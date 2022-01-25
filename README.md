@@ -295,3 +295,9 @@ The following https requests are made
 
 ## Docs & Links 
 * https://docs.docker.com/registry/spec/api/
+
+
+## Open points 
+* Eval layer injection vs on-fly build 
+* Understand how checksum is computed for manifest downloaded an request #3 
+* Benchmark Goofys performance operating in the container vs in the host 
