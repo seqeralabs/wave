@@ -206,3 +206,7 @@ The following https requests are made
         content-length: 0
         strict-transport-security: max-age=31536000
         connection: close
+
+
+## Docs & Links 
+* https://docs.docker.com/registry/spec/api/
