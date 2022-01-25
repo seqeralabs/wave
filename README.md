@@ -299,5 +299,5 @@ The following https requests are made
 
 ## Open points 
 * Eval layer injection vs on-fly build 
-* Understand how checksum is computed for manifest downloaded at request #3 
+* ~~Understand how checksum is computed for manifest downloaded at request #3~~ (it was just a formatting problem, the checksum is just the sha256 of the json response body) 
 * Benchmark Goofys performance operating in the container vs in the host 
