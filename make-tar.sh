@@ -1,0 +1,1 @@
+gtar --transform "s/^layer/\/foo/" -vcf foo.tar.gzip layer

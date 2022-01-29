@@ -1,9 +1,9 @@
 package io.seqera
 
+
 import java.security.MessageDigest
 
 import groovy.transform.CompileStatic
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -20,7 +20,11 @@ class RegHelper {
     }
 
     static String digest(String str) {
-        final digest = SHA256.digest(str.getBytes())
+        return digest(str.getBytes())
+    }
+
+    static String digest(byte[] bytes) {
+        final digest = SHA256.digest(bytes)
         return "sha256:${bytesToHex(digest)}"
     }
 

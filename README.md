@@ -98,7 +98,7 @@ The following https requests are made
         connection: close
 
 
-### Readble flow 
+### Readable flow 
 
 1. https://registry-1.docker.io/v2/library/hello-world/manifests/latest
   
