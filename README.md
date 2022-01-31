@@ -320,7 +320,7 @@ The following https requests are made
 
 ## Docs & Links 
 * https://docs.docker.com/registry/spec/api/
-
+* [OCI image specs](https://github.com/opencontainers/image-spec)
 
 ## Open points 
 * Eval layer injection vs on-fly build 
