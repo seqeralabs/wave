@@ -1,7 +1,6 @@
 package io.seqera
 
 import io.micronaut.http.HttpRequest
-import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.exceptions.HttpClientResponseException
@@ -13,7 +12,7 @@ import spock.lang.Specification
 class RegServerTest extends Specification {
 
 
-    def 'should handle ping' () {
+    def 'should handle ping get' () {
         given:
         def handler = new RegHandler()
         def server = new RegServer().withHandler(handler).start()
@@ -30,7 +29,7 @@ class RegServerTest extends Specification {
         server.stop()
     }
 
-    def 'should handle manifest list get request' () {
+    def 'should handle ping head' () {
         given:
         def handler = new RegHandler()
         def server = new RegServer().withHandler(handler).start()
@@ -38,35 +37,12 @@ class RegServerTest extends Specification {
         def client = HttpClient.create(new URL('http://localhost:9090'))
 
         when:
-        HttpRequest request = HttpRequest.GET("/v2/library/hello-world/manifests/latest");
-        HttpResponse<String> response = client.toBlocking().exchange(request,String)
+        HttpRequest request = HttpRequest.HEAD("/ping");
+        def response = client.toBlocking().exchange(request);
         then:
         response.status() == HttpStatus.OK
-        and:
-        response.body() == Mock.MANIFEST_LIST_CONTENT
-        response.getContentType().get().getName() ==  'application/vnd.docker.distribution.manifest.list.v2+json'
-        response.getContentLength() == 2562
-
-        cleanup:
-        server.stop()
-    }
-
-    def 'should handle manifest list head request' () {
-        given:
-        def handler = new RegHandler()
-        def server = new RegServer().withHandler(handler).start()
-        and:
-        def client = HttpClient.create(new URL('http://localhost:9090'))
-
-        when:
-        HttpRequest request = HttpRequest.HEAD("/v2/library/hello-world/manifests/latest");
-        HttpResponse<String> response = client.toBlocking().exchange(request,String)
-        then:
-        response.status() == HttpStatus.OK
-        and:
-        response.getContentType().get().getName() ==  'application/vnd.docker.distribution.manifest.list.v2+json'
-        response.getContentLength() == 2562
-
+        response.contentLength == 4
+        
         cleanup:
         server.stop()
     }

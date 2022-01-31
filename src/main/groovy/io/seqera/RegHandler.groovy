@@ -3,6 +3,7 @@ package io.seqera
 import com.sun.net.httpserver.Headers
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
+import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
@@ -65,6 +66,16 @@ class RegHandler implements HttpHandler {
         }
     }
 
+    private String dumpJson(payload) {
+        if( payload==null )
+            return '(null)'
+        try {
+            return '\n' + JsonOutput.prettyPrint(payload.toString())
+        }
+        catch( Throwable e ) {
+            return '(no json output)'
+        }
+    }
 
     protected void handleProxy(HttpExchange exchange, ProxyClient proxy) {
         // forward request
@@ -77,7 +88,7 @@ class RegHandler implements HttpHandler {
 
         //
         int len = Integer.parseInt(resp.headers().firstValue('content-length').get())
-        log.trace "Proxy response << status=${resp.statusCode()}; len=$len"
+        log.trace "Proxy response << status=${resp.statusCode()}; len=$len; content: ${dumpJson(resp.body())}"
         exchange.sendResponseHeaders( resp.statusCode(), len)
 
         // copy response
@@ -113,6 +124,8 @@ class RegHandler implements HttpHandler {
 
         // compute the injected digest
         final digest = scanner(route.image).resolve(route.image, route.reference, exchange.getRequestHeaders())
+        if( digest == null )
+            handleNotFound(exchange)
 
         // retries the cache entry generated from the resolve
         final req = "/v2/$route.image/manifests/$digest"
@@ -126,7 +139,7 @@ class RegHandler implements HttpHandler {
 
     protected void handleCache(HttpExchange exchange, Cache.ResponseCache entry) {
         int len = entry.bytes.length
-        log.trace "Cache response << len=$len"
+        log.trace "Cache response << len=$len; content: ${dumpJson(new String(entry.bytes))}"
         def headers = new HashMap()
         headers.put("Content-Type", entry.mediaType)
         headers.put("docker-content-digest", entry.digest)
@@ -149,7 +162,9 @@ class RegHandler implements HttpHandler {
             // https://bugs.openjdk.java.net/browse/JDK-6886723
             // see https://github.com/prometheus/client_java/issues/685#issuecomment-917071851
             exchange.getResponseHeaders().add("Content-Length", body.length.toString())
-            exchange.sendResponseHeaders(200, 0)
+            exchange.sendResponseHeaders(200, -1)
+            // hack to prevent "response headers not sent yet" exception when closing the stream
+            exchange.setStreams(null, new ByteArrayOutputStream(0))
             exchange.getResponseBody().close()
         }
         else {
@@ -174,13 +189,7 @@ class RegHandler implements HttpHandler {
 
     protected void handlePing(HttpExchange exchange) {
         final message = 'pong'
-        Headers header = exchange.getResponseHeaders()
-        header.set("Content-Type", "text/plain")
-        exchange.sendResponseHeaders(200, message.size())
-
-        OutputStream os = exchange.getResponseBody();
-        os.write(message.bytes);
-        os.close();
+        handleResp0(exchange, message.bytes, ['Content-Type': '"text/plain"'])
     }
 
 }

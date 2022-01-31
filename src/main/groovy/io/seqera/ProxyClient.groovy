@@ -87,17 +87,19 @@ class ProxyClient {
         return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofByteArray() )
     }
 
+
+    private static final List<String> SKIP_HEADERS = ['host', 'connection']
+
     private void copyHeaders(Map<String,List<String>> headers, HttpRequest.Builder builder) {
         if( !headers )
             return
 
         for( Map.Entry<String,List<String>> entry : headers )  {
-            if( entry.key.toLowerCase()=='host' )
+            if( entry.key.toLowerCase() in SKIP_HEADERS )
                 continue
             for( String val : entry.value )
                 builder.header(entry.key, val)
         }
-
     }
 
     def <T> HttpResponse<T> get(URI uri, Map<String,List<String>> headers, BodyHandler<T> handler) {

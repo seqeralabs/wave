@@ -18,11 +18,14 @@ import groovy.util.logging.Slf4j
 class ContainerScanner {
 
     private ProxyClient client
-    private Path layerPath
+    private Path compressedLayerPath
+    private Path uncompressedLayerPath
+
     private Cache cache
 
     {
-        layerPath = Paths.get('foo.tar.gzip')
+        compressedLayerPath = Paths.get('foo.tar.gzip')
+        uncompressedLayerPath = Paths.get('foo.tar')
     }
 
     ContainerScanner withCache(Cache cache) {
@@ -36,20 +39,33 @@ class ContainerScanner {
     }
 
     ContainerScanner withLayer(Path path) {
-        this.layerPath = path
+        final name = path.getFileName().toString()
+        if( !name.endsWith('.tar.gzip') )
+            throw new IllegalArgumentException("Layer name should ends with .tar.gzip")
+        this.compressedLayerPath = path
+        this.uncompressedLayerPath = path.resolveSibling( name.replace('.gzip', '') )
         return this
     }
 
+    protected Path getCompressedLayer() {
+        return compressedLayerPath
+    }
+
+    protected Path getUncompressedLayer() {
+        return uncompressedLayerPath
+    }
 
     String resolve(String imageName, String tag, Map<String,List<String>> headers) {
         assert client, "Missing client"
         // resolve image tag to digest
         final resp1 = client.head("/v2/$imageName/manifests/$tag", headers)
-        final digest = resp1.headers().firstValue('docker-content-digest').get()
+        final digest = resp1.headers().firstValue('docker-content-digest')
         log.debug "Image $imageName:$tag => digest=$digest"
+        if( digest.isEmpty() )
+            return null
 
         // get manifest list for digest
-        final resp2 = client.getString("/v2/$imageName/manifests/$digest", headers)
+        final resp2 = client.getString("/v2/$imageName/manifests/${digest.get()}", headers)
         final manifestsList = resp2.body()
         log.debug "Image $imageName:$tag => manifests list=\n${JsonOutput.prettyPrint(manifestsList)}"
 
@@ -59,9 +75,20 @@ class ContainerScanner {
         final imageManifest = resp3.body()
         log.debug "Image $imageName:$tag => image manifest=\n${JsonOutput.prettyPrint(imageManifest)}"
 
+        // find the image config digest
+        final configDigest = findImageConfigDigest(imageManifest)
+
+        // fetch the image config
+        final resp4 = client.getString("/v2/$imageName/blobs/$configDigest", headers)
+        final imageConfig = resp4.body()
+        log.debug "Image $imageName:$tag => image config=\n${JsonOutput.prettyPrint(imageConfig)}"
+
+        // update the image config adding the new layer
+        final newConfigDigest = updateImageConfig(imageName, imageConfig)
+
         // update the image manifest adding a new layer
         // returns the updated image manifest digest
-        final newDigest = updateImageManifest(imageName, imageManifest)
+        final newDigest = updateImageManifest(imageName, imageManifest, newConfigDigest)
 
         // update the manifests list with the new digest
         // returns the manifests list digest
@@ -84,13 +111,13 @@ class ContainerScanner {
     }
 
     protected Map layerBlob(String image) {
-        assert layerPath
+        assert compressedLayerPath
 
         // store the layer blob in the cache
         final type = "application/vnd.docker.image.rootfs.diff.tar.gzip"
-        final buffer = Files.readAllBytes(layerPath)
+        final buffer = Files.readAllBytes(compressedLayerPath)
         final digest = RegHelper.digest(buffer)
-        final size = Files.size(layerPath) as int
+        final size = Files.size(compressedLayerPath) as int
         final path = "/v2/$image/blobs/$digest"
         cache.put(path, buffer, type, digest)
 
@@ -101,7 +128,35 @@ class ContainerScanner {
         return result
     }
 
-    protected String updateImageManifest(String imageName, String imageManifest) {
+    /**
+     * @param imageManifest hold the image config json. It has the following structure
+     * <pre>
+     *     {
+     *      "schemaVersion": 2,
+     *      "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+     *      "config": {
+     *              "mediaType": "application/vnd.docker.container.image.v1+json",
+     *              "size": 1469,
+     *              "digest": "sha256:feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412"
+     *          },
+     *      "layers": [
+     *          {
+     *              "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+     *              "size": 2479,
+     *              "digest": "sha256:2db29710123e3e53a794f2694094b9b4338aa9ee5c40b930cb8063a1be392c54"
+     *          }
+     *      ]
+     *    }
+     * </pre>
+     * @return
+     */
+    @CompileDynamic
+    protected String findImageConfigDigest(String imageManifest) {
+        final json = (Map) new JsonSlurper().parseText(imageManifest)
+        return json.config.digest
+    }
+
+    protected String updateImageManifest(String imageName, String imageManifest, String newImageConfigDigest) {
 
         // get the layer blob
         final newLayer = layerBlob(imageName)
@@ -111,6 +166,9 @@ class ContainerScanner {
         final manifest = (Map) new JsonSlurper().parseText(imageManifest)
         (manifest.layers as List).add( newLayer )
 
+        // update the config digest
+        (manifest.config as Map).digest = newImageConfigDigest
+
         // turn the updated manifest into a json
         final newManifest = JsonOutput.prettyPrint(JsonOutput.toJson(manifest))
 
@@ -118,6 +176,31 @@ class ContainerScanner {
         final digest = RegHelper.digest(newManifest)
         final path = "/v2/$imageName/manifests/$digest"
         cache.put(path, newManifest.bytes, Mock.MANIFEST_MIME, digest)
+
+        // return the updated image manifest digest
+        return digest
+    }
+
+    protected String updateImageConfig(String imageName, String imageConfig) {
+        assert uncompressedLayerPath
+
+        final buffer = Files.readAllBytes(uncompressedLayerPath)
+        final newLayer = RegHelper.digest(buffer)
+
+        // turn the json string into a json map
+        // and append the new layer
+        final manifest = (Map) new JsonSlurper().parseText(imageConfig)
+        final rootfs = manifest.rootfs as Map
+        final layers = rootfs.diff_ids as List
+        layers.add( newLayer )
+
+        // turn the updated manifest into a json
+        final newConfig = JsonOutput.toJson(manifest)
+
+        // add to the cache
+        final digest = RegHelper.digest(newConfig)
+        final path = "/v2/$imageName/blobs/$digest"
+        cache.put(path, newConfig.bytes, Mock.IMAGE_CONFIG_MIME, digest)
 
         // return the updated image manifest digest
         return digest

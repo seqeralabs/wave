@@ -10,6 +10,8 @@ class Mock {
     public static String MANIFEST_DIGEST = 'sha256:975f4b14f326b05db86e16de00144f9c12257553bba9484fed41f9b6f2257800'
 
     public static String BLOB_MIME = 'application/vnd.docker.image.rootfs.diff.tar.gzip'
+    public static String IMAGE_CONFIG_MIME = 'application/vnd.docker.container.image.v1+json'
+
 
     public static String MANIFEST_MIME = 'application/vnd.docker.distribution.manifest.v2+json'
     public static String MANIFEST_CONTENT = '''\
