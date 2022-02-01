@@ -18,7 +18,7 @@ class RegHandler implements HttpHandler {
     private Cache cache = new Cache()
     private String username = "pditommaso"
     private String pat = 'd213e955-3357-4612-8c48-fa5652ad968b'
-
+    private String arch
 
     @Override
     void handle(HttpExchange exchange) throws IOException {
@@ -70,7 +70,7 @@ class RegHandler implements HttpHandler {
         if( payload==null )
             return '(null)'
         try {
-            return '\n' + JsonOutput.prettyPrint(payload.toString())
+            return '\n' + JsonOutput.prettyPrint(payload.toString().trim())
         }
         catch( Throwable e ) {
             return '(no json output)'
@@ -116,6 +116,7 @@ class RegHandler implements HttpHandler {
     @Memoized
     private ContainerScanner scanner(String image) {
         return new ContainerScanner()
+                .withArch(arch)
                 .withCache(cache)
                 .withClient(client(image))
     }

@@ -29,12 +29,24 @@ class ContainerScannerTest extends Specification {
 
         given:
         def body = Mock.MANIFEST_LIST_CONTENT
-        def scanner = new ContainerScanner()
 
         when:
+        def scanner = new ContainerScanner().withArch('x86_64')
         def result = scanner.findTargetDigest(body, Mock.MANIFEST_MIME)
         then:
         result == 'sha256:f54a58bc1aac5ea1a25d796ae155dc228b3f0e11d046ae276b39c4bf2f13d8c4'
+
+        when:
+        scanner = new ContainerScanner().withArch('amd64')
+        result = scanner.findTargetDigest(body, Mock.MANIFEST_MIME)
+        then:
+        result == 'sha256:f54a58bc1aac5ea1a25d796ae155dc228b3f0e11d046ae276b39c4bf2f13d8c4'
+
+        when:
+        scanner = new ContainerScanner().withArch('arm64')
+        result = scanner.findTargetDigest(body, Mock.MANIFEST_MIME)
+        then:
+        result == 'sha256:01433e86a06b752f228e3c17394169a5e21a0995f153268a9b36a16d4f2b2184'
     }
 
     def 'create the layer' () {

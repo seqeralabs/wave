@@ -20,6 +20,7 @@ class ContainerScanner {
     private ProxyClient client
     private Path compressedLayerPath
     private Path uncompressedLayerPath
+    private String arch
 
     private Cache cache
 
@@ -35,6 +36,14 @@ class ContainerScanner {
 
     ContainerScanner withClient(ProxyClient client) {
         this.client = client
+        return this
+    }
+
+    ContainerScanner withArch(String arch) {
+        assert arch, "Missing 'arch' parameter"
+        assert arch in ['x86_64', 'amd64', 'arm64'], "Unsupported architecture: $arch"
+
+        this.arch = arch == 'x86_64' ? 'amd64' : arch
         return this
     }
 
@@ -85,16 +94,19 @@ class ContainerScanner {
 
         // update the image config adding the new layer
         final newConfigDigest = updateImageConfig(imageName, imageConfig)
+        log.debug "==> new config digest: $newConfigDigest"
 
         // update the image manifest adding a new layer
         // returns the updated image manifest digest
-        final newDigest = updateImageManifest(imageName, imageManifest, newConfigDigest)
+        final newManifestDigest = updateImageManifest(imageName, imageManifest, newConfigDigest)
+        log.debug "==> new image digest: $newManifestDigest"
 
         // update the manifests list with the new digest
         // returns the manifests list digest
-        final listDigest = updateManifestsList(imageName, manifestsList, targetDigest, newDigest)
+        final newListDigest = updateManifestsList(imageName, manifestsList, targetDigest, newManifestDigest)
+        log.debug "==> new list digest: $newListDigest"
 
-        return listDigest
+        return newListDigest
     }
 
     protected String updateManifestsList(String imageName, String manifestsList, String targetDigest, String newDigest) {
@@ -207,12 +219,12 @@ class ContainerScanner {
     }
 
     @CompileDynamic
-    protected String findTargetDigest(String body, String mediaType, String architecture='amd64', String os='linux' ) {
-
+    protected String findTargetDigest(String body, String mediaType ) {
         final json = (Map) new JsonSlurper().parseText(body)
-        final record = json.manifests.find { record ->  println(record);  record.mediaType == mediaType && record.platform.os==os && record.platform.architecture==architecture }
-        return record.digest
-
+        final record = json.manifests.find( { record ->  record.mediaType == mediaType && record.platform.os=='linux' && record.platform.architecture==arch } )
+        final result = record.digest
+        log.trace "Find target digest arch: $arch ==> digest: $result"
+        return result
     }
 
 }
