@@ -52,7 +52,7 @@ with a comma `,` character.
 6. The pulled images contains the files from the appended layer. Check it with the following command:
 
 
-    docker run reg.ngrok.io/library/busybox cat foo.txt
+    docker run --rm reg.ngrok.io/library/busybox cat foo.txt
 
 7. List the content of a bucket using `ls`
 
