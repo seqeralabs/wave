@@ -1,0 +1,6 @@
+{
+  "entrypoint": ["/opt/fusion/entry.sh"],
+  "workingDir": null,
+  "cmd": null,
+  "env": ["FOO=bar"]
+}

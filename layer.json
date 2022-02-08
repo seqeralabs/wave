@@ -1,0 +1,15 @@
+{
+  "entrypoint": [
+    "/opt/fusion/entry.sh"
+  ],
+  "workingDir": null,
+  "cmd": null,
+  "env": [
+    "FOO=bar"
+  ],
+  "append": {
+    "location": "/Users/pditommaso/Projects/tower-reg/layer.tar.gzip",
+    "gzipDigest": "sha256:17a522d6c7c86beb2848adda71b4aedcf0078d33afc02ab138b4f48c21220f46",
+    "tarDigest": "sha256:162ad460eb389325e201d7c99d566e5aaaa317c99331cfbe8921aae2691a1c26"
+  }
+}

@@ -8,9 +8,7 @@ import java.time.Duration
 
 import groovy.json.JsonSlurper
 import groovy.transform.CompileStatic
-import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
-
 /**
  *
  * https://www.baeldung.com/java-9-http-client
@@ -25,6 +23,7 @@ class ProxyClient {
     private String username
     private String password
     private String image
+    private String tokenCache
 
     private String registryName = 'registry-1.docker.io'
     private HttpClient httpClient
@@ -44,11 +43,13 @@ class ProxyClient {
                 .build()
     }
 
-    @Memoized
     String getToken() {
         assert username
         assert password
         assert image
+
+        if( tokenCache )
+            return tokenCache
 
         final basic = "$username:$password".bytes.encodeBase64()
         final auth = "Basic $basic"
@@ -103,6 +104,16 @@ class ProxyClient {
     }
 
     def <T> HttpResponse<T> get(URI uri, Map<String,List<String>> headers, BodyHandler<T> handler) {
+        def result = get0(uri, headers, handler)
+        if( result.statusCode()==401 ) {
+            // clear the token to force refreshing it
+            tokenCache=null
+            result = get0(uri, headers, handler)
+        }
+        return result
+    }
+
+    private <T> HttpResponse<T> get0(URI uri, Map<String,List<String>> headers, BodyHandler<T> handler) {
         final builder = HttpRequest.newBuilder(uri) .GET()
         copyHeaders(headers, builder)
         // add authorisation header
@@ -118,6 +129,16 @@ class ProxyClient {
     }
 
     HttpResponse<Void> head(URI uri, Map<String,List<String>> headers) {
+        def result = head0(uri, headers)
+        if( result.statusCode()==401 ) {
+            // clear the token to force refreshing it
+            tokenCache=null
+            result = head0(uri, headers)
+        }
+        return result
+    }
+
+    HttpResponse<Void> head0(URI uri, Map<String,List<String>> headers) {
         // A HEAD request is a GET request without a message body
         // https://zetcode.com/java/httpclient/
         final builder = HttpRequest.newBuilder(uri)
@@ -131,5 +152,6 @@ class ProxyClient {
         // send it 
         return httpClient.send(request, HttpResponse.BodyHandlers.discarding())
     }
+
 
 }

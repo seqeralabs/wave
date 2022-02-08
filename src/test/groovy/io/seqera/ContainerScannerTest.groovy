@@ -1,6 +1,7 @@
 package io.seqera
 
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 
 import groovy.json.JsonSlurper
@@ -15,14 +16,40 @@ class ContainerScannerTest extends Specification {
     private String username = "pditommaso"
     private String password = 'd213e955-3357-4612-8c48-fa5652ad968b'
 
+    def createConfig(Path folder, Map config, byte[] content ){
+        def location = folder.resolve('layer.tar.gzip')
+        
+    }
+
     def 'should set layer paths' () {
+        given:
+        def folder = Files.createTempDirectory('test')
+        def layer = folder.resolve('layer.tar.gzip');
+        Files.createFile(layer)
+        and:
+        def CONFIG = """
+                {
+                    "append": {
+                      "location": "${layer.toAbsolutePath()}",
+                      "gzipDigest": "sha256:xxx",
+                      "tarDigest": "sha256:zzz"
+                    }                  
+                }
+                """
+        and:
+        def json = folder.resolve('layer.json')
+        Files.write(json, CONFIG.bytes)
+
         when:
-        def scanner = new ContainerScanner().withLayer( Paths.get('/some/path/foo.tar.gzip') )
+        def scanner = new ContainerScanner().withLayerConfig(json)
 
         then:
-        scanner.getCompressedLayer() == Paths.get('/some/path/foo.tar.gzip')
-        scanner.getUncompressedLayer() == Paths.get('/some/path/foo.tar')
+        def config = scanner.getLayerConfigPath()
+        and:
+        config.append.locationPath == layer
 
+        cleanup:
+        folder?.toFile()?.deleteDir()
     }
 
     def 'should find target digest' () {
@@ -54,7 +81,7 @@ class ContainerScannerTest extends Specification {
         def IMAGE = 'hello-world'
         def layerPath = Paths.get('foo.tar.gzip')
         def cache = new Cache()
-        def scanner = new ContainerScanner().withCache(cache).withLayer(layerPath)
+        def scanner = new ContainerScanner().withCache(cache).withLayerConfig(layerPath)
         and:
         def digest = RegHelper.digest(Files.readAllBytes(layerPath) )
         
@@ -85,7 +112,7 @@ class ContainerScannerTest extends Specification {
         def layerDigest = RegHelper.digest(Files.readAllBytes(layerPath))
         and:
         def cache = new Cache()
-        def scanner = new ContainerScanner().withCache(cache).withLayer(layerPath)
+        def scanner = new ContainerScanner().withCache(cache).withLayerConfig(layerPath)
 
         when:
         def digest = scanner.updateImageManifest(IMAGE, MANIFEST, NEW_CONFIG_DIGEST)
@@ -123,7 +150,7 @@ class ContainerScannerTest extends Specification {
         def layerPath = Paths.get('foo.tar.gzip')
         and:
         def cache = new Cache()
-        def scanner = new ContainerScanner().withCache(cache).withLayer(layerPath)
+        def scanner = new ContainerScanner().withCache(cache).withLayerConfig(layerPath)
 
         when:
         def digest = scanner.updateManifestsList(IMAGE, MANIFEST, DIGEST, NEW_DIGEST)
@@ -249,7 +276,7 @@ class ContainerScannerTest extends Specification {
         def layerPath = Paths.get('foo.tar.gzip')
         and:
         def cache = new Cache()
-        def scanner = new ContainerScanner().withCache(cache).withLayer(layerPath)
+        def scanner = new ContainerScanner().withCache(cache).withLayerConfig(layerPath)
 
         when:
         def digest = scanner.updateImageConfig(IMAGE_NAME, IMAGE_CONFIG)

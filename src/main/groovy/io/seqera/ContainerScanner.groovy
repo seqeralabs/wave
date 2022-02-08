@@ -3,11 +3,13 @@ package io.seqera
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.attribute.BasicFileAttributes
 
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
+import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
 /**
  *
@@ -18,15 +20,13 @@ import groovy.util.logging.Slf4j
 class ContainerScanner {
 
     private ProxyClient client
-    private Path compressedLayerPath
-    private Path uncompressedLayerPath
+    private Path layerConfigPath
     private String arch
 
     private Cache cache
 
     {
-        compressedLayerPath = Paths.get('foo.tar.gzip')
-        uncompressedLayerPath = Paths.get('foo.tar')
+        withLayerConfig(Paths.get('layer.json'))
     }
 
     ContainerScanner withCache(Cache cache) {
@@ -47,21 +47,47 @@ class ContainerScanner {
         return this
     }
 
-    ContainerScanner withLayer(Path path) {
-        final name = path.getFileName().toString()
-        if( !name.endsWith('.tar.gzip') )
-            throw new IllegalArgumentException("Layer name should ends with .tar.gzip")
-        this.compressedLayerPath = path
-        this.uncompressedLayerPath = path.resolveSibling( name.replace('.gzip', '') )
+    ContainerScanner withLayerConfig(Path path) {
+        log.debug "Layer config path: $path"
+        this.layerConfigPath = path
+        if( !Files.exists(path )) {
+            throw new IllegalArgumentException("Specific config path does not exist: $path")
+        }
         return this
     }
 
-    protected Path getCompressedLayer() {
-        return compressedLayerPath
+    Path getLayerConfigPath() {
+        return layerConfigPath
     }
 
-    protected Path getUncompressedLayer() {
-        return uncompressedLayerPath
+    protected LayerConfig getLayerConfig() {
+        assert layerConfigPath, "Missing layer config path"
+        final attrs = Files.readAttributes(layerConfigPath, BasicFileAttributes)
+        // note file size and last modified timestamp are only needed
+        // to invalidate the memoize cache
+        return createConfig(layerConfigPath.toFile(), attrs.size(), attrs.lastModifiedTime().toMillis())
+    }
+
+    @Memoized
+    protected LayerConfig createConfig(File path, long size, long lastModified) {
+        final layerConfig = new JsonSlurper().parse(path) as LayerConfig
+        if( !layerConfig.append?.location )
+            throw new IllegalArgumentException("Missing layer tar path")
+        if( !layerConfig.append?.gzipDigest )
+            throw new IllegalArgumentException("Missing layer gzip digest")
+        if( !layerConfig.append?.tarDigest )
+            throw new IllegalArgumentException("Missing layer tar digest")
+
+        if( !layerConfig.append.gzipDigest.startsWith('sha256:') )
+            throw new IllegalArgumentException("Missing layer gzip digest should start with the 'sha256:' prefix -- offending value: $layerConfig.append.gzipDigest")
+        if( !layerConfig.append.tarDigest.startsWith('sha256:') )
+            throw new IllegalArgumentException("Missing layer tar digest should start with the 'sha256:' prefix -- offending value: $layerConfig.append.tarDigest")
+
+        if( !Files.exists(layerConfig.append.locationPath) )
+            throw new IllegalArgumentException("Missing layer tar file: $layerConfig.append.locationPath")
+
+        log.debug "Layer info: path=$layerConfig.append.location; gzip-checksum=$layerConfig.append.gzipDigest; tar-checksum=$layerConfig.append.tarDigest"
+        return layerConfig
     }
 
     String resolve(String imageName, String tag, Map<String,List<String>> headers) {
@@ -123,13 +149,14 @@ class ContainerScanner {
     }
 
     protected Map layerBlob(String image) {
-        assert compressedLayerPath
 
         // store the layer blob in the cache
         final type = "application/vnd.docker.image.rootfs.diff.tar.gzip"
-        final buffer = Files.readAllBytes(compressedLayerPath)
+        final buffer = Files.readAllBytes(layerConfig.append.locationPath)
         final digest = RegHelper.digest(buffer)
-        final size = Files.size(compressedLayerPath) as int
+        final size = Files.size(layerConfig.append.locationPath) as int
+        if( digest != layerConfig.append.gzipDigest )
+            throw new IllegalArgumentException("Layer gzip computed digest does not match with expected digest -- path=$layerConfig.append.locationPath; computed=$digest; expected: $layerConfig.append.gzipDigest")
         final path = "/v2/$image/blobs/$digest"
         cache.put(path, buffer, type, digest)
 
@@ -194,17 +221,31 @@ class ContainerScanner {
     }
 
     protected String updateImageConfig(String imageName, String imageConfig) {
-        assert uncompressedLayerPath
 
-        final buffer = Files.readAllBytes(uncompressedLayerPath)
-        final newLayer = RegHelper.digest(buffer)
+        final newLayer = layerConfig.append.tarDigest
 
         // turn the json string into a json map
         // and append the new layer
-        final manifest = (Map) new JsonSlurper().parseText(imageConfig)
+        final manifest = new JsonSlurper().parseText(imageConfig) as Map
         final rootfs = manifest.rootfs as Map
         final layers = rootfs.diff_ids as List
         layers.add( newLayer )
+
+        // update the image config
+        final config = manifest.config as Map
+        if( layerConfig.entrypoint ) {
+            config.Entrypoint = layerConfig.entrypoint
+        }
+        if( layerConfig.cmd ) {
+            config.Cmd = layerConfig.cmd
+        }
+        if( layerConfig.workingDir ) {
+            config.WorkingDir = layerConfig.workingDir
+        }
+        if( layerConfig.env ) {
+            def list = config.Env as List
+            config.Env = list ? (list + layerConfig.env) : layerConfig.env
+        }
 
         // turn the updated manifest into a json
         final newConfig = JsonOutput.toJson(manifest)

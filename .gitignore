@@ -12,3 +12,5 @@ out/
 .settings
 .classpath
 .factorypath
+.layer/opt/goofys/goofys
+layer.tar.gzip

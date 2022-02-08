@@ -42,6 +42,11 @@ class RegHandler implements HttpHandler {
             return
         }
 
+        if( path=='/v2' || path=='/v2/' ) {
+            handleOK(exchange)
+            return
+        }
+
         final route = RouteHelper.parse(path)
         final isHead = exchange.requestMethod=='HEAD'
         final isGet = exchange.requestMethod=='GET'
@@ -106,6 +111,14 @@ class RegHandler implements HttpHandler {
         OutputStream os = exchange.getResponseBody();
         os.write(message.bytes);
         os.close();
+    }
+
+    protected void handleOK(HttpExchange exchange) {
+        def headers = new HashMap()
+        headers.put("Content-Type", 'text/plain')
+        headers.put("docker-distribution-api-version", "registry/2.0")
+        // handle the final response
+        handleResp0(exchange, new byte[0], headers)
     }
 
     @Memoized

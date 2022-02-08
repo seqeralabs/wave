@@ -1,0 +1,30 @@
+
+
+## docker run 
+
+docker run --rm \
+  -e AWS_REGION=eu-west-1 \
+  -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+  -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+  --privileged \
+  --entrypoint /bin/sh reg.ngrok.io/library/alpine \
+  -c 'mkdir -p /mnt/nextflow-ci; /opt/goofys/goofys -o allow_other --debug_fuse --debug_s3 --file-mode=0755 nextflow-ci /mnt/nextflow-ci; ls -la /mnt/nextflow-ci'
+
+
+## run cmd 
+
+mkdir -p /mnt/nextflow-ci
+
+/opt/goofys/goofys -o allow_other --debug_fuse --debug_s3   --file-mode=0755 nextflow-ci /mnt/nextflow-ci
+
+
+## using entry
+
+docker run --rm \
+  -e AWS_REGION=eu-west-1 \
+  -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+  -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+  -e NXF_FUSION_BUCKETS=s3://nextflow-ci \
+  --privileged  \
+  reg.ngrok.io/library/busybox \
+  ls -la /fusion/s3/nextflow-ci

@@ -1,7 +1,11 @@
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
+
 plugins {
     id("groovy") 
     id("com.github.johnrengelman.shadow") version "7.1.1"
     id("io.micronaut.application") version "3.2.0"
+    id "com.google.cloud.tools.jib" version "3.1.4"
 }
 
 version = "0.1"
@@ -21,6 +25,7 @@ dependencies {
     compileOnly("io.micronaut:micronaut-http-validation")
     runtimeOnly("ch.qos.logback:logback-classic")
     runtimeOnly("io.netty:netty-tcnative-boringssl-static:2.0.0.Final")
+    testImplementation "org.apache.commons:commons-compress:1.21"
 }
 
 
@@ -43,3 +48,15 @@ micronaut {
 }
 
 
+//
+// Build container image with JIB
+// https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin
+//
+jib.from.image = 'amazoncorretto:11.0.14'
+jib.to.image = "tower-reg:$version"
+jib.container.creationTime = "${OffsetDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME)}"
+jib.container.filesModificationTime = "${OffsetDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME)}"
+jib.container.ports = ['9090']
+jib.container.entrypoint = '/bin/sh'
+jib.container.args = ['/reg.sh']  // copied from `src/main/jib` directory
+jib.extraDirectories.permissions = ['/reg.sh': '755']
