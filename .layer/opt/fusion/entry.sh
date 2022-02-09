@@ -1,6 +1,5 @@
 #!/bin/sh
 set -e
-set -o pipefail
 ## enable debug mode
 [ $XREG_DEBUG ] && set -x
 ## holds the list of buckets to be mounted
