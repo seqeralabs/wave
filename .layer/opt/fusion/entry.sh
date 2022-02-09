@@ -18,4 +18,8 @@ if [ "$NXF_FUSION_BUCKETS" ]; then
   done
 fi
 ## invoke the target command
-exec "$@"
+if [ "$XREG_ENTRY_CHAIN" ]; then
+  exec "$XREG_ENTRY_CHAIN" "$@"
+else
+  exec "$@"
+fi

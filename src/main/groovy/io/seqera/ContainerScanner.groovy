@@ -104,14 +104,19 @@ class ContainerScanner {
         final manifestsList = resp2.body()
         log.debug "Image $imageName:$tag => manifests list=\n${JsonOutput.prettyPrint(manifestsList)}"
 
-        // get target manifest
-        final targetDigest = findTargetDigest(manifestsList, Mock.MANIFEST_MIME)
-        final resp3 = client.getString("/v2/$imageName/manifests/$targetDigest", headers)
-        final imageManifest = resp3.body()
-        log.debug "Image $imageName:$tag => image manifest=\n${JsonOutput.prettyPrint(imageManifest)}"
+//        // get target manifest
+//        final targetDigest = findTargetDigest(manifestsList)
+//        final resp3 = client.getString("/v2/$imageName/manifests/$targetDigest", headers)
+//        final imageManifest = resp3.body()
+//        log.debug "Image $imageName:$tag => image manifest=\n${JsonOutput.prettyPrint(imageManifest)}"
+//
+//        // find the image config digest
+//        final configDigest = findImageConfigDigest(imageManifest)
 
-        // find the image config digest
-        final configDigest = findImageConfigDigest(imageManifest)
+        final manifestResult = findImageManifestAndDigest(manifestsList, imageName, tag, headers)
+        final imageManifest = manifestResult.first
+        final configDigest = manifestResult.second
+        final targetDigest = manifestResult.third
 
         // fetch the image config
         final resp4 = client.getString("/v2/$imageName/blobs/$configDigest", headers)
@@ -127,12 +132,49 @@ class ContainerScanner {
         final newManifestDigest = updateImageManifest(imageName, imageManifest, newConfigDigest)
         log.debug "==> new image digest: $newManifestDigest"
 
-        // update the manifests list with the new digest
-        // returns the manifests list digest
-        final newListDigest = updateManifestsList(imageName, manifestsList, targetDigest, newManifestDigest)
-        log.debug "==> new list digest: $newListDigest"
+        if( !targetDigest ) {
+            return newManifestDigest
+        }
+        else {
+            // update the manifests list with the new digest
+            // returns the manifests list digest
+            final newListDigest = updateManifestsList(imageName, manifestsList, targetDigest, newManifestDigest)
+            log.debug "==> new list digest: $newListDigest"
 
-        return newListDigest
+            return newListDigest
+        }
+
+    }
+
+    protected Tuple3<String,String,String> findImageManifestAndDigest(String manifest, String imageName, String tag, Map<String,List<String>> headers) {
+
+        def json = new JsonSlurper().parseText(manifest) as Map
+        // check the response mime, can be either
+        // 1. application/vnd.docker.distribution.manifest.list.v2+json ==> image list
+        // 2. application/vnd.docker.distribution.manifest.v2+json  ==> image manifest
+
+        def targetDigest = null
+        def media = json.mediaType
+        if( media == Mock.MANIFEST_LIST_MIME ) {
+            // get target manifest
+            targetDigest = findTargetDigest(json)
+            final resp3 = client.getString("/v2/$imageName/manifests/$targetDigest", headers)
+            manifest = resp3.body()
+            log.debug "Image $imageName:$tag => image manifest=\n${JsonOutput.prettyPrint(manifest)}"
+            // parse the new manifest
+            json = new JsonSlurper().parseText(manifest) as Map
+            media = json.mediaType
+        }
+
+        if( media == Mock.MANIFEST_MIME ) {
+            // find the image config digest
+            final configDigest = findImageConfigDigest(manifest)
+            return new Tuple3(manifest, configDigest, targetDigest)
+        }
+        else {
+            throw new IllegalArgumentException("Unexpected media type for request '$imageName:$tag' - offending value: $media")
+        }
+        
     }
 
     protected String updateManifestsList(String imageName, String manifestsList, String targetDigest, String newDigest) {
@@ -220,6 +262,27 @@ class ContainerScanner {
         return digest
     }
 
+    protected String getFirst(value) {
+        if( !value )
+            return null
+        if( value instanceof List ) {
+            if( value.size()>1 ) log.warn "Invalid  Entrypoint value: $value -- Only the first array element will be taken"
+            return value.get(0)
+        }
+        if( value instanceof String )
+            return value
+        log.warn "Invalid Entrypoint type: ${value.getClass().getName()} -- Offending value: $value"
+        return null
+    }
+
+    protected List<String> appendEnv(List<String> env, List<String> newEntries) {
+        if( !newEntries )
+            return env
+        return env
+                ? (env + newEntries)
+                : newEntries
+    }
+
     protected String updateImageConfig(String imageName, String imageConfig) {
 
         final newLayer = layerConfig.append.tarDigest
@@ -233,6 +296,7 @@ class ContainerScanner {
 
         // update the image config
         final config = manifest.config as Map
+        final entryChain = getFirst(config.Entrypoint)
         if( layerConfig.entrypoint ) {
             config.Entrypoint = layerConfig.entrypoint
         }
@@ -243,8 +307,10 @@ class ContainerScanner {
             config.WorkingDir = layerConfig.workingDir
         }
         if( layerConfig.env ) {
-            def list = config.Env as List
-            config.Env = list ? (list + layerConfig.env) : layerConfig.env
+            config.Env = appendEnv(config.Env as List, layerConfig.env)
+        }
+        if( entryChain ) {
+            config.Env = appendEnv( config.Env as List, [ "XREG_ENTRY_CHAIN="+entryChain ] )
         }
 
         // turn the updated manifest into a json
@@ -259,9 +325,14 @@ class ContainerScanner {
         return digest
     }
 
+
+    protected String findTargetDigest(String body ) {
+        findTargetDigest((Map) new JsonSlurper().parseText(body))
+    }
+
     @CompileDynamic
-    protected String findTargetDigest(String body, String mediaType ) {
-        final json = (Map) new JsonSlurper().parseText(body)
+    protected String findTargetDigest(Map json) {
+        final mediaType = Mock.MANIFEST_MIME
         final record = json.manifests.find( { record ->  record.mediaType == mediaType && record.platform.os=='linux' && record.platform.architecture==arch } )
         final result = record.digest
         log.trace "Find target digest arch: $arch ==> digest: $result"
