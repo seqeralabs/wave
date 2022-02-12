@@ -30,32 +30,29 @@ with a comma `,` character.
 2. Assemble a container layer using this command:
 
    
-    make clean all
+        make clean all
 
 
 3. Compile and run the registry service:  
 
-
-    bash run.sh
+        bash run.sh
 
 4. Use reverse proxy service to expose the registry with public name, e.g. 
 
-
-    ngrok http 9090 -subdomain reg
+        ngrok http 9090 -subdomain reg
 
 
 5. Pull a container using the docker client: 
 
-
-    docker pull reg.ngrok.io/library/busybox
+        docker pull reg.ngrok.io/library/busybox
+        
+    **NOTE**: replace the registry name `reg.ngrok.io` with the one provided by the reverse proxy command in the previous step.
 
 6. The pulled images contains the files from the appended layer. Check it with the following command:
 
-
-    docker run --rm reg.ngrok.io/library/busybox cat foo.txt
+        docker run --rm reg.ngrok.io/library/busybox cat foo.txt
 
 7. List the content of a bucket using `ls`
-
 
         docker run --rm \
           -e AWS_REGION=eu-west-1 \
