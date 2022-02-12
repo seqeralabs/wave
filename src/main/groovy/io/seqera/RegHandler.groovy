@@ -50,7 +50,7 @@ class RegHandler implements HttpHandler {
         final route = RouteHelper.parse(path)
         final isHead = exchange.requestMethod=='HEAD'
         final isGet = exchange.requestMethod=='GET'
-        if( route.isManifest() && route.isTag() && isHead ) {
+        if( route.isManifest() && route.isTag() ) {
             log.trace "Request manifest: $path"
             handleManifest(exchange, route)
         }
@@ -118,7 +118,7 @@ class RegHandler implements HttpHandler {
         headers.put("Content-Type", 'text/plain')
         headers.put("docker-distribution-api-version", "registry/2.0")
         // handle the final response
-        handleResp0(exchange, new byte[0], headers)
+        handleResp0(exchange, 'OK'.bytes, headers)
     }
 
     @Memoized
@@ -191,13 +191,13 @@ class RegHandler implements HttpHandler {
 
 
     protected void handleNotFound(HttpExchange exchange) {
-        final message = 'Not found'
+        final byte[] message = 'Not found'.bytes
         Headers header = exchange.getResponseHeaders()
         header.set("Content-Type", "text/plain")
-        exchange.sendResponseHeaders(404, message.size())
+        exchange.sendResponseHeaders(404, message.length)
 
         OutputStream os = exchange.getResponseBody();
-        os.write(message.bytes);
+        os.write(message);
         os.close();
     }
 

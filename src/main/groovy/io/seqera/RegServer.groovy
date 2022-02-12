@@ -1,5 +1,7 @@
 package io.seqera
 
+import java.util.concurrent.Executors
+
 import com.sun.net.httpserver.HttpHandler
 import com.sun.net.httpserver.HttpServer
 import groovy.transform.CompileStatic
@@ -37,6 +39,7 @@ class RegServer {
             throw new IllegalArgumentException("Missing http handler")
 
         server = HttpServer.create(new InetSocketAddress(port), 0);
+        server.setExecutor(Executors.newCachedThreadPool());
         server.createContext(path, handler);
         server.start()
         return this
