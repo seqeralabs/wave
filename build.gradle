@@ -5,10 +5,10 @@ plugins {
     id("groovy") 
     id("com.github.johnrengelman.shadow") version "7.1.1"
     id("io.micronaut.application") version "3.2.0"
-    id "com.google.cloud.tools.jib" version "3.1.4"
+    id "com.google.cloud.tools.jib" version "3.2.0"
 }
 
-version = "0.1"
+version = "0.2"
 group = "com.example"
 
 repositories {
@@ -53,11 +53,29 @@ micronaut {
 // Build container image with JIB
 // https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin
 //
-jib.from.image = 'amazoncorretto:11.0.14'
-jib.to.image = "tower-reg:$version"
-jib.container.creationTime = "${OffsetDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME)}"
-jib.container.filesModificationTime = "${OffsetDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME)}"
-jib.container.ports = ['9090']
-jib.container.entrypoint = '/bin/sh'
-jib.container.args = ['/reg.sh']  // copied from `src/main/jib` directory
-jib.extraDirectories.permissions = ['/reg.sh': '755']
+jib {
+    from {
+        image = 'amazoncorretto:11.0.14'
+        platforms {
+            platform { architecture = 'amd64'; os = 'linux' }
+        }
+    }
+    to {
+        image = "pditommaso/tower-reg:$version"
+    }
+    container {
+        creationTime = "${OffsetDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME)}"
+        filesModificationTime = "${OffsetDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME)}"
+        ports = ['9090']
+        entrypoint = '/bin/sh'
+        args = ['/reg.sh']  // copied from `src/main/jib` directory
+    }
+    extraDirectories {
+        paths {
+            path { from = file('build/layers'); into = '/build/layers' }
+            path { from = file('src/main/jib'); }
+        }
+        permissions = ['/reg.sh': '755']
+    }
+}
+
