@@ -8,7 +8,6 @@ import java.nio.file.attribute.BasicFileAttributes
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.transform.CompileDynamic
-import groovy.transform.CompileStatic
 import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
 /**
@@ -16,7 +15,6 @@ import groovy.util.logging.Slf4j
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
-@CompileStatic
 class ContainerScanner {
 
     private ProxyClient client

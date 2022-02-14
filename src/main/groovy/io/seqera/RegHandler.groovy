@@ -12,13 +12,15 @@ import groovy.util.logging.Slf4j
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
-@CompileStatic
 class RegHandler implements HttpHandler {
 
     private Cache cache = new Cache()
-    private String username = "pditommaso"
-    private String pat = 'd213e955-3357-4612-8c48-fa5652ad968b'
-    private String arch
+
+    RegConfiguration configuration
+
+    RegHandler(RegConfiguration configuration){
+        this.configuration = configuration
+    }
 
     @Override
     void handle(HttpExchange exchange) throws IOException {
@@ -123,13 +125,13 @@ class RegHandler implements HttpHandler {
 
     @Memoized
     private ProxyClient client(String image) {
-        new ProxyClient(username, pat, image)
+        new ProxyClient(configuration.username, configuration.password, image)
     }
 
     @Memoized
     private ContainerScanner scanner(String image) {
         return new ContainerScanner()
-                .withArch(arch)
+                .withArch(configuration.arch)
                 .withCache(cache)
                 .withClient(client(image))
     }

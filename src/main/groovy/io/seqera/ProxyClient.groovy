@@ -7,7 +7,6 @@ import java.net.http.HttpResponse.BodyHandler
 import java.time.Duration
 
 import groovy.json.JsonSlurper
-import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 /**
  *
@@ -17,7 +16,6 @@ import groovy.util.logging.Slf4j
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
-@CompileStatic
 class ProxyClient {
 
     private String username

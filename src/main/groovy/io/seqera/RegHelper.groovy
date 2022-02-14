@@ -9,7 +9,6 @@ import groovy.transform.CompileStatic
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@CompileStatic
 class RegHelper {
 
     final private static char PADDING = '_' as char
