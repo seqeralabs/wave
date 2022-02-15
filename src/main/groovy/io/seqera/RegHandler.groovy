@@ -125,7 +125,7 @@ class RegHandler implements HttpHandler {
 
     @Memoized
     private ProxyClient client(String image) {
-        new ProxyClient(configuration.username, configuration.password, image)
+        new ProxyClient(configuration.username, configuration.password, configuration.targetRegistry, image)
     }
 
     @Memoized
