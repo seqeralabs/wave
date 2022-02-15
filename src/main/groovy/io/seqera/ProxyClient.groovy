@@ -23,13 +23,14 @@ class ProxyClient {
     private String image
     private String tokenCache
 
-    private String registryName = 'registry-1.docker.io'
+    private String registryName
     private HttpClient httpClient
 
-    ProxyClient(String username, String password, String image) {
+    ProxyClient(String username, String password, String registryName, String image) {
         this.username = username
         this.password = password
         this.image = image
+        this.registryName = registryName
         init()
     }
 
