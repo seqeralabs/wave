@@ -6,21 +6,23 @@ import com.sun.net.httpserver.HttpHandler
 import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.transform.Memoized
+import groovy.transform.builder.Builder
 import groovy.util.logging.Slf4j
+import io.seqera.docker.DockerAuthProvider
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
+@Builder
 class RegHandler implements HttpHandler {
 
     private Cache cache = new Cache()
 
     RegConfiguration configuration
 
-    RegHandler(RegConfiguration configuration){
-        this.configuration = configuration
-    }
+    DockerAuthProvider authProvider
 
     @Override
     void handle(HttpExchange exchange) throws IOException {
@@ -125,7 +127,7 @@ class RegHandler implements HttpHandler {
 
     @Memoized
     private ProxyClient client(String image) {
-        new ProxyClient(configuration.username, configuration.password, configuration.targetRegistry, image)
+        new ProxyClient(configuration.targetRegistry, image, authProvider)
     }
 
     @Memoized

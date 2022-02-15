@@ -1,5 +1,7 @@
 package io.seqera
 
+import io.seqera.docker.DockerAuthProvider
+
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
@@ -18,19 +20,16 @@ import groovy.util.logging.Slf4j
 @Slf4j
 class ProxyClient {
 
-    private String username
-    private String password
     private String image
-    private String tokenCache
 
+    DockerAuthProvider authProvider
     private String registryName
     private HttpClient httpClient
 
-    ProxyClient(String username, String password, String registryName, String image) {
-        this.username = username
-        this.password = password
+    ProxyClient(String registryName, String image, DockerAuthProvider authProvider) {
         this.image = image
         this.registryName = registryName
+        this.authProvider = authProvider
         init()
     }
 
@@ -40,34 +39,6 @@ class ProxyClient {
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .connectTimeout(Duration.ofSeconds(10))
                 .build()
-    }
-
-    String getToken() {
-        assert username
-        assert password
-        assert image
-
-        if( tokenCache )
-            return tokenCache
-
-        final basic = "$username:$password".bytes.encodeBase64()
-        final auth = "Basic $basic"
-        final login = "https://auth.docker.io/token?service=registry.docker.io&scope=repository:${image}:pull"
-
-        final req = HttpRequest.newBuilder()
-                .GET()
-                .uri(URI.create(login))
-                .setHeader("Authorization", auth.toString()) // add resp header
-                .build()
-        log.debug "Token request=$req"
-
-        HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
-        final body = resp.body()
-        final json = (Map) new JsonSlurper().parseText(body)
-        if( resp.statusCode()==200 )
-            return json.token
-        else
-            throw new IllegalStateException("Unable to authorize request -- response: $body")
     }
 
     private URI makeUri(String path) {
@@ -106,7 +77,7 @@ class ProxyClient {
         def result = get0(uri, headers, handler)
         if( result.statusCode()==401 ) {
             // clear the token to force refreshing it
-            tokenCache=null
+            authProvider.cleanTokenForImage(image)
             result = get0(uri, headers, handler)
         }
         return result
@@ -116,7 +87,8 @@ class ProxyClient {
         final builder = HttpRequest.newBuilder(uri) .GET()
         copyHeaders(headers, builder)
         // add authorisation header
-        builder.setHeader("Authorization", "Bearer ${getToken()}")
+        String token = authProvider.getTokenForImage(image)
+        builder.setHeader("Authorization", "Bearer ${token}")
         // build the request
         final request = builder.build()
         // send it
@@ -131,7 +103,7 @@ class ProxyClient {
         def result = head0(uri, headers)
         if( result.statusCode()==401 ) {
             // clear the token to force refreshing it
-            tokenCache=null
+            authProvider.cleanTokenForImage(image)
             result = head0(uri, headers)
         }
         return result
@@ -145,7 +117,8 @@ class ProxyClient {
         // copy headers 
         copyHeaders(headers, builder)
         // add authorisation header
-        builder.setHeader("Authorization", "Bearer ${getToken()}")
+        String token = authProvider.getTokenForImage(image)
+        builder.setHeader("Authorization", "Bearer ${token}")
         // build the request
         final request = builder.build()
         // send it 
