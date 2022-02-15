@@ -10,7 +10,6 @@ import groovy.transform.CompileStatic
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@CompileStatic
 class RegServer {
 
     private HttpServer server

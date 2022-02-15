@@ -1,4 +1,4 @@
-package com.example;
+package io.seqera;
 
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;

@@ -10,7 +10,6 @@ import groovy.transform.CompileStatic
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@CompileStatic
 class RouteHelper {
 
     public static Pattern ROUTE_PATHS = ~'/v2/([a-zA-Z0-9][a-zA-Z0-9_.-]+(?:/[a-zA-Z0-9][a-zA-Z0-9_.-]+)?)/(manifests|blobs)/(.+)'
