@@ -1,6 +1,6 @@
 package io.seqera
 
-
+import io.seqera.config.TowerConfiguration
 import spock.lang.Specification
 /**
  *
@@ -14,7 +14,7 @@ class ProxyClientTest extends Specification {
         def IMAGE = 'library/hello-world'
         def pat = 'd213e955-3357-4612-8c48-fa5652ad968b'
         and:
-        def proxy = new ProxyClient(username, pat, RegConfiguration.DEFAULT_REGISTRY, IMAGE)
+        def proxy = new ProxyClient(username, pat, TowerConfiguration.DEFAULT_REGISTRY, IMAGE)
 
         when:
         def resp1 = proxy.getString('/v2/library/hello-world/blobs/sha256:feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412')

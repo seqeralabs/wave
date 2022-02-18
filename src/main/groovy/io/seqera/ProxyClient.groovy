@@ -8,7 +8,6 @@ import java.net.http.HttpResponse
 import java.net.http.HttpResponse.BodyHandler
 import java.time.Duration
 
-import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 /**
  *
@@ -77,7 +76,7 @@ class ProxyClient {
         def result = get0(uri, headers, handler)
         if( result.statusCode()==401 ) {
             // clear the token to force refreshing it
-            authProvider.cleanTokenForImage(image)
+            authProvider.cleanTokenFor(image)
             result = get0(uri, headers, handler)
         }
         return result
@@ -87,7 +86,7 @@ class ProxyClient {
         final builder = HttpRequest.newBuilder(uri) .GET()
         copyHeaders(headers, builder)
         // add authorisation header
-        String token = authProvider.getTokenForImage(image)
+        String token = authProvider.getTokenFor(image)
         builder.setHeader("Authorization", "Bearer ${token}")
         // build the request
         final request = builder.build()
@@ -103,7 +102,7 @@ class ProxyClient {
         def result = head0(uri, headers)
         if( result.statusCode()==401 ) {
             // clear the token to force refreshing it
-            authProvider.cleanTokenForImage(image)
+            authProvider.cleanTokenFor(image)
             result = head0(uri, headers)
         }
         return result
@@ -117,7 +116,7 @@ class ProxyClient {
         // copy headers 
         copyHeaders(headers, builder)
         // add authorisation header
-        String token = authProvider.getTokenForImage(image)
+        String token = authProvider.getTokenFor(image)
         builder.setHeader("Authorization", "Bearer ${token}")
         // build the request
         final request = builder.build()

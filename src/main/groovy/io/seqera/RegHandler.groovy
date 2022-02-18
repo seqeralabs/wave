@@ -4,10 +4,12 @@ import com.sun.net.httpserver.Headers
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
 import groovy.json.JsonOutput
-import groovy.transform.CompileStatic
 import groovy.transform.Memoized
 import groovy.transform.builder.Builder
 import groovy.util.logging.Slf4j
+import io.seqera.config.Registry
+import io.seqera.config.TowerConfiguration
+import io.seqera.docker.AuthFactory
 import io.seqera.docker.DockerAuthProvider
 
 /**
@@ -20,9 +22,9 @@ class RegHandler implements HttpHandler {
 
     private Cache cache = new Cache()
 
-    RegConfiguration configuration
+    TowerConfiguration configuration
 
-    DockerAuthProvider authProvider
+    AuthFactory authFactory
 
     @Override
     void handle(HttpExchange exchange) throws IOException {
@@ -51,26 +53,29 @@ class RegHandler implements HttpHandler {
             return
         }
 
-        final route = RouteHelper.parse(path)
+        final route = RouteHelper.parse(path, configuration.defaultRegistry.name)
+        final Registry registry = configuration.findRegistry(route.registry)
+        assert registry
+
         final isHead = exchange.requestMethod=='HEAD'
         final isGet = exchange.requestMethod=='GET'
         if( route.isManifest() && route.isTag() ) {
-            log.trace "Request manifest: $path"
-            handleManifest(exchange, route)
+            log.trace "Request manifest: $route.path"
+            handleManifest(exchange, registry, route.image, route.reference)
         }
         else if( isGet && (route.isManifest() || route.isBlob()) ) {
-            Cache.ResponseCache entry = cache.get(path)
+            Cache.ResponseCache entry = cache.get(route.path)
             if( entry ) {
-                log.trace "Cache request >> $path"
+                log.trace "Cache request >> $route.path"
                 handleCache(exchange, entry)
             }
             else {
-                log.trace "Proxy request >> $path"
-                handleProxy(exchange, client(route.image))
+                log.trace "Proxy request >> $route.path"
+                handleProxy(route.path, exchange, client(registry, route.image))
             }
         }
         else {
-            log.trace "Request not found: $path"
+            log.trace "Request not found: $route.path"
             handleNotFound(exchange)
         }
     }
@@ -86,9 +91,9 @@ class RegHandler implements HttpHandler {
         }
     }
 
-    protected void handleProxy(HttpExchange exchange, ProxyClient proxy) {
+    protected void handleProxy(String path, HttpExchange exchange, ProxyClient proxy) {
         // forward request
-        final resp = proxy.getStream(exchange.getRequestURI().path, exchange.getRequestHeaders())
+        final resp = proxy.getStream(path, exchange.getRequestHeaders())
         // copy response headers
         for( Map.Entry<String,List<String>> entry : resp.headers().map().entrySet() ) {
             for( String val : entry.value )
@@ -126,27 +131,28 @@ class RegHandler implements HttpHandler {
     }
 
     @Memoized
-    private ProxyClient client(String image) {
-        new ProxyClient(configuration.targetRegistry, image, authProvider)
+    private ProxyClient client(Registry registry, String image) {
+        DockerAuthProvider authProvider = authFactory.getProvider(registry)
+        new ProxyClient(registry.host, image, authProvider)
     }
 
     @Memoized
-    private ContainerScanner scanner(String image) {
+    private ContainerScanner scanner(Registry registry, String image) {
         return new ContainerScanner()
                 .withArch(configuration.arch)
                 .withCache(cache)
-                .withClient(client(image))
+                .withClient(client(registry, image))
     }
 
-    protected void handleManifest(HttpExchange exchange, RouteHelper.Route route) {
+    protected void handleManifest(HttpExchange exchange, Registry registry, String image, String reference) {
 
         // compute the injected digest
-        final digest = scanner(route.image).resolve(route.image, route.reference, exchange.getRequestHeaders())
+        final digest = scanner(registry, image).resolve(image, reference, exchange.getRequestHeaders())
         if( digest == null )
             handleNotFound(exchange)
 
         // retries the cache entry generated from the resolve
-        final req = "/v2/$route.image/manifests/$digest"
+        final req = "/v2/$image/manifests/$digest"
         final entry = cache.get(req)
         if( !entry )
             throw new IllegalStateException("Missing cached entry for request: $req")

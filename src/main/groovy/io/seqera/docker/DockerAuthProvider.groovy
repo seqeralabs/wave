@@ -5,8 +5,8 @@ package io.seqera.docker
  * */
 interface DockerAuthProvider {
 
-    String getTokenForImage(String image)
+    String getTokenFor(String image)
 
-    void cleanTokenForImage(String image)
+    void cleanTokenFor(String image)
 
 }

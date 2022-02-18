@@ -1,7 +1,9 @@
 package io.seqera
 
 import groovy.util.logging.Slf4j
-import io.seqera.docker.ConfigurableAuthProvider
+import io.seqera.config.TowerConfiguration
+import io.seqera.config.YamlConfiguration
+import io.seqera.docker.AuthFactory
 
 /**
  *
@@ -11,7 +13,7 @@ import io.seqera.docker.ConfigurableAuthProvider
 class App {
 
     static void main(String[] args) {
-        RegConfiguration regConfiguration = new RegConfiguration()
+        TowerConfiguration regConfiguration = YamlConfiguration.newInstace()
         final arch = regConfiguration.arch
 
         if( !arch ) {
@@ -19,12 +21,12 @@ class App {
             System.exit(1)
         }
 
-        ConfigurableAuthProvider authProvider = new ConfigurableAuthProvider(regConfiguration)
+        AuthFactory authFactory = new AuthFactory()
 
         log.info("Starting Tower reg at http://localhost:$regConfiguration.port [arch: $arch]")
         new RegServer()
                 .withPort(regConfiguration.port)
-                .withHandler(RegHandler.builder().configuration(regConfiguration).authProvider(authProvider).build())
+                .withHandler(RegHandler.builder().configuration(regConfiguration).authFactory(authFactory).build())
                 .start()
     }
 }
