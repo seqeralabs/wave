@@ -3,6 +3,7 @@ arch: x86_64
 
 registries:
   -
+    name: quay.io
     host: quay.io
     auth:
       username: changeme
@@ -10,6 +11,7 @@ registries:
       url: quay.io/v2/auth
       service: quay.io
   -
+    name: docker.io
     host: registry-1.docker.io
     auth:
       username: changeme
