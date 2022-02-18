@@ -1,15 +1,15 @@
 package io.seqera.docker
 
-import io.seqera.RegConfiguration
+import io.seqera.config.Auth
 
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  * */
 class ConfigurableAuthProvider extends BaseAuthProvider{
 
-    RegConfiguration configuration
+    Auth configuration
 
-    ConfigurableAuthProvider(RegConfiguration configuration) {
+    ConfigurableAuthProvider(Auth configuration) {
         this.configuration = configuration
     }
 
@@ -22,11 +22,11 @@ class ConfigurableAuthProvider extends BaseAuthProvider{
     }
 
     protected String getAuthUrl(){
-        configuration.authUrl
+        configuration.url
     }
 
     protected String getService(){
-        configuration.authService
+        configuration.service
     }
 
 }

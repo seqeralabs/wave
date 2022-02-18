@@ -39,13 +39,13 @@ abstract class BaseAuthProvider implements DockerAuthProvider{
     protected abstract String getService()
 
     @Override
-    void cleanTokenForImage(String image) {
+    void cleanTokenFor(String image) {
         if( tokenCache.containsKey(image) )
             tokenCache.remove(image)
     }
 
     @Override
-    String getTokenForImage(String image) {
+    String getTokenFor(String image) {
         assert username
         assert password
         assert image

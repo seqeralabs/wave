@@ -1,5 +1,7 @@
 package io.seqera
 
+import io.seqera.config.TowerConfiguration
+
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -295,7 +297,7 @@ class ContainerScannerTest extends Specification {
         given:
         def layerPath = Paths.get('foo.tar.gzip')
         def cache = new Cache()
-        def client = new ProxyClient(username, password, RegConfiguration.DEFAULT_REGISTRY, 'library/busybox')
+        def client = new ProxyClient(username, password, TowerConfiguration.DEFAULT_REGISTRY, 'library/busybox')
         def scanner = new ContainerScanner().withCache(cache).withLayer(layerPath).withClient(client)
         and:
         def headers = [
