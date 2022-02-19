@@ -8,7 +8,7 @@ plugins {
     id "com.google.cloud.tools.jib" version "3.2.0"
 }
 
-version = "0.3"
+version = "0.3.1"
 group = "com.example"
 
 repositories {
@@ -74,8 +74,9 @@ jib {
     }
     extraDirectories {
         paths {
-            path { from = file('build/layers'); into = '/build/layers' }
+            path { from = file('pack/layers'); into = '/pack/layers' }
             path { from = file('src/main/jib'); }
+            path { from = file('.'); includes = ['tower-reg.yml'] }
         }
         permissions = ['/reg.sh': '755']
     }

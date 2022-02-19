@@ -24,7 +24,7 @@ class ContainerScanner {
     private Cache cache
 
     {
-        withLayerConfig(Paths.get('build/layers/layer.json'))
+        withLayerConfig(Paths.get('pack/layers/layer.json'))
     }
 
     ContainerScanner withCache(Cache cache) {

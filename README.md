@@ -55,6 +55,7 @@ with a comma `,` character.
 7. List the content of a bucket using `ls`
 
         docker run --rm \
+          --platform linux/amd64 \
           -e AWS_REGION=eu-west-1 \
           -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
           -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \

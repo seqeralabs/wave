@@ -4,20 +4,16 @@ import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 import groovy.transform.Canonical
-import groovy.transform.CompileStatic
 import io.seqera.util.Base32
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 class RouteHelper {
 
-    public static Pattern ROUTE_PATHS = ~'/v2/([a-zA-Z0-9][a-zA-Z0-9_.-]+(?:/[a-zA-Z0-9][a-zA-Z0-9_.-]+)?(?:/[a-zA-Z0-9][a-zA-Z0-9_.-]+)?)/(manifests|blobs)/(.+)'
+    public static Pattern ROUTE_PATHS = ~'/v2(?:/tw)?/([a-z0-9][a-z0-9_.-]+(?:/[a-z0-9][a-z0-9_.-]+)?(?:/[a-zA-Z0-9][a-zA-Z0-9_.-]+)?)/(manifests|blobs)/(.+)'
 
     public static Route NOT_FOUND = new Route(null, null,null,null)
-
-    public static Pattern TOWER_PATHS = ~ "/v2/tw/([a-zA-Z0-9][a-zA-Z0-9_.-]+(?:/[a-zA-Z0-9][a-zA-Z0-9_.-]+)?(?:/[a-zA-Z0-9][a-zA-Z0-9_.-]+)?)/(manifests|blobs)/(.+)"
 
     @Canonical
     static class Route {
@@ -35,9 +31,11 @@ class RouteHelper {
     }
 
     static Route parse(String path, String defaultRegistry) {
-        Matcher matcher
+        Matcher matcher = ROUTE_PATHS.matcher(path)
+        if( !matcher.matches() )
+            return NOT_FOUND
 
-        if( (matcher=TOWER_PATHS.matcher(path)).matches() ) {
+        if( path.startsWith('/v2/tw/') ) {
             String type = matcher.group(2)
             String reference = matcher.group(3)
             String coordinates = matcher.group(1)
@@ -45,11 +43,14 @@ class RouteHelper {
             String image = coordinates.split('/').length > 1 ? coordinates.split('/')[1] : ''
             String decoded = new String( Base32.decode(encoded))
             String registry = defaultRegistry
-            if( decoded.indexOf('/') != -1){
-                registry = decoded.split('/')[0]
-                image = decoded.split('/')[1] + '/' +image
-                path = "/v2/$image/$type/$reference"
+            final elems = decoded.tokenize('/')
+            if( elems[0].contains('.') ) {
+                // since contains a dot, it must a registry name
+                registry = elems.pop()
             }
+            image = "${elems ? elems.join('/') : 'library'}/$image"
+            path = "/v2/$image/$type/$reference"
+
             return new Route(
                     type,
                     registry,
@@ -58,8 +59,7 @@ class RouteHelper {
                     path
             )
         }
-
-        if( (matcher=ROUTE_PATHS.matcher(path)).matches() ) {
+        else {
             String image = matcher.group(1)
             String registry = defaultRegistry
             return new Route(
@@ -70,8 +70,7 @@ class RouteHelper {
                     path
             )
         }
-        else
-            return NOT_FOUND
+
     }
 
 }

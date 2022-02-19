@@ -2,9 +2,9 @@ set -e
 
 # main paths
 LATER_DIR=.layer
-LAYER_TAR=build/layers/layer.tar
-LAYER_GZIP=build/layers/layer.tar.gzip
-LAYER_JSON=build/layers/layer.json
+LAYER_TAR=pack/layers/layer.tar
+LAYER_GZIP=pack/layers/layer.tar.gzip
+LAYER_JSON=pack/layers/layer.json
 
 # create the fusion root path
 # and give create permissions to all
@@ -13,8 +13,8 @@ chmod 777 .layer/fusion/s3
 
 # make the layer tar
 rm -f $LAYER_TAR*
-tar --preserve-permissions --owner=0 --group=0 -vcf $LAYER_TAR -C $LATER_DIR $(ls $LATER_DIR)
 mkdir -p $(dirname $LAYER_TAR)
+gtar --preserve-permissions --owner=0 --group=0 -vcf $LAYER_TAR -C $LATER_DIR $(ls $LATER_DIR)
 CHECKSUM_TAR=$(< $LAYER_TAR sha256sum | awk '{ print $1 }')
 
 # compress the TAR file, not `-n` to prevent adding timestamp
