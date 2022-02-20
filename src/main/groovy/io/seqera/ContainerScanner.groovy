@@ -102,15 +102,6 @@ class ContainerScanner {
         final manifestsList = resp2.body()
         log.debug "Image $imageName:$tag => manifests list=\n${JsonOutput.prettyPrint(manifestsList)}"
 
-//        // get target manifest
-//        final targetDigest = findTargetDigest(manifestsList)
-//        final resp3 = client.getString("/v2/$imageName/manifests/$targetDigest", headers)
-//        final imageManifest = resp3.body()
-//        log.debug "Image $imageName:$tag => image manifest=\n${JsonOutput.prettyPrint(imageManifest)}"
-//
-//        // find the image config digest
-//        final configDigest = findImageConfigDigest(imageManifest)
-
         final manifestResult = findImageManifestAndDigest(manifestsList, imageName, tag, headers)
         final imageManifest = manifestResult.first
         final configDigest = manifestResult.second
@@ -153,7 +144,7 @@ class ContainerScanner {
 
         def targetDigest = null
         def media = json.mediaType
-        if( media == Mock.MANIFEST_LIST_MIME ) {
+        if( media == ContentType.DOCKER_MANIFEST_LIST_V2 ) {
             // get target manifest
             targetDigest = findTargetDigest(json)
             final resp3 = client.getString("/v2/$imageName/manifests/$targetDigest", headers)
@@ -164,7 +155,7 @@ class ContainerScanner {
             media = json.mediaType
         }
 
-        if( media == Mock.MANIFEST_MIME ) {
+        if( media == ContentType.DOCKER_MANIFEST_V2_TYPE ) {
             // find the image config digest
             final configDigest = findImageConfigDigest(manifest)
             return new Tuple3(manifest, configDigest, targetDigest)
@@ -178,7 +169,7 @@ class ContainerScanner {
     protected String updateManifestsList(String imageName, String manifestsList, String targetDigest, String newDigest) {
         final updated = manifestsList.replace(targetDigest, newDigest)
         final result = RegHelper.digest(updated)
-        final type = Mock.MANIFEST_LIST_MIME
+        final type = ContentType.DOCKER_MANIFEST_LIST_V2
         // make sure the manifest was updated
         if( manifestsList==updated )
             throw new IllegalArgumentException("Unable to find target digest '$targetDigest' into image list manifest")
@@ -254,7 +245,7 @@ class ContainerScanner {
         // add to the cache
         final digest = RegHelper.digest(newManifest)
         final path = "/v2/$imageName/manifests/$digest"
-        cache.put(path, newManifest.bytes, Mock.MANIFEST_MIME, digest)
+        cache.put(path, newManifest.bytes, ContentType.DOCKER_MANIFEST_V2_TYPE, digest)
 
         // return the updated image manifest digest
         return digest
@@ -317,7 +308,7 @@ class ContainerScanner {
         // add to the cache
         final digest = RegHelper.digest(newConfig)
         final path = "/v2/$imageName/blobs/$digest"
-        cache.put(path, newConfig.bytes, Mock.IMAGE_CONFIG_MIME, digest)
+        cache.put(path, newConfig.bytes, ContentType.DOCKER_IMAGE_V1, digest)
 
         // return the updated image manifest digest
         return digest
@@ -330,7 +321,7 @@ class ContainerScanner {
 
     @CompileDynamic
     protected String findTargetDigest(Map json) {
-        final mediaType = Mock.MANIFEST_MIME
+        final mediaType = ContentType.DOCKER_MANIFEST_V2_TYPE
         final record = json.manifests.find( { record ->  record.mediaType == mediaType && record.platform.os=='linux' && record.platform.architecture==arch } )
         final result = record.digest
         log.trace "Find target digest arch: $arch ==> digest: $result"

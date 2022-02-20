@@ -100,7 +100,7 @@ class ContainerScannerTest extends Specification {
         and:
         def entry = cache.get("/v2/$IMAGE/blobs/$digest")
         entry.bytes == Files.readAllBytes(layerPath)
-        entry.mediaType == Mock.BLOB_MIME
+        entry.mediaType == ContentType.BLOB_MIME
         entry.digest == RegHelper.digest(Files.readAllBytes(layerPath))
     }
 
@@ -125,7 +125,7 @@ class ContainerScannerTest extends Specification {
         def manifest = new String(entry.bytes)
         def json = new JsonSlurper().parseText(manifest)
         and:
-        entry.mediaType == Mock.MANIFEST_MIME
+        entry.mediaType == ContentType.DOCKER_MANIFEST_V2_TYPE
         entry.digest == digest
         and:
         // a new layer is added to the manifest
@@ -133,12 +133,12 @@ class ContainerScannerTest extends Specification {
         and:
         // the original layer size is not changed
         json.layers[0].get('digest') == SOURCE_JSON.layers[0].digest
-        json.layers[0].get('mediaType') == Mock.BLOB_MIME
+        json.layers[0].get('mediaType') == ContentType.BLOB_MIME
         and:
         // the new layer is valid
         json.layers[1].get('digest') == layerDigest
         json.layers[1].get('size') == Files.size(layerPath)
-        json.layers[1].get('mediaType') == Mock.BLOB_MIME
+        json.layers[1].get('mediaType') == ContentType.BLOB_MIME
         and:
         json.config.digest == NEW_CONFIG_DIGEST
     }
@@ -161,7 +161,7 @@ class ContainerScannerTest extends Specification {
         def entry = cache.get("/v2/$IMAGE/manifests/$digest")
         def manifest = new String(entry.bytes)
         and:
-        entry.mediaType == Mock.MANIFEST_LIST_MIME
+        entry.mediaType == ContentType.DOCKER_MANIFEST_LIST_V2
         entry.digest == digest
         and:
         manifest == MANIFEST.replace(DIGEST, NEW_DIGEST)
@@ -284,7 +284,7 @@ class ContainerScannerTest extends Specification {
         def digest = scanner.updateImageConfig(IMAGE_NAME, IMAGE_CONFIG)
         then:
         def entry = cache.get("/v2/$IMAGE_NAME/blobs/$digest")
-        entry.mediaType == Mock.IMAGE_CONFIG_MIME
+        entry.mediaType == ContentType.DOCKER_IMAGE_V1
         entry.digest == digest
         and:
         def manifest = new JsonSlurper().parseText(new String(entry.bytes))
