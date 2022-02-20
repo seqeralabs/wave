@@ -100,7 +100,7 @@ class ContainerScannerTest extends Specification {
         and:
         def entry = cache.get("/v2/$IMAGE/blobs/$digest")
         entry.bytes == Files.readAllBytes(layerPath)
-        entry.mediaType == ContentType.BLOB_MIME
+        entry.mediaType == ContentType.DOCKER_IMAGE_TAR_GZIP
         entry.digest == RegHelper.digest(Files.readAllBytes(layerPath))
     }
 
@@ -133,12 +133,12 @@ class ContainerScannerTest extends Specification {
         and:
         // the original layer size is not changed
         json.layers[0].get('digest') == SOURCE_JSON.layers[0].digest
-        json.layers[0].get('mediaType') == ContentType.BLOB_MIME
+        json.layers[0].get('mediaType') == ContentType.DOCKER_IMAGE_TAR_GZIP
         and:
         // the new layer is valid
         json.layers[1].get('digest') == layerDigest
         json.layers[1].get('size') == Files.size(layerPath)
-        json.layers[1].get('mediaType') == ContentType.BLOB_MIME
+        json.layers[1].get('mediaType') == ContentType.DOCKER_IMAGE_TAR_GZIP
         and:
         json.config.digest == NEW_CONFIG_DIGEST
     }
