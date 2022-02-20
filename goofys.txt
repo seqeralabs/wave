@@ -6,9 +6,11 @@ docker run --rm \
   -e AWS_REGION=eu-west-1 \
   -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
   -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+  -v $PWD/.layer/opt/goofys/goofys:/opt/goofys/goofys \
   --privileged \
-  --entrypoint /bin/sh reg.ngrok.io/library/alpine \
-  -c 'mkdir -p /mnt/nextflow-ci; /opt/goofys/goofys -o allow_other --debug_fuse --debug_s3 --file-mode=0755 nextflow-ci /mnt/nextflow-ci; ls -la /mnt/nextflow-ci'
+  --entrypoint /bin/sh \
+  debian \
+  -c 'mkdir -p /mnt/nextflow-ci; /opt/goofys/goofys -o allow_other --debug_fuse --debug_s3 -f --file-mode=0755 nextflow-ci /mnt/nextflow-ci; ls -la /mnt/nextflow-ci'
 
 
 ## run cmd 
