@@ -1,5 +1,6 @@
 package io.seqera
 
+import groovy.json.JsonOutput
 import io.seqera.config.TowerConfiguration
 
 import java.nio.file.Files
@@ -46,7 +47,7 @@ class ContainerScannerTest extends Specification {
         def scanner = new ContainerScanner().withLayerConfig(json)
 
         then:
-        def config = scanner.getLayerConfigPath()
+        def config = scanner.getLayerConfig()
         and:
         config.append.locationPath == layer
 
@@ -78,14 +79,34 @@ class ContainerScannerTest extends Specification {
         result == 'sha256:01433e86a06b752f228e3c17394169a5e21a0995f153268a9b36a16d4f2b2184'
     }
 
+    Path folder
+    File layerPath
+    File layerJson
+
+    def unpackLayer(){
+        folder = Files.createTempDirectory('test')
+        layerPath = new File("$folder/layer.tar.gzip")
+        layerPath.bytes = this.class.getResourceAsStream("/foo/layer.tar.gzip").bytes
+
+        def string = this.class.getResourceAsStream("/foo/layer.json").text
+        def layerConfig = new JsonSlurper().parseText(string)
+        layerConfig.append.location = layerPath.absolutePath
+
+        layerJson = new File("$folder/layer.json")
+        layerJson.text = JsonOutput.prettyPrint(JsonOutput.toJson(layerConfig))
+    }
+
     def 'create the layer' () {
         given:
         def IMAGE = 'hello-world'
-        def layerPath = Paths.get('foo.tar.gzip')
-        def cache = new Cache()
-        def scanner = new ContainerScanner().withCache(cache).withLayerConfig(layerPath)
+
         and:
-        def digest = RegHelper.digest(Files.readAllBytes(layerPath) )
+        unpackLayer()
+
+        def cache = new Cache()
+        def scanner = new ContainerScanner().withCache(cache).withLayerConfig(Paths.get(layerJson.absolutePath))
+        and:
+        def digest = RegHelper.digest(layerPath.bytes)
         
         when:
         def blob = scanner.layerBlob(IMAGE)
@@ -93,15 +114,18 @@ class ContainerScannerTest extends Specification {
         then:
         blob.get('mediaType') == 'application/vnd.docker.image.rootfs.diff.tar.gzip'
         blob.get('digest') == digest
-        blob.get('size') == Files.size(layerPath)
+        blob.get('size') == layerPath.size()
         and:
-        blob.get('size') == 180
+        blob.get('size') == 2
 
         and:
         def entry = cache.get("/v2/$IMAGE/blobs/$digest")
-        entry.bytes == Files.readAllBytes(layerPath)
+        entry.bytes == layerPath.bytes
         entry.mediaType == ContentType.DOCKER_IMAGE_TAR_GZIP
-        entry.digest == RegHelper.digest(Files.readAllBytes(layerPath))
+        entry.digest == RegHelper.digest(layerPath.bytes)
+
+        cleanup:
+        folder?.toFile()?.deleteDir()
     }
 
     def 'should update image manifest' () {
@@ -110,11 +134,14 @@ class ContainerScannerTest extends Specification {
         def MANIFEST = Mock.MANIFEST_CONTENT
         def NEW_CONFIG_DIGEST = 'sha256:1234abcd'
         def SOURCE_JSON = new JsonSlurper().parseText(MANIFEST)
-        def layerPath = Paths.get('foo.tar.gzip')
-        def layerDigest = RegHelper.digest(Files.readAllBytes(layerPath))
+
+        and:
+        unpackLayer()
+        def layerDigest = RegHelper.digest(layerPath.bytes)
+
         and:
         def cache = new Cache()
-        def scanner = new ContainerScanner().withCache(cache).withLayerConfig(layerPath)
+        def scanner = new ContainerScanner().withCache(cache).withLayerConfig(Paths.get(layerJson.absolutePath))
 
         when:
         def digest = scanner.updateImageManifest(IMAGE, MANIFEST, NEW_CONFIG_DIGEST)
@@ -137,10 +164,13 @@ class ContainerScannerTest extends Specification {
         and:
         // the new layer is valid
         json.layers[1].get('digest') == layerDigest
-        json.layers[1].get('size') == Files.size(layerPath)
+        json.layers[1].get('size') == layerPath.size()
         json.layers[1].get('mediaType') == ContentType.DOCKER_IMAGE_TAR_GZIP
         and:
         json.config.digest == NEW_CONFIG_DIGEST
+
+        cleanup:
+        folder?.toFile()?.deleteDir()
     }
 
     def 'should update manifests list' () {
@@ -149,10 +179,13 @@ class ContainerScannerTest extends Specification {
         def MANIFEST = Mock.MANIFEST_LIST_CONTENT
         def DIGEST = 'sha256:f54a58bc1aac5ea1a25d796ae155dc228b3f0e11d046ae276b39c4bf2f13d8c4'
         def NEW_DIGEST = RegHelper.digest('foo')
-        def layerPath = Paths.get('foo.tar.gzip')
+
+        and:
+        unpackLayer()
+
         and:
         def cache = new Cache()
-        def scanner = new ContainerScanner().withCache(cache).withLayerConfig(layerPath)
+        def scanner = new ContainerScanner().withCache(cache).withLayerConfig(Paths.get(layerJson.absolutePath))
 
         when:
         def digest = scanner.updateManifestsList(IMAGE, MANIFEST, DIGEST, NEW_DIGEST)
@@ -165,6 +198,9 @@ class ContainerScannerTest extends Specification {
         entry.digest == digest
         and:
         manifest == MANIFEST.replace(DIGEST, NEW_DIGEST)
+
+        cleanup:
+        folder?.toFile()?.deleteDir()
     }
 
     def 'should find image config digest' () {
@@ -275,10 +311,13 @@ class ContainerScannerTest extends Specification {
        '''
         and:
         def IMAGE_NAME = 'hello-world'
-        def layerPath = Paths.get('foo.tar.gzip')
+
+        and:
+        unpackLayer()
+
         and:
         def cache = new Cache()
-        def scanner = new ContainerScanner().withCache(cache).withLayerConfig(layerPath)
+        def scanner = new ContainerScanner().withCache(cache).withLayerConfig(Paths.get(layerJson.absolutePath))
 
         when:
         def digest = scanner.updateImageConfig(IMAGE_NAME, IMAGE_CONFIG)
@@ -290,6 +329,9 @@ class ContainerScannerTest extends Specification {
         def manifest = new JsonSlurper().parseText(new String(entry.bytes))
         manifest.rootfs.diff_ids instanceof List
         manifest.rootfs.diff_ids.size() == 2
+
+        cleanup:
+        folder?.toFile()?.deleteDir()
     }
 
     @Ignore

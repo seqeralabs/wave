@@ -68,7 +68,7 @@ class RouteHelperTest extends Specification {
     def 'should validate route type' () {
 
         when:
-        def route = new RouteHelper.Route(TYPE, IMAGE, REF)
+        def route = new RouteHelper.Route(TYPE, REG, IMAGE, REF)
         then:
         route.isManifest() == IS_MANIFEST
         route.isBlob() == IS_BLOB
@@ -77,12 +77,12 @@ class RouteHelperTest extends Specification {
 
 
         where:
-        TYPE        | IMAGE | REF           | IS_MANIFEST   | IS_BLOB   | IS_TAG    | IS_DIGEST
-        'manifests' | 'foo' | 'latest'      | true          | false     | true      | false
-        'manifests' | 'foo' | 'sha256:1234' | true          | false     | false     | true
+        TYPE        | REG  | IMAGE | REF           | IS_MANIFEST   | IS_BLOB   | IS_TAG    | IS_DIGEST
+        'manifests' | 'io' | 'foo' | 'latest'      | true          | false     | true      | false
+        'manifests' | 'io' | 'foo' | 'sha256:1234' | true          | false     | false     | true
         and:
-        'blobs'     | 'foo' | 'latest'      | false         | true      | true      | false
-        'blobs'     | 'foo' | 'sha256:1234' | false         | true      | false     | true
+        'blobs'     |  'io' | 'foo' | 'latest'      | false         | true      | true      | false
+        'blobs'     |  'io' | 'foo' | 'sha256:1234' | false         | true      | false     | true
 
     }
 
