@@ -1,5 +1,7 @@
 package io.seqera
 
+import groovy.transform.EqualsAndHashCode
+
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 

@@ -48,6 +48,11 @@ class RegHandler implements HttpHandler {
             return
         }
 
+        if( !path.startsWith('/v2') ) {
+            log.trace "Request not found: $path"
+            handleNotFound(exchange)
+        }
+
         if( path=='/v2' || path=='/v2/' ) {
             handleOK(exchange)
             return
