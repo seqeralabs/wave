@@ -1,0 +1,56 @@
+name: Tower-reg CI
+on:
+  push:
+    branches:
+      - 'master'
+    tags-ignore:
+      - '*'
+  pull_request:
+    branches:
+      - '*'
+jobs:
+  build:
+    name: Build tower-reg
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        java_version: [11]
+
+    steps:
+      - name: Environment
+        run: env | sort
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+          submodules: true
+
+      - name: Setup Java ${{ matrix.java_version }}
+        uses: actions/setup-java@v2
+        with:
+          java-version: ${{matrix.java_version}}
+          distribution: 'adopt'
+          architecture: x64
+          cache: gradle
+
+      - name: Compile
+        run: ./gradlew assemble
+
+      - name: Tests
+        run: |
+          export NXF_PLUGINS_DIR=$PWD/plugins
+          ./gradlew check
+        env:
+          GRADLE_OPTS: '-Dorg.gradle.daemon=false'
+
+      - name: Publish tests report
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-reports-jdk-${{ matrix.java_version }}
+          path: |
+            **/build/reports/tests/test
