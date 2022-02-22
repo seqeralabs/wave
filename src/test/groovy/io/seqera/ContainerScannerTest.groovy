@@ -20,14 +20,14 @@ class ContainerScannerTest extends Specification {
     private String password = 'd213e955-3357-4612-8c48-fa5652ad968b'
 
     def createConfig(Path folder, Map config, byte[] content ){
-        def location = folder.resolve('layer.tar.gzip')
+        def location = folder.resolve('dummy.gzip')
         
     }
 
     def 'should set layer paths' () {
         given:
         def folder = Files.createTempDirectory('test')
-        def layer = folder.resolve('layer.tar.gzip');
+        def layer = folder.resolve('dummy.gzip');
         Files.createFile(layer)
         and:
         def CONFIG = """
@@ -85,8 +85,8 @@ class ContainerScannerTest extends Specification {
 
     def unpackLayer(){
         folder = Files.createTempDirectory('test')
-        layerPath = new File("$folder/layer.tar.gzip")
-        layerPath.bytes = this.class.getResourceAsStream("/foo/layer.tar.gzip").bytes
+        layerPath =  Files.createFile(Paths.get(folder.toString(),"dummy.gzip")).toFile()
+        layerPath.bytes = this.class.getResourceAsStream("/foo/dummy.gzip").bytes
 
         def string = this.class.getResourceAsStream("/foo/layer.json").text
         def layerConfig = new JsonSlurper().parseText(string)
