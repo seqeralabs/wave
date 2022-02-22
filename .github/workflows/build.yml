@@ -38,12 +38,11 @@ jobs:
           cache: gradle
 
       - name: Compile
-        run: ./gradlew assemble
+        run: make compile
 
       - name: Tests
-        run: |
-          export NXF_PLUGINS_DIR=$PWD/plugins
-          ./gradlew check
+        run: |          
+          make check
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
 

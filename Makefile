@@ -11,6 +11,12 @@ pack/layers/layer.tar.gzip: .layer/opt/goofys/goofys
 	mkdir -p pack/layers
 	./make-tar.sh
 
+compile:
+	 ./gradlew assemble
+
+check: pack/layers/layer.tar.gzip
+	./gradlew check
+
 image:
 	./gradlew jibDockerBuild
 
