@@ -7,6 +7,7 @@ import groovy.json.JsonOutput
 import groovy.transform.Memoized
 import groovy.transform.builder.Builder
 import groovy.util.logging.Slf4j
+import io.micronaut.web.router.Route
 import io.seqera.Cache
 import io.seqera.ContainerScanner
 import io.seqera.proxy.ProxyClient
@@ -68,25 +69,22 @@ class RegHandler implements HttpHandler {
 
         final isHead = exchange.requestMethod=='HEAD'
         final isGet = exchange.requestMethod=='GET'
+
+        ProxyClient proxyClient = client(registry, route.image)
+
         if( route.isManifest() && route.isTag() ) {
             log.trace "Request manifest: $route.path"
-            handleManifest(exchange, registry, route.image, route.reference)
+            handleManifest(exchange, route, proxyClient)
+            return
         }
-        else if( isGet && (route.isManifest() || route.isBlob()) ) {
-            Cache.ResponseCache entry = cache.get(route.path)
-            if( entry ) {
-                log.trace "Cache request >> $route.path"
-                handleCache(exchange, entry)
-            }
-            else {
-                log.trace "Proxy request >> $route.path"
-                handleProxy(route.path, exchange, client(registry, route.image))
-            }
+
+        if( isGet ){
+            handleGet(exchange, route, proxyClient)
+            return
         }
-        else {
-            log.trace "Request not found: $route.path"
-            handleNotFound(exchange)
-        }
+
+        log.trace "Request not found: $route.path"
+        handleNotFound(exchange)
     }
 
     private String dumpJson(payload) {
@@ -146,28 +144,45 @@ class RegHandler implements HttpHandler {
     }
 
     @Memoized
-    private ContainerScanner scanner(Registry registry, String image) {
+    private ContainerScanner scanner(ProxyClient proxyClient) {
         return new ContainerScanner()
                 .withArch(configuration.arch)
                 .withCache(cache)
-                .withClient(client(registry, image))
+                .withClient(proxyClient)
     }
 
-    protected void handleManifest(HttpExchange exchange, Registry registry, String image, String reference) {
+    protected void handleManifest(HttpExchange exchange, RouteHelper.Route route, ProxyClient proxyClient) {
 
         // compute the injected digest
-        final digest = scanner(registry, image).resolve(image, reference, exchange.getRequestHeaders())
+        final digest = scanner(proxyClient).resolve(route.image, route.reference, exchange.getRequestHeaders())
         if( digest == null )
             handleNotFound(exchange)
 
         // retries the cache entry generated from the resolve
-        final req = "/v2/$image/manifests/$digest"
+        final req = "/v2/$route.image/manifests/$digest"
         final entry = cache.get(req)
         if( !entry )
             throw new IllegalStateException("Missing cached entry for request: $req")
 
         // return manifest list
         handleCache(exchange, entry)
+    }
+
+    protected void handleGet(HttpExchange exchange, RouteHelper.Route route, ProxyClient proxyClient) {
+
+        if( !(route.isManifest() || route.isBlob() ) ){
+            handleNotFound(exchange)
+            return
+        }
+        Cache.ResponseCache entry = cache.get(route.path)
+        if( entry ) {
+            log.trace "Cache request >> $route.path"
+            handleCache(exchange, entry)
+            return
+        }
+
+        log.trace "Proxy request >> $route.path"
+        handleProxy(route.path, exchange, proxyClient)
     }
 
     protected void handleCache(HttpExchange exchange, Cache.ResponseCache entry) {
