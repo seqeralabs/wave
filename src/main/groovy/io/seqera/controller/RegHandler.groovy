@@ -74,7 +74,12 @@ class RegHandler implements HttpHandler {
 
         if( route.isManifest() && route.isTag() ) {
             log.trace "Request manifest: $route.path"
-            handleManifest(exchange, route, proxyClient)
+            try {
+                handleManifest(exchange, route, proxyClient)
+            }catch(IllegalArgumentException | IllegalStateException iea){
+                println "----- $route.path"
+                handleProxy(route.path, exchange, proxyClient)
+            }
             return
         }
 
@@ -143,18 +148,19 @@ class RegHandler implements HttpHandler {
         new ProxyClient(registry.host, image, authProvider)
     }
 
-    @Memoized
-    private ContainerScanner scanner(ProxyClient proxyClient) {
+    private ContainerScanner scanner(ProxyClient proxyClient, RouteHelper.Route route) {
         return new ContainerScanner()
                 .withArch(configuration.arch)
                 .withCache(cache)
+                .withImage(route.image)
+                .withTag(route.reference)
                 .withClient(proxyClient)
     }
 
     protected void handleManifest(HttpExchange exchange, RouteHelper.Route route, ProxyClient proxyClient) {
 
         // compute the injected digest
-        final digest = scanner(proxyClient).resolve(route.image, route.reference, exchange.getRequestHeaders())
+        final digest = scanner(proxyClient, route).resolve(exchange.getRequestHeaders())
         if( digest == null )
             handleNotFound(exchange)
 

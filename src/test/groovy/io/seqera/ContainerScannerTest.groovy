@@ -112,7 +112,7 @@ class ContainerScannerTest extends Specification {
         def digest = RegHelper.digest(layerPath.bytes)
         
         when:
-        def blob = scanner.layerBlob(IMAGE)
+        def blob = scanner.layerBlobV2(IMAGE)
 
         then:
         blob.get('mediaType') == 'application/vnd.docker.image.rootfs.diff.tar.gzip'
@@ -135,7 +135,6 @@ class ContainerScannerTest extends Specification {
         given:
         def IMAGE = 'hello-world'
         def MANIFEST = Mock.MANIFEST_CONTENT
-        def NEW_CONFIG_DIGEST = 'sha256:1234abcd'
         def SOURCE_JSON = new JsonSlurper().parseText(MANIFEST)
 
         and:
@@ -147,7 +146,7 @@ class ContainerScannerTest extends Specification {
         def scanner = new ContainerScanner().withCache(cache).withLayerConfig(Paths.get(layerJson.absolutePath))
 
         when:
-        def digest = scanner.updateImageManifest(IMAGE, MANIFEST, NEW_CONFIG_DIGEST)
+        def digest = scanner.updateImageManifest(IMAGE, new JsonSlurper().parseText(MANIFEST))
 
         then:
         // the cache contains the update image manifest json
@@ -169,8 +168,6 @@ class ContainerScannerTest extends Specification {
         json.layers[1].get('digest') == layerDigest
         json.layers[1].get('size') == layerPath.size()
         json.layers[1].get('mediaType') == ContentType.DOCKER_IMAGE_TAR_GZIP
-        and:
-        json.config.digest == NEW_CONFIG_DIGEST
 
         cleanup:
         folder?.toFile()?.deleteDir()
@@ -191,16 +188,17 @@ class ContainerScannerTest extends Specification {
         def scanner = new ContainerScanner().withCache(cache).withLayerConfig(Paths.get(layerJson.absolutePath))
 
         when:
-        def digest = scanner.updateManifestsList(IMAGE, MANIFEST, DIGEST, NEW_DIGEST)
+        def digest = scanner.updateManifestsList(IMAGE, new JsonSlurper().parseText(MANIFEST), DIGEST, NEW_DIGEST)
 
         then:
         def entry = cache.get("/v2/$IMAGE/manifests/$digest")
         def manifest = new String(entry.bytes)
+
         and:
         entry.mediaType == ContentType.DOCKER_MANIFEST_LIST_V2
         entry.digest == digest
         and:
-        manifest == MANIFEST.replace(DIGEST, NEW_DIGEST)
+        new JsonSlurper().parseText(manifest) == new JsonSlurper().parseText(MANIFEST.replace(DIGEST, NEW_DIGEST))
 
         cleanup:
         folder?.toFile()?.deleteDir()
@@ -228,7 +226,7 @@ class ContainerScannerTest extends Specification {
           }
         '''
         when:
-        def result = scanner.findImageConfigDigest(CONFIG)
+        def result = scanner.findImageConfigDigest( new JsonSlurper().parseText(CONFIG) )
         then:
         result == 'sha256:feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412'
     }
@@ -323,7 +321,7 @@ class ContainerScannerTest extends Specification {
         def scanner = new ContainerScanner().withCache(cache).withLayerConfig(Paths.get(layerJson.absolutePath))
 
         when:
-        def digest = scanner.updateImageConfig(IMAGE_NAME, IMAGE_CONFIG)
+        def digest = scanner.updateImageConfig(IMAGE_NAME, new JsonSlurper().parseText(IMAGE_CONFIG))
         then:
         def entry = cache.get("/v2/$IMAGE_NAME/blobs/$digest")
         entry.mediaType == ContentType.DOCKER_IMAGE_V1

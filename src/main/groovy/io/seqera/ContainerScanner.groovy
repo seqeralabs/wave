@@ -15,6 +15,7 @@ import groovy.json.JsonSlurper
 import groovy.transform.CompileDynamic
 import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -24,8 +25,10 @@ class ContainerScanner {
 
     private ProxyClient client
     private Path layerConfigPath
+    private String os = 'linux'
     private String arch
-
+    private String imageName
+    private String tag
     private Cache cache
 
     {
@@ -59,10 +62,21 @@ class ContainerScanner {
         return this
     }
 
+    ContainerScanner withImage(String image){
+        this.imageName = image
+        this
+    }
+
+    ContainerScanner withTag(String tag){
+        this.tag = tag
+        this
+    }
+
     Path getLayerConfigPath() {
         return layerConfigPath
     }
 
+    @Memoized
     protected LayerConfig getLayerConfig() {
         assert layerConfigPath, "Missing layer config path"
         final attrs = Files.readAttributes(layerConfigPath, BasicFileAttributes)
@@ -93,37 +107,137 @@ class ContainerScanner {
         return layerConfig
     }
 
-    String resolve(String imageName, String tag, Map<String,List<String>> headers) {
-        assert client, "Missing client"
-        // resolve image tag to digest
+    String requestDigestForTag(Map<String,List<String>> headers){
         final resp1 = client.head("/v2/$imageName/manifests/$tag", headers)
+        assert resp1.statusCode() == 200
+
         final digest = resp1.headers().firstValue('docker-content-digest')
         log.debug "Image $imageName:$tag => digest=$digest"
         if( digest.isEmpty() )
-            return null
+            throw new IllegalArgumentException("Image $imageName without digest")
+        digest.get()
+    }
 
-        // get manifest list for digest
-        final resp2 = client.getString("/v2/$imageName/manifests/${digest.get()}", headers)
-        final manifestsList = resp2.body()
-        log.debug "Image $imageName:$tag => manifests list=\n${JsonOutput.prettyPrint(manifestsList)}"
+    Map requestManifestForDigest( String digest, Map<String,List<String>> headers){
+        final resp2 = client.getString("/v2/$imageName/manifests/${digest}", headers)
+        assert resp2.statusCode() == 200
 
-        final manifestResult = findImageManifestAndDigest(manifestsList, imageName, tag, headers)
+        final manifests =  new JsonSlurper().parseText(resp2.body()) as Map
+        log.debug "Image $imageName:$tag => manifests list=\n${JsonOutput.prettyPrint(JsonOutput.toJson(manifests))}"
+
+        manifests
+    }
+
+    Map requestManifestFromList(Map manifest, Map<String,List<String>> headers){
+        def targetDigest = findTargetDigest(manifest)
+        final resp3 = client.getString("/v2/$imageName/manifests/$targetDigest", headers)
+        final body = resp3.body()
+        log.debug "Image $imageName:$tag => image manifest=\n${JsonOutput.prettyPrint(body)}"
+        new JsonSlurper().parseText(body) as Map
+    }
+
+    Map requestImageConfig(String digest, Map<String,List<String>> headers){
+        final resp4 = client.getString("/v2/$imageName/blobs/$digest", headers)
+        assert resp4.statusCode() == 200
+
+        final imageConfig = resp4.body()
+        log.debug "Image $imageName:$tag => image config=\n${JsonOutput.prettyPrint(imageConfig)}"
+        new JsonSlurper().parseText(imageConfig) as Map
+    }
+
+    String getRandomId() {
+        def length = 64 // the size of the random string
+        def pool = ['a'..'f',0..9].flatten() // generating pool
+        Random random = new Random(System.currentTimeMillis())
+        def randomChars = (0..length-1)
+                .collect { pool[random.nextInt(pool.size())] }
+        randomChars.join('')
+    }
+
+    String resolveV1Manifest(Map origin, Map<String,List<String>> headers, String digest){
+
+        def newLayer = layerBlobV1(imageName)
+
+        def fsLayers = origin.fsLayers as List<Map>
+        def history = origin.history as List<Map>
+
+        def first = history.first()
+        def firstJson= new JsonSlurper().parseText(first['v1Compatibility'].toString()) as Map
+
+        def second = history[1]
+        def secondJson= new JsonSlurper().parseText(second['v1Compatibility'].toString()) as Map
+
+        def newHistoryJson =[
+                id : randomId,
+                parent: secondJson.id as String
+        ]
+        def newHistoryItem = [
+                v1Compatibility: JsonOutput.toJson(newHistoryJson)
+        ]
+
+        firstJson.parent = newHistoryJson.id as String
+
+        // update the image config
+        final config = firstJson.config as Map
+        final entryChain = getFirst(config.Entrypoint)
+        if( layerConfig.entrypoint ) {
+            config.Entrypoint = layerConfig.entrypoint
+        }
+        if( layerConfig.cmd ) {
+            config.Cmd = layerConfig.cmd
+        }
+        if( layerConfig.workingDir ) {
+            config.WorkingDir = layerConfig.workingDir
+        }
+        if( layerConfig.env ) {
+            config.Env = appendEnv(config.Env as List, layerConfig.env)
+        }
+        if( entryChain ) {
+            config.Env = appendEnv( config.Env as List, [ "XREG_ENTRY_CHAIN="+entryChain ] )
+        }
+
+        // store the changes
+        first['v1Compatibility'] = JsonOutput.toJson(firstJson)
+
+        fsLayers.add(newLayer)
+        history.add(1, newHistoryItem)
+
+        def newManifestLength = JsonOutput.prettyPrint(JsonOutput.toJson(origin)).length()
+
+        def signatures = origin.signatures as List<Map>
+        def signature = signatures.first()
+        def signprotected = signature.protected as String
+
+        def protecteddecoded = new JsonSlurper().parseText(new String(signprotected.decodeBase64())) as Map
+        protecteddecoded.formatLength = newManifestLength-1
+
+        def protectedBase64 = JsonOutput.toJson(protecteddecoded).bytes.encodeBase64().toString().replaceAll('=','')
+        signature.protected = protectedBase64
+
+        def manifest = JsonOutput.prettyPrint(JsonOutput.toJson(origin))
+        cache.put("/v2/$imageName/manifests/$digest", manifest.bytes, ContentType.DOCKER_MANIFEST_V1_JWS_TYPE, digest)
+        digest
+    }
+
+    String resolveV2Manifest(Map manifestV2, Map<String,List<String>> headers){
+        final manifestResult = findImageManifestAndDigest(manifestV2, headers)
         final imageManifest = manifestResult.first
         final configDigest = manifestResult.second
         final targetDigest = manifestResult.third
 
+        final manifest = new JsonSlurper().parseText(imageManifest) as Map
+
         // fetch the image config
-        final resp4 = client.getString("/v2/$imageName/blobs/$configDigest", headers)
-        final imageConfig = resp4.body()
-        log.debug "Image $imageName:$tag => image config=\n${JsonOutput.prettyPrint(imageConfig)}"
+        final imageConfig = requestImageConfig(configDigest, headers)
 
         // update the image config adding the new layer
         final newConfigDigest = updateImageConfig(imageName, imageConfig)
         log.debug "==> new config digest: $newConfigDigest"
+        (manifest.config as Map).digest = newConfigDigest
 
         // update the image manifest adding a new layer
         // returns the updated image manifest digest
-        final newManifestDigest = updateImageManifest(imageName, imageManifest, newConfigDigest)
+        final newManifestDigest = updateImageManifest(imageName, manifest)
         log.debug "==> new image digest: $newManifestDigest"
 
         if( !targetDigest ) {
@@ -132,46 +246,52 @@ class ContainerScanner {
         else {
             // update the manifests list with the new digest
             // returns the manifests list digest
-            final newListDigest = updateManifestsList(imageName, manifestsList, targetDigest, newManifestDigest)
+            final newListDigest = updateManifestsList(imageName, manifestV2, targetDigest, newManifestDigest)
             log.debug "==> new list digest: $newListDigest"
 
             return newListDigest
         }
-
     }
 
-    protected Tuple3<String,String,String> findImageManifestAndDigest(String manifest, String imageName, String tag, Map<String,List<String>> headers) {
+    String resolve(Map<String,List<String>> headers) {
+        assert client, "Missing client"
 
-        def json = new JsonSlurper().parseText(manifest) as Map
-        // check the response mime, can be either
-        // 1. application/vnd.docker.distribution.manifest.list.v2+json ==> image list
-        // 2. application/vnd.docker.distribution.manifest.v2+json  ==> image manifest
+        // resolve image tag to digest
+        final digest = requestDigestForTag(headers)
 
+        // get manifest list for digest
+        final manifest = requestManifestForDigest(digest, headers)
+
+        if (manifest.schemaVersion == 1) {
+            return resolveV1Manifest(manifest, headers, digest)
+        }
+
+        final manifestV2
+        if( manifest.mediaType == ContentType.DOCKER_MANIFEST_LIST_V2){
+            manifestV2 = requestManifestFromList(manifest, headers)
+        }else {
+            manifestV2 = manifest
+        }
+        return resolveV2Manifest(manifestV2, headers)
+    }
+
+    protected Tuple3<String,String,String> findImageManifestAndDigest(Map json, Map<String,List<String>> headers) {
         def targetDigest = null
         def media = json.mediaType
-        if( media == ContentType.DOCKER_MANIFEST_LIST_V2 ) {
-            // get target manifest
-            targetDigest = findTargetDigest(json)
-            final resp3 = client.getString("/v2/$imageName/manifests/$targetDigest", headers)
-            manifest = resp3.body()
-            log.debug "Image $imageName:$tag => image manifest=\n${JsonOutput.prettyPrint(manifest)}"
-            // parse the new manifest
-            json = new JsonSlurper().parseText(manifest) as Map
-            media = json.mediaType
-        }
 
         if( media == ContentType.DOCKER_MANIFEST_V2_TYPE ) {
             // find the image config digest
-            final configDigest = findImageConfigDigest(manifest)
-            return new Tuple3(manifest, configDigest, targetDigest)
+            final configDigest = findImageConfigDigest(json)
+            return new Tuple3( JsonOutput.toJson(json), configDigest, targetDigest)
         }
         else {
             throw new IllegalArgumentException("Unexpected media type for request '$imageName:$tag' - offending value: $media")
         }
-        
+
     }
 
-    protected String updateManifestsList(String imageName, String manifestsList, String targetDigest, String newDigest) {
+    protected String updateManifestsList(String imageName, Map json, String targetDigest, String newDigest) {
+        final manifestsList = JsonOutput.toJson(json)
         final updated = manifestsList.replace(targetDigest, newDigest)
         final result = RegHelper.digest(updated)
         final type = ContentType.DOCKER_MANIFEST_LIST_V2
@@ -203,6 +323,15 @@ class ContainerScanner {
         return result
     }
 
+    protected Map layerBlobV2(String image) {
+        return layerBlob(image)
+    }
+
+    protected Map layerBlobV1(String image) {
+        def blob = layerBlob(image)
+        [blobSum: blob.digest]
+    }
+
     /**
      * @param imageManifest hold the image config json. It has the following structure
      * <pre>
@@ -226,23 +355,18 @@ class ContainerScanner {
      * @return
      */
     @CompileDynamic
-    protected String findImageConfigDigest(String imageManifest) {
-        final json = (Map) new JsonSlurper().parseText(imageManifest)
+    protected String findImageConfigDigest(Map json) {
         return json.config.digest
     }
 
-    protected String updateImageManifest(String imageName, String imageManifest, String newImageConfigDigest) {
+    protected String updateImageManifest(String imageName, Map manifest) {
 
         // get the layer blob
-        final newLayer = layerBlob(imageName)
+        final newLayer = layerBlobV2(imageName)
 
         // turn the json string into a json map
         // and append the new layer
-        final manifest = (Map) new JsonSlurper().parseText(imageManifest)
         (manifest.layers as List).add( newLayer )
-
-        // update the config digest
-        (manifest.config as Map).digest = newImageConfigDigest
 
         // turn the updated manifest into a json
         final newManifest = JsonOutput.prettyPrint(JsonOutput.toJson(manifest))
@@ -277,13 +401,12 @@ class ContainerScanner {
                 : newEntries
     }
 
-    protected String updateImageConfig(String imageName, String imageConfig) {
+    protected String updateImageConfig(String imageName, Map manifest) {
 
         final newLayer = layerConfig.append.tarDigest
 
         // turn the json string into a json map
         // and append the new layer
-        final manifest = new JsonSlurper().parseText(imageConfig) as Map
         final rootfs = manifest.rootfs as Map
         final layers = rootfs.diff_ids as List
         layers.add( newLayer )
@@ -327,10 +450,13 @@ class ContainerScanner {
     @CompileDynamic
     protected String findTargetDigest(Map json) {
         final mediaType = ContentType.DOCKER_MANIFEST_V2_TYPE
-        final record = json.manifests.find( { record ->  record.mediaType == mediaType && record.platform.os=='linux' && record.platform.architecture==arch } )
+        final record = json.manifests.find( { record ->
+            record.mediaType == mediaType && record.platform.os==os && record.platform.architecture==arch
+        } )
         final result = record.digest
         log.trace "Find target digest arch: $arch ==> digest: $result"
         return result
     }
+
 
 }
