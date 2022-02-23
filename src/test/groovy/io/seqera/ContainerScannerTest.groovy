@@ -2,6 +2,9 @@ package io.seqera
 
 import groovy.json.JsonOutput
 import io.seqera.config.TowerConfiguration
+import io.seqera.controller.RegHelper
+import io.seqera.model.ContentType
+import io.seqera.proxy.ProxyClient
 
 import java.nio.file.Files
 import java.nio.file.Path

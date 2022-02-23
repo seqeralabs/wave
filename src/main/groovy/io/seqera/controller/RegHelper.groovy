@@ -1,4 +1,4 @@
-package io.seqera
+package io.seqera.controller
 
 import java.nio.charset.Charset
 import java.security.MessageDigest

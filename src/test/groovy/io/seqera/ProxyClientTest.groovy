@@ -1,8 +1,8 @@
 package io.seqera
 
-import io.seqera.config.TowerConfiguration
-import io.seqera.docker.BaseAuthProvider
-import io.seqera.docker.DockerAuthProvider
+
+import io.seqera.auth.BaseAuthProvider
+import io.seqera.proxy.ProxyClient
 import spock.lang.Specification
 /**
  *

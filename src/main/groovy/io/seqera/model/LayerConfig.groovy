@@ -1,4 +1,4 @@
-package io.seqera
+package io.seqera.model
 
 /**
  *

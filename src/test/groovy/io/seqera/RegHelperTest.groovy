@@ -1,5 +1,6 @@
 package io.seqera
 
+import io.seqera.controller.RegHelper
 import spock.lang.Specification
 
 /**

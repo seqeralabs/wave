@@ -1,4 +1,4 @@
-package io.seqera
+package io.seqera.controller
 
 import com.sun.net.httpserver.Headers
 import com.sun.net.httpserver.HttpExchange
@@ -7,10 +7,14 @@ import groovy.json.JsonOutput
 import groovy.transform.Memoized
 import groovy.transform.builder.Builder
 import groovy.util.logging.Slf4j
+import io.seqera.Cache
+import io.seqera.ContainerScanner
+import io.seqera.proxy.ProxyClient
+import io.seqera.RouteHelper
 import io.seqera.config.Registry
 import io.seqera.config.TowerConfiguration
-import io.seqera.docker.AuthFactory
-import io.seqera.docker.DockerAuthProvider
+import io.seqera.auth.AuthFactory
+import io.seqera.auth.DockerAuthProvider
 
 /**
  *

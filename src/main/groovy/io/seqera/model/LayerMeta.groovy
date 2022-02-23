@@ -1,4 +1,4 @@
-package io.seqera
+package io.seqera.model
 
 import java.nio.file.Path
 import java.nio.file.Paths

@@ -1,4 +1,4 @@
-package io.seqera.docker
+package io.seqera.auth
 
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
