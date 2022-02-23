@@ -1,6 +1,7 @@
 package io.seqera
 
 import groovy.json.JsonSlurper
+import io.seqera.model.LayerConfig
 import spock.lang.Specification
 
 /**

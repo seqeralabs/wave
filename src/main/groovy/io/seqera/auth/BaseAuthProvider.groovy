@@ -1,4 +1,4 @@
-package io.seqera.docker
+package io.seqera.auth
 
 import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j

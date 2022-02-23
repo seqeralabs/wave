@@ -1,4 +1,4 @@
-package io.seqera.docker
+package io.seqera.proxy
 
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString

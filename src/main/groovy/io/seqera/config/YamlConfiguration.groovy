@@ -24,7 +24,7 @@ class YamlConfiguration implements TowerConfiguration{
     }
 
     Registry getDefaultRegistry(){
-        registries.sort({it.name}).first()
+        registries.first()
     }
 
     Registry findRegistry(String name){

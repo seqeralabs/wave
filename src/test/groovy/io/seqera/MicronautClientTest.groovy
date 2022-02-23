@@ -5,7 +5,7 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
-import io.seqera.docker.LoginResponse
+import io.seqera.proxy.LoginResponse
 import spock.lang.Specification
 /**
  *

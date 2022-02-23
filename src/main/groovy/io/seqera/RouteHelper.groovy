@@ -37,42 +37,33 @@ class RouteHelper {
         if( !matcher.matches() )
             return NOT_FOUND
 
+        final String type = matcher.group(2)
+        final String reference = matcher.group(3)
+        final List<String> coordinates = matcher.group(1).tokenize('/')
+        final String image
+        final String registry
+
         if( path.startsWith('/v2/tw/') ) {
-            String type = matcher.group(2)
-            String reference = matcher.group(3)
-            String coordinates = matcher.group(1)
-            String encoded = coordinates.split('/')[0]
-            String image = coordinates.split('/').length > 1 ? coordinates.split('/')[1] : ''
-            String decoded = new String( Base32.decode(encoded))
-            String registry = defaultRegistry
-            final elems = decoded.tokenize('/')
-            if( elems[0].contains('.') ) {
-                // since contains a dot, it must a registry name
-                registry = elems.pop()
+            String encoded = coordinates[0]
+            List<String> decoded = new String(Base32.decode(encoded)).tokenize('/')
+            coordinates[0] = decoded.first()
+            if( decoded.size() > 1) {
+                coordinates.add(1, decoded.drop(1).join('/'))
             }
-            image = "${elems ? elems.join('/') : 'library'}/$image"
-            path = "/v2/$image/$type/$reference"
-
-            return new Route(
-                    type,
-                    registry,
-                    image,
-                    reference,
-                    path
-            )
-        }
-        else {
-            String image = matcher.group(1)
-            String registry = defaultRegistry
-            return new Route(
-                    matcher.group(2),
-                    registry,
-                    image,
-                    matcher.group(3),
-                    path
-            )
         }
 
+        registry = coordinates[0].contains('.') ? coordinates.pop() : defaultRegistry
+        image = coordinates.join('/')
+
+        path = "/v2/$image/$type/$reference"
+
+        return new Route(
+                type,
+                registry,
+                image,
+                reference,
+                path
+        )
     }
 
 }

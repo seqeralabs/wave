@@ -1,8 +1,7 @@
-package io.seqera.docker
+package io.seqera.auth
 
-import io.seqera.config.Auth
+
 import io.seqera.config.Registry
-import io.seqera.config.TowerConfiguration
 
 /**
  * @author : jorge <jorge.aguilera@seqera.io>

@@ -1,6 +1,6 @@
-package io.seqera
+package io.seqera.proxy
 
-import io.seqera.docker.DockerAuthProvider
+import io.seqera.auth.DockerAuthProvider
 
 import java.net.http.HttpClient
 import java.net.http.HttpRequest

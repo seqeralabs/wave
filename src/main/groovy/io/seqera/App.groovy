@@ -3,7 +3,9 @@ package io.seqera
 import groovy.util.logging.Slf4j
 import io.seqera.config.TowerConfiguration
 import io.seqera.config.YamlConfiguration
-import io.seqera.docker.AuthFactory
+import io.seqera.controller.RegHandler
+import io.seqera.controller.RegServer
+import io.seqera.auth.AuthFactory
 
 /**
  *

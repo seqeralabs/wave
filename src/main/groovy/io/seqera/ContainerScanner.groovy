@@ -1,5 +1,10 @@
 package io.seqera
 
+import io.seqera.controller.RegHelper
+import io.seqera.model.ContentType
+import io.seqera.model.LayerConfig
+import io.seqera.proxy.ProxyClient
+
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths

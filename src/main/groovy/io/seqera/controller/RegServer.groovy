@@ -1,10 +1,9 @@
-package io.seqera
+package io.seqera.controller
 
 import java.util.concurrent.Executors
 
 import com.sun.net.httpserver.HttpHandler
 import com.sun.net.httpserver.HttpServer
-import groovy.transform.CompileStatic
 
 /**
  *

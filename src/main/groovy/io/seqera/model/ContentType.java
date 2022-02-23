@@ -1,4 +1,4 @@
-package io.seqera;
+package io.seqera.model;
 
 /**
  * Define mime types used by Docker and OCI registris

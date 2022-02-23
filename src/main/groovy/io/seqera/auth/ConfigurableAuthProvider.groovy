@@ -1,4 +1,4 @@
-package io.seqera.docker
+package io.seqera.auth
 
 import io.seqera.config.Auth
 
