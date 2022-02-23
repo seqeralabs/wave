@@ -63,6 +63,8 @@ class RouteHelperTest extends Specification {
         and:
         '/v2/tw/of2wc6jonfxs63tfpb2gm3dpo4/rnaseq-nf/manifests/v1.1'        | new RouteHelper.Route('manifests', 'quay.io', 'nextflow/rnaseq-nf', 'v1.1', '/v2/nextflow/rnaseq-nf/manifests/v1.1')
         '/v2/tw/mjuw6y3pnz2gc2lomvzhg/biocontainers/manifests/v1.2.0_cv1'   | new RouteHelper.Route('manifests', 'docker.io', 'biocontainers/biocontainers', 'v1.2.0_cv1', '/v2/biocontainers/biocontainers/manifests/v1.2.0_cv1')
+        and:
+        '/v2/github.io/biocontainers/biocontainers/manifests/v1.1'        | new RouteHelper.Route('manifests', 'github.io', 'biocontainers/biocontainers', 'v1.1', '/v2/biocontainers/biocontainers/manifests/v1.1')
     }
 
     def 'should validate route type' () {
