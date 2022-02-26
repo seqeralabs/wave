@@ -9,6 +9,7 @@ out/
 *.iml
 *.ipr
 *.iws
+.nextflow*
 .project
 .settings
 .classpath
