@@ -364,6 +364,7 @@ class ContainerScannerTest extends Specification {
         digest
     }
 
+    @Ignore
     def 'should resolve fastqc' () {
         given:
         def HOST = 'quay.io'

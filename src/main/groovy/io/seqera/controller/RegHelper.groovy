@@ -2,6 +2,7 @@ package io.seqera.controller
 
 import java.nio.charset.Charset
 import java.security.MessageDigest
+import java.security.SecureRandom
 
 import com.google.common.io.BaseEncoding
 import groovy.json.JsonOutput
@@ -64,5 +65,16 @@ class RegHelper {
         catch( Throwable e ) {
             return '(no json output)'
         }
+    }
+
+    static String random256Hex() {
+        final secureRandom = new SecureRandom();
+        byte[] token = new byte[32]
+        secureRandom.nextBytes(token)
+        def result = new BigInteger(1, token).toString(16)
+        // pad with extra zeros if necessary
+        while( result.size()<64 )
+            result = '0'+result
+        return result
     }
 }

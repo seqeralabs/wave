@@ -355,7 +355,7 @@ class ContainerScanner {
         def secondJson= new JsonSlurper().parseText(second['v1Compatibility'].toString()) as Map
 
         def newHistoryJson= [
-                id : RegHelper.randomString(64),
+                id : RegHelper.random256Hex(),
                 parent: secondJson.id as String
         ]
         def newHistoryItem = [

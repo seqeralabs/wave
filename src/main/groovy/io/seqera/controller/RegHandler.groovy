@@ -3,11 +3,9 @@ package io.seqera.controller
 import com.sun.net.httpserver.Headers
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
-import groovy.json.JsonOutput
 import groovy.transform.Memoized
 import groovy.transform.builder.Builder
 import groovy.util.logging.Slf4j
-import io.micronaut.web.router.Route
 import io.seqera.Cache
 import io.seqera.ContainerScanner
 import io.seqera.proxy.ProxyClient

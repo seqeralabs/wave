@@ -47,4 +47,10 @@ class RegHelperTest extends Specification {
         then:
         words == decoded
     }
+
+
+    def 'should generate random hex' () {
+        expect:
+        RegHelper.random256Hex().length() == 64
+    }
 }
