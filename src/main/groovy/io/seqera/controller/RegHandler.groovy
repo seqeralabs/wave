@@ -1,5 +1,7 @@
 package io.seqera.controller
 
+import static io.seqera.controller.RegHelper.dumpHeaders
+
 import com.sun.net.httpserver.Headers
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
@@ -62,7 +64,6 @@ class RegHandler implements HttpHandler {
             return
         }
 
-        log.debug "Default registry: $configuration.defaultRegistry.name"
         final route = RouteHelper.parse(path, configuration.defaultRegistry.name)
         final Registry registry = configuration.findRegistry(route.registry)
         assert registry
@@ -179,7 +180,7 @@ class RegHandler implements HttpHandler {
             return
         }
 
-        log.trace "Proxy request >> $route.path"
+        log.trace "Proxy request >> $route.path ${dumpHeaders(exchange.getRequestHeaders())}"
         handleProxy(route.path, exchange, proxyClient)
     }
 
