@@ -109,7 +109,9 @@ class ContainerScanner {
         log.debug "Image $imageName:$tag => type=$type; manifests list:\n${JsonOutput.prettyPrint(manifestsList)}"
 
         if( type == ContentType.DOCKER_MANIFEST_V1_JWS_TYPE ) {
-            final manifestV1Digest = resolveV1Manifest(manifestsList, headers, )
+            final v1Digest = resolveV1Manifest(manifestsList, imageName)
+            log.debug "==> new manifest v1 digest: $v1Digest"
+            return v1Digest
         }
 
         final manifestResult = findImageManifestAndDigest(manifestsList, imageName, tag, headers)
@@ -338,9 +340,10 @@ class ContainerScanner {
         return result
     }
 
-    String resolveV1Manifest(Map origin, imageName){
-
-        def newLayer = layerBlobV1(imageName)
+    String resolveV1Manifest(String body, imageName){
+        final origin = new JsonSlurper().parseText(body) as Map
+        final blob = layerBlob(imageName)
+        final newLayer= [blobSum: blob.digest]
 
         def fsLayers = origin.fsLayers as List<Map>
         def history = origin.history as List<Map>
@@ -351,8 +354,8 @@ class ContainerScanner {
         def second = history[1]
         def secondJson= new JsonSlurper().parseText(second['v1Compatibility'].toString()) as Map
 
-        def newHistoryJson =[
-                id : randomId,
+        def newHistoryJson= [
+                id : RegHelper.randomString(64),
                 parent: secondJson.id as String
         ]
         def newHistoryItem = [
@@ -386,14 +389,14 @@ class ContainerScanner {
         fsLayers.add(newLayer)
         history.add(1, newHistoryItem)
 
-        def newManifestLength = JsonOutput.prettyPrint(JsonOutput.toJson(origin)).length()
+        def newManifestLength = JsonOutput.prettyPrint(JsonOutput.toJson(origin)).bytes.length
 
         def signatures = origin.signatures as List<Map>
         def signature = signatures.first()
         def signprotected = signature.protected as String
 
         def protecteddecoded = new JsonSlurper().parseText(new String(signprotected.decodeBase64())) as Map
-        protecteddecoded.formatLength = newManifestLength-1
+        protecteddecoded.formatLength = newManifestLength
 
         def protectedBase64 = JsonOutput.toJson(protecteddecoded).bytes.encodeBase64().toString().replaceAll('=','')
         signature.protected = protectedBase64
