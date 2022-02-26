@@ -98,7 +98,8 @@ class ContainerScanner {
         // resolve image tag to digest
         final resp1 = client.head("/v2/$imageName/manifests/$tag", headers)
         final digest = resp1.headers().firstValue('docker-content-digest')
-        log.debug "Image $imageName:$tag => digest=$digest"
+        final type = resp1.headers().firstValue('content-type').orElse(null)
+        log.debug "Image $imageName:$tag => digest=$digest; type=$type"
         if( digest.isEmpty() )
             return null
 
@@ -106,6 +107,12 @@ class ContainerScanner {
         final resp2 = client.getString("/v2/$imageName/manifests/${digest.get()}", headers)
         final manifestsList = resp2.body()
         log.debug "Image $imageName:$tag => manifests list=\n${JsonOutput.prettyPrint(manifestsList)}"
+
+        if( type == ContentType.DOCKER_MANIFEST_V1_JWS_TYPE ) {
+            final result = resolveManifestVersion1ToVersion2(resp2.body() as String, imageName)
+            log.debug "==> new manifest digest: $result"
+            return result
+        }
 
         final manifestResult = findImageManifestAndDigest(manifestsList, imageName, tag, headers)
         final imageManifest = manifestResult.first
@@ -277,19 +284,7 @@ class ContainerScanner {
                 : newEntries
     }
 
-    protected String updateImageConfig(String imageName, String imageConfig) {
-
-        final newLayer = layerConfig.append.tarDigest
-
-        // turn the json string into a json map
-        // and append the new layer
-        final manifest = new JsonSlurper().parseText(imageConfig) as Map
-        final rootfs = manifest.rootfs as Map
-        final layers = rootfs.diff_ids as List
-        layers.add( newLayer )
-
-        // update the image config
-        final config = manifest.config as Map
+    protected void updateConfig(Map config) {
         final entryChain = getFirst(config.Entrypoint)
         if( layerConfig.entrypoint ) {
             config.Entrypoint = layerConfig.entrypoint
@@ -306,6 +301,23 @@ class ContainerScanner {
         if( entryChain ) {
             config.Env = appendEnv( config.Env as List, [ "XREG_ENTRY_CHAIN="+entryChain ] )
         }
+
+    }
+
+    protected String updateImageConfig(String imageName, String imageConfig) {
+
+        final newLayer = layerConfig.append.tarDigest
+
+        // turn the json string into a json map
+        // and append the new layer
+        final manifest = new JsonSlurper().parseText(imageConfig) as Map
+        final rootfs = manifest.rootfs as Map
+        final layers = rootfs.diff_ids as List
+        layers.add( newLayer )
+
+        // update the image config
+        final config = manifest.config as Map
+        updateConfig(config)
 
         // turn the updated manifest into a json
         final newConfig = JsonOutput.toJson(manifest)
@@ -333,4 +345,87 @@ class ContainerScanner {
         return result
     }
 
+    @CompileDynamic
+    protected String resolveManifestVersion1ToVersion2( String body, String imageName ) {
+        log.trace "Manifest V1: ${RegHelper.dumpJson(body)}"
+        final manifestV1 = new JsonSlurper().parseText(body)
+
+        final history = manifestV1.history as List
+        final fsLayers = manifestV1.fsLayers as List
+        // take the first history entry
+        final cfgStr = history.first().v1Compatibility as String
+        log.trace "Manifest V1 config: ${RegHelper.dumpJson(cfgStr)}"
+        final config = new JsonSlurper().parseText(cfgStr) as Map
+        // remove unsupported attributes
+        config.remove('id')
+        config.remove('parent')
+        // update the config with the new layer settings
+        updateConfig(config)
+        // serialise the new config
+        final newConfigJson = JsonOutput.toJson(config)
+        final newConfigDigest = RegHelper.digest(newConfigJson)
+
+        // put the config in the cache
+        final path = "/v2/$imageName/blobs/$newConfigDigest"
+        cache.put(path, newConfigJson.bytes, ContentType.DOCKER_IMAGE_V1, newConfigDigest)
+
+        // get the blob ids
+        def blobs = fsLayers.reverse().collect { Map it -> it.blobSum as String}
+
+        // create the new manifest and
+        final newManifestMap = createV2Manifest(newConfigDigest, newConfigJson.bytes.size(), blobs, imageName)
+        final newManifestJson = JsonOutput.toJson(newManifestMap)
+        final newManifestDigest = RegHelper.digest(newManifestJson)
+        final newManifestPath = "/v2/$imageName/manifests/$newManifestDigest"
+        cache.put(newManifestPath, newManifestJson.bytes, ContentType.DOCKER_MANIFEST_V2_TYPE, newManifestDigest)
+
+        // return the new manifest digest
+        return newManifestDigest
+    }
+
+    protected Map createV2Manifest(String configDigest, int configSize, List<String> blobs, String imageName) {
+        final result = new LinkedHashMap()
+        result.schemaVersion = 2
+        result.mediaType = ContentType.DOCKER_MANIFEST_V2_TYPE
+        result.config = [ mediaType: ContentType.DOCKER_IMAGE_V1, size:configSize, digest:configDigest  ]
+
+        final layers = []
+        for( String it : blobs ) {
+            layers.add([
+                    mediaType: ContentType.DOCKER_IMAGE_TAR_GZIP,
+                    size: fetchBlobSize(imageName, it),
+                    digest: it])
+        }
+
+        // add new layer
+        final meta = getLayerConfig().getAppend()
+        if( meta ) {
+            layers.add([
+                    mediaType: ContentType.DOCKER_IMAGE_TAR_GZIP,
+                    size: meta.gzipSize,
+                    digest: meta.gzipDigest] )
+        }
+        // append to config
+        result.layers = layers
+
+        return result
+    }
+
+    protected int fetchBlobSize(String imageName, String blobDigest) {
+        final path = "/v2/$imageName/blobs/$blobDigest"
+        final resp = client.head(path)
+        if( resp.statusCode() >= 400 ) {
+            throw new RuntimeException("Blob not found ==> $path")
+        }
+        final len = resp.headers().firstValue('content-length').orElse(null)
+        if( len==null ) {
+            throw new RuntimeException("Blob size not found ==> $path")
+        }
+        try {
+            return len as int
+        }
+        catch (NumberFormatException e) {
+            throw new RuntimeException("Blob size not a number ==> $path - offending value: '$len'")
+        }
+    }
 }

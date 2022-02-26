@@ -363,4 +363,40 @@ class ContainerScannerTest extends Specification {
         then:
         digest
     }
+
+    @Ignore
+    def 'should resolve v1 image' () {
+        given:
+        def HOST = 'quay.io'
+        def IMAGE = 'biocontainers/fastqc'
+        def TAG = '0.11.9--0'
+        def AUTH_URL = 'quay.io/v2/auth'
+        def SERVICE = HOST
+
+        and:
+        def layerPath = Paths.get('foo.tar.gzip')
+        def cache = new Cache()
+        def client = new ProxyClient(HOST, IMAGE, new SimpleAuthProvider(
+                username: Mock.QUAY_USER,
+                password: Mock.QUAY_PAT,
+                authUrl: AUTH_URL,
+                service: SERVICE))
+        and:
+        def scanner = new ContainerScanner()
+                .withCache(cache)
+                .withClient(client)
+                .withArch('amd64')
+        and:
+        def headers = [
+                Accept: ['application/vnd.docker.distribution.manifest.v1+prettyjws',
+                         'application/json',
+                         'application/vnd.oci.image.manifest.v1+json',
+                         'application/vnd.docker.distribution.manifest.v2+json',
+                         'application/vnd.docker.distribution.manifest.list.v2+json',
+                         'application/vnd.oci.image.index.v1+json' ] ]
+        when:
+        def digest = scanner.resolve(IMAGE, TAG, headers)
+        then:
+        digest
+    }
 }
