@@ -2,19 +2,18 @@ port: 9090
 arch: x86_64
 
 registries:
-  -
-    name: quay.io
-    host: quay.io
-    auth:
-      username: changeme
-      password: changeme
-      url: quay.io/v2/auth
-      service: quay.io
-  -
-    name: docker.io
+  - name: docker.io
     host: registry-1.docker.io
     auth:
       username: changeme
       password: changeme
       url: auth.docker.io/token
       service: registry.docker.io
+
+  - name: quay.io
+    host: quay.io
+    auth:
+      username: changeme
+      password: changeme
+      url: quay.io/v2/auth
+      service: quay.io
