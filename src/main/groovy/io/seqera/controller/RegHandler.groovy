@@ -113,7 +113,7 @@ class RegHandler implements HttpHandler {
         }
 
         //
-        int len = Integer.parseInt(resp.headers().firstValue('content-length').get())
+        int len = Integer.parseInt(resp.headers().firstValue('content-length').orElse("-1"))
         log.trace "Proxy response << status=${resp.statusCode()}; len=$len; content: ${dumpJson(resp.body())}"
         exchange.sendResponseHeaders( resp.statusCode(), len)
 
