@@ -1,6 +1,6 @@
 package io.seqera.controller
 
-import static io.seqera.controller.RegHelper.dumpHeaders
+import static io.seqera.controller.RegHelper.*
 
 import com.sun.net.httpserver.Headers
 import com.sun.net.httpserver.HttpExchange
@@ -10,14 +10,12 @@ import groovy.transform.builder.Builder
 import groovy.util.logging.Slf4j
 import io.seqera.Cache
 import io.seqera.ContainerScanner
-import io.seqera.proxy.ProxyClient
 import io.seqera.RouteHelper
-import io.seqera.config.Registry
-import io.seqera.config.TowerConfiguration
 import io.seqera.auth.AuthFactory
 import io.seqera.auth.DockerAuthProvider
-import static io.seqera.controller.RegHelper.dumpJson
-
+import io.seqera.config.Registry
+import io.seqera.config.TowerConfiguration
+import io.seqera.proxy.ProxyClient
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -101,17 +99,16 @@ class RegHandler implements HttpHandler {
 
         //
         int len = Integer.parseInt(resp.headers().firstValue('content-length').orElse('-1'))
+        log.trace "Proxy response << status=${resp.statusCode()}; len=$len; content: ${dumpJson(resp.body())}"
         exchange.sendResponseHeaders( resp.statusCode(), len)
 
         if( len>0 ) {
-            log.trace "Proxy response << status=${resp.statusCode()}; len=$len; content: ${dumpJson(resp.body())}"
             // copy response
             final target = exchange.getResponseBody()
             resp.body().transferTo(target)
             target.close()
         }
         else {
-            log.trace "Proxy response << status=${resp.statusCode()}; len=$len; headers: ${dumpHeaders(resp.headers())}"
             // hack to prevent "response headers not sent yet" exception when closing the stream
             exchange.setStreams(null, new ByteArrayOutputStream(0))
             exchange.getResponseBody().close()
@@ -181,7 +178,7 @@ class RegHandler implements HttpHandler {
             return
         }
 
-        log.trace "Proxy request >> $route.path ${dumpHeaders(exchange.getRequestHeaders())}"
+        log.trace "Proxy request >> $route.path"
         handleProxy(route.path, exchange, proxyClient)
     }
 
