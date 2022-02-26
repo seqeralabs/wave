@@ -340,7 +340,7 @@ class ContainerScanner {
         return result
     }
 
-    String resolveV1Manifest(String body, imageName){
+    String resolveV1Manifest(String body, String imageName){
         final origin = new JsonSlurper().parseText(body) as Map
         final blob = layerBlob(imageName)
         final newLayer= [blobSum: blob.digest]
