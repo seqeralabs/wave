@@ -1,6 +1,6 @@
 package io.seqera.controller
 
-
+import java.net.http.HttpHeaders
 import java.nio.charset.Charset
 import java.security.MessageDigest
 import java.security.SecureRandom
@@ -73,7 +73,16 @@ class RegHelper {
         def result = new StringBuilder()
         for( Map.Entry<String,List<String>> entry : headers )  {
             for( String val : entry.value )
-                result.append("\n* $entry.key=$val")
+                result.append("\n  $entry.key=$val")
+        }
+        return result.toString()
+    }
+
+    static String dumpHeaders(HttpHeaders headers) {
+        def result = new StringBuilder()
+        for( Map.Entry<String,List<String>> entry : headers.map() )  {
+            for( String val : entry.value )
+                result.append("\n  $entry.key=$val")
         }
         return result.toString()
     }
