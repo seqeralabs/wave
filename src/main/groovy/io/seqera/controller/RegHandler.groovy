@@ -63,6 +63,7 @@ class RegHandler implements HttpHandler {
             return
         }
 
+        log.debug "Default registry: $configuration.defaultRegistry.name"
         final route = RouteHelper.parse(path, configuration.defaultRegistry.name)
         final Registry registry = configuration.findRegistry(route.registry)
         assert registry
