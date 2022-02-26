@@ -341,12 +341,12 @@ class ContainerScanner {
     }
 
     String resolveV1Manifest(String body, String imageName){
-        final origin = new JsonSlurper().parseText(body) as Map
+        final manifest = new JsonSlurper().parseText(body) as Map
         final blob = layerBlob(imageName)
         final newLayer= [blobSum: blob.digest]
 
-        def fsLayers = origin.fsLayers as List<Map>
-        def history = origin.history as List<Map>
+        def fsLayers = manifest.fsLayers as List<Map>
+        def history = manifest.history as List<Map>
 
         def first = history.first()
         def firstJson= new JsonSlurper().parseText(first['v1Compatibility'].toString()) as Map
@@ -389,21 +389,23 @@ class ContainerScanner {
         fsLayers.add(newLayer)
         history.add(1, newHistoryItem)
 
-        def newManifestLength = JsonOutput.prettyPrint(JsonOutput.toJson(origin)).bytes.length
+        // sign the manifest
+        def newManifestLength = JsonOutput.prettyPrint(JsonOutput.toJson(manifest)).length()
 
-        def signatures = origin.signatures as List<Map>
+        def signatures = manifest.signatures as List<Map>
         def signature = signatures.first()
         def signprotected = signature.protected as String
 
         def protecteddecoded = new JsonSlurper().parseText(new String(signprotected.decodeBase64())) as Map
-        protecteddecoded.formatLength = newManifestLength
+        protecteddecoded.formatLength = newManifestLength-1
 
         def protectedBase64 = JsonOutput.toJson(protecteddecoded).bytes.encodeBase64().toString().replaceAll('=','')
         signature.protected = protectedBase64
 
-        def manifest = JsonOutput.prettyPrint(JsonOutput.toJson(origin))
-        def digest = RegHelper.digest(manifest)
-        cache.put("/v2/$imageName/manifests/$digest", manifest.bytes, ContentType.DOCKER_MANIFEST_V1_JWS_TYPE, digest)
-        return digest
+        def newManifestJson = JsonOutput.prettyPrint(JsonOutput.toJson(manifest))
+        def newManifestDigest = RegHelper.digest(newManifestJson)
+
+        cache.put("/v2/$imageName/manifests/$newManifestDigest", newManifestJson.bytes, ContentType.DOCKER_MANIFEST_V1_JWS_TYPE, newManifestDigest)
+        return newManifestDigest
     }
 }
