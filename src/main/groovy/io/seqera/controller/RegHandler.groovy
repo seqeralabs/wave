@@ -99,14 +99,21 @@ class RegHandler implements HttpHandler {
         }
 
         //
-        int len = Integer.parseInt(resp.headers().firstValue('content-length').get())
+        int len = Integer.parseInt(resp.headers().firstValue('content-length').orElse('-1'))
         log.trace "Proxy response << status=${resp.statusCode()}; len=$len; content: ${dumpJson(resp.body())}"
         exchange.sendResponseHeaders( resp.statusCode(), len)
 
-        // copy response
-        final target = exchange.getResponseBody()
-        resp.body().transferTo(target)
-        target.close()
+        if( len>0 ) {
+            // copy response
+            final target = exchange.getResponseBody()
+            resp.body().transferTo(target)
+            target.close()
+        }
+        else {
+            // hack to prevent "response headers not sent yet" exception when closing the stream
+            exchange.setStreams(null, new ByteArrayOutputStream(0))
+            exchange.getResponseBody().close()
+        }
     }
 
     protected void handleError(HttpExchange exchange, Throwable e) {
