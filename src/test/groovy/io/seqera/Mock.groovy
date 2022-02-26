@@ -26,4 +26,11 @@ class Mock {
    ]
 }
 '''
+
+    static final String DOCKER_USER = 'pditommaso'
+    static final String DOCKER_PAT = 'd213e955-3357-4612-8c48-fa5652ad968b'
+
+    static final String QUAY_USER = 'pditommaso'
+    static final String QUAY_PAT = "SVO9GmXzeDJfB3Ba7PDSN90Pv7ggvzIGjYNT7QD4Ol05riiSuWu+ioBWiPIYd39v"
+
 }

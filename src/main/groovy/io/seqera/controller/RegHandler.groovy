@@ -16,6 +16,7 @@ import io.seqera.config.Registry
 import io.seqera.config.TowerConfiguration
 import io.seqera.auth.AuthFactory
 import io.seqera.auth.DockerAuthProvider
+import static io.seqera.controller.RegHelper.dumpJson
 
 /**
  *
@@ -88,16 +89,7 @@ class RegHandler implements HttpHandler {
         handleNotFound(exchange)
     }
 
-    private String dumpJson(payload) {
-        if( payload==null )
-            return '(null)'
-        try {
-            return '\n' + JsonOutput.prettyPrint(payload.toString().trim())
-        }
-        catch( Throwable e ) {
-            return '(no json output)'
-        }
-    }
+
 
     protected void handleProxy(String path, HttpExchange exchange, ProxyClient proxy) {
         // forward request

@@ -190,7 +190,7 @@ class ContainerScanner {
         final type = "application/vnd.docker.image.rootfs.diff.tar.gzip"
         final buffer = Files.readAllBytes(layerConfig.append.locationPath)
         final digest = RegHelper.digest(buffer)
-        final size = Files.size(layerConfig.append.locationPath) as int
+        final size = layerConfig.append.gzipSize
         if( digest != layerConfig.append.gzipDigest )
             throw new IllegalArgumentException("Layer gzip computed digest does not match with expected digest -- path=$layerConfig.append.locationPath; computed=$digest; expected: $layerConfig.append.gzipDigest")
         final path = "/v2/$image/blobs/$digest"

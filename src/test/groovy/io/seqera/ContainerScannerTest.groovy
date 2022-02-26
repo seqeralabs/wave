@@ -1,16 +1,15 @@
 package io.seqera
 
-import groovy.json.JsonOutput
-import io.seqera.config.TowerConfiguration
-import io.seqera.controller.RegHelper
-import io.seqera.model.ContentType
-import io.seqera.proxy.ProxyClient
-
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
+import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
+import io.seqera.auth.SimpleAuthProvider
+import io.seqera.controller.RegHelper
+import io.seqera.model.ContentType
+import io.seqera.proxy.ProxyClient
 import spock.lang.Ignore
 import spock.lang.Specification
 /**
@@ -19,12 +18,8 @@ import spock.lang.Specification
  */
 class ContainerScannerTest extends Specification {
 
-    private String username = "pditommaso"
-    private String password = 'd213e955-3357-4612-8c48-fa5652ad968b'
-
     def createConfig(Path folder, Map config, byte[] content ){
         def location = folder.resolve('dummy.gzip')
-        
     }
 
     def 'should set layer paths' () {
@@ -340,10 +335,21 @@ class ContainerScannerTest extends Specification {
     @Ignore
     def 'should resolve busybox' () {
         given:
+        def HOST = 'registry-1.docker.io'
+        def IMAGE = 'library/busybox'
+        and:
         def layerPath = Paths.get('foo.tar.gzip')
         def cache = new Cache()
-        def client = new ProxyClient(username, password, TowerConfiguration.DEFAULT_REGISTRY, 'library/busybox')
-        def scanner = new ContainerScanner().withCache(cache).withLayer(layerPath).withClient(client)
+        def client = new ProxyClient(HOST, IMAGE, new SimpleAuthProvider(
+                username: Mock.DOCKER_USER,
+                password: Mock.DOCKER_PAT,
+                authUrl: 'auth.docker.io/token',
+                service: 'registry.docker.io'))
+        and:
+        def scanner = new ContainerScanner()
+                            .withCache(cache)
+                            .withClient(client)
+                            .withArch('amd64')
         and:
         def headers = [
                 Accept: ['application/vnd.docker.distribution.manifest.v1+prettyjws',
@@ -353,7 +359,7 @@ class ContainerScannerTest extends Specification {
                         'application/vnd.docker.distribution.manifest.list.v2+json',
                         'application/vnd.oci.image.index.v1+json' ] ]
         when:
-        def digest = scanner.resolve('library/busybox', 'latest', headers)
+        def digest = scanner.resolve(IMAGE, 'latest', headers)
         then:
         digest
     }

@@ -4,7 +4,7 @@ import java.nio.charset.Charset
 import java.security.MessageDigest
 
 import com.google.common.io.BaseEncoding
-import groovy.transform.CompileStatic
+import groovy.json.JsonOutput
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -53,5 +53,16 @@ class RegHelper {
         Random random = new Random();
         final len = random.nextInt(max - min) + min
         randomString(len)
+    }
+
+    static String dumpJson(payload) {
+        if( payload==null )
+            return '(null)'
+        try {
+            return '\n' + JsonOutput.prettyPrint(payload.toString().trim())
+        }
+        catch( Throwable e ) {
+            return '(no json output)'
+        }
     }
 }

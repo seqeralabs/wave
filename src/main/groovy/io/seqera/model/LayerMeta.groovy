@@ -1,5 +1,6 @@
 package io.seqera.model
 
+import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
@@ -14,6 +15,14 @@ class LayerMeta {
     String tarDigest
 
     Path getLocationPath() {
-        return location ? Paths.get(location) : null
+        return location
+                ? Paths.get(location)
+                : null
+    }
+
+    int getGzipSize() {
+        return locationPath
+                ? Files.size(locationPath) as int
+                : 0
     }
 }
