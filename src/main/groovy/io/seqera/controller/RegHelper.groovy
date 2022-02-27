@@ -1,9 +1,12 @@
 package io.seqera.controller
 
+import java.net.http.HttpHeaders
 import java.nio.charset.Charset
 import java.security.MessageDigest
+import java.security.SecureRandom
 
 import com.google.common.io.BaseEncoding
+import com.sun.net.httpserver.Headers
 import groovy.json.JsonOutput
 /**
  *
@@ -64,5 +67,34 @@ class RegHelper {
         catch( Throwable e ) {
             return '(no json output)'
         }
+    }
+
+    static String dumpHeaders(Headers headers) {
+        def result = new StringBuilder()
+        for( Map.Entry<String,List<String>> entry : headers )  {
+            for( String val : entry.value )
+                result.append("\n  $entry.key=$val")
+        }
+        return result.toString()
+    }
+
+    static String dumpHeaders(HttpHeaders headers) {
+        def result = new StringBuilder()
+        for( Map.Entry<String,List<String>> entry : headers.map() )  {
+            for( String val : entry.value )
+                result.append("\n  $entry.key=$val")
+        }
+        return result.toString()
+    }
+
+    static String random256Hex() {
+        final secureRandom = new SecureRandom();
+        byte[] token = new byte[32]
+        secureRandom.nextBytes(token)
+        def result = new BigInteger(1, token).toString(16)
+        // pad with extra zeros if necessary
+        while( result.size()<64 )
+            result = '0'+result
+        return result
     }
 }

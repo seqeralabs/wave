@@ -1,10 +1,5 @@
 package io.seqera
 
-import io.seqera.controller.RegHelper
-import io.seqera.model.ContentType
-import io.seqera.model.LayerConfig
-import io.seqera.proxy.ProxyClient
-
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -15,6 +10,11 @@ import groovy.json.JsonSlurper
 import groovy.transform.CompileDynamic
 import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
+import io.seqera.controller.RegHelper
+import io.seqera.model.ContentType
+import io.seqera.model.LayerConfig
+import io.seqera.proxy.InvalidResponseException
+import io.seqera.proxy.ProxyClient
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -99,13 +99,20 @@ class ContainerScanner {
         final resp1 = client.head("/v2/$imageName/manifests/$tag", headers)
         final digest = resp1.headers().firstValue('docker-content-digest')
         log.debug "Image $imageName:$tag => digest=$digest"
-        if( digest.isEmpty() )
-            return null
+        if( resp1.statusCode() != 200 )
+            throw new InvalidResponseException("Unexpected response statusCode: ${resp1.statusCode()}", resp1)
 
         // get manifest list for digest
         final resp2 = client.getString("/v2/$imageName/manifests/${digest.get()}", headers)
+        final type = resp2.headers().firstValue('content-type').orElse(null)
         final manifestsList = resp2.body()
-        log.debug "Image $imageName:$tag => manifests list=\n${JsonOutput.prettyPrint(manifestsList)}"
+        log.debug "Image $imageName:$tag => type=$type; manifests list:\n${JsonOutput.prettyPrint(manifestsList)}"
+
+        if( type == ContentType.DOCKER_MANIFEST_V1_JWS_TYPE ) {
+            final v1Digest = resolveV1Manifest(manifestsList, imageName)
+            log.debug "==> new manifest v1 digest: $v1Digest"
+            return v1Digest
+        }
 
         final manifestResult = findImageManifestAndDigest(manifestsList, imageName, tag, headers)
         final imageManifest = manifestResult.first
@@ -333,4 +340,72 @@ class ContainerScanner {
         return result
     }
 
+    String resolveV1Manifest(String body, String imageName){
+        final manifest = new JsonSlurper().parseText(body) as Map
+        final blob = layerBlob(imageName)
+        final newLayer= [blobSum: blob.digest]
+
+        def fsLayers = manifest.fsLayers as List<Map>
+        def history = manifest.history as List<Map>
+
+        def first = history.first()
+        def firstJson= new JsonSlurper().parseText(first['v1Compatibility'].toString()) as Map
+
+        def second = history[1]
+        def secondJson= new JsonSlurper().parseText(second['v1Compatibility'].toString()) as Map
+
+        def newHistoryJson= [
+                id : RegHelper.random256Hex(),
+                parent: secondJson.id as String
+        ]
+        def newHistoryItem = [
+                v1Compatibility: JsonOutput.toJson(newHistoryJson)
+        ]
+
+        firstJson.parent = newHistoryJson.id as String
+
+        // update the image config
+        final config = firstJson.config as Map
+        final entryChain = getFirst(config.Entrypoint)
+        if( layerConfig.entrypoint ) {
+            config.Entrypoint = layerConfig.entrypoint
+        }
+        if( layerConfig.cmd ) {
+            config.Cmd = layerConfig.cmd
+        }
+        if( layerConfig.workingDir ) {
+            config.WorkingDir = layerConfig.workingDir
+        }
+        if( layerConfig.env ) {
+            config.Env = appendEnv(config.Env as List, layerConfig.env)
+        }
+        if( entryChain ) {
+            config.Env = appendEnv( config.Env as List, [ "XREG_ENTRY_CHAIN="+entryChain ] )
+        }
+
+        // store the changes
+        first['v1Compatibility'] = JsonOutput.toJson(firstJson)
+
+        fsLayers.add(newLayer)
+        history.add(1, newHistoryItem)
+
+        // sign the manifest
+        def newManifestLength = JsonOutput.prettyPrint(JsonOutput.toJson(manifest)).length()
+
+        def signatures = manifest.signatures as List<Map>
+        def signature = signatures.first()
+        def signprotected = signature.protected as String
+
+        def protecteddecoded = new JsonSlurper().parseText(new String(signprotected.decodeBase64())) as Map
+        protecteddecoded.formatLength = newManifestLength-1
+
+        def protectedBase64 = JsonOutput.toJson(protecteddecoded).bytes.encodeBase64().toString().replaceAll('=','')
+        signature.protected = protectedBase64
+
+        def newManifestJson = JsonOutput.prettyPrint(JsonOutput.toJson(manifest))
+        def newManifestDigest = RegHelper.digest(newManifestJson)
+
+        cache.put("/v2/$imageName/manifests/$newManifestDigest", newManifestJson.bytes, ContentType.DOCKER_MANIFEST_V1_JWS_TYPE, newManifestDigest)
+        return newManifestDigest
+    }
 }

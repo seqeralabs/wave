@@ -11,6 +11,8 @@ pack/layers/layer.tar.gzip: .layer/opt/goofys/goofys
 	mkdir -p pack/layers
 	./make-tar.sh
 
+pack: clean pack/layers/layer.tar.gzip
+
 compile:
 	 ./gradlew assemble
 

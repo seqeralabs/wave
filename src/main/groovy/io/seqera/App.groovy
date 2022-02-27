@@ -14,13 +14,15 @@ import io.seqera.auth.AuthFactory
 @Slf4j
 class App {
 
+    static String DEFAULT_ARCH = 'amd64'
+
     static void main(String[] args) {
         TowerConfiguration regConfiguration = YamlConfiguration.newInstace()
-        final arch = regConfiguration.arch
+        def arch = regConfiguration.arch
 
         if( !arch ) {
-            log.info "Missing 'CLIENT_ARCH' environment variable"
-            System.exit(1)
+            log.info "Missing 'XREG_ARCH' environment variable - Fallback to '$DEFAULT_ARCH'"
+            arch = DEFAULT_ARCH
         }
 
         AuthFactory authFactory = new AuthFactory()
