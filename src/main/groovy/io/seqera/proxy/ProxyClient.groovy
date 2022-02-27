@@ -48,15 +48,30 @@ class ProxyClient {
     }
 
     HttpResponse<String> getString(String path, Map<String,List<String>> headers=null) {
-        return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofString() )
+        try {
+            return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofString() )
+        }
+        catch (BadRequestException e) {
+            return ErrResponse<String>.forString(e.message, e.request)
+        }
     }
 
     HttpResponse<InputStream> getStream(String path, Map<String,List<String>> headers=null) {
-        return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofInputStream() )
+        try {
+            return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofInputStream() )
+        }
+        catch (BadRequestException e) {
+            return ErrResponse.forStream(e.message, e.request)
+        }
     }
 
     HttpResponse<byte[]> getBytes(String path, Map<String,List<String>> headers=null) {
-        return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofByteArray() )
+        try {
+            return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofByteArray() )
+        }
+        catch (BadRequestException e) {
+            return ErrResponse.forByteArray(e.message, e.request)
+        }
     }
 
 
@@ -76,15 +91,16 @@ class ProxyClient {
 
     private static final int[] REDIRECT_CODES = [301, 302, 307, 308]
 
-    def <T> HttpResponse<T> get(URI uri, Map<String,List<String>> headers, BodyHandler<T> handler) {
-        def visited = new HashSet<URI>(10)
-        def target = uri
+    def <T> HttpResponse<T> get(URI origin, Map<String,List<String>> headers, BodyHandler<T> handler) {
+        final host = origin.getHost()
+        final visited = new HashSet<URI>(10)
+        def target = origin
         int redirectCount = 0
         int authRetry = 0
         while( true ) {
             visited.add(target)
             def result = get0(target, headers, handler)
-            if( result.statusCode()==401 && (authRetry++)<2 ) {
+            if( result.statusCode()==401 && (authRetry++)<2 && host==target.host ) {
                 // clear the token to force refreshing it
                 authProvider.cleanTokenFor(image)
                 continue
@@ -92,9 +108,26 @@ class ProxyClient {
             if( result.statusCode() in REDIRECT_CODES  ) {
                 final redirect = result.headers().firstValue('location').orElse(null)
                 log.trace "Redirecting (${++redirectCount}) $target ==> $redirect ${RegHelper.dumpHeaders(result.headers())}"
+                if( !redirect ) {
+                    final msg = "Missing `Location` header for request URI '$target' ― origin request '$origin'"
+                    throw new BadRequestException(msg, result.request())
+                }
                 target = new URI(redirect)
                 if( target in visited ) {
-                    log.warn("Redirect location already visited: $redirect")
+                    final msg = "Redirect location already visited: $redirect ― origin request '$origin'"
+                    throw new BadRequestException(msg, result.request())
+                }
+                if( visited.size()>=10 ) {
+                    final msg = "Redirect location already visited: $redirect ― origin request '$origin'"
+                    throw new BadRequestException(msg, result.request())
+                }
+                // remove authorization header when the target host
+                // is different from the origin host, otherwise it can
+                // cause an error when the redirection target uses a different
+                // auth mechanism e.g. signed url
+                // https://github.com/rkt/rkt/issues/2266#issuecomment-211326020
+                if( host != target.getHost() && headers ) {
+                    headers.remove('Authorization')
                 }
                 continue
             }
