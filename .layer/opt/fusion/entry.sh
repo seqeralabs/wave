@@ -15,6 +15,7 @@ if [ "$NXF_FUSION_BUCKETS" ]; then
     ## because this is the format expected by goofys
     bucket=$(echo $path | sed 's#/#:#')
     /opt/goofys/goofys --file-mode=0755 --uid $uid --gid $gid $bucket /fusion/s3/$path
+    sleep 1
   done)
 fi
 ## invoke the target command
