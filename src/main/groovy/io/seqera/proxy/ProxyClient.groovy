@@ -51,7 +51,7 @@ class ProxyClient {
         try {
             return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofString() )
         }
-        catch (BadRequestException e) {
+        catch (BadResponseException e) {
             return ErrResponse<String>.forString(e.message, e.request)
         }
     }
@@ -60,7 +60,7 @@ class ProxyClient {
         try {
             return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofInputStream() )
         }
-        catch (BadRequestException e) {
+        catch (BadResponseException e) {
             return ErrResponse.forStream(e.message, e.request)
         }
     }
@@ -69,13 +69,13 @@ class ProxyClient {
         try {
             return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofByteArray() )
         }
-        catch (BadRequestException e) {
+        catch (BadResponseException e) {
             return ErrResponse.forByteArray(e.message, e.request)
         }
     }
 
 
-    private static final List<String> SKIP_HEADERS = ['host', 'connection']
+    private static final List<String> SKIP_HEADERS = ['host', 'connection', 'authorization']
 
     private void copyHeaders(Map<String,List<String>> headers, HttpRequest.Builder builder) {
         if( !headers )
@@ -98,8 +98,16 @@ class ProxyClient {
         int redirectCount = 0
         int authRetry = 0
         while( true ) {
+            // add authorization header ONLY when the target host
+            // is different from the origin host, otherwise it can
+            // cause an error when the redirection target uses a different
+            // auth mechanism e.g. signed url
+            // https://github.com/rkt/rkt/issues/2266#issuecomment-211326020
+            final authorize = host == target.getHost()
+            final result = get0(target, headers, handler, authorize)
+            // add to visited URL
             visited.add(target)
-            def result = get0(target, headers, handler)
+            // check the result code
             if( result.statusCode()==401 && (authRetry++)<2 && host==target.host ) {
                 // clear the token to force refreshing it
                 authProvider.cleanTokenFor(image)
@@ -110,25 +118,18 @@ class ProxyClient {
                 log.trace "Redirecting (${++redirectCount}) $target ==> $redirect ${RegHelper.dumpHeaders(result.headers())}"
                 if( !redirect ) {
                     final msg = "Missing `Location` header for request URI '$target' ― origin request '$origin'"
-                    throw new BadRequestException(msg, result.request())
+                    throw new BadResponseException(msg, result.request())
                 }
                 target = new URI(redirect)
                 if( target in visited ) {
                     final msg = "Redirect location already visited: $redirect ― origin request '$origin'"
-                    throw new BadRequestException(msg, result.request())
+                    throw new BadResponseException(msg, result.request())
                 }
                 if( visited.size()>=10 ) {
                     final msg = "Redirect location already visited: $redirect ― origin request '$origin'"
-                    throw new BadRequestException(msg, result.request())
+                    throw new BadResponseException(msg, result.request())
                 }
-                // remove authorization header when the target host
-                // is different from the origin host, otherwise it can
-                // cause an error when the redirection target uses a different
-                // auth mechanism e.g. signed url
-                // https://github.com/rkt/rkt/issues/2266#issuecomment-211326020
-                if( host != target.getHost() && headers ) {
-                    headers.remove('Authorization')
-                }
+                // go head with with the redirection
                 continue
             }
             return result
@@ -136,12 +137,14 @@ class ProxyClient {
 
     }
 
-    private <T> HttpResponse<T> get0(URI uri, Map<String,List<String>> headers, BodyHandler<T> handler) {
+    private <T> HttpResponse<T> get0(URI uri, Map<String,List<String>> headers, BodyHandler<T> handler, boolean authorize) {
         final builder = HttpRequest.newBuilder(uri) .GET()
         copyHeaders(headers, builder)
-        // add authorisation header
-        String token = authProvider.getTokenFor(image)
-        builder.setHeader("Authorization", "Bearer ${token}")
+        if( authorize ) {
+            // add authorisation header
+            String token = authProvider.getTokenFor(image)
+            builder.setHeader("Authorization", "Bearer ${token}")
+        }
         // build the request
         final request = builder.build()
         // send it

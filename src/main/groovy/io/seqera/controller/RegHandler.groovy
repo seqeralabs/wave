@@ -2,6 +2,8 @@ package io.seqera.controller
 
 import static io.seqera.controller.RegHelper.*
 
+import java.net.http.HttpResponse
+
 import com.sun.net.httpserver.Headers
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
@@ -15,6 +17,7 @@ import io.seqera.auth.AuthFactory
 import io.seqera.auth.DockerAuthProvider
 import io.seqera.config.Registry
 import io.seqera.config.TowerConfiguration
+import io.seqera.proxy.InvalidResponseException
 import io.seqera.proxy.ProxyClient
 /**
  *
@@ -34,6 +37,9 @@ class RegHandler implements HttpHandler {
     void handle(HttpExchange exchange) throws IOException {
         try {
             doHandle(exchange)
+        }
+        catch (InvalidResponseException e) {
+            handleReply(exchange, e.response)
         }
         catch (Throwable e) {
             log.error("Unexpected error", e)
@@ -71,7 +77,7 @@ class RegHandler implements HttpHandler {
 
         ProxyClient proxyClient = client(registry, route.image)
 
-        if( route.isManifest() && route.isTag() ) {
+        if( route.isManifest() && route.isTag() && isHead ) {
             log.trace "Request manifest: $route.path"
             handleManifest(exchange, route, proxyClient)
             return
@@ -86,11 +92,14 @@ class RegHandler implements HttpHandler {
         handleNotFound(exchange)
     }
 
-
-
     protected void handleProxy(String path, HttpExchange exchange, ProxyClient proxy) {
         // forward request
         final resp = proxy.getStream(path, exchange.getRequestHeaders())
+        // forward response
+        handleReply(exchange, resp)
+    }
+
+    protected void handleReply(HttpExchange exchange, HttpResponse<InputStream> resp) {
         // copy response headers
         for( Map.Entry<String,List<String>> entry : resp.headers().map().entrySet() ) {
             for( String val : entry.value )
@@ -131,7 +140,7 @@ class RegHandler implements HttpHandler {
         headers.put("Content-Type", 'text/plain')
         headers.put("docker-distribution-api-version", "registry/2.0")
         // handle the final response
-        handleResp0(exchange, 'OK'.bytes, headers)
+        handleResp0(exchange, 200, 'OK'.bytes, headers)
     }
 
     @Memoized
@@ -153,7 +162,7 @@ class RegHandler implements HttpHandler {
         // compute the injected digest
         final digest = scanner(proxyClient).resolve(route.image, route.reference, exchange.getRequestHeaders())
         if( digest == null )
-            handleNotFound(exchange)
+            throw new IllegalStateException("Missing digest for request: $route")
 
         // retries the cache entry generated from the resolve
         final req = "/v2/$route.image/manifests/$digest"
@@ -192,10 +201,10 @@ class RegHandler implements HttpHandler {
         headers.put("docker-distribution-api-version", "registry/2.0")
 
         // handle the final response
-        handleResp0(exchange, entry.bytes, headers)
+        handleResp0(exchange, 200, entry.bytes, headers)
     }
 
-    protected void handleResp0(HttpExchange exchange, byte[] body, Map headers) {
+    protected void handleResp0(HttpExchange exchange, int status, byte[] body, Map headers) {
         Headers header = exchange.getResponseHeaders()
         for( Map.Entry<String,String> it : headers.entrySet() ) {
             header.set(it.key, it.value)
@@ -207,13 +216,13 @@ class RegHandler implements HttpHandler {
             // https://bugs.openjdk.java.net/browse/JDK-6886723
             // see https://github.com/prometheus/client_java/issues/685#issuecomment-917071851
             exchange.getResponseHeaders().add("Content-Length", body.length.toString())
-            exchange.sendResponseHeaders(200, -1)
+            exchange.sendResponseHeaders(status, -1)
             // hack to prevent "response headers not sent yet" exception when closing the stream
             exchange.setStreams(null, new ByteArrayOutputStream(0))
             exchange.getResponseBody().close()
         }
         else {
-            exchange.sendResponseHeaders(200, body.length)
+            exchange.sendResponseHeaders(status, body.length)
             OutputStream os = exchange.getResponseBody()
             os.write(body)
             os.close();
@@ -223,18 +232,15 @@ class RegHandler implements HttpHandler {
 
     protected void handleNotFound(HttpExchange exchange) {
         final byte[] message = 'Not found'.bytes
-        Headers header = exchange.getResponseHeaders()
-        header.set("Content-Type", "text/plain")
-        exchange.sendResponseHeaders(404, message.length)
-
-        OutputStream os = exchange.getResponseBody();
-        os.write(message);
-        os.close();
+        Headers headers = exchange.getResponseHeaders()
+        headers.set("Content-Type", "text/plain")
+        // send response
+        handleResp0(exchange, 404, message, headers)
     }
 
     protected void handlePing(HttpExchange exchange) {
         final message = 'pong'
-        handleResp0(exchange, message.bytes, ['Content-Type': '"text/plain"'])
+        handleResp0(exchange, 200, message.bytes, ['Content-Type': '"text/plain"'])
     }
 
 }

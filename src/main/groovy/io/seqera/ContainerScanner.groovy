@@ -1,10 +1,5 @@
 package io.seqera
 
-import io.seqera.controller.RegHelper
-import io.seqera.model.ContentType
-import io.seqera.model.LayerConfig
-import io.seqera.proxy.ProxyClient
-
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -15,6 +10,11 @@ import groovy.json.JsonSlurper
 import groovy.transform.CompileDynamic
 import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
+import io.seqera.controller.RegHelper
+import io.seqera.model.ContentType
+import io.seqera.model.LayerConfig
+import io.seqera.proxy.InvalidResponseException
+import io.seqera.proxy.ProxyClient
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -99,8 +99,8 @@ class ContainerScanner {
         final resp1 = client.head("/v2/$imageName/manifests/$tag", headers)
         final digest = resp1.headers().firstValue('docker-content-digest')
         log.debug "Image $imageName:$tag => digest=$digest"
-        if( digest.isEmpty() )
-            return null
+        if( resp1.statusCode() != 200 )
+            throw new InvalidResponseException("Unexpected response statusCode: ${resp1.statusCode()}", resp1)
 
         // get manifest list for digest
         final resp2 = client.getString("/v2/$imageName/manifests/${digest.get()}", headers)
