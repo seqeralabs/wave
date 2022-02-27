@@ -9,6 +9,8 @@ import java.net.http.HttpResponse.BodyHandler
 import java.time.Duration
 
 import groovy.util.logging.Slf4j
+import io.seqera.controller.RegHelper
+
 /**
  *
  * https://www.baeldung.com/java-9-http-client
@@ -35,7 +37,7 @@ class ProxyClient {
     private void init() {
         this.httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
-                .followRedirects(HttpClient.Redirect.ALWAYS)
+                .followRedirects(HttpClient.Redirect.NEVER)
                 .connectTimeout(Duration.ofSeconds(10))
                 .build()
     }
@@ -72,14 +74,33 @@ class ProxyClient {
         }
     }
 
+    private static final int[] REDIRECT_CODES = [301, 302, 307, 308]
+
     def <T> HttpResponse<T> get(URI uri, Map<String,List<String>> headers, BodyHandler<T> handler) {
-        def result = get0(uri, headers, handler)
-        if( result.statusCode()==401 ) {
-            // clear the token to force refreshing it
-            authProvider.cleanTokenFor(image)
-            result = get0(uri, headers, handler)
+        def visited = new HashSet<URI>(10)
+        def target = uri
+        int redirectCount = 0
+        int authRetry = 0
+        while( true ) {
+            visited.add(target)
+            def result = get0(target, headers, handler)
+            if( result.statusCode()==401 && (authRetry++)<2 ) {
+                // clear the token to force refreshing it
+                authProvider.cleanTokenFor(image)
+                continue
+            }
+            if( result.statusCode() in REDIRECT_CODES  ) {
+                final redirect = result.headers().firstValue('location').orElse(null)
+                log.trace "Redirecting (${++redirectCount}) $target ==> $redirect ${RegHelper.dumpHeaders(result.headers())}"
+                target = new URI(redirect)
+                if( target in visited ) {
+                    log.warn("Redirect location already visited: $redirect")
+                }
+                continue
+            }
+            return result
         }
-        return result
+
     }
 
     private <T> HttpResponse<T> get0(URI uri, Map<String,List<String>> headers, BodyHandler<T> handler) {
