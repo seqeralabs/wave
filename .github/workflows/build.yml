@@ -46,6 +46,15 @@ jobs:
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
 
+      - name: Release
+        if: "contains(github.event.head_commit.message, '[release]')"
+        run: |
+          bash tag-and-push.sh
+        env:
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          DOCKER_PAT: ${{ secrets.DOCKER_PAT }}
+          QUAY_PAT: ${{ secrets.QUAY_PAT }}
+
       - name: Publish tests report
         if: failure()
         uses: actions/upload-artifact@v2
