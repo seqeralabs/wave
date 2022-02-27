@@ -1,2 +1,3 @@
 export CLIENT_ARCH=$(uname -m)
-./gradlew clean run 
+#export _JAVA_OPTIONS=-Djdk.httpclient.HttpClient.log=errors,requests,headers
+./gradlew run 
