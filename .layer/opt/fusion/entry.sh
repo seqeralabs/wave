@@ -1,5 +1,5 @@
 #!/bin/sh
-set -e
+set -xe
 ## enable debug mode
 [ $XREG_DEBUG ] && set -x
 ## holds the list of buckets to be mounted
@@ -14,8 +14,11 @@ if [ "$NXF_FUSION_BUCKETS" ]; then
     ## replace the first slash with a `:` character
     ## because this is the format expected by goofys
     bucket=$(echo $path | sed 's#/#:#')
-    /opt/goofys/goofys --file-mode=0755 --uid $uid --gid $gid $bucket /fusion/s3/$path
-    sleep 1
+    /opt/goofys/goofys --debug_s3 --file-mode=0755 --uid $uid --gid $gid $bucket /fusion/s3/$path
+    if grep -qs "/fusion/s3/$path " /proc/mounts; then
+      echo "It's mounted."
+      ls -la /fusion/s3/$path
+    fi
   done)
 fi
 ## invoke the target command
