@@ -89,7 +89,7 @@ class ContainerScanner {
         if( !Files.exists(layerConfig.append.locationPath) )
             throw new IllegalArgumentException("Missing layer tar file: $layerConfig.append.locationPath")
 
-        log.debug "Layer info: path=$layerConfig.append.location; gzip-checksum=$layerConfig.append.gzipDigest; tar-checksum=$layerConfig.append.tarDigest"
+        log.debug "Layer info: path=$layerConfig.append.location; gzip-checksum=$layerConfig.append.gzipDigest; gzip-size: $layerConfig.append.gzipSize; tar-checksum=$layerConfig.append.tarDigest"
         return layerConfig
     }
 
@@ -191,15 +191,21 @@ class ContainerScanner {
         return result
     }
 
-    protected Map layerBlob(String image) {
-
+    @Memoized
+    synchronized protected Map layerBlob(String image) {
         // store the layer blob in the cache
         final type = "application/vnd.docker.image.rootfs.diff.tar.gzip"
-        final buffer = Files.readAllBytes(layerConfig.append.locationPath)
-        final digest = RegHelper.digest(buffer)
+        final location = layerConfig.append.locationPath
+        final buffer = Files.readAllBytes(location)
+        final computed = RegHelper.digest(buffer)
+        final digest = layerConfig.append.gzipDigest
         final size = layerConfig.append.gzipSize
-        if( digest != layerConfig.append.gzipDigest )
-            throw new IllegalArgumentException("Layer gzip computed digest does not match with expected digest -- path=$layerConfig.append.locationPath; computed=$digest; expected: $layerConfig.append.gzipDigest")
+        if( !buffer )
+            throw new IllegalArgumentException("Layer content is empty -- path: $layerConfig.append.locationPath; exists: ${Files.exists(location)}")
+        if( !size )
+            throw new IllegalArgumentException("Layer size cannot be null or zero")
+        if( digest != computed )
+            log.warn("Layer gzip computed digest does not match with expected digest -- path=$layerConfig.append.locationPath; computed=$computed; expected: $digest")
         final path = "/v2/$image/blobs/$digest"
         cache.put(path, buffer, type, digest)
 

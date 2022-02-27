@@ -19,6 +19,7 @@ class LayerConfigTest extends Specification {
               "append": {
                 "location": "/some/path/layer.tag.gzip",
                 "gzipDigest": "sha256:xxx",
+                "gzipSize": 10167366,
                 "tarDigest": "sha256:zzz" 
               } 
             }
@@ -33,7 +34,7 @@ class LayerConfigTest extends Specification {
         config.append.location == "/some/path/layer.tag.gzip"
         config.append.gzipDigest ==  "sha256:xxx"
         config.append.tarDigest ==  "sha256:zzz"
-
+        config.append.gzipSize == 10167366
     }
 
 }

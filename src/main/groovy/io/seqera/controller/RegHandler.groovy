@@ -136,11 +136,11 @@ class RegHandler implements HttpHandler {
     }
 
     protected void handleOK(HttpExchange exchange) {
-        def headers = new HashMap()
+        def headers = new HashMap<String,String>()
         headers.put("Content-Type", 'text/plain')
         headers.put("docker-distribution-api-version", "registry/2.0")
         // handle the final response
-        handleResp0(exchange, 200, 'OK'.bytes, headers)
+        handleResp1(exchange, 200, 'OK'.bytes, headers)
     }
 
     @Memoized
@@ -194,20 +194,28 @@ class RegHandler implements HttpHandler {
     protected void handleCache(HttpExchange exchange, Cache.ResponseCache entry) {
         int len = entry.bytes.length
         log.trace "Cache response << len=$len; content: ${dumpJson(new String(entry.bytes))}"
-        def headers = new HashMap()
+        def headers = new HashMap<String,String>()
         headers.put("Content-Type", entry.mediaType)
         headers.put("docker-content-digest", entry.digest)
         headers.put("etag", entry.digest)
         headers.put("docker-distribution-api-version", "registry/2.0")
 
         // handle the final response
-        handleResp0(exchange, 200, entry.bytes, headers)
+        handleResp1(exchange, 200, entry.bytes, headers)
     }
 
-    protected void handleResp0(HttpExchange exchange, int status, byte[] body, Map headers) {
+    protected void handleResp1(HttpExchange exchange, int status, byte[] body, Map<String,String> headers) {
+        final copy = new HashMap<String,List<String>>(10)
+        headers.each { k,v -> copy.put(k, [v]) }
+        handleResp0(exchange, status, body, copy)
+    }
+
+    protected void handleResp0(HttpExchange exchange, int status, byte[] body, Map<String,List<String>> headers) {
         Headers header = exchange.getResponseHeaders()
-        for( Map.Entry<String,String> it : headers.entrySet() ) {
-            header.set(it.key, it.value)
+        for( Map.Entry<String,List<String>> it : headers.entrySet() ) {
+            for( String val : it.value ) {
+                header.set(it.key, val)
+            }
         }
 
         final head = exchange.requestMethod=='HEAD'
@@ -240,7 +248,7 @@ class RegHandler implements HttpHandler {
 
     protected void handlePing(HttpExchange exchange) {
         final message = 'pong'
-        handleResp0(exchange, 200, message.bytes, ['Content-Type': '"text/plain"'])
+        handleResp1(exchange, 200, message.bytes, ['Content-Type': '"text/plain"'])
     }
 
 }

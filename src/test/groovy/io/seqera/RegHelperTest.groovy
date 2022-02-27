@@ -1,8 +1,8 @@
 package io.seqera
 
+
 import io.seqera.controller.RegHelper
 import spock.lang.Specification
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -53,4 +53,5 @@ class RegHelperTest extends Specification {
         expect:
         RegHelper.random256Hex().length() == 64
     }
+
 }

@@ -33,6 +33,7 @@ class ContainerScannerTest extends Specification {
                     "append": {
                       "location": "${layer.toAbsolutePath()}",
                       "gzipDigest": "sha256:xxx",
+                      "gzipSize": 1000,
                       "tarDigest": "sha256:zzz"
                     }                  
                 }
