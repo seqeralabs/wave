@@ -394,7 +394,6 @@ class ContainerScanner {
     String resolveV1Manifest(String body, String imageName){
         final manifest = new JsonSlurper().parseText(body) as Map
 
-
         def fsLayers = manifest.fsLayers as List<Map>
         def history = manifest.history as List<Map>
 
@@ -405,7 +404,6 @@ class ContainerScanner {
         def newManifestJson = JsonOutput.toJson(manifest)
         def newManifestDigest = RegHelper.digest(newManifestJson)
 
-        println newManifestJson
         cache.put("/v2/$imageName/manifests/$newManifestDigest", newManifestJson.bytes, ContentType.DOCKER_MANIFEST_V1_JWS_TYPE, newManifestDigest)
         return newManifestDigest
     }
