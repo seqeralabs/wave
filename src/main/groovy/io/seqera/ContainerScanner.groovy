@@ -290,19 +290,7 @@ class ContainerScanner {
                 : newEntries
     }
 
-    protected String updateImageConfig(String imageName, String imageConfig) {
-
-        final newLayer = layerConfig.append.tarDigest
-
-        // turn the json string into a json map
-        // and append the new layer
-        final manifest = new JsonSlurper().parseText(imageConfig) as Map
-        final rootfs = manifest.rootfs as Map
-        final layers = rootfs.diff_ids as List
-        layers.add( newLayer )
-
-        // update the image config
-        final config = manifest.config as Map
+    protected Map enrichConfig(Map config){
         final entryChain = getFirst(config.Entrypoint)
         if( layerConfig.entrypoint ) {
             config.Entrypoint = layerConfig.entrypoint
@@ -319,6 +307,23 @@ class ContainerScanner {
         if( entryChain ) {
             config.Env = appendEnv( config.Env as List, [ "XREG_ENTRY_CHAIN="+entryChain ] )
         }
+
+        config
+    }
+
+    protected String updateImageConfig(String imageName, String imageConfig) {
+
+        final newLayer = layerConfig.append.tarDigest
+
+        // turn the json string into a json map
+        // and append the new layer
+        final manifest = new JsonSlurper().parseText(imageConfig) as Map
+        final rootfs = manifest.rootfs as Map
+        final layers = rootfs.diff_ids as List
+        layers.add( newLayer )
+
+        // update the image config
+         enrichConfig(manifest.config as Map)
 
         // turn the updated manifest into a json
         final newConfig = JsonOutput.toJson(manifest)
@@ -349,50 +354,26 @@ class ContainerScanner {
     void rewriteHistoryV1( List<Map> history){
 
         def first = history.first()
-        def firstV1Compatibility= new JsonSlurper().parseText(first['v1Compatibility'].toString()) as Map
-
-        def second = history[1]
-        def secondV1Compatibility= new JsonSlurper().parseText(second['v1Compatibility'].toString()) as Map
 
         def newHistoryId = RegHelper.random256Hex()
-        def newHistoryItem = [
-                v1Compatibility: JsonOutput.toJson([
-                        id : newHistoryId,
-                        parent: secondV1Compatibility.id as String,
-                        created: firstV1Compatibility.created
-                ])
-        ]
+        def newV1Compatibility = new JsonSlurper().parseText(first['v1Compatibility'].toString()) as Map
+        newV1Compatibility.parent = newV1Compatibility.id
+        newV1Compatibility.id = newHistoryId
 
         // update the image config
-        final config = firstV1Compatibility.config as Map
-        final entryChain = getFirst(config.Entrypoint)
-        if( layerConfig.entrypoint ) {
-            config.Entrypoint = layerConfig.entrypoint
-        }
-        if( layerConfig.cmd ) {
-            config.Cmd = layerConfig.cmd
-        }
-        if( layerConfig.workingDir ) {
-            config.WorkingDir = layerConfig.workingDir
-        }
-        if( layerConfig.env ) {
-            config.Env = appendEnv(config.Env as List, layerConfig.env)
-        }
-        if( entryChain ) {
-            config.Env = appendEnv( config.Env as List, [ "XREG_ENTRY_CHAIN="+entryChain ] )
-        }
+        enrichConfig(newV1Compatibility.config as Map)
 
-        // store the changes
-        firstV1Compatibility.parent = newHistoryId
-        first['v1Compatibility'] = JsonOutput.toJson(firstV1Compatibility)
-
-        history.add(1, newHistoryItem)
+        // create the new item
+        def newHistoryItem = [
+                v1Compatibility: JsonOutput.toJson(newV1Compatibility)
+        ]
+        history.add(0, newHistoryItem)
     }
 
     void rewriteLayersV1(String imageName, List<Map> fsLayers){
         final blob = layerBlob(imageName)
         final newLayer= [blobSum: blob.digest]
-        fsLayers.add(1, newLayer)
+        fsLayers.add(0, newLayer)
     }
 
     void rewriteSignatureV1(Map manifest){
@@ -424,6 +405,7 @@ class ContainerScanner {
         def newManifestJson = JsonOutput.toJson(manifest)
         def newManifestDigest = RegHelper.digest(newManifestJson)
 
+        println newManifestJson
         cache.put("/v2/$imageName/manifests/$newManifestDigest", newManifestJson.bytes, ContentType.DOCKER_MANIFEST_V1_JWS_TYPE, newManifestDigest)
         return newManifestDigest
     }
