@@ -346,32 +346,25 @@ class ContainerScanner {
         return result
     }
 
-    String resolveV1Manifest(String body, String imageName){
-        final manifest = new JsonSlurper().parseText(body) as Map
-        final blob = layerBlob(imageName)
-        final newLayer= [blobSum: blob.digest]
-
-        def fsLayers = manifest.fsLayers as List<Map>
-        def history = manifest.history as List<Map>
+    void rewriteHistoryV1( List<Map> history){
 
         def first = history.first()
-        def firstJson= new JsonSlurper().parseText(first['v1Compatibility'].toString()) as Map
+        def firstV1Compatibility= new JsonSlurper().parseText(first['v1Compatibility'].toString()) as Map
 
         def second = history[1]
-        def secondJson= new JsonSlurper().parseText(second['v1Compatibility'].toString()) as Map
+        def secondV1Compatibility= new JsonSlurper().parseText(second['v1Compatibility'].toString()) as Map
 
-        def newHistoryJson= [
-                id : RegHelper.random256Hex(),
-                parent: secondJson.id as String
-        ]
+        def newHistoryId = RegHelper.random256Hex()
         def newHistoryItem = [
-                v1Compatibility: JsonOutput.toJson(newHistoryJson)
+                v1Compatibility: JsonOutput.toJson([
+                        id : newHistoryId,
+                        parent: secondV1Compatibility.id as String,
+                        created: firstV1Compatibility.created
+                ])
         ]
-
-        firstJson.parent = newHistoryJson.id as String
 
         // update the image config
-        final config = firstJson.config as Map
+        final config = firstV1Compatibility.config as Map
         final entryChain = getFirst(config.Entrypoint)
         if( layerConfig.entrypoint ) {
             config.Entrypoint = layerConfig.entrypoint
@@ -390,13 +383,20 @@ class ContainerScanner {
         }
 
         // store the changes
-        first['v1Compatibility'] = JsonOutput.toJson(firstJson)
+        firstV1Compatibility.parent = newHistoryId
+        first['v1Compatibility'] = JsonOutput.toJson(firstV1Compatibility)
 
-        fsLayers.add(newLayer)
         history.add(1, newHistoryItem)
+    }
 
-        // sign the manifest
-        def newManifestLength = JsonOutput.prettyPrint(JsonOutput.toJson(manifest)).length()
+    void rewriteLayersV1(String imageName, List<Map> fsLayers){
+        final blob = layerBlob(imageName)
+        final newLayer= [blobSum: blob.digest]
+        fsLayers.add(1, newLayer)
+    }
+
+    void rewriteSignatureV1(Map manifest){
+        def newManifestLength = JsonOutput.toJson(manifest).length()
 
         def signatures = manifest.signatures as List<Map>
         def signature = signatures.first()
@@ -408,7 +408,20 @@ class ContainerScanner {
         def protectedBase64 = JsonOutput.toJson(protecteddecoded).bytes.encodeBase64().toString().replaceAll('=','')
         signature.protected = protectedBase64
 
-        def newManifestJson = JsonOutput.prettyPrint(JsonOutput.toJson(manifest))
+    }
+
+    String resolveV1Manifest(String body, String imageName){
+        final manifest = new JsonSlurper().parseText(body) as Map
+
+
+        def fsLayers = manifest.fsLayers as List<Map>
+        def history = manifest.history as List<Map>
+
+        rewriteHistoryV1(history)
+        rewriteLayersV1(imageName, fsLayers)
+        rewriteSignatureV1(manifest)
+
+        def newManifestJson = JsonOutput.toJson(manifest)
         def newManifestDigest = RegHelper.digest(newManifestJson)
 
         cache.put("/v2/$imageName/manifests/$newManifestDigest", newManifestJson.bytes, ContentType.DOCKER_MANIFEST_V1_JWS_TYPE, newManifestDigest)
