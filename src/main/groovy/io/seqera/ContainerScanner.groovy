@@ -351,7 +351,8 @@ class ContainerScanner {
         return result
     }
 
-    void rewriteHistoryV1( List<Map> history){
+    protected void rewriteHistoryV1( List<Map> history){
+        assert history.size()
 
         def first = history.first()
 
@@ -370,13 +371,15 @@ class ContainerScanner {
         history.add(0, newHistoryItem)
     }
 
-    void rewriteLayersV1(String imageName, List<Map> fsLayers){
+    protected void rewriteLayersV1(String imageName, List<Map> fsLayers){
+        assert fsLayers.size()
+
         final blob = layerBlob(imageName)
         final newLayer= [blobSum: blob.digest]
         fsLayers.add(0, newLayer)
     }
 
-    void rewriteSignatureV1(Map manifest){
+    protected void rewriteSignatureV1(Map manifest){
         def newManifestLength = JsonOutput.toJson(manifest).length()
 
         def signatures = manifest.signatures as List<Map>
