@@ -30,6 +30,8 @@ dependencies {
     runtimeOnly("ch.qos.logback:logback-classic")
     runtimeOnly("io.netty:netty-tcnative-boringssl-static:2.0.0.Final")
     testImplementation "org.apache.commons:commons-compress:1.21"
+
+    implementation 'org.apache.commons:commons-compress:1.21'
 }
 
 

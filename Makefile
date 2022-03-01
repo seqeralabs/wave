@@ -1,7 +1,7 @@
 all: pack/layers/layer.tar.gzip
 
 clean:
-	rm -f pack/layers/*
+	rm -rf pack/layers/*
 	rm .layer/opt/goofys/goofys
 
 .layer/opt/goofys/goofys:
@@ -9,8 +9,9 @@ clean:
 	chmod +x .layer/opt/goofys/goofys
 
 pack/layers/layer.tar.gzip: .layer/opt/goofys/goofys
-	mkdir -p pack/layers
-	./make-tar.sh
+	# mkdir -p pack/layers
+	# ./make-tar.sh
+	java -cp build/libs/tower-reg-0.4.2-all.jar io.seqera.util.LayerAssembler .layer pack
 
 pack: clean pack/layers/layer.tar.gzip
 
