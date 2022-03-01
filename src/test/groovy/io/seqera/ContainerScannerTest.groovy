@@ -333,6 +333,204 @@ class ContainerScannerTest extends Specification {
         folder?.toFile()?.deleteDir()
     }
 
+    def 'should update image config with new layer v1' () {
+        given:
+        def MANIFEST = '''
+{
+   "schemaVersion": 1,
+   "name": "biocontainers/fastqc",
+   "tag": "0.11.9--0",
+   "architecture": "amd64",
+   "fsLayers": [
+      {
+         "blobSum": "sha256:6d92b3a49ebfad5fe895550c2cb24b6370d61783aa4f979702a94892cbd19077"
+      },
+      {
+         "blobSum": "sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4"
+      }
+   ],
+   "history": [
+      {
+         "v1Compatibility": "{\\"architecture\\":\\"amd64\\",\\"config\\":{\\"Hostname\\":\\"\\",\\"Domainname\\":\\"\\",\\"User\\":\\"\\",\\"AttachStdin\\":false,\\"AttachStdout\\":false,\\"AttachStderr\\":false,\\"Tty\\":false,\\"OpenStdin\\":false,\\"StdinOnce\\":false,\\"Env\\":[\\"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\\"],\\"Cmd\\":[\\"/bin/sh\\"],\\"Image\\":\\"\\",\\"Volumes\\":null,\\"WorkingDir\\":\\"\\",\\"Entrypoint\\":null,\\"OnBuild\\":null,\\"Labels\\":{}},\\"container\\":\\"4be9f6b4406ec142e457fd7c43ff338511ab338b33585c30805ba2d5d3da29e3\\",\\"container_config\\":{\\"Hostname\\":\\"4be9f6b4406e\\",\\"Domainname\\":\\"\\",\\"User\\":\\"\\",\\"AttachStdin\\":false,\\"AttachStdout\\":false,\\"AttachStderr\\":false,\\"Tty\\":false,\\"OpenStdin\\":false,\\"StdinOnce\\":false,\\"Env\\":[\\"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\\"],\\"Cmd\\":[\\"/bin/sh\\"],\\"Image\\":\\"bgruening/busybox-bash:0.1\\",\\"Volumes\\":null,\\"WorkingDir\\":\\"\\",\\"Entrypoint\\":null,\\"OnBuild\\":null,\\"Labels\\":{}},\\"created\\":\\"2020-01-24T15:39:30.564518517Z\\",\\"docker_version\\":\\"17.09.0-ce\\",\\"id\\":\\"f235879f79194a5e3d4b10c3b714c36669e8e98160ba73bd9b044fdec624ceaf\\",\\"os\\":\\"linux\\",\\"parent\\":\\"b7c0567175be2a551a8ed4e60d695d33347ebae5d8cfc4a5d0381e0ce3c34222\\"}"
+      },
+      {
+         "v1Compatibility": "{\\"id\\":\\"b7c0567175be2a551a8ed4e60d695d33347ebae5d8cfc4a5d0381e0ce3c34222\\",\\"parent\\":\\"32dbc9f4b6f9f15dfcce38773db21d7aadfc059242a821fb98bc8cf0997d05ce\\",\\"created\\":\\"2016-05-09T06:21:02.266124295Z\\",\\"container_config\\":{\\"Cmd\\":[\\"/bin/sh -c #(nop) CMD [\\\\\\"/bin/sh\\\\\\" \\\\\\"-c\\\\\\" \\\\\\"/bin/bash\\\\\\"]\\"]},\\"author\\":\\"Bjoern Gruening \\\\u003cbjoern.gruening@gmail.com\\\\u003e\\",\\"throwaway\\":true}"
+      }
+   ],
+   "signatures": [
+      {
+         "header": {
+            "jwk": {
+               "crv": "P-256",
+               "kid": "H4I5:ZTAM:GNQK:AM3G:HF4X:RFAK:U67G:GHDB:L4S3:EBKB:Y7Z2:QPXP",
+               "kty": "EC",
+               "x": "ZAM8UZLnMkeRrrK2J81Vv2Whi2yHt3aevb1fKOqZenQ",
+               "y": "J6Oeam_YkFuANSPxVYTFq8iZjoP7JCvIrFlABrD1JCA"
+            },
+            "alg": "ES256"
+         },
+         "signature": "4-yAR3tVSQHhFfu_LxWkuVoAW3eqeBkIK1azWYH_-4N4pKvkJCoS2CjUDzcUBNkeul38pUocgLSUUmHiSdqjUA",
+         "protected": "eyJmb3JtYXRMZW5ndGgiOjY5ODksImZvcm1hdFRhaWwiOiJDbjAiLCJ0aW1lIjoiMjAyMC0wMS0yNFQxNTo0MToxNloifQ"
+      }
+   ]
+}
+       '''
+        def originalManifest = new JsonSlurper().parseText(MANIFEST)
+        and:
+        def IMAGE_NAME = 'hello-world'
+
+        and:
+        unpackLayer()
+
+        and:
+        def cache = new Cache()
+        def scanner = new ContainerScanner().withCache(cache).withLayerConfig(Paths.get(layerJson.absolutePath))
+
+        when:
+        def digest = scanner.resolveV1Manifest(MANIFEST, IMAGE_NAME)
+        then:
+        def entry = cache.get("/v2/$IMAGE_NAME/manifests/$digest")
+        entry.mediaType == ContentType.DOCKER_MANIFEST_V1_JWS_TYPE
+        entry.digest == digest
+        and:
+        def manifest = new JsonSlurper().parseText(new String(entry.bytes))
+        originalManifest.fsLayers.size() == manifest.fsLayers.size() - 1
+        originalManifest.history.size() == manifest.history.size() - 1
+        and:
+        manifest.history.first()['v1Compatibility'].indexOf('parent') != -1
+        manifest.history[1]['v1Compatibility'] == originalManifest.history[0]['v1Compatibility']
+        cleanup:
+        folder?.toFile()?.deleteDir()
+    }
+
+    def 'should add a new layer v1 format' () {
+        given:
+        def MANIFEST = '''
+{   
+   "history": [
+      {
+         "v1Compatibility": "{\\"architecture\\":\\"amd64\\",\\"config\\":{\\"Hostname\\":\\"\\",\\"Domainname\\":\\"\\",\\"User\\":\\"\\",\\"AttachStdin\\":false,\\"AttachStdout\\":false,\\"AttachStderr\\":false,\\"Tty\\":false,\\"OpenStdin\\":false,\\"StdinOnce\\":false,\\"Env\\":[\\"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\\"],\\"Cmd\\":[\\"/bin/sh\\"],\\"Image\\":\\"\\",\\"Volumes\\":null,\\"WorkingDir\\":\\"\\",\\"Entrypoint\\":null,\\"OnBuild\\":null,\\"Labels\\":{}},\\"container\\":\\"4be9f6b4406ec142e457fd7c43ff338511ab338b33585c30805ba2d5d3da29e3\\",\\"container_config\\":{\\"Hostname\\":\\"4be9f6b4406e\\",\\"Domainname\\":\\"\\",\\"User\\":\\"\\",\\"AttachStdin\\":false,\\"AttachStdout\\":false,\\"AttachStderr\\":false,\\"Tty\\":false,\\"OpenStdin\\":false,\\"StdinOnce\\":false,\\"Env\\":[\\"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\\"],\\"Cmd\\":[\\"/bin/sh\\"],\\"Image\\":\\"bgruening/busybox-bash:0.1\\",\\"Volumes\\":null,\\"WorkingDir\\":\\"\\",\\"Entrypoint\\":null,\\"OnBuild\\":null,\\"Labels\\":{}},\\"created\\":\\"2020-01-24T15:39:30.564518517Z\\",\\"docker_version\\":\\"17.09.0-ce\\",\\"id\\":\\"f235879f79194a5e3d4b10c3b714c36669e8e98160ba73bd9b044fdec624ceaf\\",\\"os\\":\\"linux\\",\\"parent\\":\\"b7c0567175be2a551a8ed4e60d695d33347ebae5d8cfc4a5d0381e0ce3c34222\\"}"
+      },
+      {
+         "v1Compatibility": "{\\"id\\":\\"b7c0567175be2a551a8ed4e60d695d33347ebae5d8cfc4a5d0381e0ce3c34222\\",\\"parent\\":\\"32dbc9f4b6f9f15dfcce38773db21d7aadfc059242a821fb98bc8cf0997d05ce\\",\\"created\\":\\"2016-05-09T06:21:02.266124295Z\\",\\"container_config\\":{\\"Cmd\\":[\\"/bin/sh -c #(nop) CMD [\\\\\\"/bin/sh\\\\\\" \\\\\\"-c\\\\\\" \\\\\\"/bin/bash\\\\\\"]\\"]},\\"author\\":\\"Bjoern Gruening \\\\u003cbjoern.gruening@gmail.com\\\\u003e\\",\\"throwaway\\":true}"
+      }
+   ]
+}
+       '''
+        def originalManifest = new JsonSlurper().parseText(MANIFEST)
+        def mutableManifest = new JsonSlurper().parseText(MANIFEST)
+
+        and:
+        unpackLayer()
+
+        and:
+        def scanner = new ContainerScanner().withLayerConfig(Paths.get(layerJson.absolutePath))
+
+        when:
+        scanner.rewriteHistoryV1(mutableManifest.history)
+
+        then:
+        originalManifest.history.size() == mutableManifest.history.size() - 1
+        and:
+        mutableManifest.history.first()['v1Compatibility'].indexOf('parent') != -1
+        mutableManifest.history[1]['v1Compatibility'] == originalManifest.history[0]['v1Compatibility']
+
+        cleanup:
+        folder?.toFile()?.deleteDir()
+    }
+
+    def 'add a new layer v1 format requires an history' () {
+        given:
+        def MANIFEST = '''
+{   
+   "history": []
+}
+       '''
+        def originalManifest = new JsonSlurper().parseText(MANIFEST)
+        def mutableManifest = new JsonSlurper().parseText(MANIFEST)
+
+        and:
+        unpackLayer()
+
+        and:
+        def scanner = new ContainerScanner().withLayerConfig(Paths.get(layerJson.absolutePath))
+
+        when:
+        scanner.rewriteHistoryV1(mutableManifest.history)
+
+        then:
+        def e = thrown(AssertionError)
+
+        cleanup:
+        folder?.toFile()?.deleteDir()
+    }
+
+    def 'add a new layer v1 format requires a layer' () {
+        given:
+        def MANIFEST = '''
+{   
+   "fsLayers": []
+}
+       '''
+        def originalManifest = new JsonSlurper().parseText(MANIFEST)
+        def mutableManifest = new JsonSlurper().parseText(MANIFEST)
+
+        and:
+        unpackLayer()
+        and:
+        def IMAGE_NAME = 'hello-world'
+
+        and:
+        def scanner = new ContainerScanner().withLayerConfig(Paths.get(layerJson.absolutePath))
+
+        when:
+        scanner.rewriteLayersV1(IMAGE_NAME, mutableManifest.fsLayers)
+
+        then:
+        def e = thrown(AssertionError)
+
+        cleanup:
+        folder?.toFile()?.deleteDir()
+    }
+
+    def 'add a new layer v1 format' () {
+        given:
+        def MANIFEST = '''
+{   
+   "fsLayers": [
+      {
+         "blobSum": "sha256:6d92b3a49ebfad5fe895550c2cb24b6370d61783aa4f979702a94892cbd19077"
+      },
+      {
+         "blobSum": "sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4"
+      }
+   ]
+}
+       '''
+        def originalManifest = new JsonSlurper().parseText(MANIFEST)
+        def mutableManifest = new JsonSlurper().parseText(MANIFEST)
+
+        and:
+        unpackLayer()
+        and:
+        def IMAGE_NAME = 'hello-world'
+
+        and:
+        def cache = new Cache()
+        def scanner = new ContainerScanner().withCache(cache).withLayerConfig(Paths.get(layerJson.absolutePath))
+
+        when:
+        scanner.rewriteLayersV1(IMAGE_NAME, mutableManifest.fsLayers)
+
+        then:
+        originalManifest.fsLayers.size() == mutableManifest.fsLayers.size() - 1
+        originalManifest.fsLayers.first().blobSum != mutableManifest.fsLayers.first().blobSum
+        originalManifest.fsLayers.first().blobSum == mutableManifest.fsLayers[1].blobSum
+
+        cleanup:
+        folder?.toFile()?.deleteDir()
+    }
+
     @Ignore
     def 'should resolve busybox' () {
         given:

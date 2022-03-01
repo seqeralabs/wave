@@ -290,19 +290,7 @@ class ContainerScanner {
                 : newEntries
     }
 
-    protected String updateImageConfig(String imageName, String imageConfig) {
-
-        final newLayer = layerConfig.append.tarDigest
-
-        // turn the json string into a json map
-        // and append the new layer
-        final manifest = new JsonSlurper().parseText(imageConfig) as Map
-        final rootfs = manifest.rootfs as Map
-        final layers = rootfs.diff_ids as List
-        layers.add( newLayer )
-
-        // update the image config
-        final config = manifest.config as Map
+    protected Map enrichConfig(Map config){
         final entryChain = getFirst(config.Entrypoint)
         if( layerConfig.entrypoint ) {
             config.Entrypoint = layerConfig.entrypoint
@@ -319,6 +307,23 @@ class ContainerScanner {
         if( entryChain ) {
             config.Env = appendEnv( config.Env as List, [ "XREG_ENTRY_CHAIN="+entryChain ] )
         }
+
+        config
+    }
+
+    protected String updateImageConfig(String imageName, String imageConfig) {
+
+        final newLayer = layerConfig.append.tarDigest
+
+        // turn the json string into a json map
+        // and append the new layer
+        final manifest = new JsonSlurper().parseText(imageConfig) as Map
+        final rootfs = manifest.rootfs as Map
+        final layers = rootfs.diff_ids as List
+        layers.add( newLayer )
+
+        // update the image config
+         enrichConfig(manifest.config as Map)
 
         // turn the updated manifest into a json
         final newConfig = JsonOutput.toJson(manifest)
@@ -346,57 +351,36 @@ class ContainerScanner {
         return result
     }
 
-    String resolveV1Manifest(String body, String imageName){
-        final manifest = new JsonSlurper().parseText(body) as Map
-        final blob = layerBlob(imageName)
-        final newLayer= [blobSum: blob.digest]
-
-        def fsLayers = manifest.fsLayers as List<Map>
-        def history = manifest.history as List<Map>
+    protected void rewriteHistoryV1( List<Map> history){
+        assert history.size()
 
         def first = history.first()
-        def firstJson= new JsonSlurper().parseText(first['v1Compatibility'].toString()) as Map
 
-        def second = history[1]
-        def secondJson= new JsonSlurper().parseText(second['v1Compatibility'].toString()) as Map
-
-        def newHistoryJson= [
-                id : RegHelper.random256Hex(),
-                parent: secondJson.id as String
-        ]
-        def newHistoryItem = [
-                v1Compatibility: JsonOutput.toJson(newHistoryJson)
-        ]
-
-        firstJson.parent = newHistoryJson.id as String
+        def newHistoryId = RegHelper.random256Hex()
+        def newV1Compatibility = new JsonSlurper().parseText(first['v1Compatibility'].toString()) as Map
+        newV1Compatibility.parent = newV1Compatibility.id
+        newV1Compatibility.id = newHistoryId
 
         // update the image config
-        final config = firstJson.config as Map
-        final entryChain = getFirst(config.Entrypoint)
-        if( layerConfig.entrypoint ) {
-            config.Entrypoint = layerConfig.entrypoint
-        }
-        if( layerConfig.cmd ) {
-            config.Cmd = layerConfig.cmd
-        }
-        if( layerConfig.workingDir ) {
-            config.WorkingDir = layerConfig.workingDir
-        }
-        if( layerConfig.env ) {
-            config.Env = appendEnv(config.Env as List, layerConfig.env)
-        }
-        if( entryChain ) {
-            config.Env = appendEnv( config.Env as List, [ "XREG_ENTRY_CHAIN="+entryChain ] )
-        }
+        enrichConfig(newV1Compatibility.config as Map)
 
-        // store the changes
-        first['v1Compatibility'] = JsonOutput.toJson(firstJson)
+        // create the new item
+        def newHistoryItem = [
+                v1Compatibility: JsonOutput.toJson(newV1Compatibility)
+        ]
+        history.add(0, newHistoryItem)
+    }
 
-        fsLayers.add(newLayer)
-        history.add(1, newHistoryItem)
+    protected void rewriteLayersV1(String imageName, List<Map> fsLayers){
+        assert fsLayers.size()
 
-        // sign the manifest
-        def newManifestLength = JsonOutput.prettyPrint(JsonOutput.toJson(manifest)).length()
+        final blob = layerBlob(imageName)
+        final newLayer= [blobSum: blob.digest]
+        fsLayers.add(0, newLayer)
+    }
+
+    protected void rewriteSignatureV1(Map manifest){
+        def newManifestLength = JsonOutput.toJson(manifest).length()
 
         def signatures = manifest.signatures as List<Map>
         def signature = signatures.first()
@@ -408,7 +392,19 @@ class ContainerScanner {
         def protectedBase64 = JsonOutput.toJson(protecteddecoded).bytes.encodeBase64().toString().replaceAll('=','')
         signature.protected = protectedBase64
 
-        def newManifestJson = JsonOutput.prettyPrint(JsonOutput.toJson(manifest))
+    }
+
+    String resolveV1Manifest(String body, String imageName){
+        final manifest = new JsonSlurper().parseText(body) as Map
+
+        def fsLayers = manifest.fsLayers as List<Map>
+        def history = manifest.history as List<Map>
+
+        rewriteHistoryV1(history)
+        rewriteLayersV1(imageName, fsLayers)
+        rewriteSignatureV1(manifest)
+
+        def newManifestJson = JsonOutput.toJson(manifest)
         def newManifestDigest = RegHelper.digest(newManifestJson)
 
         cache.put("/v2/$imageName/manifests/$newManifestDigest", newManifestJson.bytes, ContentType.DOCKER_MANIFEST_V1_JWS_TYPE, newManifestDigest)
