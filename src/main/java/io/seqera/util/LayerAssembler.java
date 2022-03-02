@@ -16,13 +16,13 @@ import java.security.NoSuchAlgorithmException;
  **/
 public class LayerAssembler {
 
-    final static String SOURCE_DIR = ".layer";
+    public final static String SOURCE_DIR = ".layer";
 
-    final static String LAYER_ROOT = "pack";
-    final static String LAYER_DIR = "layers";
-    final static String LAYER_TAR = "layer.tar";
-    final static String LAYER_GZIP = "layer.tar.gzip";
-    final static String LAYER_JSON = "layer.json";
+    public final static String LAYER_ROOT = "pack";
+    public final static String LAYER_DIR = "layers";
+    public final static String LAYER_TAR = "layer.tar";
+    public final static String LAYER_GZIP = "layer.tar.gzip";
+    public final static String LAYER_JSON = "layer.json";
 
     final String sourceDir;
     final String destinationDir;

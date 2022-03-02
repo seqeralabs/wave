@@ -11,6 +11,7 @@ clean:
 pack/layers/layer.tar.gzip: .layer/opt/goofys/goofys
 	# mkdir -p pack/layers
 	# ./make-tar.sh
+	./gradlew assemble -x test
 	java -cp build/libs/tower-reg-0.4.2-all.jar io.seqera.util.LayerAssembler .layer pack
 
 pack: clean pack/layers/layer.tar.gzip
