@@ -6,6 +6,7 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
 import io.seqera.proxy.LoginResponse
+import spock.lang.IgnoreIf
 import spock.lang.Specification
 /**
  *
@@ -13,12 +14,13 @@ import spock.lang.Specification
  */
 class MicronautClientTest extends Specification{
 
+    @IgnoreIf({ System.getenv("DOCKER_USER") == null})
     def 'should call target blob' () {
         given:
-        def username = "pditommaso"
+        def username = System.getenv("DOCKER_USER")
         def IMAGE = 'library/hello-world'
         def DIGEST = 'sha256:feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412'
-        def pat = 'd213e955-3357-4612-8c48-fa5652ad968b'
+        def pat = System.getenv("DOCKER_PASSWORD")
         def client = HttpClient.create(new URL('https://auth.docker.io'))
         def login = "/token?service=registry.docker.io&scope=repository:${IMAGE}:pull"
         def basic = "$username:$pat".bytes.encodeBase64()
