@@ -63,7 +63,7 @@ class RegHandler implements HttpHandler {
             handleNotFound(exchange)
         }
 
-        if( path=='/v2' || path=='/v2/' ) {
+        if( path=='/v2' || path=='/v2/' || path=='/' ) {
             handleOK(exchange)
             return
         }
