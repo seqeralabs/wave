@@ -68,6 +68,14 @@ class RegHandler implements HttpHandler {
             return
         }
 
+        if( path=='' || path.trim()=='/') {
+            try {
+                handleResp1(exchange, 204, [] as byte[], [:])
+            }
+            catch (Throwable e) { log.trace "Unexpected error", e }
+            return
+        }
+
         final route = RouteHelper.parse(path, configuration.defaultRegistry.name)
         final Registry registry = configuration.findRegistry(route.registry)
         assert registry
