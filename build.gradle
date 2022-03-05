@@ -25,6 +25,7 @@ dependencies {
     implementation("io.micronaut:micronaut-validation")
     implementation "org.codehaus.groovy:groovy-json"
     implementation 'com.google.guava:guava:24.1.1-jre'
+    implementation 'dev.failsafe:failsafe:3.1.0'
     compileOnly("io.micronaut:micronaut-http-validation")
     runtimeOnly("ch.qos.logback:logback-classic")
     runtimeOnly("io.netty:netty-tcnative-boringssl-static:2.0.0.Final")

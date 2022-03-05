@@ -1,16 +1,20 @@
 package io.seqera.proxy
 
-import io.seqera.auth.DockerAuthProvider
-
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.net.http.HttpResponse.BodyHandler
 import java.time.Duration
+import java.time.temporal.ChronoUnit
 
+import dev.failsafe.Failsafe
+import dev.failsafe.RetryPolicy
+import dev.failsafe.event.EventListener
+import dev.failsafe.event.ExecutionAttemptedEvent
+import dev.failsafe.function.CheckedSupplier
 import groovy.util.logging.Slf4j
+import io.seqera.auth.DockerAuthProvider
 import io.seqera.controller.RegHelper
-
 /**
  *
  * https://www.baeldung.com/java-9-http-client
@@ -20,6 +24,9 @@ import io.seqera.controller.RegHelper
  */
 @Slf4j
 class ProxyClient {
+
+    private static final long RETRY_MAX_DELAY_MILLIS = 30_000
+    private static final int RETRY_MAX_ATTEMPTS = 5
 
     private String image
 
@@ -92,6 +99,17 @@ class ProxyClient {
     private static final int[] REDIRECT_CODES = [301, 302, 307, 308]
 
     def <T> HttpResponse<T> get(URI origin, Map<String,List<String>> headers, BodyHandler<T> handler) {
+        final policy = retryPolicy("Failure on GET request: $origin")
+        final supplier = new CheckedSupplier<HttpResponse<T>>() {
+            @Override
+            HttpResponse<T> get() throws Throwable {
+                return get0(origin, headers, handler)
+            }
+        }
+        return Failsafe.with(policy).get(supplier)
+    }
+
+    def <T> HttpResponse<T> get0(URI origin, Map<String,List<String>> headers, BodyHandler<T> handler) {
         final host = origin.getHost()
         final visited = new HashSet<URI>(10)
         def target = origin
@@ -104,7 +122,7 @@ class ProxyClient {
             // auth mechanism e.g. signed url
             // https://github.com/rkt/rkt/issues/2266#issuecomment-211326020
             final authorize = host == target.getHost()
-            final result = get0(target, headers, handler, authorize)
+            final result = get1(target, headers, handler, authorize)
             // add to visited URL
             visited.add(target)
             // check the result code
@@ -137,7 +155,7 @@ class ProxyClient {
 
     }
 
-    private <T> HttpResponse<T> get0(URI uri, Map<String,List<String>> headers, BodyHandler<T> handler, boolean authorize) {
+    private <T> HttpResponse<T> get1(URI uri, Map<String,List<String>> headers, BodyHandler<T> handler, boolean authorize) {
         final builder = HttpRequest.newBuilder(uri) .GET()
         copyHeaders(headers, builder)
         if( authorize ) {
@@ -155,17 +173,45 @@ class ProxyClient {
         return head(makeUri(path), headers)
     }
 
+    private RetryPolicy retryPolicy(String errMessage) {
+        final listener = new EventListener<ExecutionAttemptedEvent<Void>>() {
+            @Override
+            void accept(ExecutionAttemptedEvent e) throws Throwable {
+                log.error("${errMessage} – Attempt: ${e.attemptCount}; Cause: ${e.lastFailure.message ?: e.lastFailure}")
+            }
+        }
+
+        return RetryPolicy.builder()
+                .handle(IOException, SocketException.class)
+                .withBackoff(50, RETRY_MAX_DELAY_MILLIS, ChronoUnit.MILLIS)
+                .withMaxAttempts(RETRY_MAX_ATTEMPTS)
+                .onRetry(listener)
+                .build()
+    }
+
     HttpResponse<Void> head(URI uri, Map<String,List<String>> headers) {
-        def result = head0(uri, headers)
+        final policy = retryPolicy("Failure on HEAD request: $uri")
+        final supplier = new CheckedSupplier<HttpResponse<Void>>() {
+            @Override
+            HttpResponse<Void> get() throws Throwable {
+                return head0(uri,headers)
+            }
+        }
+        return Failsafe.with(policy).get(supplier)
+    }
+
+    HttpResponse<Void> head0(URI uri, Map<String,List<String>> headers) {
+
+        def result = head1(uri, headers)
         if( result.statusCode()==401 ) {
             // clear the token to force refreshing it
             authProvider.cleanTokenFor(image)
-            result = head0(uri, headers)
+            result = head1(uri, headers)
         }
         return result
     }
 
-    HttpResponse<Void> head0(URI uri, Map<String,List<String>> headers) {
+    HttpResponse<Void> head1(URI uri, Map<String,List<String>> headers) {
         // A HEAD request is a GET request without a message body
         // https://zetcode.com/java/httpclient/
         final builder = HttpRequest.newBuilder(uri)
