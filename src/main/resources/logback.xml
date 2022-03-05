@@ -8,8 +8,25 @@
         </encoder>
     </appender>
 
+    <appender name="ROLLING_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>fusion-reg.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- daily rollover -->
+            <fileNamePattern>fusion-reg.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!-- keep 10 days' worth of history capped at 100MB total size -->
+            <maxHistory>10</maxHistory>
+            <totalSizeCap>200MB</totalSizeCap>
+        </rollingPolicy>
+
+        <encoder>
+            <pattern>%d{MMM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
     <root level="info">
         <appender-ref ref="STDOUT" />
     </root>
-    <logger name="io.seqera" level="${XREG_LOG_LEVEL:-debug}" />
+    <logger name="io.seqera" level="${debug}" >
+        <appender-ref ref="ROLLING_FILE" />
+    </logger>
 </configuration>
