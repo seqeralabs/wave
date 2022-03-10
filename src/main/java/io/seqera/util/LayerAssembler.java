@@ -27,21 +27,6 @@ public class LayerAssembler {
     final String sourceDir;
     final String destinationDir;
 
-    public static void main(String[] args) {
-        if( args.length != 2){
-            System.out.println("source and destination arguments required");
-            System.exit(-1);
-            return;
-        }
-        LayerAssembler layerAssembler = LayerAssembler.newInstance(args[0], args[1]);
-        try {
-            layerAssembler.buildLayer();
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.exit(-1);
-        }
-    }
-
     private LayerAssembler(String source, String destination){
         this.sourceDir = source;
         this.destinationDir = destination;
