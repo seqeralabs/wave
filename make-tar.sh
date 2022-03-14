@@ -5,9 +5,9 @@ set -e
 
 # main paths
 LATER_DIR=.layer
-LAYER_TAR=pack/layers/layer.tar
-LAYER_GZIP=pack/layers/layer.tar.gzip
-LAYER_JSON=pack/layers/layer.json
+LAYER_TAR=packtar/layers/layer.tar
+LAYER_GZIP=packtar/layers/layer.tar.gzip
+LAYER_JSON=packtar/layers/layer.json
 
 # create the fusion root path
 # and give create permissions to all
@@ -22,7 +22,7 @@ CHECKSUM_TAR=$(< $LAYER_TAR sha256sum | awk '{ print $1 }')
 
 # compress the TAR file, not `-n` to prevent adding timestamp
 # in the header metadata which will cause the inconsistent hashing
-gzip -n --suffix .gzip $LAYER_TAR
+gzip -k -n --suffix .gzip $LAYER_TAR
 CHECKSUM_GZIP=$(< $LAYER_GZIP sha256sum | awk '{ print $1 }')
 SIZE_GZIP=$(wc -c "$LAYER_GZIP" | awk '{print $1}')
 

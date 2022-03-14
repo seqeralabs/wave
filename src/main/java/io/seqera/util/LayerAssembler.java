@@ -10,6 +10,7 @@ import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.NoSuchAlgorithmException;
+import java.util.TreeSet;
 
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
@@ -53,6 +54,7 @@ public class LayerAssembler {
     }
 
     protected void createDestination() throws IOException {
+        Files.deleteIfExists(Paths.get(destinationDir, LAYER_DIR));
         Files.createDirectories(Paths.get(destinationDir, LAYER_DIR));
     }
 
@@ -76,22 +78,33 @@ public class LayerAssembler {
              BufferedOutputStream buffOut = new BufferedOutputStream(fOut);
              TarArchiveOutputStream tOut = new TarArchiveOutputStream(buffOut)) {
 
-            Files.walkFileTree(source, new SimpleFileVisitor<>() {
+            TreeSet<Path> paths = new TreeSet<>();
+            Files.walkFileTree(source, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                    if( dir != source)
+                        paths.add(dir);
+                    return super.preVisitDirectory(source, attrs);
+                }
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    Path targetFile = source.relativize(file);
-                    TarArchiveEntry tarEntry = new TarArchiveEntry(
-                            file.toFile(), targetFile.toString());
-                    tarEntry.setGroupId(0);
-                    tarEntry.setUserId(0);
-                    tarEntry.setMode((int) Files.getAttribute( file, "unix:mode"));
-                    tOut.putArchiveEntry(tarEntry);
-                    Files.copy(file, tOut);
-                    tOut.closeArchiveEntry();
-
-                    return FileVisitResult.CONTINUE;
+                    paths.add(file);
+                    return super.visitFile(source, attrs);
                 }
             });
+            for (Path file : paths) {
+                Path targetFile = source.relativize(file);
+                TarArchiveEntry tarEntry = new TarArchiveEntry(file.toFile(), targetFile.toString());
+                tarEntry.setIds(0,0);
+                tarEntry.setGroupName("root");
+                tarEntry.setUserName("root");
+                tarEntry.setMode( file.toFile().isDirectory() ? 040777 : 0100777); // Apache magic numbers
+                tOut.putArchiveEntry(tarEntry);
+                if( !file.toFile().isDirectory()) {
+                    Files.copy(file, tOut);
+                }
+                tOut.closeArchiveEntry();
+            }
             tOut.finish();
         }
         return output.toFile();
