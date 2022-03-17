@@ -22,7 +22,7 @@ CHECKSUM_TAR=$(< $LAYER_TAR sha256sum | awk '{ print $1 }')
 
 # compress the TAR file, not `-n` to prevent adding timestamp
 # in the header metadata which will cause the inconsistent hashing
-gzip -n --suffix .gzip $LAYER_TAR
+gzip -k -n --suffix .gzip $LAYER_TAR
 CHECKSUM_GZIP=$(< $LAYER_GZIP sha256sum | awk '{ print $1 }')
 SIZE_GZIP=$(wc -c "$LAYER_GZIP" | awk '{print $1}')
 
