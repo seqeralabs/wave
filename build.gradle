@@ -18,6 +18,11 @@ repositories {
 compileGroovy.groovyOptions.configurationScript = file('gradle/config/groovyc.groovy')
 
 dependencies {
+    annotationProcessor("io.micronaut:micronaut-validation")
+    annotationProcessor("io.micronaut:micronaut-http-validation")
+    compileOnly("io.micronaut:micronaut-validation")
+    compileOnly("io.micronaut:micronaut-http-validation")
+
     implementation("io.micronaut:micronaut-http-client")
     implementation("io.micronaut:micronaut-jackson-databind")
     implementation("io.micronaut.groovy:micronaut-runtime-groovy")
@@ -26,17 +31,19 @@ dependencies {
     implementation "org.codehaus.groovy:groovy-json"
     implementation 'com.google.guava:guava:24.1.1-jre'
     implementation 'dev.failsafe:failsafe:3.1.0'
-    compileOnly("io.micronaut:micronaut-http-validation")
+    implementation('io.projectreactor:reactor-core')
+
     runtimeOnly("ch.qos.logback:logback-classic")
     runtimeOnly("io.netty:netty-tcnative-boringssl-static:2.0.0.Final")
     testImplementation "org.apache.commons:commons-compress:1.21"
+    testImplementation("org.testcontainers:testcontainers")
 
     implementation 'org.apache.commons:commons-compress:1.21'
 }
 
 
 application {
-    mainClass.set("io.seqera.App")
+    mainClass.set("io.seqera.Application")
 }
 java {
     sourceCompatibility = JavaVersion.toVersion("11")
@@ -74,14 +81,25 @@ jib {
         ports = ['9090']
         entrypoint = '/bin/sh'
         args = ['/reg.sh']  // copied from `src/main/jib` directory
+        environment = ['MICRONAUT_ENVIRONMENTS':'prod']
     }
     extraDirectories {
         paths {
             path { from = file('pack/layers'); into = '/pack/layers' }
             path { from = file('src/main/jib'); }
-            path { from = file('.'); includes = ['tower-reg.yml'] }
+            path { from = file('.'); includes = ['application-prod.yml'] }
         }
         permissions = ['/reg.sh': '755']
     }
 }
 
+run{
+    jvmArgs '-Dmicronaut.environments=dev'
+}
+
+test {
+    testLogging {
+        outputs.upToDateWhen {false}
+        showStandardStreams = true
+    }
+}

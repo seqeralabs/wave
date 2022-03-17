@@ -18,3 +18,5 @@ out/
 .layer/opt/goofys/goofys
 layer.tar.gzip
 tower-reg.yml
+src/main/resources/application-dev.yml
+/fusion-reg*.log

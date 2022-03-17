@@ -14,4 +14,4 @@ exec java \
   --add-opens=java.base/java.util=ALL-UNNAMED \
   ${JAVA_OPTS} \
   -cp /app/resources:/app/classes:/app/libs/* \
-  io.seqera.App
+  io.seqera.Application

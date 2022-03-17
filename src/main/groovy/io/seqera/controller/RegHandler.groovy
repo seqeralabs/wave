@@ -1,39 +1,40 @@
 package io.seqera.controller
 
-import static io.seqera.controller.RegHelper.*
-
-import java.net.http.HttpResponse
-
 import com.sun.net.httpserver.Headers
 import com.sun.net.httpserver.HttpExchange
-import com.sun.net.httpserver.HttpHandler
 import groovy.transform.Memoized
 import groovy.transform.builder.Builder
 import groovy.util.logging.Slf4j
 import io.seqera.Cache
-import io.seqera.ContainerScanner
 import io.seqera.RouteHelper
 import io.seqera.auth.AuthFactory
 import io.seqera.auth.DockerAuthProvider
 import io.seqera.config.Registry
 import io.seqera.config.TowerConfiguration
+import io.seqera.docker.ContainerScanner
 import io.seqera.proxy.InvalidResponseException
 import io.seqera.proxy.ProxyClient
+import io.seqera.util.MemoryCache
+
+import java.net.http.HttpResponse
+
+import static io.seqera.util.RegHelper.dumpJson
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @Builder
-class RegHandler implements HttpHandler {
+class RegHandler  {
 
-    private Cache cache = new Cache()
+    private Cache cache = new MemoryCache()
 
     TowerConfiguration configuration
 
     AuthFactory authFactory
 
-    @Override
+    //@Override
     void handle(HttpExchange exchange) throws IOException {
         try {
             doHandle(exchange)

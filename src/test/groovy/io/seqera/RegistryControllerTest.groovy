@@ -1,55 +1,83 @@
 package io.seqera
 
-
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
+import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.config.DefaultConfiguration
+import io.seqera.model.ContentType
 import jakarta.inject.Inject
-import spock.lang.Ignore
-import spock.lang.IgnoreIf
-import spock.lang.Requires
+import spock.lang.Shared
 import spock.lang.Specification
-
-import java.text.SimpleDateFormat
 
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-class RegistryControllerTest extends Specification {
+class RegistryControllerTest extends Specification implements DockerRegistryContainer{
 
     @Inject
     @Client("/")
     HttpClient client;
 
-    void 'should get manifest'() {
-        when:
-        HttpRequest request = HttpRequest.GET("/v2/library/hello-world/manifests/latest");
-        HttpResponse<String> response = client.toBlocking().exchange(request,String)
-        then:
-        response.status() == HttpStatus.OK
-        and:
-        response.body().startsWith('{"manifests":')
-        response.getContentType().get().getName() ==  'application/vnd.docker.distribution.manifest.list.v2+json'
-        response.getContentLength() == 2562
+    @Inject
+    @Shared
+    DefaultConfiguration defaultConfiguration
+
+    def setupSpec() {
+        initRegistryContainer(defaultConfiguration)
     }
 
-    //Ignore until next release of micronaut fix head issue
-    @IgnoreIf({ new Date().before(new SimpleDateFormat('yyyy/MM/dd').parse('2022/08/01'))})
-    void 'should head manifest'() {
+    void 'should get manifest'() {
         when:
-        HttpRequest request = HttpRequest.HEAD("/v2/library/hello-world/manifests/latest");
+        HttpRequest request = HttpRequest.GET("/v2/library/hello-world/manifests/latest").headers({h->
+            h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
+            h.add('Accept', ContentType.DOCKER_MANIFEST_V1_JWS_TYPE)
+            h.add('Accept', MediaType.APPLICATION_JSON)
+        })
         HttpResponse<String> response = client.toBlocking().exchange(request,String)
         then:
         response.status() == HttpStatus.OK
         and:
-        response.getHeaders().get('docker-content-digest') == 'sha256:975f4b14f326b05db86e16de00144f9c12257553bba9484fed41f9b6f2257800'
-        response.getHeaders().get('Content-Type') == 'application/vnd.docker.distribution.manifest.list.v2+json'
-//        response.getContentType().get().getName() ==  'application/vnd.docker.distribution.manifest.list.v2+json'
-//        response.getContentLength() == 2562
+        response.body().indexOf('"schemaVersion":') != -1
+        response.getContentType().get().getName() ==  'application/vnd.docker.distribution.manifest.v2+json'
+        response.getContentLength() == 525
+    }
+
+    void 'should head manifest'() {
+        when:
+        HttpRequest request = HttpRequest.HEAD("/v2/library/hello-world/manifests/latest").headers({h->
+            h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
+            h.add('Accept', ContentType.DOCKER_MANIFEST_V1_JWS_TYPE)
+            h.add('Accept', MediaType.APPLICATION_JSON)
+        })
+        HttpResponse<String> response = client.toBlocking().exchange(request,String)
+        then:
+        response.status() == HttpStatus.OK
+        response.headers.each {println "$it.key=$it.value"}
+        and:
+        response.getHeaders().get('docker-content-digest').startsWith( 'sha256:')
+        response.getHeaders().get('Content-Type') == 'application/vnd.docker.distribution.manifest.v2+json'
+        response.getContentLength() == 775
+    }
+
+    void 'should head manifest of image'() {
+        when:
+        HttpRequest request = HttpRequest.HEAD("/v2/hello-world/manifests/latest").headers({h->
+            h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
+            h.add('Accept', ContentType.DOCKER_MANIFEST_V1_JWS_TYPE)
+            h.add('Accept', MediaType.APPLICATION_JSON)
+        })
+        HttpResponse<String> response = client.toBlocking().exchange(request,String)
+        then:
+        response.status() == HttpStatus.OK
+        and:
+        response.getHeaders().get('docker-content-digest').startsWith( 'sha256:')
+        response.getHeaders().get('Content-Type') == 'application/vnd.docker.distribution.manifest.v2+json'
+        response.getContentLength() == 775
     }
 }

@@ -8,5 +8,4 @@ class Registry {
     String name
     String host
     Auth auth
-
 }

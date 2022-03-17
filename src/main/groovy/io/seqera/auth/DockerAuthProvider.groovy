@@ -5,6 +5,8 @@ package io.seqera.auth
  * */
 interface DockerAuthProvider {
 
+    boolean isSsl()
+
     String getTokenFor(String image)
 
     void cleanTokenFor(String image)

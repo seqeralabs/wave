@@ -1,12 +1,11 @@
 package io.seqera
 
-import groovy.transform.EqualsAndHashCode
+import groovy.transform.Canonical
+import io.seqera.util.Base32
 
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
-import groovy.transform.Canonical
-import io.seqera.util.Base32
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>

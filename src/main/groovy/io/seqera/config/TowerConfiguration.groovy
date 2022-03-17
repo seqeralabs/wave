@@ -2,8 +2,6 @@ package io.seqera.config
 
 interface TowerConfiguration {
 
-    int getPort()
-
     String getArch()
 
     Registry getDefaultRegistry()
