@@ -5,9 +5,9 @@ set -e
 
 # main paths
 LATER_DIR=.layer
-LAYER_TAR=packtar/layers/layer.tar
-LAYER_GZIP=packtar/layers/layer.tar.gzip
-LAYER_JSON=packtar/layers/layer.json
+LAYER_TAR=pack/layers/layer.tar
+LAYER_GZIP=pack/layers/layer.tar.gzip
+LAYER_JSON=pack/layers/layer.json
 
 # create the fusion root path
 # and give create permissions to all
