@@ -60,7 +60,8 @@ with a comma `,` character.
           -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
           -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
           -e NXF_FUSION_BUCKETS=s3://nextflow-ci \
-          --privileged  \
+          --cap-add SYS_ADMIN \
+          --device /dev/fuse  \
           reg.ngrok.io/library/busybox \
           ls -la /fusion/s3/nextflow-ci
   
