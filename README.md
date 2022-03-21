@@ -36,26 +36,29 @@ with a comma `,` character.
 
          make pack
 
-4. Compile and run the registry service:  
+4. Create a `dev` configuration: copy `application-prod-example.yml` into `src/main/resources/application-dev.yml`
+and set the user/pwd for at least 1 registry
+
+5. Compile and run the registry service:  
 
         bash run.sh
 
-5. Use reverse proxy service to expose the registry with public name, e.g. 
+6. Use reverse proxy service to expose the registry with public name, e.g. 
 
         ngrok http 9090 -subdomain reg
 
 
-6. Pull a container using the docker client: 
+7. Pull a container using the docker client: 
 
         docker pull reg.ngrok.io/library/busybox
         
     **NOTE**: replace the registry name `reg.ngrok.io` with the one provided by the reverse proxy command in the previous step.
 
-7. The pulled images contains the files from the appended layer. Check it with the following command:
+8. The pulled images contains the files from the appended layer. Check it with the following command:
 
         docker run --rm reg.ngrok.io/library/busybox cat foo.txt
 
-8. List the content of a bucket using `ls`
+9. List the content of a bucket using `ls`
 
         docker run --rm \
           --platform linux/amd64 \

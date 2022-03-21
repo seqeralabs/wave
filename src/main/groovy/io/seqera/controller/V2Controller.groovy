@@ -3,7 +3,10 @@ package io.seqera.controller
 import groovy.util.logging.Slf4j
 import io.micronaut.http.*
 import io.micronaut.http.annotation.Controller
+import io.micronaut.http.annotation.Error
 import io.micronaut.http.annotation.Get
+import io.micronaut.http.hateoas.JsonError
+import io.micronaut.http.hateoas.Link
 import io.seqera.Cache
 import io.seqera.RouteHelper
 import io.seqera.config.TowerConfiguration
@@ -28,6 +31,13 @@ class V2Controller {
         this.configuration = configuration
         this.containerService = containerService
         this.cache = cache
+    }
+
+    @Error
+    HttpResponse<JsonError> handleError(HttpRequest request, Throwable t){
+        log.error t.message, t
+        JsonError error = new JsonError("Error: " + t.message).link(Link.SELF, Link.of(request.getUri()))
+        HttpResponse.<JsonError>serverError().body(error)
     }
 
     @Get
