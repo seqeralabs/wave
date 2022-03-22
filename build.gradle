@@ -81,7 +81,10 @@ jib {
         ports = ['9090']
         entrypoint = '/bin/sh'
         args = ['/reg.sh']  // copied from `src/main/jib` directory
-        environment = ['MICRONAUT_ENVIRONMENTS':'prod']
+        environment = [
+                'MICRONAUT_ENVIRONMENTS': 'prod',
+                'MICRONAUT_CONFIG_FILES': 'classpath:application.yml,file:application-prod.yml'
+        ]
     }
     extraDirectories {
         paths {

@@ -19,4 +19,5 @@ out/
 layer.tar.gzip
 tower-reg.yml
 src/main/resources/application-dev.yml
+application-prod.yml
 /fusion-reg*.log
