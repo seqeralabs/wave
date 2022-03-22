@@ -1,14 +1,11 @@
 package io.seqera.config
 
-import io.micronaut.context.annotation.ConfigurationProperties
-import io.micronaut.context.annotation.Context
-import jakarta.inject.Singleton
-
-import javax.annotation.PostConstruct
-import javax.validation.constraints.Min
 import javax.validation.constraints.NotNull
 import javax.validation.constraints.Size
 
+import io.micronaut.context.annotation.ConfigurationProperties
+import io.micronaut.context.annotation.Context
+import jakarta.inject.Singleton
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  * */
@@ -33,4 +30,7 @@ class DefaultConfiguration implements TowerConfiguration{
         registries.find{ it.name == name} ?: defaultRegistry
     }
 
+    String toString() {
+        return "DefaultConfiguration[arch=$arch; registries=${registries.join(',')}]"
+    }
 }

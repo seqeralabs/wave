@@ -8,4 +8,9 @@ class Registry {
     String name
     String host
     Auth auth
+
+    @Override
+    String toString() {
+        return "Registry[name=$name; host=$host; auth=$auth]"
+    }
 }

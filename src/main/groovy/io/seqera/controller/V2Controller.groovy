@@ -28,6 +28,7 @@ class V2Controller {
     Cache cache
 
     V2Controller(TowerConfiguration configuration, ContainerService containerService, Cache cache) {
+        log.debug "Server configuration=$configuration"
         this.configuration = configuration
         this.containerService = containerService
         this.cache = cache
