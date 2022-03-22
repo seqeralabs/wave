@@ -11,7 +11,6 @@ import io.micronaut.runtime.Micronaut
 class Application {
     static void main(String[] args) {
         Micronaut.build(args)
-                .eagerInitConfiguration(true)
                 .mainClass(Application.class)
                 .start();
     }

@@ -1,25 +1,29 @@
 package io.seqera.config
 
 import io.micronaut.context.annotation.ConfigurationProperties
+import io.micronaut.context.annotation.Context
 import jakarta.inject.Singleton
 
 import javax.annotation.PostConstruct
+import javax.validation.constraints.Min
+import javax.validation.constraints.NotNull
+import javax.validation.constraints.Size
 
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  * */
+@Context
 @Singleton
 @ConfigurationProperties("towerreg")
 class DefaultConfiguration implements TowerConfiguration{
 
+    @NotNull
     String arch
+
+    @NotNull
+    @Size(min=1)
     List<Registry> registries
 
-    @PostConstruct
-    void init(){
-        assert arch, "towerreg.arch configuration is required"
-        assert registries , "at least a Registry in towerreg.registries is required"
-    }
 
     Registry getDefaultRegistry(){
         registries.first()
