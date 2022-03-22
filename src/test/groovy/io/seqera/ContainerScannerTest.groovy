@@ -1,17 +1,20 @@
 package io.seqera
 
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import io.seqera.auth.SimpleAuthProvider
+import io.seqera.docker.ContainerScanner
+import io.seqera.model.ContentType
+import io.seqera.proxy.ProxyClient
+import io.seqera.util.MemoryCache
+import io.seqera.util.RegHelper
+import spock.lang.Ignore
+import spock.lang.Specification
+
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
-import groovy.json.JsonOutput
-import groovy.json.JsonSlurper
-import io.seqera.auth.SimpleAuthProvider
-import io.seqera.controller.RegHelper
-import io.seqera.model.ContentType
-import io.seqera.proxy.ProxyClient
-import spock.lang.Ignore
-import spock.lang.Specification
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -102,7 +105,7 @@ class ContainerScannerTest extends Specification {
         and:
         unpackLayer()
 
-        def cache = new Cache()
+        def cache = new MemoryCache()
         def scanner = new ContainerScanner().withCache(cache).withLayerConfig(Paths.get(layerJson.absolutePath))
         and:
         def digest = RegHelper.digest(layerPath.bytes)
@@ -139,7 +142,7 @@ class ContainerScannerTest extends Specification {
         def layerDigest = RegHelper.digest(layerPath.bytes)
 
         and:
-        def cache = new Cache()
+        def cache = new MemoryCache()
         def scanner = new ContainerScanner().withCache(cache).withLayerConfig(Paths.get(layerJson.absolutePath))
 
         when:
@@ -183,7 +186,7 @@ class ContainerScannerTest extends Specification {
         unpackLayer()
 
         and:
-        def cache = new Cache()
+        def cache = new MemoryCache()
         def scanner = new ContainerScanner().withCache(cache).withLayerConfig(Paths.get(layerJson.absolutePath))
 
         when:
@@ -315,7 +318,7 @@ class ContainerScannerTest extends Specification {
         unpackLayer()
 
         and:
-        def cache = new Cache()
+        def cache = new MemoryCache()
         def scanner = new ContainerScanner().withCache(cache).withLayerConfig(Paths.get(layerJson.absolutePath))
 
         when:
@@ -383,7 +386,7 @@ class ContainerScannerTest extends Specification {
         unpackLayer()
 
         and:
-        def cache = new Cache()
+        def cache = new MemoryCache()
         def scanner = new ContainerScanner().withCache(cache).withLayerConfig(Paths.get(layerJson.absolutePath))
 
         when:
@@ -516,7 +519,7 @@ class ContainerScannerTest extends Specification {
         def IMAGE_NAME = 'hello-world'
 
         and:
-        def cache = new Cache()
+        def cache = new MemoryCache()
         def scanner = new ContainerScanner().withCache(cache).withLayerConfig(Paths.get(layerJson.absolutePath))
 
         when:
@@ -538,7 +541,7 @@ class ContainerScannerTest extends Specification {
         def IMAGE = 'library/busybox'
         and:
         def layerPath = Paths.get('foo.tar.gzip')
-        def cache = new Cache()
+        def cache = new MemoryCache()
         def client = new ProxyClient(HOST, IMAGE, new SimpleAuthProvider(
                 username: Mock.DOCKER_USER,
                 password: Mock.DOCKER_PAT,
@@ -570,7 +573,7 @@ class ContainerScannerTest extends Specification {
         def IMAGE = 'biocontainers/fastqc'
         def TAG = "0.11.9--0"
         and:
-        def cache = new Cache()
+        def cache = new MemoryCache()
         def client = new ProxyClient(HOST, IMAGE, new SimpleAuthProvider(
                 username: Mock.QUAY_USER,
                 password: Mock.QUAY_PAT,

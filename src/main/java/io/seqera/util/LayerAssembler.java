@@ -1,12 +1,14 @@
 package io.seqera.util;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 
-import java.io.*;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.NoSuchAlgorithmException;
@@ -14,7 +16,7 @@ import java.util.TreeSet;
 
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
- **/
+ */
 public class LayerAssembler {
 
     public final static String SOURCE_DIR = ".layer";

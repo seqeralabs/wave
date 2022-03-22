@@ -1,13 +1,14 @@
-package io.seqera.controller
+package io.seqera.util
+
+import com.google.common.io.BaseEncoding
+import com.sun.net.httpserver.Headers
+import groovy.json.JsonOutput
 
 import java.net.http.HttpHeaders
 import java.nio.charset.Charset
 import java.security.MessageDigest
 import java.security.SecureRandom
 
-import com.google.common.io.BaseEncoding
-import com.sun.net.httpserver.Headers
-import groovy.json.JsonOutput
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -17,6 +18,11 @@ class RegHelper {
     final private static char PADDING = '_' as char
     final private static MessageDigest SHA256 = java.security.MessageDigest.getInstance("SHA-256")
     final private static BaseEncoding BASE32 = BaseEncoding.base32() .withPadChar(PADDING)
+
+    // this clas is not to be extended
+    private RegHelper(){
+        throw new AssertionError()
+    }
 
     static private String bytesToHex(byte[] bytes) {
         StringBuffer result = new StringBuffer();

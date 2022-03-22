@@ -5,15 +5,12 @@ import spock.lang.Specification
 
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
-import java.nio.file.Path
 import java.nio.file.Paths
-import java.nio.file.attribute.FileAttribute
-import java.nio.file.attribute.PosixFilePermission
 import java.nio.file.attribute.PosixFilePermissions
 
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
- * */
+ */
 class LayerAssemblerSpec extends Specification {
 
     def 'should create a layer' () {

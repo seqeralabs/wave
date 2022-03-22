@@ -73,4 +73,9 @@ abstract class BaseAuthProvider implements DockerAuthProvider{
         }else
             throw new IllegalStateException("Unable to authorize request -- response: $body")
     }
+
+    @Override
+    boolean isSsl() {
+        return true
+    }
 }

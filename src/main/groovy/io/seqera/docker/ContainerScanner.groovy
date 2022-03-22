@@ -1,20 +1,22 @@
-package io.seqera
-
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
-import java.nio.file.attribute.BasicFileAttributes
+package io.seqera.docker
 
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.transform.CompileDynamic
 import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
-import io.seqera.controller.RegHelper
+import io.seqera.Cache
 import io.seqera.model.ContentType
 import io.seqera.model.LayerConfig
 import io.seqera.proxy.InvalidResponseException
 import io.seqera.proxy.ProxyClient
+import io.seqera.util.RegHelper
+
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.nio.file.attribute.BasicFileAttributes
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -105,6 +107,8 @@ class ContainerScanner {
         // get manifest list for digest
         final resp2 = client.getString("/v2/$imageName/manifests/${digest.get()}", headers)
         final type = resp2.headers().firstValue('content-type').orElse(null)
+        if( resp2.statusCode() != 200 )
+            throw new InvalidResponseException("Unexpected response statusCode: ${resp1.statusCode()}", resp1)
         final manifestsList = resp2.body()
         log.debug "Image $imageName:$tag => type=$type; manifests list:\n${JsonOutput.prettyPrint(manifestsList)}"
 

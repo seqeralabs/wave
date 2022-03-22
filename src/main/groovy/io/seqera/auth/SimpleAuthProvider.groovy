@@ -6,9 +6,33 @@ package io.seqera.auth
  */
 class SimpleAuthProvider extends BaseAuthProvider {
 
-    String username
-    String password
-    String authUrl
-    String service
-    
+    @Override
+    protected String getUsername() {
+        return null
+    }
+
+    @Override
+    protected String getPassword() {
+        return null
+    }
+
+    @Override
+    protected String getAuthUrl() {
+        return null
+    }
+
+    @Override
+    protected String getService() {
+        return null
+    }
+
+    @Override
+    boolean isSsl() {
+        return false
+    }
+
+    @Override
+    String getTokenFor(String image) {
+        return ""
+    }
 }

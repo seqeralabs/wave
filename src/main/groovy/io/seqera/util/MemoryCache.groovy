@@ -1,16 +1,13 @@
-package io.seqera
+package io.seqera.util
+
+import io.seqera.Cache
+import jakarta.inject.Singleton
 
 /**
- *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
- */
-class Cache {
-
-    static class ResponseCache {
-        byte[] bytes
-        String mediaType
-        String digest
-    }
+ * @author : jorge <jorge.aguilera@seqera.io>
+ * */
+@Singleton
+class MemoryCache implements Cache{
 
     Map<String,ResponseCache> target = new HashMap<>()
 
@@ -23,4 +20,8 @@ class Cache {
         return this
     }
 
+    @Override
+    Optional<ResponseCache> find(String path) {
+        Optional.ofNullable(target.get(path))
+    }
 }

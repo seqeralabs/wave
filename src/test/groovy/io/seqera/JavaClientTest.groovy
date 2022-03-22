@@ -1,12 +1,13 @@
 package io.seqera
 
+import groovy.json.JsonSlurper
+import spock.lang.Specification
+
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
 
-import groovy.json.JsonSlurper
-import spock.lang.Specification
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>

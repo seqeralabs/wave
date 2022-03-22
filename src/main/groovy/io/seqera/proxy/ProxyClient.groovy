@@ -1,12 +1,5 @@
 package io.seqera.proxy
 
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
-import java.net.http.HttpResponse.BodyHandler
-import java.time.Duration
-import java.time.temporal.ChronoUnit
-
 import dev.failsafe.Failsafe
 import dev.failsafe.RetryPolicy
 import dev.failsafe.event.EventListener
@@ -14,7 +7,15 @@ import dev.failsafe.event.ExecutionAttemptedEvent
 import dev.failsafe.function.CheckedSupplier
 import groovy.util.logging.Slf4j
 import io.seqera.auth.DockerAuthProvider
-import io.seqera.controller.RegHelper
+import io.seqera.util.RegHelper
+
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+import java.net.http.HttpResponse.BodyHandler
+import java.time.Duration
+import java.time.temporal.ChronoUnit
+
 /**
  *
  * https://www.baeldung.com/java-9-http-client
@@ -23,7 +24,7 @@ import io.seqera.controller.RegHelper
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
-class ProxyClient {
+class ProxyClient implements RemoteDocker{
 
     private static final long RETRY_MAX_DELAY_MILLIS = 30_000
     private static final int RETRY_MAX_ATTEMPTS = 5
@@ -51,7 +52,8 @@ class ProxyClient {
 
     private URI makeUri(String path) {
         assert path.startsWith('/'), "Request past should start with a slash character -- offending path: $path"
-        URI.create("https://$registryName$path")
+        String protocol = this.authProvider.ssl ? "https" : "http"
+        URI.create("$protocol://$registryName$path")
     }
 
     HttpResponse<String> getString(String path, Map<String,List<String>> headers=null) {

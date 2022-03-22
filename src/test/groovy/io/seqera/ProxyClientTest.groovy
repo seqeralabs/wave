@@ -1,24 +1,35 @@
 package io.seqera
 
-
+import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.auth.ConfigurableAuthProvider
 import io.seqera.auth.SimpleAuthProvider
+import io.seqera.config.Auth
+import io.seqera.config.DefaultConfiguration
 import io.seqera.proxy.ProxyClient
+import jakarta.inject.Inject
+import spock.lang.Shared
 import spock.lang.Specification
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class ProxyClientTest extends Specification {
+@MicronautTest
+class ProxyClientTest extends Specification implements DockerRegistryContainer{
+
+    @Inject
+    @Shared
+    DefaultConfiguration defaultConfiguration
+
+    def setupSpec() {
+        initRegistryContainer(defaultConfiguration)
+    }
 
     def 'should call target blob' () {
         given:
         def IMAGE = 'library/hello-world'
         and:
-        def proxy = new ProxyClient('registry-1.docker.io', IMAGE, new SimpleAuthProvider(
-                username: Mock.DOCKER_USER,
-                password: Mock.DOCKER_PAT,
-                authUrl: 'auth.docker.io/token',
-                service: 'registry.docker.io'))
+        def proxy = new ProxyClient(registryURL, IMAGE, new SimpleAuthProvider())
 
         when:
         def resp1 = proxy.getString('/v2/library/hello-world/blobs/sha256:feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412')
@@ -32,11 +43,11 @@ class ProxyClientTest extends Specification {
         given:
         def IMAGE = 'biocontainers/fastqc'
         and:
-        def proxy = new ProxyClient('quay.io', IMAGE, new SimpleAuthProvider(
+        def proxy = new ProxyClient('quay.io', IMAGE, new ConfigurableAuthProvider( new Auth(
                 username: Mock.QUAY_USER,
                 password: Mock.QUAY_PAT,
-                authUrl: Mock.QUAY_AUTH,
-                service: 'quay.io'))
+                url: Mock.QUAY_AUTH,
+                service: 'quay.io')))
 
         when:
         def resp1 = proxy.getString('/v2/biocontainers/fastqc/blobs/sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4')

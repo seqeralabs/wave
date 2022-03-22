@@ -28,12 +28,7 @@ if [[ $RELEASE ]]; then
   make pack
   # creds file
   set +x
-  < tower-reg-example.yml \
-    DOCKER_USER=pditommaso \
-    DOCKER_PAT=${DOCKER_PAT} \
-    QUAY_USER=pditommaso \
-    QUAY_PAT=${QUAY_PAT} \
-    envsubst > tower-reg.yml
+  cp application-prod-example.yml application-prod.yml
   # docker login
   docker login -u pditommaso -p ${DOCKER_PASSWORD}
   # push it

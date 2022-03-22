@@ -1,9 +1,9 @@
 # tower-reg 
 
-Proof-of-concept for an ephemeral container registry that injects 
+Ephemeral container registry that injects 
 a custom payloads during an arbitrary image pull.
 
-The main goal is showing the possibility to append a layer into any Linux
+The main goal is to have a custom registry server how append a layer into any Linux
 container including a FUSE driver to access a S3 bucket.
 
 ### How it works 
@@ -13,10 +13,10 @@ arbitrary container image and the target registry i.e. docker.io hosting the
 image to be downloaded. 
 
 When an imaged is pulled the proxy server forward the request to the target registry, 
-fetch the image manifest, and appended to the layers configuration a new layer 
+fetch the image manifest, and appended to the layer configuration a new layer 
 which provides the FUSE client required access the AWS S3 storage.
 
-It also change the entry point of the container setting the script [entry.sh](.layer/opt/fusion/entry.sh)
+It also changes the entry point of the container setting the script [entry.sh](.layer/opt/fusion/entry.sh)
 which takes care to automatically mount the bucket names specified via the env variable 
 `$NXF_FUSION_BUCKETS` into the container. For example if the variable value is `s3://foo` it mounts 
 the bucket to the path `/fusion/s3/foo`. Multiple buckets can be specified separating them 
@@ -32,27 +32,33 @@ with a comma `,` character.
    
         make clean all
 
+3. Prepare a new layer (will create a new `pack` directory with the layer to inject)
 
-3. Compile and run the registry service:  
+         make pack
+
+4. Create a `dev` configuration: copy `application-prod-example.yml` into `src/main/resources/application-dev.yml`
+and set the user/pwd for at least 1 registry
+
+5. Compile and run the registry service:  
 
         bash run.sh
 
-4. Use reverse proxy service to expose the registry with public name, e.g. 
+6. Use reverse proxy service to expose the registry with public name, e.g. 
 
         ngrok http 9090 -subdomain reg
 
 
-5. Pull a container using the docker client: 
+7. Pull a container using the docker client: 
 
         docker pull reg.ngrok.io/library/busybox
         
     **NOTE**: replace the registry name `reg.ngrok.io` with the one provided by the reverse proxy command in the previous step.
 
-6. The pulled images contains the files from the appended layer. Check it with the following command:
+8. The pulled images contains the files from the appended layer. Check it with the following command:
 
         docker run --rm reg.ngrok.io/library/busybox cat foo.txt
 
-7. List the content of a bucket using `ls`
+9. List the content of a bucket using `ls`
 
         docker run --rm \
           --platform linux/amd64 \
@@ -68,8 +74,9 @@ with a comma `,` character.
 
 ### Next goals 
 
-* Implements the core functionality using Java + Micronaut + native compilation (Graal)
-* Add support to use an arbitrary target container registry other than docker.io 
-* Add support for private registry authentication, at least quay.io, AWS ECR, Google Artifact Registry, Azure registry
-* Implement layer caching mechanism to store layers binary into a S3 bucket 
+* ~~Implements the core functionality using Java + Micronaut + native compilation (Graal)~~
+* ~~Add support to use an arbitrary target container registry other than docker.io~~ 
+* ~~Add support for private registry authentication, at least quay.io, AWS ECR, Google Artifact Registry, Azure registry~~
+* ~~Implement layer caching mechanism to store layers binary into a S3 bucket~~ 
 * Add support for Tower users [token propagation](https://micronaut-projects.github.io/micronaut-guides-poc/latest/micronaut-token-propagation-gradle-java.html) 
+* Inject multiple layers
