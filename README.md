@@ -56,11 +56,16 @@ and set the user/pwd for at least 1 registry
 
 8. The pulled images contains the files from the appended layer. Check it with the following command:
 
-        docker run --rm reg.ngrok.io/library/busybox cat foo.txt
+        docker run 
+          --rm \
+          --platform linux/amd64 \
+          reg.ngrok.io/library/busybox \
+          cat foo.txt
 
-9. List the content of a bucket using `ls`
+1. List the content of a bucket using `ls`
 
-        docker run --rm \
+        docker run \
+          --rm \
           --platform linux/amd64 \
           -e AWS_REGION=eu-west-1 \
           -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
