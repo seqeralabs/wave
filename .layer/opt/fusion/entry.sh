@@ -4,19 +4,10 @@ set -e
 [ $XREG_DEBUG ] && set -x
 ## holds the list of buckets to be mounted
 if [ "$NXF_FUSION_BUCKETS" ]; then
-  uid=$(id -u)
-  gid=$(id -g)
   #export AWS_MAX_ATTEMPTS={{aws_max_attempts}}
-  (IFS=',';
-  for x in $NXF_FUSION_BUCKETS; do
-    path=$(echo $x | sed s@'s3://'@@)
-    mkdir -p /fusion/s3/$path
-    ## replace the first slash with a `:` character
-    ## because this is the format expected by goofys
-    bucket=$(echo $path | sed 's#/#:#')
-    /opt/goofys/goofys -f --debug_s3 --file-mode=0755 --uid $uid --gid $gid $bucket /fusion/s3/$path &
-    until (cat /proc/mounts | grep "/fusion/s3/$path"); do sleep 1; done >/dev/null
-  done)
+  mkdir -p /fusion/s3
+  /opt/fusion/fusionfs &
+  until (cat /proc/mounts | grep "/fusion/s3"); do sleep 1; done >/dev/null
 fi
 ## invoke the target command
 if [ "$XREG_ENTRY_CHAIN" ]; then
