@@ -5,7 +5,7 @@ import groovy.json.JsonSlurper
 import groovy.transform.CompileDynamic
 import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
-import io.seqera.Cache
+import io.seqera.cache.Cache
 import io.seqera.model.ContentType
 import io.seqera.model.LayerConfig
 import io.seqera.proxy.InvalidResponseException

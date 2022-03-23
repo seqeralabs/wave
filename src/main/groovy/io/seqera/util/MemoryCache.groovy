@@ -1,6 +1,8 @@
 package io.seqera.util
 
-import io.seqera.Cache
+import io.seqera.cache.Cache
+import io.seqera.cache.ResponseCache
+
 import jakarta.inject.Singleton
 
 /**

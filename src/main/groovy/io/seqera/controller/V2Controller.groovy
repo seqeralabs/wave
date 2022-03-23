@@ -7,7 +7,7 @@ import io.micronaut.http.annotation.Error
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.hateoas.JsonError
 import io.micronaut.http.hateoas.Link
-import io.seqera.Cache
+import io.seqera.cache.Cache
 import io.seqera.RouteHelper
 import io.seqera.config.TowerConfiguration
 import io.seqera.docker.ContainerService
@@ -82,7 +82,7 @@ class V2Controller {
         return fromCache(entry)
     }
 
-    MutableHttpResponse<?> fromCache(Cache.ResponseCache entry) {
+    MutableHttpResponse<?> fromCache(ResponseCache entry) {
         Map<CharSequence, CharSequence> headers = Map.of(
                         "Content-Length", entry.bytes.length.toString(),
                         "Content-Type", entry.mediaType,

@@ -5,7 +5,7 @@ import com.sun.net.httpserver.HttpExchange
 import groovy.transform.Memoized
 import groovy.transform.builder.Builder
 import groovy.util.logging.Slf4j
-import io.seqera.Cache
+import io.seqera.cache.Cache
 import io.seqera.RouteHelper
 import io.seqera.auth.AuthFactory
 import io.seqera.auth.DockerAuthProvider
@@ -122,8 +122,8 @@ class RegHandler  {
 
         if( len>0 ) {
             // copy response
-            final target = exchange.getResponseBody()
-            resp.body().transferTo(target)
+            final target        resp.body().transferTo(target) = exchange.getResponseBody()
+
             target.close()
         }
         else {
@@ -189,7 +189,7 @@ class RegHandler  {
             handleNotFound(exchange)
             return
         }
-        Cache.ResponseCache entry = cache.get(route.path)
+        ResponseCache entry = cache.get(route.path)
         if( entry ) {
             log.trace "Cache request >> $route.path"
             handleCache(exchange, entry)
@@ -200,7 +200,7 @@ class RegHandler  {
         handleProxy(route.path, exchange, proxyClient)
     }
 
-    protected void handleCache(HttpExchange exchange, Cache.ResponseCache entry) {
+    protected void handleCache(HttpExchange exchange, ResponseCache entry) {
         int len = entry.bytes.length
         log.trace "Cache response << len=$len; content: ${dumpJson(new String(entry.bytes))}"
         def headers = new HashMap<String,String>()

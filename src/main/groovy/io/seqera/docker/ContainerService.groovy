@@ -1,7 +1,7 @@
 package io.seqera.docker
 
 import groovy.util.logging.Slf4j
-import io.seqera.Cache
+import io.seqera.cache.Cache
 import io.seqera.RouteHelper
 import io.seqera.auth.AuthFactory
 import io.seqera.auth.DockerAuthProvider
@@ -40,7 +40,7 @@ class ContainerService {
         new ProxyClient(registry.host, image, authProvider)
     }
 
-    Cache.ResponseCache handleManifest(RouteHelper.Route route, Map<String,List<String>> headers){
+    ResponseCache handleManifest(RouteHelper.Route route, Map<String,List<String>> headers){
         final Registry registry = configuration.findRegistry(route.registry)
         assert registry
 

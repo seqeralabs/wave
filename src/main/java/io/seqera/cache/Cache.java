@@ -1,4 +1,4 @@
-package io.seqera;
+package io.seqera.cache;
 
 import java.util.Optional;
 
@@ -6,12 +6,6 @@ import java.util.Optional;
  * @author : jorge <jorge.aguilera@seqera.io>
  **/
 public interface Cache {
-
-    class ResponseCache {
-        public byte[] bytes;
-        public String mediaType;
-        public String digest;
-    }
 
     ResponseCache get(String path);
 
