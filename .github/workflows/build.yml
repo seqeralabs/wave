@@ -45,6 +45,7 @@ jobs:
           make check
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Release
         if: "contains(github.event.head_commit.message, '[release]')"
