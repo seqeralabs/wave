@@ -15,7 +15,7 @@ import io.seqera.docker.ContainerScanner
 import io.seqera.proxy.InvalidResponseException
 import io.seqera.proxy.ProxyClient
 import io.seqera.util.MemoryCache
-
+import io.seqera.cache.ResponseCache
 import java.net.http.HttpResponse
 
 import static io.seqera.util.RegHelper.dumpJson
@@ -122,8 +122,8 @@ class RegHandler  {
 
         if( len>0 ) {
             // copy response
-            final target        resp.body().transferTo(target) = exchange.getResponseBody()
-
+            final target = exchange.getResponseBody()
+            resp.body().transferTo(target)
             target.close()
         }
         else {

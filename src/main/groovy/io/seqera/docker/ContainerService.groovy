@@ -2,6 +2,7 @@ package io.seqera.docker
 
 import groovy.util.logging.Slf4j
 import io.seqera.cache.Cache
+import io.seqera.cache.ResponseCache
 import io.seqera.RouteHelper
 import io.seqera.auth.AuthFactory
 import io.seqera.auth.DockerAuthProvider

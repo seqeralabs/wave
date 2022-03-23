@@ -8,6 +8,7 @@ import io.micronaut.http.annotation.Get
 import io.micronaut.http.hateoas.JsonError
 import io.micronaut.http.hateoas.Link
 import io.seqera.cache.Cache
+import io.seqera.cache.ResponseCache
 import io.seqera.RouteHelper
 import io.seqera.config.TowerConfiguration
 import io.seqera.docker.ContainerService
