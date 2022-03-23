@@ -18,7 +18,7 @@ which provides the FUSE client required access the AWS S3 storage.
 
 It also changes the entry point of the container setting the script [entry.sh](.layer/opt/fusion/entry.sh)
 which takes care to automatically mount FusionFS when the env variable 
-`$NXF_FUSION_BUCKETS` is defined into the container. FIt mounts 
+`$NXF_FUSION_BUCKETS` is defined into the container. It mounts 
 the path `/fusion/s3`, and then any S3 bucket it is available as `/fusion/s3/<bucket_name>`.
 
 ### Get started 
