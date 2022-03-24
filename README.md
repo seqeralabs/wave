@@ -17,10 +17,9 @@ fetch the image manifest, and appended to the layer configuration a new layer
 which provides the FUSE client required access the AWS S3 storage.
 
 It also changes the entry point of the container setting the script [entry.sh](.layer/opt/fusion/entry.sh)
-which takes care to automatically mount the bucket names specified via the env variable 
-`$NXF_FUSION_BUCKETS` into the container. For example if the variable value is `s3://foo` it mounts 
-the bucket to the path `/fusion/s3/foo`. Multiple buckets can be specified separating them 
-with a comma `,` character.
+which takes care to automatically mount FusionFS when the env variable 
+`$NXF_FUSION_BUCKETS` is defined into the container. It mounts 
+the path `/fusion/s3`, and then any S3 bucket it is available as `/fusion/s3/<bucket_name>`.
 
 ### Get started 
 
@@ -56,7 +55,7 @@ and set the user/pwd for at least 1 registry
 
 8. The pulled images contains the files from the appended layer. Check it with the following command:
 
-        docker run 
+        docker run \
           --rm \
           --platform linux/amd64 \
           reg.ngrok.io/library/busybox \

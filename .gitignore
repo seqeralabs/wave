@@ -15,7 +15,7 @@ out/
 .settings
 .classpath
 .factorypath
-.layer/opt/goofys/goofys
+.layer/opt/fusion/fusionfs
 layer.tar.gzip
 tower-reg.yml
 src/main/resources/application-dev.yml
