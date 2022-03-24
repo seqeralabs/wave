@@ -32,13 +32,13 @@ trait DockerRegistryContainer {
     void initRegistryContainer(DefaultConfiguration defaultConfiguration){
         testcontainers.start()
 
-        "docker pull hello-world".execute().waitForOrKill(2000)
-        "docker tag hello-world $registryURL/hello-world".execute().waitForOrKill(1000)
-        "docker push $registryURL/hello-world".execute().waitForOrKill(1000)
-        "docker tag hello-world $registryURL/library/hello-world".execute().waitForOrKill(1000)
-        "docker push $registryURL/library/hello-world".execute().waitForOrKill(1000)
+        "docker pull hello-world".execute().waitForOrKill(4000)
+        "docker tag hello-world $registryURL/hello-world".execute().waitForOrKill(2000)
+        "docker push $registryURL/hello-world".execute().waitForOrKill(2000)
+        "docker tag hello-world $registryURL/library/hello-world".execute().waitForOrKill(2000)
+        "docker push $registryURL/library/hello-world".execute().waitForOrKill(2000)
 
-        sleep 500 //let docker store the push
+        sleep 1500 //let docker store the push
 
         defaultConfiguration.registries.push(
                 new Registry(
