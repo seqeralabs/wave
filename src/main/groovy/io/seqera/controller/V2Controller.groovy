@@ -51,7 +51,7 @@ class V2Controller {
         )
     }
 
-    @Get(uri="/{url:(.+)}")
+    @Get(uri="/{url:(.+)}", produces = "*/*")
     MutableHttpResponse<?> handleGet(String url, HttpRequest httpRequest) {
 
         def route = RouteHelper.parse("/v2/"+url, configuration.defaultRegistry.name)
