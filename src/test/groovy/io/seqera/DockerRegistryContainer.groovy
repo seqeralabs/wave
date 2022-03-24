@@ -1,7 +1,7 @@
 package io.seqera
 
 import io.seqera.config.DefaultConfiguration
-import io.seqera.config.Registry
+import io.seqera.config.RegistryConfiguration
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.utility.DockerImageName
@@ -40,12 +40,10 @@ trait DockerRegistryContainer {
 
         sleep 1500 //let docker store the push
 
-        defaultConfiguration.registries.push(
-                new Registry(
-                        name: 'test',
-                        host: registryURL,
-                        auth: null
-                )
-        )
+        def registry = new RegistryConfiguration(0)
+        registry.name= 'test'
+        registry.host= registryURL
+        registry.auth= null
+        defaultConfiguration.registries.push(registry)
     }
 }
