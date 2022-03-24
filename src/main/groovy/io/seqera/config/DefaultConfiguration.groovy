@@ -47,7 +47,7 @@ class DefaultConfiguration implements TowerConfiguration{
     }
 
     @PostConstruct
-    void init(){
+    private void init(){
         registries.each {r ->
             r.auth = auths.find{ it.name == r.authConfig }
         }
