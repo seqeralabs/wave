@@ -67,6 +67,17 @@ class V2Controller {
             return HttpResponse.notFound()
         }
 
+        if (route.manifest && !route.digest) {
+            MutableHttpResponse<?> resp = handleHead(route, httpRequest)
+            String digest = resp.header("docker-content-digest")
+            route.path = route.path.replace("/${route.reference}", "/${digest}")
+            route.reference = digest
+            entry = cache.get(route.path)
+            if (entry) {
+                return fromCache(entry)
+            }
+        }
+
         def headers = httpRequest.headers.asMap() as Map<String, List<String>>
         def response = containerService.handleRequest(route, headers)
         fromDelegateResponse(response)
