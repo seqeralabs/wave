@@ -3,6 +3,14 @@ micronaut:
     name: demo
   server:
     port: 9090
+  caches:
+    manifests:
+      listen-to-removals: true
+      maximum-size : 100
+    blobs:
+      listen-to-removals: true
+      maximum-size : 10
+
 netty:
   default:
     allocator:
