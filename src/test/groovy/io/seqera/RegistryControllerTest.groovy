@@ -65,7 +65,7 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
         response.getContentLength() == 774
     }
 
-    void 'should head manifest of image'() {
+    void 'should head manifest and get blob of image'() {
         when:
         HttpRequest request = HttpRequest.HEAD("/v2/hello-world/manifests/latest").headers({h->
             h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)

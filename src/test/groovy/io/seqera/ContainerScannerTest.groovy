@@ -2,11 +2,13 @@ package io.seqera
 
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
+import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.auth.SimpleAuthProvider
 import io.seqera.docker.ContainerScanner
 import io.seqera.model.ContentType
 import io.seqera.proxy.ProxyClient
-import io.seqera.util.MemoryCache
+import io.seqera.storage.MemoryStorage
+import io.seqera.storage.Storage
 import io.seqera.util.RegHelper
 import spock.lang.Ignore
 import spock.lang.Specification
@@ -15,11 +17,17 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
+import jakarta.inject.Inject
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@MicronautTest
 class ContainerScannerTest extends Specification {
+
+    @Inject
+    Storage storage
 
     def createConfig(Path folder, Map config, byte[] content ){
         def location = folder.resolve('dummy.gzip')
@@ -105,11 +113,10 @@ class ContainerScannerTest extends Specification {
         and:
         unpackLayer()
 
-        def cache = new MemoryCache()
-        def scanner = new ContainerScanner().withCache(cache).withLayerConfig(Paths.get(layerJson.absolutePath))
+        def scanner = new ContainerScanner().withStorage(storage).withLayerConfig(Paths.get(layerJson.absolutePath))
         and:
         def digest = RegHelper.digest(layerPath.bytes)
-        
+
         when:
         def blob = scanner.layerBlob(IMAGE)
 
@@ -121,7 +128,7 @@ class ContainerScannerTest extends Specification {
         blob.get('size') == 2
 
         and:
-        def entry = cache.get("/v2/$IMAGE/blobs/$digest")
+        def entry = storage.getBlob("/v2/$IMAGE/blobs/$digest").get()
         entry.bytes == layerPath.bytes
         entry.mediaType == ContentType.DOCKER_IMAGE_TAR_GZIP
         entry.digest == RegHelper.digest(layerPath.bytes)
@@ -142,15 +149,15 @@ class ContainerScannerTest extends Specification {
         def layerDigest = RegHelper.digest(layerPath.bytes)
 
         and:
-        def cache = new MemoryCache()
-        def scanner = new ContainerScanner().withCache(cache).withLayerConfig(Paths.get(layerJson.absolutePath))
+
+        def scanner = new ContainerScanner().withStorage(storage).withLayerConfig(Paths.get(layerJson.absolutePath))
 
         when:
         def digest = scanner.updateImageManifest(IMAGE, MANIFEST, NEW_CONFIG_DIGEST)
 
         then:
         // the cache contains the update image manifest json
-        def entry = cache.get("/v2/$IMAGE/manifests/$digest")
+        def entry = storage.getManifest("/v2/$IMAGE/manifests/$digest").get()
         def manifest = new String(entry.bytes)
         def json = new JsonSlurper().parseText(manifest)
         and:
@@ -186,14 +193,14 @@ class ContainerScannerTest extends Specification {
         unpackLayer()
 
         and:
-        def cache = new MemoryCache()
-        def scanner = new ContainerScanner().withCache(cache).withLayerConfig(Paths.get(layerJson.absolutePath))
+
+        def scanner = new ContainerScanner().withStorage(storage).withLayerConfig(Paths.get(layerJson.absolutePath))
 
         when:
         def digest = scanner.updateManifestsList(IMAGE, MANIFEST, DIGEST, NEW_DIGEST)
 
         then:
-        def entry = cache.get("/v2/$IMAGE/manifests/$digest")
+        def entry = storage.getManifest("/v2/$IMAGE/manifests/$digest").get()
         def manifest = new String(entry.bytes)
         and:
         entry.mediaType == ContentType.DOCKER_MANIFEST_LIST_V2
@@ -318,13 +325,13 @@ class ContainerScannerTest extends Specification {
         unpackLayer()
 
         and:
-        def cache = new MemoryCache()
-        def scanner = new ContainerScanner().withCache(cache).withLayerConfig(Paths.get(layerJson.absolutePath))
+
+        def scanner = new ContainerScanner().withStorage(storage).withLayerConfig(Paths.get(layerJson.absolutePath))
 
         when:
         def digest = scanner.updateImageConfig(IMAGE_NAME, IMAGE_CONFIG)
         then:
-        def entry = cache.get("/v2/$IMAGE_NAME/blobs/$digest")
+        def entry = storage.getBlob("/v2/$IMAGE_NAME/blobs/$digest").get()
         entry.mediaType == ContentType.DOCKER_IMAGE_V1
         entry.digest == digest
         and:
@@ -386,13 +393,13 @@ class ContainerScannerTest extends Specification {
         unpackLayer()
 
         and:
-        def cache = new MemoryCache()
-        def scanner = new ContainerScanner().withCache(cache).withLayerConfig(Paths.get(layerJson.absolutePath))
+
+        def scanner = new ContainerScanner().withStorage(storage).withLayerConfig(Paths.get(layerJson.absolutePath))
 
         when:
         def digest = scanner.resolveV1Manifest(MANIFEST, IMAGE_NAME)
         then:
-        def entry = cache.get("/v2/$IMAGE_NAME/manifests/$digest")
+        def entry = storage.getManifest("/v2/$IMAGE_NAME/manifests/$digest").get()
         entry.mediaType == ContentType.DOCKER_MANIFEST_V1_JWS_TYPE
         entry.digest == digest
         and:
@@ -519,8 +526,8 @@ class ContainerScannerTest extends Specification {
         def IMAGE_NAME = 'hello-world'
 
         and:
-        def cache = new MemoryCache()
-        def scanner = new ContainerScanner().withCache(cache).withLayerConfig(Paths.get(layerJson.absolutePath))
+
+        def scanner = new ContainerScanner().withStorage(storage).withLayerConfig(Paths.get(layerJson.absolutePath))
 
         when:
         scanner.rewriteLayersV1(IMAGE_NAME, mutableManifest.fsLayers)
@@ -541,7 +548,7 @@ class ContainerScannerTest extends Specification {
         def IMAGE = 'library/busybox'
         and:
         def layerPath = Paths.get('foo.tar.gzip')
-        def cache = new MemoryCache()
+
         def client = new ProxyClient(HOST, IMAGE, new SimpleAuthProvider(
                 username: Mock.DOCKER_USER,
                 password: Mock.DOCKER_PAT,
@@ -549,17 +556,17 @@ class ContainerScannerTest extends Specification {
                 service: 'registry.docker.io'))
         and:
         def scanner = new ContainerScanner()
-                            .withCache(cache)
-                            .withClient(client)
-                            .withArch('amd64')
+                .withStorage(storage)
+                .withClient(client)
+                .withArch('amd64')
         and:
         def headers = [
                 Accept: ['application/vnd.docker.distribution.manifest.v1+prettyjws',
-                        'application/json',
-                        'application/vnd.oci.image.manifest.v1+json',
-                        'application/vnd.docker.distribution.manifest.v2+json',
-                        'application/vnd.docker.distribution.manifest.list.v2+json',
-                        'application/vnd.oci.image.index.v1+json' ] ]
+                         'application/json',
+                         'application/vnd.oci.image.manifest.v1+json',
+                         'application/vnd.docker.distribution.manifest.v2+json',
+                         'application/vnd.docker.distribution.manifest.list.v2+json',
+                         'application/vnd.oci.image.index.v1+json' ] ]
         when:
         def digest = scanner.resolve(IMAGE, 'latest', headers)
         then:
@@ -573,7 +580,7 @@ class ContainerScannerTest extends Specification {
         def IMAGE = 'biocontainers/fastqc'
         def TAG = "0.11.9--0"
         and:
-        def cache = new MemoryCache()
+
         def client = new ProxyClient(HOST, IMAGE, new SimpleAuthProvider(
                 username: Mock.QUAY_USER,
                 password: Mock.QUAY_PAT,
@@ -581,7 +588,7 @@ class ContainerScannerTest extends Specification {
                 service: HOST))
         and:
         def scanner = new ContainerScanner()
-                .withCache(cache)
+                .withStorage(storage)
                 .withClient(client)
                 .withArch('amd64')
         and:

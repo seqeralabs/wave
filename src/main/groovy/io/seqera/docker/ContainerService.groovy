@@ -1,8 +1,8 @@
 package io.seqera.docker
 
 import groovy.util.logging.Slf4j
-import io.seqera.cache.Cache
-import io.seqera.cache.ResponseCache
+import io.seqera.storage.Storage
+import io.seqera.storage.DigestByteArray
 import io.seqera.RouteHelper
 import io.seqera.auth.AuthFactory
 import io.seqera.auth.DockerAuthProvider
@@ -19,12 +19,12 @@ import jakarta.inject.Singleton
 @Singleton
 class ContainerService {
 
-    Cache cache
+    Storage storage
     AuthFactory authFactory
     TowerConfiguration configuration
 
-    ContainerService(Cache cache, AuthFactory authFactory, TowerConfiguration towerConfiguration) {
-        this.cache = cache
+    ContainerService(Storage storage, AuthFactory authFactory, TowerConfiguration towerConfiguration) {
+        this.storage = storage
         this.authFactory = authFactory
         this.configuration = towerConfiguration
     }
@@ -32,7 +32,7 @@ class ContainerService {
     private ContainerScanner scanner(ProxyClient proxyClient) {
         return new ContainerScanner()
                 .withArch(configuration.arch)
-                .withCache(cache)
+                .withStorage(storage)
                 .withClient(proxyClient)
     }
 
@@ -41,7 +41,7 @@ class ContainerService {
         new ProxyClient(registry.host, image, authProvider)
     }
 
-    ResponseCache handleManifest(RouteHelper.Route route, Map<String,List<String>> headers){
+    DigestByteArray handleManifest(RouteHelper.Route route, Map<String,List<String>> headers){
         final Registry registry = configuration.findRegistry(route.registry)
         assert registry
 
@@ -52,9 +52,8 @@ class ContainerService {
             throw new IllegalStateException("Missing digest for request: $route")
 
         final req = "/v2/$route.image/manifests/$digest"
-        final entry = cache.get(req)
-        if( !entry )
-            throw new IllegalStateException("Missing cached entry for request: $req")
+        final entry = storage.getManifest(req).orElseThrow( ()->
+                new IllegalStateException("Missing cached entry for request: $req"))
         entry
     }
 

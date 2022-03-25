@@ -7,13 +7,15 @@ import io.micronaut.http.annotation.Error
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.hateoas.JsonError
 import io.micronaut.http.hateoas.Link
-import io.seqera.cache.Cache
-import io.seqera.cache.ResponseCache
+import io.seqera.storage.Storage
+import io.seqera.storage.DigestByteArray
 import io.seqera.RouteHelper
 import io.seqera.config.TowerConfiguration
 import io.seqera.docker.ContainerService
 import io.seqera.docker.ContainerService.DelegateResponse
 import org.reactivestreams.Publisher
+import reactor.core.publisher.Flux
+import reactor.core.publisher.FluxSink
 import reactor.core.publisher.Mono
 
 /**
@@ -26,13 +28,13 @@ class V2Controller {
 
     TowerConfiguration configuration
     ContainerService containerService
-    Cache cache
+    Storage storage
 
-    V2Controller(TowerConfiguration configuration, ContainerService containerService, Cache cache) {
+    V2Controller(TowerConfiguration configuration, ContainerService containerService, Storage storage) {
         log.debug "Server configuration=$configuration"
         this.configuration = configuration
         this.containerService = containerService
-        this.cache = cache
+        this.storage = storage
     }
 
     @Error
@@ -55,16 +57,26 @@ class V2Controller {
     MutableHttpResponse<?> handleGet(String url, HttpRequest httpRequest) {
 
         def route = RouteHelper.parse("/v2/"+url, configuration.defaultRegistry.name)
-        def entry = cache.get(route.path)
-        if (entry) {
-            return fromCache(entry)
-        }
 
         if( httpRequest.method == HttpMethod.HEAD )
             return handleHead(route, httpRequest)
 
         if (!(route.manifest || route.blob)) {
             return HttpResponse.notFound()
+        }
+
+        if( route.manifest ) {
+            def entry = storage.getManifest(route.path)
+            if (entry.present) {
+                return fromCache(entry.get())
+            }
+        }
+
+        if( route.blob){
+            def entry = storage.getBlob(route.path)
+            if (entry.present) {
+                return fromCache(entry.get())
+            }
         }
 
         def headers = httpRequest.headers.asMap() as Map<String, List<String>>
@@ -78,12 +90,17 @@ class V2Controller {
             return HttpResponse.notFound()
         }
 
+        def manifest = storage.getManifest(route.path)
+        if (manifest.present) {
+            return fromCache(manifest.get())
+        }
+
         Map<String, List<String>> headers = httpRequest.headers.asMap() as Map<String, List<String>>
         def entry = containerService.handleManifest(route, headers)
         return fromCache(entry)
     }
 
-    MutableHttpResponse<?> fromCache(ResponseCache entry) {
+    MutableHttpResponse<?> fromCache(DigestByteArray entry) {
         Map<CharSequence, CharSequence> headers = Map.of(
                         "Content-Length", entry.bytes.length.toString(),
                         "Content-Type", entry.mediaType,
@@ -95,11 +112,13 @@ class V2Controller {
                 .headers(headers)
     }
 
-    MutableHttpResponse<?>fromDelegateResponse(final DelegateResponse delegateResponse){
+    MutableHttpResponse<Flux<byte[]>>fromDelegateResponse(final DelegateResponse delegateResponse){
+
+        Flux<byte[]> fluxInputStream = createFluxFromChunkBytes(delegateResponse.body)
 
         HttpResponse
                 .status(HttpStatus.valueOf(delegateResponse.statusCode))
-                .body( delegateResponse.body.readAllBytes() )
+                .body( fluxInputStream )
                 .headers({MutableHttpHeaders mutableHttpHeaders ->
                     delegateResponse.headers.each {entry->
                         entry.value.each{ value ->
@@ -107,6 +126,19 @@ class V2Controller {
                         }
                     }
                 })
+    }
+
+    static Flux<byte[]> createFluxFromChunkBytes(InputStream inputStream){
+        int size = 1024
+        Flux.<byte[]>create({ emitter ->
+            byte[]buff = new byte[size]
+            int readed
+            while( (readed=inputStream.read(buff, 0, size)) != -1){
+                byte[] send = Arrays.copyOf(buff, readed)
+                emitter.next(send)
+            }
+            emitter.complete()
+        }, FluxSink.OverflowStrategy.BUFFER)
     }
 
 }
