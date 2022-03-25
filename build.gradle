@@ -39,6 +39,8 @@ dependencies {
     testImplementation("org.testcontainers:testcontainers")
 
     implementation 'org.apache.commons:commons-compress:1.21'
+
+    implementation("io.micronaut.cache:micronaut-cache-caffeine")
 }
 
 
