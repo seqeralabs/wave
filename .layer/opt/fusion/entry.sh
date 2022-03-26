@@ -3,9 +3,17 @@ set -e
 ## enable debug mode
 [ $XREG_DEBUG ] && set -x
 if [ "$NXF_FUSION_BUCKETS" ]; then
-  mkdir -p /fusion/s3
-  /opt/fusion/fusionfs &
-  timeout 10s sh -c 'until (cat /proc/mounts | grep "/fusion/s3"); do sleep 1; done >/dev/null' || { echo "ERROR mounting FusionFS at /fusion/s3"; exit 1; }
+  uid=$(id -u)
+  gid=$(id -g)
+  (IFS=',';
+  for x in $NXF_FUSION_BUCKETS; do
+    path=$(echo $x | sed s@'s3://'@@)
+    mkdir -p /fusion/s3/$path
+    ## replace the first slash with a `:` character
+    ## because this is the format expected by goofys
+    bucket=$(echo $path | sed 's#/#:#')
+    /opt/goofys/goofys --file-mode=0755 --uid $uid --gid $gid $bucket /fusion/s3/$path
+  done)
 fi
 ## invoke the target command
 if [ "$XREG_ENTRY_CHAIN" ]; then
