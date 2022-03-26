@@ -69,7 +69,7 @@ and set the user/pwd for at least 1 registry
           -e AWS_REGION=eu-west-1 \
           -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
           -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
-          -e NXF_FUSION_BUCKETS=true \
+          -e NXF_FUSION_BUCKETS=nextflow-ci \
           --cap-add SYS_ADMIN \
           --device /dev/fuse  \
           reg.ngrok.io/library/busybox \
