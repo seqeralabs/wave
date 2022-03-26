@@ -100,7 +100,7 @@ class ContainerScanner {
         // resolve image tag to digest
         final resp1 = client.head("/v2/$imageName/manifests/$tag", headers)
         final digest = resp1.headers().firstValue('docker-content-digest')
-        log.debug "Image $imageName:$tag => digest=$digest"
+        log.info "Image $imageName:$tag => digest=$digest"
         if( resp1.statusCode() != 200 )
             throw new InvalidResponseException("Unexpected response statusCode: ${resp1.statusCode()}", resp1)
 

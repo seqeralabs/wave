@@ -26,11 +26,6 @@ if [[ $RELEASE ]]; then
   git push $REMOTE $TAG $FORCE
   # build and push image
   make pack
-  # creds file
-  set +x
-  cp application-prod-example.yml application-prod.yml
-  # docker login
-  docker login -u pditommaso -p ${DOCKER_PASSWORD}
   # push it
   make push
 fi

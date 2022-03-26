@@ -31,7 +31,7 @@ class V2Controller {
     Storage storage
 
     V2Controller(TowerConfiguration configuration, ContainerService containerService, Storage storage) {
-        log.debug "Server configuration=$configuration"
+        log.info "Server configuration=$configuration"
         this.configuration = configuration
         this.containerService = containerService
         this.storage = storage
@@ -55,7 +55,7 @@ class V2Controller {
 
     @Get(uri="/{url:(.+)}", produces = "*/*")
     MutableHttpResponse<?> handleGet(String url, HttpRequest httpRequest) {
-
+        log.info "> Request [$httpRequest.method] $httpRequest.path"
         def route = RouteHelper.parse("/v2/"+url, configuration.defaultRegistry.name)
 
         if( httpRequest.method == HttpMethod.HEAD )
