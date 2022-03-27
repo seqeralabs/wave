@@ -45,7 +45,7 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
         and:
         response.body().indexOf('"schemaVersion":') != -1
         response.getContentType().get().getName() ==  'application/vnd.docker.distribution.manifest.v2+json'
-        response.getContentLength() == 525
+        response.getContentLength() == 775
     }
 
     void 'should head manifest'() {
