@@ -66,13 +66,9 @@ class V2Controller {
         }
 
         if (route.manifest && !route.digest) {
-            MutableHttpResponse<?> resp = handleHead(route, httpRequest)
-            String digest = resp.header("docker-content-digest")
-            route.path = route.path.replace("/${route.reference}", "/${digest}")
-            route.reference = digest
-            def entry = storage.getManifest(route.path)
-            if (entry.isPresent()) {
-                return fromCache(entry.get())
+            def entry = manifestForPath(route, httpRequest)
+            if (entry) {
+                return fromCache(entry)
             }
         }
         else if( route.manifest ) {
@@ -94,19 +90,23 @@ class V2Controller {
         fromDelegateResponse(response)
     }
 
+    protected DigestByteArray manifestForPath(RouteHelper.Route route, HttpRequest httpRequest) {
+        def manifest = storage.getManifest(route.path)
+        if (manifest.present) {
+            return manifest.get()
+        }
+
+        Map<String, List<String>> headers = httpRequest.headers.asMap() as Map<String, List<String>>
+        return containerService.handleManifest(route, headers)
+    }
+
     MutableHttpResponse<?> handleHead(RouteHelper.Route route, HttpRequest httpRequest) {
 
         if (!(route.manifest && route.tag)) {
             return HttpResponse.notFound()
         }
 
-        def manifest = storage.getManifest(route.path)
-        if (manifest.present) {
-            return fromCache(manifest.get())
-        }
-
-        Map<String, List<String>> headers = httpRequest.headers.asMap() as Map<String, List<String>>
-        def entry = containerService.handleManifest(route, headers)
+        final entry = manifestForPath(route, httpRequest)
         return fromCache(entry)
     }
 
