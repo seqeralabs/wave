@@ -62,10 +62,10 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
         and:
         response.getHeaders().get('docker-content-digest').startsWith( 'sha256:')
         response.getHeaders().get('Content-Type') == 'application/vnd.docker.distribution.manifest.v2+json'
-        response.getContentLength() == 774
+        response.getContentLength() == 775
     }
 
-    void 'should head manifest of image'() {
+    void 'should head manifest and get blob of image'() {
         when:
         HttpRequest request = HttpRequest.HEAD("/v2/hello-world/manifests/latest").headers({h->
             h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
@@ -78,6 +78,6 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
         and:
         response.getHeaders().get('docker-content-digest').startsWith( 'sha256:')
         response.getHeaders().get('Content-Type') == 'application/vnd.docker.distribution.manifest.v2+json'
-        response.getContentLength() == 774
+        response.getContentLength() == 775
     }
 }

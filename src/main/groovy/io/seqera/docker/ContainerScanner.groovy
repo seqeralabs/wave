@@ -5,7 +5,7 @@ import groovy.json.JsonSlurper
 import groovy.transform.CompileDynamic
 import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
-import io.seqera.cache.Cache
+import io.seqera.storage.Storage
 import io.seqera.model.ContentType
 import io.seqera.model.LayerConfig
 import io.seqera.proxy.InvalidResponseException
@@ -28,14 +28,14 @@ class ContainerScanner {
     private Path layerConfigPath
     private String arch
 
-    private Cache cache
+    private Storage storage
 
     {
         withLayerConfig(Paths.get('pack/layers/layer.json'))
     }
 
-    ContainerScanner withCache(Cache cache) {
-        this.cache = cache
+    ContainerScanner withStorage(Storage cache) {
+        this.storage = cache
         return this
     }
 
@@ -100,7 +100,7 @@ class ContainerScanner {
         // resolve image tag to digest
         final resp1 = client.head("/v2/$imageName/manifests/$tag", headers)
         final digest = resp1.headers().firstValue('docker-content-digest')
-        log.debug "Image $imageName:$tag => digest=$digest"
+        log.info "Image $imageName:$tag => digest=$digest"
         if( resp1.statusCode() != 200 )
             throw new InvalidResponseException("Unexpected response statusCode: ${resp1.statusCode()}", resp1)
 
@@ -179,7 +179,7 @@ class ContainerScanner {
         else {
             throw new IllegalArgumentException("Unexpected media type for request '$imageName:$tag' - offending value: $media")
         }
-        
+
     }
 
     protected String updateManifestsList(String imageName, String manifestsList, String targetDigest, String newDigest) {
@@ -190,12 +190,11 @@ class ContainerScanner {
         if( manifestsList==updated )
             throw new IllegalArgumentException("Unable to find target digest '$targetDigest' into image list manifest")
         // store in the cache
-        cache.put("/v2/$imageName/manifests/$result", updated.bytes, type, result)
+        storage.saveManifest("/v2/$imageName/manifests/$result", updated, type, result)
         // return the updated manifests list digest
         return result
     }
 
-    @Memoized
     synchronized protected Map layerBlob(String image) {
         // store the layer blob in the cache
         final type = "application/vnd.docker.image.rootfs.diff.tar.gzip"
@@ -211,7 +210,7 @@ class ContainerScanner {
         if( digest != computed )
             log.warn("Layer gzip computed digest does not match with expected digest -- path=$layerConfig.append.locationPath; computed=$computed; expected: $digest")
         final path = "/v2/$image/blobs/$digest"
-        cache.put(path, buffer, type, digest)
+        storage.saveBlob(path, buffer, type, digest)
 
         final result = new HashMap()
         result."mediaType" = type
@@ -267,7 +266,7 @@ class ContainerScanner {
         // add to the cache
         final digest = RegHelper.digest(newManifest)
         final path = "/v2/$imageName/manifests/$digest"
-        cache.put(path, newManifest.bytes, ContentType.DOCKER_MANIFEST_V2_TYPE, digest)
+        storage.saveManifest(path, newManifest, ContentType.DOCKER_MANIFEST_V2_TYPE, digest)
 
         // return the updated image manifest digest
         return digest
@@ -335,7 +334,7 @@ class ContainerScanner {
         // add to the cache
         final digest = RegHelper.digest(newConfig)
         final path = "/v2/$imageName/blobs/$digest"
-        cache.put(path, newConfig.bytes, ContentType.DOCKER_IMAGE_V1, digest)
+        storage.saveBlob(path, newConfig.bytes, ContentType.DOCKER_IMAGE_V1, digest)
 
         // return the updated image manifest digest
         return digest
@@ -411,7 +410,7 @@ class ContainerScanner {
         def newManifestJson = JsonOutput.toJson(manifest)
         def newManifestDigest = RegHelper.digest(newManifestJson)
 
-        cache.put("/v2/$imageName/manifests/$newManifestDigest", newManifestJson.bytes, ContentType.DOCKER_MANIFEST_V1_JWS_TYPE, newManifestDigest)
+        storage.saveManifest("/v2/$imageName/manifests/$newManifestDigest", newManifestJson, ContentType.DOCKER_MANIFEST_V1_JWS_TYPE, newManifestDigest)
         return newManifestDigest
     }
 }

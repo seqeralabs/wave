@@ -1,6 +1,6 @@
 export XREG_ARCH=$(uname -m)
 # create config file from env var
-< application-prod-example.yml \
+< application-example.yml \
   DOCKER_USER=pditommaso \
   DOCKER_PAT=${DOCKER_PAT} \
   QUAY_USER=pditommaso \

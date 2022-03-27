@@ -5,7 +5,6 @@ import com.sun.net.httpserver.HttpExchange
 import groovy.transform.Memoized
 import groovy.transform.builder.Builder
 import groovy.util.logging.Slf4j
-import io.seqera.cache.Cache
 import io.seqera.RouteHelper
 import io.seqera.auth.AuthFactory
 import io.seqera.auth.DockerAuthProvider
@@ -14,8 +13,6 @@ import io.seqera.config.TowerConfiguration
 import io.seqera.docker.ContainerScanner
 import io.seqera.proxy.InvalidResponseException
 import io.seqera.proxy.ProxyClient
-import io.seqera.util.MemoryCache
-import io.seqera.cache.ResponseCache
 import java.net.http.HttpResponse
 
 import static io.seqera.util.RegHelper.dumpJson
@@ -28,6 +25,8 @@ import static io.seqera.util.RegHelper.dumpJson
 @Builder
 class RegHandler  {
 
+    /**
+     * Deprecated. Maintaining for historical reference but will be removed
     private Cache cache = new MemoryCache()
 
     TowerConfiguration configuration
@@ -259,5 +258,5 @@ class RegHandler  {
         final message = 'pong'
         handleResp1(exchange, 200, message.bytes, ['Content-Type': '"text/plain"'])
     }
-
+    */
 }
