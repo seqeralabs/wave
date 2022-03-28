@@ -65,7 +65,13 @@ class V2Controller {
             return HttpResponse.notFound()
         }
 
-        if( route.manifest ) {
+        if (route.manifest && !route.digest) {
+            def entry = manifestForPath(route, httpRequest)
+            if (entry) {
+                return fromCache(entry)
+            }
+        }
+        else if( route.manifest ) {
             def entry = storage.getManifest(route.path)
             if (entry.present) {
                 return fromCache(entry.get())
@@ -84,19 +90,23 @@ class V2Controller {
         fromDelegateResponse(response)
     }
 
+    protected DigestByteArray manifestForPath(RouteHelper.Route route, HttpRequest httpRequest) {
+        def manifest = storage.getManifest(route.path)
+        if (manifest.present) {
+            return manifest.get()
+        }
+
+        Map<String, List<String>> headers = httpRequest.headers.asMap() as Map<String, List<String>>
+        return containerService.handleManifest(route, headers)
+    }
+
     MutableHttpResponse<?> handleHead(RouteHelper.Route route, HttpRequest httpRequest) {
 
         if (!(route.manifest && route.tag)) {
             return HttpResponse.notFound()
         }
 
-        def manifest = storage.getManifest(route.path)
-        if (manifest.present) {
-            return fromCache(manifest.get())
-        }
-
-        Map<String, List<String>> headers = httpRequest.headers.asMap() as Map<String, List<String>>
-        def entry = containerService.handleManifest(route, headers)
+        final entry = manifestForPath(route, httpRequest)
         return fromCache(entry)
     }
 
