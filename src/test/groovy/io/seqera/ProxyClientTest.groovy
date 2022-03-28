@@ -3,7 +3,7 @@ package io.seqera
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.auth.ConfigurableAuthProvider
 import io.seqera.auth.SimpleAuthProvider
-import io.seqera.config.AuthConfiguration
+
 import io.seqera.config.DefaultConfiguration
 import io.seqera.proxy.ProxyClient
 import jakarta.inject.Inject
@@ -43,7 +43,7 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
         given:
         def IMAGE = 'biocontainers/fastqc'
         and:
-        def authConfiguration = new AuthConfiguration("test")
+        def authConfiguration = new DefaultConfiguration.RegistryConfiguration.AuthConfiguration("test")
         authConfiguration.username= Mock.QUAY_USER
         authConfiguration.password= Mock.QUAY_PAT
         authConfiguration.url= Mock.QUAY_AUTH

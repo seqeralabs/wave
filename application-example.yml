@@ -5,22 +5,16 @@ towerreg:
     -
       name: docker.io
       host: registry-1.docker.io
-      authConfig: docker
+      auth:
+        username: ${DOCKER_USER}
+        password: ${DOCKER_PAT}
+        url: auth.docker.io/token
+        service: registry.docker.io
     -
       name: quay.io
       host: quay.io
-      authConfig: quay
-
-  auths:
-    -
-      name: docker
-      username : ${DOCKER_USER}
-      password : ${DOCKER_PAT}
-      url : auth.docker.io/token
-      service : registry.docker.io
-    -
-      name: quay
-      username: ${QUAY_USER}
-      password: ${QUAY_PAT}
-      url: quay.io/v2/auth
-      service: quay.io
+      auth:
+        username: ${QUAY_USER}
+        password: ${QUAY_PAT}
+        url: quay.io/v2/auth
+        service: quay.io
