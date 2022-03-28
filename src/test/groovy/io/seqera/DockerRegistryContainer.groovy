@@ -40,7 +40,7 @@ trait DockerRegistryContainer {
 
         sleep 1500 //let docker store the push
 
-        def registry = new DefaultConfiguration.RegistryConfiguration(0)
+        def registry = new DefaultConfiguration.RegistryConfiguration()
         registry.name= 'test'
         registry.host= registryURL
         registry.auth= null

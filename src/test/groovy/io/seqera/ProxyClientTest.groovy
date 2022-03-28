@@ -43,7 +43,7 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
         given:
         def IMAGE = 'biocontainers/fastqc'
         and:
-        def authConfiguration = new DefaultConfiguration.RegistryConfiguration.AuthConfiguration("test")
+        def authConfiguration = new DefaultConfiguration.RegistryConfiguration.AuthConfiguration()
         authConfiguration.username= Mock.QUAY_USER
         authConfiguration.password= Mock.QUAY_PAT
         authConfiguration.url= Mock.QUAY_AUTH
