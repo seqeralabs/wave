@@ -19,6 +19,7 @@ trait DockerRegistryContainer {
     @Shared
     static GenericContainer testcontainers = new GenericContainer(DockerImageName.parse("registry:2"))
             .withExposedPorts(5000)
+            .withPrivilegedMode(true)
             .waitingFor(
                     Wait.forLogMessage(".*listening on .*\\n", 1)
             );
@@ -31,14 +32,13 @@ trait DockerRegistryContainer {
 
     void initRegistryContainer(DefaultConfiguration defaultConfiguration){
         testcontainers.start()
-
-        "docker pull hello-world".execute().waitForOrKill(4000)
-        "docker tag hello-world $registryURL/hello-world".execute().waitForOrKill(2000)
-        "docker push $registryURL/hello-world".execute().waitForOrKill(2000)
-        "docker tag hello-world $registryURL/library/hello-world".execute().waitForOrKill(2000)
-        "docker push $registryURL/library/hello-world".execute().waitForOrKill(2000)
-
-        sleep 1500 //let docker store the push
+        assert testcontainers.execInContainer("apk","add", "docker","bash").exitCode==0
+        assert testcontainers.execInContainer("sh","-c","dockerd &").exitCode==0
+        assert testcontainers.execInContainer("docker","pull","hello-world").exitCode==0
+        assert testcontainers.execInContainer("docker","tag","hello-world","localhost:5000/hello-world").exitCode==0
+        assert testcontainers.execInContainer("docker","push","localhost:5000/hello-world").exitCode==0
+        assert testcontainers.execInContainer("docker","tag","hello-world","localhost:5000/library/hello-world").exitCode==0
+        assert testcontainers.execInContainer("docker","push","localhost:5000/library/hello-world").exitCode==0
 
         def registry = new DefaultConfiguration.RegistryConfiguration()
         registry.name= 'test'
