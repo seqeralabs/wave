@@ -1,6 +1,5 @@
 package io.seqera.auth
 
-
 import io.seqera.config.Registry
 import jakarta.inject.Singleton
 

@@ -1,36 +1,79 @@
 package io.seqera.config
 
-import javax.validation.constraints.NotNull
+import javax.annotation.Nullable
+import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
 
 import io.micronaut.context.annotation.ConfigurationProperties
 import io.micronaut.context.annotation.Context
-import jakarta.inject.Singleton
+import io.micronaut.context.annotation.EachProperty
+import io.micronaut.context.annotation.Parameter
+
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  * */
 @Context
-@Singleton
 @ConfigurationProperties("towerreg")
-class DefaultConfiguration implements TowerConfiguration{
+class DefaultConfiguration implements TowerConfiguration {
 
-    @NotNull
-    String arch
+    @NotBlank
+    private String arch
 
-    @NotNull
-    @Size(min=1)
-    List<Registry> registries
+    @Size(min = 1)
+    private List<RegistryConfiguration> registries
 
-
-    Registry getDefaultRegistry(){
+    Registry getDefaultRegistry() {
         registries.first()
     }
 
-    Registry findRegistry(String name){
-        registries.find{ it.name == name} ?: defaultRegistry
+    Registry findRegistry(String name) {
+        registries.find { it.name == name } ?: defaultRegistry
     }
 
-    String toString() {
-        return "DefaultConfiguration[arch=$arch; registries=${registries.join(',')}]"
+    String getArch() {
+        return arch
+    }
+
+    void setArch(String arch) {
+        this.arch = arch
+    }
+
+    List<RegistryConfiguration> getRegistries() {
+        return registries
+    }
+
+    void setRegistries(List<RegistryConfiguration> registries) {
+        this.registries = registries
+    }
+
+    @EachProperty(value = "registries", list = true)
+    static class RegistryConfiguration implements Registry {
+
+        @NotBlank
+        String name
+
+        @NotBlank
+        String host
+
+        @Nullable
+        AuthConfiguration auth
+
+
+        @ConfigurationProperties("auth")
+        static class AuthConfiguration implements Auth{
+
+            @NotBlank
+            String username
+
+            @NotBlank
+            String password
+
+            @NotBlank
+            String url
+
+            @NotBlank
+            String service
+        }
+
     }
 }

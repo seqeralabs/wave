@@ -3,7 +3,7 @@ package io.seqera
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.auth.ConfigurableAuthProvider
 import io.seqera.auth.SimpleAuthProvider
-import io.seqera.config.Auth
+
 import io.seqera.config.DefaultConfiguration
 import io.seqera.proxy.ProxyClient
 import jakarta.inject.Inject
@@ -43,11 +43,13 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
         given:
         def IMAGE = 'biocontainers/fastqc'
         and:
-        def proxy = new ProxyClient('quay.io', IMAGE, new ConfigurableAuthProvider( new Auth(
-                username: Mock.QUAY_USER,
-                password: Mock.QUAY_PAT,
-                url: Mock.QUAY_AUTH,
-                service: 'quay.io')))
+        def authConfiguration = new DefaultConfiguration.RegistryConfiguration.AuthConfiguration()
+        authConfiguration.username= Mock.QUAY_USER
+        authConfiguration.password= Mock.QUAY_PAT
+        authConfiguration.url= Mock.QUAY_AUTH
+        authConfiguration.service= 'quay.io'
+
+        def proxy = new ProxyClient('quay.io', IMAGE, new ConfigurableAuthProvider(authConfiguration))
 
         when:
         def resp1 = proxy.getString('/v2/biocontainers/fastqc/blobs/sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4')
