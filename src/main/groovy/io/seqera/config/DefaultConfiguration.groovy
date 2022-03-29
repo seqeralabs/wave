@@ -7,8 +7,7 @@ import javax.validation.constraints.Size
 import io.micronaut.context.annotation.ConfigurationProperties
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.EachProperty
-import io.micronaut.context.annotation.Parameter
-
+import io.seqera.util.StringUtils
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  * */
@@ -42,6 +41,11 @@ class DefaultConfiguration implements TowerConfiguration {
         return registries
     }
 
+    @Override
+    String toString() {
+        return "DefaultConfiguration[arch=$arch; registries=$registries]"
+    }
+
     void setRegistries(List<RegistryConfiguration> registries) {
         this.registries = registries
     }
@@ -58,6 +62,10 @@ class DefaultConfiguration implements TowerConfiguration {
         @Nullable
         AuthConfiguration auth
 
+        @Override
+        String toString() {
+            "RegistryConfiguration[name=$name; host=$host; auth=$auth]"
+        }
 
         @ConfigurationProperties("auth")
         static class AuthConfiguration implements Auth{
@@ -73,6 +81,11 @@ class DefaultConfiguration implements TowerConfiguration {
 
             @NotBlank
             String service
+
+            @Override
+            String toString() {
+                "AuthConfiguration[username=$username; password=${StringUtils.redact(password)}; url=$url; service=$service]"
+            }
         }
 
     }
