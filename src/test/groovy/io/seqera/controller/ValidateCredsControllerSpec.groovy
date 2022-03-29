@@ -3,6 +3,7 @@ package io.seqera.controller
 import spock.lang.Shared
 import spock.lang.Specification
 
+import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
@@ -40,7 +41,7 @@ class ValidateCredsControllerSpec extends Specification{
         url
     }
 
-    void initRegistryContainer(DefaultConfiguration defaultConfiguration){
+    void initRegistryContainer(ApplicationContext applicationContext){
         testcontainers.start()
     }
 
@@ -50,10 +51,10 @@ class ValidateCredsControllerSpec extends Specification{
 
     @Inject
     @Shared
-    DefaultConfiguration defaultConfiguration
+    ApplicationContext applicationContext
 
     def setupSpec() {
-        initRegistryContainer(defaultConfiguration)
+        initRegistryContainer(applicationContext)
     }
 
     void 'should validate username required'() {

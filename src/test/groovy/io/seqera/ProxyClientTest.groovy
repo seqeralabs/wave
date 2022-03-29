@@ -1,5 +1,6 @@
 package io.seqera
 
+import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.auth.ConfigurableAuthProvider
 import io.seqera.auth.SimpleAuthProvider
@@ -19,10 +20,10 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
 
     @Inject
     @Shared
-    DefaultConfiguration defaultConfiguration
+    ApplicationContext applicationContext
 
     def setupSpec() {
-        initRegistryContainer(defaultConfiguration)
+        initRegistryContainer(applicationContext)
     }
 
     def 'should call target blob' () {
@@ -43,13 +44,13 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
         given:
         def IMAGE = 'biocontainers/fastqc'
         and:
-        def authConfiguration = new DefaultConfiguration.RegistryConfiguration.AuthConfiguration()
-        authConfiguration.username= Mock.QUAY_USER
-        authConfiguration.password= Mock.QUAY_PAT
-        authConfiguration.url= Mock.QUAY_AUTH
-        authConfiguration.service= 'quay.io'
-
-        def proxy = new ProxyClient('quay.io', IMAGE, new ConfigurableAuthProvider(authConfiguration))
+        def proxy = new ProxyClient('https://quay.io', IMAGE, ConfigurableAuthProvider.builder()
+                .username(Mock.QUAY_USER)
+                .password(Mock.QUAY_PAT)
+                .authUrl(Mock.QUAY_AUTH)
+                .service('quay.io')
+                .build()
+        )
 
         when:
         def resp1 = proxy.getString('/v2/biocontainers/fastqc/blobs/sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4')

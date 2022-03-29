@@ -1,7 +1,9 @@
 package io.seqera
 
+import io.micronaut.context.ApplicationContext
 import io.seqera.config.DefaultConfiguration
-
+import io.seqera.config.RegistryBean
+import jakarta.inject.Inject
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.utility.DockerImageName
@@ -26,11 +28,11 @@ trait DockerRegistryContainer {
 
     String getRegistryURL(){
         int port = testcontainers.firstMappedPort
-        String url = "$testcontainers.containerIpAddress:$port"
+        String url = "http://$testcontainers.containerIpAddress:$port"
         url
     }
 
-    void initRegistryContainer(DefaultConfiguration defaultConfiguration){
+    void initRegistryContainer(ApplicationContext applicationContext){
         testcontainers.start()
         assert testcontainers.execInContainer("apk","add", "docker","bash").exitCode==0
         assert testcontainers.execInContainer("sh","-c","dockerd &").exitCode==0
@@ -40,10 +42,7 @@ trait DockerRegistryContainer {
         assert testcontainers.execInContainer("docker","tag","hello-world","localhost:5000/library/hello-world").exitCode==0
         assert testcontainers.execInContainer("docker","push","localhost:5000/library/hello-world").exitCode==0
 
-        def registry = new DefaultConfiguration.RegistryConfiguration()
-        registry.name= 'test'
-        registry.host= registryURL
-        registry.auth= null
-        defaultConfiguration.registries.push(registry)
+        def registry = RegistryBean.builder().name('test').host(registryURL).build()
+        applicationContext.registerSingleton(registry)
     }
 }

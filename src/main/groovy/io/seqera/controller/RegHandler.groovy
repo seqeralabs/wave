@@ -9,7 +9,6 @@ import io.seqera.RouteHelper
 import io.seqera.auth.AuthFactory
 import io.seqera.auth.DockerAuthProvider
 import io.seqera.config.Registry
-import io.seqera.config.TowerConfiguration
 import io.seqera.docker.ContainerScanner
 import io.seqera.proxy.InvalidResponseException
 import io.seqera.proxy.ProxyClient

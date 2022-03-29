@@ -1,5 +1,6 @@
 package io.seqera
 
+import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
@@ -10,6 +11,8 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.http.hateoas.JsonError
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.config.DefaultConfiguration
+import io.seqera.config.Registry
+import io.seqera.config.RegistryBean
 import io.seqera.model.ContentType
 import jakarta.inject.Inject
 import spock.lang.Shared
@@ -27,11 +30,10 @@ class ErrorHandlingTest extends Specification {
     HttpClient client;
 
     @Inject
-    @Shared
-    DefaultConfiguration defaultConfiguration
+    ApplicationContext applicationContext
 
-    def setupSpec() {
-        defaultConfiguration.registries.clear()
+    def setup() {
+        applicationContext.getBeansOfType(RegistryBean)*.name=null
     }
 
     void 'should handle an error'() {

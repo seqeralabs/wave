@@ -1,5 +1,6 @@
 package io.seqera
 
+import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
@@ -26,10 +27,10 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
 
     @Inject
     @Shared
-    DefaultConfiguration defaultConfiguration
+    ApplicationContext applicationContext
 
     def setupSpec() {
-        initRegistryContainer(defaultConfiguration)
+        initRegistryContainer(applicationContext)
     }
 
     void 'should get manifest'() {

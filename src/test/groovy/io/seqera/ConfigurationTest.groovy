@@ -10,6 +10,7 @@ import io.micronaut.context.env.Environment
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.config.DefaultConfiguration
+import io.seqera.config.Registry
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
@@ -17,7 +18,6 @@ import jakarta.inject.Singleton
  *
  * @author Jorge Aguilera <jorge.aguilera@seqera.io>
  */
-@MicronautTest
 class ConfigurationTest extends Specification{
 
     void "test configuration"() {
@@ -27,8 +27,15 @@ class ConfigurationTest extends Specification{
                 "TEST_USER": 'theUser',
                 "towerreg.arch": 'test',
                 "towerreg.registries": [
-                        [ name: '${TEST_USER}', host:'quay.io',authConfig:'test',
-                          auth:[ name: 'test',username: '${TEST_USER}',password: 'pwd',url: 'quay.io/v2/auth',service: 'quay.io']
+                        [
+                                name:'test',
+                                host:'quay.io',
+                                auth: [
+                                        username: '${TEST_USER}',
+                                        password: 'pwd',
+                                        url: 'quay.io/v2/auth',
+                                        service: 'quay.io'
+                                ]
                         ]
                 ]
         ])
@@ -39,9 +46,9 @@ class ConfigurationTest extends Specification{
         then:
         teamConfiguration
         teamConfiguration.arch == 'test'
-        teamConfiguration.registries.size()==1
-        teamConfiguration.registries.first().name=='theUser'
-        teamConfiguration.registries.first().auth.username=='theUser'
+        ctx.getBeansOfType(Registry).size()==1
+        ctx.getBeansOfType(Registry).first().getName()=='test'
+        ctx.getBeansOfType(Registry).first().getAuth().username=='theUser'
 
         cleanup:
         ctx.close()

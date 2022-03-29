@@ -10,7 +10,6 @@ import io.micronaut.http.hateoas.Link
 import io.seqera.storage.Storage
 import io.seqera.storage.DigestByteArray
 import io.seqera.RouteHelper
-import io.seqera.config.TowerConfiguration
 import io.seqera.docker.ContainerService
 import io.seqera.docker.ContainerService.DelegateResponse
 import org.reactivestreams.Publisher
@@ -26,13 +25,10 @@ import reactor.core.publisher.Mono
 @Controller("/v2")
 class V2Controller {
 
-    TowerConfiguration configuration
     ContainerService containerService
     Storage storage
 
-    V2Controller(TowerConfiguration configuration, ContainerService containerService, Storage storage) {
-        log.info "Server configuration=$configuration"
-        this.configuration = configuration
+    V2Controller(ContainerService containerService, Storage storage) {
         this.containerService = containerService
         this.storage = storage
     }
@@ -56,7 +52,7 @@ class V2Controller {
     @Get(uri="/{url:(.+)}", produces = "*/*")
     MutableHttpResponse<?> handleGet(String url, HttpRequest httpRequest) {
         log.info "> Request [$httpRequest.method] $httpRequest.path"
-        def route = RouteHelper.parse("/v2/"+url, configuration.defaultRegistry.name)
+        def route = RouteHelper.parse("/v2/"+url)
 
         if( httpRequest.method == HttpMethod.HEAD )
             return handleHead(route, httpRequest)

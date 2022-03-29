@@ -31,7 +31,7 @@ class RouteHelper {
 
     }
 
-    static Route parse(String path, String defaultRegistry) {
+    static Route parse(String path) {
         Matcher matcher = ROUTE_PATHS.matcher(path)
         if( !matcher.matches() )
             return NOT_FOUND
@@ -51,7 +51,7 @@ class RouteHelper {
             }
         }
 
-        registry = coordinates[0].contains('.') ? coordinates.pop() : defaultRegistry
+        registry = coordinates[0].contains('.') ? coordinates.pop() : null
         image = coordinates.join('/')
 
         path = "/v2/$image/$type/$reference"
