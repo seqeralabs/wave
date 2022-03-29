@@ -85,14 +85,14 @@ jib {
         args = ['/reg.sh']  // copied from `src/main/jib` directory
         environment = [
                 'MICRONAUT_ENVIRONMENTS': 'prod',
-                'MICRONAUT_CONFIG_FILES': 'classpath:application.yml,file:application-prod.yml'
+                'MICRONAUT_CONFIG_FILES': 'classpath:application.yml,file:config.yml'
         ]
     }
     extraDirectories {
         paths {
             path { from = file('pack/layers'); into = '/pack/layers' }
             path { from = file('src/main/jib'); }
-            path { from = file('.'); includes = ['application-prod.yml'] }
+            path { from = file('.'); includes = ['config.yml'] }
         }
         permissions = ['/reg.sh': '755']
     }
@@ -100,10 +100,6 @@ jib {
 
 run{
     jvmArgs '-Dmicronaut.environments=dev'
-    systemProperties 'DOCKER_USER': project.findProperty('DOCKER_USER'),
-            'DOCKER_PAT': project.findProperty('DOCKER_PAT'),
-            'QUAY_USER': project.findProperty('QUAY_USER'),
-            'QUAY_PAT': project.findProperty('QUAY_PAT')
 }
 
 test {

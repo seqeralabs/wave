@@ -26,4 +26,6 @@ image:
 	./gradlew jibDockerBuild
 
 push:
-	./push.sh
+	# docker login
+	docker login -u pditommaso -p ${DOCKER_PASSWORD}
+	./gradlew jib
