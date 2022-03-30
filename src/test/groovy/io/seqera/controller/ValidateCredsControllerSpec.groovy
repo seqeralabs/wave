@@ -11,11 +11,12 @@ import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.Mock
 import io.seqera.SecureDockerRegistryContainer
 import jakarta.inject.Inject
 
 @MicronautTest
-class ValidateCredsControllerSpec extends Specification implements SecureDockerRegistryContainer{
+class ValidateCredsControllerSpec extends Specification implements SecureDockerRegistryContainer {
 
     @Inject
     @Client("/")
@@ -31,36 +32,62 @@ class ValidateCredsControllerSpec extends Specification implements SecureDockerR
 
     void 'should validate username required'() {
         when:
-        HttpRequest request = HttpRequest.POST("/validate-creds",[
-                password:'test',
+        HttpRequest request = HttpRequest.POST("/validate-creds", [
+                password: 'test',
         ])
-        HttpResponse<String> response = client.toBlocking().exchange(request,String)
+        client.toBlocking().exchange(request, Boolean)
         then:
         def e = thrown(HttpClientResponseException)
     }
 
     void 'should validate pwd required'() {
         when:
-        HttpRequest request = HttpRequest.POST("/validate-creds",[
-                userName:'test',
+        HttpRequest request = HttpRequest.POST("/validate-creds", [
+                userName: 'test',
         ])
-        HttpResponse<String> response = client.toBlocking().exchange(request,String)
+        client.toBlocking().exchange(request, Boolean)
         then:
         def e = thrown(HttpClientResponseException)
     }
 
     void 'should validate the test user'() {
-        when:
-        HttpRequest request = HttpRequest.POST("/validate-creds",[
-                userName:'test',
-                password: 'test'
+        given:
+        HttpRequest request = HttpRequest.POST("/validate-creds", [
+                userName: 'test',
+                password: 'test',
+                registry: 'test'
         ])
-        HttpResponse<String> response = client.toBlocking().exchange(request,String)
+        when:
+        HttpResponse<Boolean> response = client.toBlocking().exchange(request, Boolean)
         then:
         response.status() == HttpStatus.OK
         and:
-        response.body() == "Ok"
+        response.body()
     }
 
+    void 'test validateController valid login'() {
+        given:
+        HttpRequest request = HttpRequest.POST("/validate-creds", [
+                userName: USER,
+                password: PWD,
+                registry: REGISTRY_URL
+        ])
+        when:
+        HttpResponse<Boolean> response = client.toBlocking().exchange(request, Boolean)
 
+        then:
+        response.status() == HttpStatus.OK
+        and:
+        response.body() == VALID
+
+        where:
+        USER             | PWD             | REGISTRY_URL                   | VALID
+        'test'           | 'test'          | 'test'                         | true
+        'nope'           | 'yepes'         | 'test'                         | false
+        Mock.DOCKER_USER | Mock.DOCKER_PAT | "https://registry-1.docker.io" | true
+        'nope'           | 'yepes'         | "https://registry-1.docker.io" | false
+        Mock.QUAY_USER   | Mock.QUAY_PAT   | "https://quay.io"              | true
+        'nope'           | 'yepes'         | "https://quay.io"              | false
+        'test'           | 'test'          | 'test'                         | true
+    }
 }

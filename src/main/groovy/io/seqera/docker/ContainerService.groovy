@@ -7,6 +7,7 @@ import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Value
 import io.micronaut.inject.qualifiers.Qualifiers
+import io.seqera.auth.LoginValidator
 import io.seqera.storage.Storage
 import io.seqera.storage.DigestByteArray
 import io.seqera.RouteHelper
@@ -48,6 +49,19 @@ class ContainerService {
         new ProxyClient(registry.host, image, authProvider)
     }
 
+    boolean validateUser(String registry, String user, String password){
+        String host
+        try {
+            Registry registryBean = findRegistryWithName(registry)
+            host = registryBean.host
+        }catch( Exception ie){
+            host = registry
+        }
+        LoginValidator validator = new LoginValidator()
+        validator.login(user, password, host)
+    }
+
+
     DigestByteArray handleManifest(RouteHelper.Route route, Map<String,List<String>> headers){
         final Registry registry = findRegistry(route.registry)
         assert registry
@@ -77,9 +91,13 @@ class ContainerService {
         )
     }
 
+    private Registry findRegistryWithName(String name){
+        applicationContext.getBean(Registry, Qualifiers.byName(name.replaceAll("\\.","-")))
+    }
+
     private Registry findRegistry(String name){
         try{
-            applicationContext.getBean(Registry, Qualifiers.byName(name.replaceAll("\\.","-")))
+            return findRegistryWithName(name)
         }catch( Exception e) {
             Collection<Registry> registries = applicationContext.getBeansOfType(Registry)
             registries.find { name && it.name == name } ?: registries.first()

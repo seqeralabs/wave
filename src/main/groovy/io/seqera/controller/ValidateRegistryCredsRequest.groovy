@@ -6,10 +6,11 @@ import javax.validation.constraints.NotBlank
 import io.micronaut.core.annotation.Introspected
 
 @Introspected
-class ValidateContainerRegistryCreds {
+class ValidateRegistryCredsRequest {
     @NotBlank
     String userName
     @NotBlank
     String password
-
+    @NotBlank
+    String registry
 }

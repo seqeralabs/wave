@@ -1,7 +1,6 @@
 package io.seqera.auth
 
 import groovy.json.JsonSlurper
-import groovy.transform.Memoized
 import groovy.transform.builder.Builder
 import groovy.util.logging.Slf4j
 
@@ -75,12 +74,6 @@ class ConfigurableAuthProvider implements DockerAuthProvider{
             return json.token
         }else
             throw new IllegalStateException("Unable to authorize request -- response: $body")
-    }
-
-    String login(String url){
-        final basic = "$username:$password".bytes.encodeBase64()
-        final auth = "Basic $basic"
-        auth
     }
 
 }
