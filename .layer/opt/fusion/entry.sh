@@ -18,14 +18,15 @@ fi
 ## make sure to shutdown the fuse driver
 on_exit() {
   if pidof goofys >/dev/null; then
-  { echo "Shutdown goofys"
+  { echo "$(date '+%Y-%m-%d_%H:%M:%S') Shutdown goofys"
     kill $(pidof goofys)
-    echo "Done"
+    echo "$(date '+%Y-%m-%d_%H:%M:%S') Done"
   }>&2
   fi
 }
 trap on_exit EXIT
 ## invoke the target command
+echo "$(date '+%Y-%m-%d_%H:%M:%S') Begin"
 if [ "$XREG_ENTRY_CHAIN" ]; then
   "$XREG_ENTRY_CHAIN" "$@"
 else
