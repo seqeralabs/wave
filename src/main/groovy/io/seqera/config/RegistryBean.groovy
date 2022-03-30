@@ -26,7 +26,7 @@ class RegistryBean implements Registry{
 
 
     @Override
-    public String toString() {
+    String toString() {
         return "RegistryBean{" +
                 "name='" + name + '\'' +
                 ", host='" + host + '\'' +

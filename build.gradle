@@ -100,6 +100,10 @@ jib {
 
 run{
     jvmArgs '-Dmicronaut.environments=dev'
+    systemProperties 'DOCKER_USER': project.findProperty('DOCKER_USER'),
+            'DOCKER_PAT': project.findProperty('DOCKER_PAT'),
+            'QUAY_USER': project.findProperty('QUAY_USER'),
+            'QUAY_PAT': project.findProperty('QUAY_PAT')
 }
 
 test {
