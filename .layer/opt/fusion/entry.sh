@@ -17,9 +17,9 @@ if [ "$NXF_FUSION_BUCKETS" ]; then
 fi
 ## make sure to shutdown the fuse driver
 on_exit() {
-  if pidof goofys >/dev/null; then
+  if pgrep goofys >/dev/null; then
   { echo "$(date '+%Y-%m-%d_%H:%M:%S') Shutdown goofys"
-    kill $(pidof goofys)
+    kill $(pgrep goofys)
     echo "$(date '+%Y-%m-%d_%H:%M:%S') Done"
   }>&2
   fi
