@@ -75,7 +75,30 @@ and set the user/pwd for at least 1 registry
           reg.ngrok.io/library/busybox \
           ls -la /fusion/s3/nextflow-ci
   
+### K8s one-liners 
 
+```
+ kubectl run busybox \
+   --image reg.staging-tower.xyz/library/busybox \
+   --image-pull-policy Always \
+   --restart Never \
+   --attach=true \
+   cat foo.txt
+```
+
+```
+kubectl run busybox \
+  --env "AWS_REGION=eu-west-1" \
+  --env "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" \
+  --env "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" \
+  --env "NXF_FUSION_BUCKETS=nextflow-ci" \
+  --privileged \
+  --image reg.staging-tower.xyz/library/busybox \
+  --restart Never \
+  --attach=true \
+  -- \
+  ls -la /fusion/s3/nextflow-ci 
+```
 ### Next goals 
 
 * ~~Implements the core functionality using Java + Micronaut + native compilation (Graal)~~
