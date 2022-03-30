@@ -35,7 +35,7 @@ the path `/fusion/s3`, and then any S3 bucket it is available as `/fusion/s3/<bu
 
          make pack
 
-4. Create a `dev` configuration: copy `application-prod-example.yml` into `src/main/resources/application-dev.yml`
+4. Create a `dev` configuration: copy `config.yml` into `src/main/resources/application-dev.yml`
 and set the user/pwd for at least 1 registry
 
 5. Compile and run the registry service:  
