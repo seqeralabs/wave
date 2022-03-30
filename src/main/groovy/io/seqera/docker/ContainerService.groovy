@@ -6,10 +6,10 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Value
+import io.micronaut.inject.qualifiers.Qualifiers
 import io.seqera.storage.Storage
 import io.seqera.storage.DigestByteArray
 import io.seqera.RouteHelper
-import io.seqera.auth.AuthFactory
 import io.seqera.auth.DockerAuthProvider
 import io.seqera.config.Registry
 import io.seqera.proxy.ProxyClient
@@ -25,12 +25,10 @@ import jakarta.inject.Singleton
 class ContainerService {
 
     Storage storage
-    AuthFactory authFactory
     ApplicationContext applicationContext
 
-    ContainerService(Storage storage, AuthFactory authFactory, ApplicationContext applicationContext) {
+    ContainerService(Storage storage, ApplicationContext applicationContext) {
         this.storage = storage
-        this.authFactory = authFactory
         this.applicationContext = applicationContext
     }
 
@@ -46,7 +44,7 @@ class ContainerService {
     }
 
     private ProxyClient client(Registry registry, String image) {
-        DockerAuthProvider authProvider = authFactory.getProvider(registry)
+        DockerAuthProvider authProvider = findAuthProvider(registry.name)
         new ProxyClient(registry.host, image, authProvider)
     }
 
@@ -80,8 +78,21 @@ class ContainerService {
     }
 
     private Registry findRegistry(String name){
-        Collection<Registry> registries = applicationContext.getBeansOfType(Registry)
-        registries.find{ name && it.name == name} ?: registries.first()
+        try{
+            applicationContext.getBean(Registry, Qualifiers.byName(name.replaceAll("\\.","-")))
+        }catch( Exception e) {
+            Collection<Registry> registries = applicationContext.getBeansOfType(Registry)
+            registries.find { name && it.name == name } ?: registries.first()
+        }
+    }
+
+    private DockerAuthProvider findAuthProvider(String name){
+        try{
+            applicationContext.getBean(DockerAuthProvider, Qualifiers.byName(name.replaceAll("\\.","-")))
+        }catch( Exception e) {
+            Collection<DockerAuthProvider> auths = applicationContext.getBeansOfType(DockerAuthProvider)
+            auths.first()
+        }
     }
 
     static class DelegateResponse{

@@ -77,4 +77,10 @@ class ConfigurableAuthProvider implements DockerAuthProvider{
             throw new IllegalStateException("Unable to authorize request -- response: $body")
     }
 
+    String login(String url){
+        final basic = "$username:$password".bytes.encodeBase64()
+        final auth = "Basic $basic"
+        auth
+    }
+
 }

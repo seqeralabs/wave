@@ -23,4 +23,14 @@ class RegistryBean implements Registry{
     Auth getAuth() {
         return auth
     }
+
+
+    @Override
+    public String toString() {
+        return "RegistryBean{" +
+                "name='" + name + '\'' +
+                ", host='" + host + '\'' +
+                ", auth=" + auth +
+                '}';
+    }
 }

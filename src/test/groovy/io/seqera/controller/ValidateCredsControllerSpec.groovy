@@ -7,43 +7,15 @@ import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
-import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.config.DefaultConfiguration
-import io.seqera.model.ContentType
+import io.seqera.SecureDockerRegistryContainer
 import jakarta.inject.Inject
-import org.testcontainers.containers.GenericContainer
-import org.testcontainers.containers.wait.strategy.Wait
-import org.testcontainers.utility.DockerImageName
-import org.testcontainers.utility.MountableFile
 
 @MicronautTest
-class ValidateCredsControllerSpec extends Specification{
-
-    @Shared
-    static GenericContainer testcontainers = new GenericContainer(DockerImageName.parse("registry:2.2"))
-            .withExposedPorts(5000)
-            .withPrivilegedMode(true)
-            .withCopyFileToContainer(MountableFile.forClasspathResource ("/registry.password"),"/auth/")
-            .withEnv(REGISTRY_AUTH: "htpasswd",
-                    REGISTRY_AUTH_HTPASSWD_REALM: "Registry",
-                    REGISTRY_AUTH_HTPASSWD_PATH: "/auth/registry.password")
-            .waitingFor(
-                    Wait.forLogMessage(".*listening on .*\\n", 1)
-            );
-
-    String getRegistryURL(){
-        int port = testcontainers.firstMappedPort
-        String url = "$testcontainers.containerIpAddress:$port"
-        url
-    }
-
-    void initRegistryContainer(ApplicationContext applicationContext){
-        testcontainers.start()
-    }
+class ValidateCredsControllerSpec extends Specification implements SecureDockerRegistryContainer{
 
     @Inject
     @Client("/")

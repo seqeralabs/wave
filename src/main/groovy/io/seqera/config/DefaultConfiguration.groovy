@@ -10,6 +10,7 @@ import io.micronaut.context.annotation.EachBean
 import io.micronaut.context.annotation.EachProperty
 import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Parameter
+import io.seqera.util.StringUtils
 
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
@@ -26,10 +27,12 @@ class DefaultConfiguration {
         return arch
     }
 
-    @EachProperty(value = "registries", list = true)
+    @EachProperty(value = "registries")
     static class RegistryConfiguration {
 
-        @NotBlank
+        RegistryConfiguration(@Parameter String name){
+            this.name = name
+        }
         String name
 
         @NotBlank
@@ -53,6 +56,17 @@ class DefaultConfiguration {
 
             @NotBlank
             String service
+
+
+            @Override
+            String toString() {
+                return "AuthConfiguration{" +
+                        "username='" + username + '\'' +
+                        ", password='" + StringUtils.redact(password) + '\'' +
+                        ", url='" + url + '\'' +
+                        ", service='" + service + '\'' +
+                        '}';
+            }
         }
 
     }

@@ -1,4 +1,4 @@
-package io.seqera
+package io.seqera.controller
 
 import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest

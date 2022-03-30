@@ -1,4 +1,4 @@
-package io.seqera
+package io.seqera.controller
 
 import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
@@ -8,6 +8,7 @@ import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.DockerRegistryContainer
 import io.seqera.config.DefaultConfiguration
 import io.seqera.model.ContentType
 import jakarta.inject.Inject

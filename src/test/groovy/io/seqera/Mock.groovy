@@ -32,5 +32,5 @@ class Mock {
 
     public static final String QUAY_USER = 'pditommaso'
     public static final String QUAY_PAT = "SVO9GmXzeDJfB3Ba7PDSN90Pv7ggvzIGjYNT7QD4Ol05riiSuWu+ioBWiPIYd39v"
-    public static final String QUAY_AUTH = 'quay.io/v2/auth'
+    public static final String QUAY_AUTH = 'https://quay.io/v2/auth'
 }

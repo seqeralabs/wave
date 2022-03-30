@@ -5,3 +5,12 @@ micronaut:
 
 towerreg:
   arch: x86_64
+
+  registries:
+    test:
+      host: changed at runtime
+      auth:
+        username: test
+        password: test
+        url: changed at runtime
+        service: localhost

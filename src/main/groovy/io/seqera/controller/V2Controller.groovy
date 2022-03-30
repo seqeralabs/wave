@@ -35,7 +35,7 @@ class V2Controller {
 
     @Error
     HttpResponse<JsonError> handleError(HttpRequest request, Throwable t){
-        log.error t.message, t
+        log.info t.message, t
         JsonError error = new JsonError("Error: " + t.message).link(Link.SELF, Link.of(request.getUri()))
         HttpResponse.<JsonError>serverError().body(error)
     }
