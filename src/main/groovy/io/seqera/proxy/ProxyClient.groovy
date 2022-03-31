@@ -32,12 +32,12 @@ class ProxyClient implements RemoteDocker{
     private String image
 
     DockerAuthProvider authProvider
-    private String registryName
+    private String hostName
     private HttpClient httpClient
 
-    ProxyClient(String registryName, String image, DockerAuthProvider authProvider) {
+    ProxyClient(String hostName, String image, DockerAuthProvider authProvider) {
         this.image = image
-        this.registryName = registryName
+        this.hostName = hostName
         this.authProvider = authProvider
         init()
     }
@@ -52,8 +52,7 @@ class ProxyClient implements RemoteDocker{
 
     private URI makeUri(String path) {
         assert path.startsWith('/'), "Request past should start with a slash character -- offending path: $path"
-        String protocol = this.authProvider.ssl ? "https" : "http"
-        URI.create("$protocol://$registryName$path")
+        URI.create("$hostName$path")
     }
 
     HttpResponse<String> getString(String path, Map<String,List<String>> headers=null) {

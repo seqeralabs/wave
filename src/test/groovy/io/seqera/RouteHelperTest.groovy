@@ -43,26 +43,26 @@ class RouteHelperTest extends Specification {
     @Unroll
     def 'should get manifests route #PATH'() {
         when:
-        def route = RouteHelper.parse(PATH, 'docker.io')
+        def route = RouteHelper.parse(PATH)
         then:
         route == ROUTE
 
         where:
         PATH                                        | ROUTE
-        '/v2/hello-world/manifests/latest'          | new RouteHelper.Route('manifests', 'docker.io', 'hello-world', 'latest', '/v2/hello-world/manifests/latest')
-        '/v2/library/hello-world/manifests/latest'  | new RouteHelper.Route('manifests', 'docker.io', 'library/hello-world', 'latest', '/v2/library/hello-world/manifests/latest')
+        '/v2/hello-world/manifests/latest'          | new RouteHelper.Route('manifests', null, 'hello-world', 'latest', '/v2/hello-world/manifests/latest')
+        '/v2/library/hello-world/manifests/latest'  | new RouteHelper.Route('manifests', null, 'library/hello-world', 'latest', '/v2/library/hello-world/manifests/latest')
         '/v1/library/hello-world/manifests/latest'  | RouteHelper.NOT_FOUND
         '/v2/library/hello-world/foo/latest'        | RouteHelper.NOT_FOUND
         '/v2/foo:bar/blobs/latest'                  | RouteHelper.NOT_FOUND
         and:
-        '/v2/hello-world/blobs/latest'              | new RouteHelper.Route('blobs', 'docker.io','hello-world', 'latest', '/v2/hello-world/blobs/latest')
-        '/v2/library/hello-world/blobs/latest'      | new RouteHelper.Route('blobs', 'docker.io','library/hello-world', 'latest', '/v2/library/hello-world/blobs/latest')
+        '/v2/hello-world/blobs/latest'              | new RouteHelper.Route('blobs', null,'hello-world', 'latest', '/v2/hello-world/blobs/latest')
+        '/v2/library/hello-world/blobs/latest'      | new RouteHelper.Route('blobs', null,'library/hello-world', 'latest', '/v2/library/hello-world/blobs/latest')
         '/v1/library/hello-world/blobs/latest'      | RouteHelper.NOT_FOUND
         '/v2/library/hello-world/foo/latest'        | RouteHelper.NOT_FOUND
         '/v2/foo:bar/blobs/latest'                  | RouteHelper.NOT_FOUND
         and:
         '/v2/tw/of2wc6jonfxs63tfpb2gm3dpo4/rnaseq-nf/manifests/v1.1'        | new RouteHelper.Route('manifests', 'quay.io', 'nextflow/rnaseq-nf', 'v1.1', '/v2/nextflow/rnaseq-nf/manifests/v1.1')
-        '/v2/tw/mjuw6y3pnz2gc2lomvzhg/biocontainers/manifests/v1.2.0_cv1'   | new RouteHelper.Route('manifests', 'docker.io', 'biocontainers/biocontainers', 'v1.2.0_cv1', '/v2/biocontainers/biocontainers/manifests/v1.2.0_cv1')
+        '/v2/tw/mjuw6y3pnz2gc2lomvzhg/biocontainers/manifests/v1.2.0_cv1'   | new RouteHelper.Route('manifests', null, 'biocontainers/biocontainers', 'v1.2.0_cv1', '/v2/biocontainers/biocontainers/manifests/v1.2.0_cv1')
         and:
         '/v2/github.io/biocontainers/biocontainers/manifests/v1.1'        | new RouteHelper.Route('manifests', 'github.io', 'biocontainers/biocontainers', 'v1.1', '/v2/biocontainers/biocontainers/manifests/v1.1')
     }

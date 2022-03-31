@@ -1,13 +1,18 @@
 package io.seqera.docker
 
+import javax.validation.constraints.NotBlank
+
 import groovy.util.logging.Slf4j
+import io.micronaut.context.ApplicationContext
+import io.micronaut.context.annotation.Context
+import io.micronaut.context.annotation.Value
+import io.micronaut.inject.qualifiers.Qualifiers
+import io.seqera.auth.LoginValidator
 import io.seqera.storage.Storage
 import io.seqera.storage.DigestByteArray
 import io.seqera.RouteHelper
-import io.seqera.auth.AuthFactory
 import io.seqera.auth.DockerAuthProvider
 import io.seqera.config.Registry
-import io.seqera.config.TowerConfiguration
 import io.seqera.proxy.ProxyClient
 import jakarta.inject.Singleton
 
@@ -17,32 +22,48 @@ import jakarta.inject.Singleton
  */
 @Slf4j
 @Singleton
+@Context
 class ContainerService {
 
     Storage storage
-    AuthFactory authFactory
-    TowerConfiguration configuration
+    ApplicationContext applicationContext
 
-    ContainerService(Storage storage, AuthFactory authFactory, TowerConfiguration towerConfiguration) {
+    ContainerService(Storage storage, ApplicationContext applicationContext) {
         this.storage = storage
-        this.authFactory = authFactory
-        this.configuration = towerConfiguration
+        this.applicationContext = applicationContext
     }
+
+    @Value('${towerreg.arch}')
+    @NotBlank
+    private String arch
 
     private ContainerScanner scanner(ProxyClient proxyClient) {
         return new ContainerScanner()
-                .withArch(configuration.arch)
+                .withArch(arch)
                 .withStorage(storage)
                 .withClient(proxyClient)
     }
 
     private ProxyClient client(Registry registry, String image) {
-        DockerAuthProvider authProvider = authFactory.getProvider(registry)
+        DockerAuthProvider authProvider = findAuthProvider(registry.name)
         new ProxyClient(registry.host, image, authProvider)
     }
 
+    boolean validateUser(String registry, String user, String password){
+        String host
+        try {
+            Registry registryBean = findRegistryWithName(registry)
+            host = registryBean.host
+        }catch( Exception ie){
+            host = registry
+        }
+        LoginValidator validator = new LoginValidator()
+        validator.login(user, password, host)
+    }
+
+
     DigestByteArray handleManifest(RouteHelper.Route route, Map<String,List<String>> headers){
-        final Registry registry = configuration.findRegistry(route.registry)
+        final Registry registry = findRegistry(route.registry)
         assert registry
 
         ProxyClient proxyClient = client(registry, route.image)
@@ -58,7 +79,7 @@ class ContainerService {
     }
 
     DelegateResponse handleRequest(RouteHelper.Route route, Map<String,List<String>> headers){
-        final Registry registry = configuration.findRegistry(route.registry)
+        final Registry registry = findRegistry(route.registry)
 
         ProxyClient proxyClient = client(registry, route.image)
         final resp = proxyClient.getStream(route.path, headers)
@@ -68,6 +89,28 @@ class ContainerService {
                 headers: resp.headers().map(),
                 body: resp.body()
         )
+    }
+
+    private Registry findRegistryWithName(String name){
+        applicationContext.getBean(Registry, Qualifiers.byName(name.replaceAll("\\.","-")))
+    }
+
+    private Registry findRegistry(String name){
+        try{
+            return findRegistryWithName(name)
+        }catch( Exception e) {
+            Collection<Registry> registries = applicationContext.getBeansOfType(Registry)
+            registries.find { name && it.name == name } ?: registries.first()
+        }
+    }
+
+    private DockerAuthProvider findAuthProvider(String name){
+        try{
+            applicationContext.getBean(DockerAuthProvider, Qualifiers.byName(name.replaceAll("\\.","-")))
+        }catch( Exception e) {
+            Collection<DockerAuthProvider> auths = applicationContext.getBeansOfType(DockerAuthProvider)
+            auths.first()
+        }
     }
 
     static class DelegateResponse{

@@ -7,15 +7,10 @@ towerreg:
   arch: x86_64
 
   registries:
-    -
-      name: quay.io
-      host: quay.io
-      authConfig: test
-
-  auths:
-    -
-      name: test
-      username: pditommaso
-      password: SVO9GmXzeDJfB3Ba7PDSN90Pv7ggvzIGjYNT7QD4Ol05riiSuWu+ioBWiPIYd39v
-      url: quay.io/v2/auth
-      service: quay.io
+    test:
+      host: changed at runtime
+      auth:
+        username: test
+        password: test
+        url: changed at runtime
+        service: localhost
