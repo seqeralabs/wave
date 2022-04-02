@@ -15,18 +15,23 @@ if [ "$NXF_FUSION_BUCKETS" ]; then
     /opt/goofys/goofys --file-mode=0755 --uid $uid --gid $gid $bucket /fusion/s3/$path
   done)
 fi
+## mount juicefs
+if [ "$XREG_JUICE_URL" ]; then
+  mkdir -p "$XREG_JUICE_PATH"
+  juicefs mount "$XREG_JUICE_URL" "$XREG_JUICE_PATH" -d
+fi
 ## make sure to shutdown the fuse driver
 on_exit() {
   if pgrep goofys >/dev/null; then
-  { echo "$(date '+%Y-%m-%d_%H:%M:%S') Shutdown goofys"
+  { >&2 echo "$(date '+%Y-%m-%d_%H:%M:%S') Shutdown goofys"
     kill $(pgrep goofys)
-    echo "$(date '+%Y-%m-%d_%H:%M:%S') Done"
+    >&2 echo "$(date '+%Y-%m-%d_%H:%M:%S') Done"
   }>&2
   fi
 }
 trap on_exit EXIT
 ## invoke the target command
-echo "$(date '+%Y-%m-%d_%H:%M:%S') Begin"
+>&2 echo "$(date '+%Y-%m-%d_%H:%M:%S') Begin"
 if [ "$XREG_ENTRY_CHAIN" ]; then
   "$XREG_ENTRY_CHAIN" "$@"
 else
