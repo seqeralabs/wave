@@ -5,7 +5,7 @@ plugins {
     id("groovy") 
     id("com.github.johnrengelman.shadow") version "7.1.1"
     id("io.micronaut.application") version "3.2.0"
-    id "com.google.cloud.tools.jib" version "3.2.0"
+    id "com.google.cloud.tools.jib" version "3.2.1"
 }
 
 version = "0.6.2"
@@ -82,7 +82,7 @@ jib {
         filesModificationTime = "${OffsetDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME)}"
         ports = ['9090']
         entrypoint = '/bin/sh'
-        args = ['/reg.sh']  // copied from `src/main/jib` directory
+        args = ['/launch.sh']  // copied from `src/main/jib` directory
         environment = [
                 'MICRONAUT_ENVIRONMENTS': 'prod',
                 'MICRONAUT_CONFIG_FILES': 'classpath:application.yml,file:config.yml'
@@ -94,7 +94,7 @@ jib {
             path { from = file('src/main/jib'); }
             path { from = file('.'); includes = ['config.yml'] }
         }
-        permissions = ['/reg.sh': '755']
+        permissions = ['/launch.sh': '755']
     }
 }
 
