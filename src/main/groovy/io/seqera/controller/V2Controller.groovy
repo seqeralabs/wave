@@ -118,13 +118,11 @@ class V2Controller {
                 .headers(headers)
     }
 
-    MutableHttpResponse<Flux<byte[]>>fromDelegateResponse(final DelegateResponse delegateResponse){
-
-        Flux<byte[]> fluxInputStream = createFluxFromChunkBytes(delegateResponse.body)
+    MutableHttpResponse<InputStream>fromDelegateResponse(final DelegateResponse delegateResponse){
 
         HttpResponse
                 .status(HttpStatus.valueOf(delegateResponse.statusCode))
-                .body( fluxInputStream )
+                .body( delegateResponse.body )
                 .headers({MutableHttpHeaders mutableHttpHeaders ->
                     delegateResponse.headers.each {entry->
                         entry.value.each{ value ->
