@@ -1,6 +1,6 @@
 # Launch backend server
 export CLIENT_ARCH=amd64
-[ $JAVA_OPTS ] && echo "Detected JAVA_OPTS=$JAVA_OPTS"
+[ "$JAVA_OPTS" ] && echo "Detected JAVA_OPTS=$JAVA_OPTS"
 exec java \
   -Dfile.encoding=UTF-8 \
   -Dcom.sun.security.enableAIAcaIssuers=true \
