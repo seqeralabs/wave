@@ -69,7 +69,7 @@ micronaut {
 //
 jib {
     from {
-        image = 'amazoncorretto:11.0.14'
+        image = 'amazoncorretto:17.0.2'
         platforms {
             platform { architecture = 'amd64'; os = 'linux' }
         }
