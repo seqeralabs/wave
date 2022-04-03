@@ -17,8 +17,8 @@ if [ "$NXF_FUSION_BUCKETS" ]; then
 fi
 ## mount juicefs
 if [ "$XREG_JUICE_URL" ]; then
-  mkdir -p "$XREG_JUICE_PATH"
-  juicefs mount "$XREG_JUICE_URL" "$XREG_JUICE_PATH" -d
+  mkdir -p "$XREG_JUICE_MOUNT"
+  /opt/juicefs/juicefs mount "$XREG_JUICE_URL" "$XREG_JUICE_MOUNT" -d
 fi
 ## make sure to shutdown the fuse driver
 on_exit() {
