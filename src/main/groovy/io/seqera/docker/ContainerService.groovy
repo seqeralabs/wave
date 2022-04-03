@@ -2,6 +2,7 @@ package io.seqera.docker
 
 import javax.validation.constraints.NotBlank
 
+import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Context
@@ -95,12 +96,39 @@ class ContainerService {
         applicationContext.getBean(Registry, Qualifiers.byName(name.replaceAll("\\.","-")))
     }
 
+    @Memoized
+    private Registry defaultRegistry() {
+        Collection<Registry> registries = applicationContext.getBeansOfType(Registry)
+        // fallback docker
+        def result  = registries.find { it.host.contains('docker.io') }
+        if (result) {
+            log.debug "Using docker.io as default registry ==> $result"
+            return result
+        }
+        // just find the first
+        result = registries.first()
+        log.debug "Unable to find docker.io registry config - Fallback to first => $result"
+        return result
+    }
+
+    @Memoized
     private Registry findRegistry(String name){
-        try{
-            return findRegistryWithName(name)
-        }catch( Exception e) {
+        if( !name )
+            return defaultRegistry()
+
+        try {
+            final result = findRegistryWithName(name)
+            log.debug "Find registry by name: $name => $result"
+            return result
+        }
+        catch( Exception e) {
             Collection<Registry> registries = applicationContext.getBeansOfType(Registry)
-            registries.find { name && it.name == name } ?: registries.first()
+            def result = registries.find { name && it.name == name }
+            if (result) {
+                log.debug "Find typed registry by name: $name => $result"
+                return result
+            }
+            throw new IllegalArgumentException("Unable to find a registry configuration by name: $name")
         }
     }
 
