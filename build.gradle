@@ -33,7 +33,7 @@ dependencies {
     implementation 'dev.failsafe:failsafe:3.1.0'
     implementation('io.projectreactor:reactor-core')
 
-    runtimeOnly("ch.qos.logback:logback-classic")
+    implementation("ch.qos.logback:logback-classic")
     runtimeOnly("io.netty:netty-tcnative-boringssl-static:2.0.0.Final")
     testImplementation "org.apache.commons:commons-compress:1.21"
     testImplementation("org.testcontainers:testcontainers")

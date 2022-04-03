@@ -6,7 +6,7 @@
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
-        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+        <filter class="io.seqera.util.LoggerLevelFilter">
             <level>${XREG_LOG_LEVEL:-INFO}</level>
             <onMatch>ACCEPT</onMatch>
             <onMismatch>DENY</onMismatch>
@@ -25,7 +25,7 @@
         <encoder>
             <pattern>%d{MMM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
-        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+        <filter class="io.seqera.util.LoggerLevelFilter">
             <level>${XREG_LOG_LEVEL:-DEBUG}</level>
             <onMatch>ACCEPT</onMatch>
             <onMismatch>DENY</onMismatch>
