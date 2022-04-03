@@ -195,11 +195,16 @@ class ContainerScanner {
         return result
     }
 
+    @Memoized // <-- prevent to load in memory the same blob more than once, otherwise it will throw a OOM exception
+    private byte[] readLayerBlob(Path location) {
+        return Files.readAllBytes(location)
+    }
+
     synchronized protected Map layerBlob(String image) {
         // store the layer blob in the cache
         final type = "application/vnd.docker.image.rootfs.diff.tar.gzip"
         final location = layerConfig.append.locationPath
-        final buffer = Files.readAllBytes(location)
+        final buffer = readLayerBlob(location)
         final computed = RegHelper.digest(buffer)
         final digest = layerConfig.append.gzipDigest
         final size = layerConfig.append.gzipSize
