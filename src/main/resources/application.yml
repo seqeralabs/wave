@@ -4,12 +4,9 @@ micronaut:
   server:
     port: 9090
   caches:
-    manifests:
+    cache-1h:
       listen-to-removals: true
-      maximum-size : 100
-    blobs:
-      listen-to-removals: true
-      maximum-size : 10
+      expire-after-access: 60m
 
 netty:
   default:

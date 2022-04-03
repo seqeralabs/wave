@@ -18,27 +18,27 @@ class MemoryStorage implements Storage, RemovalListener<String, DigestByteArray>
     private static Logger logger = LoggerFactory.getLogger(MemoryStorage.class);
 
     @Override
-    @Cacheable(value = "manifests", parameters = "path")
+    @Cacheable(value = "cache-1h", parameters = "path")
     Optional<DigestByteArray> getManifest(String path) {
         return Optional.ofNullable(null);
     }
 
     @Override
-    @CachePut(value = "manifests", parameters = "path")
+    @CachePut(value = "cache-1h", parameters = "path")
     DigestByteArray saveManifest(String path, String manifest, String type, String digest) {
         DigestByteArray digestByteArray = new DigestByteArray(manifest.getBytes(), type, digest);
         return digestByteArray;
     }
 
     @Override
-    @Cacheable(value = "blobs", parameters = "path")
+    @Cacheable(value = "cache-1h", parameters = "path")
     Optional<DigestByteArray> getBlob(String path) {
         log.debug "getBlob $path"
         return Optional.ofNullable(null);
     }
 
     @Override
-    @CachePut(value = "blobs", parameters = "path")
+    @CachePut(value = "cache-1h", parameters = "path")
     DigestByteArray saveBlob(String path, byte[] bytes, String type, String digest) {
         log.debug "saveBlob $path"
         DigestByteArray digestByteArray = new DigestByteArray(bytes, type, digest);
