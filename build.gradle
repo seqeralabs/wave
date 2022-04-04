@@ -69,7 +69,7 @@ micronaut {
 //
 jib {
     from {
-        image = 'amazoncorretto:17.0.2'
+        image = 'public.ecr.aws/seqera-labs/nf-jdk:corretto-17.0.2'
         platforms {
             platform { architecture = 'amd64'; os = 'linux' }
         }
