@@ -40,7 +40,7 @@ dependencies {
 
     implementation 'org.apache.commons:commons-compress:1.21'
 
-    implementation("io.micronaut.cache:micronaut-cache-caffeine")
+    implementation("io.micronaut.cache:micronaut-cache-caffeine:3.3.0")
 }
 
 
