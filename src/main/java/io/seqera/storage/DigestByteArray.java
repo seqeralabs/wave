@@ -1,5 +1,7 @@
 package io.seqera.storage;
 
+import io.seqera.util.ZipUtils;
+
 /**
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -9,13 +11,13 @@ public class DigestByteArray {
     private String digest;
 
     public DigestByteArray(byte[] bytes, String mediaType, String digest) {
-        this.bytes = bytes;
+        this.bytes = ZipUtils.compress(bytes);
         this.mediaType = mediaType;
         this.digest = digest;
     }
 
     public byte[] getBytes() {
-        return bytes;
+        return ZipUtils.decompressAsBytes(bytes);
     }
 
     public String getMediaType() {
