@@ -13,40 +13,50 @@ import org.slf4j.LoggerFactory
  * */
 @Slf4j
 @Singleton
-class MemoryStorage implements Storage, RemovalListener<String, DigestByteArray> {
-
-    private static Logger logger = LoggerFactory.getLogger(MemoryStorage.class);
+class MemoryStorage implements Storage {
 
     @Override
-    @Cacheable(value = "cache-1h", parameters = "path")
     Optional<DigestByteArray> getManifest(String path) {
-        return Optional.ofNullable(null);
+        getManifestCacheable(path)
     }
 
     @Override
-    @CachePut(value = "cache-1h", parameters = "path")
     DigestByteArray saveManifest(String path, String manifest, String type, String digest) {
+        saveManifestCacheable(path, manifest, type, digest)
+    }
+
+    @Override
+    Optional<DigestByteArray> getBlob(String path) {
+        getBlobCacheable(path)
+    }
+
+    @Override
+    DigestByteArray saveBlob(String path, byte[] bytes, String type, String digest) {
+        saveBlobCacheable(path, bytes, type, digest)
+    }
+
+    @Cacheable(value = "cache-1h", parameters = "path")
+    protected Optional<DigestByteArray> getManifestCacheable(String path) {
+        Optional.empty()
+    }
+
+    @Cacheable(value = "cache-1h", parameters = "path")
+    protected DigestByteArray saveManifestCacheable(String path, String manifest, String type, String digest) {
+        log.debug "Save Manifest $path"
         DigestByteArray digestByteArray = new DigestByteArray(manifest.getBytes(), type, digest);
         return digestByteArray;
     }
 
-    @Override
     @Cacheable(value = "cache-1h", parameters = "path")
-    Optional<DigestByteArray> getBlob(String path) {
-        log.debug "getBlob $path"
-        return Optional.ofNullable(null);
+    protected Optional<DigestByteArray> getBlobCacheable(String path) {
+        Optional.empty()
     }
 
-    @Override
-    @CachePut(value = "cache-1h", parameters = "path")
-    DigestByteArray saveBlob(String path, byte[] bytes, String type, String digest) {
-        log.debug "saveBlob $path"
+    @Cacheable(value = "cache-1h", parameters = "path")
+    protected DigestByteArray saveBlobCacheable(String path, byte[] bytes, String type, String digest) {
+        log.debug "Save Blob $path"
         DigestByteArray digestByteArray = new DigestByteArray(bytes, type, digest);
         return digestByteArray;
     }
 
-    @Override
-    void onRemoval(String s, DigestByteArray digestByteArray, RemovalCause removalCause) {
-        logger.info("Removing {} from cache", s);
-    }
 }

@@ -364,7 +364,7 @@ class ContainerScanner {
 
         def first = history.first()
 
-        def newHistoryId = RegHelper.random256Hex()
+        def newHistoryId = RegHelper.stringToId(JsonOutput.toJson(history))
         def newV1Compatibility = new JsonSlurper().parseText(first['v1Compatibility'].toString()) as Map
         newV1Compatibility.parent = newV1Compatibility.id
         newV1Compatibility.id = newHistoryId
