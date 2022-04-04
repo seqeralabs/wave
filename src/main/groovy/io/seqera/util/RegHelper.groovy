@@ -105,7 +105,7 @@ class RegHelper {
     }
 
     static String stringToId(String str) {
-        def result = str.hashCode().toString()
+        def result = bytesToHex(SHA256.digest(str.bytes))
         // pad with extra zeros if necessary
         while( result.size()<64 )
             result = '0'+result
