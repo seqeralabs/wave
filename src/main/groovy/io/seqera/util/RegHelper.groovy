@@ -103,4 +103,12 @@ class RegHelper {
             result = '0'+result
         return result
     }
+
+    static String stringToId(String str) {
+        def result = str.hashCode().toString()
+        // pad with extra zeros if necessary
+        while( result.size()<64 )
+            result = '0'+result
+        return result
+    }
 }
