@@ -1,63 +1,53 @@
 package io.seqera.storage
 
+import java.util.concurrent.TimeUnit
+
+import com.google.common.cache.Cache
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.cache.annotation.CachePut
-import io.micronaut.cache.annotation.Cacheable
-import io.micronaut.caffeine.cache.RemovalCause
-import io.micronaut.caffeine.cache.RemovalListener
 import jakarta.inject.Singleton
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import com.google.common.cache.CacheBuilder
+
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  * */
 @Slf4j
 @Singleton
+@CompileStatic
 class MemoryStorage implements Storage {
+
+    private Cache<String,DigestByteArray> cache = CacheBuilder<String,DigestByteArray>
+            .newBuilder()
+            .maximumSize(1000)
+            .expireAfterAccess(1, TimeUnit.HOURS)
+            .build()
 
     @Override
     Optional<DigestByteArray> getManifest(String path) {
-        getManifestCacheable(path)
+        final result = cache.getIfPresent(path)
+        result!=null ? Optional.of(result) : Optional.<DigestByteArray>empty()
     }
 
     @Override
     DigestByteArray saveManifest(String path, String manifest, String type, String digest) {
-        saveManifestCacheable(path, manifest, type, digest)
+        log.debug "Save Manifest [size: ${manifest.size()}] ==> $path"
+        final result = new DigestByteArray(manifest.getBytes(), type, digest);
+        cache.put(path, result)
+        return result;
     }
 
     @Override
     Optional<DigestByteArray> getBlob(String path) {
-        getBlobCacheable(path)
+        final result = cache.getIfPresent(path)
+        result!=null ? Optional.of(result) : Optional.<DigestByteArray>empty()
     }
 
     @Override
-    DigestByteArray saveBlob(String path, byte[] bytes, String type, String digest) {
-        new RuntimeException().printStackTrace()
-        saveBlobCacheable(path, bytes, type, digest)
-    }
-
-    @Cacheable(value = "cache-manifest", parameters = "path")
-    protected Optional<DigestByteArray> getManifestCacheable(String path) {
-        Optional.empty()
-    }
-
-    @Cacheable(value = "cache-manifest", parameters = "path")
-    protected DigestByteArray saveManifestCacheable(String path, String manifest, String type, String digest) {
-        log.debug "Save Manifest $path"
-        DigestByteArray digestByteArray = new DigestByteArray(manifest.getBytes(), type, digest);
-        return digestByteArray;
-    }
-
-    @Cacheable(value = "cache-blob", parameters = "path")
-    protected Optional<DigestByteArray> getBlobCacheable(String path) {
-        Optional.empty()
-    }
-
-    @Cacheable(value = "cache-blob", parameters = "path")
-    protected DigestByteArray saveBlobCacheable(String path, byte[] bytes, String type, String digest) {
-        log.debug "Save Blob $path"
-        DigestByteArray digestByteArray = new DigestByteArray(bytes, type, digest);
-        return digestByteArray;
+    DigestByteArray saveBlob(String path, byte[] blob, String type, String digest) {
+        log.debug "Save Blob [size: ${blob.size()}] ==> $path"
+        final result = new DigestByteArray(blob, type, digest);
+        cache.put(path, result)
+        return result
     }
 
 }

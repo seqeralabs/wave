@@ -75,13 +75,15 @@ class V2Controller {
             }
         }
 
-        if( route.blob){
+        if( route.blob ) {
             def entry = storage.getBlob(route.path)
             if (entry.present) {
+                log.info "Blob found in the cache: $route.path"
                 return fromCache(entry.get())
             }
         }
 
+        log.debug "Blob pulling from remote host: $route.path"
         def headers = httpRequest.headers.asMap() as Map<String, List<String>>
         def response = containerService.handleRequest(route, headers)
         fromDelegateResponse(response)
