@@ -74,7 +74,7 @@ class ContainerScanner {
     }
 
     @Memoized
-    protected LayerConfig createConfig(File path, long size, long lastModified) {
+    synchronized protected LayerConfig createConfig(File path, long size, long lastModified) {
         final layerConfig = new JsonSlurper().parse(path) as LayerConfig
         if( !layerConfig.append?.location )
             throw new IllegalArgumentException("Missing layer tar path")
@@ -196,7 +196,7 @@ class ContainerScanner {
     }
 
     @Memoized // <-- prevent to load in memory the same blob more than once, otherwise it will throw a OOM exception
-    private byte[] readLayerBlob(Path location) {
+    synchronized private byte[] readLayerBlob(Path location) {
         return Files.readAllBytes(location)
     }
 
