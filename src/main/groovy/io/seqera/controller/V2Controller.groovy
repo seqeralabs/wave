@@ -1,9 +1,6 @@
 package io.seqera.controller
 
-import java.nio.ByteBuffer
-import java.nio.MappedByteBuffer
-import java.nio.channels.FileChannel
-import java.nio.file.Files
+import java.time.Instant
 
 import groovy.util.logging.Slf4j
 import io.micronaut.http.*
@@ -12,14 +9,13 @@ import io.micronaut.http.annotation.Error
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.hateoas.JsonError
 import io.micronaut.http.hateoas.Link
+import io.micronaut.http.server.types.files.StreamedFile
 import io.seqera.storage.Storage
 import io.seqera.storage.DigestByteArray
 import io.seqera.RouteHelper
 import io.seqera.docker.ContainerService
 import io.seqera.docker.ContainerService.DelegateResponse
 import org.reactivestreams.Publisher
-import reactor.core.publisher.Flux
-import reactor.core.publisher.FluxSink
 import reactor.core.publisher.Mono
 
 /**
@@ -123,9 +119,11 @@ class V2Controller {
                 .headers(headers)
     }
 
-    MutableHttpResponse<Flux<ByteBuffer>>fromDelegateResponse(final DelegateResponse delegateResponse){
+    MutableHttpResponse<StreamedFile>fromDelegateResponse(final DelegateResponse delegateResponse){
 
-        final fluxInputStream = createFluxFromChunkBytes(delegateResponse.body)
+        final Long contentLength = delegateResponse.headers
+                .find {it.key.toLowerCase()=='content-length'}?.value?.first() as long ?: null
+        final fluxInputStream = createFluxFromChunkBytes(delegateResponse.body, contentLength)
 
         HttpResponse
                 .status(HttpStatus.valueOf(delegateResponse.statusCode))
@@ -139,24 +137,11 @@ class V2Controller {
                 })
     }
 
-    static Flux<ByteBuffer> createFluxFromChunkBytes(InputStream inputStream){
-        int size = 32 * 1024
-        Flux.<ByteBuffer>create({ emitter ->
-            def file = Files.createTempFile('image','download').toFile()
-            def rnd = new RandomAccessFile(file, "rw")
-            def ch = rnd.getChannel()
-            byte[]buff = new byte[size]
-            int readed
-            int index=0
-            while( (readed=inputStream.read(buff, 0, size)) != -1){
-                // save to the rnd
-                ch.write(ByteBuffer.wrap(buff, 0, readed) )
-                // read mapped by buffer from the rnd
-                MappedByteBuffer buf = ch.map(FileChannel.MapMode.READ_ONLY, size * index++, readed)
-                emitter.next(buf)
-            }
-            emitter.complete()
-        }, FluxSink.OverflowStrategy.BUFFER)
+    static StreamedFile createFluxFromChunkBytes(InputStream inputStream, Long size){
+        if( size )
+            new StreamedFile(inputStream, MediaType.APPLICATION_OCTET_STREAM_TYPE, Instant.now().toEpochMilli(), size)
+        else
+            new StreamedFile(inputStream, MediaType.APPLICATION_OCTET_STREAM_TYPE)
     }
 
 }
