@@ -1,5 +1,10 @@
 package io.seqera.controller
 
+import java.nio.ByteBuffer
+import java.nio.MappedByteBuffer
+import java.nio.channels.FileChannel
+import java.nio.file.Files
+
 import groovy.util.logging.Slf4j
 import io.micronaut.http.*
 import io.micronaut.http.annotation.Controller
@@ -118,9 +123,9 @@ class V2Controller {
                 .headers(headers)
     }
 
-    MutableHttpResponse<Flux<byte[]>>fromDelegateResponse(final DelegateResponse delegateResponse){
+    MutableHttpResponse<Flux<ByteBuffer>>fromDelegateResponse(final DelegateResponse delegateResponse){
 
-        Flux<byte[]> fluxInputStream = createFluxFromChunkBytes(delegateResponse.body)
+        final fluxInputStream = createFluxFromChunkBytes(delegateResponse.body)
 
         HttpResponse
                 .status(HttpStatus.valueOf(delegateResponse.statusCode))
@@ -134,14 +139,21 @@ class V2Controller {
                 })
     }
 
-    static Flux<byte[]> createFluxFromChunkBytes(InputStream inputStream){
-        int size = 1024
-        Flux.<byte[]>create({ emitter ->
+    static Flux<ByteBuffer> createFluxFromChunkBytes(InputStream inputStream){
+        int size = 32 * 1024
+        Flux.<ByteBuffer>create({ emitter ->
+            def file = Files.createTempFile('image','download').toFile()
+            def rnd = new RandomAccessFile(file, "rw")
+            def ch = rnd.getChannel()
             byte[]buff = new byte[size]
             int readed
+            int index=0
             while( (readed=inputStream.read(buff, 0, size)) != -1){
-                byte[] send = Arrays.copyOf(buff, readed)
-                emitter.next(send)
+                // save to the rnd
+                ch.write(ByteBuffer.wrap(buff, 0, readed) )
+                // read mapped by buffer from the rnd
+                MappedByteBuffer buf = ch.map(FileChannel.MapMode.READ_ONLY, size * index++, readed)
+                emitter.next(buf)
             }
             emitter.complete()
         }, FluxSink.OverflowStrategy.BUFFER)
