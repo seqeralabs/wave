@@ -4,7 +4,10 @@ micronaut:
   server:
     port: 9090
   caches:
-    cache-1h:
+    cache-manifest:
+      listen-to-removals: true
+      expire-after-access: 60m
+    cache-blob:
       listen-to-removals: true
       expire-after-access: 60m
 

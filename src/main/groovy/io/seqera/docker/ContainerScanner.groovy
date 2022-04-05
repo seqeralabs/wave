@@ -108,7 +108,7 @@ class ContainerScanner {
         final resp2 = client.getString("/v2/$imageName/manifests/${digest.get()}", headers)
         final type = resp2.headers().firstValue('content-type').orElse(null)
         if( resp2.statusCode() != 200 )
-            throw new InvalidResponseException("Unexpected response statusCode: ${resp1.statusCode()}", resp1)
+            throw new InvalidResponseException("Unexpected response statusCode: ${resp2.statusCode()}", resp2)
         final manifestsList = resp2.body()
         log.debug "Image $imageName:$tag => type=$type; manifests list:\n${JsonOutput.prettyPrint(manifestsList)}"
 
