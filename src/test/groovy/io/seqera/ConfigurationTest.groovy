@@ -26,6 +26,7 @@ class ConfigurationTest extends Specification{
         ApplicationContext ctx = ApplicationContext.run(ApplicationContext, [
                 "TEST_USER": 'theUser',
                 "towerreg.arch": 'test',
+                "towerreg.layerPath": 'pack/layers/layer.json',
                 "towerreg.registries.test": [
                         host:'quay.io',
                         auth: [username: '${TEST_USER}',password: 'pwd',url: 'quay.io/v2/auth',service: 'quay.io']

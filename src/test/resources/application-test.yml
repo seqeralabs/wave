@@ -5,7 +5,6 @@ micronaut:
 
 towerreg:
   arch: x86_64
-
   registries:
     test:
       host: changed at runtime
