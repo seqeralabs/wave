@@ -10,13 +10,8 @@ clean:
 	wget -O .layer/opt/goofys/goofys https://nf-xpack.s3.amazonaws.com/goofys/v0.25.0.beta/goofys
 	chmod +x .layer/opt/goofys/goofys
 
-.layer/opt/juicefs/juicefs:
-	mkdir -p .layer/opt/juicefs
-	rm -rf juicefs*
-	./make-juicefs.sh
-	mv juicefs .layer/opt/juicefs
 
-pack/layers/layer.tar.gzip: .layer/opt/goofys/goofys .layer/opt/juicefs/juicefs
+pack/layers/layer.tar.gzip: .layer/opt/goofys/goofys
 	mkdir -p pack/layers
 	./make-tar.sh
 

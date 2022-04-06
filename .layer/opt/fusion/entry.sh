@@ -15,11 +15,6 @@ if [ "$NXF_FUSION_BUCKETS" ]; then
     /opt/goofys/goofys --file-mode=0755 --uid $uid --gid $gid $bucket /fusion/s3/$path
   done)
 fi
-## mount juicefs
-if [ "$XREG_JUICE_URL" ]; then
-  mkdir -p "$XREG_JUICE_MOUNT"
-  /opt/juicefs/juicefs mount "$XREG_JUICE_URL" "$XREG_JUICE_MOUNT" -d
-fi
 ## make sure to shutdown the fuse driver
 on_exit() {
   if pgrep goofys >/dev/null; then
