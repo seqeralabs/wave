@@ -1,7 +1,7 @@
 #!/bin/bash
 # Tag and and push the the GitHub repo and Docker images
 #
-# - The tag is taken from the `version` in the `build.gradle` file
+# - The tag is taken from the `VERSION` file in the project root
 # - The tagging is enabled using putting the string `[release]` in the
 #   commit comment
 # - Use the string `[force release]` to override existing tag/images
@@ -19,7 +19,7 @@ MARKETPLACE=${ENTERPRISE:-$(git show -s --format='%s' | $SED -rn 's/.*\[(marketp
 
 if [[ $RELEASE ]]; then
   # take the version from the `build.gradle` file
-  TAG=v$(cat build.gradle | sed -En 's@version *= *"([0-9]+\.[0-9]+\.[0-9]+)"@\1@p')
+  TAG=v$(cat VERSION)
   [[ $FORCE == 'force' ]] && FORCE='-f'
   # tag repo
   git tag $TAG $FORCE
