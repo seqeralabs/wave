@@ -1,14 +1,15 @@
 package io.seqera.util
 
-import com.google.common.io.BaseEncoding
-import com.sun.net.httpserver.Headers
-import groovy.json.JsonOutput
-
 import java.net.http.HttpHeaders
 import java.nio.charset.Charset
+import java.nio.file.Files
+import java.nio.file.Path
 import java.security.MessageDigest
 import java.security.SecureRandom
 
+import com.google.common.io.BaseEncoding
+import com.sun.net.httpserver.Headers
+import groovy.json.JsonOutput
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -32,6 +33,10 @@ class RegHelper {
 
     static String digest(String str) {
         return digest(str.getBytes())
+    }
+
+    static String digest(Path path) {
+        return digest(Files.readAllBytes(path))
     }
 
     static String digest(byte[] bytes) {

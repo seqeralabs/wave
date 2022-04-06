@@ -11,7 +11,7 @@ import io.micronaut.http.hateoas.JsonError
 import io.micronaut.http.hateoas.Link
 import io.micronaut.http.server.types.files.StreamedFile
 import io.seqera.storage.Storage
-import io.seqera.storage.DigestByteArray
+import io.seqera.storage.DigestStore
 import io.seqera.RouteHelper
 import io.seqera.docker.ContainerService
 import io.seqera.docker.ContainerService.DelegateResponse
@@ -89,7 +89,7 @@ class V2Controller {
         fromDelegateResponse(response)
     }
 
-    protected DigestByteArray manifestForPath(RouteHelper.Route route, HttpRequest httpRequest) {
+    protected DigestStore manifestForPath(RouteHelper.Route route, HttpRequest httpRequest) {
         def manifest = storage.getManifest(route.path)
         if (manifest.present) {
             return manifest.get()
@@ -109,7 +109,7 @@ class V2Controller {
         return fromCache(entry)
     }
 
-    MutableHttpResponse<?> fromCache(DigestByteArray entry) {
+    MutableHttpResponse<?> fromCache(DigestStore entry) {
         Map<CharSequence, CharSequence> headers = Map.of(
                         "Content-Length", entry.bytes.length.toString(),
                         "Content-Type", entry.mediaType,

@@ -73,8 +73,11 @@ class ContainerScanner {
         return createConfig(layerConfigPath.toFile(), attrs.size(), attrs.lastModifiedTime().toMillis())
     }
 
+    /*
+     * note: make this method static to enforce the memoized behavior across all instances of this class
+     */
     @Memoized
-    synchronized protected LayerConfig createConfig(File path, long size, long lastModified) {
+    static synchronized protected LayerConfig createConfig(File path, long size, long lastModified) {
         final layerConfig = new JsonSlurper().parse(path) as LayerConfig
         if( !layerConfig.append?.location )
             throw new IllegalArgumentException("Missing layer tar path")
@@ -195,29 +198,21 @@ class ContainerScanner {
         return result
     }
 
-    @Memoized // <-- prevent to load in memory the same blob more than once, otherwise it will throw a OOM exception
-    synchronized private byte[] readLayerBlob(Path location) {
-        return Files.readAllBytes(location)
-    }
-
     synchronized protected Map layerBlob(String image) {
         // store the layer blob in the cache
         final type = "application/vnd.docker.image.rootfs.diff.tar.gzip"
         final location = layerConfig.append.locationPath
-        final buffer = readLayerBlob(location)
-        final computed = RegHelper.digest(buffer)
+        final computed = RegHelper.digest(location)
         final digest = layerConfig.append.gzipDigest
         final size = layerConfig.append.gzipSize
-        if( !buffer )
-            throw new IllegalArgumentException("Layer content is empty -- path: $layerConfig.append.locationPath; exists: ${Files.exists(location)}")
         if( !size )
             throw new IllegalArgumentException("Layer size cannot be null or zero")
         if( digest != computed )
             log.warn("Layer gzip computed digest does not match with expected digest -- path=$layerConfig.append.locationPath; computed=$computed; expected: $digest")
-        final path = "/v2/$image/blobs/$digest"
-        storage.saveBlob(path, buffer, type, digest)
+        final String path = "/v2/$image/blobs/$digest"
+        storage.saveBlob(path, location, type, digest)
 
-        final result = new HashMap()
+        final result = new HashMap(10)
         result."mediaType" = type
         result."size" = size
         result."digest" = digest

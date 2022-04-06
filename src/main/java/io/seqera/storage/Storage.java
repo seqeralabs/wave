@@ -1,6 +1,7 @@
 package io.seqera.storage;
 
 
+import java.nio.file.Path;
 import java.util.Optional;
 
 /**
@@ -8,11 +9,13 @@ import java.util.Optional;
  **/
 public interface Storage {
 
-    Optional<DigestByteArray> getManifest(String path);
+    Optional<DigestStore> getManifest(String path);
 
-    DigestByteArray saveManifest(String path, String manifest, String type, String digest);
+    DigestStore saveManifest(String path, String manifest, String type, String digest);
 
-    Optional<DigestByteArray> getBlob(String path);
+    Optional<DigestStore> getBlob(String path);
 
-    DigestByteArray saveBlob(String path, byte[] bytes, String type, String digest);
+    DigestStore saveBlob(String path, byte[] content, String type, String digest);
+
+    DigestStore saveBlob(String path, Path content, String type, String digest);
 }
