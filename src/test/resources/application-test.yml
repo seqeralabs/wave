@@ -5,7 +5,7 @@ micronaut:
 
 towerreg:
   arch: x86_64
-
+  layerPath: pack/layers/layer.json
   registries:
     test:
       host: changed at runtime

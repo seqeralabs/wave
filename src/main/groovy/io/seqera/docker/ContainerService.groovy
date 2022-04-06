@@ -1,5 +1,6 @@
 package io.seqera.docker
 
+import java.nio.file.Path
 import javax.validation.constraints.NotBlank
 
 import groovy.transform.Memoized
@@ -38,9 +39,14 @@ class ContainerService {
     @NotBlank
     private String arch
 
+    @Value('${towerreg.layerPath}')
+    @NotBlank
+    private String layerPath
+
     private ContainerScanner scanner(ProxyClient proxyClient) {
         return new ContainerScanner()
                 .withArch(arch)
+                .withLayerConfig(Path.of(layerPath))
                 .withStorage(storage)
                 .withClient(proxyClient)
     }

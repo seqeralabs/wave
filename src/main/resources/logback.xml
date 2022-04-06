@@ -1,4 +1,6 @@
 <configuration>
+    <property name="LOG_ROOT" value="${LOG_ROOT:-.}" />
+    <property name="LOG_FILE_NAME" value="${LOG_FILE_NAME:-fusion-reg}" />
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <!-- ansi escape mess-up with non-ansi terminal and loggers -->
@@ -14,10 +16,10 @@
     </appender>
 
     <appender name="ROLLING_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>fusion-reg.log</file>
+        <file>${LOG_ROOT}/${LOG_FILE_NAME}.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- daily rollover -->
-            <fileNamePattern>fusion-reg.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>${LOG_FILE_NAME}.%d{yyyy-MM-dd}.log</fileNamePattern>
             <!-- keep 10 days' worth of history capped at 100MB total size -->
             <maxHistory>10</maxHistory>
             <totalSizeCap>200MB</totalSizeCap>

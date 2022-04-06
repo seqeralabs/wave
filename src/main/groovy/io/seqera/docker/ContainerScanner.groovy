@@ -30,9 +30,6 @@ class ContainerScanner {
 
     private Storage storage
 
-    {
-        withLayerConfig(Paths.get('pack/layers/layer.json'))
-    }
 
     ContainerScanner withStorage(Storage cache) {
         this.storage = cache
@@ -59,10 +56,6 @@ class ContainerScanner {
             throw new IllegalArgumentException("Specific config path does not exist: $path")
         }
         return this
-    }
-
-    Path getLayerConfigPath() {
-        return layerConfigPath
     }
 
     protected LayerConfig getLayerConfig() {
@@ -100,6 +93,9 @@ class ContainerScanner {
 
     String resolve(String imageName, String tag, Map<String,List<String>> headers) {
         assert client, "Missing client"
+        assert layerConfigPath, "Missing layerPath"
+        assert storage, "Missing storage"
+        assert arch, "Missing 'arch' parameter"
         // resolve image tag to digest
         final resp1 = client.head("/v2/$imageName/manifests/$tag", headers)
         final digest = resp1.headers().firstValue('docker-content-digest')
