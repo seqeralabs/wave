@@ -1,22 +1,20 @@
 package io.seqera.docker
 
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.attribute.BasicFileAttributes
+
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.transform.CompileDynamic
 import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
-import io.seqera.storage.Storage
 import io.seqera.model.ContentType
 import io.seqera.model.LayerConfig
 import io.seqera.proxy.InvalidResponseException
 import io.seqera.proxy.ProxyClient
+import io.seqera.storage.Storage
 import io.seqera.util.RegHelper
-
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
-import java.nio.file.attribute.BasicFileAttributes
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -51,9 +49,9 @@ class ContainerScanner {
 
     ContainerScanner withLayerConfig(Path path) {
         log.debug "Layer config path: $path"
-        this.layerConfigPath = path
-        if( !Files.exists(path )) {
-            throw new IllegalArgumentException("Specific config path does not exist: $path")
+        layerConfigPath = path.toAbsolutePath()
+        if( !Files.exists(layerConfigPath) ) {
+            throw new IllegalArgumentException("Specific config path does not exist: $layerConfigPath")
         }
         return this
     }
@@ -63,16 +61,16 @@ class ContainerScanner {
         final attrs = Files.readAttributes(layerConfigPath, BasicFileAttributes)
         // note file size and last modified timestamp are only needed
         // to invalidate the memoize cache
-        return createConfig(layerConfigPath.toFile(), attrs.size(), attrs.lastModifiedTime().toMillis())
+        return createConfig(layerConfigPath, attrs.size(), attrs.lastModifiedTime().toMillis())
     }
 
     /*
      * note: make this method static to enforce the memoized behavior across all instances of this class
      */
     @Memoized
-    static synchronized protected LayerConfig createConfig(File path, long size, long lastModified) {
+    static synchronized protected LayerConfig createConfig(Path path, long size, long lastModified) {
         final layerConfig = new JsonSlurper().parse(path) as LayerConfig
-        if( !layerConfig.append?.location )
+        if( !layerConfig.append?.getLocationPath() )
             throw new IllegalArgumentException("Missing layer tar path")
         if( !layerConfig.append?.gzipDigest )
             throw new IllegalArgumentException("Missing layer gzip digest")
@@ -84,10 +82,12 @@ class ContainerScanner {
         if( !layerConfig.append.tarDigest.startsWith('sha256:') )
             throw new IllegalArgumentException("Missing layer tar digest should start with the 'sha256:' prefix -- offending value: $layerConfig.append.tarDigest")
 
-        if( !Files.exists(layerConfig.append.locationPath) )
-            throw new IllegalArgumentException("Missing layer tar file: $layerConfig.append.locationPath")
+        final base = path.parent.toAbsolutePath()
+        final tarFile = layerConfig.append.withBase(base).getLocationPath()
+        if( !Files.exists(tarFile) )
+            throw new IllegalArgumentException("Missing layer tar file: $tarFile")
 
-        log.debug "Layer info: path=$layerConfig.append.location; gzip-checksum=$layerConfig.append.gzipDigest; gzip-size: $layerConfig.append.gzipSize; tar-checksum=$layerConfig.append.tarDigest"
+        log.debug "Layer info: path=$tarFile; gzip-checksum=$layerConfig.append.gzipDigest; gzip-size: $layerConfig.append.gzipSize; tar-checksum=$layerConfig.append.tarDigest"
         return layerConfig
     }
 

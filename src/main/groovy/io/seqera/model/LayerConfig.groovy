@@ -1,6 +1,7 @@
 package io.seqera.model
 
 /**
+ * Model the settings to be injected into the pulled container
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

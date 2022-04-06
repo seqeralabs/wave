@@ -28,7 +28,7 @@ SIZE_GZIP=$(wc -c "$LAYER_GZIP" | awk '{print $1}')
 
 # create the json metadata 
 JSON_STRING=$( jq -n \
-                  --arg location "$LAYER_GZIP" \
+                  --arg location "$(basename $LAYER_GZIP)" \
                   --arg tar_sha256 "sha256:$CHECKSUM_TAR" \
                   --arg gzip_sha256 "sha256:$CHECKSUM_GZIP" \
                   --arg gzip_size "$SIZE_GZIP" \
