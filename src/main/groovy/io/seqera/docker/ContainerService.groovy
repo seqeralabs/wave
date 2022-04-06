@@ -39,7 +39,7 @@ class ContainerService {
     @NotBlank
     private String arch
 
-    @Value('${towerreg.layerPath}')
+    @Value('${towerreg.layerPath:`pack/layers/layer.json`}')
     @NotBlank
     private String layerPath
 

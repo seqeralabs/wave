@@ -1,7 +1,7 @@
 ---
 towerreg:
   arch: x86_64
-  layerPath: pack/layers/layer.json
+  layerPath: "${XREF_LAYER_PATH:`pack/layers/layer.json`}"
   registries:
     docker_io:
       host: https://registry-1.docker.io
