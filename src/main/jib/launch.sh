@@ -1,6 +1,6 @@
 # Launch backend server
 export CLIENT_ARCH=amd64
-[ "$JAVA_OPTS" ] && echo "Detected JAVA_OPTS=$JAVA_OPTS"
+[ "$XREG_JVM_OPTS" ] && echo "Detected XREG_JVM_OPTS=$XREG_JVM_OPTS"
 exec java \
   -Dfile.encoding=UTF-8 \
   -Dcom.sun.security.enableAIAcaIssuers=true \
@@ -13,6 +13,6 @@ exec java \
   --add-opens=java.base/java.io=ALL-UNNAMED \
   --add-opens=java.base/java.nio=ALL-UNNAMED \
   --add-opens=java.base/java.util=ALL-UNNAMED \
-  ${JAVA_OPTS} \
+  ${XREG_JVM_OPTS} \
   -cp /app/resources:/app/classes:/app/libs/* \
   io.seqera.Application
