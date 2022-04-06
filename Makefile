@@ -22,6 +22,9 @@ pack/layers/layer.tar.gzip: .layer/opt/goofys/goofys .layer/opt/juicefs/juicefs
 
 pack: clean pack/layers/layer.tar.gzip
 
+buildInfo:
+	./gradlew buildInfo
+
 compile:
 	 ./gradlew assemble
 

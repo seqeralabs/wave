@@ -8,8 +8,15 @@ plugins {
     id "com.google.cloud.tools.jib" version "3.2.1"
 }
 
-version = "0.6.10"
-group = "com.example"
+String gitVersion() {
+    def p = new ProcessBuilder() .command('sh','-c','git rev-parse --short HEAD') .start()
+    def r = p.waitFor()
+    return r==0 ? p.text.trim() : '(unknown)'
+}
+
+group "io.seqera"
+version "${rootProject.file('VERSION').text.trim()}"
+ext.commitId = gitVersion()
 
 repositories {
     mavenCentral()
@@ -111,3 +118,16 @@ test {
         showStandardStreams = true
     }
 }
+
+/** Update version number for backend app and modules */
+task buildInfo { doLast {
+    def info = """\
+                name=${project.name}
+                group=${project.group}
+                version=${version}
+                commitId=${project.property('commitId')}
+            """.stripIndent().toString()
+    def f = file("src/main/resources/META-INF/build-info.properties")
+    f.parentFile.mkdirs()
+    f.text = info
+} }

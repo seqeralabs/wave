@@ -7,6 +7,7 @@ import io.micronaut.context.event.ApplicationEventListener
 import io.micronaut.context.event.StartupEvent
 import io.micronaut.runtime.Micronaut
 import io.seqera.config.RegistryBean
+import io.seqera.util.BuildInfo
 import io.seqera.util.RuntimeInfo
 import jakarta.inject.Inject
 
@@ -19,7 +20,7 @@ import jakarta.inject.Inject
 @Slf4j
 class Application implements ApplicationEventListener<StartupEvent>{
     static void main(String[] args) {
-        log.info(RuntimeInfo.info('; '))
+        log.info( "Starting ${BuildInfo.name} - version: ${BuildInfo.fullVersion} - ${RuntimeInfo.info('; ')}" )
         setupConfig()
         Micronaut.build(args)
                 .banner(false)

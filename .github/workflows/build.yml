@@ -38,7 +38,7 @@ jobs:
           cache: gradle
 
       - name: Compile
-        run: make compile
+        run: make buildInfo compile
 
       - name: Tests
         run: |          
