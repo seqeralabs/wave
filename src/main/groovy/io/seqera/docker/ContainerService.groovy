@@ -10,7 +10,7 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.inject.qualifiers.Qualifiers
 import io.seqera.auth.LoginValidator
 import io.seqera.storage.Storage
-import io.seqera.storage.DigestByteArray
+import io.seqera.storage.DigestStore
 import io.seqera.RouteHelper
 import io.seqera.auth.DockerAuthProvider
 import io.seqera.config.Registry
@@ -63,7 +63,7 @@ class ContainerService {
     }
 
 
-    DigestByteArray handleManifest(RouteHelper.Route route, Map<String,List<String>> headers){
+    DigestStore handleManifest(RouteHelper.Route route, Map<String,List<String>> headers){
         final Registry registry = findRegistry(route.registry)
         assert registry
 
@@ -76,7 +76,7 @@ class ContainerService {
         final req = "/v2/$route.image/manifests/$digest"
         final entry = storage.getManifest(req).orElseThrow( ()->
                 new IllegalStateException("Missing cached entry for request: $req"))
-        entry
+        return entry
     }
 
     DelegateResponse handleRequest(RouteHelper.Route route, Map<String,List<String>> headers){

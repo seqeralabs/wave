@@ -1,5 +1,7 @@
 package io.seqera.storage
 
+import java.nio.file.Files
+import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
 import com.google.common.cache.Cache
@@ -16,38 +18,45 @@ import com.google.common.cache.CacheBuilder
 @CompileStatic
 class MemoryStorage implements Storage {
 
-    private Cache<String,DigestByteArray> cache = CacheBuilder<String,DigestByteArray>
+    private Cache<String,DigestStore> cache = CacheBuilder<String,DigestStore>
             .newBuilder()
             .maximumSize(1000)
             .expireAfterAccess(1, TimeUnit.HOURS)
             .build()
 
     @Override
-    Optional<DigestByteArray> getManifest(String path) {
+    Optional<DigestStore> getManifest(String path) {
         final result = cache.getIfPresent(path)
-        result!=null ? Optional.of(result) : Optional.<DigestByteArray>empty()
+        result!=null ? Optional.of(result) : Optional.<DigestStore>empty()
     }
 
     @Override
-    DigestByteArray saveManifest(String path, String manifest, String type, String digest) {
+    DigestStore saveManifest(String path, String manifest, String type, String digest) {
         log.debug "Save Manifest [size: ${manifest.size()}] ==> $path"
-        final result = new DigestByteArray(manifest.getBytes(), type, digest);
+        final result = new ZippedDigestStore(manifest.getBytes(), type, digest);
         cache.put(path, result)
         return result;
     }
 
     @Override
-    Optional<DigestByteArray> getBlob(String path) {
+    Optional<DigestStore> getBlob(String path) {
         final result = cache.getIfPresent(path)
-        result!=null ? Optional.of(result) : Optional.<DigestByteArray>empty()
+        result!=null ? Optional.of(result) : Optional.<DigestStore>empty()
     }
 
     @Override
-    DigestByteArray saveBlob(String path, byte[] blob, String type, String digest) {
-        log.debug "Save Blob [size: ${blob.size()}] ==> $path"
-        final result = new DigestByteArray(blob, type, digest);
+    DigestStore saveBlob(String path, byte[] content, String type, String digest) {
+        log.debug "Save Blob [size: ${content.size()}] ==> $path"
+        final result = new ZippedDigestStore(content, type, digest);
         cache.put(path, result)
         return result
     }
 
+    @Override
+    DigestStore saveBlob(String path, Path content, String type, String digest) {
+        log.debug "Save Blob [size: ${Files.size(content)}] ==> $path"
+        final result = new LazyDigestStore(content, type, digest);
+        cache.put(path, result)
+        return result
+    }
 }
