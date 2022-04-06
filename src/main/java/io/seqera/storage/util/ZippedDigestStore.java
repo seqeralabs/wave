@@ -1,6 +1,10 @@
-package io.seqera.storage;
+package io.seqera.storage.util;
 
+import io.seqera.storage.DigestStore;
 import io.seqera.util.ZipUtils;
+
+import java.io.InputStream;
+import java.io.Serializable;
 
 /**
  * Implements a digest store compress/decompression on-demand
@@ -8,9 +12,10 @@ import io.seqera.util.ZipUtils;
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-public class ZippedDigestStore implements DigestStore{
+public class ZippedDigestStore implements DigestStore, Serializable {
 
     final private byte[] bytes;
+    final private long size;
     final private String mediaType;
     final private String digest;
 
@@ -18,10 +23,11 @@ public class ZippedDigestStore implements DigestStore{
         this.bytes = ZipUtils.compress(bytes);
         this.mediaType = mediaType;
         this.digest = digest;
+        this.size = bytes.length;
     }
 
-    public byte[] getBytes() {
-        return ZipUtils.decompressAsBytes(bytes);
+    public InputStream getInputStream() {
+        return ZipUtils.decompress(bytes);
     }
 
     public String getMediaType() {
@@ -32,4 +38,8 @@ public class ZippedDigestStore implements DigestStore{
         return digest;
     }
 
+    @Override
+    public long getContentLength() {
+        return size;
+    }
 }

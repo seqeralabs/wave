@@ -1,13 +1,13 @@
-package io.seqera
+package io.seqera.docker
 
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.Mock
 import io.seqera.auth.SimpleAuthProvider
 import io.seqera.docker.ContainerScanner
 import io.seqera.model.ContentType
 import io.seqera.proxy.ProxyClient
-import io.seqera.storage.MemoryStorage
 import io.seqera.storage.Storage
 import io.seqera.util.RegHelper
 import spock.lang.Ignore
@@ -99,7 +99,7 @@ class ContainerScannerTest extends Specification {
         layerPath.bytes = this.class.getResourceAsStream("/foo/dummy.gzip").bytes
 
         def string = this.class.getResourceAsStream("/foo/layer.json").text
-        def layerConfig = new JsonSlurper().parseText(string)
+        def layerConfig = new JsonSlurper().parseText(string) as Map
         layerConfig.append.location = layerPath.absolutePath
 
         layerJson = new File("$folder/layer.json")
@@ -129,7 +129,7 @@ class ContainerScannerTest extends Specification {
 
         and:
         def entry = storage.getBlob("/v2/$IMAGE/blobs/$digest").get()
-        entry.bytes == layerPath.bytes
+        entry.inputStream.readAllBytes() == layerPath.bytes
         entry.mediaType == ContentType.DOCKER_IMAGE_TAR_GZIP
         entry.digest == RegHelper.digest(layerPath.bytes)
 
@@ -158,7 +158,7 @@ class ContainerScannerTest extends Specification {
         then:
         // the cache contains the update image manifest json
         def entry = storage.getManifest("/v2/$IMAGE/manifests/$digest").get()
-        def manifest = new String(entry.bytes)
+        def manifest = new String(entry.inputStream.readAllBytes())
         def json = new JsonSlurper().parseText(manifest)
         and:
         entry.mediaType == ContentType.DOCKER_MANIFEST_V2_TYPE
@@ -201,7 +201,7 @@ class ContainerScannerTest extends Specification {
 
         then:
         def entry = storage.getManifest("/v2/$IMAGE/manifests/$digest").get()
-        def manifest = new String(entry.bytes)
+        def manifest = new String(entry.inputStream.readAllBytes())
         and:
         entry.mediaType == ContentType.DOCKER_MANIFEST_LIST_V2
         entry.digest == digest
@@ -335,7 +335,7 @@ class ContainerScannerTest extends Specification {
         entry.mediaType == ContentType.DOCKER_IMAGE_V1
         entry.digest == digest
         and:
-        def manifest = new JsonSlurper().parseText(new String(entry.bytes))
+        def manifest = new JsonSlurper().parseText(new String(entry.inputStream.readAllBytes())) as Map
         manifest.rootfs.diff_ids instanceof List
         manifest.rootfs.diff_ids.size() == 2
 
@@ -403,7 +403,7 @@ class ContainerScannerTest extends Specification {
         entry.mediaType == ContentType.DOCKER_MANIFEST_V1_JWS_TYPE
         entry.digest == digest
         and:
-        def manifest = new JsonSlurper().parseText(new String(entry.bytes))
+        def manifest = new JsonSlurper().parseText(new String(entry.inputStream.readAllBytes())) as Map
         originalManifest.fsLayers.size() == manifest.fsLayers.size() - 1
         originalManifest.history.size() == manifest.history.size() - 1
         and:

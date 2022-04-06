@@ -1,4 +1,4 @@
-package io.seqera.storage
+package io.seqera.storage.memory
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -7,6 +7,10 @@ import java.util.concurrent.TimeUnit
 import com.google.common.cache.Cache
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.storage.DigestStore
+import io.seqera.storage.Storage
+import io.seqera.storage.util.LazyDigestStore
+import io.seqera.storage.util.ZippedDigestStore
 import jakarta.inject.Singleton
 import com.google.common.cache.CacheBuilder
 
@@ -18,7 +22,7 @@ import com.google.common.cache.CacheBuilder
 @CompileStatic
 class MemoryStorage implements Storage {
 
-    private Cache<String,DigestStore> cache = CacheBuilder<String,DigestStore>
+    private Cache<String, DigestStore> cache = CacheBuilder<String,DigestStore>
             .newBuilder()
             .maximumSize(1000)
             .expireAfterAccess(1, TimeUnit.HOURS)
@@ -26,8 +30,7 @@ class MemoryStorage implements Storage {
 
     @Override
     Optional<DigestStore> getManifest(String path) {
-        final result = cache.getIfPresent(path)
-        result!=null ? Optional.of(result) : Optional.<DigestStore>empty()
+        Optional.ofNullable(cache.getIfPresent(path))
     }
 
     @Override
@@ -40,8 +43,7 @@ class MemoryStorage implements Storage {
 
     @Override
     Optional<DigestStore> getBlob(String path) {
-        final result = cache.getIfPresent(path)
-        result!=null ? Optional.of(result) : Optional.<DigestStore>empty()
+        Optional.ofNullable(cache.getIfPresent(path))
     }
 
     @Override
@@ -58,5 +60,10 @@ class MemoryStorage implements Storage {
         final result = new LazyDigestStore(content, type, digest);
         cache.put(path, result)
         return result
+    }
+
+    @Override
+    InputStream wrapInputStream(String path, InputStream inputStream, String type, String digest) {
+        inputStream
     }
 }

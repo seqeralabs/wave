@@ -1,6 +1,7 @@
 package io.seqera.storage;
 
 
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Optional;
 
@@ -18,4 +19,6 @@ public interface Storage {
     DigestStore saveBlob(String path, byte[] content, String type, String digest);
 
     DigestStore saveBlob(String path, Path content, String type, String digest);
+
+    InputStream wrapInputStream(String path, InputStream inputStream, String type, String digest);
 }

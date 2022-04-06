@@ -1,5 +1,6 @@
 package io.seqera.storage
 
+import io.seqera.storage.util.LazyDigestStore
 import spock.lang.Specification
 
 import java.nio.file.Files
@@ -19,7 +20,7 @@ class LazyDigestStoreTest extends Specification {
         when:
         def digest = new LazyDigestStore(file, 'text', 'sha256:122345567890')
         then:
-        digest.bytes == CONTENT.bytes
+        digest.inputStream.readAllBytes() == CONTENT.bytes
         digest.digest == 'sha256:122345567890'
         digest.mediaType == 'text'
 

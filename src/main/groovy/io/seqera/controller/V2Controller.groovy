@@ -111,13 +111,13 @@ class V2Controller {
 
     MutableHttpResponse<?> fromCache(DigestStore entry) {
         Map<CharSequence, CharSequence> headers = Map.of(
-                        "Content-Length", entry.bytes.length.toString(),
+                        "Content-Length", entry.contentLength.toString(),
                         "Content-Type", entry.mediaType,
                         "docker-content-digest", entry.digest,
                         "etag", entry.digest,
                         "docker-distribution-api-version", "registry/2.0") as Map<CharSequence, CharSequence>
         MutableHttpResponse
-                .ok( entry.bytes )
+                .ok( entry.inputStream )
                 .headers(headers)
     }
 

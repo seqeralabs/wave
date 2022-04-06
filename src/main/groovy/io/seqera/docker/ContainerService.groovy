@@ -8,6 +8,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Value
+import io.micronaut.http.MediaType
 import io.micronaut.inject.qualifiers.Qualifiers
 import io.seqera.auth.LoginValidator
 import io.seqera.storage.Storage
@@ -91,10 +92,15 @@ class ContainerService {
         ProxyClient proxyClient = client(registry, route.image)
         final resp = proxyClient.getStream(route.path, headers)
 
+        String contentType = headers.find {
+            it.key.toLowerCase().equals("content-type")
+        }?.value?.first() ?: MediaType.APPLICATION_OCTET_STREAM
+        String digest = route.path.split(':').last()
+
         new DelegateResponse(
                 statusCode: resp.statusCode(),
                 headers: resp.headers().map(),
-                body: resp.body()
+                body: storage.wrapInputStream(route.path, resp.body(), contentType, digest)
         )
     }
 
