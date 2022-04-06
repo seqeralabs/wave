@@ -82,8 +82,7 @@ jib {
         entrypoint = '/bin/sh'
         args = ['/launch.sh']  // copied from `src/main/jib` directory
         environment = [
-                'MICRONAUT_ENVIRONMENTS': 'prod',
-                'MICRONAUT_CONFIG_FILES': 'classpath:application.yml,file:config.yml'
+                'MICRONAUT_ENVIRONMENTS': 'prod'
         ]
     }
     extraDirectories {

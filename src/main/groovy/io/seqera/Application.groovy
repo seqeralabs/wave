@@ -20,7 +20,7 @@ import jakarta.inject.Inject
 class Application implements ApplicationEventListener<StartupEvent>{
     static void main(String[] args) {
         log.info(RuntimeInfo.info('; '))
-
+        setupConfig()
         Micronaut.build(args)
                 .banner(false)
                 .eagerInitSingletons(true)
@@ -36,5 +36,15 @@ class Application implements ApplicationEventListener<StartupEvent>{
         ctx.getBeansOfType(RegistryBean).each{registryBean ->
             log.info "$registryBean.name configuration = $registryBean"
         }
+    }
+
+    static void setupConfig() {
+        def configFile = 'config.yml'
+        if( System.getenv('XREG_CONFIG_FILE') ) {
+            log.info "Detected XREG_CONFIG_FILE variable: ${System.getenv('XREG_CONFIG_FILE')}"
+            configFile = System.getenv('XREG_CONFIG_FILE')
+        }
+
+        System.setProperty('micronaut.config.files', "classpath:application.yml,file:$configFile")
     }
 }
