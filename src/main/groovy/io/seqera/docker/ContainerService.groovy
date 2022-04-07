@@ -32,17 +32,16 @@ class ContainerService {
     Storage storage
     ApplicationContext applicationContext
 
-    @Value('${towerreg.layerPath:`pack/layers/layer.json`}')
-    @NotBlank
-    private String layerPath
-
     ContainerService(Storage storage, ApplicationContext applicationContext, TowerConfiguration towerConfiguration) {
         this.storage = storage
         this.applicationContext = applicationContext
         this.arch = towerConfiguration.arch
+        this.layerPath = towerConfiguration.layerPath
     }
 
     private String arch
+
+    private String layerPath
 
     private ContainerScanner scanner(ProxyClient proxyClient) {
         return new ContainerScanner()
@@ -97,10 +96,15 @@ class ContainerService {
         }?.value?.first() ?: MediaType.APPLICATION_OCTET_STREAM
         String digest = route.path.split(':').last()
 
+        if( !storage.containsBlob(route.path) ){
+            final asyncResp = proxyClient.getStream(route.path, headers)
+            storage.asyncSaveBlob(route.path, asyncResp.body(), contentType, digest)
+        }
+
         new DelegateResponse(
                 statusCode: resp.statusCode(),
                 headers: resp.headers().map(),
-                body: storage.wrapInputStream(route.path, resp.body(), contentType, digest)
+                body: resp.body()
         )
     }
 

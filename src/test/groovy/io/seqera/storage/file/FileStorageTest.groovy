@@ -129,27 +129,4 @@ class FileStorageTest extends Specification{
         content.exists()
     }
 
-    void 'save remote inputstream create a lazy blob'() {
-        given: 'a configuration'
-        Map configuration = pipedValidConfiguration()
-
-        and: 'an application'
-        ApplicationContext ctx = ApplicationContext.run(ApplicationContext, configuration)
-
-        and: 'a storage'
-        FileStorage storage = ctx.getBean(FileStorage)
-        File blob
-        blob = Files.createTempFile(path, "", ".dump").toFile()
-        blob.text = "Hi!"*1000
-
-        when:
-        def wrapped = storage.wrapInputStream("/a/path", blob.newInputStream() , "application/text", "digest")
-
-        then:
-        wrapped.readAllBytes() == blob.bytes
-        def content = path.resolve("a/path.blob").toFile()
-        content.exists()
-        (content.newObjectInputStream().readObject() as DigestStore).inputStream.readAllBytes() == blob.bytes
-        (content.newObjectInputStream().readObject() as DigestStore).mediaType == 'application/text'
-    }
 }

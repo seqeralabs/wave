@@ -12,7 +12,7 @@ netty:
 ---
 towerreg:
   arch : x86_64
-
+  layerPath: pack/layers/layer.json
   storage:
     maximum-size: 1000
     expire-after: 1h

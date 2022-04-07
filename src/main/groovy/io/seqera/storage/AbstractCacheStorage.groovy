@@ -28,6 +28,11 @@ abstract class AbstractCacheStorage implements Storage{
     }
 
     @Override
+    boolean containsManifest(String path) {
+        getManifest(path).present
+    }
+
+    @Override
     Optional<DigestStore> getManifest(String path) {
         Optional.ofNullable(cache.getIfPresent(path))
     }
@@ -41,6 +46,11 @@ abstract class AbstractCacheStorage implements Storage{
     }
 
     @Override
+    boolean containsBlob(String path) {
+        getBlob(path).present
+    }
+
+    @Override
     abstract Optional<DigestStore> getBlob(String path)
 
     @Override
@@ -50,5 +60,6 @@ abstract class AbstractCacheStorage implements Storage{
     abstract DigestStore saveBlob(String path, Path content, String type, String digest)
 
     @Override
-    abstract InputStream wrapInputStream(String path, InputStream inputStream, String type, String digest)
+    abstract void asyncSaveBlob(String path, InputStream inputStream, String type, String digest)
+
 }

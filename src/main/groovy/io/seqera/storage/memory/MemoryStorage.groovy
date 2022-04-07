@@ -52,7 +52,7 @@ class MemoryStorage extends AbstractCacheStorage {
     }
 
     @Override
-    InputStream wrapInputStream(String path, InputStream inputStream, String type, String digest) {
-        inputStream
+    void asyncSaveBlob(String path, InputStream inputStream, String type, String digest) {
+
     }
 }

@@ -3,6 +3,7 @@ package io.seqera.storage.file
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.function.Function
 
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Primary
@@ -11,6 +12,7 @@ import io.seqera.config.FileStorageConfiguration
 import io.seqera.config.StorageConfiguration
 import io.seqera.storage.AbstractCacheStorage
 import io.seqera.storage.DigestStore
+import io.seqera.storage.DownloadFileExecutor
 import io.seqera.storage.util.LazyDigestStore
 import io.seqera.storage.util.ZippedDigestStore
 import jakarta.inject.Singleton
@@ -22,14 +24,22 @@ import reactor.core.scheduler.Schedulers
 @Slf4j
 class FileStorage extends AbstractCacheStorage{
 
-    boolean intermediateBlobs
-    Path rootStorage
+    private boolean intermediateBlobs
+    private Path rootStorage
+    private DownloadFileExecutor downloadFileExecutor
 
     FileStorage( StorageConfiguration storageConfiguration,
-                 FileStorageConfiguration fileStorageConfiguration){
+                 FileStorageConfiguration fileStorageConfiguration,
+                 DownloadFileExecutor downloadFileExecutor){
         super(storageConfiguration)
-        rootStorage = Paths.get(fileStorageConfiguration.path)
+        this.rootStorage = Paths.get(fileStorageConfiguration.path)
         this.intermediateBlobs = fileStorageConfiguration.storeRemotes
+        this.downloadFileExecutor = downloadFileExecutor
+    }
+
+    @Override
+    boolean containsBlob(String path) {
+        newFile("${path}.blob").exists()
     }
 
     @Override
@@ -59,43 +69,14 @@ class FileStorage extends AbstractCacheStorage{
     }
 
     @Override
-    InputStream wrapInputStream(final String path, final InputStream inputStream, final String type, final String digest) {
+    void asyncSaveBlob(final String path, final InputStream inputStream, final String type, final String digest) {
         if (!intermediateBlobs) {
-            return inputStream
+            return
         }
-        pipeInputStream(path, inputStream, type, digest)
-    }
-
-    protected InputStream pipeInputStream(final String path, final InputStream inputStream, final String type, final String digest) {
-        log.debug "Save remote Blob ==> $path"
-        final PipedOutputStream pipedOutputStream = new PipedOutputStream()
-        final PipedInputStream pipedInputStream = new PipedInputStream(pipedOutputStream)
-        final String suffix = "${System.currentTimeMillis()}"
-        final File dump = newFile("${path}.${suffix}")
-        final FileOutputStream fileOutputStream = new FileOutputStream(dump)
-        Schedulers.boundedElastic().schedule({
-            try {
-                byte[] bytes = new byte[1024*32]
-                int data = inputStream.read(bytes)
-                while(data != -1){
-                    pipedOutputStream.write(bytes, 0, data)
-                    fileOutputStream.write(bytes, 0, data)
-                    data = inputStream.read(bytes)
-                }
-
-                String finalName = dump.absolutePath.replace(suffix,"dump")
-                Files.move( Path.of(dump.absolutePath), Path.of(finalName))
-                saveBlob(path, Path.of(finalName), type, digest)
-
-                pipedOutputStream.flush()
-                pipedOutputStream.close()
-                log.debug "Stored remote Blob  ==> $path"
-            } catch (IOException e) {
-                log.debug "Error dumping remote Blob ==> $path", e
-                dump.delete()
-            }
+        downloadFileExecutor.scheduleDownload( path, inputStream, (downloaded)->{
+            final result = new LazyDigestStore(downloaded, type, digest)
+            newFile("${path}.blob").newObjectOutputStream().writeObject(result)
         })
-        pipedInputStream
     }
 
     private File newFile(String path){

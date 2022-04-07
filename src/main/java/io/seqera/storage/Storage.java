@@ -10,9 +10,13 @@ import java.util.Optional;
  **/
 public interface Storage {
 
+    boolean containsManifest(String path);
+
     Optional<DigestStore> getManifest(String path);
 
     DigestStore saveManifest(String path, String manifest, String type, String digest);
+
+    boolean containsBlob(String path);
 
     Optional<DigestStore> getBlob(String path);
 
@@ -20,5 +24,5 @@ public interface Storage {
 
     DigestStore saveBlob(String path, Path content, String type, String digest);
 
-    InputStream wrapInputStream(String path, InputStream inputStream, String type, String digest);
+    void asyncSaveBlob(String path, InputStream inputStream, String type, String digest);
 }
