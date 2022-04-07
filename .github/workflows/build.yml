@@ -39,6 +39,8 @@ jobs:
 
       - name: Compile
         run: make buildInfo compile
+        env:
+          GRADLE_OPTS: '-Dorg.gradle.daemon=false'
 
       - name: Tests
         run: |          
@@ -52,9 +54,11 @@ jobs:
         run: |
           bash tag-and-push.sh
         env:
+          GRADLE_OPTS: '-Dorg.gradle.daemon=false'
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           DOCKER_PAT: ${{ secrets.DOCKER_PAT }}
           QUAY_PAT: ${{ secrets.QUAY_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GH_SEQERA_TOKEN }}
 
       - name: Publish tests report
         if: failure()
