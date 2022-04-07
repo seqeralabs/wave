@@ -5,7 +5,8 @@ set -e
 if [ "$NXF_FUSION_BUCKETS" ]; then
   mkdir -p /fusion/s3
   /opt/fusion/fusionfs &
-  timeout 10s sh -c 'until (cat /proc/mounts | grep "/fusion/s3"); do sleep 1; done >/dev/null' || { echo "ERROR mounting FusionFS at /fusion/s3"; exit 1; }
+  i=0; until (cat /proc/mounts | grep /fusion/s3) || [ $((++i)) -gt 30 ]; do sleep 1; done >/dev/null \
+    || { echo "ERROR mounting FusionFS at /fusion/s3"; exit 1; }
 fi
 ## make sure to shutdown the fuse driver
 on_exit() {
