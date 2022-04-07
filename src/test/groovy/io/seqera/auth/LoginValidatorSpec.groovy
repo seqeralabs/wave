@@ -4,12 +4,9 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
-import io.micronaut.http.client.HttpClient
-import io.micronaut.http.client.annotation.Client
-import io.micronaut.http.client.netty.DefaultHttpClient
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.Mock
-import io.seqera.SecureDockerRegistryContainer
+import io.seqera.testcontainers.SecureDockerRegistryContainer
 import io.seqera.docker.ContainerService
 import jakarta.inject.Inject
 

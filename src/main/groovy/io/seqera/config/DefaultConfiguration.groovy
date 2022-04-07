@@ -11,6 +11,7 @@ import io.micronaut.context.annotation.EachBean
 import io.micronaut.context.annotation.EachProperty
 import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Parameter
+import io.micronaut.context.annotation.Requires
 import io.seqera.util.StringUtils
 
 /**
@@ -90,10 +91,21 @@ class DefaultConfiguration implements TowerConfiguration{
         Duration expireAfter = Duration.ofMinutes(60)
     }
 
+    @Requires(property = "towerreg.storage.file.path")
     @ConfigurationProperties("storage.file")
     static class FileConfigurationImpl implements FileStorageConfiguration{
         @NotBlank
         String path
         boolean storeRemotes=false
     }
+
+    @Requires(property = "towerreg.storage.s3.bucket")
+    @ConfigurationProperties("storage.s3")
+    static class S3ConfigurationImpl implements S3StorageConfiguration{
+        Optional<String> endpoint
+        @NotBlank
+        String bucket
+        boolean storeRemotes=false
+    }
+
 }

@@ -1,4 +1,4 @@
-package io.seqera
+package io.seqera.testcontainers
 
 import spock.lang.Shared
 

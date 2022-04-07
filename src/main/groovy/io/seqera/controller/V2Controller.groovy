@@ -68,14 +68,14 @@ class V2Controller {
                 return fromCache(entry)
             }
         }
-        else if( route.manifest ) {
+        else if( route.manifest && storage.containsManifest(route.path)) {
             def entry = storage.getManifest(route.path)
             if (entry.present) {
                 return fromCache(entry.get())
             }
         }
 
-        if( route.blob ) {
+        if( route.blob && storage.containsBlob(route.path) ) {
             def entry = storage.getBlob(route.path)
             if (entry.present) {
                 log.info "Blob found in the cache: $route.path"

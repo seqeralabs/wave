@@ -1,4 +1,4 @@
-package io.seqera
+package io.seqera.testcontainers
 
 import io.micronaut.context.ApplicationContext
 import io.micronaut.inject.qualifiers.Qualifiers

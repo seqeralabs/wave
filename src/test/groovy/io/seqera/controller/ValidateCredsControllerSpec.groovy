@@ -12,7 +12,7 @@ import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.Mock
-import io.seqera.SecureDockerRegistryContainer
+import io.seqera.testcontainers.SecureDockerRegistryContainer
 import jakarta.inject.Inject
 
 @MicronautTest

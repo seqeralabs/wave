@@ -4,9 +4,8 @@ import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.auth.ConfigurableAuthProvider
 import io.seqera.auth.SimpleAuthProvider
-
-import io.seqera.config.DefaultConfiguration
 import io.seqera.proxy.ProxyClient
+import io.seqera.testcontainers.DockerRegistryContainer
 import jakarta.inject.Inject
 import spock.lang.Shared
 import spock.lang.Specification

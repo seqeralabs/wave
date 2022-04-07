@@ -3,7 +3,6 @@ package io.seqera.storage.file
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.function.Function
 
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Primary
@@ -16,7 +15,6 @@ import io.seqera.storage.DownloadFileExecutor
 import io.seqera.storage.util.LazyDigestStore
 import io.seqera.storage.util.ZippedDigestStore
 import jakarta.inject.Singleton
-import reactor.core.scheduler.Schedulers
 
 @Primary
 @Requires(property = "towerreg.storage.file.path")
