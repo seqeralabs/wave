@@ -31,7 +31,7 @@ class FileStorageTest extends Specification{
     Map pipedValidConfiguration(){
         [
                 "towerreg.storage.file.path": path.toAbsolutePath().toString(),
-                "towerreg.storage.file.intermediate": true
+                "towerreg.storage.file.storeRemotes": true
         ]
     }
 
@@ -103,10 +103,9 @@ class FileStorageTest extends Specification{
         storage.saveManifest("/a/path", "12345" , "application/text", "digest")
 
         then:
-        def content = path.resolve("a/path.manifest").toFile()
-        content.exists()
-        (content.newObjectInputStream().readObject() as DigestStore).bytes
-        (content.newObjectInputStream().readObject() as DigestStore).mediaType == 'application/text'
+        def content = storage.cache.getIfPresent("/a/path")
+        content.inputStream.readAllBytes() == '12345'.bytes
+        content.mediaType == 'application/text'
     }
 
     void 'create the storage if directory doesnt exist'() {

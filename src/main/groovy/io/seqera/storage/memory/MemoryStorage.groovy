@@ -2,11 +2,15 @@ package io.seqera.storage.memory
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 
 import com.google.common.cache.Cache
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Value
+import io.seqera.config.StorageConfiguration
+import io.seqera.storage.AbstractCacheStorage
 import io.seqera.storage.DigestStore
 import io.seqera.storage.Storage
 import io.seqera.storage.util.LazyDigestStore
@@ -20,25 +24,10 @@ import com.google.common.cache.CacheBuilder
 @Slf4j
 @Singleton
 @CompileStatic
-class MemoryStorage implements Storage {
+class MemoryStorage extends AbstractCacheStorage {
 
-    private Cache<String, DigestStore> cache = CacheBuilder<String,DigestStore>
-            .newBuilder()
-            .maximumSize(1000)
-            .expireAfterAccess(1, TimeUnit.HOURS)
-            .build()
-
-    @Override
-    Optional<DigestStore> getManifest(String path) {
-        Optional.ofNullable(cache.getIfPresent(path))
-    }
-
-    @Override
-    DigestStore saveManifest(String path, String manifest, String type, String digest) {
-        log.debug "Save Manifest [size: ${manifest.size()}] ==> $path"
-        final result = new ZippedDigestStore(manifest.getBytes(), type, digest);
-        cache.put(path, result)
-        return result;
+    MemoryStorage(StorageConfiguration storageConfiguration){
+        super(storageConfiguration)
     }
 
     @Override

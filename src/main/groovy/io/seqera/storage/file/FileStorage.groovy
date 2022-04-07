@@ -3,14 +3,14 @@ package io.seqera.storage.file
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.time.Instant
 
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
-import io.micronaut.context.annotation.Value
+import io.seqera.config.FileStorageConfiguration
+import io.seqera.config.StorageConfiguration
+import io.seqera.storage.AbstractCacheStorage
 import io.seqera.storage.DigestStore
-import io.seqera.storage.Storage
 import io.seqera.storage.util.LazyDigestStore
 import io.seqera.storage.util.ZippedDigestStore
 import jakarta.inject.Singleton
@@ -20,34 +20,16 @@ import reactor.core.scheduler.Schedulers
 @Requires(property = "towerreg.storage.file.path")
 @Singleton
 @Slf4j
-class FileStorage implements Storage{
+class FileStorage extends AbstractCacheStorage{
 
     boolean intermediateBlobs
     Path rootStorage
 
-    FileStorage(
-            @Value('${towerreg.storage.file.path}') String path,
-            @Value('${towerreg.storage.file.intermediate:false}') boolean intermediateBlobs){
-        rootStorage = Paths.get(path)
-        this.intermediateBlobs = intermediateBlobs
-    }
-
-    @Override
-    Optional<DigestStore> getManifest(String path) {
-        File f = newFile("${path}.manifest")
-        if( !f.exists()){
-            return Optional.empty()
-        }
-        DigestStore digestStore = f.newObjectInputStream().readObject() as DigestStore
-        Optional.of(digestStore)
-    }
-
-    @Override
-    DigestStore saveManifest(String path, String manifest, String type, String digest) {
-        log.debug "Save Manifest [size: ${manifest.size()}] ==> $path"
-        final result = new ZippedDigestStore(manifest.getBytes(), type, digest);
-        newFile("${path}.manifest").newObjectOutputStream().writeObject(result)
-        result
+    FileStorage( StorageConfiguration storageConfiguration,
+                 FileStorageConfiguration fileStorageConfiguration){
+        super(storageConfiguration)
+        rootStorage = Paths.get(fileStorageConfiguration.path)
+        this.intermediateBlobs = fileStorageConfiguration.storeRemotes
     }
 
     @Override

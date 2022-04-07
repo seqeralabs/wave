@@ -4,4 +4,5 @@ public interface TowerConfiguration {
 
     String getArch();
 
+    String getLayerPath();
 }

@@ -11,6 +11,7 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.http.MediaType
 import io.micronaut.inject.qualifiers.Qualifiers
 import io.seqera.auth.LoginValidator
+import io.seqera.config.TowerConfiguration
 import io.seqera.storage.Storage
 import io.seqera.storage.DigestStore
 import io.seqera.RouteHelper
@@ -31,18 +32,17 @@ class ContainerService {
     Storage storage
     ApplicationContext applicationContext
 
-    ContainerService(Storage storage, ApplicationContext applicationContext) {
-        this.storage = storage
-        this.applicationContext = applicationContext
-    }
-
-    @Value('${towerreg.arch}')
-    @NotBlank
-    private String arch
-
     @Value('${towerreg.layerPath:`pack/layers/layer.json`}')
     @NotBlank
     private String layerPath
+
+    ContainerService(Storage storage, ApplicationContext applicationContext, TowerConfiguration towerConfiguration) {
+        this.storage = storage
+        this.applicationContext = applicationContext
+        this.arch = towerConfiguration.arch
+    }
+
+    private String arch
 
     private ContainerScanner scanner(ProxyClient proxyClient) {
         return new ContainerScanner()

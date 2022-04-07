@@ -1,5 +1,6 @@
 package io.seqera.config
 
+import java.time.Duration
 import javax.annotation.Nullable
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
@@ -18,13 +19,20 @@ import io.seqera.util.StringUtils
 @Context
 @ConfigurationProperties("towerreg")
 @Factory
-class DefaultConfiguration {
+class DefaultConfiguration implements TowerConfiguration{
 
     @NotBlank
     private String arch
 
+    private String layerPath
+
     String getArch() {
         return arch
+    }
+
+    @Override
+    String getLayerPath() {
+        return layerPath
     }
 
     @EachProperty(value = "registries")
@@ -74,5 +82,18 @@ class DefaultConfiguration {
     @EachBean(RegistryConfiguration)
     RegistryBean registryBean(RegistryConfiguration configuration){
         RegistryBean.builder().name(configuration.name).host(configuration.host).auth(configuration.auth).build()
+    }
+
+    @ConfigurationProperties("storage")
+    static class StorageConfigurationImpl implements StorageConfiguration{
+        int maximumSize = 1000
+        Duration expireAfter = Duration.ofMinutes(60)
+    }
+
+    @ConfigurationProperties("storage.file")
+    static class FileConfigurationImpl implements FileStorageConfiguration{
+        @NotBlank
+        String path
+        boolean storeRemotes=false
     }
 }

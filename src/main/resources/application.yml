@@ -9,4 +9,10 @@ netty:
   default:
     allocator:
       max-order: 3
-...
+---
+towerreg:
+  arch : x86_64
+
+  storage:
+    maximum-size: 1000
+    expire-after: 1h
