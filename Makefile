@@ -3,6 +3,7 @@ all: pack/layers/layer.tar.gzip
 clean:
 	rm -rf pack/layers/*
 	rm -rf .layer/opt/goofys/goofys
+	rm -rf .layer/opt/fusion/fusionfs
 	./gradlew clean
 
 .layer/opt/goofys/goofys:
@@ -10,8 +11,12 @@ clean:
 	wget -O .layer/opt/goofys/goofys https://nf-xpack.s3.amazonaws.com/goofys/v0.25.0.beta/goofys
 	chmod +x .layer/opt/goofys/goofys
 
+.layer/opt/fusion/fusionfs:
+	mkdir -p .layer/opt/fusion
+	gh release download -p fusionfs -R seqeralabs/fusionfs -D .layer/opt/fusion/
+	chmod +x .layer/opt/fusion/fusionfs
 
-pack/layers/layer.tar.gzip: .layer/opt/goofys/goofys
+pack/layers/layer.tar.gzip: .layer/opt/fusion/fusionfs
 	mkdir -p pack/layers
 	./make-tar.sh
 

@@ -1,5 +1,8 @@
 package io.seqera.controller
 
+import spock.lang.Shared
+import spock.lang.Specification
+
 import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
@@ -9,12 +12,8 @@ import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.DockerRegistryContainer
-import io.seqera.config.DefaultConfiguration
 import io.seqera.model.ContentType
 import jakarta.inject.Inject
-import spock.lang.Shared
-import spock.lang.Specification
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -47,7 +46,7 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
         and:
         response.body().indexOf('"schemaVersion":') != -1
         response.getContentType().get().getName() ==  'application/vnd.docker.distribution.manifest.v2+json'
-        response.getContentLength() == 775
+        response.getContentLength() == 774
     }
 
     void 'should head manifest'() {
@@ -64,7 +63,7 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
         and:
         response.getHeaders().get('docker-content-digest').startsWith( 'sha256:')
         response.getHeaders().get('Content-Type') == 'application/vnd.docker.distribution.manifest.v2+json'
-        response.getContentLength() == 775
+        response.getContentLength() == 774
     }
 
     void 'should head manifest and get blob of image'() {
@@ -80,6 +79,6 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
         and:
         response.getHeaders().get('docker-content-digest').startsWith( 'sha256:')
         response.getHeaders().get('Content-Type') == 'application/vnd.docker.distribution.manifest.v2+json'
-        response.getContentLength() == 775
+        response.getContentLength() == 774
     }
 }
