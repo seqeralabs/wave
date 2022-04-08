@@ -1,0 +1,132 @@
+= TowerRegistry
+support@sequera.io
+
+Ephemeral container registry that injects
+a custom payloads during an arbitrary image pull.
+
+== Idea
+
+TowerReg act like a proxy server in between the Docker client, putting an
+arbitrary container image and the target registry i.e. docker.io hosting the
+image to be downloaded.
+
+When an imaged is pulled the proxy server forward the request to the target registry,
+fetch the image manifest, and appended to the layer configuration a new configurable layer.
+
+== Architecture
+
+[plantuml]
+----
+!include <c4/C4_Context.puml>
+!include <office/Users/user.puml>
+!include <office/Users/mobile_user.puml>
+
+title TowerRegistry
+
+LAYOUT_TOP_DOWN
+
+Person(customer, "<$user>\nDocker", "docker pull")
+
+Enterprise_Boundary(c0, "TowerReg") {
+    System(service, "TowerReg", "Micronaut Application")
+    System(file, "File", "Storage")
+}
+
+System_Ext(s3, "S3", "Storage")
+
+System_Ext(docker, "Docker Hub", "docker.io")
+System_Ext(quai, "RedHat Quay", "quay.io")
+
+Rel(customer, service, "Pull", "Only pull")
+
+Rel_L(service, s3, "Get/Put", "bucket")
+Rel_R(service, file, "Read/Write", "bucket")
+
+Rel_D(service, docker, "Pull", "manifest & blobs")
+Rel_D(service, quai, "Pull", "manifest & blobs")
+----
+
+== Docker image schema
+
+TowerRegistry follows the Docker protocol and serve images under the `/v2` endpoint. In this way a user can pull
+images using, for example, the standard `docker cli`:
+
+[source]
+----
+docker pull my-towerreg-server/library/hello-world:1.0` <1>
+----
+<1> my-towerreg-server it's a DNS where you've deployed the service
+
+TowerRegistry act as a proxy against different `registries` servers and the user can choose which one to use setting it
+into the name of the image:
+
+[source]
+----
+docker pull my-towerreg-server/library/hello-world:1.0` <1>
+docker pull my-towerreg-server/docker.io/library/hello-world:1.0` <2>
+docker pull my-towerreg-server/quay.io/biocontainers/fastqc:0.11.9--0` <3>
+----
+<1> If no server is specified, TowerRegistry use the default as origin for the request
+<2> docker.io is a registry configured into TowerRegistry
+<3> quay.io is another registry configured into TowerRegistry
+
+Using the special name `tw` the image can be also encoded using base32:
+
+[source]
+----
+/v2/tw/mjuw6y3pnz2gc2lomvzhg
+----
+
+
+== Components
+
+Main parts of the service are structured into following components:
+
+=== Configuration
+
+=== Authorization
+
+=== Proxy
+
+=== Dialog
+
+=== Storage
+
+=== Controller
+
+== Configuration
+
+You can specify a `property` or `yaml` file to overwrite default configuration using the environment `XREG_CONFIG_FILE`
+
+[source]
+----
+towerreg:
+  registries: <1>
+    docker_io: <2>
+      fallback: true <3>
+      host: https://registry-1.docker.io
+      auth:
+        username: "${DOCKER_USER}"
+        password: "${DOCKER_PAT}"
+        url: https://auth.docker.io/token
+        service: registry.docker.io
+    quay_io:
+      host: https://quay.io
+      auth:
+        username: "${QUAY_USER}"
+        password: "${QUAY_PAT}"
+        url: https://quay.io/v2/auth
+        service: quay.io
+  storage: <4>
+    file:
+      path: /home/jorge/Descargas/tmp
+      store-remotes: true
+    s3:
+      bucket: tower-reg-test
+      store-remotes: true
+----
+<1> a map of registries
+<2> a registry configuration for docker.io
+<3> use this in case user doesnt specify one
+<4> different storages. Only one can be present
+

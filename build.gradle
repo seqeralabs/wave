@@ -6,6 +6,7 @@ plugins {
     id("com.github.johnrengelman.shadow") version "7.1.1"
     id("io.micronaut.application") version "3.2.0"
     id "com.google.cloud.tools.jib" version "3.2.1"
+    id 'org.asciidoctor.jvm.convert' version '3.3.2'
 }
 
 String gitVersion() {
@@ -131,3 +132,9 @@ task buildInfo { doLast {
     f.parentFile.mkdirs()
     f.text = info
 } }
+
+asciidoctorj {
+    modules {
+        diagram.use()
+    }
+}
