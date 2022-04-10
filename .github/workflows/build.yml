@@ -2,12 +2,13 @@ name: Tower-reg CI
 on:
   push:
     branches:
-      - 'master'
+      - '*'
+      - '!refs/tags/.*'
     tags-ignore:
       - '*'
   pull_request:
-    branches:
-      - '*'
+    types: [opened, reopened]
+    
 jobs:
   build:
     name: Build tower-reg
