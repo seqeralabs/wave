@@ -15,20 +15,19 @@ if [ "$NXF_FUSION_BUCKETS" ]; then
     /opt/goofys/goofys --file-mode=0755 --uid $uid --gid $gid $bucket /fusion/s3/$path
   done)
 fi
-## make sure to shutdown the fuse driver
-on_exit() {
-  if pgrep goofys >/dev/null; then
-  { >&2 echo "$(date '+%Y-%m-%d_%H:%M:%S') Shutdown goofys"
-    kill $(pgrep goofys)
-    >&2 echo "$(date '+%Y-%m-%d_%H:%M:%S') Done"
-  }>&2
+
+# tini wrapper to detect to detected the correct version to use 
+# read more https://github.com/krallin/tini
+tini() {
+  if [ -f /etc/alpine-release ]; then
+    echo /opt/tini/tini-static-muslc-amd64
+  else
+    echo /opt/tini/tini-static-amd64
   fi
 }
-trap on_exit EXIT
 ## invoke the target command
->&2 echo "$(date '+%Y-%m-%d_%H:%M:%S') Begin"
 if [ "$XREG_ENTRY_CHAIN" ]; then
-  "$XREG_ENTRY_CHAIN" "$@"
+  exec $(tini) -- "$XREG_ENTRY_CHAIN" "$@"
 else
-  "$@"
+  exec $(tini) -- "$@"
 fi
