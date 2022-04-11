@@ -59,7 +59,4 @@ abstract class AbstractCacheStorage implements Storage{
     @Override
     abstract DigestStore saveBlob(String path, Path content, String type, String digest)
 
-    @Override
-    abstract void asyncSaveBlob(String path, InputStream inputStream, String type, String digest)
-
 }

@@ -2,10 +2,13 @@ package io.seqera.storage.s3
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.Instant
 
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
+import io.micronaut.http.MediaType
+import io.micronaut.scheduling.annotation.Async
 import io.seqera.config.S3StorageConfiguration
 import io.seqera.config.StorageConfiguration
 import io.seqera.storage.AbstractCacheStorage
@@ -14,10 +17,14 @@ import io.seqera.storage.DownloadFileExecutor
 import io.seqera.storage.util.InputStreamDigestStore
 import io.seqera.storage.util.LazyDigestStore
 import io.seqera.storage.util.ZippedDigestStore
+import io.seqera.util.TapInputStreamFilter
 import jakarta.inject.Singleton
+import reactor.core.publisher.Mono
+import reactor.core.scheduler.Schedulers
 import software.amazon.awssdk.core.ResponseInputStream
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.amazon.awssdk.services.s3.model.GetObjectResponse
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest
@@ -95,26 +102,93 @@ class S3Storage extends AbstractCacheStorage {
     @Override
     DigestStore saveBlob(String path, Path content, String type, String digest) {
         log.debug "Save Blob [size: ${Files.size(content)}] ==> $path"
-        uploadStream(path, content, type, digest)
+        uploadFile(path, content, type, digest)
         final result = new LazyDigestStore(content, type, digest)
         result
     }
 
     @Override
-    void asyncSaveBlob(final String path, final InputStream inputStream, final String type, final String digest) {
-        if (!intermediateBlobs) {
-            return
+    InputStream saveBlob(String path, InputStream inputStream, String type, String digest, long length) {
+        // if there is another thread uploading the blob to S3 let current client download directly from remote repository
+        if (isUploadingFlagPresent(path) || !createFlagForPath(path)) {
+            return inputStream
         }
-        downloadFileExecutor.scheduleDownload(path, inputStream, (downloaded) -> {
-            try {
-                uploadStream(path, downloaded, type, digest)
-            }catch(Exception ignored){
-                log.debug "Error uploading to $bucketName => $path"
-            }
+
+        // otherwise link remote inputStream with a pipe and upload it to s3
+        final PipedOutputStream pipedOutputStream = new PipedOutputStream()
+        final PipedInputStream s3InputStream = new PipedInputStream(pipedOutputStream)
+        final TapInputStreamFilter clientInputStream = new TapInputStreamFilter(inputStream, pipedOutputStream, {
+            removeFlagForPath(path)
         })
+        scheduleUploadStream(path, s3InputStream, type, digest, length)
+        clientInputStream
     }
 
-    private void uploadStream(final String path, final Path content, final String type, final String digest){
+    @Async
+    protected void scheduleUploadStream(final String path, final InputStream inputStream, final String type, final String digest, final long length) {
+        uploadStream(path,  inputStream,  type,  digest,  length)
+    }
+
+    protected void uploadStream(final String path, final InputStream inputStream, final String type, final String digest, final long length) {
+        final Map<String, String> metadata = Map.of(TOWER_CONTENT_TYPE_KEY, type, TOWER_DIGEST_KEY, digest)
+        try {
+            s3Client.putObject(
+                    PutObjectRequest.builder()
+                            .bucket(bucketName)
+                            .key(path)
+                            .metadata(metadata)
+                            .contentLength(length)
+                            .build() as PutObjectRequest,
+                    RequestBody.fromInputStream(inputStream, length))
+            log.info "Save Blob [size: ${length}] ==> $path"
+        } catch (Exception e) {
+            log.error "Error uploading blob to S3 => $path", e
+        }
+    }
+
+    private static final String FLAG_EXTENSION = 'flg'
+
+    private boolean isUploadingFlagPresent(String path) {
+        try {
+            s3Client.headObject(
+                    HeadObjectRequest.builder().bucket(bucketName)
+                            .key("${path}.${FLAG_EXTENSION}")
+                            .build() as HeadObjectRequest)
+            true
+        } catch (Exception ignored) {
+            false
+        }
+    }
+
+    private boolean createFlagForPath(String path) {
+        try {
+            log.info "Creating flag for $path"
+            s3Client.putObject(
+                    PutObjectRequest.builder().bucket(bucketName)
+                            .key("${path}.${FLAG_EXTENSION}")
+                            .contentType(MediaType.TEXT_PLAIN)
+                            .build() as PutObjectRequest,
+                    RequestBody.fromString(Instant.now().toString()))
+            true
+        } catch (Exception e) {
+            log.error "Error creating flag for path $path", e
+            false
+        }
+    }
+
+    private void removeFlagForPath(String path) {
+        try {
+            log.info "Removing flag for $path"
+            s3Client.deleteObject(
+                    DeleteObjectRequest.builder().bucket(bucketName)
+                            .key("${path}.${FLAG_EXTENSION}")
+                            .build() as DeleteObjectRequest)
+        } catch (Exception e) {
+            log.error "Error deleting flag for path $path", e
+        }
+    }
+
+    private void uploadFile(final String path, final Path content, final String type, final String digest) {
         Map<String, String> metadata = Map.of(TOWER_CONTENT_TYPE_KEY, type, TOWER_DIGEST_KEY, digest)
         s3Client.putObject(
                 PutObjectRequest.builder().bucket(bucketName).key(path).metadata(metadata).build() as PutObjectRequest,

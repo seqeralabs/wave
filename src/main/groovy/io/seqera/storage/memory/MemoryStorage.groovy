@@ -52,7 +52,7 @@ class MemoryStorage extends AbstractCacheStorage {
     }
 
     @Override
-    void asyncSaveBlob(String path, InputStream inputStream, String type, String digest) {
-
+    InputStream saveBlob(String path, InputStream inputStream, String type, String digest, long length) {
+        inputStream
     }
 }

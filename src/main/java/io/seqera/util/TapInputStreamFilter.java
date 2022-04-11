@@ -20,9 +20,18 @@ public class TapInputStreamFilter extends FilterInputStream {
 
     final private OutputStream target;
 
+    final private Runnable finalizer;
+
     public TapInputStreamFilter(InputStream source, OutputStream target) {
         super(source);
         this.target = target;
+        this.finalizer = null;
+    }
+
+    public TapInputStreamFilter(InputStream source, OutputStream target, Runnable finalizer) {
+        super(source);
+        this.target = target;
+        this.finalizer = finalizer;
     }
 
     @Override
@@ -54,5 +63,8 @@ public class TapInputStreamFilter extends FilterInputStream {
     public void close() throws IOException {
         target.close();
         super.close();
+        if( finalizer != null){
+            finalizer.run();
+        }
     }
 }

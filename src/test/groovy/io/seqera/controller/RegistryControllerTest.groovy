@@ -11,8 +11,8 @@ import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.DockerRegistryContainer
 import io.seqera.model.ContentType
+import io.seqera.testcontainers.DockerRegistryContainer
 import jakarta.inject.Inject
 /**
  *

@@ -91,20 +91,18 @@ class ContainerService {
         ProxyClient proxyClient = client(registry, route.image)
         final resp = proxyClient.getStream(route.path, headers)
 
-        String contentType = headers.find {
-            it.key.toLowerCase().equals("content-type")
-        }?.value?.first() ?: MediaType.APPLICATION_OCTET_STREAM
-        String digest = route.path.split(':').last()
+        final String contentType = resp.headers().firstValue("content-type").orElse(MediaType.APPLICATION_OCTET_STREAM)
+        final Long contentLength =resp.headers().firstValueAsLong("content-length").orElse(0)
+        final String digest = route.path.split(':').last()
 
-        if( !storage.containsBlob(route.path) ){
-            final asyncResp = proxyClient.getStream(route.path, headers)
-            storage.asyncSaveBlob(route.path, asyncResp.body(), contentType, digest)
-        }
+        InputStream inputStream = storage.containsBlob(route.path) ?
+                storage.getBlob(route.path).get().inputStream :
+                storage.saveBlob(route.path, resp.body(), contentType, digest, contentLength)
 
         new DelegateResponse(
                 statusCode: resp.statusCode(),
                 headers: resp.headers().map(),
-                body: resp.body()
+                body: inputStream
         )
     }
 

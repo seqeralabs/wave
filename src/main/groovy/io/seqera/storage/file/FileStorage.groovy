@@ -14,6 +14,7 @@ import io.seqera.storage.DigestStore
 import io.seqera.storage.DownloadFileExecutor
 import io.seqera.storage.util.LazyDigestStore
 import io.seqera.storage.util.ZippedDigestStore
+import io.seqera.util.TapInputStreamFilter
 import jakarta.inject.Singleton
 
 @Primary
@@ -67,14 +68,14 @@ class FileStorage extends AbstractCacheStorage{
     }
 
     @Override
-    void asyncSaveBlob(final String path, final InputStream inputStream, final String type, final String digest) {
-        if (!intermediateBlobs) {
-            return
-        }
-        downloadFileExecutor.scheduleDownload( path, inputStream, (downloaded)->{
-            final result = new LazyDigestStore(downloaded, type, digest)
+    InputStream saveBlob(String path, InputStream inputStream, String type, String digest, long length) {
+        final File blob = newFile("${path}")
+        TapInputStreamFilter tapInputStreamFilter = new TapInputStreamFilter(inputStream, blob.newOutputStream(), {
+            log.debug "Save Blob ==> $path"
+            final result = new LazyDigestStore( Path.of(blob.absolutePath), type, digest)
             newFile("${path}.blob").newObjectOutputStream().writeObject(result)
         })
+        tapInputStreamFilter
     }
 
     private File newFile(String path){
