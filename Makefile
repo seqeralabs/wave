@@ -18,7 +18,13 @@ clean:
 	wget -P .layer/opt/tini https://github.com/krallin/tini/releases/download/v0.19.0/tini-static-muslc-amd64
 	chmod +x .layer/opt/tini/tini-*
 
-pack/layers/layer.tar.gzip: .layer/opt/goofys .layer/opt/tini
+.layer/opt/juicefs:
+	mkdir -p .layer/opt/juicefs
+	rm -rf juicefs*
+	./make-juicefs.sh
+	mv juicefs .layer/opt/juicefs
+
+pack/layers/layer.tar.gzip: .layer/opt/juicefs .layer/opt/tini
 	mkdir -p pack/layers
 	./make-tar.sh
 
