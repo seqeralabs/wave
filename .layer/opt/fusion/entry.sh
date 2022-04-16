@@ -4,6 +4,7 @@ set -e
 [ $XREG_DEBUG ] && set -x
 ## mount juicefs
 if [ "$XREG_JUICE_URL" ]; then
+  mkdir -p /var/log
   mkdir -p "$XREG_JUICE_MOUNT"
   /opt/juicefs/juicefs mount "$XREG_JUICE_URL" "$XREG_JUICE_MOUNT" -d
 fi
