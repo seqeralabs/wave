@@ -46,9 +46,16 @@ class S3StorageSpec extends Specification implements AwsContainer{
         ctx.getBean(Storage) instanceof S3Storage
     }
 
+    String randomPath(){
+        new Random().with {(1..9).collect {(('a'..'z')).join()[ nextInt((('a'..'z')).join().length())]}.join()}
+    }
+
     void 'save blob'() {
         given: 'a configuration'
         Map configuration = validConfiguration()
+
+        and: 'a path'
+        String path = randomPath()
 
         and: 'an application'
         ApplicationContext ctx = ApplicationContext.run(ApplicationContext, configuration)
@@ -63,11 +70,11 @@ class S3StorageSpec extends Specification implements AwsContainer{
         S3Storage storage = ctx.getBean(S3Storage)
 
         when:
-        storage.saveBlob("/a/path", "12345".bytes , "application/text", "digest")
+        storage.saveBlob(path, "12345".bytes , "application/text", "digest")
 
         then:
         def content = s3Client.getObject(
-                GetObjectRequest.builder().bucket("test").key("/a/path").build() as GetObjectRequest)
+                GetObjectRequest.builder().bucket("test").key(path).build() as GetObjectRequest)
         "12345".bytes == content.bytes
     }
 
@@ -91,12 +98,15 @@ class S3StorageSpec extends Specification implements AwsContainer{
         and: 'a storage'
         S3Storage storage = ctx.getBean(S3Storage)
 
+        and: 'a path'
+        String s3 = randomPath()
+
         when:
-        storage.saveBlob("/a/path", path, "application/text", "digest")
+        storage.saveBlob(s3, path, "application/text", "digest")
 
         then:
         def content = s3Client.getObject(
-                GetObjectRequest.builder().bucket("test").key("/a/path").build() as GetObjectRequest)
+                GetObjectRequest.builder().bucket("test").key(s3).build() as GetObjectRequest)
         path.toFile().bytes == content.bytes
 
         cleanup:
@@ -121,18 +131,22 @@ class S3StorageSpec extends Specification implements AwsContainer{
         Path path = Files.createTempFile("","")
         path.toFile().text = "1234"*10
 
+        and: 'a path'
+        String s3 = randomPath()
+
         and: 'a storage'
         S3Storage storage = ctx.getBean(S3Storage)
 
         when:
-        def inputStream = storage.saveBlob("/a/path", path.toFile().newInputStream(), "application/text", "digest", path.size())
+        def inputStream = storage.saveBlob(s3, path.toFile().newInputStream(), "application/text", "digest", path.size())
 
         then: 'is readed'
         path.toFile().bytes == inputStream.readAllBytes()
 
         and: 'blob is stored'
-        //need a good way to check async task completion
-        true
+        def content = s3Client.getObject(
+                GetObjectRequest.builder().bucket("test").key(s3).build() as GetObjectRequest)
+        path.toFile().bytes == content.bytes
 
         cleanup:
         Files.delete(path)
@@ -148,8 +162,11 @@ class S3StorageSpec extends Specification implements AwsContainer{
         and: 'a storage'
         S3Storage storage = ctx.getBean(S3Storage)
 
+        and: 'a path'
+        String path = randomPath()
+
         when:
-        storage.saveBlob("/a/path", "12345".bytes , "application/text", "digest")
+        storage.saveBlob(path, "12345".bytes , "application/text", "digest")
 
         then:
         thrown(NoSuchBucketException)

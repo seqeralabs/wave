@@ -121,7 +121,7 @@ class V2Controller {
                 .headers(headers)
     }
 
-    MutableHttpResponse<StreamedFile>fromDelegateResponse(final DelegateResponse delegateResponse){
+    MutableHttpResponse<InputStream>fromDelegateResponse(final DelegateResponse delegateResponse){
 
         final Long contentLength = delegateResponse.headers
                 .find {it.key.toLowerCase()=='content-length'}?.value?.first() as long ?: null
@@ -129,7 +129,7 @@ class V2Controller {
 
         HttpResponse
                 .status(HttpStatus.valueOf(delegateResponse.statusCode))
-                .body( fluxInputStream )
+                .body( delegateResponse.body )
                 .headers({MutableHttpHeaders mutableHttpHeaders ->
                     delegateResponse.headers.each {entry->
                         entry.value.each{ value ->

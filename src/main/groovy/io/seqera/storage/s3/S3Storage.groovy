@@ -75,7 +75,7 @@ class S3Storage extends AbstractCacheStorage {
         try {
             ResponseInputStream<GetObjectResponse> response = s3Client.getObject(
                     GetObjectRequest.builder().bucket(bucketName).key(path).build() as GetObjectRequest)
-            InputStream inputStream = response
+            InputStream inputStream = wrapInputStream(path, response)
             Map<String, String> metadata = response.response().metadata()
             String contentType = metadata.get(TOWER_CONTENT_TYPE_KEY)
             String digest = metadata.get(TOWER_DIGEST_KEY)
@@ -114,19 +114,29 @@ class S3Storage extends AbstractCacheStorage {
             return inputStream
         }
 
-        // otherwise link remote inputStream with a pipe and upload it to s3
-        final PipedOutputStream pipedOutputStream = new PipedOutputStream()
-        final PipedInputStream s3InputStream = new PipedInputStream(pipedOutputStream)
-        final TapInputStreamFilter clientInputStream = new TapInputStreamFilter(inputStream, pipedOutputStream, {
-            removeFlagForPath(path)
-        })
-        scheduleUploadStream(path, s3InputStream, type, digest, length)
-        clientInputStream
+        // otherwise store the blob and serve it
+        uploadStream(path, inputStream, type, digest, length)
+        removeFlagForPath(path)
+
+        def remoteInputStream = s3Client.getObject(
+                GetObjectRequest.builder().bucket(bucketName).key(path).build() as GetObjectRequest)
+        wrapInputStream(path, remoteInputStream)
+    }
+
+    private InputStream wrapInputStream(final String path, final InputStream inputStream){
+        def pipedInputStream = new PipedInputStream()
+        def pipedOutputStream = new PipedOutputStream()
+        pipedInputStream.connect(pipedOutputStream)
+        asyncTransferInputStream(path, inputStream, pipedOutputStream)
+        pipedInputStream
     }
 
     @Async
-    protected void scheduleUploadStream(final String path, final InputStream inputStream, final String type, final String digest, final long length) {
-        uploadStream(path,  inputStream,  type,  digest,  length)
+    void asyncTransferInputStream(final String path, final InputStream inputStream, final OutputStream outputStream){
+        inputStream.transferTo(outputStream)
+        outputStream.flush()
+        outputStream.close()
+        log.info "Blob transferred => $path"
     }
 
     protected void uploadStream(final String path, final InputStream inputStream, final String type, final String digest, final long length) {
