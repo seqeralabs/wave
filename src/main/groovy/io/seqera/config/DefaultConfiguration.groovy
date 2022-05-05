@@ -91,20 +91,22 @@ class DefaultConfiguration implements TowerConfiguration{
         Duration expireAfter = Duration.ofMinutes(60)
     }
 
-    @Requires(property = "towerreg.storage.file.path")
+    @Requires(property = "towerreg.storage.file.enabled", value = "true")
     @ConfigurationProperties("storage.file")
     static class FileConfigurationImpl implements FileStorageConfiguration{
         @NotBlank
         String path
+        boolean enabled = false
         boolean storeRemotes=false
     }
 
-    @Requires(property = "towerreg.storage.s3.bucket")
+    @Requires(property = "towerreg.storage.s3.enabled", value = "true")
     @ConfigurationProperties("storage.s3")
     static class S3ConfigurationImpl implements S3StorageConfiguration{
         Optional<String> endpoint
         @NotBlank
         String bucket
+        boolean enabled = false
         boolean storeRemotes=false
     }
 

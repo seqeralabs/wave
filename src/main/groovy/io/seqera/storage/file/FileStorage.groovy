@@ -18,7 +18,7 @@ import io.seqera.util.TapInputStreamFilter
 import jakarta.inject.Singleton
 
 @Primary
-@Requires(property = "towerreg.storage.file.path")
+@Requires(property = "towerreg.storage.file.enabled", value = "true")
 @Singleton
 @Slf4j
 class FileStorage extends AbstractCacheStorage{

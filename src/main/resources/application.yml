@@ -16,3 +16,12 @@ towerreg:
   storage:
     maximum-size: 1000
     expire-after: 1h
+    file:
+      enabled: false
+      path: build/images
+      store-remotes: true
+    s3:
+      enabled: false
+      bucket:
+      store-remotes: true
+---

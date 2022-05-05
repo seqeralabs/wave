@@ -35,7 +35,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest
  *
  */
 @Primary
-@Requires(property = "towerreg.storage.s3.bucket")
+@Requires(property = "towerreg.storage.s3.enabled", value = "true")
 @Singleton
 @Slf4j
 class S3Storage extends AbstractCacheStorage {
