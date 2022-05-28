@@ -49,19 +49,18 @@ and set the user/pwd for at least 1 registry
 
 7. Pull a container using the docker client: 
 
-        docker pull reg.ngrok.io/library/busybox
-        
-    **NOTE**: replace the registry name `reg.ngrok.io` with the one provided by the reverse proxy command in the previous step.
+        docker pull reg.staging-tower.xyz/library/busybox
+
 
 8. The pulled images contains the files from the appended layer. Check it with the following command:
 
         docker run \
           --rm \
           --platform linux/amd64 \
-          reg.ngrok.io/library/busybox \
-          cat foo.txt
+          reg.staging-tower.xyz/library/busybox \
+          cat isc-demo.txt
 
-1. List the content of a bucket using `ls`
+9. List the content of a bucket using `ls`
 
         docker run \
           --rm \
@@ -72,7 +71,7 @@ and set the user/pwd for at least 1 registry
           -e NXF_FUSION_BUCKETS=nextflow-ci \
           --cap-add SYS_ADMIN \
           --device /dev/fuse  \
-          reg.ngrok.io/library/busybox \
+          reg.staging-tower.xyz/library/busybox \
           ls -la /fusion/s3/nextflow-ci
   
 ### K8s one-liners 
@@ -83,7 +82,7 @@ and set the user/pwd for at least 1 registry
    --image-pull-policy Always \
    --restart Never \
    --attach=true \
-   cat foo.txt
+   cat isc-demo.txt
 ```
 
 ```
@@ -99,11 +98,5 @@ kubectl run busybox \
   -- \
   ls -la /fusion/s3/nextflow-ci 
 ```
-### Next goals 
 
-* ~~Implements the core functionality using Java + Micronaut + native compilation (Graal)~~
-* ~~Add support to use an arbitrary target container registry other than docker.io~~ 
-* ~~Add support for private registry authentication, at least quay.io, AWS ECR, Google Artifact Registry, Azure registry~~
-* ~~Implement layer caching mechanism to store layers binary into a S3 bucket~~ 
-* Add support for Tower users [token propagation](https://micronaut-projects.github.io/micronaut-guides-poc/latest/micronaut-token-propagation-gradle-java.html) 
-* Inject multiple layers
+
