@@ -17,7 +17,7 @@ class ValidateController {
     }
 
     @Post
-    Mono<Boolean> validateCreds(  @Valid ValidateRegistryCredsRequest request){
+    Mono<Boolean> validateCreds(@Valid ValidateRegistryCredsRequest request){
         Mono.just(
             containerService.validateUser(request.registry, request.userName, request.password)
         )

@@ -1,27 +1,15 @@
 package io.seqera.controller
 
-import com.sun.net.httpserver.Headers
-import com.sun.net.httpserver.HttpExchange
-import groovy.transform.Memoized
+
 import groovy.transform.builder.Builder
 import groovy.util.logging.Slf4j
-import io.seqera.RouteHelper
-import io.seqera.auth.AuthFactory
-import io.seqera.auth.DockerAuthProvider
-import io.seqera.config.Registry
-import io.seqera.docker.ContainerScanner
-import io.seqera.proxy.InvalidResponseException
-import io.seqera.proxy.ProxyClient
-import java.net.http.HttpResponse
-
-import static io.seqera.util.RegHelper.dumpJson
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @Builder
+@Deprecated
 class RegHandler  {
 
     /**

@@ -16,6 +16,7 @@ import io.seqera.RouteHelper
 import io.seqera.auth.DockerAuthProvider
 import io.seqera.config.Registry
 import io.seqera.proxy.ProxyClient
+import io.seqera.util.StringUtils
 import jakarta.inject.Singleton
 
 /**
@@ -61,9 +62,10 @@ class ContainerService {
         try {
             Registry registryBean = findRegistryWithName(registry)
             host = registryBean.host
-        }catch( Exception ie){
+        }catch(Exception ie){
             host = registry
         }
+        log.debug "Validate registry credentials userName=$user; password=${StringUtils.redact(password)}; registry=$registry; host=$host"
         LoginValidator validator = new LoginValidator()
         validator.login(user, password, host)
     }

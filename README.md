@@ -99,11 +99,12 @@ kubectl run busybox \
   -- \
   ls -la /fusion/s3/nextflow-ci 
 ```
-### Next goals 
+### Credentials validation 
 
-* ~~Implements the core functionality using Java + Micronaut + native compilation (Graal)~~
-* ~~Add support to use an arbitrary target container registry other than docker.io~~ 
-* ~~Add support for private registry authentication, at least quay.io, AWS ECR, Google Artifact Registry, Azure registry~~
-* ~~Implement layer caching mechanism to store layers binary into a S3 bucket~~ 
-* Add support for Tower users [token propagation](https://micronaut-projects.github.io/micronaut-guides-poc/latest/micronaut-token-propagation-gradle-java.html) 
-* Inject multiple layers
+
+```
+curl \
+  -H "Content-Type: application/json" \
+  -X POST http://localhost:9090/validate-creds \
+  -d '{"userName":"<USERNAME>", "password":"PASSWORD", "registry": "docker.io"}' 
+```
