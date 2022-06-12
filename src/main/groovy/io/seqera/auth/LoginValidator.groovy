@@ -47,11 +47,11 @@ class LoginValidator {
             try {
                 HttpRequest request = HttpRequest.GET(path).basicAuth(username, password)
                 Map response = httpClient.toBlocking().retrieve(request, Map)
-                log.error "valid login for $username"
+                log.debug "valid login for $username; response=$response"
                 return true
 
             } catch (HttpClientResponseException ignored) {
-                log.error "Error validating login for $username"
+                log.error "Invalid login for $username"
                 return false
             }
         }
