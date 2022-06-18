@@ -81,7 +81,7 @@ class LayerAssemblerSpec extends Specification {
         println sout2.toString()
 
         then:
-        sout2.toString().split('\n').last()=='ok'
+        sout2.readLines().last()=='ok'
 
         cleanup:
         root.toFile().deleteDir()
