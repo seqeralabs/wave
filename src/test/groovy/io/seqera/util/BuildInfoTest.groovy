@@ -11,7 +11,7 @@ class BuildIntoTest extends Specification {
 
     def 'should load version and commit id' () {
         expect:
-        BuildInfo.getName() == 'tower-reg'
+        BuildInfo.getName() == 'wave'
         BuildInfo.getVersion()
         BuildInfo.getCommitId()
     }
