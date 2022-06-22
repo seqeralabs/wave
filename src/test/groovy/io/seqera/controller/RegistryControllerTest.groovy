@@ -46,7 +46,7 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
         and:
         response.body().indexOf('"schemaVersion":') != -1
         response.getContentType().get().getName() ==  'application/vnd.docker.distribution.manifest.v2+json'
-        response.getContentLength() == 774
+        response.getContentLength() == 775
     }
 
     void 'should head manifest'() {
@@ -63,7 +63,7 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
         and:
         response.getHeaders().get('docker-content-digest').startsWith( 'sha256:')
         response.getHeaders().get('Content-Type') == 'application/vnd.docker.distribution.manifest.v2+json'
-        response.getContentLength() == 774
+        response.getContentLength() == 775
     }
 
     void 'should head manifest and get blob of image'() {
@@ -79,6 +79,6 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
         and:
         response.getHeaders().get('docker-content-digest').startsWith( 'sha256:')
         response.getHeaders().get('Content-Type') == 'application/vnd.docker.distribution.manifest.v2+json'
-        response.getContentLength() == 774
+        response.getContentLength() == 775
     }
 }
