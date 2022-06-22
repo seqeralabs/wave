@@ -96,7 +96,7 @@ Main parts of the service are structured into following components:
 
 == Configuration
 
-You can specify a `property` or `yaml` file to overwrite default configuration using the environment `XREG_CONFIG_FILE`
+You can specify a `property` or `yaml` file to overwrite default configuration using the environment `WAVE_CONFIG_FILE`
 
 [source]
 ----

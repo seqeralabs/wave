@@ -1,6 +1,6 @@
 <configuration>
-    <property name="XREG_LOG_ROOT" value="${XREG_LOG_ROOT:-.}" />
-    <property name="XREG_LOG_NAME" value="${XREG_LOG_NAME:-fusion-reg}" />
+    <property name="WAVE_LOG_ROOT" value="${WAVE_LOG_ROOT:-.}" />
+    <property name="WAVE_LOG_NAME" value="${WAVE_LOG_NAME:-wave}" />
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <!-- ansi escape mess-up with non-ansi terminal and loggers -->
@@ -9,17 +9,17 @@
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
         <filter class="io.seqera.util.LoggerLevelFilter">
-            <level>${XREG_LOG_LEVEL:-INFO}</level>
+            <level>${WAVE_LOG_LEVEL:-INFO}</level>
             <onMatch>ACCEPT</onMatch>
             <onMismatch>DENY</onMismatch>
         </filter>
     </appender>
 
     <appender name="ROLLING_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${XREG_LOG_ROOT}/${XREG_LOG_NAME}.log</file>
+        <file>${WAVE_LOG_ROOT}/${WAVE_LOG_NAME}.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- daily rollover -->
-            <fileNamePattern>${XREG_LOG_NAME}.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>${WAVE_LOG_NAME}.%d{yyyy-MM-dd}.log</fileNamePattern>
             <!-- keep 10 days' worth of history capped at 100MB total size -->
             <maxHistory>10</maxHistory>
             <totalSizeCap>200MB</totalSizeCap>
@@ -28,7 +28,7 @@
             <pattern>%d{MMM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
         <filter class="io.seqera.util.LoggerLevelFilter">
-            <level>${XREG_LOG_LEVEL:-DEBUG}</level>
+            <level>${WAVE_LOG_LEVEL:-DEBUG}</level>
             <onMatch>ACCEPT</onMatch>
             <onMismatch>DENY</onMismatch>
         </filter>

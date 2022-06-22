@@ -304,7 +304,7 @@ class ContainerScanner {
             config.Env = appendEnv(config.Env as List, layerConfig.env)
         }
         if( entryChain ) {
-            config.Env = appendEnv( config.Env as List, [ "XREG_ENTRY_CHAIN="+entryChain ] )
+            config.Env = appendEnv( config.Env as List, [ "WAVE_ENTRY_CHAIN="+entryChain ] )
         }
 
         config
@@ -346,7 +346,7 @@ class ContainerScanner {
         final mediaType = ContentType.DOCKER_MANIFEST_V2_TYPE
         final record = json.manifests.find( { record ->  record.mediaType == mediaType && record.platform.os=='linux' && record.platform.architecture==arch } )
         final result = record.digest
-        log.trace "Find target digest arch: $arch ==> digest: $result"
+        log.debug "Find target digest arch: $arch ==> digest: $result"
         return result
     }
 

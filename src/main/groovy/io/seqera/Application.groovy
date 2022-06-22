@@ -42,16 +42,16 @@ class Application implements ApplicationEventListener<StartupEvent>{
     static void setupConfig() {
         // config file
         def configFile = 'config.yml'
-        if( System.getenv('XREG_CONFIG_FILE') ) {
-            configFile = System.getenv('XREG_CONFIG_FILE')
-            log.info "Detected XREG_CONFIG_FILE variable: ${configFile}"
+        if( System.getenv('WAVE_CONFIG_FILE') ) {
+            configFile = System.getenv('WAVE_CONFIG_FILE')
+            log.info "Detected WAVE_CONFIG_FILE variable: ${configFile}"
         }
         System.setProperty('micronaut.config.files', "classpath:application.yml,file:$configFile")
 
         // detected layer path
-        if( System.getenv('XREG_LAYER_PATH') ) {
-            def layerPath = System.getenv('XREG_LAYER_PATH')
-            log.info "Detected XREG_LAYER_PATH variable: ${layerPath}"
+        if( System.getenv('WAVE_LAYER_PATH') ) {
+            def layerPath = System.getenv('WAVE_LAYER_PATH')
+            log.info "Detected WAVE_LAYER_PATH variable: ${layerPath}"
             System.setProperty('towerreg.layerPath', layerPath)
         }
 

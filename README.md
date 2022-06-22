@@ -67,8 +67,8 @@ and set the user/pwd for at least 1 registry
           --rm \
           --platform linux/amd64 \
           -e AWS_REGION=eu-west-1 \
-          -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
-          -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+          -e AWS_ACCESS_KEY_ID \
+          -e AWS_SECRET_ACCESS_KEY \
           -e NXF_FUSION_BUCKETS=nextflow-ci \
           --cap-add SYS_ADMIN \
           --device /dev/fuse  \
