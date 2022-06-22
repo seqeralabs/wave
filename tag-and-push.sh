@@ -13,9 +13,9 @@ SED=sed
 # check for [release] [force] and [enterprise] string in the commit comment
 FORCE=${FORCE:-$(git show -s --format='%s' | $SED -rn 's/.*\[(force)\].*/\1/p')}
 RELEASE=${RELEASE:-$(git show -s --format='%s' | $SED -rn 's/.*\[(release)\].*/\1/p')}
-REMOTE=https://$GITHUB_TOKEN:x-oauth-basic@github.com/seqeralabs/tower-reg.git
+REMOTE=https://oauth:$GITHUB_TOKEN@github.com/${GITHUB_REPOSITORY}.git
 ENTERPRISE=${ENTERPRISE:-$(git show -s --format='%s' | $SED -rn 's/.*\[(enterprise)\].*/\1/p')}
-MARKETPLACE=${ENTERPRISE:-$(git show -s --format='%s' | $SED -rn 's/.*\[(marketplace)\].*/\1/p')}
+MARKETPLACE=${MARKETPLACE:-$(git show -s --format='%s' | $SED -rn 's/.*\[(marketplace)\].*/\1/p')}
 
 if [[ $RELEASE ]]; then
   # take the version from the `build.gradle` file
