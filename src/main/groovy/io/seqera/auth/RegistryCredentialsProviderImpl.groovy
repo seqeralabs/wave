@@ -8,6 +8,8 @@ import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
 /**
+ * Implements a basic credentials provider fetching the registry creds
+ * from the application config file
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -36,7 +38,15 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
     @Value('${wave.registries.quay.password}')
     private String quayPassword
 
-
+    /**
+     * Find the corresponding credentials for the specified registry
+     *
+     * @param registry
+     *      A registry name e.g. docker.io or quay.io
+     * @return
+     *      A {@link RegistryCredentials} object holding the credentials for the specified registry or {@code null}
+     *      if not credentials can be found
+     */
     @Override
     RegistryCredentials getCredentials(String registry) {
         if( !registry || registry == 'docker.io' ) {

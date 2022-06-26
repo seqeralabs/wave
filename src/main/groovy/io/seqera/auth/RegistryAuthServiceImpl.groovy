@@ -4,15 +4,21 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 
+import com.google.common.cache.CacheLoader
+import com.google.common.cache.LoadingCache
 import groovy.json.JsonSlurper
+import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.util.StringUtils
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.WaveDefault.DOCKER_IO
+
+import com.google.common.cache.CacheBuilder
+
 /**
  * Implement Docker authentication & login service
  *
@@ -25,8 +31,27 @@ import static io.seqera.WaveDefault.DOCKER_IO
 @CompileStatic
 class RegistryAuthServiceImpl implements RegistryAuthService {
 
+    @Canonical
+    static private class CacheKey {
+        final String image
+        final RegistryAuth auth
+        final RegistryCredentials creds
+    }
+
+    private CacheLoader<CacheKey, String> loader = new CacheLoader<CacheKey, String>() {
+        @Override
+        String load(CacheKey key) throws Exception {
+            return getToken0(key)
+        }
+    }
+
+    private LoadingCache<CacheKey, String> cacheTokens = CacheBuilder<CacheKey, String>
+                    .newBuilder()
+                    .maximumSize(10_000)
+                    .expireAfterAccess(1, TimeUnit.HOURS)
+                    .build(loader)
+
     private HttpClient httpClient
-    private Map<String,String> tokenCache = new ConcurrentHashMap()
 
     @Inject
     private RegistryLookupService lookupService
@@ -39,13 +64,27 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
                 .build()
     }
 
+    /**
+     * Implements container registry login
+     *
+     * @param registryName The registry name e.g. docker.io or quay.io
+     * @param username The registry username
+     * @param password The registry password
+     * @return {@code true} if the login was successful or {@code false} otherwise
+     */
     boolean login(String registryName, String username, String password) {
+        // 0. default to 'docker.io' when the registry name is empty
         if( !registryName )
             registryName = DOCKER_IO
+
+        // 1. look up the registry authorisation info for the given registry name
         final registry = lookupService.lookup(registryName)
+        log.debug "Registry '$registryName' => auth: $registry"
         if( !registry )
             throw new IllegalArgumentException("Unable to find authorization info for registry: $registryName")
 
+        // 2. make a request against the authorization "realm" service using basic
+        //    credentials to get the login token
         final basic =  "$username:$password".bytes.encodeBase64()
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(registry.auth.realm)
@@ -66,25 +105,41 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         }
     }
 
-
     @Override
-    void cleanTokenFor(String image) {
-        if( tokenCache.containsKey(image) )
-            tokenCache.remove(image)
+    boolean validateUser(String registry, String user, String password){
+        try {
+            final result = login(registry, user, password)
+            log.debug "Validate registry credentials userName=$user; password=${StringUtils.redact(password)}; registry=$registry; host=$registry; -> result=$result"
+            return result
+        }
+        catch (Exception e) {
+            log.error "Enable to validate registry credentials userName=$user; password=${StringUtils.redact(password)}; registry=$registry; host=$registry -- cause: ${e.message}", e
+            return false
+        }
     }
 
     private HttpRequest makeRequest(String uri, RegistryCredentials creds) {
         final builder = HttpRequest.newBuilder()
                 .GET()
                 .uri(URI.create(uri))
-        if( creds?.username && creds.password  ) {
+        if( creds && creds.username && creds.password ) {
             final basic = "${creds.username}:${creds.password}".bytes.encodeBase64()
             builder.setHeader("Authorization", "Basic $basic")
         }
         return builder.build()
     }
 
-    String getAuthorizationHeader(String image, RegistryAuth auth, RegistryCredentials creds) {
+    /**
+     * Get the authorization header for the given image, registry and credentials.
+     * This can be either a bearer token header or a basic auth header.
+     *
+     * @param image The image name for which the authorisation is needed
+     * @param auth The {@link RegistryAuth} information modelling the target registry
+     * @param creds The user credentials
+     * @return The authorization header including the 'Basic' or 'Bearer' prefix
+     */
+    @Override
+    String getAuthorization(String image, RegistryAuth auth, RegistryCredentials creds) {
         if( !creds || creds.username==null || creds.password==null )
             return null
 
@@ -92,7 +147,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
             throw new IllegalArgumentException("Missing registry authentication information")
 
         if( auth.type == RegistryAuth.Type.Bearer ) {
-            final token = getTokenFor(image, auth, creds)
+            final token = getAuthToken(image, auth, creds)
             return "Bearer $token"
         }
 
@@ -104,37 +159,44 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         throw new IllegalArgumentException("Unknown authentication type: $auth.type")
     }
 
-    @Override
-    String getTokenFor(String image, RegistryAuth auth, RegistryCredentials creds) {
-
-        if( tokenCache.containsKey(image) )
-            return tokenCache[image]
-
-        final login = "${auth.realm}?service=${auth.service}&scope=repository:${image}:pull"
-        final req = makeRequest(login, creds)
+    /**
+     * Perform the actual token request to the target registry. This is invoked by the
+     * cache loader when a key is missed
+     *
+     * @param key A {@link CacheKey} object holding the information of the image, registry and credentials
+     * @return The resulting bearer token to authorise a pull request
+     */
+    protected String getToken0(CacheKey key) {
+        final login = "${key.auth.realm}?service=${key.auth.service}&scope=repository:${key.image}:pull"
+        final req = makeRequest(login, key.creds)
         log.debug "Token request=$req"
 
         HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
         final body = resp.body()
-        final json = (Map) new JsonSlurper().parseText(body)
+        final result = (Map) new JsonSlurper().parseText(body)
         if( resp.statusCode()==200 ) {
-            tokenCache[image] = json.token.toString()
-            return json.token
+            log.debug "Registry '$login' => token: ${result.token}"
+            return result.get('token')
         }
 
         throw new IllegalStateException("Unable to authorize request: $login -- response: $body")
     }
 
-    @Override
-    boolean validateUser(String registryName, String user, String password){
-        try {
-            final result = login(registryName, user, password)
-            log.debug "Validate registry credentials userName=$user; password=${StringUtils.redact(password)}; registry=$registryName; host=$registryName; -> result=$result"
-            return result
-        }
-        catch (Exception e) {
-            log.error "Enable to validate registry credentials userName=$user; password=${StringUtils.redact(password)}; registry=$registryName; host=$registryName -- cause: ${e.message}", e
-            return false
-        }
+    protected String getAuthToken(String image, RegistryAuth auth, RegistryCredentials creds) {
+        final key = new CacheKey(image, auth, creds)
+        return cacheTokens.get(key)
     }
+
+    /**
+     * Invalidate a cached authorization token
+     *
+     * @param image The image name for which the authorisation is needed
+     * @param auth The {@link RegistryAuth} information modelling the target registry
+     * @param creds The user credentials
+     */
+    void invalidateAuthorization(String image, RegistryAuth auth, RegistryCredentials creds) {
+        final key = new CacheKey(image, auth, creds)
+        cacheTokens.invalidate(key)
+    }
+
 }

@@ -3,6 +3,7 @@ package io.seqera.auth
 import groovy.transform.Canonical
 
 /**
+ * Model a container registry server and authorization info
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

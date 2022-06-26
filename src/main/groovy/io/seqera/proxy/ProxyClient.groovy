@@ -146,9 +146,9 @@ class ProxyClient {
             // add to visited URL
             visited.add(target)
             // check the result code
-            if( result.statusCode()==401 && (authRetry++)<2 && host==target.host ) {
+            if( result.statusCode()==401 && (authRetry++)<2 && host==target.host && registry.auth.isRefreshable() ) {
                 // clear the token to force refreshing it
-                loginService.cleanTokenFor(image)
+                loginService.invalidateAuthorization(image, registry.auth, credentials)
                 continue
             }
             if( result.statusCode() in REDIRECT_CODES  ) {
@@ -180,7 +180,7 @@ class ProxyClient {
         copyHeaders(headers, builder)
         if( authorize ) {
             // add authorisation header
-            final header = loginService.getAuthorizationHeader(image, registry.auth, credentials)
+            final header = loginService.getAuthorization(image, registry.auth, credentials)
             if( header )
                 builder.setHeader("Authorization", header)
         }
@@ -224,9 +224,9 @@ class ProxyClient {
     HttpResponse<Void> head0(URI uri, Map<String,List<String>> headers) {
 
         def result = head1(uri, headers)
-        if( result.statusCode()==401 ) {
+        if( result.statusCode()==401 && registry.auth.isRefreshable() ) {
             // clear the token to force refreshing it
-            loginService.cleanTokenFor(image)
+            loginService.invalidateAuthorization(image, registry.auth, credentials)
             result = head1(uri, headers)
         }
         return result
@@ -240,7 +240,7 @@ class ProxyClient {
         // copy headers 
         copyHeaders(headers, builder)
         // add authorisation header
-        final header = loginService.getAuthorizationHeader(image, registry.auth, credentials)
+        final header = loginService.getAuthorization(image, registry.auth, credentials)
         if( header )
             builder.setHeader("Authorization", header)
         // build the request

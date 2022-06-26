@@ -11,6 +11,7 @@ import groovy.transform.Canonical
  */
 @Canonical
 class RegistryAuth {
+
     private static Pattern AUTH = ~/(?i)(?<type>.+) realm="(?<realm>.+)",service="(?<service>.+)"/
 
     enum Type { Basic, Bearer }
@@ -18,6 +19,10 @@ class RegistryAuth {
     final URI realm
     final String service
     final Type type
+
+    boolean isRefreshable() {
+        return type==Type.Bearer
+    }
 
     static RegistryAuth parse(String auth) {
         if(!auth)

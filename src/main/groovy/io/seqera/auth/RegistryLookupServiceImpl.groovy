@@ -33,7 +33,7 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
 
     private LoadingCache<URI, RegistryAuth> cache = CacheBuilder<URI, RegistryAuth>
                 .newBuilder()
-                .maximumSize(1000)
+                .maximumSize(10_000)
                 .expireAfterAccess(1, TimeUnit.HOURS)
                 .build(loader)
 
