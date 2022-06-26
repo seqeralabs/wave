@@ -21,6 +21,8 @@ class StringUtilsTest extends Specification {
         'World'         | 'Wor****'
         '12345678'      | '123****'
         'hola'          | '****'
+        null            | '(null)'
+        ''              | '(empty)'
     }
 
 

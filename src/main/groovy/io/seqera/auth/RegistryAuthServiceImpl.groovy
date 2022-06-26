@@ -113,7 +113,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
             return result
         }
         catch (Exception e) {
-            log.error "Enable to validate registry credentials userName=$user; password=${StringUtils.redact(password)}; registry=$registry; host=$registry -- cause: ${e.message}", e
+            log.error "Unable to validate registry credentials userName=$user; password=${StringUtils.redact(password)}; registry=$registry; host=$registry -- cause: ${e.message}", e
             return false
         }
     }

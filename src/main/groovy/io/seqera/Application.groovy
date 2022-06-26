@@ -38,7 +38,7 @@ class Application {
         if( System.getenv('WAVE_LAYER_PATH') ) {
             def layerPath = System.getenv('WAVE_LAYER_PATH')
             log.info "Detected WAVE_LAYER_PATH variable: ${layerPath}"
-            System.setProperty('towerreg.layerPath', layerPath)
+            System.setProperty('wave.layerPath', layerPath)
         }
 
     }

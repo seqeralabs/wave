@@ -11,6 +11,10 @@ import groovy.transform.CompileStatic
 class StringUtils {
 
     static String redact(Object value) {
+        if( value==null )
+            return '(null)'
+        if( !value )
+            return ('(empty)')
         final str = value.toString()
         return str.length()>=5 ? str[0..2] + '****' : '****'
     }

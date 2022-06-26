@@ -2,9 +2,10 @@
 wave:
   arch: x86_64
   registries:
-    - name: 'docker.io'
+    docker:
       username: "${DOCKER_USER}"
       password: "${DOCKER_PAT}"
-    - name: 'quay.io'
-      username : "${QUAY_USER}"
-      password : "${QUAY_PAT}"
+    quay:
+      username: "${QUAY_USER}"
+      password: "${QUAY_PAT}"
+...

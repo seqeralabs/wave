@@ -1,5 +1,4 @@
 # Launch backend server
-export CLIENT_ARCH=amd64
 [ "$WAVE_JVM_OPTS" ] && echo "Detected WAVE_JVM_OPTS=$WAVE_JVM_OPTS"
 exec java \
   -Dfile.encoding=UTF-8 \
