@@ -1,5 +1,6 @@
 package io.seqera.config;
 
+@Deprecated
 public interface Registry {
 
     String getName();

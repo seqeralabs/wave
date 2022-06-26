@@ -3,6 +3,7 @@ package io.seqera.config
 import groovy.transform.builder.Builder
 
 @Builder
+@Deprecated
 class RegistryBean implements Registry{
 
     private String name
@@ -27,7 +28,7 @@ class RegistryBean implements Registry{
 
     @Override
     String toString() {
-        return "RegistryBean{" +
+        return "RegistryInfo{" +
                 "name='" + name + '\'' +
                 ", host='" + host + '\'' +
                 ", auth=" + auth +

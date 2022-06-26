@@ -1,11 +1,11 @@
 package io.seqera
 
 import io.micronaut.context.ApplicationContext
+import io.micronaut.context.annotation.Value
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.auth.ConfigurableAuthProvider
 import io.seqera.auth.SimpleAuthProvider
 
-import io.seqera.config.DefaultConfiguration
 import io.seqera.proxy.ProxyClient
 import jakarta.inject.Inject
 import spock.lang.Shared
@@ -21,6 +21,14 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
     @Inject
     @Shared
     ApplicationContext applicationContext
+
+    @Shared
+    @Value('${wave.registries.quay.username}')
+    String quayUsername
+
+    @Shared
+    @Value('${wave.registries.quay.password}')
+    String quayPassword
 
     def setupSpec() {
         initRegistryContainer(applicationContext)
@@ -45,9 +53,9 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
         def IMAGE = 'biocontainers/fastqc'
         and:
         def proxy = new ProxyClient('https://quay.io', IMAGE, ConfigurableAuthProvider.builder()
-                .username(Mock.QUAY_USER)
-                .password(Mock.QUAY_PAT)
-                .authUrl(Mock.QUAY_AUTH)
+                .username(quayUsername)
+                .password(quayPassword)
+                .authUrl('https://quay.io/v2/auth')
                 .service('quay.io')
                 .build()
         )

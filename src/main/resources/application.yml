@@ -9,4 +9,7 @@ netty:
   default:
     allocator:
       max-order: 3
+---
+wave:
+  arch: 'x86_64'
 ...

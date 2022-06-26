@@ -7,6 +7,7 @@ import io.seqera.config.RegistryBean
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  * */
+@Deprecated
 @Factory
 class AuthFactory {
 

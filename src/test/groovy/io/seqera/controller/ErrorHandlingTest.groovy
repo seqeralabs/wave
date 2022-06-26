@@ -10,12 +10,9 @@ import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.http.hateoas.JsonError
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.config.DefaultConfiguration
-import io.seqera.config.Registry
 import io.seqera.config.RegistryBean
 import io.seqera.model.ContentType
 import jakarta.inject.Inject
-import spock.lang.Shared
 import spock.lang.Specification
 
 /**

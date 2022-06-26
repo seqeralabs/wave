@@ -9,6 +9,7 @@ import java.util.Map;
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  **/
+@Deprecated
 public interface RemoteDocker {
 
     HttpResponse<String> getString(String path, Map<String, List<String>> headers);

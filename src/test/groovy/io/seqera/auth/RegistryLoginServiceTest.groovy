@@ -4,21 +4,35 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
-import io.micronaut.http.client.HttpClient
-import io.micronaut.http.client.annotation.Client
-import io.micronaut.http.client.netty.DefaultHttpClient
+import io.micronaut.context.annotation.Value
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.Mock
 import io.seqera.SecureDockerRegistryContainer
-import io.seqera.docker.ContainerService
 import jakarta.inject.Inject
 
 @MicronautTest
-class LoginValidatorSpec extends Specification implements SecureDockerRegistryContainer {
+class RegistryLoginServiceTest extends Specification implements SecureDockerRegistryContainer {
 
     @Inject
     @Shared
     ApplicationContext applicationContext
+
+    @Shared
+    @Value('${wave.registries.docker.username}')
+    String dockerUsername
+
+    @Shared
+    @Value('${wave.registries.docker.password}')
+    String dockerPassword
+
+    @Shared
+    @Value('${wave.registries.quay.username}')
+    String quayUsername
+
+    @Shared
+    @Value('${wave.registries.quay.password}')
+    String quayPassword
+
+    @Inject RegistryLoginService loginService
 
     def setupSpec() {
         initRegistryContainer(applicationContext)
@@ -26,12 +40,11 @@ class LoginValidatorSpec extends Specification implements SecureDockerRegistryCo
 
     void 'test valid login'() {
         given:
-        LoginValidator authProvider = new LoginValidator()
 
         String uri = REGISTRY_URL ?: registryURL
 
         when:
-        boolean logged = authProvider.login(USER, PWD, uri)
+        boolean logged = loginService.login(uri, USER, PWD)
 
         then:
         logged == VALID
@@ -40,21 +53,19 @@ class LoginValidatorSpec extends Specification implements SecureDockerRegistryCo
         USER             | PWD             | REGISTRY_URL                   | VALID
         'test'           | 'test'          | null                           | true
         'nope'           | 'yepes'         | null                           | false
-        Mock.DOCKER_USER | Mock.DOCKER_PAT | "https://registry-1.docker.io" | true
+        dockerUsername   | dockerPassword  | "https://registry-1.docker.io" | true
         'nope'           | 'yepes'         | "https://registry-1.docker.io" | false
-        Mock.QUAY_USER   | Mock.QUAY_PAT   | "https://quay.io"              | true
+        quayUsername     | quayPassword     | "https://quay.io"              | true
         'nope'           | 'yepes'         | "https://quay.io"              | false
     }
 
-    @Inject
-    ContainerService containerService
 
     void 'test containerService valid login'() {
         given:
-        String uri = REGISTRY_URL ?: registryURL
+        String uri = REGISTRY_URL ?: getRegistryURL()
 
         when:
-        boolean logged = containerService.validateUser(uri, USER, PWD)
+        boolean logged = loginService.validateUser(uri, USER, PWD)
 
         then:
         logged == VALID
@@ -63,12 +74,11 @@ class LoginValidatorSpec extends Specification implements SecureDockerRegistryCo
         USER             | PWD             | REGISTRY_URL                   | VALID
         'test'           | 'test'          | null                           | true
         'nope'           | 'yepes'         | null                           | false
-        Mock.DOCKER_USER | Mock.DOCKER_PAT | "https://registry-1.docker.io" | true
+        dockerUsername   | dockerPassword  | "https://registry-1.docker.io" | true
         'nope'           | 'yepes'         | "https://registry-1.docker.io" | false
-        Mock.QUAY_USER   | Mock.QUAY_PAT   | "https://quay.io"              | true
+        quayUsername     | quayPassword    | "https://quay.io"              | true
         'nope'           | 'yepes'         | "https://quay.io"              | false
-        'test'           | 'test'          | 'test'                         | true
-        'test'           | 'test'          | 'test'                         | true
     }
+
 
 }

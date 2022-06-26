@@ -1,14 +1,5 @@
 package io.seqera.proxy
 
-import dev.failsafe.Failsafe
-import dev.failsafe.RetryPolicy
-import dev.failsafe.event.EventListener
-import dev.failsafe.event.ExecutionAttemptedEvent
-import dev.failsafe.function.CheckedSupplier
-import groovy.util.logging.Slf4j
-import io.seqera.auth.DockerAuthProvider
-import io.seqera.util.RegHelper
-
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
@@ -16,6 +7,17 @@ import java.net.http.HttpResponse.BodyHandler
 import java.time.Duration
 import java.time.temporal.ChronoUnit
 
+import dev.failsafe.Failsafe
+import dev.failsafe.RetryPolicy
+import dev.failsafe.event.EventListener
+import dev.failsafe.event.ExecutionAttemptedEvent
+import dev.failsafe.function.CheckedSupplier
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
+import io.seqera.auth.RegistryCredentials
+import io.seqera.auth.RegistryInfo
+import io.seqera.auth.RegistryLoginService
+import io.seqera.util.RegHelper
 /**
  *
  * https://www.baeldung.com/java-9-http-client
@@ -24,22 +26,39 @@ import java.time.temporal.ChronoUnit
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
-class ProxyClient implements RemoteDocker{
+@CompileStatic
+class ProxyClient {
 
     private static final long RETRY_MAX_DELAY_MILLIS = 30_000
     private static final int RETRY_MAX_ATTEMPTS = 5
 
     private String image
-
-    DockerAuthProvider authProvider
-    private String hostName
+    private RegistryInfo registry
+    private RegistryCredentials credentials
     private HttpClient httpClient
+    private RegistryLoginService loginService
 
-    ProxyClient(String hostName, String image, DockerAuthProvider authProvider) {
-        this.image = image
-        this.hostName = hostName
-        this.authProvider = authProvider
+    ProxyClient() {
         init()
+    }
+
+    ProxyClient withImage(String image) {
+        this.image = image
+        return this
+    }
+
+    ProxyClient withRegistry(RegistryInfo registry) {
+        this.registry = registry
+        return this
+    }
+    ProxyClient withLoginService(RegistryLoginService loginService) {
+        this.loginService = loginService
+        return this
+    }
+
+    ProxyClient withCredentials(RegistryCredentials credentials) {
+        this.credentials = credentials
+        return this
     }
 
     private void init() {
@@ -52,7 +71,7 @@ class ProxyClient implements RemoteDocker{
 
     private URI makeUri(String path) {
         assert path.startsWith('/'), "Request past should start with a slash character -- offending path: $path"
-        URI.create("$hostName$path")
+        URI.create(registry.host.toString() + path)
     }
 
     HttpResponse<String> getString(String path, Map<String,List<String>> headers=null) {
@@ -129,7 +148,7 @@ class ProxyClient implements RemoteDocker{
             // check the result code
             if( result.statusCode()==401 && (authRetry++)<2 && host==target.host ) {
                 // clear the token to force refreshing it
-                authProvider.cleanTokenFor(image)
+                loginService.cleanTokenFor(image)
                 continue
             }
             if( result.statusCode() in REDIRECT_CODES  ) {
@@ -161,7 +180,7 @@ class ProxyClient implements RemoteDocker{
         copyHeaders(headers, builder)
         if( authorize ) {
             // add authorisation header
-            String token = authProvider.getTokenFor(image)
+            String token = loginService.getTokenFor(image, registry.auth, credentials)
             builder.setHeader("Authorization", "Bearer ${token}")
         }
         // build the request
@@ -175,7 +194,7 @@ class ProxyClient implements RemoteDocker{
     }
 
     private RetryPolicy retryPolicy(String errMessage) {
-        final listener = new EventListener<ExecutionAttemptedEvent<Void>>() {
+        final listener = new EventListener<ExecutionAttemptedEvent>() {
             @Override
             void accept(ExecutionAttemptedEvent e) throws Throwable {
                 log.error("${errMessage} – Attempt: ${e.attemptCount}; Cause: ${e.lastFailure.message ?: e.lastFailure}")
@@ -206,7 +225,7 @@ class ProxyClient implements RemoteDocker{
         def result = head1(uri, headers)
         if( result.statusCode()==401 ) {
             // clear the token to force refreshing it
-            authProvider.cleanTokenFor(image)
+            loginService.cleanTokenFor(image)
             result = head1(uri, headers)
         }
         return result
@@ -220,7 +239,7 @@ class ProxyClient implements RemoteDocker{
         // copy headers 
         copyHeaders(headers, builder)
         // add authorisation header
-        String token = authProvider.getTokenFor(image)
+        String token = loginService.getTokenFor(image, registry.auth, credentials)
         builder.setHeader("Authorization", "Bearer ${token}")
         // build the request
         final request = builder.build()

@@ -16,3 +16,13 @@ towerreg:
         password: "${QUAY_PAT}"
         url: https://quay.io/v2/auth
         service: quay.io
+---
+wave:
+  arch: x86_64
+  registries:
+    - name: 'docker.io'
+      username: "${DOCKER_USER}"
+      password: "${DOCKER_PAT}"
+    - name: 'quay.io'
+      username : "${QUAY_USER}"
+      password : "${QUAY_PAT}"

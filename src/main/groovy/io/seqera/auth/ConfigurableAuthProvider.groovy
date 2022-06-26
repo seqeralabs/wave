@@ -12,6 +12,7 @@ import java.time.Duration
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  * */
+@Deprecated
 @Slf4j
 @Builder
 class ConfigurableAuthProvider implements DockerAuthProvider{

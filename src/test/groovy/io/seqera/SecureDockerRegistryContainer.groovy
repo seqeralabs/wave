@@ -6,8 +6,6 @@ import io.micronaut.context.ApplicationContext
 import io.micronaut.inject.qualifiers.Qualifiers
 import io.seqera.auth.ConfigurableAuthProvider
 import io.seqera.auth.DockerAuthProvider
-import io.seqera.auth.SimpleAuthProvider
-import io.seqera.config.DefaultConfiguration
 import io.seqera.config.RegistryBean
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait

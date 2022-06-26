@@ -2,13 +2,9 @@ package io.seqera
 
 import io.micronaut.context.ApplicationContext
 import io.micronaut.inject.qualifiers.Qualifiers
-import io.seqera.auth.ConfigurableAuthProvider
 import io.seqera.auth.DockerAuthProvider
 import io.seqera.auth.SimpleAuthProvider
-import io.seqera.config.DefaultConfiguration
-import io.seqera.config.Registry
 import io.seqera.config.RegistryBean
-import jakarta.inject.Inject
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.utility.DockerImageName

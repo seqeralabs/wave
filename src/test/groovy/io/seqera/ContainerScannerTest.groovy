@@ -1,24 +1,24 @@
 package io.seqera
 
-import groovy.json.JsonOutput
-import groovy.json.JsonSlurper
-import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.auth.SimpleAuthProvider
-import io.seqera.docker.ContainerScanner
-import io.seqera.model.ContentType
-import io.seqera.proxy.ProxyClient
-import io.seqera.storage.MemoryStorage
-import io.seqera.storage.Storage
-import io.seqera.util.RegHelper
 import spock.lang.Ignore
+import spock.lang.Shared
 import spock.lang.Specification
 
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import io.micronaut.context.annotation.Value
+import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.auth.SimpleAuthProvider
+import io.seqera.docker.ContainerScanner
+import io.seqera.model.ContentType
+import io.seqera.proxy.ProxyClient
+import io.seqera.storage.Storage
+import io.seqera.util.RegHelper
 import jakarta.inject.Inject
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -28,6 +28,20 @@ class ContainerScannerTest extends Specification {
 
     @Inject
     Storage storage
+
+    @Value('${wave.registries.docker.username}')
+    String dockerUsername
+
+    @Value('${wave.registries.docker.password}')
+    String dockerPassword
+
+    @Shared
+    @Value('${wave.registries.quay.username}')
+    String quayUsername
+
+    @Shared
+    @Value('${wave.registries.quay.password}')
+    String quayPassword
 
     def createConfig(Path folder, Map config, byte[] content ){
         def location = folder.resolve('dummy.gzip')
@@ -68,7 +82,7 @@ class ContainerScannerTest extends Specification {
     def 'should find target digest' () {
 
         given:
-        def body = Mock.MANIFEST_LIST_CONTENT
+        def body = ManifestConst.MANIFEST_LIST_CONTENT
 
         when:
         def scanner = new ContainerScanner().withArch('x86_64')
@@ -140,7 +154,7 @@ class ContainerScannerTest extends Specification {
     def 'should update image manifest' () {
         given:
         def IMAGE = 'hello-world'
-        def MANIFEST = Mock.MANIFEST_CONTENT
+        def MANIFEST = ManifestConst.MANIFEST_CONTENT
         def NEW_CONFIG_DIGEST = 'sha256:1234abcd'
         def SOURCE_JSON = new JsonSlurper().parseText(MANIFEST)
 
@@ -185,7 +199,7 @@ class ContainerScannerTest extends Specification {
     def 'should update manifests list' () {
         given:
         def IMAGE = 'hello-world'
-        def MANIFEST = Mock.MANIFEST_LIST_CONTENT
+        def MANIFEST = ManifestConst.MANIFEST_LIST_CONTENT
         def DIGEST = 'sha256:f54a58bc1aac5ea1a25d796ae155dc228b3f0e11d046ae276b39c4bf2f13d8c4'
         def NEW_DIGEST = RegHelper.digest('foo')
 
@@ -550,8 +564,8 @@ class ContainerScannerTest extends Specification {
         def layerPath = Paths.get('foo.tar.gzip')
 
         def client = new ProxyClient(HOST, IMAGE, new SimpleAuthProvider(
-                username: Mock.DOCKER_USER,
-                password: Mock.DOCKER_PAT,
+                username: dockerUsername,
+                password: dockerPassword,
                 authUrl: 'auth.docker.io/token',
                 service: 'registry.docker.io'))
         and:
@@ -582,9 +596,9 @@ class ContainerScannerTest extends Specification {
         and:
 
         def client = new ProxyClient(HOST, IMAGE, new SimpleAuthProvider(
-                username: Mock.QUAY_USER,
-                password: Mock.QUAY_PAT,
-                authUrl: Mock.QUAY_AUTH,
+                username: quayUsername,
+                password: quayPassword,
+                authUrl: 'https://quay.io/v2/auth',
                 service: HOST))
         and:
         def scanner = new ContainerScanner()
