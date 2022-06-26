@@ -6,11 +6,11 @@ import spock.lang.Specification
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Value
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.SecureDockerRegistryContainer
+import io.seqera.test.SecureDockerRegistryContainer
 import jakarta.inject.Inject
 
 @MicronautTest
-class RegistryLoginServiceTest extends Specification implements SecureDockerRegistryContainer {
+class RegistryAuthServiceTest extends Specification implements SecureDockerRegistryContainer {
 
     @Inject
     @Shared
@@ -32,7 +32,7 @@ class RegistryLoginServiceTest extends Specification implements SecureDockerRegi
     @Value('${wave.registries.quay.password}')
     String quayPassword
 
-    @Inject RegistryLoginService loginService
+    @Inject RegistryAuthService loginService
 
     def setupSpec() {
         initRegistryContainer(applicationContext)
@@ -41,7 +41,7 @@ class RegistryLoginServiceTest extends Specification implements SecureDockerRegi
     void 'test valid login'() {
         given:
 
-        String uri = REGISTRY_URL ?: registryURL
+        String uri = getTestRegistryUrl(REGISTRY_URL)
 
         when:
         boolean logged = loginService.login(uri, USER, PWD)
@@ -51,18 +51,18 @@ class RegistryLoginServiceTest extends Specification implements SecureDockerRegi
 
         where:
         USER             | PWD             | REGISTRY_URL                   | VALID
-        'test'           | 'test'          | null                           | true
-        'nope'           | 'yepes'         | null                           | false
+        'test'           | 'test'          | 'localhost'                    | true
+        'nope'           | 'yepes'         | 'localhost'                    | false
         dockerUsername   | dockerPassword  | "https://registry-1.docker.io" | true
         'nope'           | 'yepes'         | "https://registry-1.docker.io" | false
-        quayUsername     | quayPassword     | "https://quay.io"              | true
+        quayUsername     | quayPassword    | "https://quay.io"              | true
         'nope'           | 'yepes'         | "https://quay.io"              | false
     }
 
 
     void 'test containerService valid login'() {
         given:
-        String uri = REGISTRY_URL ?: getRegistryURL()
+        String uri = getTestRegistryUrl(REGISTRY_URL)
 
         when:
         boolean logged = loginService.validateUser(uri, USER, PWD)
@@ -72,8 +72,8 @@ class RegistryLoginServiceTest extends Specification implements SecureDockerRegi
 
         where:
         USER             | PWD             | REGISTRY_URL                   | VALID
-        'test'           | 'test'          | null                           | true
-        'nope'           | 'yepes'         | null                           | false
+        'test'           | 'test'          | 'localhost'                    | true
+        'nope'           | 'yepes'         | 'localhost'                    | false
         dockerUsername   | dockerPassword  | "https://registry-1.docker.io" | true
         'nope'           | 'yepes'         | "https://registry-1.docker.io" | false
         quayUsername     | quayPassword    | "https://quay.io"              | true

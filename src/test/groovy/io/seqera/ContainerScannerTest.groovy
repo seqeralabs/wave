@@ -12,11 +12,14 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import io.micronaut.context.annotation.Value
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.auth.SimpleAuthProvider
+import io.seqera.auth.SimpleRegistryCredentials
+import io.seqera.auth.RegistryAuthService
+import io.seqera.auth.RegistryLookupService
 import io.seqera.docker.ContainerScanner
 import io.seqera.model.ContentType
 import io.seqera.proxy.ProxyClient
 import io.seqera.storage.Storage
+import io.seqera.test.ManifestConst
 import io.seqera.util.RegHelper
 import jakarta.inject.Inject
 /**
@@ -42,6 +45,9 @@ class ContainerScannerTest extends Specification {
     @Shared
     @Value('${wave.registries.quay.password}')
     String quayPassword
+
+    @Inject RegistryAuthService loginService
+    @Inject RegistryLookupService lookupService
 
     def createConfig(Path folder, Map config, byte[] content ){
         def location = folder.resolve('dummy.gzip')
@@ -558,16 +564,16 @@ class ContainerScannerTest extends Specification {
     @Ignore
     def 'should resolve busybox' () {
         given:
-        def HOST = 'registry-1.docker.io'
         def IMAGE = 'library/busybox'
+        def registry = lookupService.lookup('docker.io')
+        def creds = new SimpleRegistryCredentials(dockerUsername, dockerPassword)
         and:
-        def layerPath = Paths.get('foo.tar.gzip')
 
-        def client = new ProxyClient(HOST, IMAGE, new SimpleAuthProvider(
-                username: dockerUsername,
-                password: dockerPassword,
-                authUrl: 'auth.docker.io/token',
-                service: 'registry.docker.io'))
+        def client = new ProxyClient()
+                .withImage(IMAGE)
+                .withRegistry(registry)
+                .withCredentials(creds)
+                .withLoginService(loginService)
         and:
         def scanner = new ContainerScanner()
                 .withStorage(storage)
@@ -590,16 +596,17 @@ class ContainerScannerTest extends Specification {
     @Ignore
     def 'should resolve fastqc' () {
         given:
-        def HOST = 'quay.io'
         def IMAGE = 'biocontainers/fastqc'
         def TAG = "0.11.9--0"
+        def registry = lookupService.lookup('quay.io')
+        def creds = new SimpleRegistryCredentials(quayUsername, quayPassword)
         and:
 
-        def client = new ProxyClient(HOST, IMAGE, new SimpleAuthProvider(
-                username: quayUsername,
-                password: quayPassword,
-                authUrl: 'https://quay.io/v2/auth',
-                service: HOST))
+        def client = new ProxyClient()
+                .withImage(IMAGE)
+                .withRegistry(registry)
+                .withCredentials(creds)
+                .withLoginService(loginService)
         and:
         def scanner = new ContainerScanner()
                 .withStorage(storage)

@@ -23,7 +23,7 @@ import static io.seqera.WaveDefault.DOCKER_IO
 @Slf4j
 @Singleton
 @CompileStatic
-class RegistryLoginServiceImpl implements RegistryLoginService {
+class RegistryAuthServiceImpl implements RegistryAuthService {
 
     private HttpClient httpClient
     private Map<String,String> tokenCache = new ConcurrentHashMap()
@@ -31,7 +31,7 @@ class RegistryLoginServiceImpl implements RegistryLoginService {
     @Inject
     private RegistryLookupService lookupService
 
-    RegistryLoginServiceImpl() {
+    RegistryAuthServiceImpl() {
         this.httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NORMAL)
@@ -83,6 +83,27 @@ class RegistryLoginServiceImpl implements RegistryLoginService {
         }
         return builder.build()
     }
+
+    String getAuthorizationHeader(String image, RegistryAuth auth, RegistryCredentials creds) {
+        if( !creds || creds.username==null || creds.password==null )
+            return null
+
+        if( !auth )
+            throw new IllegalArgumentException("Missing registry authentication information")
+
+        if( auth.type == RegistryAuth.Type.Bearer ) {
+            final token = getTokenFor(image, auth, creds)
+            return "Bearer $token"
+        }
+
+        if( auth.type == RegistryAuth.Type.Basic ) {
+            final basic = "$creds.username:$creds.password".bytes.encodeBase64()
+            return "Basic $basic"
+        }
+
+        throw new IllegalArgumentException("Unknown authentication type: $auth.type")
+    }
+
     @Override
     String getTokenFor(String image, RegistryAuth auth, RegistryCredentials creds) {
 

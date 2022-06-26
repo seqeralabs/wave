@@ -1,6 +1,6 @@
 package io.seqera
 
-
+import io.seqera.test.ManifestConst
 import io.seqera.util.RegHelper
 import spock.lang.Specification
 /**

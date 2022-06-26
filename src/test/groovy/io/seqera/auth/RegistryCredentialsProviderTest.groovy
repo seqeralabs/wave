@@ -39,13 +39,13 @@ class RegistryCredentialsProviderTest extends Specification {
     
     def 'should find docker creds' () {
         expect:
-        credentialsProvider.getCredentials(null) == new BasicRegistryCredentials(dockerUsername, dockerPassword)
-        credentialsProvider.getCredentials('docker.io') == new BasicRegistryCredentials(dockerUsername, dockerPassword)
+        credentialsProvider.getCredentials(null) == new SimpleRegistryCredentials(dockerUsername, dockerPassword)
+        credentialsProvider.getCredentials('docker.io') == new SimpleRegistryCredentials(dockerUsername, dockerPassword)
     }
 
     def 'should find quay creds' () {
         expect:
-        credentialsProvider.getCredentials('quay.io') == new BasicRegistryCredentials(quayUsername, quayPassword)
+        credentialsProvider.getCredentials('quay.io') == new SimpleRegistryCredentials(quayUsername, quayPassword)
     }
 
     def 'should not find creds' () {

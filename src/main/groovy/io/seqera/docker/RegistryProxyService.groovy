@@ -10,7 +10,7 @@ import io.micronaut.context.annotation.Value
 import io.seqera.RouteHelper
 import io.seqera.RouteHelper.Route
 import io.seqera.auth.RegistryCredentialsProvider
-import io.seqera.auth.RegistryLoginService
+import io.seqera.auth.RegistryAuthService
 import io.seqera.auth.RegistryLookupService
 import io.seqera.proxy.ProxyClient
 import io.seqera.storage.DigestStore
@@ -44,7 +44,7 @@ class RegistryProxyService {
     private RegistryCredentialsProvider credentialsProvider
 
     @Inject
-    private RegistryLoginService loginService
+    private RegistryAuthService loginService
 
     private ContainerScanner scanner(ProxyClient proxyClient) {
         return new ContainerScanner()

@@ -12,7 +12,7 @@ import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.SecureDockerRegistryContainer
+import io.seqera.test.SecureDockerRegistryContainer
 import jakarta.inject.Inject
 
 @MicronautTest
@@ -69,11 +69,12 @@ class ValidateCredsControllerSpec extends Specification implements SecureDockerR
 
     void 'should validate the test user'() {
         given:
-        HttpRequest request = HttpRequest.POST("/validate-creds", [
-                userName: 'test',
-                password: 'test',
-                registry: 'test'
-        ])
+        def req = [
+                userName:'test',
+                password:'test',
+                registry: getTestRegistryUrl('test') ]
+        and:
+        HttpRequest request = HttpRequest.POST("/validate-creds", req)
         when:
         HttpResponse<Boolean> response = client.toBlocking().exchange(request, Boolean)
         then:
@@ -84,11 +85,12 @@ class ValidateCredsControllerSpec extends Specification implements SecureDockerR
 
     void 'test validateController valid login'() {
         given:
-        HttpRequest request = HttpRequest.POST("/validate-creds", [
+        def req = [
                 userName: USER,
                 password: PWD,
-                registry: REGISTRY_URL
-        ])
+                registry: getTestRegistryUrl(REGISTRY_URL)
+        ]
+        HttpRequest request = HttpRequest.POST("/validate-creds", req)
         when:
         HttpResponse<Boolean> response = client.toBlocking().exchange(request, Boolean)
 

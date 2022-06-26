@@ -4,14 +4,14 @@ import javax.validation.Valid
 
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Post
-import io.seqera.auth.RegistryLoginService
+import io.seqera.auth.RegistryAuthService
 import jakarta.inject.Inject
 import reactor.core.publisher.Mono
 
 @Controller("/validate-creds")
 class ValidateController {
 
-    @Inject RegistryLoginService loginService
+    @Inject RegistryAuthService loginService
 
     @Post
     Mono<Boolean> validateCreds(@Valid ValidateRegistryCredsRequest request){

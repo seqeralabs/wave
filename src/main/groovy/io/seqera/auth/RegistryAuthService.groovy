@@ -4,7 +4,7 @@ package io.seqera.auth
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface RegistryLoginService {
+interface RegistryAuthService {
 
     boolean validateUser(String registry, String user, String password)
 
@@ -14,4 +14,5 @@ interface RegistryLoginService {
 
     String getTokenFor(String image, RegistryAuth auth, RegistryCredentials creds)
 
+    String getAuthorizationHeader(String image, RegistryAuth auth, RegistryCredentials creds)
 }

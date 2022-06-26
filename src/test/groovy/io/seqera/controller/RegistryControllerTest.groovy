@@ -11,7 +11,7 @@ import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.DockerRegistryContainer
+import io.seqera.test.DockerRegistryContainer
 import io.seqera.model.ContentType
 import jakarta.inject.Inject
 /**
@@ -68,7 +68,7 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
 
     void 'should head manifest and get blob of image'() {
         when:
-        HttpRequest request = HttpRequest.HEAD("/v2/hello-world/manifests/latest").headers({h->
+        HttpRequest request = HttpRequest.HEAD("/v2/library/hello-world/manifests/latest").headers({h->
             h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
             h.add('Accept', ContentType.DOCKER_MANIFEST_V1_JWS_TYPE)
             h.add('Accept', MediaType.APPLICATION_JSON)

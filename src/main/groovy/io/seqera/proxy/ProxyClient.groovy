@@ -16,7 +16,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.auth.RegistryCredentials
 import io.seqera.auth.RegistryInfo
-import io.seqera.auth.RegistryLoginService
+import io.seqera.auth.RegistryAuthService
 import io.seqera.util.RegHelper
 /**
  *
@@ -36,7 +36,7 @@ class ProxyClient {
     private RegistryInfo registry
     private RegistryCredentials credentials
     private HttpClient httpClient
-    private RegistryLoginService loginService
+    private RegistryAuthService loginService
 
     ProxyClient() {
         init()
@@ -51,7 +51,7 @@ class ProxyClient {
         this.registry = registry
         return this
     }
-    ProxyClient withLoginService(RegistryLoginService loginService) {
+    ProxyClient withLoginService(RegistryAuthService loginService) {
         this.loginService = loginService
         return this
     }
@@ -180,8 +180,9 @@ class ProxyClient {
         copyHeaders(headers, builder)
         if( authorize ) {
             // add authorisation header
-            String token = loginService.getTokenFor(image, registry.auth, credentials)
-            builder.setHeader("Authorization", "Bearer ${token}")
+            final header = loginService.getAuthorizationHeader(image, registry.auth, credentials)
+            if( header )
+                builder.setHeader("Authorization", header)
         }
         // build the request
         final request = builder.build()
@@ -239,8 +240,9 @@ class ProxyClient {
         // copy headers 
         copyHeaders(headers, builder)
         // add authorisation header
-        String token = loginService.getTokenFor(image, registry.auth, credentials)
-        builder.setHeader("Authorization", "Bearer ${token}")
+        final header = loginService.getAuthorizationHeader(image, registry.auth, credentials)
+        if( header )
+            builder.setHeader("Authorization", header)
         // build the request
         final request = builder.build()
         // send it 

@@ -1,16 +1,18 @@
 package io.seqera
 
-import io.micronaut.context.ApplicationContext
-import io.micronaut.context.annotation.Value
-import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.auth.ConfigurableAuthProvider
-import io.seqera.auth.SimpleAuthProvider
-
-import io.seqera.proxy.ProxyClient
-import jakarta.inject.Inject
 import spock.lang.Shared
 import spock.lang.Specification
 
+import io.micronaut.context.ApplicationContext
+import io.micronaut.context.annotation.Value
+import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.auth.SimpleRegistryCredentials
+import io.seqera.auth.RegistryCredentialsProvider
+import io.seqera.auth.RegistryAuthService
+import io.seqera.auth.RegistryLookupService
+import io.seqera.proxy.ProxyClient
+import io.seqera.test.DockerRegistryContainer
+import jakarta.inject.Inject
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -30,6 +32,10 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
     @Value('${wave.registries.quay.password}')
     String quayPassword
 
+    @Inject RegistryLookupService lookupService
+    @Inject RegistryAuthService loginService
+    @Inject RegistryCredentialsProvider credentialsProvider
+
     def setupSpec() {
         initRegistryContainer(applicationContext)
     }
@@ -38,10 +44,13 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
         given:
         def IMAGE = 'library/hello-world'
         and:
-        def proxy = new ProxyClient(registryURL, IMAGE, new SimpleAuthProvider())
+        def proxy = new ProxyClient()
+                .withImage(IMAGE)
+                .withRegistry(getLocalTestRegistryInfo())
+                .withLoginService(loginService)
 
         when:
-        def resp1 = proxy.getString('/v2/library/hello-world/blobs/sha256:feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412')
+        def resp1 = proxy.getString('/v2/library/hello-world/manifests/latest')
         and:
         println resp1.body()
         then:
@@ -51,14 +60,13 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
     def 'should call target blob on quay' () {
         given:
         def IMAGE = 'biocontainers/fastqc'
+        def registry = lookupService.lookup('quay.io')
         and:
-        def proxy = new ProxyClient('https://quay.io', IMAGE, ConfigurableAuthProvider.builder()
-                .username(quayUsername)
-                .password(quayPassword)
-                .authUrl('https://quay.io/v2/auth')
-                .service('quay.io')
-                .build()
-        )
+        def proxy = new ProxyClient()
+                .withImage(IMAGE)
+                .withRegistry(registry)
+                .withLoginService(loginService)
+                .withCredentials(new SimpleRegistryCredentials(quayUsername, quayPassword))
 
         when:
         def resp1 = proxy.getString('/v2/biocontainers/fastqc/blobs/sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4')

@@ -41,12 +41,12 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
     RegistryCredentials getCredentials(String registry) {
         if( !registry || registry == 'docker.io' ) {
             if( dockerUsername && dockerPassword ) {
-                return new BasicRegistryCredentials(dockerUsername, dockerPassword)
+                return new SimpleRegistryCredentials(dockerUsername, dockerPassword)
             }
         }
         else if( registry == 'quay.io' ) {
             if( quayUsername && quayPassword ) {
-                return new BasicRegistryCredentials(quayUsername, quayPassword)
+                return new SimpleRegistryCredentials(quayUsername, quayPassword)
             }
         }
         log.debug "Unable to find credentials for registry '$registry'"
