@@ -2,16 +2,17 @@ name: Tower-reg CI
 on:
   push:
     branches:
-      - 'master'
+      - '*'
+      - '!refs/tags/.*'
     tags-ignore:
       - '*'
   pull_request:
-    branches:
-      - '*'
+    types: [opened, reopened, synchronize]
+    
 jobs:
   build:
     name: Build tower-reg
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    if: "github.event == 'push' || github.repository != github.event.pull_request.head.repo.full_name"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
