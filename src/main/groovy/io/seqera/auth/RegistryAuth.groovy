@@ -12,7 +12,7 @@ import groovy.transform.Canonical
 @Canonical
 class RegistryAuth {
 
-    private static Pattern AUTH = ~/(?i)(?<type>.+) realm="(?<realm>.+)",service="(?<service>.+)"/
+    private static final Pattern AUTH = ~/(?i)(?<type>.+) realm="(?<realm>.+)",service="(?<service>.+)"/
 
     enum Type { Basic, Bearer }
 

@@ -8,14 +8,34 @@ import spock.lang.Specification
  */
 class RegistryInfoTest extends Specification {
 
-    def 'should parse registry info'() {
+    def 'should populate registry info' () {
+        when:
+        def uri1 = new URI('http://my.docker.io/v2')
+        def reg1 = new RegistryInfo('docker.io', uri1, new RegistryAuth(uri1, 'foo', RegistryAuth.Type.Basic))
+        then:
+        reg1.name == 'docker.io'
+        reg1.host == new URI('http://my.docker.io')
+        reg1.auth.realm == uri1
+        reg1.auth.service == 'foo'
+        reg1.auth.type == RegistryAuth.Type.Basic
+    }
+
+    def 'should implement equals and hashcode' () {
+        given:
+        def uri1 = new URI('http://my.docker.io/v2')
+        def reg1 = new RegistryInfo('docker.io', uri1, new RegistryAuth(uri1, 'foo', RegistryAuth.Type.Basic))
+        and:
+        def uri2 = new URI('http://my.docker.io/v2')
+        def reg2 = new RegistryInfo('docker.io', uri2, new RegistryAuth(uri2, 'foo', RegistryAuth.Type.Basic))
+        and:
+        def uri3 = new URI('http://my.quay.io/v2')
+        def reg3 = new RegistryInfo('quay.io', uri2, new RegistryAuth(uri3, 'foo', RegistryAuth.Type.Basic))
+
         expect:
-        RegistryAuth.parse('Bearer realm="https://quay.io/v2/auth",service="quay.io"') == new RegistryAuth(new URI('https://quay.io/v2/auth'), 'quay.io', RegistryAuth.Type.Bearer)
-        RegistryAuth.parse('Bearer realm="https://auth.docker.io/token",service="registry.docker.io"') == new RegistryAuth(new URI('https://auth.docker.io/token'), 'registry.docker.io', RegistryAuth.Type.Bearer)
+        reg1 == reg2
+        reg1 != reg3
         and:
-        RegistryAuth.parse('Basic realm="http://foo",service="bar"') == new RegistryAuth(new URI('http://foo'), 'bar', RegistryAuth.Type.Basic)
-        and:
-        RegistryAuth.parse('foo') == null
-        RegistryAuth.parse(null) == null
+        reg1.hashCode() == reg2.hashCode()
+        reg1.hashCode() != reg3.hashCode()
     }
 }
