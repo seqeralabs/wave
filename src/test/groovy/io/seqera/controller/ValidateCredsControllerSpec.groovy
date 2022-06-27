@@ -4,6 +4,7 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
+import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
@@ -11,8 +12,7 @@ import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.Mock
-import io.seqera.SecureDockerRegistryContainer
+import io.seqera.test.SecureDockerRegistryContainer
 import jakarta.inject.Inject
 
 @MicronautTest
@@ -25,6 +25,23 @@ class ValidateCredsControllerSpec extends Specification implements SecureDockerR
     @Inject
     @Shared
     ApplicationContext applicationContext
+
+    @Shared
+    @Value('${wave.registries.docker.username}')
+    String dockerUsername
+
+    @Shared
+    @Value('${wave.registries.docker.password}')
+    String dockerPassword
+
+    @Shared
+    @Value('${wave.registries.quay.username}')
+    String quayUsername
+
+    @Shared
+    @Value('${wave.registries.quay.password}')
+    String quayPassword
+
 
     def setupSpec() {
         initRegistryContainer(applicationContext)
@@ -52,11 +69,12 @@ class ValidateCredsControllerSpec extends Specification implements SecureDockerR
 
     void 'should validate the test user'() {
         given:
-        HttpRequest request = HttpRequest.POST("/validate-creds", [
-                userName: 'test',
-                password: 'test',
-                registry: 'test'
-        ])
+        def req = [
+                userName:'test',
+                password:'test',
+                registry: getTestRegistryUrl('test') ]
+        and:
+        HttpRequest request = HttpRequest.POST("/validate-creds", req)
         when:
         HttpResponse<Boolean> response = client.toBlocking().exchange(request, Boolean)
         then:
@@ -67,11 +85,12 @@ class ValidateCredsControllerSpec extends Specification implements SecureDockerR
 
     void 'test validateController valid login'() {
         given:
-        HttpRequest request = HttpRequest.POST("/validate-creds", [
+        def req = [
                 userName: USER,
                 password: PWD,
-                registry: REGISTRY_URL
-        ])
+                registry: getTestRegistryUrl(REGISTRY_URL)
+        ]
+        HttpRequest request = HttpRequest.POST("/validate-creds", req)
         when:
         HttpResponse<Boolean> response = client.toBlocking().exchange(request, Boolean)
 
@@ -84,9 +103,9 @@ class ValidateCredsControllerSpec extends Specification implements SecureDockerR
         USER             | PWD             | REGISTRY_URL                   | VALID
         'test'           | 'test'          | 'test'                         | true
         'nope'           | 'yepes'         | 'test'                         | false
-        Mock.DOCKER_USER | Mock.DOCKER_PAT | "https://registry-1.docker.io" | true
+        dockerUsername   | dockerPassword  | "https://registry-1.docker.io" | true
         'nope'           | 'yepes'         | "https://registry-1.docker.io" | false
-        Mock.QUAY_USER   | Mock.QUAY_PAT   | "https://quay.io"              | true
+        quayUsername     | quayPassword    | "https://quay.io"              | true
         'nope'           | 'yepes'         | "https://quay.io"              | false
         'test'           | 'test'          | 'test'                         | true
     }

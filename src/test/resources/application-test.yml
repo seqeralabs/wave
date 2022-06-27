@@ -2,7 +2,7 @@ micronaut:
   http:
     client:
       read-timeout: 90s
-
+---
 towerreg:
   arch: x86_64
   registries:
@@ -13,3 +13,12 @@ towerreg:
         password: test
         url: changed at runtime
         service: localhost
+---
+wave:
+  registries:
+    docker:
+      username: "pditommaso"
+      password: "d213e955-3357-4612-8c48-fa5652ad968b"
+    quay:
+      username: "pditommaso"
+      password: "SVO9GmXzeDJfB3Ba7PDSN90Pv7ggvzIGjYNT7QD4Ol05riiSuWu+ioBWiPIYd39v"

@@ -1,6 +1,6 @@
 package io.seqera
 
-
+import io.seqera.test.ManifestConst
 import io.seqera.util.RegHelper
 import spock.lang.Specification
 /**
@@ -11,7 +11,7 @@ class RegHelperTest extends Specification {
 
     def 'should compute digest' () {
         expect:
-        RegHelper.digest(Mock.MANIFEST_LIST_CONTENT) == Mock.MANIFEST_DIGEST
+        RegHelper.digest(ManifestConst.MANIFEST_LIST_CONTENT) == ManifestConst.MANIFEST_DIGEST
     }
 
     def 'should encode base32' () {

@@ -4,20 +4,14 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
-import io.micronaut.http.HttpRequest
-import io.micronaut.http.HttpResponse
-import io.micronaut.http.HttpStatus
-import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
-import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.SecureDockerRegistryContainer
-import io.seqera.model.ContentType
+import io.seqera.test.SecureDockerRegistryContainer
 import jakarta.inject.Inject
 
 @MicronautTest
-class SecureRegistryControllerSpec extends Specification implements SecureDockerRegistryContainer{
+class SecureRegistryControllerSpec extends Specification implements SecureDockerRegistryContainer {
 
     @Inject
     @Client("/")

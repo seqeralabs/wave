@@ -13,26 +13,23 @@ import io.micronaut.http.server.types.files.StreamedFile
 import io.seqera.storage.Storage
 import io.seqera.storage.DigestStore
 import io.seqera.RouteHelper
-import io.seqera.docker.ContainerService
-import io.seqera.docker.ContainerService.DelegateResponse
+import io.seqera.docker.RegistryProxyService
+import io.seqera.docker.RegistryProxyService.DelegateResponse
+import jakarta.inject.Inject
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Mono
 
 /**
- * @author : jorge <jorge.aguilera@seqera.io>
+ * Implement a registry proxy controller that forward registry pull requests to the target service
  *
+ * @author : jorge <jorge.aguilera@seqera.io>
  */
 @Slf4j
 @Controller("/v2")
-class V2Controller {
+class RegistryProxyController {
 
-    ContainerService containerService
-    Storage storage
-
-    V2Controller(ContainerService containerService, Storage storage) {
-        this.containerService = containerService
-        this.storage = storage
-    }
+    @Inject RegistryProxyService proxyService
+    @Inject Storage storage
 
     @Error
     HttpResponse<JsonError> handleError(HttpRequest request, Throwable t){
@@ -85,7 +82,7 @@ class V2Controller {
 
         log.debug "Blob pulling from remote host: $route.path"
         def headers = httpRequest.headers.asMap() as Map<String, List<String>>
-        def response = containerService.handleRequest(route, headers)
+        def response = proxyService.handleRequest(route, headers)
         fromDelegateResponse(response)
     }
 
@@ -96,7 +93,7 @@ class V2Controller {
         }
 
         Map<String, List<String>> headers = httpRequest.headers.asMap() as Map<String, List<String>>
-        return containerService.handleManifest(route, headers)
+        return proxyService.handleManifest(route, headers)
     }
 
     MutableHttpResponse<?> handleHead(RouteHelper.Route route, HttpRequest httpRequest) {
