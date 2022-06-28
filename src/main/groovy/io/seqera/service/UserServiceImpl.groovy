@@ -12,6 +12,7 @@ import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
 /**
+ * Define a service to access a Tower user
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

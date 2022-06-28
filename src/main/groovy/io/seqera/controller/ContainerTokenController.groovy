@@ -26,7 +26,7 @@ class ContainerTokenController {
         final user = userService.getUserByAccessToken(req.towerAccessToken)
         if( !user )
             HttpResponse.badRequest()
-        final data = new ContainerRequestData(userId: user.id, workspaceId: req.towerWorkspaceId, containerImage: req.containerImage)
+        final data = new ContainerRequestData(user.id, req.towerWorkspaceId, req.containerImage)
         final token = tokenService.getToken(data)
         HttpResponse.ok(new SubmitContainerTokenResponse(containerToken: token))
     }

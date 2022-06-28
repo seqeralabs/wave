@@ -20,4 +20,8 @@ datasources:
     username: "${TOWER_DB_USER:`tower`}"
     password: "${TOWER_DB_PASSWORD:`tower`}"
     dialect: H2
+---
+tower:
+  crypto:
+    secretKey: "6Lc407kUAAAAAPCb10a_5czoIYbB1zjtMdnGYnF7"
 ...

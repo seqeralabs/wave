@@ -87,14 +87,13 @@ class RouteHelperTest extends Specification {
         when:
         def route = new RouteHelper(tokenService).parse(REQ_PATH)
         then:
-        1 * tokenService.getRequest(ROUTE_TKN) >> new ContainerRequestData(containerImage: REQ_IMAGE)
+        1 * tokenService.getRequest(ROUTE_TKN) >> new ContainerRequestData(null,null,REQ_IMAGE)
         and:
         route.image == ROUTE_IMAGE
         route.type == ROUTE_TYPE
         route.registry == ROUTE_REG
         route.reference == ROUTE_REF
         route.path == ROUTE_PATH
-        route.token == ROUTE_TKN
 
         where:
         REQ_IMAGE                                   | REQ_PATH                                                      | ROUTE_REG     | ROUTE_TKN     | ROUTE_TYPE    | ROUTE_IMAGE                       | ROUTE_REF         | ROUTE_PATH

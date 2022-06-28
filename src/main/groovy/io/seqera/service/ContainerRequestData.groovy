@@ -1,5 +1,6 @@
 package io.seqera.service
 
+import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import io.seqera.model.ContainerCoordinates
 
@@ -8,11 +9,12 @@ import io.seqera.model.ContainerCoordinates
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Canonical
 @CompileStatic
 class ContainerRequestData {
-    Long userId
-    Long workspaceId
-    String containerImage
+    final Long userId
+    final Long workspaceId
+    final String containerImage
 
     ContainerCoordinates coordinates() { ContainerCoordinates.parse(containerImage) }
 }

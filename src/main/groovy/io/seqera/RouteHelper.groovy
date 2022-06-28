@@ -1,6 +1,7 @@
 package io.seqera
 
 import groovy.transform.Canonical
+import io.seqera.service.ContainerRequestData
 import io.seqera.service.ContainerTokenService
 import io.seqera.util.Base32
 
@@ -34,15 +35,15 @@ class RouteHelper {
         final String image
         final String reference
         final String path
-        final String token
+        final ContainerRequestData request
 
         boolean isManifest() { type=='manifests' }
         boolean isBlob() { type=='blobs' }
         boolean isTag() { reference && !isDigest() }
         boolean isDigest() { reference && reference.startsWith('sha256:') }
 
-        static Route v2path(String type, String registry, String image, String ref, String token=null) {
-            new Route(type, registry, image, ref, "/v2/$image/$type/$ref", token)
+        static Route v2path(String type, String registry, String image, String ref, ContainerRequestData request=null) {
+            new Route(type, registry, image, ref, "/v2/$image/$type/$ref", request)
         }
 
         static Route empty() {
@@ -74,7 +75,7 @@ class RouteHelper {
             // compose the target request path in such a way that
             // - the 'registry' name is taken from the request associated to the token
             // - the 'reference' from the current request
-            return Route.v2path(type, coords.registry, coords.image, reference, token)
+            return Route.v2path(type, coords.registry, coords.image, reference)
         }
 
         final String image
