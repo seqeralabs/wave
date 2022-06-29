@@ -9,10 +9,13 @@ import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Value
 import io.seqera.RouteHelper
 import io.seqera.RouteHelper.Route
-import io.seqera.auth.RegistryCredentialsProvider
 import io.seqera.auth.RegistryAuthService
+import io.seqera.auth.RegistryCredentials
+import io.seqera.auth.RegistryCredentialsProvider
 import io.seqera.auth.RegistryLookupService
+import io.seqera.auth.SimpleRegistryCredentials
 import io.seqera.proxy.ProxyClient
+import io.seqera.service.CredentialsService
 import io.seqera.storage.DigestStore
 import io.seqera.storage.Storage
 import jakarta.inject.Inject
@@ -43,6 +46,12 @@ class RegistryProxyService {
     @Inject
     private RegistryCredentialsProvider credentialsProvider
 
+    /**
+     * Service to query credentials stored into tower
+     */
+    @Inject
+    private CredentialsService credentialsService
+
     @Inject
     private RegistryAuthService loginService
 
@@ -58,7 +67,7 @@ class RegistryProxyService {
         final registry = registryLookup.lookup(route.registry)
         if( !registry )
             throw new IllegalArgumentException("Unable to resolve target registry for name: '$route.registry'")
-        final creds = credentialsProvider.getCredentials(route.registry)
+        final creds = getCredentials(route)
         new ProxyClient()
                 .withImage(route.image)
                 .withRegistry(registry)
@@ -66,6 +75,19 @@ class RegistryProxyService {
                 .withLoginService(loginService)
     }
 
+    protected RegistryCredentials getCredentials(Route route) {
+        log.debug "Checking credentials for route=$route"
+        final req = route.request
+        if(  req?.userId ) {
+            final result = credentialsService.findRegistryCreds(route.registry, req.userId, req.workspaceId)
+            log.debug "Credentials for container image: $req.containerImage; userId=$req.userId; workspaceId=$req.workspaceId => userName=${result?.userName}; password=${result?.password}"
+            return result
+                    ? new SimpleRegistryCredentials(result.userName, result.password)
+                    : null
+        }
+        else
+            return credentialsProvider.getCredentials(route.registry)
+    }
 
     DigestStore handleManifest(RouteHelper.Route route, Map<String,List<String>> headers){
         ProxyClient proxyClient = client(route)

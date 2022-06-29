@@ -3,16 +3,14 @@ micronaut:
     client:
       read-timeout: 90s
 ---
-towerreg:
-  arch: x86_64
-  registries:
-    test:
-      host: changed at runtime
-      auth:
-        username: test
-        password: test
-        url: changed at runtime
-        service: localhost
+datasources:
+  default:
+    url: "jdbc:h2:mem:test_mem"
+    driverClassName: "org.h2.Driver"
+    username: "sq"
+    password: ""
+    dialect: H2
+    schema-generate: CREATE_DROP
 ---
 wave:
   registries:
@@ -22,3 +20,11 @@ wave:
     quay:
       username: "pditommaso"
       password: "SVO9GmXzeDJfB3Ba7PDSN90Pv7ggvzIGjYNT7QD4Ol05riiSuWu+ioBWiPIYd39v"
+---
+tower:
+  crypto :
+    secretKey : "${TOWER_CRYPTO_SECRETKEY:`6Lc407kUAAAAAPCb10a_5czoIYbB1zjtMdnGYnF7`}"
+---
+logger:
+  levels:
+    io.micronaut.data.query: "DEBUG"

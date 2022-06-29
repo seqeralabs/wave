@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit
 
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
+import com.google.common.util.concurrent.UncheckedExecutionException
 import groovy.json.JsonSlurper
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
@@ -81,7 +82,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         final registry = lookupService.lookup(registryName)
         log.debug "Registry '$registryName' => auth: $registry"
         if( !registry )
-            throw new IllegalArgumentException("Unable to find authorization info for registry: $registryName")
+            throw new RegistryUnauthorizedAccessException("Unable to find authorization service for registry: $registryName")
 
         // 2. make a request against the authorization "realm" service using basic
         //    credentials to get the login token
@@ -124,6 +125,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
                 .uri(URI.create(uri))
         if( creds && creds.username && creds.password ) {
             final basic = "${creds.username}:${creds.password}".bytes.encodeBase64()
+            log.debug "Request uri=$uri; 'Authorization Basic $basic'"
             builder.setHeader("Authorization", "Basic $basic")
         }
         return builder.build()
@@ -139,12 +141,12 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
      * @return The authorization header including the 'Basic' or 'Bearer' prefix
      */
     @Override
-    String getAuthorization(String image, RegistryAuth auth, RegistryCredentials creds) {
+    String getAuthorization(String image, RegistryAuth auth, RegistryCredentials creds) throws RegistryUnauthorizedAccessException {
         if( !creds || creds.username==null || creds.password==null )
             return null
 
         if( !auth )
-            throw new IllegalArgumentException("Missing registry authentication information")
+            throw new RegistryUnauthorizedAccessException("Missing authentication credentials")
 
         if( auth.type == RegistryAuth.Type.Bearer ) {
             final token = getAuthToken(image, auth, creds)
@@ -156,7 +158,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
             return "Basic $basic"
         }
 
-        throw new IllegalArgumentException("Unknown authentication type: $auth.type")
+        throw new RegistryUnauthorizedAccessException("Unknown authentication type: $auth.type")
     }
 
     /**
@@ -179,12 +181,19 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
             return result.get('token')
         }
 
-        throw new IllegalStateException("Unable to authorize request: $login -- response: $body")
+        throw new RegistryUnauthorizedAccessException("Unable to authorize request: $login", body)
     }
 
     protected String getAuthToken(String image, RegistryAuth auth, RegistryCredentials creds) {
         final key = new CacheKey(image, auth, creds)
-        return cacheTokens.get(key)
+        try {
+            return cacheTokens.get(key)
+        }
+        catch (UncheckedExecutionException e) {
+            // this catches the exception thrown in the cache loader lookup
+            // and throws the causing exception that should be `RegistryUnauthorizedAccessException`
+            throw e.cause
+        }
     }
 
     /**

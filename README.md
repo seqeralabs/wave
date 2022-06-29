@@ -108,3 +108,23 @@ curl \
   -X POST http://localhost:9090/validate-creds \
   -d '{"userName":"<USERNAME>", "password":"PASSWORD", "registry": "docker.io"}' 
 ```
+
+### Container token
+  
+Acquire a container token  
+```
+curl \
+  -H "Content-Type: application/json" \
+  -X POST http://localhost:9090/container-token \
+  -d '{"containerImage":"quay.io/nextflow/bash:latest", "towerAccessToken":"eyJ0aWQiOiAxfS40ZGE4ZDBmMTQ3YzliMWJkOGVkMDNlYjY1ZWRiZmU1OWQxZjEyZGU3", "towerWorkspaceId": null}' 
+```
+
+Pull the container using the resulting token 
+
+```
+docker run \
+  --rm \
+  --platform linux/amd64 \
+  reg.ngrok.io/wt/<TOKEN>/nextflow/bash:latest \
+  cat foo.txt 
+```

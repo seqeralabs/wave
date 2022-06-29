@@ -2,6 +2,7 @@ package io.seqera.controller
 
 import java.time.Instant
 
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.http.*
 import io.micronaut.http.annotation.Controller
@@ -25,11 +26,13 @@ import reactor.core.publisher.Mono
  * @author : jorge <jorge.aguilera@seqera.io>
  */
 @Slf4j
+@CompileStatic
 @Controller("/v2")
 class RegistryProxyController {
 
     @Inject RegistryProxyService proxyService
     @Inject Storage storage
+    @Inject RouteHelper routeHelper
 
     @Error
     HttpResponse<JsonError> handleError(HttpRequest request, Throwable t){
@@ -50,7 +53,7 @@ class RegistryProxyController {
     @Get(uri="/{url:(.+)}", produces = "*/*")
     MutableHttpResponse<?> handleGet(String url, HttpRequest httpRequest) {
         log.info "> Request [$httpRequest.method] $httpRequest.path"
-        def route = RouteHelper.parse("/v2/"+url)
+        final route = routeHelper.parse("/v2/"+url)
 
         if( httpRequest.method == HttpMethod.HEAD )
             return handleHead(route, httpRequest)

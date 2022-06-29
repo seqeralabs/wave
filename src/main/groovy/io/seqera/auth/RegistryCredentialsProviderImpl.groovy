@@ -6,7 +6,6 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 /**
  * Implements a basic credentials provider fetching the registry creds
  * from the application config file
@@ -49,6 +48,7 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
      */
     @Override
     RegistryCredentials getCredentials(String registry) {
+
         if( !registry || registry == 'docker.io' ) {
             if( dockerUsername && dockerPassword ) {
                 return new SimpleRegistryCredentials(dockerUsername, dockerPassword)

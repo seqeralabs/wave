@@ -28,7 +28,7 @@ interface RegistryAuthService {
      * @param creds The user credentials
      * @return The authorization header including the 'Basic' or 'Bearer' prefix
      */
-    String getAuthorization(String image, RegistryAuth auth, RegistryCredentials creds)
+    String getAuthorization(String image, RegistryAuth auth, RegistryCredentials creds) throws RegistryUnauthorizedAccessException
 
     /**
      * Invalidate a cached authorization token
