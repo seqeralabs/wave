@@ -1,6 +1,7 @@
 package io.seqera
 
 import groovy.transform.Canonical
+import groovy.transform.ToString
 import io.seqera.service.ContainerRequestData
 import io.seqera.service.ContainerTokenService
 import io.seqera.util.Base32
@@ -29,6 +30,7 @@ class RouteHelper {
     }
 
     @Canonical
+    @ToString(includePackage = false, includeNames = true)
     static class Route {
         final String type
         final String registry
@@ -75,7 +77,7 @@ class RouteHelper {
             // compose the target request path in such a way that
             // - the 'registry' name is taken from the request associated to the token
             // - the 'reference' from the current request
-            return Route.v2path(type, coords.registry, coords.image, reference)
+            return Route.v2path(type, coords.registry, coords.image, reference, request)
         }
 
         final String image

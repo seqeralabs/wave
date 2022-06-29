@@ -1,12 +1,11 @@
 package io.seqera.tower
 
-import java.time.OffsetDateTime
+
 import javax.validation.constraints.NotNull
 import javax.validation.constraints.Size
 
 import groovy.transform.CompileStatic
-import io.micronaut.data.annotation.DateCreated
-import io.micronaut.data.annotation.DateUpdated
+import io.micronaut.core.annotation.Nullable
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
@@ -31,8 +30,10 @@ class Credentials {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     User user
 
+    @Nullable
     Long organizationId
 
+    @Nullable
     Long workspaceId
 
     /**
@@ -52,25 +53,9 @@ class Credentials {
     /**
      * Soft deletion
      */
+    @Nullable
     Boolean deleted
 
-    /**
-     * Timestamp last time credentials were used
-     */
-    OffsetDateTime lastUsed
-
-    /**
-     * Timestamp when record was created
-     */
-    @DateCreated
-    OffsetDateTime dateCreated
-
-    /**
-     * Timestamp last modification
-     */
-    @DateUpdated
-    @Column(nullable = false)
-    OffsetDateTime lastUpdated
 
     @Version
     @Column(name = 'version', nullable = false)
@@ -85,6 +70,5 @@ class Credentials {
 
     @Column(name='keys_meta')
     String keys
-
 
 }

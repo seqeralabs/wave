@@ -2,7 +2,6 @@ package io.seqera.service
 
 import javax.annotation.PostConstruct
 
-import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
@@ -55,7 +54,7 @@ class CredentialServiceImpl implements CredentialsService {
         // find a credentials with a matching registry
         final matching = new ArrayList<Credentials>(10)
         for (Credentials it : all) {
-            final keys = parseKeys(it.keys)
+            final keys = parsePayload(it.keys)
             if (keys == null)
                 continue
 
@@ -85,15 +84,12 @@ class CredentialServiceImpl implements CredentialsService {
             return null
         }
         final sealedObj = Sealed.deserialize(secret.secure)
-        final password = crypto.decrypt(sealedObj, creds.salt)
+        final json = new String(crypto.decrypt(sealedObj, creds.salt))
 
-        final result = parseKeys(creds.keys)
-        result.password = new String(password)
-        return result
+        return parsePayload(json)
     }
 
-    @CompileDynamic
-    ContainerRegistryKeys parseKeys(String json) {
+    protected ContainerRegistryKeys parsePayload(String json) {
         try {
             return ContainerRegistryKeys.fromJson(json)
         }

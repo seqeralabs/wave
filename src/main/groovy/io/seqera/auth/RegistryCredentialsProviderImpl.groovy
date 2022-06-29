@@ -4,6 +4,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.seqera.service.CredentialsService
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
@@ -38,6 +39,11 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
     @Value('${wave.registries.quay.password}')
     private String quayPassword
 
+
+    @Inject
+    private CredentialsService credentialsService
+
+
     /**
      * Find the corresponding credentials for the specified registry
      *
@@ -49,6 +55,7 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
      */
     @Override
     RegistryCredentials getCredentials(String registry) {
+
         if( !registry || registry == 'docker.io' ) {
             if( dockerUsername && dockerPassword ) {
                 return new SimpleRegistryCredentials(dockerUsername, dockerPassword)

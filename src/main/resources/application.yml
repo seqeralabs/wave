@@ -15,10 +15,10 @@ wave:
 ---
 datasources:
   default:
-    url: "${TOWER_DB_URL:`jdbc:h2:file:../nf-tower-cloud/tower-backend/.db/h2/tower;AUTO_SERVER=TRUE`}"
-    driverClassName: "${TOWER_DB_DRIVER:`org.h2.Driver`}"
-    username: "${TOWER_DB_USER:`tower`}"
-    password: "${TOWER_DB_PASSWORD:`tower`}"
+    url: "${TOWER_DB_URL}"
+    driverClassName: "${TOWER_DB_DRIVER}"
+    username: "${TOWER_DB_USER}"
+    password: "${TOWER_DB_PASSWORD}"
     dialect: H2
 ---
 tower:
