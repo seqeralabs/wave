@@ -10,6 +10,7 @@ import io.seqera.tower.CredentialsDao
 import io.seqera.tower.SecretDao
 import io.seqera.tower.crypto.CryptoHelper
 import io.seqera.tower.crypto.Sealed
+import io.seqera.util.StringUtils
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -37,6 +38,7 @@ class CredentialServiceImpl implements CredentialsService {
 
     @PostConstruct
     private void init() {
+        log.debug "Tower crypto key: ${StringUtils.redact(secretKey)}"
         crypto = new CryptoHelper(secretKey)
     }
 
