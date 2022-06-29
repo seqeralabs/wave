@@ -1,5 +1,6 @@
 package io.seqera.service
 /**
+ * service to fulfill request for an augmented container
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

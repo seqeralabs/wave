@@ -3,6 +3,7 @@ package io.seqera.service
 import io.seqera.util.LongRndKey
 import jakarta.inject.Singleton
 /**
+ * Service to fulfill request for an augmented container
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

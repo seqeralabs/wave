@@ -11,7 +11,8 @@ import io.seqera.service.ContainerTokenService
 import io.seqera.service.UserService
 import jakarta.inject.Inject
 /**
- *
+ * Implement a controller to receive container token requests
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j

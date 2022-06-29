@@ -1,11 +1,10 @@
 package io.seqera.tower
 
-import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.tower.crypto.CryptoHelper
 import jakarta.inject.Inject
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -13,21 +12,72 @@ import jakarta.inject.Inject
 @MicronautTest
 class CredentialsDaoTest extends Specification {
 
-    @Inject @Shared CredentialsDao credentialsDao
+    @Inject UserDao userDao
+    @Inject CredentialsDao credentialsDao
+    @Inject SecretDao secretDao
 
     def 'should find creds by user' () {
+        given:
+        def USER_ID = 10
+        def SALT = CryptoHelper.rndSalt()
+        and:
+        // create a user
+        def user = userDao.save(
+                new User(id: USER_ID, userName: 'foo', email: 'foo@gmail.com'))
+
+        // create the credentials
+        def creds1 = credentialsDao.save(
+                new Credentials( id: 'abc', name: 'foo', provider: 'container-reg', salt: SALT, keys: '{foo}', user: user ))
+        and:
+        def creds2 = credentialsDao.save(
+                new Credentials( id: 'cba', name: 'bar', provider: 'container-reg', salt: SALT, keys: '{bar}', user: user ))
+
+        and:
+        def creds3 = credentialsDao.save(
+                new Credentials( id: 'cba', name: 'bar', provider: 'container-reg', salt: SALT, keys: '{bar}', user: user, workspaceId: 100 ))
+
+
         when:
-        def result = credentialsDao.findRegistryCredentialsByUser(1)
-        println "creds: $result"
+        def result = credentialsDao.findRegistryCredentialsByUser(USER_ID)
         then:
-        result
+        result.size() == 2
     }
 
     def 'should find creds by workspace' () {
+        given:
+        def USER_ID = 10
+        def WORKSPACE_1 = 1
+        def WORKSPACE_2 = 2
+
+        def SALT = CryptoHelper.rndSalt()
+        and:
+        // create a user
+        def user = userDao.save(
+                new User(id: USER_ID, userName: 'foo', email: 'foo@gmail.com'))
+
+        // create the credentials
+        def creds1 = credentialsDao.save(
+                new Credentials( id: 'abc', name: 'foo', provider: 'container-reg', salt: SALT, keys: '{foo}', user: user ))
+        and:
+        def creds2 = credentialsDao.save(
+                new Credentials( id: 'cba', name: 'bar', provider: 'container-reg', salt: SALT, keys: '{bar}', user: user, workspaceId: WORKSPACE_1 ))
+        and:
+        def creds3 = credentialsDao.save(
+                new Credentials( id: 'cba', name: 'bar', provider: 'container-reg', salt: SALT, keys: '{bar}', user: user, workspaceId: WORKSPACE_2 ))
+
         when:
-        def result = credentialsDao.findRegistryCredentialsByWorkspaceId(123230369066943)
+        def result = credentialsDao.findRegistryCredentialsByWorkspaceId(WORKSPACE_1)
         then:
-        result
+        result.size() == 1
+        and:
+        result.get(0).id == creds2.id
+
+        when:
+        result = credentialsDao.findRegistryCredentialsByWorkspaceId(WORKSPACE_2)
+        then:
+        result.size() == 1
+        and:
+        result.get(0).id == creds3.id
     }
 
 }

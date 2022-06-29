@@ -7,6 +7,7 @@ import javax.validation.constraints.Size
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import groovy.transform.CompileStatic
+import io.micronaut.core.annotation.Nullable
 import io.micronaut.data.annotation.DateCreated
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -15,7 +16,6 @@ import jakarta.persistence.Id
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import jakarta.persistence.Version
-
 /**
  * Model a tower access token
  *
@@ -33,16 +33,6 @@ class AccessToken {
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     User user
 
-    /**
-     * Unique token content used as basic auth mechanism.
-     *
-     * @deprecated The new JWT-like bearer token generated with the id + salt is used instead.
-     */
-    @Column(unique = true)
-    @Size(max = 40)
-    @Deprecated
-    String token
-
     @NotNull
     @NotBlank
     @Size(max = 50)
@@ -56,6 +46,7 @@ class AccessToken {
     @JsonIgnore
     byte[] secret
 
+    @Nullable
     Instant lastUsed
 
     @DateCreated
