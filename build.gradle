@@ -62,7 +62,7 @@ dependencies {
 
 
 application {
-    mainClass.set("io.seqera.Application")
+    mainClass.set("io.seqera.wave.Application")
 }
 
 java {
