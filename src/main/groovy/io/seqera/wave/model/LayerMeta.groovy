@@ -8,6 +8,7 @@ import java.nio.file.Paths
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Deprecated
 class LayerMeta {
 
     private Path basePath
@@ -35,5 +36,13 @@ class LayerMeta {
         assert basePath?.isAbsolute()
         this.basePath = basePath
         return this
+    }
+
+    Layer toNewLayer() {
+        new Layer(
+                getLocationPath().toString(),
+                gzipDigest,
+                gzipSize,
+                tarDigest)
     }
 }

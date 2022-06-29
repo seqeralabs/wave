@@ -4,6 +4,7 @@ import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.tower.Credentials
 import io.seqera.wave.tower.CredentialsDao
@@ -19,6 +20,7 @@ import jakarta.inject.Singleton
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
+@Requires(env = 'tower')
 @CompileStatic
 @Singleton
 class CredentialServiceImpl implements CredentialsService {

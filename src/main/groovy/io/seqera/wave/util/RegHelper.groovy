@@ -10,10 +10,14 @@ import java.security.SecureRandom
 import com.google.common.io.BaseEncoding
 import com.sun.net.httpserver.Headers
 import groovy.json.JsonOutput
+import groovy.transform.CompileStatic
+
 /**
+ * Helper methods
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@CompileStatic
 class RegHelper {
 
     final private static char PADDING = '_' as char

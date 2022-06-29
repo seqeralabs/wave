@@ -1,4 +1,5 @@
-package io.seqera.wave.docker
+package io.seqera.wave.core
+
 
 import java.nio.file.Path
 import javax.validation.constraints.NotBlank
@@ -7,17 +8,16 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Value
-import io.seqera.wave.RouteHelper
-import io.seqera.wave.RouteHelper.Route
+import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.auth.SimpleRegistryCredentials
-import io.seqera.wave.storage.DigestStore
-import io.seqera.wave.storage.Storage
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.service.CredentialsService
+import io.seqera.wave.storage.DigestStore
+import io.seqera.wave.storage.Storage
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -50,6 +50,7 @@ class RegistryProxyService {
      * Service to query credentials stored into tower
      */
     @Inject
+    @Nullable
     private CredentialsService credentialsService
 
     @Inject
@@ -63,7 +64,7 @@ class RegistryProxyService {
                 .withClient(proxyClient)
     }
 
-    private ProxyClient client(Route route) {
+    private ProxyClient client(RoutePath route) {
         final registry = registryLookup.lookup(route.registry)
         if( !registry )
             throw new IllegalArgumentException("Unable to resolve target registry for name: '$route.registry'")
@@ -75,7 +76,7 @@ class RegistryProxyService {
                 .withLoginService(loginService)
     }
 
-    protected RegistryCredentials getCredentials(Route route) {
+    protected RegistryCredentials getCredentials(RoutePath route) {
         log.debug "Checking credentials for route=$route"
         final req = route.request
         if(  req?.userId ) {
@@ -89,10 +90,10 @@ class RegistryProxyService {
             return credentialsProvider.getCredentials(route.registry)
     }
 
-    DigestStore handleManifest(RouteHelper.Route route, Map<String,List<String>> headers){
+    DigestStore handleManifest(RoutePath route, Map<String,List<String>> headers){
         ProxyClient proxyClient = client(route)
 
-        final digest = scanner(proxyClient).resolve(route.image, route.reference, headers)
+        final digest = scanner(proxyClient).resolve(route, headers)
         if( digest == null )
             throw new IllegalStateException("Missing digest for request: $route")
 
@@ -102,7 +103,7 @@ class RegistryProxyService {
         return entry
     }
 
-    DelegateResponse handleRequest(RouteHelper.Route route, Map<String,List<String>> headers){
+    DelegateResponse handleRequest(RoutePath route, Map<String,List<String>> headers){
         ProxyClient proxyClient = client(route)
         final resp = proxyClient.getStream(route.path, headers)
 

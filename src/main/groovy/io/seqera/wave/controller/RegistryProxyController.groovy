@@ -11,11 +11,12 @@ import io.micronaut.http.annotation.Get
 import io.micronaut.http.hateoas.JsonError
 import io.micronaut.http.hateoas.Link
 import io.micronaut.http.server.types.files.StreamedFile
+import io.seqera.wave.core.RoutePath
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.storage.DigestStore
-import io.seqera.wave.RouteHelper
-import io.seqera.wave.docker.RegistryProxyService
-import io.seqera.wave.docker.RegistryProxyService.DelegateResponse
+import io.seqera.wave.core.RouteHelper
+import io.seqera.wave.core.RegistryProxyService
+import io.seqera.wave.core.RegistryProxyService.DelegateResponse
 import jakarta.inject.Inject
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Mono
@@ -89,7 +90,7 @@ class RegistryProxyController {
         fromDelegateResponse(response)
     }
 
-    protected DigestStore manifestForPath(RouteHelper.Route route, HttpRequest httpRequest) {
+    protected DigestStore manifestForPath(RoutePath route, HttpRequest httpRequest) {
         def manifest = storage.getManifest(route.path)
         if (manifest.present) {
             return manifest.get()
@@ -99,7 +100,7 @@ class RegistryProxyController {
         return proxyService.handleManifest(route, headers)
     }
 
-    MutableHttpResponse<?> handleHead(RouteHelper.Route route, HttpRequest httpRequest) {
+    MutableHttpResponse<?> handleHead(RoutePath route, HttpRequest httpRequest) {
 
         if (!(route.manifest && route.tag)) {
             return HttpResponse.notFound()

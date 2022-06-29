@@ -5,6 +5,7 @@ import io.micronaut.core.version.VersionUtils;
 
 /**
  * Helper class to find out runtime info
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic

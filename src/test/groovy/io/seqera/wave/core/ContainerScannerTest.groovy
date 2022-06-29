@@ -1,4 +1,4 @@
-package io.seqera.wave
+package io.seqera.wave.core
 
 import spock.lang.Ignore
 import spock.lang.Shared
@@ -12,10 +12,10 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import io.micronaut.context.annotation.Value
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.auth.SimpleRegistryCredentials
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryLookupService
-import io.seqera.wave.docker.ContainerScanner
+import io.seqera.wave.auth.SimpleRegistryCredentials
+import io.seqera.wave.core.ContainerScanner
 import io.seqera.wave.model.ContentType
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.storage.Storage
@@ -77,9 +77,9 @@ class ContainerScannerTest extends Specification {
         def scanner = new ContainerScanner().withLayerConfig(json)
 
         then:
-        def config = scanner.getLayerConfig()
+        def config = scanner.getContainerConfig()
         and:
-        config.append.locationPath == layer
+        config.layers[0].location == layer.toString()
 
         cleanup:
         folder?.toFile()?.deleteDir()
@@ -133,12 +133,15 @@ class ContainerScannerTest extends Specification {
         and:
         unpackLayer()
 
-        def scanner = new ContainerScanner().withStorage(storage).withLayerConfig(Paths.get(layerJson.absolutePath))
+        def scanner = new ContainerScanner()
+                            .withStorage(storage)
+                            .withLayerConfig(Paths.get(layerJson.absolutePath))
         and:
         def digest = RegHelper.digest(layerPath.bytes)
 
         when:
-        def blob = scanner.layerBlob(IMAGE)
+        def layer = scanner.getContainerConfig().layers.get(0)
+        def blob = scanner.layerBlob(IMAGE, layer)
 
         then:
         blob.get('mediaType') == 'application/vnd.docker.image.rootfs.diff.tar.gzip'

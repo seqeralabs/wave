@@ -6,10 +6,13 @@ import java.net.http.HttpHeaders
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 
+import groovy.transform.CompileStatic
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@CompileStatic
 class ErrResponse<T> implements HttpResponse<T> {
 
     private int statusCode

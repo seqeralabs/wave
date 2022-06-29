@@ -1,8 +1,9 @@
 package io.seqera.wave.storage;
 
 
-import java.nio.file.Path;
 import java.util.Optional;
+
+import io.seqera.wave.storage.reader.ContentReader;
 
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
@@ -17,5 +18,5 @@ public interface Storage {
 
     DigestStore saveBlob(String path, byte[] content, String type, String digest);
 
-    DigestStore saveBlob(String path, Path content, String type, String digest);
+    DigestStore saveBlob(String path, ContentReader content, String type, String digest);
 }

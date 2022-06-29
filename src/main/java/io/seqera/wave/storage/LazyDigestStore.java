@@ -1,8 +1,10 @@
 package io.seqera.wave.storage;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
+
+import io.seqera.wave.storage.reader.ContentReader;
+import io.seqera.wave.storage.reader.PathContentReader;
 
 /**
  * Implements a digest store that laods the binary content on-demand
@@ -13,10 +15,16 @@ public class LazyDigestStore implements DigestStore{
 
     final private String mediaType;
     final private String digest;
-    final private Path contentLocation;
+    final private ContentReader contentReader;
+
+    LazyDigestStore(ContentReader content, String mediaType, String digest) {
+        this.contentReader = content;
+        this.mediaType = mediaType;
+        this.digest = digest;
+    }
 
     LazyDigestStore(Path content, String mediaType, String digest) {
-        this.contentLocation = content;
+        this.contentReader = new PathContentReader(content);
         this.mediaType = mediaType;
         this.digest = digest;
     }
@@ -24,10 +32,10 @@ public class LazyDigestStore implements DigestStore{
     @Override
     public byte[] getBytes() {
         try {
-            return contentLocation!=null ? Files.readAllBytes(contentLocation) : null;
+            return contentReader !=null ? contentReader.readAllBytes() : null;
         }
         catch (IOException e) {
-            throw new IllegalStateException("Unable to load digest content at path: "+contentLocation, e);
+            throw new IllegalStateException("Unable to load digest content at path: "+ contentReader, e);
         }
     }
 

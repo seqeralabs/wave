@@ -1,12 +1,12 @@
-package io.seqera.wave
+package io.seqera.wave.core
 
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import io.seqera.wave.RouteHelper
+import io.seqera.wave.core.RouteHelper
+import io.seqera.wave.core.RoutePath
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.ContainerTokenService
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -62,22 +62,22 @@ class RouteHelperTest extends Specification {
         
         where:
         PATH                                        | ROUTE
-        '/v2/hello-world/manifests/latest'          | new RouteHelper.Route('manifests', null, 'hello-world', 'latest', '/v2/hello-world/manifests/latest')
-        '/v2/library/hello-world/manifests/latest'  | new RouteHelper.Route('manifests', null, 'library/hello-world', 'latest', '/v2/library/hello-world/manifests/latest')
+        '/v2/hello-world/manifests/latest'          | new RoutePath('manifests', null, 'hello-world', 'latest', '/v2/hello-world/manifests/latest')
+        '/v2/library/hello-world/manifests/latest'  | new RoutePath('manifests', null, 'library/hello-world', 'latest', '/v2/library/hello-world/manifests/latest')
         '/v1/library/hello-world/manifests/latest'  | RouteHelper.NOT_FOUND
         '/v2/library/hello-world/foo/latest'        | RouteHelper.NOT_FOUND
         '/v2/foo:bar/blobs/latest'                  | RouteHelper.NOT_FOUND
         and:
-        '/v2/hello-world/blobs/latest'              | new RouteHelper.Route('blobs', null,'hello-world', 'latest', '/v2/hello-world/blobs/latest')
-        '/v2/library/hello-world/blobs/latest'      | new RouteHelper.Route('blobs', null,'library/hello-world', 'latest', '/v2/library/hello-world/blobs/latest')
+        '/v2/hello-world/blobs/latest'              | new RoutePath('blobs', null,'hello-world', 'latest', '/v2/hello-world/blobs/latest')
+        '/v2/library/hello-world/blobs/latest'      | new RoutePath('blobs', null,'library/hello-world', 'latest', '/v2/library/hello-world/blobs/latest')
         '/v1/library/hello-world/blobs/latest'      | RouteHelper.NOT_FOUND
         '/v2/library/hello-world/foo/latest'        | RouteHelper.NOT_FOUND
         '/v2/foo:bar/blobs/latest'                  | RouteHelper.NOT_FOUND
         and:
-        '/v2/tw/of2wc6jonfxs63tfpb2gm3dpo4/rnaseq-nf/manifests/v1.1'        | new RouteHelper.Route('manifests', 'quay.io', 'nextflow/rnaseq-nf', 'v1.1', '/v2/nextflow/rnaseq-nf/manifests/v1.1')
-        '/v2/tw/mjuw6y3pnz2gc2lomvzhg/biocontainers/manifests/v1.2.0_cv1'   | new RouteHelper.Route('manifests', null, 'biocontainers/biocontainers', 'v1.2.0_cv1', '/v2/biocontainers/biocontainers/manifests/v1.2.0_cv1')
+        '/v2/tw/of2wc6jonfxs63tfpb2gm3dpo4/rnaseq-nf/manifests/v1.1'        | new RoutePath('manifests', 'quay.io', 'nextflow/rnaseq-nf', 'v1.1', '/v2/nextflow/rnaseq-nf/manifests/v1.1')
+        '/v2/tw/mjuw6y3pnz2gc2lomvzhg/biocontainers/manifests/v1.2.0_cv1'   | new RoutePath('manifests', null, 'biocontainers/biocontainers', 'v1.2.0_cv1', '/v2/biocontainers/biocontainers/manifests/v1.2.0_cv1')
         and:
-        '/v2/github.io/biocontainers/biocontainers/manifests/v1.1'        | new RouteHelper.Route('manifests', 'github.io', 'biocontainers/biocontainers', 'v1.1', '/v2/biocontainers/biocontainers/manifests/v1.1')
+        '/v2/github.io/biocontainers/biocontainers/manifests/v1.1'        | new RoutePath('manifests', 'github.io', 'biocontainers/biocontainers', 'v1.1', '/v2/biocontainers/biocontainers/manifests/v1.1')
     }
 
     @Unroll
@@ -109,7 +109,7 @@ class RouteHelperTest extends Specification {
     def 'should validate route type' () {
 
         when:
-        def route = new RouteHelper.Route(TYPE, REG, IMAGE, REF)
+        def route = new RoutePath(TYPE, REG, IMAGE, REF)
         then:
         route.isManifest() == IS_MANIFEST
         route.isBlob() == IS_BLOB

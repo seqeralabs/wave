@@ -1,34 +1,41 @@
-package io.seqera.wave.docker
+package io.seqera.wave.core
 
-import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.attribute.BasicFileAttributes
 
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.transform.CompileDynamic
-import groovy.transform.Memoized
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.wave.model.ContainerConfig
 import io.seqera.wave.model.ContentType
+import io.seqera.wave.model.Layer
 import io.seqera.wave.model.LayerConfig
-import io.seqera.wave.storage.Storage
-import io.seqera.wave.util.RegHelper
 import io.seqera.wave.proxy.InvalidResponseException
 import io.seqera.wave.proxy.ProxyClient
+import io.seqera.wave.storage.Storage
+import io.seqera.wave.storage.reader.ContentReaderFactory
+import io.seqera.wave.util.RegHelper
 
 /**
- *
+ * Implement the logic of container manifest manipulation and
+ * layers injections
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
+@CompileStatic
 class ContainerScanner {
 
     private ProxyClient client
-    private Path layerConfigPath
+    private ContainerConfig containerConfig
     private String arch
 
     private Storage storage
 
+    ContainerConfig getContainerConfig() {
+        return containerConfig
+    }
 
     ContainerScanner withStorage(Storage cache) {
         this.storage = cache
@@ -48,55 +55,33 @@ class ContainerScanner {
         return this
     }
 
-    ContainerScanner withLayerConfig(Path path) {
-        log.debug "Layer config path: $path"
-        layerConfigPath = path.toAbsolutePath()
-        if( !Files.exists(layerConfigPath) ) {
-            throw new IllegalArgumentException("Specific config path does not exist: $layerConfigPath")
-        }
+    ContainerScanner withContainerConfig(ContainerConfig containerConfig) {
+        this.containerConfig = containerConfig
+        final l = containerConfig?.layers ?: Collections.<Layer>emptyList()
+        for( Layer it : l )
+            it.validate()
         return this
     }
 
-    protected LayerConfig getLayerConfig() {
-        assert layerConfigPath, "Missing layer config path"
-        final attrs = Files.readAttributes(layerConfigPath, BasicFileAttributes)
-        // note file size and last modified timestamp are only needed
-        // to invalidate the memoize cache
-        return createConfig(layerConfigPath, attrs.size(), attrs.lastModifiedTime().toMillis())
+    @Deprecated
+    ContainerScanner withLayerConfig(Path json) {
+        containerConfig = LayerConfig.containerConfigAdapter(json)
+        return this
     }
 
-    /*
-     * note: make this method static to enforce the memoized behavior across all instances of this class
-     */
-    @Memoized
-    static synchronized protected LayerConfig createConfig(Path path, long size, long lastModified) {
-        final layerConfig = new JsonSlurper().parse(path) as LayerConfig
-        if( !layerConfig.append?.getLocationPath() )
-            throw new IllegalArgumentException("Missing layer tar path")
-        if( !layerConfig.append?.gzipDigest )
-            throw new IllegalArgumentException("Missing layer gzip digest")
-        if( !layerConfig.append?.tarDigest )
-            throw new IllegalArgumentException("Missing layer tar digest")
-
-        if( !layerConfig.append.gzipDigest.startsWith('sha256:') )
-            throw new IllegalArgumentException("Missing layer gzip digest should start with the 'sha256:' prefix -- offending value: $layerConfig.append.gzipDigest")
-        if( !layerConfig.append.tarDigest.startsWith('sha256:') )
-            throw new IllegalArgumentException("Missing layer tar digest should start with the 'sha256:' prefix -- offending value: $layerConfig.append.tarDigest")
-
-        final base = path.parent.toAbsolutePath()
-        final tarFile = layerConfig.append.withBase(base).getLocationPath()
-        if( !Files.exists(tarFile) )
-            throw new IllegalArgumentException("Missing layer tar file: $tarFile")
-
-        log.debug "Layer info: path=$tarFile; gzip-checksum=$layerConfig.append.gzipDigest; gzip-size: $layerConfig.append.gzipSize; tar-checksum=$layerConfig.append.tarDigest"
-        return layerConfig
+    String resolve(RoutePath route, Map<String,List<String>> headers) {
+        assert route, "Missing route"
+        if( route.request?.containerConfig )
+            this.containerConfig = route.request.containerConfig
+        resolve(route.image, route.reference, headers)
     }
 
     String resolve(String imageName, String tag, Map<String,List<String>> headers) {
         assert client, "Missing client"
-        assert layerConfigPath, "Missing layerPath"
+        assert containerConfig, "Missing container config"
         assert storage, "Missing storage"
         assert arch, "Missing 'arch' parameter"
+
         // resolve image tag to digest
         final resp1 = client.head("/v2/$imageName/manifests/$tag", headers)
         final digest = resp1.headers().firstValue('docker-content-digest')
@@ -195,19 +180,16 @@ class ContainerScanner {
         return result
     }
 
-    synchronized protected Map layerBlob(String image) {
+    synchronized protected Map layerBlob(String image, Layer layer) {
+        log.debug "Adding layer: $layer to image: $image"
         // store the layer blob in the cache
         final type = "application/vnd.docker.image.rootfs.diff.tar.gzip"
-        final location = layerConfig.append.locationPath
-        final computed = RegHelper.digest(location)
-        final digest = layerConfig.append.gzipDigest
-        final size = layerConfig.append.gzipSize
-        if( !size )
-            throw new IllegalArgumentException("Layer size cannot be null or zero")
-        if( digest != computed )
-            log.warn("Layer gzip computed digest does not match with expected digest -- path=$layerConfig.append.locationPath; computed=$computed; expected: $digest")
+        final location = layer.location
+        final digest = layer.gzipDigest
+        final size = layer.gzipSize
         final String path = "/v2/$image/blobs/$digest"
-        storage.saveBlob(path, location, type, digest)
+        final content = ContentReaderFactory.of(location)
+        storage.saveBlob(path, content, type, digest)
 
         final result = new HashMap(10)
         result."mediaType" = type
@@ -246,13 +228,16 @@ class ContainerScanner {
 
     protected String updateImageManifest(String imageName, String imageManifest, String newImageConfigDigest) {
 
-        // get the layer blob
-        final newLayer = layerBlob(imageName)
-
         // turn the json string into a json map
         // and append the new layer
         final manifest = (Map) new JsonSlurper().parseText(imageManifest)
-        (manifest.layers as List).add( newLayer )
+        final layers = (manifest.layers as List)
+
+        for( Layer it : containerConfig.layers ) {
+            // get the layer blob
+            final newLayer= layerBlob(imageName, it)
+            layers.add( newLayer )
+        }
 
         // update the config digest
         (manifest.config as Map).digest = newImageConfigDigest
@@ -292,17 +277,17 @@ class ContainerScanner {
 
     protected Map enrichConfig(Map config){
         final entryChain = getFirst(config.Entrypoint)
-        if( layerConfig.entrypoint ) {
-            config.Entrypoint = layerConfig.entrypoint
+        if( containerConfig.entrypoint ) {
+            config.Entrypoint = containerConfig.entrypoint
         }
-        if( layerConfig.cmd ) {
-            config.Cmd = layerConfig.cmd
+        if( containerConfig.cmd ) {
+            config.Cmd = containerConfig.cmd
         }
-        if( layerConfig.workingDir ) {
-            config.WorkingDir = layerConfig.workingDir
+        if( containerConfig.workingDir ) {
+            config.WorkingDir = containerConfig.workingDir
         }
-        if( layerConfig.env ) {
-            config.Env = appendEnv(config.Env as List, layerConfig.env)
+        if( containerConfig.env ) {
+            config.Env = appendEnv(config.Env as List, containerConfig.env)
         }
         if( entryChain ) {
             config.Env = appendEnv( config.Env as List, [ "WAVE_ENTRY_CHAIN="+entryChain ] )
@@ -313,17 +298,18 @@ class ContainerScanner {
 
     protected String updateImageConfig(String imageName, String imageConfig) {
 
-        final newLayer = layerConfig.append.tarDigest
-
         // turn the json string into a json map
         // and append the new layer
         final manifest = new JsonSlurper().parseText(imageConfig) as Map
         final rootfs = manifest.rootfs as Map
         final layers = rootfs.diff_ids as List
-        layers.add( newLayer )
+
+        for( Layer it : containerConfig.layers ) {
+            layers.add( it.tarDigest )
+        }
 
         // update the image config
-         enrichConfig(manifest.config as Map)
+        enrichConfig(manifest.config as Map)
 
         // turn the updated manifest into a json
         final newConfig = JsonOutput.toJson(manifest)
@@ -374,9 +360,11 @@ class ContainerScanner {
     protected void rewriteLayersV1(String imageName, List<Map> fsLayers){
         assert fsLayers.size()
 
-        final blob = layerBlob(imageName)
-        final newLayer= [blobSum: blob.digest]
-        fsLayers.add(0, newLayer)
+        for( Layer it : containerConfig.layers ) {
+            final blob = layerBlob(imageName, it)
+            final newLayer= [blobSum: blob.digest]
+            fsLayers.add(0, newLayer)
+        }
     }
 
     protected void rewriteSignatureV1(Map manifest){

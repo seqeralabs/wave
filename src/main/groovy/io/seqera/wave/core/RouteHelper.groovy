@@ -1,14 +1,11 @@
-package io.seqera.wave
-
-import groovy.transform.Canonical
-import groovy.transform.ToString
-import io.seqera.wave.service.ContainerRequestData
-import io.seqera.wave.service.ContainerTokenService
-import io.seqera.wave.util.Base32
+package io.seqera.wave.core
 
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
+import groovy.transform.CompileStatic
+import io.seqera.wave.service.ContainerTokenService
+import io.seqera.wave.util.Base32
 import jakarta.inject.Singleton
 
 /**
@@ -17,11 +14,12 @@ import jakarta.inject.Singleton
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Singleton
+@CompileStatic
 class RouteHelper {
 
     public static Pattern ROUTE_PATHS = ~'/v2(?:/tw|/wt)?/([a-z0-9][a-z0-9_.-]+(?:/[a-z0-9][a-z0-9_.-]+)?(?:/[a-zA-Z0-9][a-zA-Z0-9_.-]+)*)/(manifests|blobs)/(.+)'
 
-    public static Route NOT_FOUND = Route.empty()
+    public static RoutePath NOT_FOUND = RoutePath.empty()
 
     private ContainerTokenService tokenService
 
@@ -29,31 +27,7 @@ class RouteHelper {
         this.tokenService = tokenService
     }
 
-    @Canonical
-    @ToString(includePackage = false, includeNames = true)
-    static class Route {
-        final String type
-        final String registry
-        final String image
-        final String reference
-        final String path
-        final ContainerRequestData request
-
-        boolean isManifest() { type=='manifests' }
-        boolean isBlob() { type=='blobs' }
-        boolean isTag() { reference && !isDigest() }
-        boolean isDigest() { reference && reference.startsWith('sha256:') }
-
-        static Route v2path(String type, String registry, String image, String ref, ContainerRequestData request=null) {
-            new Route(type, registry, image, ref, "/v2/$image/$type/$ref", request)
-        }
-
-        static Route empty() {
-            new Route(null, null, null, null, null, null)
-        }
-    }
-
-    Route parse(String path) {
+    RoutePath parse(String path) {
         Matcher matcher = ROUTE_PATHS.matcher(path)
         if( !matcher.matches() )
             return NOT_FOUND
@@ -77,7 +51,7 @@ class RouteHelper {
             // compose the target request path in such a way that
             // - the 'registry' name is taken from the request associated to the token
             // - the 'reference' from the current request
-            return Route.v2path(type, coords.registry, coords.image, reference, request)
+            return RoutePath.v2path(type, coords.registry, coords.image, reference, request)
         }
 
         final String image
@@ -95,7 +69,7 @@ class RouteHelper {
         registry = coordinates[0].contains('.') ? coordinates.pop() : null
         image = coordinates.join('/')
 
-        return Route.v2path(type, registry, image, reference)
+        return RoutePath.v2path(type, registry, image, reference)
     }
 
     private String normImage(String image) {

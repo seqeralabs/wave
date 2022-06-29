@@ -12,16 +12,7 @@ netty:
 ---
 wave:
   arch: 'x86_64'
----
-datasources:
-  default:
-    url: "${TOWER_DB_URL}"
-    driverClassName: "${TOWER_DB_DRIVER}"
-    username: "${TOWER_DB_USER}"
-    password: "${TOWER_DB_PASSWORD}"
-    dialect: H2
----
-tower:
-  crypto:
-    secretKey: "${TOWER_CRYPTO_SECRETKEY}"
+  allowAnonymous: true
+  server:
+      url: 'https://reg.ngrok.io'
 ...

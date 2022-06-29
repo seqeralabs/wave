@@ -1,15 +1,14 @@
 package io.seqera.wave.storage
 
-import java.nio.file.Files
-import java.nio.file.Path
+
 import java.util.concurrent.TimeUnit
 
 import com.google.common.cache.Cache
+import com.google.common.cache.CacheBuilder
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.wave.storage.reader.ContentReader
 import jakarta.inject.Singleton
-import com.google.common.cache.CacheBuilder
-
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  * */
@@ -53,8 +52,8 @@ class MemoryStorage implements Storage {
     }
 
     @Override
-    DigestStore saveBlob(String path, Path content, String type, String digest) {
-        log.debug "Save Blob [size: ${Files.size(content)}] ==> $path"
+    DigestStore saveBlob(String path, ContentReader content, String type, String digest) {
+        log.debug "Save Blob ==> $path"
         final result = new LazyDigestStore(content, type, digest);
         cache.put(path, result)
         return result

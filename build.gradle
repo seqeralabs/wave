@@ -26,8 +26,6 @@ repositories {
     maven { url = 'https://s3-eu-west-1.amazonaws.com/maven.seqera.io/snapshots' }
 }
 
-compileGroovy.groovyOptions.configurationScript = file('gradle/config/groovyc.groovy')
-
 dependencies {
     annotationProcessor("io.micronaut:micronaut-http-validation")
     compileOnly("io.micronaut.data:micronaut-data-processor")
