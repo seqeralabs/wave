@@ -14,4 +14,4 @@ exec java \
   --add-opens=java.base/java.util=ALL-UNNAMED \
   ${WAVE_JVM_OPTS} \
   -cp /app/resources:/app/classes:/app/libs/* \
-  io.seqera.Application
+  io.seqera.wave.Application
