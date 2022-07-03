@@ -2,7 +2,7 @@ package io.seqera.wave.service
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
-import io.seqera.wave.model.ContainerConfig
+import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.model.ContainerCoordinates
 /**
  * Model a container request

@@ -4,8 +4,8 @@ import groovy.util.logging.Slf4j
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
-import io.seqera.wave.exchange.ServiceInfo
-import io.seqera.wave.exchange.ServiceInfoResponse
+import io.seqera.wave.api.ServiceInfo
+import io.seqera.wave.api.ServiceInfoResponse
 import io.seqera.wave.util.BuildInfo
 
 /**

@@ -1,7 +1,6 @@
-package io.seqera.wave.exchange
+package io.seqera.wave.api
 
 import groovy.transform.CompileStatic
-import io.seqera.wave.model.ContainerConfig
 /**
  * Model a request for an augmented container
  *

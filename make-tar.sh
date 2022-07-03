@@ -20,7 +20,7 @@ mkdir -p $(dirname $LAYER_TAR)
 $TAR --preserve-permissions --owner=0 --group=0 -vcf $LAYER_TAR -C $LATER_DIR $(ls $LATER_DIR)
 CHECKSUM_TAR=$(< $LAYER_TAR sha256sum | awk '{ print $1 }')
 
-# compress the TAR file, not `-n` to prevent adding timestamp
+# compress the TAR file, with `-n` to prevent adding timestamp
 # in the header metadata which will cause the inconsistent hashing
 gzip -k -n --suffix .gzip $LAYER_TAR
 CHECKSUM_GZIP=$(< $LAYER_GZIP sha256sum | awk '{ print $1 }')

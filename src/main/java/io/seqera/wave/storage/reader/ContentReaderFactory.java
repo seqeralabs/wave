@@ -18,6 +18,9 @@ public class ContentReaderFactory {
             return new PathContentReader(Paths.get(location));
         if( location.startsWith("http://") || location.startsWith("https://"))
             return new HttpContentReader(location);
+        if( location.startsWith("data:") ) {
+            return new DataContentReader(location.substring(5));
+        }
         throw new IllegalArgumentException("Unsupported content location: " + location);
     }
 

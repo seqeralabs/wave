@@ -7,9 +7,9 @@ import groovy.json.JsonSlurper
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.seqera.wave.model.ContainerConfig
+import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.model.ContentType
-import io.seqera.wave.model.Layer
+import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.model.LayerConfig
 import io.seqera.wave.proxy.InvalidResponseException
 import io.seqera.wave.proxy.ProxyClient
@@ -57,8 +57,8 @@ class ContainerScanner {
 
     ContainerScanner withContainerConfig(ContainerConfig containerConfig) {
         this.containerConfig = containerConfig
-        final l = containerConfig?.layers ?: Collections.<Layer>emptyList()
-        for( Layer it : l )
+        final l = containerConfig?.layers ?: Collections.<ContainerLayer>emptyList()
+        for( ContainerLayer it : l )
             it.validate()
         return this
     }
@@ -180,7 +180,7 @@ class ContainerScanner {
         return result
     }
 
-    synchronized protected Map layerBlob(String image, Layer layer) {
+    synchronized protected Map layerBlob(String image, ContainerLayer layer) {
         log.debug "Adding layer: $layer to image: $image"
         // store the layer blob in the cache
         final type = "application/vnd.docker.image.rootfs.diff.tar.gzip"
@@ -233,7 +233,7 @@ class ContainerScanner {
         final manifest = (Map) new JsonSlurper().parseText(imageManifest)
         final layers = (manifest.layers as List)
 
-        for( Layer it : containerConfig.layers ) {
+        for( ContainerLayer it : containerConfig.layers ) {
             // get the layer blob
             final newLayer= layerBlob(imageName, it)
             layers.add( newLayer )
@@ -304,7 +304,7 @@ class ContainerScanner {
         final rootfs = manifest.rootfs as Map
         final layers = rootfs.diff_ids as List
 
-        for( Layer it : containerConfig.layers ) {
+        for( ContainerLayer it : containerConfig.layers ) {
             layers.add( it.tarDigest )
         }
 
@@ -360,7 +360,7 @@ class ContainerScanner {
     protected void rewriteLayersV1(String imageName, List<Map> fsLayers){
         assert fsLayers.size()
 
-        for( Layer it : containerConfig.layers ) {
+        for( ContainerLayer it : containerConfig.layers ) {
             final blob = layerBlob(imageName, it)
             final newLayer= [blobSum: blob.digest]
             fsLayers.add(0, newLayer)

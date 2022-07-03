@@ -1,7 +1,5 @@
 package io.seqera.wave.util;
 
-import com.google.common.io.BaseEncoding;
-
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -13,6 +11,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Random;
 
+import com.google.common.io.BaseEncoding;
+
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  **/
@@ -20,12 +20,10 @@ public class DigestFunctions {
 
     final private static char PADDING = '_';
     final private static BaseEncoding BASE32 = BaseEncoding.base32() .withPadChar(PADDING);
-    private static MessageDigest SHA256;
 
     private static MessageDigest getSha256() throws NoSuchAlgorithmException {
-        if( SHA256 == null)
-            SHA256 = MessageDigest.getInstance("SHA-256");
-        return SHA256;
+        // warning: MessageDigest instance is not thread safe!
+        return MessageDigest.getInstance("SHA-256");
     }
 
     public static String bytesToHex(byte[] bytes) {

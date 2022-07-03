@@ -1,13 +1,15 @@
 package io.seqera.wave.controller
 
+import javax.annotation.PostConstruct
+
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Post
-import io.seqera.wave.exchange.SubmitContainerTokenRequest
-import io.seqera.wave.exchange.SubmitContainerTokenResponse
+import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.ContainerTokenService
@@ -33,6 +35,11 @@ class ContainerTokenController {
     @Inject
     @Value('${wave.server.url}')
     String serverUrl
+
+    @PostConstruct
+    private void init() {
+        log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous"
+    }
 
     @Post
     HttpResponse<SubmitContainerTokenResponse> getToken(SubmitContainerTokenRequest req) {

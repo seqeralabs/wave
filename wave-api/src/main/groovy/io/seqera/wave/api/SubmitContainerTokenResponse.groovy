@@ -1,4 +1,4 @@
-package io.seqera.wave.exchange
+package io.seqera.wave.api
 
 import groovy.transform.CompileStatic
 

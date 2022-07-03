@@ -1,0 +1,16 @@
+plugins {
+    id 'io.seqera.wave.groovy-library-conventions'
+    id 'groovy'
+}
+
+dependencies {
+    implementation "org.codehaus.groovy:groovy:3.0.10"
+    implementation "org.codehaus.groovy:groovy-nio:3.0.10"
+}
+
+java {
+    sourceCompatibility = JavaVersion.toVersion("11")
+    targetCompatibility = JavaVersion.toVersion("11")
+}
+
+group = 'io.seqera'

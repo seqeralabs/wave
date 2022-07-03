@@ -7,6 +7,8 @@ import groovy.json.JsonSlurper
 import groovy.transform.CompileStatic
 import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
+import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.ContainerLayer
 
 /**
  * Model the settings to be injected into the pulled container
@@ -25,10 +27,10 @@ class LayerConfig {
     LayerMeta append
 
     /**
-     * Convert layer layer config format to new {@link ContainerConfig}
+     * Convert layer layer config format to new {@link io.seqera.wave.api.ContainerConfig}
      *
      * @param path The location path of the layer config file
-     * @return An instance of {@link ContainerConfig}
+     * @return An instance of {@link io.seqera.wave.api.ContainerConfig}
      */
     @Memoized
     static ContainerConfig containerConfigAdapter(Path path) {
@@ -39,7 +41,7 @@ class LayerConfig {
         }
 
         final layerConfig = createConfig(layerConfigPath)
-        final layers = new ArrayList<Layer>(1)
+        final layers = new ArrayList<ContainerLayer>(1)
         if( layerConfig.append )
             layers.add(layerConfig.append.toNewLayer())
 

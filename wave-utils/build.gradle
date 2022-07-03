@@ -1,0 +1,10 @@
+plugins {
+    id 'io.seqera.wave.groovy-library-conventions'
+}
+
+dependencies {
+    implementation 'com.google.guava:guava:24.1.1-jre'
+}
+
+group = 'io.seqera'
+version = '0.1.0'

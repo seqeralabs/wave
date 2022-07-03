@@ -1,4 +1,4 @@
-package io.seqera.wave.model
+package io.seqera.wave.api
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
@@ -19,5 +19,5 @@ class ContainerConfig {
     List<String> env
     String workingDir
 
-    List<Layer> layers
+    List<ContainerLayer> layers
 }

@@ -1,4 +1,4 @@
-package io.seqera.wave.model
+package io.seqera.wave.api
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
@@ -10,7 +10,7 @@ import groovy.transform.CompileStatic
  */
 @Canonical
 @CompileStatic
-class Layer {
+class ContainerLayer {
     String location
     String gzipDigest
     Integer gzipSize

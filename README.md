@@ -111,13 +111,21 @@ curl \
 
 ### Container token
   
-Acquire a container token  
+Acquire a container token:  
 ```
 curl \
   -H "Content-Type: application/json" \
   -X POST http://localhost:9090/container-token \
   -d '{"containerImage":"quay.io/nextflow/bash:latest", "towerAccessToken":"eyJ0aWQiOiAxfS40ZGE4ZDBmMTQ3YzliMWJkOGVkMDNlYjY1ZWRiZmU1OWQxZjEyZGU3", "towerWorkspaceId": null}' 
 ```
+
+```
+curl \
+  -H "Content-Type: application/json" \
+  -X POST http://reg.ngrok.io/container-token \
+  -d @container-request.json 
+```
+
 
 Pull the container using the resulting token 
 

@@ -3,6 +3,9 @@ package io.seqera.wave.model
 
 import java.nio.file.Path
 import java.nio.file.Paths
+
+import io.seqera.wave.api.ContainerLayer
+
 /**
  * Model meta info properties of layer to be added to the container image
  *
@@ -38,8 +41,8 @@ class LayerMeta {
         return this
     }
 
-    Layer toNewLayer() {
-        new Layer(
+    ContainerLayer toNewLayer() {
+        new ContainerLayer(
                 getLocationPath().toString(),
                 gzipDigest,
                 gzipSize,
