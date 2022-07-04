@@ -12,7 +12,7 @@ import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.model.ContainerCoordinates
-import io.seqera.wave.service.build.ContainerBuildService
+import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.ContainerTokenService
 import io.seqera.wave.service.UserService

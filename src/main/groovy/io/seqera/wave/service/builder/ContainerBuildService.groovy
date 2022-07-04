@@ -1,6 +1,7 @@
-package io.seqera.wave.service.build
+package io.seqera.wave.service.builder
 
 /**
+ * Declare container build service interface
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

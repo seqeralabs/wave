@@ -1,9 +1,10 @@
-package io.seqera.wave.service.build
+package io.seqera.wave.service.builder
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 
 /**
+ * Model a container builder request
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

@@ -6,9 +6,10 @@ import spock.lang.Specification
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Value
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.auth.SimpleRegistryCredentials
-import io.seqera.wave.auth.RegistryCredentialsProvider
+import io.seqera.wave.auth.RegistryAuth
 import io.seqera.wave.auth.RegistryAuthService
+import io.seqera.wave.auth.RegistryCredentials
+import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.test.DockerRegistryContainer
@@ -61,12 +62,13 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
         given:
         def IMAGE = 'biocontainers/fastqc'
         def registry = lookupService.lookup('quay.io')
+        def creds = [quayUsername, quayPassword] as RegistryCredentials
         and:
         def proxy = new ProxyClient()
                 .withImage(IMAGE)
                 .withRegistry(registry)
                 .withLoginService(loginService)
-                .withCredentials(new SimpleRegistryCredentials(quayUsername, quayPassword))
+                .withCredentials(creds)
 
         when:
         def resp1 = proxy.getString('/v2/biocontainers/fastqc/blobs/sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4')
@@ -75,4 +77,34 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
         resp1.statusCode() == 200
     }
 
+    def 'should lookup aws registry' () {
+
+        when:
+        def registry = lookupService.lookup('195996028523.dkr.ecr.eu-west-1.amazonaws.com')
+        then:
+        registry.name == '195996028523.dkr.ecr.eu-west-1.amazonaws.com'
+        registry.host == new URI('https://195996028523.dkr.ecr.eu-west-1.amazonaws.com')
+        registry.auth.realm == new URI('https://195996028523.dkr.ecr.eu-west-1.amazonaws.com/')
+        registry.auth.service == 'ecr.amazonaws.com'
+        registry.auth.type == RegistryAuth.Type.Basic
+    }
+
+    def 'should call target manifest on amazon' () {
+        given:
+        def IMAGE = 'wave/kaniko'
+        def REG = '195996028523.dkr.ecr.eu-west-1.amazonaws.com'
+        def registry = lookupService.lookup(REG)
+        def creds = credentialsProvider.getCredentials(REG)
+        and:
+        def proxy = new ProxyClient()
+                .withImage(IMAGE)
+                .withRegistry(registry)
+                .withLoginService(loginService)
+                .withCredentials(creds)
+
+        when:
+        def resp = proxy.getString("/v2/$IMAGE/manifests/0.1.0")
+        then:
+        resp.statusCode() == 200
+    }
 }

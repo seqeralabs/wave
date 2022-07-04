@@ -1,6 +1,7 @@
-package io.seqera.wave.service.build
+package io.seqera.wave.service.builder
 
 /**
+ * Model a container image build status
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

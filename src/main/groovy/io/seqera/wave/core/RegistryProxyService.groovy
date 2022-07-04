@@ -1,6 +1,5 @@
 package io.seqera.wave.core
 
-
 import java.nio.file.Path
 import javax.validation.constraints.NotBlank
 
@@ -11,9 +10,9 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
+import io.seqera.wave.auth.RegistryCredentialsFactory
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
-import io.seqera.wave.auth.SimpleRegistryCredentials
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.service.CredentialsService
 import io.seqera.wave.storage.DigestStore
@@ -56,6 +55,9 @@ class RegistryProxyService {
     @Inject
     private RegistryAuthService loginService
 
+    @Inject
+    private RegistryCredentialsFactory credentialsFactory
+
     private ContainerScanner scanner(ProxyClient proxyClient) {
         return new ContainerScanner()
                 .withArch(arch)
@@ -83,7 +85,7 @@ class RegistryProxyService {
             final result = credentialsService.findRegistryCreds(route.registry, req.userId, req.workspaceId)
             log.debug "Credentials for container image: $req.containerImage; userId=$req.userId; workspaceId=$req.workspaceId => userName=${result?.userName}; password=${result?.password}"
             return result
-                    ? new SimpleRegistryCredentials(result.userName, result.password)
+                    ? credentialsFactory.create(route.registry, result.userName, result.password)
                     : null
         }
         else

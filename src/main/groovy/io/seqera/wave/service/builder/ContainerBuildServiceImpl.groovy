@@ -1,4 +1,4 @@
-package io.seqera.wave.service.build
+package io.seqera.wave.service.builder
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -18,6 +18,7 @@ import jakarta.inject.Singleton
 import static java.nio.file.StandardOpenOption.APPEND
 import static java.nio.file.StandardOpenOption.CREATE
 /**
+ * Implements container build service
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

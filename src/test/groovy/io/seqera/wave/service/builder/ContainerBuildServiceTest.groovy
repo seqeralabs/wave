@@ -1,4 +1,4 @@
-package io.seqera.wave.service.build
+package io.seqera.wave.service.builder
 
 import spock.lang.Specification
 

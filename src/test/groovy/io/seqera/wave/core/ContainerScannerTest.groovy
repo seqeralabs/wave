@@ -13,8 +13,8 @@ import groovy.json.JsonSlurper
 import io.micronaut.context.annotation.Value
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.auth.RegistryAuthService
+import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryLookupService
-import io.seqera.wave.auth.SimpleRegistryCredentials
 import io.seqera.wave.core.ContainerScanner
 import io.seqera.wave.model.ContentType
 import io.seqera.wave.proxy.ProxyClient
@@ -569,7 +569,7 @@ class ContainerScannerTest extends Specification {
         given:
         def IMAGE = 'library/busybox'
         def registry = lookupService.lookup('docker.io')
-        def creds = new SimpleRegistryCredentials(dockerUsername, dockerPassword)
+        def creds = [dockerUsername, dockerPassword] as RegistryCredentials
         and:
 
         def client = new ProxyClient()
@@ -602,7 +602,7 @@ class ContainerScannerTest extends Specification {
         def IMAGE = 'biocontainers/fastqc'
         def TAG = "0.11.9--0"
         def registry = lookupService.lookup('quay.io')
-        def creds = new SimpleRegistryCredentials(quayUsername, quayPassword)
+        def creds = [quayUsername, quayPassword] as RegistryCredentials
         and:
 
         def client = new ProxyClient()

@@ -20,6 +20,9 @@ wave:
     quay:
       username: "pditommaso"
       password: "SVO9GmXzeDJfB3Ba7PDSN90Pv7ggvzIGjYNT7QD4Ol05riiSuWu+ioBWiPIYd39v"
+    amazon:
+      username: "${AWS_ACCESS_KEY_ID}"
+      password: "${AWS_SECRET_ACCESS_KEY}"
 ---
 tower:
   crypto :

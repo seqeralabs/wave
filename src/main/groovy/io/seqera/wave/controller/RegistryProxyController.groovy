@@ -12,7 +12,7 @@ import io.micronaut.http.hateoas.JsonError
 import io.micronaut.http.hateoas.Link
 import io.micronaut.http.server.types.files.StreamedFile
 import io.seqera.wave.core.RoutePath
-import io.seqera.wave.service.build.ContainerBuildService
+import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.core.RouteHelper

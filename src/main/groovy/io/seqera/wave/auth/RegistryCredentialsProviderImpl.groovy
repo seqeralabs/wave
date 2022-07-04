@@ -4,7 +4,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
-import io.seqera.wave.auth.aws.AwsRegistryCredentialsProvider
+import io.seqera.wave.service.aws.AwsEcrService
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -49,7 +49,7 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
     private String awsSecretKey
 
     @Inject
-    private AwsRegistryCredentialsProvider awsProvider
+    private RegistryCredentialsFactory credentialsFactory
 
     /**
      * Find the corresponding credentials for the specified registry
@@ -65,23 +65,21 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
 
         if( !registry || registry == 'docker.io' ) {
             if( dockerUsername && dockerPassword ) {
-                return new SimpleRegistryCredentials(dockerUsername, dockerPassword)
+                return credentialsFactory.create('docker.io', dockerUsername, dockerPassword)
             }
         }
         else if( registry == 'quay.io' ) {
             if( quayUsername && quayPassword ) {
-                return new SimpleRegistryCredentials(quayUsername, quayPassword)
+                return credentialsFactory.create(registry, quayUsername, quayPassword)
             }
         }
-        else if( registry.endsWith('.amazonaws.com') ) {
+        else if( AwsEcrService.isEcrHost(registry) ) {
             if( awsAccessKey && awsSecretKey ) {
-                return awsProvider.getAwsCredentials(awsAccessKey, awsSecretKey, 'eu-west-1')
+                return credentialsFactory.create(registry, awsAccessKey, awsSecretKey)
             }
         }
         log.debug "Unable to find credentials for registry '$registry'"
         return null
     }
-
-
 
 }

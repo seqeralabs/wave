@@ -1,4 +1,4 @@
-package io.seqera.wave.service.build
+package io.seqera.wave.service.builder
 
 import java.nio.file.Path
 import java.util.concurrent.Future
@@ -8,6 +8,7 @@ import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import io.seqera.wave.util.DigestFunctions
 /**
+ * Model a container builder result
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
