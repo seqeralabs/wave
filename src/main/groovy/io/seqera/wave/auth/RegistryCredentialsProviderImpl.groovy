@@ -4,6 +4,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.seqera.wave.auth.aws.AwsRegistryCredentialsProvider
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -37,6 +38,19 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
     @Value('${wave.registries.quay.password}')
     private String quayPassword
 
+    @Inject
+    @Nullable
+    @Value('${wave.registries.amazon.username}')
+    private String awsAccessKey
+
+    @Inject
+    @Nullable
+    @Value('${wave.registries.amazon.password}')
+    private String awsSecretKey
+
+    @Inject
+    private AwsRegistryCredentialsProvider awsProvider
+
     /**
      * Find the corresponding credentials for the specified registry
      *
@@ -59,7 +73,15 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
                 return new SimpleRegistryCredentials(quayUsername, quayPassword)
             }
         }
+        else if( registry.endsWith('.amazonaws.com') ) {
+            if( awsAccessKey && awsSecretKey ) {
+                return awsProvider.getAwsCredentials(awsAccessKey, awsSecretKey, 'eu-west-1')
+            }
+        }
         log.debug "Unable to find credentials for registry '$registry'"
         return null
     }
+
+
+
 }
