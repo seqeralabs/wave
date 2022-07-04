@@ -119,20 +119,51 @@ curl \
   -d '{"containerImage":"quay.io/nextflow/bash:latest", "towerAccessToken":"eyJ0aWQiOiAxfS40ZGE4ZDBmMTQ3YzliMWJkOGVkMDNlYjY1ZWRiZmU1OWQxZjEyZGU3", "towerWorkspaceId": null}' 
 ```
 
+Example payload: 
+
+```
+cat <<EOT > container-request.json
+{
+  "containerImage":"quay.io/nextflow/bash:latest",
+  "containerConfig": {
+    "layers": [
+      {
+        "location": "https://s3.eu-west-1.amazonaws.com/nf-tower.dev/wave-layer.tar.gzip",
+        "gzipDigest": "sha256:e9d6f29eecde29c12f0d32a1bc81aa9f4fcb76f8d813b8f1a37e8af5ee6b7657",
+        "gzipSize": 13219265,
+        "tarDigest": "sha256:2648cf125a9a4c4c5c9a2d3799b3a57983b5297442d7995746273c615bc4e316"
+      }
+    ]
+  }
+}
+EOT
+```
+
+Example request: 
+
 ```
 curl \
   -H "Content-Type: application/json" \
-  -X POST http://reg.ngrok.io/container-token \
+  -X POST https://reg.staging-tower.xyz/container-token \
   -d @container-request.json 
 ```
 
+Example response:
 
-Pull the container using the resulting token 
+```
+{
+  "containerToken": "bbc389039bf0",
+  "targetImage": "reg.staging-tower.xyz/wt/bbc389039bf0/nextflow/bash:latest"
+}
+```
+
+
+Example container run using the resulting token: 
 
 ```
 docker run \
   --rm \
   --platform linux/amd64 \
-  reg.ngrok.io/wt/<TOKEN>/nextflow/bash:latest \
+  reg.staging-tower.xyz/wt/<TOKEN>/nextflow/bash:latest \
   cat foo.txt 
 ```
