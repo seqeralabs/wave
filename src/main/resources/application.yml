@@ -14,5 +14,5 @@ wave:
   arch: 'x86_64'
   allowAnonymous: true
   server:
-      url: 'https://reg.ngrok.io'
+      url: "${WAVE_ENDPOINT:`https://reg.ngrok.io`}"
 ...
