@@ -14,7 +14,7 @@ import java.util.zip.InflaterInputStream;
 public class ZipUtils {
 
     public static byte[] compress(InputStream stream) {
-        try (stream) {
+        try {
             return new DeflaterInputStream(stream).readAllBytes();
         }
         catch (IOException e) {

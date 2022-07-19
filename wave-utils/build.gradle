@@ -5,6 +5,9 @@ plugins {
 dependencies {
     implementation 'com.google.guava:guava:24.1.1-jre'
 }
-
+java {
+    sourceCompatibility = JavaVersion.toVersion("1.8")
+    targetCompatibility = JavaVersion.toVersion("1.8")
+}
 group = 'io.seqera'
 version = '0.1.0'
