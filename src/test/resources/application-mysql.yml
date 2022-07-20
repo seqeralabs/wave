@@ -1,0 +1,8 @@
+datasources:
+  default:
+    url: jdbc:tc:mysql://localhost/test
+    driverClassName: org.testcontainers.jdbc.ContainerDatabaseDriver
+    username: test
+    password: test
+    dialect: MYSQL
+    schema-generate: CREATE_DROP

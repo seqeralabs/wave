@@ -20,7 +20,7 @@ import jakarta.inject.Inject
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@MicronautTest(environments = ['tower','test'])
+@MicronautTest(environments = ['tower','test', 'mysql'])
 class CredentialsServiceTest extends Specification {
 
     @Inject CredentialsService credentialsService

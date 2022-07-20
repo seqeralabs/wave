@@ -1,4 +1,4 @@
-package io.seqera.wave.tower
+package io.seqera.wave.tower.h2
 
 import io.seqera.wave.tower.Credentials
 import io.seqera.wave.tower.CredentialsDao
@@ -14,8 +14,8 @@ import jakarta.inject.Inject
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@MicronautTest
-class CredentialsDaoTest extends Specification {
+@MicronautTest(environments = 'h2')
+class H2CredentialsDaoTest extends Specification {
 
     @Inject UserDao userDao
     @Inject CredentialsDao credentialsDao
