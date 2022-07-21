@@ -6,6 +6,8 @@ import io.micronaut.data.model.query.builder.sql.Dialect
 import io.seqera.wave.tower.AccessTokenDao
 
 /**
+ * MySQL Data repository for {@link io.seqera.wave.tower.AccessToken} entity
+ *
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */

@@ -6,7 +6,7 @@ import io.micronaut.data.model.query.builder.sql.Dialect
 import io.seqera.wave.tower.UserDao
 
 /**
- * Data repository for {@link io.seqera.wave.tower.User} entity
+ * MySQL Data repository for {@link io.seqera.wave.tower.User} entity
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

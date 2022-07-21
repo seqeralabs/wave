@@ -49,14 +49,14 @@ dependencies {
     implementation 'org.apache.commons:commons-compress:1.21'
 
     runtimeOnly("com.h2database:h2")
-    runtimeOnly 'mysql:mysql-connector-java:8.0.16'
+    runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
     implementation("io.micronaut.sql:micronaut-jdbc-hikari")
 
     implementation("ch.qos.logback:logback-classic")
     runtimeOnly("io.netty:netty-tcnative-boringssl-static:2.0.0.Final")
     testImplementation "org.apache.commons:commons-compress:1.21"
     testImplementation("org.testcontainers:testcontainers")
-    testImplementation("org.testcontainers:mysql:1.17.3")
+    testImplementation("org.testcontainers:mariadb:1.17.3")
 
     // --
     runtimeOnly("ch.qos.logback:logback-classic")

@@ -9,7 +9,7 @@ import io.seqera.wave.tower.Credentials
 import io.seqera.wave.tower.CredentialsDao
 
 /**
- * Data repository for {@link Credentials} entity
+ * MySQL Data repository for {@link Credentials} entity
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

@@ -1,6 +1,6 @@
 datasources:
   default:
-    url: jdbc:tc:mysql://localhost/test
+    url: jdbc:tc:mariadb://localhost/test
     driverClassName: org.testcontainers.jdbc.ContainerDatabaseDriver
     username: test
     password: test

@@ -8,7 +8,7 @@ import io.seqera.wave.tower.Secret
 import io.seqera.wave.tower.SecretDao
 
 /**
- * Data repository for {@link io.seqera.wave.tower.Secret} entity
+ * H2 Data repository for {@link io.seqera.wave.tower.Secret} entity
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
