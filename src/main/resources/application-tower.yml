@@ -5,7 +5,7 @@ datasources:
     driverClassName: "${TOWER_DB_DRIVER}"
     username: "${TOWER_DB_USER}"
     password: "${TOWER_DB_PASSWORD}"
-    dialect: H2
+    dialect: "${TOWER_DB_DIALECT}"
 ---
 tower:
   crypto:

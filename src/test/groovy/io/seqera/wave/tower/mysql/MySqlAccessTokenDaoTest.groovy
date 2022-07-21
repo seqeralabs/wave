@@ -1,21 +1,21 @@
-package io.seqera.wave.tower
+package io.seqera.wave.tower.mysql
 
-import io.seqera.wave.tower.AccessToken
-import io.seqera.wave.tower.AccessTokenDao
-import io.seqera.wave.tower.User
-import io.seqera.wave.tower.UserDao
 import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.tower.AccessToken
+import io.seqera.wave.tower.AccessTokenDao
+import io.seqera.wave.tower.User
+import io.seqera.wave.tower.UserDao
 import jakarta.inject.Inject
 
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@MicronautTest
-class AccessTokenDaoTest extends Specification {
+@MicronautTest(environments = 'mysql')
+class MySqlAccessTokenDaoTest extends Specification {
 
     @Inject @Shared UserDao userDao
     @Inject @Shared AccessTokenDao accessTokenDao

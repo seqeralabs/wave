@@ -1,19 +1,19 @@
-package io.seqera.wave.tower
+package io.seqera.wave.tower.mysql
 
-import io.seqera.wave.tower.User
-import io.seqera.wave.tower.UserDao
 import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.tower.User
+import io.seqera.wave.tower.UserDao
 import jakarta.inject.Inject
 
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@MicronautTest
-class UserDaoTest extends Specification{
+@MicronautTest(environments = 'mysql')
+class MySqlUserDaoTest extends Specification{
 
     @Inject @Shared UserDao userDao
 

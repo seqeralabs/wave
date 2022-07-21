@@ -9,7 +9,6 @@ import io.micronaut.data.repository.CrudRepository
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@JdbcRepository(dialect = Dialect.H2)
 interface SecretDao extends CrudRepository<Secret, String> {
 
 }
