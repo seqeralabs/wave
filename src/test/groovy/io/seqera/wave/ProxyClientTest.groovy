@@ -1,5 +1,6 @@
 package io.seqera.wave
 
+import spock.lang.Requires
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -69,7 +70,6 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
     }
 
     def 'should lookup aws registry' () {
-
         when:
         def registry = lookupService.lookup('195996028523.dkr.ecr.eu-west-1.amazonaws.com')
         then:
@@ -80,6 +80,7 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
         registry.auth.type == RegistryAuth.Type.Basic
     }
 
+    @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
     def 'should call target manifest on amazon' () {
         given:
         def IMAGE = 'wave/kaniko'
@@ -98,4 +99,5 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
         then:
         resp.statusCode() == 200
     }
+    
 }

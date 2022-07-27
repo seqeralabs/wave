@@ -1,5 +1,6 @@
 package io.seqera.wave.service.builder
 
+import spock.lang.Requires
 import spock.lang.Specification
 
 import java.nio.file.Files
@@ -69,6 +70,7 @@ class ContainerBuildServiceTest extends Specification {
         ]
     }
 
+    @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
     def 'should build & push container' () {
         given:
         def folder = Files.createTempDirectory('test')

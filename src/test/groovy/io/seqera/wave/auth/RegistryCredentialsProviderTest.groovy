@@ -71,7 +71,6 @@ class RegistryCredentialsProviderTest extends Specification {
         creds.password.size() > 0
     }
 
-
     def 'should not find creds' () {
         expect:
         credentialsProvider.getCredentials('foo') == null
