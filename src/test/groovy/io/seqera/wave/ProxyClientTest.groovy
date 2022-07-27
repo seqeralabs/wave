@@ -4,11 +4,9 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
-import io.micronaut.context.annotation.Value
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.auth.RegistryAuth
 import io.seqera.wave.auth.RegistryAuthService
-import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.proxy.ProxyClient
@@ -24,14 +22,6 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
     @Inject
     @Shared
     ApplicationContext applicationContext
-
-    @Shared
-    @Value('${wave.registries.quay.username}')
-    String quayUsername
-
-    @Shared
-    @Value('${wave.registries.quay.password}')
-    String quayPassword
 
     @Inject RegistryLookupService lookupService
     @Inject RegistryAuthService loginService
@@ -60,9 +50,10 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
 
     def 'should call target blob on quay' () {
         given:
+        def REG = 'quay.io'
         def IMAGE = 'biocontainers/fastqc'
-        def registry = lookupService.lookup('quay.io')
-        def creds = [quayUsername, quayPassword] as RegistryCredentials
+        def registry = lookupService.lookup(REG)
+        def creds = credentialsProvider.getCredentials(REG)
         and:
         def proxy = new ProxyClient()
                 .withImage(IMAGE)
