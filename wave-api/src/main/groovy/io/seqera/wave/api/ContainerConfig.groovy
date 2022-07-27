@@ -20,4 +20,11 @@ class ContainerConfig {
     String workingDir
 
     List<ContainerLayer> layers
+
+    /**
+     * Implements groovy truth for container config 
+     */
+    boolean asBoolean() {
+        return entrypoint || cmd || env || workingDir || workingDir || layers
+    }
 }
