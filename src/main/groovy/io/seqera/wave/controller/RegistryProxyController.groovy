@@ -113,6 +113,10 @@ class RegistryProxyController {
         }
 
         final entry = manifestForPath(route, httpRequest)
+        if( !entry ) {
+            log.warn "Unable to find cache manifest for $route"
+            return HttpResponse.notFound()
+        }
         return fromCache(entry)
     }
 

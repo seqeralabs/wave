@@ -65,7 +65,7 @@ class ContainerScanner {
 
     @Deprecated
     ContainerScanner withLayerConfig(Path json) {
-        containerConfig = LayerConfig.containerConfigAdapter(json)
+        containerConfig = json ? LayerConfig.containerConfigAdapter(json) : null
         return this
     }
 
@@ -73,12 +73,11 @@ class ContainerScanner {
         assert route, "Missing route"
         if( route.request?.containerConfig )
             this.containerConfig = route.request.containerConfig
-        resolve(route.image, route.reference, headers)
+        return resolve(route.image, route.reference, headers)
     }
 
     String resolve(String imageName, String tag, Map<String,List<String>> headers) {
         assert client, "Missing client"
-        assert containerConfig, "Missing container config"
         assert storage, "Missing storage"
         assert arch, "Missing 'arch' parameter"
 
@@ -96,6 +95,14 @@ class ContainerScanner {
             throw new InvalidResponseException("Unexpected response statusCode: ${resp2.statusCode()}", resp2)
         final manifestsList = resp2.body()
         log.debug "Image $imageName:$tag => type=$type; manifests list:\n${JsonOutput.prettyPrint(manifestsList)}"
+
+        // when there's no container config, not much to do
+        // just cache the manifest content and return the digest
+        if( !containerConfig ) {
+            log.info "No container config provided for image=$imageName:$tag"
+            storage.saveManifest("/v2/$imageName/manifests/$digest", manifestsList, type, digest.get())
+            return digest
+        }
 
         if( type == ContentType.DOCKER_MANIFEST_V1_JWS_TYPE ) {
             final v1Digest = resolveV1Manifest(manifestsList, imageName)

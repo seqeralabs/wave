@@ -35,8 +35,8 @@ class RegistryProxyService {
     @NotBlank
     private String arch
 
-    @Value('${wave.layerPath:`pack/layers/layer.json`}')
-    @NotBlank
+    @Nullable
+    @Value('${wave.layerPath}')
     private String layerPath
 
     @Inject
@@ -61,7 +61,7 @@ class RegistryProxyService {
     private ContainerScanner scanner(ProxyClient proxyClient) {
         return new ContainerScanner()
                 .withArch(arch)
-                .withLayerConfig(Path.of(layerPath))
+                .withLayerConfig(layerPath ? Path.of(layerPath) : null)
                 .withStorage(storage)
                 .withClient(proxyClient)
     }
@@ -100,8 +100,7 @@ class RegistryProxyService {
             throw new IllegalStateException("Missing digest for request: $route")
 
         final req = "/v2/$route.image/manifests/$digest"
-        final entry = storage.getManifest(req).orElseThrow( ()->
-                new IllegalStateException("Missing cached entry for request: $req"))
+        final entry = storage.getManifest(req).orElse(null)
         return entry
     }
 
@@ -112,8 +111,7 @@ class RegistryProxyService {
         new DelegateResponse(
                 statusCode: resp.statusCode(),
                 headers: resp.headers().map(),
-                body: resp.body()
-        )
+                body: resp.body() )
     }
 
     static class DelegateResponse {
