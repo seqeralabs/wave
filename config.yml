@@ -1,6 +1,7 @@
 ---
 wave:
   arch: "x86_64"
+  layerPath: "pack/layers/layer.json"
   registries:
     docker:
       username: "${DOCKER_USER}"

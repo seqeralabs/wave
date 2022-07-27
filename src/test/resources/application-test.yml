@@ -13,6 +13,7 @@ datasources:
     schema-generate: CREATE_DROP
 ---
 wave:
+  layerPath: "pack/layers/layer.json"
   registries:
     docker:
       username: "pditommaso"
