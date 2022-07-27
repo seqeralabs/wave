@@ -31,7 +31,7 @@ class ContainerBuildServiceTest extends Specification {
                 '-v', '/work/foo:/work/foo',
                 '-e', 'AWS_ACCESS_KEY_ID',
                 '-e', 'AWS_SECRET_ACCESS_KEY',
-                '195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave-base:0.1.0']
+                '195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/kaniko:0.1.0']
     }
 
     def 'should get kaniko command' () {
@@ -49,7 +49,7 @@ class ContainerBuildServiceTest extends Specification {
                 '-v', '/work/foo/7a3e00f5a5d41298cbb8b61ac280b7418f198677df8b330cae1602546d34c24d:/work/foo/7a3e00f5a5d41298cbb8b61ac280b7418f198677df8b330cae1602546d34c24d',
                 '-e', 'AWS_ACCESS_KEY_ID',
                 '-e', 'AWS_SECRET_ACCESS_KEY',
-                '195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave-base:0.1.0',
+                '195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/kaniko:0.1.0',
                 '/kaniko/executor',
                 '--dockerfile',
                 '/work/foo/7a3e00f5a5d41298cbb8b61ac280b7418f198677df8b330cae1602546d34c24d/Dockerfile',
@@ -72,7 +72,7 @@ class ContainerBuildServiceTest extends Specification {
     def 'should build & push container' () {
         given:
         def folder = Files.createTempDirectory('test')
-        def repo = '195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave-builder'
+        def repo = '195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build'
         and:
         def dockerfile = '''
         FROM busybox

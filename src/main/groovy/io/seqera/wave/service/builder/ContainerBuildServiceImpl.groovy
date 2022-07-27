@@ -139,10 +139,11 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             final proc = new ProcessBuilder()
                     .command(cmd)
                     .directory(req.workDir.toFile())
+                    .redirectErrorStream(true)
                     .start()
 
             final failed = proc.waitFor()
-            final err = proc.errorStream.text
+            final err = proc.inputStream.text
             log.debug "Build command: ${cmd.join(' ')}\n- completed with status=$failed\n- error: ${err}"
             return new BuildResult(failed, err)
         }

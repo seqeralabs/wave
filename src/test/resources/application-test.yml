@@ -13,8 +13,6 @@ datasources:
     schema-generate: CREATE_DROP
 ---
 wave:
-  build:
-    image: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave-base:0.1.0"
   registries:
     docker:
       username: "pditommaso"
