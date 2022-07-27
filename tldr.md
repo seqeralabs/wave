@@ -1,5 +1,5 @@
-# tower-reg
-Sandbox for tower container registry 
+# Wave
+Sandbox for Wave registry project 
 
 
 ### Reverse engineering of image pull 

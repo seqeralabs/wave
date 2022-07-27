@@ -10,7 +10,9 @@ import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Post
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.model.ContainerCoordinates
+import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.ContainerTokenService
 import io.seqera.wave.service.UserService
@@ -36,6 +38,9 @@ class ContainerTokenController {
     @Value('${wave.server.url}')
     String serverUrl
 
+    @Inject
+    ContainerBuildService buildService
+
     @PostConstruct
     private void init() {
         log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous"
@@ -47,18 +52,38 @@ class ContainerTokenController {
                 ? userService.getUserByAccessToken(req.towerAccessToken).id
                 : 0
         if( !userId && !allowAnonymous )
-            HttpResponse.badRequest()
+            throw new BadRequestException("Missing access token")
+
+        final data = makeRequestData(req, userId)
+        final token = tokenService.getToken(data)
+        final target = targetImage(token, data.containerImage)
+        final resp = new SubmitContainerTokenResponse(containerToken: token, targetImage: target)
+        HttpResponse.ok(resp)
+    }
+
+    ContainerRequestData makeRequestData(SubmitContainerTokenRequest req, Long userId) {
+        if( !req.containerImage && !req.containerFile )
+            throw new BadRequestException("Missing container image")
+
+        String targetImage
+        String targetContent
+        if( req.containerFile ) {
+            targetContent = new String(req.containerFile.decodeBase64())
+            targetImage = buildService.buildImage(targetContent)
+        }
+        else {
+            targetImage = req.containerImage
+            targetContent = null
+        }
 
         final data = new ContainerRequestData(
                 userId,
                 req.towerWorkspaceId,
-                req.containerImage,
-                req.containerFile,
+                targetImage,
+                targetContent,
                 req.containerConfig )
-        final token = tokenService.getToken(data)
-        final target = targetImage(token, req.containerImage)
-        final resp = new SubmitContainerTokenResponse(containerToken: token, targetImage: target)
-        HttpResponse.ok(resp)
+
+        return data
     }
 
     protected String targetImage(String token, String image) {

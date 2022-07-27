@@ -1,6 +1,7 @@
 ---
 wave:
-  arch: x86_64
+  arch: "x86_64"
+  layerPath: "pack/layers/layer.json"
   registries:
     docker:
       username: "${DOCKER_USER}"
@@ -8,4 +9,7 @@ wave:
     quay:
       username: "${QUAY_USER}"
       password: "${QUAY_PAT}"
+    amazon:
+      username : "${AWS_ACCESS_KEY_ID}"
+      password : "${AWS_SECRET_ACCESS_KEY}"
 ...

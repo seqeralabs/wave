@@ -12,6 +12,7 @@ import io.micronaut.http.hateoas.JsonError
 import io.micronaut.http.hateoas.Link
 import io.micronaut.http.server.types.files.StreamedFile
 import io.seqera.wave.core.RoutePath
+import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.core.RouteHelper
@@ -34,6 +35,7 @@ class RegistryProxyController {
     @Inject RegistryProxyService proxyService
     @Inject Storage storage
     @Inject RouteHelper routeHelper
+    @Inject ContainerBuildService containerBuildService
 
     @Error
     HttpResponse<JsonError> handleError(HttpRequest request, Throwable t){
@@ -55,6 +57,10 @@ class RegistryProxyController {
     MutableHttpResponse<?> handleGet(String url, HttpRequest httpRequest) {
         log.info "> Request [$httpRequest.method] $httpRequest.path"
         final route = routeHelper.parse("/v2/"+url)
+
+        // check if it's a container under build
+        final targetImage = route.request?.containerImage
+        final status = containerBuildService.waitImageBuild(targetImage)
 
         if( httpRequest.method == HttpMethod.HEAD )
             return handleHead(route, httpRequest)
@@ -107,6 +113,10 @@ class RegistryProxyController {
         }
 
         final entry = manifestForPath(route, httpRequest)
+        if( !entry ) {
+            log.warn "Unable to find cache manifest for $route"
+            return HttpResponse.notFound()
+        }
         return fromCache(entry)
     }
 

@@ -1,4 +1,4 @@
-# tower-reg 
+# Wave registry 
 
 Ephemeral container registry that injects 
 a custom payloads during an arbitrary image pull.
