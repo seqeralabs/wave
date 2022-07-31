@@ -15,10 +15,9 @@ wave:
   debug: true
   allowAnonymous: true
   server:
-      url: "${WAVE_ENDPOINT:`https://reg.ngrok.io`}"
+      url: "${WAVE_SERVER_URL:`https://reg.ngrok.io`}"
   build:
     image: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/kaniko:0.1.0"
-    dockerMode: true
     workspace: 'build-workspace'
     repository: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build"
 ...

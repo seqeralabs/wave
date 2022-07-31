@@ -120,7 +120,7 @@ jib {
 }
 
 run{
-    def args = ['-Dmicronaut.environments=dev']
+    def args = ['-Dmicronaut.environments=dev,h2']
     if( environment['JVM_OPTS'] ) args.add(environment['JVM_OPTS'])
     jvmArgs args
     systemProperties 'DOCKER_USER': project.findProperty('DOCKER_USER') ?: environment['DOCKER_USER'],

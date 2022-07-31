@@ -64,8 +64,8 @@ class ContainerScanner {
     }
 
     @Deprecated
-    ContainerScanner withLayerConfig(Path json) {
-        containerConfig = json ? LayerConfig.containerConfigAdapter(json) : null
+    ContainerScanner withLayerConfig(Path configPath) {
+        containerConfig = configPath ? LayerConfig.containerConfigAdapter(configPath) : null
         return this
     }
 
