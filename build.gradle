@@ -91,7 +91,7 @@ micronaut {
 //
 jib {
     from {
-        image = '195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/kaniko:0.1.0'
+        image = '195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/kaniko:0.1.1'
         platforms {
             platform { architecture = 'amd64'; os = 'linux' }
         }
