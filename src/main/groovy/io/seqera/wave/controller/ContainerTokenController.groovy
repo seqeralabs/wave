@@ -67,13 +67,16 @@ class ContainerTokenController {
 
         String targetImage
         String targetContent
+        String condaContent
         if( req.containerFile ) {
             targetContent = new String(req.containerFile.decodeBase64())
-            targetImage = buildService.buildImage(targetContent)
+            condaContent = req.condaFile ? new String(req.condaFile.decodeBase64()) : null
+            targetImage = buildService.buildImage(targetContent, condaContent)
         }
         else {
             targetImage = req.containerImage
             targetContent = null
+            condaContent = null
         }
 
         final data = new ContainerRequestData(
@@ -81,7 +84,8 @@ class ContainerTokenController {
                 req.towerWorkspaceId,
                 targetImage,
                 targetContent,
-                req.containerConfig )
+                req.containerConfig,
+                condaContent )
 
         return data
     }

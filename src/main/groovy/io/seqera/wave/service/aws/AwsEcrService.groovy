@@ -14,12 +14,15 @@ import com.google.common.cache.LoadingCache
 import com.google.common.util.concurrent.UncheckedExecutionException
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
+import io.seqera.wave.util.StringUtils
 import jakarta.inject.Singleton
 /**
  * Implement AWS ECR login service
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @Singleton
 @CompileStatic
 class AwsEcrService {
@@ -63,6 +66,7 @@ class AwsEcrService {
 
 
     protected String getLoginToken0(String accessKey, String secretKey, String region) {
+        log.debug "Getting AWS ECT auth token - region=$region; accessKey=$accessKey; secretKey=${StringUtils.redact(secretKey)}"
         final client = ecrClient(accessKey,secretKey,region)
         final resp = client.getAuthorizationToken(new GetAuthorizationTokenRequest())
         final encoded = resp.getAuthorizationData().get(0).getAuthorizationToken()

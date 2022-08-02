@@ -12,10 +12,12 @@ interface ContainerBuildService {
      *
      * @param dockerfileContent
      *      The dockerfile encoded as base64 string of the container to build
+     * @param condaFile
+     *      A conda recipe file that can be associated this image build
      * @return
      *      The container image where the resulting image is going to be hosted
      */
-    String buildImage(String dockerfileContent)
+    String buildImage(String dockerfileContent, String condaFile)
 
 
     BuildStatus waitImageBuild(String targetImage)

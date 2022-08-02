@@ -18,14 +18,16 @@ import io.seqera.wave.util.DigestFunctions
 class BuildRequest {
 
     final String id
-    final String dockerfile
+    final String dockerFile
+    final String condaFile
     final Path workDir
     final String targetImage
     volatile Future<BuildResult> result
 
-    BuildRequest(String dockerfile, Path workspace, String repo) {
-        this.id = DigestFunctions.digest(dockerfile).replace('sha256:','')
-        this.dockerfile = dockerfile
+    BuildRequest(String dockerFile, Path workspace, String repo, String condaFile) {
+        this.id = DigestFunctions.digest(dockerFile).replace('sha256:','')
+        this.dockerFile = dockerFile
+        this.condaFile = condaFile
         this.targetImage = "${repo}:${id}"
         this.workDir = workspace.resolve(id).toAbsolutePath()
     }

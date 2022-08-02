@@ -61,10 +61,12 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     }
 
     @Override
-    String buildImage(String dockerfileContent) {
+    String buildImage(String dockerfileContent, String condaFile) {
         if( !dockerfileContent )
             throw new BadRequestException("Missing dockerfile content")
-        return getOrSubmit(dockerfileContent)
+        // create a unique digest to identify the request
+        final request = new BuildRequest(dockerfileContent, Path.of(workspace), repository, condaFile)
+        return getOrSubmit(request)
     }
 
     @Override
@@ -131,7 +133,12 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         Files.createDirectories(req.workDir)
         // save the dockerfile
         final dockerfile = req.workDir.resolve('Dockerfile')
-        Files.write(dockerfile, req.dockerfile.bytes, CREATE, APPEND)
+        Files.write(dockerfile, req.dockerFile.bytes, CREATE, APPEND)
+        // save the conda file
+        if( req.condaFile ) {
+            final condaFile = req.workDir.resolve('conda.yml')
+            Files.write(condaFile, req.condaFile.bytes, CREATE, APPEND)
+        }
 
         try {
             final cmd = launchCmd(req, dockerMode)
@@ -162,9 +169,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         }
     }
 
-    protected String getOrSubmit(String dockerfile) {
-        // create a unique digest to identify the request
-        final request = new BuildRequest(dockerfile, Path.of(workspace), repository)
+    protected String getOrSubmit(BuildRequest request) {
         // use the target image as the cache key
         synchronized (buildRequests) {
             if( !buildRequests.containsKey(request.targetImage) ) {

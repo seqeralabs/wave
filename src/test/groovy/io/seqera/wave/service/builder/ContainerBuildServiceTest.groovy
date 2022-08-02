@@ -38,7 +38,7 @@ class ContainerBuildServiceTest extends Specification {
     def 'should get kaniko command' () {
         given:
         def work = Path.of('/work/foo')
-        def REQ = new BuildRequest('from foo', work, 'quay.io/wave')
+        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null)
 
         when:
         def cmd = service.launchCmd(REQ, true)
@@ -81,7 +81,7 @@ class ContainerBuildServiceTest extends Specification {
         RUN echo Hello > hello.txt
         '''.stripIndent()
         and:
-        def REQ = new BuildRequest(dockerfile, folder, repo)
+        def REQ = new BuildRequest(dockerfile, folder, repo, null)
 
         when:
         def result = service.launch(REQ, true)
