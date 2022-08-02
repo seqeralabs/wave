@@ -23,9 +23,9 @@ class Boostrap {
 
     @PostConstruct
     void init() {
-        def dokCreds = provider.getCredentials('docker.io')
+        def dockCreds = provider.getCredentials('docker.io')
         def quayCreds = provider.getCredentials('quay.io')
-        log.info "Docker.io registry credentials: username=${dokCreds?.username ?: '-'}; password=${StringUtils.redact(dokCreds?.password)}"
+        log.info "Docker.io registry credentials: username=${dockCreds?.username ?: '-'}; password=${StringUtils.redact(dockCreds?.password)}"
         log.info "Quay.io   registry credentials: username=${quayCreds?.username ?: '-'}; password=${StringUtils.redact(quayCreds?.password)}"
     }
 
