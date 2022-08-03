@@ -46,6 +46,7 @@ and set the user/pwd for at least 1 registry
 
         ngrok http 9090 -subdomain reg
 
+    **NOTE**: in case you don't want/can use ngrok you can access to the local server `docker pull localhost:9090/library/busybox` 
 
 7. Pull a container using the docker client: 
 
