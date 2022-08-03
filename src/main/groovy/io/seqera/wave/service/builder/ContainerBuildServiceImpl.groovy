@@ -40,7 +40,10 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
      * The registry repository where the build image will be stored
      */
     @Value('${wave.build.repository}')
-    String repository
+    String buildRepo
+
+    @Value('${wave.build.cache}')
+    String cacheRepo
 
     @Value('${wave.build.dockerMode:false}')
     Boolean dockerMode
@@ -65,7 +68,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         if( !dockerfileContent )
             throw new BadRequestException("Missing dockerfile content")
         // create a unique digest to identify the request
-        final request = new BuildRequest(dockerfileContent, Path.of(workspace), repository, condaFile)
+        final request = new BuildRequest(dockerfileContent, Path.of(workspace), buildRepo, condaFile)
         return getOrSubmit(request)
     }
 
@@ -87,7 +90,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             catch (TimeoutException e) {
                 final delta = System.currentTimeMillis() - begin
                 if( delta > buildTimeout.toMillis() ) {
-                    log.debug "Build timeout for image: $targetImage"
+                    log.info "== Build timeout for image: $targetImage"
                     return BuildStatus.FAILED
                 }
             }
@@ -95,7 +98,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 Thread.currentThread().interrupt();
             }
             catch (Exception e) {
-                log.error "Build failed for image: $targetImage -- cause: ${e.message}", e
+                log.error "== Build failed for image: $targetImage -- cause: ${e.message}", e
                 return BuildStatus.FAILED
             }
         }
@@ -126,6 +129,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 << "$req.workDir/Dockerfile".toString()
                 << "--destination"
                 << req.targetImage
+                << "--cache=true"
+                << "--cache-repo"
+                << cacheRepo
     }
 
     protected BuildResult launch(BuildRequest req, boolean dockerMode) {
@@ -173,12 +179,12 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         // use the target image as the cache key
         synchronized (buildRequests) {
             if( !buildRequests.containsKey(request.targetImage) ) {
-                log.debug "Submit build request request: $request"
+                log.info "== Submit build request request: $request"
                 request.result = executor.submit(callLaunch(request))
                 buildRequests.put(request.targetImage, request)
             }
             else {
-                log.debug "Hit build cache for request: $request"
+                log.info "== Hit build cache for request: $request"
             }
             return request.targetImage
         }

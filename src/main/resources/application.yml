@@ -20,4 +20,5 @@ wave:
     image: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/kaniko:0.1.0"
     workspace: 'build-workspace'
     repository: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build"
+    cache: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/cache"
 ...
