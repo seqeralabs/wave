@@ -23,6 +23,10 @@ class MemoryStorage implements Storage {
             .expireAfterAccess(1, TimeUnit.HOURS)
             .build()
 
+    void clearCache(){
+        cache.invalidateAll()
+    }
+
     @Override
     Optional<DigestStore> getManifest(String path) {
         final result = cache.getIfPresent(path)

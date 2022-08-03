@@ -2,6 +2,7 @@ micronaut:
   http:
     client:
       read-timeout: 90s
+      max-content-length: 20Mb
 ---
 datasources:
   default:
