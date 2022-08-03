@@ -51,7 +51,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     @Value('${wave.build.image}')
     String buildImage
 
-    @Value('${wave.build.timeout:1m}')
+    @Value('${wave.build.timeout:5m}')
     Duration buildTimeout
 
     private final Map<String,BuildRequest> buildRequests = new HashMap<>()
