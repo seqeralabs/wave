@@ -17,6 +17,10 @@ out/
 .factorypath
 .layer/opt/fusion/fusionfs
 .layer/opt/goofys/goofys
+.layer/opt/geesefs
+.layer/opt/tini
 layer.tar.gzip
 tower-reg.yml
 /fusion-reg*.log
+wave.log
+src/main/resources/application-dev.yml
