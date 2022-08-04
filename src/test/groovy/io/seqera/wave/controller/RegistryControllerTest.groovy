@@ -115,32 +115,29 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
     // Double download hello-world requesting all required layers refreshing cache between them
     void 'should resolve a full request'() {
         given:
-
-        def list = [
-         "/v2/library/hello-world/manifests/sha256:b31a0b6fd208383ae113148b0978261ff32eb6b375231fb4a962cf6b7c6e607f" ,
-         "/v2/library/hello-world/manifests/sha256:dfb914cb56891261aa3839876077c6f60031f1162f28a2ce2e3ce73529af7839",
-         "/v2/library/hello-world/blobs/sha256:29d2f32f2fa0c01345b440c031bb61c8aa3911b89b5e607ffba2eadbbeca74db",
-         "/v2/library/hello-world/blobs/sha256:2db29710123e3e53a794f2694094b9b4338aa9ee5c40b930cb8063a1be392c54",
-         "/v2/library/hello-world/blobs/sha256:30f2106e40c01f68e37bbb0279de84958cbd93ddb4c844dbd54bbbb04ad6f692",
-        ]
-
         def accept = [
+                'application/json',
                 'application/vnd.oci.image.index.v1+json', 'application/vnd.docker.distribution.manifest.v1+prettyjws',
-                'application/json', 'application/vnd.oci.image.manifest.v1+json', 'application/vnd.docker.distribution.manifest.v2+json',
+                'application/vnd.oci.image.manifest.v1+json', 'application/vnd.docker.distribution.manifest.v2+json',
                 'application/vnd.docker.distribution.manifest.list.v2+json'
         ]
 
         when:
-        HttpRequest request = HttpRequest.HEAD("/v2/library/hello-world/manifests/latest").headers({ h ->
+        HttpRequest request = HttpRequest.GET("/v2/$IMAGE/manifests/latest").headers({ h ->
             accept.each {
                 h.add('Accept', it)
             }
         })
-        HttpResponse<String> response = client.toBlocking().exchange(request, String)
+        HttpResponse<Map> response = client.toBlocking().exchange(request, Map)
+
         then:
         response.status() == HttpStatus.OK
 
         when:
+        def list = response.body().manifests.collect{
+            String type = it.mediaType.indexOf("manifest") ? "manifests" : "blobs"
+            "/v2/$IMAGE/$type/$it.digest"
+        }
         boolean fails = list.find{ url ->
             HttpRequest requestGet = HttpRequest.GET(url).headers({ h ->
                 accept.each {
@@ -173,6 +170,9 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
         then:
         !fails
 
+        where:
+        IMAGE | _
+        "library/hello-world" | _
     }
 
 }
