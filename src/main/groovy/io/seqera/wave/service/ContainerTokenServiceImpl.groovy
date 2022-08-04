@@ -20,7 +20,7 @@ class ContainerTokenServiceImpl implements ContainerTokenService {
     private Cache<String, ContainerRequestData> cache = CacheBuilder<String, ContainerRequestData>
             .newBuilder()
             .maximumSize(10_000)
-            .expireAfterAccess(1, TimeUnit.HOURS)
+            .expireAfterAccess(24, TimeUnit.HOURS)
             .build()
 
     @Override
