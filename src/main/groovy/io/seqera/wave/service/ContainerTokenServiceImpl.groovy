@@ -2,6 +2,7 @@ package io.seqera.wave.service
 
 import java.time.Duration
 import java.util.concurrent.TimeUnit
+import javax.annotation.PostConstruct
 
 import com.google.common.cache.Cache
 import com.google.common.cache.CacheBuilder
@@ -28,6 +29,7 @@ class ContainerTokenServiceImpl implements ContainerTokenService {
 
     private Cache<String, ContainerRequestData> cache
 
+    @PostConstruct
     private void init() {
         log.debug "Creating container tokens cache - maxSize=$maxSize; maxDuration=$maxDuration"
         this.cache = CacheBuilder<String, ContainerRequestData>
