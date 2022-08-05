@@ -4,6 +4,7 @@ import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.seqera.wave.service.ContainerTokenService
 import io.seqera.wave.util.Base32
 import jakarta.inject.Singleton
@@ -13,6 +14,7 @@ import jakarta.inject.Singleton
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @Singleton
 @CompileStatic
 class RouteHelper {
@@ -42,8 +44,10 @@ class RouteHelper {
             final image = normImage(coordinates.join('/'))
             // find out the container request that must have been submitted for the token
             final request = tokenService.getRequest(token)
-            if( !request )
+            if( !request ) {
+                log.warn "Token ${token} not found"
                 return NOT_FOUND
+            }
             // the image name (without tag) must match
             final coords = request.coordinates()
             if( image != coords.image )
