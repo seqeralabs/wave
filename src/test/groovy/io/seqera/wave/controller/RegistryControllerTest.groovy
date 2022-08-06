@@ -11,6 +11,8 @@ import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.storage.MemoryStorage
+import io.seqera.wave.storage.Storage
 import io.seqera.wave.test.DockerRegistryContainer
 import io.seqera.wave.model.ContentType
 import jakarta.inject.Inject
@@ -29,6 +31,9 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
     @Shared
     ApplicationContext applicationContext
 
+    @Inject
+    MemoryStorage storage
+
     def setupSpec() {
         initRegistryContainer(applicationContext)
     }
@@ -41,6 +46,19 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
             h.add('Accept', MediaType.APPLICATION_JSON)
         })
         HttpResponse<String> response = client.toBlocking().exchange(request,String)
+        then:
+        response.status() == HttpStatus.OK
+        and:
+        response.body().indexOf('"schemaVersion":') != -1
+        response.getContentType().get().getName() ==  'application/vnd.docker.distribution.manifest.v2+json'
+        response.getContentLength() == 775
+
+        when:
+        storage.clearCache()
+
+        and:
+        response = client.toBlocking().exchange(request,String)
+
         then:
         response.status() == HttpStatus.OK
         and:
@@ -80,5 +98,81 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
         response.getHeaders().get('docker-content-digest').startsWith( 'sha256:')
         response.getHeaders().get('Content-Type') == 'application/vnd.docker.distribution.manifest.v2+json'
         response.getContentLength() == 775
+
+        when:
+        storage.clearCache()
+        and:
+        response = client.toBlocking().exchange(request,String)
+
+        then:
+        response.status() == HttpStatus.OK
+        and:
+        response.getHeaders().get('docker-content-digest').startsWith( 'sha256:')
+        response.getHeaders().get('Content-Type') == 'application/vnd.docker.distribution.manifest.v2+json'
+        response.getContentLength() == 775
     }
+
+    // Double download hello-world requesting all required layers refreshing cache between them
+    void 'should resolve a full request'() {
+        given:
+        def accept = [
+                'application/json',
+                'application/vnd.oci.image.index.v1+json', 'application/vnd.docker.distribution.manifest.v1+prettyjws',
+                'application/vnd.oci.image.manifest.v1+json', 'application/vnd.docker.distribution.manifest.v2+json',
+                'application/vnd.docker.distribution.manifest.list.v2+json'
+        ]
+
+        when:
+        HttpRequest request = HttpRequest.GET("/v2/$IMAGE/manifests/latest").headers({ h ->
+            accept.each {
+                h.add('Accept', it)
+            }
+        })
+        HttpResponse<Map> response = client.toBlocking().exchange(request, Map)
+
+        then:
+        response.status() == HttpStatus.OK
+
+        when:
+        def list = response.body().manifests.collect{
+            String type = it.mediaType.indexOf("manifest") ? "manifests" : "blobs"
+            "/v2/$IMAGE/$type/$it.digest"
+        }
+        boolean fails = list.find{ url ->
+            HttpRequest requestGet = HttpRequest.GET(url).headers({ h ->
+                accept.each {
+                    h.add('Accept', it)
+                }
+            })
+            HttpResponse<String> responseGet = client.toBlocking().exchange(requestGet, String)
+            responseGet.status() != HttpStatus.OK
+        }
+        then:
+        !fails
+
+        when:
+        storage.clearCache()
+        and:
+        response = client.toBlocking().exchange(request, String)
+        then:
+        response.status() == HttpStatus.OK
+
+        when:
+        fails = list.find{ url ->
+            HttpRequest requestGet = HttpRequest.GET(url).headers({ h ->
+                accept.each {
+                    h.add('Accept', it)
+                }
+            })
+            HttpResponse<String> responseGet = client.toBlocking().exchange(requestGet, String)
+            responseGet.status() != HttpStatus.OK
+        }
+        then:
+        !fails
+
+        where:
+        IMAGE | _
+        "library/hello-world" | _
+    }
+
 }

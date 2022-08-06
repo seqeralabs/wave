@@ -69,16 +69,17 @@ class RegistryProxyController {
             return HttpResponse.notFound()
         }
 
-        if (route.manifest && !route.digest) {
-            def entry = manifestForPath(route, httpRequest)
-            if (entry) {
-                return fromCache(entry)
-            }
-        }
-        else if( route.manifest ) {
-            def entry = storage.getManifest(route.path)
-            if (entry.present) {
-                return fromCache(entry.get())
+        if( route.manifest ) {
+            if ( !route.digest ) {
+                def entry = manifestForPath(route, httpRequest)
+                if (entry) {
+                    return fromCache(entry)
+                }
+            } else {
+                def entry = storage.getManifest(route.path)
+                if (entry.present) {
+                    return fromCache(entry.get())
+                }
             }
         }
 
@@ -90,7 +91,7 @@ class RegistryProxyController {
             }
         }
 
-        log.debug "Blob pulling from remote host: $route.path"
+        log.debug "Resource pulling from remote host: $route.path"
         def headers = httpRequest.headers.asMap() as Map<String, List<String>>
         def response = proxyService.handleRequest(route, headers)
         fromDelegateResponse(response)
