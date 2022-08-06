@@ -16,6 +16,7 @@ import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.ContainerTokenService
 import io.seqera.wave.service.UserService
+import io.seqera.wave.tower.User
 import jakarta.inject.Inject
 /**
  * Implement a controller to receive container token requests
@@ -48,20 +49,20 @@ class ContainerTokenController {
 
     @Post
     HttpResponse<SubmitContainerTokenResponse> getToken(SubmitContainerTokenRequest req) {
-        final Long userId = req.towerAccessToken
-                ? userService.getUserByAccessToken(req.towerAccessToken).id
-                : 0
-        if( !userId && !allowAnonymous )
+        final User user = req.towerAccessToken
+                ? userService.getUserByAccessToken(req.towerAccessToken)
+                : null
+        if( !user && !allowAnonymous )
             throw new BadRequestException("Missing access token")
 
-        final data = makeRequestData(req, userId)
+        final data = makeRequestData(req, user)
         final token = tokenService.getToken(data)
         final target = targetImage(token, data.containerImage)
         final resp = new SubmitContainerTokenResponse(containerToken: token, targetImage: target)
         HttpResponse.ok(resp)
     }
 
-    ContainerRequestData makeRequestData(SubmitContainerTokenRequest req, Long userId) {
+    ContainerRequestData makeRequestData(SubmitContainerTokenRequest req, User user) {
         if( !req.containerImage && !req.containerFile )
             throw new BadRequestException("Missing container image")
 
@@ -71,7 +72,7 @@ class ContainerTokenController {
         if( req.containerFile ) {
             targetContent = new String(req.containerFile.decodeBase64())
             condaContent = req.condaFile ? new String(req.condaFile.decodeBase64()) : null
-            targetImage = buildService.buildImage(targetContent, condaContent)
+            targetImage = buildService.buildImage(targetContent, condaContent, user)
         }
         else {
             targetImage = req.containerImage
@@ -80,7 +81,7 @@ class ContainerTokenController {
         }
 
         final data = new ContainerRequestData(
-                userId,
+                user?.id,
                 req.towerWorkspaceId,
                 targetImage,
                 targetContent,

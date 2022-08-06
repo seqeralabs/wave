@@ -34,7 +34,8 @@ dependencies {
     implementation("jakarta.persistence:jakarta.persistence-api:3.0.0")
     api project(':wave-api')
     api project(':wave-utils')
-
+    api project(':wave-mail')
+    
     implementation("io.micronaut:micronaut-http-client")
     implementation("io.micronaut:micronaut-jackson-databind")
     implementation("io.micronaut.groovy:micronaut-runtime-groovy")
@@ -50,6 +51,7 @@ dependencies {
     implementation("io.seqera:tower-crypto:22.1.1") { transitive = false }
     implementation 'org.apache.commons:commons-compress:1.21'
     implementation 'com.amazonaws:aws-java-sdk-ecr:1.12.253'
+    implementation 'org.threeten:threeten-extra:1.7.1'
     
     runtimeOnly("com.h2database:h2")
     runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'

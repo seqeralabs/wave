@@ -7,13 +7,17 @@ import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import javax.annotation.Nullable
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.exception.BadRequestException
+import io.seqera.wave.service.mail.MailService
+import io.seqera.wave.tower.User
 import io.seqera.wave.util.ThreadPoolBuilder
+import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static java.nio.file.StandardOpenOption.APPEND
 import static java.nio.file.StandardOpenOption.CREATE
@@ -54,6 +58,10 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     @Value('${wave.build.timeout:5m}')
     Duration buildTimeout
 
+    @Inject
+    @Nullable
+    private MailService mailService
+
     private final Map<String,BuildRequest> buildRequests = new HashMap<>()
 
     private ExecutorService executor
@@ -64,11 +72,11 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     }
 
     @Override
-    String buildImage(String dockerfileContent, String condaFile) {
+    String buildImage(String dockerfileContent, String condaFile, User user) {
         if( !dockerfileContent )
             throw new BadRequestException("Missing dockerfile content")
         // create a unique digest to identify the request
-        final request = new BuildRequest(dockerfileContent, Path.of(workspace), buildRepo, condaFile)
+        final request = new BuildRequest(dockerfileContent, Path.of(workspace), buildRepo, condaFile, user)
         return getOrSubmit(request)
     }
 
@@ -145,7 +153,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             final condaFile = req.workDir.resolve('conda.yml')
             Files.write(condaFile, req.condaFile.bytes, CREATE, APPEND)
         }
-
+        // launch an external process to build the container
         try {
             final cmd = launchCmd(req, dockerMode)
             log.debug "Build run command: ${cmd.join(' ')}"
@@ -156,9 +164,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                     .start()
 
             final failed = proc.waitFor()
-            final err = proc.inputStream.text
-            log.debug "Build command: ${cmd.join(' ')}\n- completed with status=$failed\n- error: ${err}"
-            return new BuildResult(failed, err)
+            final stdout = proc.inputStream.text
+            log.info "== Build completed: ${cmd.join(' ')}\n- completed with status=$failed\n- stdout: ${stdout}"
+            return new BuildResult(req.id, failed, stdout, req.startTime)
         }
         finally {
             if( !debugMode )
@@ -170,7 +178,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         new Callable<BuildResult>() {
             @Override
             BuildResult call() throws Exception {
-                return launch(request, dockerMode)
+                final result = launch(request, dockerMode)
+                mailService?.sendCompletionMail(result, request.user)
+                return result
             }
         }
     }

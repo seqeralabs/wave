@@ -1,0 +1,15 @@
+---
+mail:
+  from: me@google.com
+  smtp:
+    host: localhost
+    port: 3025
+    user: mr-bean
+    password: super-secret
+    auth: true
+    starttls:
+      enable: false
+      required: false
+    proxy:
+      host: proxy.com
+      port: 5566

@@ -20,3 +20,4 @@ out/
 layer.tar.gzip
 tower-reg.yml
 /fusion-reg*.log
+build-workspace/

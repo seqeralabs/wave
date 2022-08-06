@@ -2,4 +2,4 @@ rootProject.name="wave"
 
 include('wave-api')
 include('wave-utils')
-
+include('wave-mail')

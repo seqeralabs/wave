@@ -1,0 +1,34 @@
+plugins {
+    id 'io.seqera.wave.groovy-library-conventions'
+    id 'groovy'
+    id "io.micronaut.application" 
+}
+
+java {
+    sourceCompatibility = JavaVersion.toVersion("11")
+    targetCompatibility = JavaVersion.toVersion("11")
+}
+
+micronaut {
+    runtime("netty")
+    testRuntime("spock2")
+    processing {
+        incremental(true)
+        annotations("com.example.*")
+    }
+}
+
+dependencies {
+    implementation(project(':wave-utils'))
+    implementation("ch.qos.logback:logback-classic:1.2.11")
+    implementation "org.codehaus.groovy:groovy:3.0.10"
+    implementation "org.codehaus.groovy:groovy-nio:3.0.10"
+    implementation "org.codehaus.groovy:groovy-templates:3.0.10"
+    api "com.sun.mail:javax.mail:1.6.2"
+    api "org.jsoup:jsoup:1.11.2"
+    implementation("io.micronaut:micronaut-runtime:3.3.4")
+
+    testImplementation "org.subethamail:subethasmtp:3.1.7"
+}
+
+group = 'io.seqera'

@@ -1,5 +1,7 @@
 package io.seqera.wave.service.builder
 
+import io.seqera.wave.tower.User
+
 /**
  * Declare container build service interface
  *
@@ -17,7 +19,7 @@ interface ContainerBuildService {
      * @return
      *      The container image where the resulting image is going to be hosted
      */
-    String buildImage(String dockerfileContent, String condaFile)
+    String buildImage(String dockerfileContent, String condaFile, User user)
 
 
     BuildStatus waitImageBuild(String targetImage)

@@ -66,7 +66,7 @@ class AwsEcrService {
 
 
     protected String getLoginToken0(String accessKey, String secretKey, String region) {
-        log.debug "Getting AWS ECT auth token - region=$region; accessKey=$accessKey; secretKey=${StringUtils.redact(secretKey)}"
+        log.debug "Getting AWS ECR auth token - region=$region; accessKey=$accessKey; secretKey=${StringUtils.redact(secretKey)}"
         final client = ecrClient(accessKey,secretKey,region)
         final resp = client.getAuthorizationToken(new GetAuthorizationTokenRequest())
         final encoded = resp.getAuthorizationData().get(0).getAuthorizationToken()
