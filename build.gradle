@@ -39,6 +39,7 @@ dependencies {
     implementation("io.micronaut:micronaut-jackson-databind")
     implementation("io.micronaut.groovy:micronaut-runtime-groovy")
     implementation("io.micronaut.data:micronaut-data-jdbc")
+    implementation("io.micronaut.aws:micronaut-aws-parameter-store")
     implementation("jakarta.annotation:jakarta.annotation-api")
     implementation("io.micronaut:micronaut-validation")
     implementation "org.codehaus.groovy:groovy-json"

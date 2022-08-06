@@ -1,7 +1,7 @@
 ---
 micronaut:
   application:
-    name: demo
+    name: wave-app
   server:
     port: 9090
 ---
