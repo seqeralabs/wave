@@ -1,0 +1,118 @@
+# Wave changelog
+v0.11.0 - 6 Aug 2022
+- Add config setting for storage cache [e6d3d33d]
+- Improve unit tests for manifest and blob cache [70ba6886]
+- Improve config [9b8e3d46]
+- Add support for mail notification [7e862bc8]
+- Update wave.build.repo config [d3e5ca61]
+- Add support for AWS params store [29e2a89b]
+
+v0.10.3 - 5 Aug 2022
+- Fix missing cache annotation [c56f4d9b]
+
+v0.10.2 - 5 Aug 2022
+- Make container token configurable [03f91737]
+- Increase token expire time. Log missing token requests. (#80) [f734678a]
+- Increase build timeout to 5 mins [7b887614]
+- Bump wave/kaniko:0.1.1 as build image [0275f872]
+- Add support for build cache [829b68f8]
+- Add support for conda file [839eb973]
+- Bump base image 0.1.0 [f39f5449]
+- Minor change [b12aed90]
+
+v0.10.1 -31 Jul 2022
+- Config changes [9373f51c]
+
+v0.10.0 - 27 Jul 2022
+- Add support for container build [8ce16792]
+- feature: allow mysql or h2 via env configuration (#77) [8c2c692a]
+- Use WAVE_ENDPOINT variable as server URL (#75) [61485da7]
+
+v0.9.1 - 3 Jul 2022
+d221290b - Fix launcher main class (5 weeks ago) <Paolo Di Tommaso>
+
+v0.9.0 - 3 Jul 2022
+- Modularise project structure [087e3bbd]
+- Add container injection via external layers [a4a03adb]
+- Refactor package structure [6c9a62a7]
+- Add ability to access private registry using tower creds [47347c9a]
+- Registry authorisation & credentials refactor (#71) [546d73b9]
+
+v0.8.0 - 22 Jun 2022
+- Use geesefs as fuse driver [0a5c61c4]
+- Improve tag & build script [534474b4]
+- Use WAVE_ prefix for env vars [b6326847]
+- Bump Wave project name [0111df4e]
+- Add service info [d681861b]
+- feature: initial documentation (#66) [8b7d0e71]
+
+v0.7.1 - 7 Apr 2022
+- Improve entrypoint [89a7a382]
+
+v0.7.0 - 7 Apr 2022
+
+v0.7.1 - 2022-04-07
+
+v0.7.0 - 2022-04-07
+
+v0.6.14-ISC - 2022-05-28
+
+v0.6.15-juice - 2022-04-16
+
+v0.6.14-juice - 2022-04-16
+
+v0.6.14 - 2022-04-10
+
+v0.6.13 - 2022-04-06
+
+v0.6.10 - 2022-04-06
+
+v0.6.9 - 2022-04-05
+
+v0.6.8 - 2022-04-05
+
+v0.6.7 - 2022-04-04
+
+v0.6.6 - 2022-04-04
+
+v0.6.5 - 2022-04-04
+
+v0.6.4 - 2022-04-03
+
+v0.6.3 - 2022-04-03
+
+v0.6.2 - 2022-04-03
+
+v0.6.1 - 2022-04-03
+
+v0.6.0 - 2022-04-02
+
+v0.5.4 - 2022-03-30
+
+v0.5.3 - 2022-03-29
+
+v0.5.2 - 2022-03-29
+
+v0.5.1 - 2022-03-26
+
+v0.4.8 - 2022-03-16
+
+v0.4.7 - 2022-03-05
+
+v0.4.6 - 2022-03-05
+
+v0.4.5 - 2022-03-04
+
+v0.4.4 - 2022-03-04
+
+v0.4.3 - 2022-03-01
+
+v0.4.2 - 2022-02-27
+
+v0.4.1 - 2022-02-27
+
+v0.4.0 - 2022-02-27
+
+v0.3 - 2022-02-18
+
+v0.2 - 2022-02-12
