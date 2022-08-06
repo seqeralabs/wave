@@ -39,7 +39,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     /**
      * The registry repository where the build image will be stored
      */
-    @Value('${wave.build.repository}')
+    @Value('${wave.build.repo}')
     String buildRepo
 
     @Value('${wave.build.cache}')
