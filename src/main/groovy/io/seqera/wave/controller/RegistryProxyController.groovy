@@ -91,7 +91,8 @@ class RegistryProxyController {
             }
         }
 
-        log.debug "Resource pulling from remote host: $route.path"
+        final type = route.isManifest() ? 'manifest' : 'blob'
+        log.debug "Pulling $type from remote host: $route.path"
         def headers = httpRequest.headers.asMap() as Map<String, List<String>>
         def response = proxyService.handleRequest(route, headers)
         fromDelegateResponse(response)
