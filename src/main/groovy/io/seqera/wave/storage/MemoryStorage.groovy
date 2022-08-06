@@ -1,27 +1,42 @@
 package io.seqera.wave.storage
 
-
+import java.time.Duration
 import java.util.concurrent.TimeUnit
+import javax.annotation.PostConstruct
 
 import com.google.common.cache.Cache
 import com.google.common.cache.CacheBuilder
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Value
 import io.seqera.wave.storage.reader.ContentReader
 import jakarta.inject.Singleton
 /**
+ * Implements an in-memory store for container manifest and blobs request
+ *
  * @author : jorge <jorge.aguilera@seqera.io>
- * */
+ */
 @Slf4j
 @Singleton
 @CompileStatic
 class MemoryStorage implements Storage {
 
-    private Cache<String, DigestStore> cache = CacheBuilder<String,DigestStore>
+    private Cache<String, DigestStore> cache
+
+    @Value('${wave.storage.cache.duration:`1h`}')
+    private Duration maxDuration
+
+    @Value('${wave.storage.cache.maxSize:1000}')
+    private int maxSize
+
+    @PostConstruct
+    private void init() {
+        cache = CacheBuilder<String,DigestStore>
             .newBuilder()
-            .maximumSize(1000)
-            .expireAfterAccess(1, TimeUnit.HOURS)
+            .maximumSize(maxSize)
+            .expireAfterAccess(maxDuration.toSeconds(), TimeUnit.SECONDS)
             .build()
+    }
 
     void clearCache(){
         cache.invalidateAll()
