@@ -28,4 +28,6 @@ if [[ $RELEASE ]]; then
   make pack
   # push it
   make push
+  # publish release notes
+  gh release create $TAG --generate-notes
 fi
