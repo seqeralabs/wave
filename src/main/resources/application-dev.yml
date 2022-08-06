@@ -5,7 +5,7 @@ wave:
 # uses TOWER_xxx variable because the dev environment is expected to be
 # the same as of tower
 mail:
-  from: "${TOWER_CONTACT_EMAIL:paolo@seqera.io}"
+  from: "${TOWER_CONTACT_EMAIL:wave-app+dev@seqera.io}"
   smtp:
     host: "${TOWER_SMTP_HOST:email-smtp.eu-west-1.amazonaws.com}"
     port: "${TOWER_SMTP_PORT:587}"
