@@ -7,6 +7,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.tower.User
 import jakarta.inject.Inject
 
 /**
@@ -38,7 +39,7 @@ class ContainerBuildServiceTest extends Specification {
     def 'should get kaniko command' () {
         given:
         def work = Path.of('/work/foo')
-        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null)
+        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, Mock(User))
 
         when:
         def cmd = service.launchCmd(REQ, true)
@@ -87,11 +88,14 @@ class ContainerBuildServiceTest extends Specification {
         RUN echo Hello > hello.txt
         '''.stripIndent()
         and:
-        def REQ = new BuildRequest(dockerfile, folder, repo, null)
+        def REQ = new BuildRequest(dockerfile, folder, repo, null, Mock(User))
 
         when:
         def result = service.launch(REQ, true)
         then:
+        result.id
+        result.startTime
+        result.duration
         result.exitStatus == 0
 
         cleanup:
