@@ -52,7 +52,8 @@ dependencies {
     implementation 'org.apache.commons:commons-compress:1.21'
     implementation 'com.amazonaws:aws-java-sdk-ecr:1.12.253'
     implementation 'org.threeten:threeten-extra:1.7.1'
-    
+
+    runtimeOnly 'com.amazonaws:aws-java-sdk-sts:1.12.253'
     runtimeOnly("com.h2database:h2")
     runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
     implementation("io.micronaut.sql:micronaut-jdbc-hikari")
