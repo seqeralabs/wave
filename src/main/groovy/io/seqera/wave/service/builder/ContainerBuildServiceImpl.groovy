@@ -135,6 +135,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 << "/kaniko/executor"
                 << "--dockerfile"
                 << "$req.workDir/Dockerfile".toString()
+                << '--context'
+                << req.workDir.toString()
                 << "--destination"
                 << req.targetImage
                 << "--cache=true"
