@@ -2,6 +2,7 @@ micronaut:
   config-client:
     enabled: true
 aws:
+  region: "${AWS_REGION:eu-west-1}"
   client:
     system-manager:
       parameterstore:

@@ -3,11 +3,6 @@ package io.seqera.wave.service.aws
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider
-import com.amazonaws.auth.BasicAWSCredentials
-import com.amazonaws.services.ecr.AmazonECR
-import com.amazonaws.services.ecr.AmazonECRClientBuilder
-import com.amazonaws.services.ecr.model.GetAuthorizationTokenRequest
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
@@ -15,8 +10,15 @@ import com.google.common.util.concurrent.UncheckedExecutionException
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.seqera.wave.util.StringUtils
 import jakarta.inject.Singleton
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.ecr.EcrClient
+import software.amazon.awssdk.services.ecr.model.GetAuthorizationTokenRequest
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
+
 /**
  * Implement AWS ECR login service
  *
@@ -25,6 +27,7 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
+@Requires(env = 'ec2')
 class AwsEcrService {
 
     static final private Pattern AWS_ECR = ~/^(\d+)\.dkr\.ecr\.([a-z\-\d]+)\.amazonaws\.com/
@@ -56,11 +59,10 @@ class AwsEcrService {
             .build(loader)
 
 
-    private AmazonECR ecrClient(String accessKey, String secretKey, String region) {
-        AmazonECRClientBuilder
-                .standard()
-                .withRegion(region)
-                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
+    private EcrClient ecrClient(String accessKey, String secretKey, String region) {
+        EcrClient.builder()
+                .region( Region.of(region))
+                .credentialsProvider( StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)))
                 .build()
     }
 
@@ -68,8 +70,8 @@ class AwsEcrService {
     protected String getLoginToken0(String accessKey, String secretKey, String region) {
         log.debug "Getting AWS ECR auth token - region=$region; accessKey=$accessKey; secretKey=${StringUtils.redact(secretKey)}"
         final client = ecrClient(accessKey,secretKey,region)
-        final resp = client.getAuthorizationToken(new GetAuthorizationTokenRequest())
-        final encoded = resp.getAuthorizationData().get(0).getAuthorizationToken()
+        final resp = client.getAuthorizationToken(GetAuthorizationTokenRequest.builder().build() as GetAuthorizationTokenRequest)
+        final encoded = resp.authorizationData().get(0).authorizationToken()
         return new String(encoded.decodeBase64())
     }
 
