@@ -145,7 +145,7 @@ Example request:
 ```
 curl \
   -H "Content-Type: application/json" \
-  -X POST https://reg.staging-tower.xyz/container-token \
+  -X POST http://localhost:9090/container-token \
   -d @container-request.json 
 ```
 
