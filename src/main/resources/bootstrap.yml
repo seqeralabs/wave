@@ -1,10 +1,5 @@
 micronaut:
   config-client:
-    enabled: true
+    enabled: false
 aws:
   region: "${AWS_REGION:eu-west-1}"
-  client:
-    system-manager:
-      parameterstore:
-        enabled: true
-        use-secure-parameters: true
