@@ -27,7 +27,6 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 @Slf4j
 @Singleton
 @CompileStatic
-@Requires(env = 'ec2')
 class AwsEcrService {
 
     static final private Pattern AWS_ECR = ~/^(\d+)\.dkr\.ecr\.([a-z\-\d]+)\.amazonaws\.com/
