@@ -1,6 +1,6 @@
 package io.seqera.wave.service.mail
 
-
+import java.time.Duration
 import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
@@ -15,7 +15,6 @@ import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import org.threeten.extra.AmountFormats
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -57,7 +56,7 @@ class MailServiceImpl implements MailService {
         binding.build_success = build.exitStatus==0
         binding.build_exit_status = build.exitStatus
         binding.build_time = build.startTime?.toString() ?: '-'
-        binding.build_duration = build.duration ? AmountFormats.wordBased(build.duration, Locale.getDefault()) : '-'
+        binding.build_duration = build.duration ? formatDuration(build.duration) : '-'
         binding.put('server_url', serverUrl)
         // strip ansi escape codes
         final logs = build.getLogs()?.replaceAll("\u001B\\[[;\\d]*m", "")
@@ -71,4 +70,10 @@ class MailServiceImpl implements MailService {
         return mail
     }
 
+    protected String formatDuration(Duration duration) {
+        final time = duration.toMillis()
+        int minutes = time / (60 * 1_000) as int
+        int seconds = (time / 1_000 as int) % 60
+        return String.format("%d:%02d", minutes, seconds);
+    }
 }

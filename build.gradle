@@ -51,7 +51,6 @@ dependencies {
     implementation("io.seqera:tower-crypto:22.1.1") { transitive = false }
     implementation 'org.apache.commons:commons-compress:1.21'
     implementation 'com.amazonaws:aws-java-sdk-ecr:1.12.253'
-    implementation 'org.threeten:threeten-extra:1.7.1'
 
     runtimeOnly 'com.amazonaws:aws-java-sdk-sts:1.12.253'
     runtimeOnly("com.h2database:h2")
