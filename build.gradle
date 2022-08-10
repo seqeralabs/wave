@@ -49,11 +49,12 @@ dependencies {
     implementation('io.projectreactor:reactor-core')
     implementation("io.seqera:tower-crypto:22.1.1") { transitive = false }
     implementation 'org.apache.commons:commons-compress:1.21'
-    implementation 'com.amazonaws:aws-java-sdk-ecr:1.12.253'
 
     implementation("io.micronaut.aws:micronaut-aws-parameter-store")
     implementation "software.amazon.awssdk:ecr"
-    implementation "software.amazon.awssdk:sts"
+    // this sts dependency is require by micronaut-aws-parameter-store,
+    // not directly used by the app, for this reason keeping `runtimeOnly`
+    runtimeOnly "software.amazon.awssdk:sts"
 
     runtimeOnly("com.h2database:h2")
     runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
