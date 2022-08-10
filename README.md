@@ -168,3 +168,14 @@ docker run \
   reg.staging-tower.xyz/wt/<TOKEN>/nextflow/bash:latest \
   cat foo.txt 
 ```
+
+
+== EC2 profile
+
+To run the application using the AWS ParameterStore configuration you need to activate the `ec2` profile.
+
+In dev you can do it running following command:
+
+`./gradlew run -Penvs=dev,h2,mail,ec2`
+
+In prod profiles are activated via MICRONAUT_ENVIRONMENTS (i.e. `MICRONAUT_ENVIRONMENTS=mysql,mail,ec2`)

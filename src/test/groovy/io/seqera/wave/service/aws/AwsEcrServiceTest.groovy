@@ -4,7 +4,6 @@ package io.seqera.wave.service.aws
 import spock.lang.Requires
 import spock.lang.Specification
 
-import com.amazonaws.SdkClientException
 
 /**
  *
@@ -29,7 +28,7 @@ class AwsEcrServiceTest extends Specification {
         when:
         provider.getLoginToken('a','b','c')
         then:
-        thrown(SdkClientException)
+        thrown(Exception)
 
     }
 
