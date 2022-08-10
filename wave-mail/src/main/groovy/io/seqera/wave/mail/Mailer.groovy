@@ -259,7 +259,7 @@ class Mailer {
             result.attachFile(item.file)
         }
         else if( item.resource ) {
-            def url = this.class.getResource(item.resource)
+            def url = item.resourceLoader.getResource(item.resource)
             if( !url )
                 throw new MessagingException("The following attachment resource does not exist: $item.resource")
             def source = new URLDataSource(url)

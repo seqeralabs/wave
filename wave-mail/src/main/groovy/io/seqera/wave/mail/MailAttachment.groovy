@@ -50,11 +50,14 @@ class MailAttachment implements Serializable {
 
     String fileName
 
-    static MailAttachment resource(Map params, String path) {
+    Class resourceLoader
+
+    static MailAttachment resource(Map params, String path, Class resourceLoader) {
 //        final res = this.class.getResource(path)
 //        if( !res ) throw new IllegalArgumentException("Unable to load resource from classpath: $path")
         final result = new MailAttachment(params)
         result.@resource = path
+        result.resourceLoader = resourceLoader
         return result
     }
 

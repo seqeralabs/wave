@@ -24,8 +24,8 @@ final class MailHelper {
 
     private MailHelper() {}
 
-    static String getTemplateFile(String classpathResource, Map binding) {
-        def source = MailHelper.getResourceAsStream(classpathResource)
+    static String getTemplateFile(Class fromClass, String classpathResource, Map binding) {
+        def source = fromClass.getResourceAsStream(classpathResource)
         if (!source)
             throw new IllegalArgumentException("Cannot load notification default template -- check classpath resource: $classpathResource")
         loadMailTemplate0(source, binding)
