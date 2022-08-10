@@ -49,7 +49,7 @@ dependencies {
     implementation('io.projectreactor:reactor-core')
     implementation("io.seqera:tower-crypto:22.1.1") { transitive = false }
     implementation 'org.apache.commons:commons-compress:1.21'
-    implementation 'org.threeten:threeten-extra:1.7.1'
+    implementation 'com.amazonaws:aws-java-sdk-ecr:1.12.253'
 
     implementation("io.micronaut.aws:micronaut-aws-parameter-store")
     implementation "software.amazon.awssdk:ecr"
@@ -149,10 +149,11 @@ task buildInfo { doLast {
                 version=${version}
                 commitId=${project.property('commitId')}
             """.stripIndent().toString()
-    def f = file("src/main/resources/META-INF/build-info.properties")
+    def f = file("${buildDir}/resources/main/META-INF/build-info.properties")
     f.parentFile.mkdirs()
     f.text = info
 } }
+compileGroovy.dependsOn buildInfo
 
 asciidoctorj {
     modules {

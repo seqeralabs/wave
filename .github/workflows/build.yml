@@ -39,7 +39,7 @@ jobs:
           cache: gradle
 
       - name: Compile
-        run: make buildInfo compile
+        run: make compile
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
 

@@ -1,4 +1,7 @@
 # Wave changelog
+v0.11.1 - 9 Aug 2022
+- Fix build duration format
+
 v0.11.0 - 6 Aug 2022
 - Add config setting for storage cache [e6d3d33d]
 - Improve unit tests for manifest and blob cache [70ba6886]
