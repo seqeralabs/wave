@@ -147,10 +147,11 @@ task buildInfo { doLast {
                 version=${version}
                 commitId=${project.property('commitId')}
             """.stripIndent().toString()
-    def f = file("src/main/resources/META-INF/build-info.properties")
+    def f = file("${buildDir}/resources/main/META-INF/build-info.properties")
     f.parentFile.mkdirs()
     f.text = info
 } }
+compileGroovy.dependsOn buildInfo
 
 asciidoctorj {
     modules {

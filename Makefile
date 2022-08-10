@@ -33,8 +33,6 @@ pack/layers/layer.tar.gzip: .layer/opt/geesefs .layer/opt/tini
 
 pack: clean pack/layers/layer.tar.gzip
 
-buildInfo:
-	./gradlew buildInfo
 
 compile:
 	 ./gradlew assemble
