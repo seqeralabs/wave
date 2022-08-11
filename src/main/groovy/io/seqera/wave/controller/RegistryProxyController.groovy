@@ -1,6 +1,8 @@
 package io.seqera.wave.controller
 
 import java.time.Instant
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Future
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -14,6 +16,9 @@ import io.micronaut.http.MutableHttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Error
 import io.micronaut.http.annotation.Get
+import io.micronaut.http.annotation.Head
+import io.micronaut.http.hateoas.JsonError
+import io.micronaut.http.hateoas.Link
 import io.micronaut.http.server.types.files.StreamedFile
 import io.seqera.wave.ErrorHandler
 import io.seqera.wave.core.RegistryProxyService
@@ -59,20 +64,25 @@ class RegistryProxyController {
         )
     }
 
-    @Get(uri="/{url:(.+)}", produces = "*/*")
-    MutableHttpResponse<?> handleGet(String url, HttpRequest httpRequest) {
+    @Head(uri="/{url:(.+)}")
+    CompletableFuture<MutableHttpResponse<?>> handleHead(String url, HttpRequest httpRequest) {
+        log.info "> Request [$httpRequest.method] $httpRequest.path"
+        final route = routeHelper.parse("/v2/" + url)
+
+        if (!(route.manifest && route.tag)) {
+            return asyncNotFound()
+        }
+
+        return handleHead(route, httpRequest)
+    }
+
+    @Get(uri="/{url:(.+)}", produces = "*/*", headRoute = false)
+    CompletableFuture<?> handleGet(String url, HttpRequest httpRequest) {
         log.info "> Request [$httpRequest.method] $httpRequest.path"
         final route = routeHelper.parse("/v2/"+url)
 
-        // check if it's a container under build
-        final targetImage = route.request?.containerImage
-        final status = containerBuildService.waitImageBuild(targetImage)
-
-        if( httpRequest.method == HttpMethod.HEAD )
-            return handleHead(route, httpRequest)
-
         if (!(route.manifest || route.blob)) {
-            return HttpResponse.notFound()
+            return asyncNotFound()
         }
 
         if( route.manifest ) {
@@ -114,48 +124,55 @@ class RegistryProxyController {
         return proxyService.handleManifest(route, headers)
     }
 
-    MutableHttpResponse<?> handleHead(RoutePath route, HttpRequest httpRequest) {
+    CompletableFuture<MutableHttpResponse<?>> handleHead(RoutePath route, HttpRequest httpRequest) {
 
-        if (!(route.manifest && route.tag)) {
-            return HttpResponse.notFound()
+        // check if it's a container under build
+        final targetImage = route.request?.containerImage
+        if( targetImage ) {
+            final status = containerBuildService.waitImageBuild(targetImage)
+            if( status != BuildStatus.SUCCEED )
+                return asyncNotFound()
         }
 
         final entry = manifestForPath(route, httpRequest)
         if( !entry ) {
             log.warn "Unable to find cache manifest for $route"
-            return HttpResponse.notFound()
+            return CompletableFuture.supplyAsync { HttpResponse.notFound() } as CompletableFuture<MutableHttpResponse<?>>
         }
         return fromCache(entry)
     }
 
-    MutableHttpResponse<?> fromCache(DigestStore entry) {
-        Map<CharSequence, CharSequence> headers = Map.of(
-                        "Content-Length", entry.bytes.length.toString(),
-                        "Content-Type", entry.mediaType,
-                        "docker-content-digest", entry.digest,
-                        "etag", entry.digest,
-                        "docker-distribution-api-version", "registry/2.0") as Map<CharSequence, CharSequence>
-        MutableHttpResponse
-                .ok( entry.bytes )
-                .headers(headers)
+    CompletableFuture<MutableHttpResponse<?>> fromCache(DigestStore entry) {
+        CompletableFuture.supplyAsync {
+            Map<CharSequence, CharSequence> headers = Map.of(
+                    "Content-Length", entry.bytes.length.toString(),
+                    "Content-Type", entry.mediaType,
+                    "docker-content-digest", entry.digest,
+                    "etag", entry.digest,
+                    "docker-distribution-api-version", "registry/2.0") as Map<CharSequence, CharSequence>
+            MutableHttpResponse
+                    .ok(entry.bytes)
+                    .headers(headers)
+        } as CompletableFuture<MutableHttpResponse<?>>
     }
 
-    MutableHttpResponse<StreamedFile>fromDelegateResponse(final DelegateResponse delegateResponse){
+    CompletableFuture<MutableHttpResponse<?>>fromDelegateResponse(final DelegateResponse delegateResponse){
+        CompletableFuture.supplyAsync {
+            final Long contentLength = delegateResponse.headers
+                    .find { it.key.toLowerCase() == 'content-length' }?.value?.first() as long ?: null
+            final fluxInputStream = createFluxFromChunkBytes(delegateResponse.body, contentLength)
 
-        final Long contentLength = delegateResponse.headers
-                .find {it.key.toLowerCase()=='content-length'}?.value?.first() as long ?: null
-        final fluxInputStream = createFluxFromChunkBytes(delegateResponse.body, contentLength)
-
-        HttpResponse
-                .status(HttpStatus.valueOf(delegateResponse.statusCode))
-                .body( fluxInputStream )
-                .headers({MutableHttpHeaders mutableHttpHeaders ->
-                    delegateResponse.headers.each {entry->
-                        entry.value.each{ value ->
-                            mutableHttpHeaders.add(entry.key, value)
+            HttpResponse
+                    .status(HttpStatus.valueOf(delegateResponse.statusCode))
+                    .body(fluxInputStream)
+                    .headers({ MutableHttpHeaders mutableHttpHeaders ->
+                        delegateResponse.headers.each { entry ->
+                            entry.value.each { value ->
+                                mutableHttpHeaders.add(entry.key, value)
+                            }
                         }
-                    }
-                })
+                    })
+        } as CompletableFuture<MutableHttpResponse<?>>
     }
 
     static StreamedFile createFluxFromChunkBytes(InputStream inputStream, Long size){
@@ -163,6 +180,12 @@ class RegistryProxyController {
             new StreamedFile(inputStream, MediaType.APPLICATION_OCTET_STREAM_TYPE, Instant.now().toEpochMilli(), size)
         else
             new StreamedFile(inputStream, MediaType.APPLICATION_OCTET_STREAM_TYPE)
+    }
+
+    CompletableFuture<MutableHttpResponse<?>> asyncNotFound() {
+        CompletableFuture.supplyAsync {
+            HttpResponse.notFound()
+        } as CompletableFuture<MutableHttpResponse<?>>
     }
 
 }

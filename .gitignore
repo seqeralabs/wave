@@ -22,5 +22,5 @@ out/
 layer.tar.gzip
 tower-reg.yml
 /fusion-reg*.log
-wave.log
+wave*.log
 build-workspace/
