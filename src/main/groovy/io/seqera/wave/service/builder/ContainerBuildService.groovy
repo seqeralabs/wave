@@ -21,7 +21,6 @@ interface ContainerBuildService {
      */
     String buildImage(String dockerfileContent, String condaFile, User user)
 
-
-    BuildStatus waitImageBuild(String targetImage)
+    BuildStatus isUnderConstruction( String targetImage )
 
 }

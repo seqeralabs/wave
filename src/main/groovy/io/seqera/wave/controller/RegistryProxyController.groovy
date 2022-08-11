@@ -20,6 +20,7 @@ import io.micronaut.http.annotation.Head
 import io.micronaut.http.hateoas.JsonError
 import io.micronaut.http.hateoas.Link
 import io.micronaut.http.server.types.files.StreamedFile
+import io.micronaut.retry.annotation.Retryable
 import io.seqera.wave.ErrorHandler
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RegistryProxyService.DelegateResponse
@@ -129,7 +130,7 @@ class RegistryProxyController {
         // check if it's a container under build
         final targetImage = route.request?.containerImage
         if( targetImage ) {
-            final status = containerBuildService.waitImageBuild(targetImage)
+            final status = waitImageBuild(targetImage)
             if( status != BuildStatus.SUCCEED )
                 return asyncNotFound()
         }
@@ -182,10 +183,16 @@ class RegistryProxyController {
             new StreamedFile(inputStream, MediaType.APPLICATION_OCTET_STREAM_TYPE)
     }
 
-    CompletableFuture<MutableHttpResponse<?>> asyncNotFound() {
+    static CompletableFuture<MutableHttpResponse<?>> asyncNotFound() {
         CompletableFuture.supplyAsync {
             HttpResponse.notFound()
         } as CompletableFuture<MutableHttpResponse<?>>
+    }
+
+    @Retryable(delay = '${wave.build.retry.delay:5s}', attempts = '${wave.build.retry.attempts:5}')
+    BuildStatus waitImageBuild(String targetImage){
+        if( containerBuildService.isUnderConstruction(targetImage) == BuildStatus.IN_PROGRESS )
+            throw new RuntimeException("Image $targetImage in progress")
     }
 
 }

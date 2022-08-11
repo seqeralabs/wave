@@ -7,6 +7,7 @@ package io.seqera.wave.service.builder
  */
 enum BuildStatus {
     UNKNOWN,
+    IN_PROGRESS,
     SUCCEED,
     FAILED
 }

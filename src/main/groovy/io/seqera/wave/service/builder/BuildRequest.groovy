@@ -63,9 +63,14 @@ class BuildRequest {
     final String job
 
     /**
-     * Reference to the future build job result
+     * build job status
      */
-    volatile Future<BuildResult> result
+    volatile BuildStatus status
+
+    /**
+     * build job result
+     */
+    volatile BuildResult result
 
     BuildRequest(String dockerFile, Path workspace, String repo, String condaFile, User user) {
         final content = condaFile ? dockerFile + condaFile : dockerFile
@@ -77,6 +82,12 @@ class BuildRequest {
         this.workDir = workspace.resolve(id).toAbsolutePath()
         this.startTime = Instant.now()
         this.job = "${id}-${startTime.toEpochMilli().toString().md5()[-5..-1]}"
+        this.status = BuildStatus.IN_PROGRESS
+    }
+
+    void markAsCompleted(BuildStatus status, BuildResult result){
+        this.status = status
+        this.result = result
     }
 
     @Override

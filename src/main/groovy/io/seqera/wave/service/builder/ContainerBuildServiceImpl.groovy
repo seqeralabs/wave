@@ -15,10 +15,10 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.micronaut.scheduling.TaskScheduler
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.mail.MailService
 import io.seqera.wave.tower.User
-import io.seqera.wave.util.ThreadPoolBuilder
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static java.nio.file.StandardOpenOption.APPEND
@@ -67,21 +67,12 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     private final Map<String,BuildRequest> buildRequests = new HashMap<>()
 
-    private ExecutorService executor
-
     @Inject
-    private RegistryLookupService lookupService
-
-    @Inject
+    TaskScheduler taskScheduler
     private RegistryCredentialsProvider credentialsProvider
 
     @Inject
     private BuildStrategy buildStrategy
-
-    @PostConstruct
-    void init() {
-        executor = ThreadPoolBuilder.io(10, 10, 100, 'wave-builder')
-    }
 
     @Override
     String buildImage(String dockerfileContent, String condaFile, User user) {
@@ -93,42 +84,12 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     }
 
     @Override
-    BuildStatus waitImageBuild(String targetImage) {
+    BuildStatus isUnderConstruction(String targetImage) {
         final req = buildRequests.get(targetImage)
         if( !req )
             return BuildStatus.UNKNOWN
-        final future = req.result
-        if( future.isCancelled() )
-            return BuildStatus.FAILED
-        if( future.isDone() )
-            return ret(req.result.get())
-        final begin = System.currentTimeMillis()
-        while( true ) {
-            try {
-                return ret(future.get(1, TimeUnit.SECONDS))
-            }
-            catch (TimeoutException e) {
-                final delta = System.currentTimeMillis() - begin
-                if( delta > buildTimeout.toMillis() ) {
-                    log.info "== Build timeout for image: $targetImage"
-                    return BuildStatus.FAILED
-                }
-                else if( delta>10_000 ) {
-                    log.info "== Build in progress for image: $targetImage"
-                }
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-            catch (Exception e) {
-                log.error "== Build failed for image: $targetImage -- cause: ${e.message}", e
-                return BuildStatus.FAILED
-            }
-        }
-    }
-
-    protected BuildStatus ret(BuildResult result) {
-        result.exitStatus==0 ? BuildStatus.SUCCEED : BuildStatus.FAILED
+        final status = req.status
+        status
     }
 
 
@@ -163,8 +124,10 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             return resp
         }
         catch (Exception e) {
+            BuildResult result = new BuildResult(req.id, -1, e.message, req.startTime)
+            req.markAsCompleted( BuildStatus.FAILED, result)
             log.error "== Ouch! Unable to build container request=$req", e
-            return new BuildResult(req.id, -1, e.message, req.startTime)
+            result
         }
         finally {
             if( !debugMode )
@@ -172,15 +135,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         }
     }
 
-    protected Callable<BuildResult> callLaunch(BuildRequest request) {
-        new Callable<BuildResult>() {
-            @Override
-            BuildResult call() throws Exception {
-                final result = launch(request)
-                sendCompletionEmail(request,result)
-                return result
-            }
-        }
+    protected void callLaunch(BuildRequest request) {
+        final result = launch(request)
+        sendCompletionEmail(request,result)
     }
 
     protected sendCompletionEmail(BuildRequest request, BuildResult result) {
@@ -197,7 +154,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         synchronized (buildRequests) {
             if( !buildRequests.containsKey(request.targetImage) ) {
                 log.info "== Submit build request request: $request"
-                request.result = executor.submit(callLaunch(request))
+                taskScheduler.schedule(Duration.ofMillis(1), {
+                    callLaunch(request)
+                })
                 buildRequests.put(request.targetImage, request)
             }
             else {
