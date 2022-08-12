@@ -23,7 +23,6 @@ fetch the image manifest, and appended to the layer configuration a new configur
 
 title TowerRegistry
 
-LAYOUT_TOP_DOWN
 
 Person(customer, "<$user>\nDocker", "docker pull")
 
@@ -36,6 +35,7 @@ System_Ext(s3, "S3", "Storage")
 
 System_Ext(docker, "Docker Hub", "docker.io")
 System_Ext(quai, "RedHat Quay", "quay.io")
+System_Ext(aws, "AWS ECR", "ecr")
 
 Rel(customer, service, "Pull", "Only pull")
 
@@ -44,6 +44,7 @@ Rel_R(service, file, "Read/Write", "bucket")
 
 Rel_D(service, docker, "Pull", "manifest & blobs")
 Rel_D(service, quai, "Pull", "manifest & blobs")
+Rel_D(service, aws, "Push/Pull", "")
 ----
 
 == Docker image schema
@@ -82,17 +83,17 @@ Using the special name `tw` the image can be also encoded using base32:
 
 Main parts of the service are structured into following components:
 
-=== Configuration
+- Configuration: creates beans of configurations
 
-=== Authorization
+- aAthorization: maintain and perform the authorization of request agains external docker registries
 
-=== Proxy
+- Proxy: main business logic, perform the logic of send request to external registries
 
-=== Dialog
+- Storage: subsystem to save blobs and manifest
 
-=== Storage
+- Controllers: inputs of the system
 
-=== Controller
+- Builder: create and push docker image on the fly
 
 == Configuration
 
