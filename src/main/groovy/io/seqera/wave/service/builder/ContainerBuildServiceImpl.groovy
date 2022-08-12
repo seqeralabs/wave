@@ -13,6 +13,8 @@ import javax.annotation.PostConstruct
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.auth.RegistryCredentialsProvider
+import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.mail.MailService
 import io.seqera.wave.tower.User
@@ -66,6 +68,12 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     private ExecutorService executor
 
+    @Inject
+    private RegistryLookupService lookupService
+
+    @Inject
+    private RegistryCredentialsProvider credentialsProvider
+
     @PostConstruct
     void init() {
         executor = ThreadPoolBuilder.io(10, 10, 100, 'wave-builder')
@@ -116,20 +124,44 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         result.exitStatus==0 ? BuildStatus.SUCCEED : BuildStatus.FAILED
     }
 
-    protected List<String> dockerWrapper(Path workDir) {
-        ['docker',
-         'run',
-         '--rm',
-         '-w', workDir.toString(),
-         '-v', "$workDir:$workDir".toString(),
-         '-e', 'AWS_ACCESS_KEY_ID',
-         '-e', 'AWS_SECRET_ACCESS_KEY',
-         buildImage]
+    protected List<String> dockerWrapper(Path workDir, Path credsFile) {
+        final wrapper = ['docker',
+                 'run',
+                 '--rm',
+                 '-w', workDir.toString(),
+                 '-v', "$workDir:$workDir".toString()]
+
+        if( credsFile ) {
+            wrapper.add('-v')
+            wrapper.add("$credsFile:/kaniko/.docker/config.json:ro".toString())
+        }
+        // the container image to be used t
+        wrapper.add( buildImage )
+        // return it
+        return wrapper
     }
 
-    protected List<String> launchCmd(BuildRequest req, boolean dockerMode) {
+    protected String credsJson(String registry) {
+        final info = lookupService.lookup(registry)
+        final creds = credentialsProvider.getCredentials(registry)
+        if( !creds ) {
+            return null
+        }
+        final encode = "${creds.username}:${creds.password}".getBytes().encodeBase64()
+        return """\
+        {
+            "auths": {
+                "${info.getHost()}": {
+                    "auth": "$encode"
+                }
+            }
+        }
+        """.stripIndent()
+    }
+
+    protected List<String> launchCmd(BuildRequest req, boolean dockerMode, Path credsFile) {
         final result = dockerMode
-                ? dockerWrapper(req.workDir)
+                ? dockerWrapper(req.workDir, credsFile)
                 : new ArrayList()
         result
                 << "/kaniko/executor"
@@ -155,9 +187,18 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             final condaFile = req.workDir.resolve('conda.yml')
             Files.write(condaFile, req.condaFile.bytes, CREATE, APPEND)
         }
+        // create creds file for target repo
+        Path credsFile = req.workDir.resolve('config.json')
+        final creds = credsJson(buildRepo)
+        if( creds ) {
+            Files.write(credsFile, creds.bytes)
+        }
+        else
+            credsFile = null
+
         // launch an external process to build the container
         try {
-            final cmd = launchCmd(req, dockerMode)
+            final cmd = launchCmd(req, dockerMode, credsFile)
             log.debug "Build run command: ${cmd.join(' ')}"
             final proc = new ProcessBuilder()
                     .command(cmd)

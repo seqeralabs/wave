@@ -24,33 +24,42 @@ class ContainerBuildServiceTest extends Specification {
         given:
         def work = Path.of('/work/foo')
         when:
-        def cmd = service.dockerWrapper(work)
+        def cmd = service.dockerWrapper(work, null)
         then:
         cmd == ['docker',
                 'run',
                 '--rm',
                 '-w', '/work/foo',
                 '-v', '/work/foo:/work/foo',
-                '-e', 'AWS_ACCESS_KEY_ID',
-                '-e', 'AWS_SECRET_ACCESS_KEY',
+                '195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/kaniko:0.1.3']
+
+        when:
+        cmd = service.dockerWrapper(work, Path.of('/foo/creds.json'))
+        then:
+        cmd == ['docker',
+                'run',
+                '--rm',
+                '-w', '/work/foo',
+                '-v', '/work/foo:/work/foo',
+                '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
                 '195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/kaniko:0.1.3']
     }
 
     def 'should get kaniko command' () {
         given:
+        def creds = Path.of('/work/creds.json')
         def work = Path.of('/work/foo')
         def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, Mock(User))
 
         when:
-        def cmd = service.launchCmd(REQ, true)
+        def cmd = service.launchCmd(REQ, true, creds)
         then:
         cmd == ['docker',
                 'run',
                 '--rm',
                 '-w', '/work/foo/7a3e00f5a5d41298cbb8b61ac280b7418f198677df8b330cae1602546d34c24d',
                 '-v', '/work/foo/7a3e00f5a5d41298cbb8b61ac280b7418f198677df8b330cae1602546d34c24d:/work/foo/7a3e00f5a5d41298cbb8b61ac280b7418f198677df8b330cae1602546d34c24d',
-                '-e', 'AWS_ACCESS_KEY_ID',
-                '-e', 'AWS_SECRET_ACCESS_KEY',
+                '-v', '/work/creds.json:/kaniko/.docker/config.json:ro',
                 '195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/kaniko:0.1.3',
                 '/kaniko/executor',
                 '--dockerfile',
@@ -65,7 +74,7 @@ class ContainerBuildServiceTest extends Specification {
         ]
 
         when:
-        cmd = service.launchCmd(REQ, false)
+        cmd = service.launchCmd(REQ, false, null)
         then:
         cmd == [
                 '/kaniko/executor',
@@ -104,5 +113,21 @@ class ContainerBuildServiceTest extends Specification {
 
         cleanup:
         folder?.deleteDir()
+    }
+
+    def 'should create creds json file' () {
+        when:
+        def result = service.credsJson('docker.io')
+        then:
+        // note: the auth below depends on the docker user and password used for test
+        result == """\
+            {
+                "auths": {
+                    "https://registry-1.docker.io": {
+                        "auth": "cGRpdG9tbWFzbzpkMjEzZTk1NS0zMzU3LTQ2MTItOGM0OC1mYTU2NTJhZDk2OGI="
+                    }
+                }
+            }
+            """.stripIndent()
     }
 }
