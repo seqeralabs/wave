@@ -3,12 +3,7 @@ package io.seqera.wave.service.builder
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
-import java.util.concurrent.Callable
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 import javax.annotation.Nullable
-import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -66,6 +61,12 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     private MailService mailService
 
     private final Map<String,BuildRequest> buildRequests = new HashMap<>()
+
+    @Inject
+    private RegistryLookupService lookupService
+
+    @Inject
+    private RegistryCredentialsProvider credentialsProvider
 
     @Inject
     TaskScheduler taskScheduler
