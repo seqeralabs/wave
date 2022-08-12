@@ -1,0 +1,5 @@
+wave:
+  build:
+    retry:
+      delay: "1s"
+      attempts: 3

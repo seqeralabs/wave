@@ -189,10 +189,14 @@ class RegistryProxyController {
         } as CompletableFuture<MutableHttpResponse<?>>
     }
 
-    @Retryable(delay = '${wave.build.retry.delay:5s}', attempts = '${wave.build.retry.attempts:5}')
+    @Retryable(delay = '${wave.build.retry.delay:5s}', attempts = '${wave.build.retry.attempts:5}', includes = IllegalStateException)
     BuildStatus waitImageBuild(String targetImage){
-        if( containerBuildService.isUnderConstruction(targetImage) == BuildStatus.IN_PROGRESS )
-            throw new RuntimeException("Image $targetImage in progress")
+        BuildStatus ret = containerBuildService.isUnderConstruction(targetImage)
+        if( ret == BuildStatus.IN_PROGRESS ) {
+            log.info("Image $targetImage under construccion, try again")
+            throw new IllegalStateException("Image $targetImage in progress")
+        }
+        ret
     }
 
 }
