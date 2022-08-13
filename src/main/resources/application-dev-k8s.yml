@@ -1,0 +1,9 @@
+wave:
+  build:
+    debug: false
+    k8s:
+      configPath: "${HOME}/.kube/config"
+      context: 'docker-desktop'
+      namespace: 'wave-local'
+      volumeClaim: 'wave-logs'
+

@@ -19,4 +19,19 @@ class StringUtils {
         return str.length()>=5 ? str[0..2] + '****' : '****'
     }
 
+    static String trunc(String value) {
+        if( !value ) return value
+        final lines = value.readLines()
+        return lines.size()==1 ? lines[0] : lines[0] + ' (more omitted)'
+    }
+
+    static String indent(String text) {
+        if( !text ) return text
+        final result = new StringBuilder()
+        for( String line : text.readLines()) {
+            result.append(' ').append(line).append('\n')
+        }
+        return result.toString()
+    }
+
 }

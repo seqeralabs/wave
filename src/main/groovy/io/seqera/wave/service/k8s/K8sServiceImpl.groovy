@@ -14,6 +14,7 @@ import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1JobBuilder
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodBuilder
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -24,6 +25,7 @@ import jakarta.inject.Singleton
  */
 @Slf4j
 @Singleton
+@Requires(property = 'wave.build.k8s')
 @CompileStatic
 class K8sServiceImpl implements K8sService {
 

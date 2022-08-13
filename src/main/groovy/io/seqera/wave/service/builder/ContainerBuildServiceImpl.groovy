@@ -23,6 +23,9 @@ import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static java.nio.file.StandardOpenOption.APPEND
 import static java.nio.file.StandardOpenOption.CREATE
+
+import static io.seqera.wave.util.StringUtils.indent
+
 /**
  * Implements container build service
  *
@@ -110,6 +113,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                     log.info "== Build timeout for image: $targetImage"
                     return BuildStatus.FAILED
                 }
+                else if( delta>10_000 ) {
+                    log.info "== Build in progress for image: $targetImage"
+                }
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -153,7 +159,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         // launch an external process to build the container
         try {
             final resp = buildStrategy.build(req, creds)
-            log.info "== Build completed with status=$resp.exitStatus\n- stdout: ${resp.logs}"
+            log.info "== Build completed with status=$resp.exitStatus; stdout: (see below)\n${indent(resp.logs)}"
             return resp
         }
         catch (Exception e) {

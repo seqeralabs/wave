@@ -4,6 +4,9 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.model.ContainerCoordinates
+
+import static io.seqera.wave.util.StringUtils.trunc
+
 /**
  * Model a container request
  *
@@ -21,4 +24,10 @@ class ContainerRequestData {
     final String condaFile
 
     ContainerCoordinates coordinates() { ContainerCoordinates.parse(containerImage) }
+
+    @Override
+    String toString() {
+        return "ContainerRequestData[userId=$userId; workspaceId=$workspaceId; containerImage=$containerImage; containerFile=${trunc(containerFile)}; condaFile=${trunc(condaFile)}; containerConfig=${containerConfig}]"
+    }
+
 }

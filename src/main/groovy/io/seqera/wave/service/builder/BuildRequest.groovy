@@ -8,6 +8,9 @@ import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import io.seqera.wave.tower.User
 import io.seqera.wave.util.DigestFunctions
+
+import static io.seqera.wave.util.StringUtils.trunc
+
 /**
  * Model a container builder result
  *
@@ -42,9 +45,4 @@ class BuildRequest {
         return "BuildRequest[id=$id; targetImage=$targetImage; user=$user; dockerFile=${trunc(dockerFile)}; condaFile=${trunc(condaFile)}]"
     }
 
-    private String trunc(String value) {
-        if( !value ) return value
-        final lines = value.readLines()
-        return lines.size()==1 ? lines[0] : lines[0] + ' (more omitted)'
-    }
 }

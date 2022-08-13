@@ -1,11 +1,6 @@
 wave:
   build:
     debug: false
-    k8s:
-      configPath: "${HOME}/.kube/config"
-      context: 'docker-desktop'
-      namespace: 'wave-local'
-      volumeClaim: 'wave-logs'
 ---
 # uses TOWER_xxx variable because the dev environment is expected to be
 # the same as of tower
