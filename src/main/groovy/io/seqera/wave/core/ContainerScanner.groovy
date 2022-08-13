@@ -83,30 +83,30 @@ class ContainerScanner {
 
         // resolve image tag to digest
         final resp1 = client.head("/v2/$imageName/manifests/$tag", headers)
-        final digest = resp1.headers().firstValue('docker-content-digest')
-        log.info "Image $imageName:$tag => digest=$digest"
+        final digest = resp1.headers().firstValue('docker-content-digest').orElse(null)
+        log.debug "Resolve (1): image $imageName:$tag => digest=$digest"
         if( resp1.statusCode() != 200 )
             throw new InvalidResponseException("Unexpected response statusCode: ${resp1.statusCode()}", resp1)
 
         // get manifest list for digest
-        final resp2 = client.getString("/v2/$imageName/manifests/${digest.get()}", headers)
+        final resp2 = client.getString("/v2/$imageName/manifests/$digest", headers)
         final type = resp2.headers().firstValue('content-type').orElse(null)
         if( resp2.statusCode() != 200 )
             throw new InvalidResponseException("Unexpected response statusCode: ${resp2.statusCode()}", resp2)
         final manifestsList = resp2.body()
-        log.debug "Image $imageName:$tag => type=$type; manifests list:\n${JsonOutput.prettyPrint(manifestsList)}"
+        log.debug "Resolve (2): image $imageName:$tag => type=$type; manifests list:\n${JsonOutput.prettyPrint(manifestsList)}"
 
         // when there's no container config, not much to do
         // just cache the manifest content and return the digest
         if( !containerConfig ) {
-            log.info "No container config provided for image=$imageName:$tag"
-            storage.saveManifest("/v2/$imageName/manifests/$digest", manifestsList, type, digest.get())
+            log.debug "Resolve (3): container config provided for image=$imageName:$tag"
+            storage.saveManifest("/v2/$imageName/manifests/$digest", manifestsList, type, digest)
             return digest
         }
 
         if( type == ContentType.DOCKER_MANIFEST_V1_JWS_TYPE ) {
             final v1Digest = resolveV1Manifest(manifestsList, imageName)
-            log.debug "==> new manifest v1 digest: $v1Digest"
+            log.debug "Resolve (4) ==> new manifest v1 digest: $v1Digest"
             return v1Digest
         }
 
@@ -118,16 +118,16 @@ class ContainerScanner {
         // fetch the image config
         final resp4 = client.getString("/v2/$imageName/blobs/$configDigest", headers)
         final imageConfig = resp4.body()
-        log.debug "Image $imageName:$tag => image config=\n${JsonOutput.prettyPrint(imageConfig)}"
+        log.debug "Resolve (5): image $imageName:$tag => image config=\n${JsonOutput.prettyPrint(imageConfig)}"
 
         // update the image config adding the new layer
         final newConfigDigest = updateImageConfig(imageName, imageConfig)
-        log.debug "==> new config digest: $newConfigDigest"
+        log.debug "Resolve (6) ==> new config digest: $newConfigDigest"
 
         // update the image manifest adding a new layer
         // returns the updated image manifest digest
         final newManifestDigest = updateImageManifest(imageName, imageManifest, newConfigDigest)
-        log.debug "==> new image digest: $newManifestDigest"
+        log.debug "Resolve (7) ==> new image digest: $newManifestDigest"
 
         if( !targetDigest ) {
             return newManifestDigest
@@ -136,8 +136,7 @@ class ContainerScanner {
             // update the manifests list with the new digest
             // returns the manifests list digest
             final newListDigest = updateManifestsList(imageName, manifestsList, targetDigest, newManifestDigest)
-            log.debug "==> new list digest: $newListDigest"
-
+            log.debug "Resolve (8) ==> new list digest: $newListDigest"
             return newListDigest
         }
 
