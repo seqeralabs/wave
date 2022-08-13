@@ -49,6 +49,7 @@ dependencies {
     implementation('io.projectreactor:reactor-core')
     implementation("io.seqera:tower-crypto:22.1.1") { transitive = false }
     implementation 'org.apache.commons:commons-compress:1.21'
+    implementation 'io.kubernetes:client-java:10.0.1'
 
     implementation("io.micronaut.aws:micronaut-aws-parameter-store")
     implementation "software.amazon.awssdk:ecr"

@@ -39,7 +39,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     @Value('${wave.build.workspace}')
     String workspace
 
-    @Value('${wave.debug}')
+    @Value('${wave.build.debug}')
+    @Nullable
     Boolean debugMode
 
     /**
@@ -50,9 +51,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     @Value('${wave.build.cache}')
     String cacheRepo
-
-    @Value('${wave.build.dockerMode:false}')
-    Boolean dockerMode
 
     @Value('${wave.build.image}')
     String buildImage
@@ -73,6 +71,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     @Inject
     private RegistryCredentialsProvider credentialsProvider
+
+    @Inject
+    private BuildStrategy buildStrategy
 
     @PostConstruct
     void init() {
@@ -124,22 +125,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         result.exitStatus==0 ? BuildStatus.SUCCEED : BuildStatus.FAILED
     }
 
-    protected List<String> dockerWrapper(Path workDir, Path credsFile) {
-        final wrapper = ['docker',
-                 'run',
-                 '--rm',
-                 '-w', workDir.toString(),
-                 '-v', "$workDir:$workDir".toString()]
-
-        if( credsFile ) {
-            wrapper.add('-v')
-            wrapper.add("$credsFile:/kaniko/.docker/config.json:ro".toString())
-        }
-        // the container image to be used t
-        wrapper.add( buildImage )
-        // return it
-        return wrapper
-    }
 
     protected String credsJson(String registry) {
         final info = lookupService.lookup(registry)
@@ -148,35 +133,10 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             return null
         }
         final encode = "${creds.username}:${creds.password}".getBytes().encodeBase64()
-        return """\
-        {
-            "auths": {
-                "${info.getHost()}": {
-                    "auth": "$encode"
-                }
-            }
-        }
-        """.stripIndent()
+        return """{"auths":{"${info.getHost()}":{"auth":"$encode"}}}"""
     }
 
-    protected List<String> launchCmd(BuildRequest req, boolean dockerMode, Path credsFile) {
-        final result = dockerMode
-                ? dockerWrapper(req.workDir, credsFile)
-                : new ArrayList()
-        result
-                << "/kaniko/executor"
-                << "--dockerfile"
-                << "$req.workDir/Dockerfile".toString()
-                << '--context'
-                << req.workDir.toString()
-                << "--destination"
-                << req.targetImage
-                << "--cache=true"
-                << "--cache-repo"
-                << cacheRepo
-    }
-
-    protected BuildResult launch(BuildRequest req, boolean dockerMode) {
+    protected BuildResult launch(BuildRequest req) {
         // create the workdir path
         Files.createDirectories(req.workDir)
         // save the dockerfile
@@ -188,32 +148,21 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             Files.write(condaFile, req.condaFile.bytes, CREATE, APPEND)
         }
         // create creds file for target repo
-        Path credsFile = req.workDir.resolve('config.json')
         final creds = credsJson(buildRepo)
-        if( creds ) {
-            Files.write(credsFile, creds.bytes)
-        }
-        else
-            credsFile = null
 
         // launch an external process to build the container
         try {
-            final cmd = launchCmd(req, dockerMode, credsFile)
-            log.debug "Build run command: ${cmd.join(' ')}"
-            final proc = new ProcessBuilder()
-                    .command(cmd)
-                    .directory(req.workDir.toFile())
-                    .redirectErrorStream(true)
-                    .start()
-
-            final failed = proc.waitFor()
-            final stdout = proc.inputStream.text
-            log.info "== Build completed: ${cmd.join(' ')}\n- completed with status=$failed\n- stdout: ${stdout}"
-            return new BuildResult(req.id, failed, stdout, req.startTime)
+            final resp = buildStrategy.build(req, creds)
+            log.info "== Build completed with status=$resp.exitStatus\n- stdout: ${resp.logs}"
+            return resp
+        }
+        catch (Exception e) {
+            log.error "== Ouch! Unable to build container request=$req", e
+            return new BuildResult(req.id, -1, e.message, req.startTime)
         }
         finally {
             if( !debugMode )
-                dockerfile.parent.deleteDir()
+                buildStrategy.cleanup(req)
         }
     }
 
@@ -221,10 +170,19 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         new Callable<BuildResult>() {
             @Override
             BuildResult call() throws Exception {
-                final result = launch(request, dockerMode)
-                mailService?.sendCompletionMail(result, request.user)
+                final result = launch(request)
+                sendCompletionEmail(request,result)
                 return result
             }
+        }
+    }
+
+    protected sendCompletionEmail(BuildRequest request, BuildResult result) {
+        try {
+            mailService?.sendCompletionMail(result, request.user)
+        }
+        catch (Exception e) {
+            log.warn "Enable to send completion notication - reason: ${e.message?:e}"
         }
     }
 

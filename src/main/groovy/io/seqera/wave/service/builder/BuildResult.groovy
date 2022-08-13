@@ -12,7 +12,7 @@ import groovy.transform.CompileStatic
 @CompileStatic
 class BuildResult {
 
-    public static final BuildResult ERROR = new BuildResult('-', -1, 'Unknown', null, Duration.ZERO)
+    public static final BuildResult UNKNOWN = new BuildResult('-', -1, 'Unknown', null, Duration.ZERO)
 
     final String id
     final int exitStatus

@@ -39,7 +39,7 @@ class MailServiceImpl implements MailService {
         // send to user email address or fallback to the system `mail.from` address
         final recipient = user ? user.email : config.from
         if( recipient ) {
-            final arg = build ?: BuildResult.ERROR
+            final arg = build ?: BuildResult.UNKNOWN
             final mail = buildCompletionMail(arg, recipient)
             spooler.sendMail(mail)
         }

@@ -28,7 +28,7 @@ class BuildRequest {
 
     BuildRequest(String dockerFile, Path workspace, String repo, String condaFile, User user) {
         final content = condaFile ? dockerFile + condaFile : dockerFile
-        this.id = DigestFunctions.digest(content).replace('sha256:','')
+        this.id = DigestFunctions.md5(content)
         this.dockerFile = dockerFile
         this.condaFile = condaFile
         this.targetImage = "${repo}:${id}"
@@ -45,6 +45,6 @@ class BuildRequest {
     private String trunc(String value) {
         if( !value ) return value
         final lines = value.readLines()
-        return lines.size()==1 ? lines[0] : lines[0] + ' (..)'
+        return lines.size()==1 ? lines[0] : lines[0] + ' (more omitted)'
     }
 }

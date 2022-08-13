@@ -26,6 +26,15 @@ public class DigestFunctions {
         return MessageDigest.getInstance("SHA-256");
     }
 
+    private static MessageDigest getMd5() throws NoSuchAlgorithmException {
+        return MessageDigest.getInstance("MD5");
+    }
+
+    public static String md5(String str) throws NoSuchAlgorithmException {
+        final byte[] digest = getMd5().digest(str.getBytes());
+        return bytesToHex(digest);
+    }
+
     public static String bytesToHex(byte[] bytes) {
         StringBuffer result = new StringBuffer();
         for (byte byt : bytes) result.append(Integer.toString((byt & 0xff) + 0x100, 16).substring(1));
