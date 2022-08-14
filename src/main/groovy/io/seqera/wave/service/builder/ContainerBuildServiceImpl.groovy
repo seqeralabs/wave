@@ -70,7 +70,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     @Inject
     TaskScheduler taskScheduler
-    private RegistryCredentialsProvider credentialsProvider
 
     @Inject
     private BuildStrategy buildStrategy
@@ -122,6 +121,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         try {
             final resp = buildStrategy.build(req, creds)
             log.info "== Build completed with status=$resp.exitStatus; stdout: (see below)\n${indent(resp.logs)}"
+            req.markAsCompleted( resp.exitStatus ? BuildStatus.FAILED : BuildStatus.SUCCEED, resp)
             return resp
         }
         catch (Exception e) {
