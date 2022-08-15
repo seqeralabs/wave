@@ -3,6 +3,7 @@ package io.seqera.wave.controller
 import spock.lang.Specification
 
 import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
 import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
@@ -24,18 +25,16 @@ class ErrorHandlingTest extends Specification {
 
 
     void 'should handle an error'() {
-        given:
-        HttpRequest request = HttpRequest.GET("/v2/missing/manifests/latest").headers({h->
+        when:
+        HttpRequest request = HttpRequest.GET("/v2/hello-world/manifests/latest").headers({ h->
             h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
             h.add('Accept', ContentType.DOCKER_MANIFEST_V1_JWS_TYPE)
             h.add('Accept', MediaType.APPLICATION_JSON)
         })
-        when:
-        client.toBlocking().exchange(request,RegistryErrorResponse)
+        HttpResponse<RegistryErrorResponse> response = client.toBlocking().exchange(request,RegistryErrorResponse)
         then:
-        def exception = thrown(HttpClientResponseException)
-        def response = exception.response.getBody(RegistryErrorResponse)
-        and:
-        response.get().errors.get(0).message == ''
+        final exception = thrown(HttpClientResponseException)
+        RegistryErrorResponse error = exception.response.getBody(RegistryErrorResponse).get()
+        error.errors.get(0).message == "repository 'hello-world:latest' unauthorized (401)"
     }
 }

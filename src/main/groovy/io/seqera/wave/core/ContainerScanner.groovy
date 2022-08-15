@@ -82,13 +82,13 @@ class ContainerScanner {
         final repository = route.getTargetRepository()
         final String body = response.body()?.toString()
         if( code==404 ) {
-            final msg = "repository $repository not found"
+            final msg = "repository '$repository' not found"
             throw new GenericException(msg, code, body)
         }
 
         if( code>=400 ) {
             final status = HttpStatus.valueOf(code)
-            final msg = "repository $repository ${status.reason.toLowerCase()} (${status.code})"
+            final msg = "repository '$repository' ${status.reason.toLowerCase()} (${status.code})"
             throw new GenericException(msg, code, body)
         }
 

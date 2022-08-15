@@ -1,6 +1,9 @@
 package io.seqera.wave.exchange
 
+import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import io.micronaut.http.MediaType
+import io.micronaut.http.annotation.Produces
 
 /**
  * Model a docker registry error response
@@ -8,22 +11,29 @@ import groovy.transform.CompileStatic
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
+@Produces(MediaType.APPLICATION_JSON)
 class RegistryErrorResponse {
 
-    static class Error {
-        String code
-        String message
-        String details
+    @Canonical
+    static class RegistryError {
+        final String code
+        final String message
+        final String details
     }
 
-    List<Error> errors = new ArrayList<>(10)
+    List<RegistryError> errors = new ArrayList<>(10)
 
-    RegistryErrorResponse(List<Error> errors) {
+    /**
+     * Do not remove -- required for object de-serialisation
+     */
+    RegistryErrorResponse() { }
+
+    RegistryErrorResponse(List<RegistryError> errors) {
         this.errors = errors
     }
 
     RegistryErrorResponse(String message, String code=null, String details=null) {
-        errors.add( new Error(code:code, message: message, details: details) )
+        errors.add( new RegistryError(code, message, details) )
     }
 
 }

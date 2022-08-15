@@ -47,8 +47,7 @@ class RegistryProxyController {
     @Error
     HttpResponse<RegistryErrorResponse> handleError(HttpRequest request, Throwable t) {
         final String details = t instanceof GenericException ? t.details : null
-        final resp = errorHandler.handle(request, t, (msg, id) -> new RegistryErrorResponse(msg,id,details) )
-        return resp
+        return errorHandler.handle(request, t, (msg, id) -> new RegistryErrorResponse(msg,id,details) )
     }
 
     @Get
