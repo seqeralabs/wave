@@ -3,8 +3,6 @@ package io.seqera.wave.core
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import io.seqera.wave.core.RouteHelper
-import io.seqera.wave.core.RoutePath
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.ContainerTokenService
 /**
@@ -125,6 +123,15 @@ class RouteHelperTest extends Specification {
         'blobs'     |  'io' | 'foo' | 'latest'      | false         | true      | true      | false
         'blobs'     |  'io' | 'foo' | 'sha256:1234' | false         | true      | false     | true
 
+    }
+
+    def 'should check target image' () {
+        expect:
+        new RoutePath(null, null, 'library/busybox','latest',null)
+                .targetRepository == 'library/busybox:latest'
+        and:
+        new RoutePath(null, 'quay.io', 'library/busybox','latest',null)
+                .targetRepository == 'quay.io/library/busybox:latest'
     }
 
 }
