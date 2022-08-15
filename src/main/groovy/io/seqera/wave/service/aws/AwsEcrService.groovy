@@ -10,15 +10,13 @@ import com.google.common.util.concurrent.UncheckedExecutionException
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Requires
 import io.seqera.wave.util.StringUtils
 import jakarta.inject.Singleton
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.ecr.EcrClient
 import software.amazon.awssdk.services.ecr.model.GetAuthorizationTokenRequest
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
-
 /**
  * Implement AWS ECR login service
  *
@@ -51,10 +49,10 @@ class AwsEcrService {
         }
     }
 
-    private LoadingCache<AwsCreds, String> cache = CacheBuilder<URI, String>
+    private LoadingCache<AwsCreds, String> cache = CacheBuilder<AwsCreds, String>
             .newBuilder()
             .maximumSize(10_000)
-            .expireAfterWrite(6, TimeUnit.HOURS)
+            .expireAfterWrite(3, TimeUnit.HOURS)
             .build(loader)
 
 
