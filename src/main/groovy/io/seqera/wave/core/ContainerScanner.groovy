@@ -1,5 +1,6 @@
 package io.seqera.wave.core
 
+import java.net.http.HttpResponse
 import java.nio.file.Path
 
 import groovy.json.JsonOutput
@@ -7,16 +8,16 @@ import groovy.json.JsonSlurper
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.http.HttpStatus
 import io.seqera.wave.api.ContainerConfig
-import io.seqera.wave.model.ContentType
 import io.seqera.wave.api.ContainerLayer
+import io.seqera.wave.exception.GenericException
+import io.seqera.wave.model.ContentType
 import io.seqera.wave.model.LayerConfig
-import io.seqera.wave.proxy.InvalidResponseException
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.storage.reader.ContentReaderFactory
 import io.seqera.wave.util.RegHelper
-
 /**
  * Implement the logic of container manifest manipulation and
  * layers injections
@@ -76,6 +77,27 @@ class ContainerScanner {
         return resolve(route.image, route.reference, headers)
     }
 
+    protected void checkResponseCode(HttpResponse<?> response, RoutePath route) {
+        final code = response.statusCode()
+        final repository = route.getTargetRepository()
+        final String body = response.body()?.toString()
+        if( code==404 ) {
+            final msg = "repository '$repository' not found"
+            throw new GenericException(msg, code, body)
+        }
+
+        if( code>=400 ) {
+            final status = HttpStatus.valueOf(code)
+            final msg = "repository '$repository' ${status.reason.toLowerCase()} (${status.code})"
+            throw new GenericException(msg, code, body)
+        }
+
+        if( code != 200 ) {
+            final msg = "Unexpected response code ${code} on ${response.uri()}"
+            log.debug(msg)
+        }
+    }
+
     String resolve(String imageName, String tag, Map<String,List<String>> headers) {
         assert client, "Missing client"
         assert storage, "Missing storage"
@@ -85,14 +107,12 @@ class ContainerScanner {
         final resp1 = client.head("/v2/$imageName/manifests/$tag", headers)
         final digest = resp1.headers().firstValue('docker-content-digest').orElse(null)
         log.debug "Resolve (1): image $imageName:$tag => digest=$digest"
-        if( resp1.statusCode() != 200 )
-            throw new InvalidResponseException("Unexpected response statusCode: ${resp1.statusCode()}", resp1)
+        checkResponseCode(resp1, client.route)
 
         // get manifest list for digest
         final resp2 = client.getString("/v2/$imageName/manifests/$digest", headers)
         final type = resp2.headers().firstValue('content-type').orElse(null)
-        if( resp2.statusCode() != 200 )
-            throw new InvalidResponseException("Unexpected response statusCode: ${resp2.statusCode()}", resp2)
+        checkResponseCode(resp2, client.route)
         final manifestsList = resp2.body()
         log.debug "Resolve (2): image $imageName:$tag => type=$type; manifests list:\n${JsonOutput.prettyPrint(manifestsList)}"
 
@@ -116,8 +136,9 @@ class ContainerScanner {
         final targetDigest = manifestResult.third
 
         // fetch the image config
-        final resp4 = client.getString("/v2/$imageName/blobs/$configDigest", headers)
-        final imageConfig = resp4.body()
+        final resp5 = client.getString("/v2/$imageName/blobs/$configDigest", headers)
+        checkResponseCode(resp5, client.route)
+        final imageConfig = resp5.body()
         log.debug "Resolve (5): image $imageName:$tag => image config=\n${JsonOutput.prettyPrint(imageConfig)}"
 
         // update the image config adding the new layer

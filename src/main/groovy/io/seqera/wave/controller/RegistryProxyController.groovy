@@ -4,24 +4,30 @@ import java.time.Instant
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.http.*
+import io.micronaut.http.HttpMethod
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.MediaType
+import io.micronaut.http.MutableHttpHeaders
+import io.micronaut.http.MutableHttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Error
 import io.micronaut.http.annotation.Get
-import io.micronaut.http.hateoas.JsonError
-import io.micronaut.http.hateoas.Link
 import io.micronaut.http.server.types.files.StreamedFile
-import io.seqera.wave.core.RoutePath
-import io.seqera.wave.service.builder.ContainerBuildService
-import io.seqera.wave.storage.Storage
-import io.seqera.wave.storage.DigestStore
-import io.seqera.wave.core.RouteHelper
+import io.seqera.wave.ErrorHandler
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RegistryProxyService.DelegateResponse
+import io.seqera.wave.core.RouteHelper
+import io.seqera.wave.core.RoutePath
+import io.seqera.wave.exception.GenericException
+import io.seqera.wave.exchange.RegistryErrorResponse
+import io.seqera.wave.service.builder.ContainerBuildService
+import io.seqera.wave.storage.DigestStore
+import io.seqera.wave.storage.Storage
 import jakarta.inject.Inject
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Mono
-
 /**
  * Implement a registry proxy controller that forward registry pull requests to the target service
  *
@@ -36,12 +42,12 @@ class RegistryProxyController {
     @Inject Storage storage
     @Inject RouteHelper routeHelper
     @Inject ContainerBuildService containerBuildService
+    @Inject ErrorHandler errorHandler
 
     @Error
-    HttpResponse<JsonError> handleError(HttpRequest request, Throwable t){
-        log.info t.message, t
-        JsonError error = new JsonError("Error: " + t.message).link(Link.SELF, Link.of(request.getUri()))
-        HttpResponse.<JsonError>serverError().body(error)
+    HttpResponse<RegistryErrorResponse> handleError(HttpRequest request, Throwable t) {
+        final String details = t instanceof GenericException ? t.details : null
+        return errorHandler.handle(request, t, (msg, id) -> new RegistryErrorResponse(msg,id,details) )
     }
 
     @Get

@@ -573,6 +573,7 @@ class ContainerScannerTest extends Specification {
         and:
 
         def client = new ProxyClient()
+                .withRoute(Mock(RoutePath))
                 .withImage(IMAGE)
                 .withRegistry(registry)
                 .withCredentials(creds)

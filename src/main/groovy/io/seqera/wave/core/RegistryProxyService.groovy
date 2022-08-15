@@ -72,6 +72,7 @@ class RegistryProxyService {
             throw new IllegalArgumentException("Unable to resolve target registry for name: '$route.registry'")
         final creds = getCredentials(route)
         new ProxyClient()
+                .withRoute(route)
                 .withImage(route.image)
                 .withRegistry(registry)
                 .withCredentials(creds)

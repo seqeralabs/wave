@@ -26,6 +26,11 @@ class RoutePath {
     boolean isTag() { reference && !isDigest() }
     boolean isDigest() { reference && reference.startsWith('sha256:') }
 
+    String getTargetRepository() {
+        def result = "$image:$reference"
+        return registry ? "$registry/$result" : result
+    }
+
     static RoutePath v2path(String type, String registry, String image, String ref, ContainerRequestData request=null) {
         new RoutePath(type, registry, image, ref, "/v2/$image/$type/$ref", request)
     }

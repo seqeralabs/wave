@@ -25,7 +25,7 @@ class RegHandler  {
         try {
             doHandle(exchange)
         }
-        catch (InvalidResponseException e) {
+        catch (ClientResponseException e) {
             handleReply(exchange, e.response)
         }
         catch (Throwable e) {

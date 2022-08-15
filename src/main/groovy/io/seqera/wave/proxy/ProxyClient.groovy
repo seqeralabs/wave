@@ -17,6 +17,7 @@ import groovy.util.logging.Slf4j
 import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryInfo
 import io.seqera.wave.auth.RegistryAuthService
+import io.seqera.wave.core.RoutePath
 import io.seqera.wave.util.RegHelper
 /**
  *
@@ -37,9 +38,17 @@ class ProxyClient {
     private RegistryCredentials credentials
     private HttpClient httpClient
     private RegistryAuthService loginService
+    private RoutePath route
 
     ProxyClient() {
         init()
+    }
+
+    RoutePath getRoute() { route }
+
+    ProxyClient withRoute(RoutePath path) {
+        this.route = path
+        return this
     }
 
     ProxyClient withImage(String image) {
@@ -78,7 +87,7 @@ class ProxyClient {
         try {
             return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofString() )
         }
-        catch (BadResponseException e) {
+        catch (ClientResponseException e) {
             return ErrResponse<String>.forString(e.message, e.request)
         }
     }
@@ -87,7 +96,7 @@ class ProxyClient {
         try {
             return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofInputStream() )
         }
-        catch (BadResponseException e) {
+        catch (ClientResponseException e) {
             return ErrResponse.forStream(e.message, e.request)
         }
     }
@@ -96,7 +105,7 @@ class ProxyClient {
         try {
             return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofByteArray() )
         }
-        catch (BadResponseException e) {
+        catch (ClientResponseException e) {
             return ErrResponse.forByteArray(e.message, e.request)
         }
     }
@@ -156,16 +165,16 @@ class ProxyClient {
                 log.trace "Redirecting (${++redirectCount}) $target ==> $redirect ${RegHelper.dumpHeaders(result.headers())}"
                 if( !redirect ) {
                     final msg = "Missing `Location` header for request URI '$target' ― origin request '$origin'"
-                    throw new BadResponseException(msg, result.request())
+                    throw new ClientResponseException(msg, result.request())
                 }
                 target = new URI(redirect)
                 if( target in visited ) {
                     final msg = "Redirect location already visited: $redirect ― origin request '$origin'"
-                    throw new BadResponseException(msg, result.request())
+                    throw new ClientResponseException(msg, result.request())
                 }
                 if( visited.size()>=10 ) {
                     final msg = "Redirect location already visited: $redirect ― origin request '$origin'"
-                    throw new BadResponseException(msg, result.request())
+                    throw new ClientResponseException(msg, result.request())
                 }
                 // go head with with the redirection
                 continue
@@ -248,6 +257,5 @@ class ProxyClient {
         // send it 
         return httpClient.send(request, HttpResponse.BodyHandlers.discarding())
     }
-
 
 }

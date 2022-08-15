@@ -5,17 +5,18 @@ import java.net.http.HttpRequest
 import groovy.transform.CompileStatic
 
 /**
+ * Model an invalid response got by the registry client client
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-class BadResponseException extends Exception {
+class ClientResponseException extends Exception {
 
     private HttpRequest request
 
     HttpRequest getRequest() { request }
 
-    BadResponseException(String message, HttpRequest request) {
+    ClientResponseException(String message, HttpRequest request) {
         super(message)
         this.request = request
     }
