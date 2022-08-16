@@ -74,7 +74,7 @@ class K8sServiceImplTest extends Specification {
         result = k8sService.mountBuildStorage(Path.of('/foo/work/x1'), '/foo')
         then:
         result.name == 'build-data'
-        result.mountPath == '/foo'
+        result.mountPath == '/foo/work/x1'
         result.subPath == 'work/x1'
 
         when:

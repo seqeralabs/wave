@@ -168,21 +168,17 @@ class K8sServiceImpl implements K8sService {
     protected V1VolumeMount mountBuildStorage(Path workDir, @Nullable String storageMountPath) {
         assert workDir, "K8s mount build storage is mandatory"
 
+        final vol = new V1VolumeMount()
+                .name('build-data')
+                .mountPath(workDir.toString())
+
         if( storageMountPath ) {
-            final vol = new V1VolumeMount()
-                    .name('build-data')
-                    .mountPath(storageMountPath)
             // check sub-path
             final rel = Path.of(storageMountPath).relativize(workDir).toString()
-            if( rel )
+            if (rel)
                 vol.subPath(rel)
-            return vol
         }
-        else {
-            return new V1VolumeMount()
-                    .name('build-data')
-                    .mountPath(workDir.toString())
-        }
+        return vol
     }
 
     /**
