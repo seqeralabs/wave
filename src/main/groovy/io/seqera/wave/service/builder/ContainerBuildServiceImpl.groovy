@@ -176,7 +176,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             if( !buildRequests.containsKey(request.targetImage) ) {
                 log.info "== Submit build request request: $request"
                 request.result = callLaunch(request)
-                attachListenerToTask(request.result, request.targetImage)
                 buildRequests.put(request.targetImage, request)
             }
             else {
@@ -186,33 +185,5 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         }
     }
 
-    protected void attachListenerToTask(CompletableFuture<BuildResult> future, String targetImage){
-        executor.submit({
-            final begin = System.currentTimeMillis()
-            while( true ) {
-                try {
-                    return ret(future.get(1, TimeUnit.SECONDS))
-                }
-                catch (TimeoutException e) {
-                    final delta = System.currentTimeMillis() - begin
-                    if( delta > buildTimeout.toMillis() ) {
-                        log.info "== Build timeout for image: $targetImage"
-                        future.cancel(true)
-                        return
-                    }
-                    else if( delta>10_000 ) {
-                        log.info "== Build in progress for image: $targetImage"
-                    }
-                }
-                catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-                catch (Exception e) {
-                    log.error "== Build failed for image: $targetImage -- cause: ${e.message}", e
-                    return
-                }
-            }
-        })
-    }
 
 }
