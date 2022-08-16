@@ -1,6 +1,6 @@
 wave:
   build:
-    debug: false
+    debug: true
     k8s:
       configPath: "${HOME}/.kube/config"
       context: 'docker-desktop'

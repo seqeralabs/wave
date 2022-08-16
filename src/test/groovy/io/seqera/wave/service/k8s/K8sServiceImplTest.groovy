@@ -62,6 +62,7 @@ class K8sServiceImplTest extends Specification {
         result.name == 'build-data'
         result.mountPath == '/foo'
         result.subPath == null
+        result.readOnly
 
         when:
         result = k8sService.mountBuildStorage(Path.of('/foo/'), '/foo')
@@ -69,6 +70,7 @@ class K8sServiceImplTest extends Specification {
         result.name == 'build-data'
         result.mountPath == '/foo'
         result.subPath == null
+        result.readOnly
 
         when:
         result = k8sService.mountBuildStorage(Path.of('/foo/work/x1'), '/foo')
@@ -76,12 +78,14 @@ class K8sServiceImplTest extends Specification {
         result.name == 'build-data'
         result.mountPath == '/foo/work/x1'
         result.subPath == 'work/x1'
+        result.readOnly
 
         when:
         result = k8sService.mountBuildStorage(Path.of('/foo/work/x1'), null)
         then:
         result.name == 'build-data'
         result.mountPath == '/foo/work/x1'
+        result.readOnly
 
         cleanup:
         ctx.close()
@@ -138,6 +142,52 @@ class K8sServiceImplTest extends Specification {
         then:
         mount.name == 'docker-config'
         mount.mountPath == '/kaniko/.docker/'
+
+        cleanup:
+        ctx.close()
+    }
+
+
+    def 'should create build pod' () {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'my-ns',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.storage.claimName': 'build-claim',
+                'wave.build.k8s.storage.mountPath': '/build' ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+
+        when:
+        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), 'secret')
+        then:
+        result.metadata.name == 'foo'
+        result.metadata.namespace == 'my-ns'
+        and:
+        result.spec.initContainers.get(0).name == 'init-secret'
+        result.spec.initContainers.get(0).image == 'busybox'
+        result.spec.initContainers.get(0).getVolumeMounts().get(0).getName() == 'docker-config'
+        and:
+        result.spec.containers.get(0).name == 'foo'
+        result.spec.containers.get(0).image == 'my-image:latest'
+        result.spec.containers.get(0).args ==  ['this','that']
+        and:
+        result.spec.containers.get(0).volumeMounts.get(0).name == 'docker-config'
+        result.spec.containers.get(0).volumeMounts.get(0).mountPath == '/kaniko/.docker/'
+        and:
+        result.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
+        result.spec.containers.get(0).volumeMounts.get(1).mountPath == '/build/work/xyz'
+        result.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz'
+
+        and:
+        result.spec.volumes.get(0).name == 'docker-config'
+        result.spec.volumes.get(0).emptyDir == new V1EmptyDirVolumeSource()
+        and:
+        result.spec.volumes.get(1).name == 'build-data'
+        result.spec.volumes.get(1).persistentVolumeClaim.claimName == 'build-claim'
+
 
         cleanup:
         ctx.close()

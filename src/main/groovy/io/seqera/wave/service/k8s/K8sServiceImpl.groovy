@@ -171,6 +171,7 @@ class K8sServiceImpl implements K8sService {
         final vol = new V1VolumeMount()
                 .name('build-data')
                 .mountPath(workDir.toString())
+                .readOnly(true)
 
         if( storageMountPath ) {
             // check sub-path
@@ -204,7 +205,7 @@ class K8sServiceImpl implements K8sService {
     /**
      * Defines the volume mount for the Kaniko docker config
      *
-     * @return A {@link V!V1VolumeMount} representing the docker config for kaniko
+     * @return A {@link V1VolumeMount} representing the docker config for kaniko
      */
     protected V1VolumeMount mountDockerConfig() {
         new V1VolumeMount()
@@ -241,8 +242,15 @@ class K8sServiceImpl implements K8sService {
     @Override
     @CompileDynamic
     V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, String creds) {
+        final spec = buildSpec(name, containerImage, args, workDir, creds)
+        return k8sClient
+                .coreV1Api()
+                .createNamespacedPod(namespace, spec, null, null, null)
+    }
 
-        V1Pod spec = new V1PodBuilder()
+    @CompileDynamic
+    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, String creds) {
+        return new V1PodBuilder()
                 .withNewMetadata()
                     .withNamespace(namespace)
                     .withName(name)
@@ -265,9 +273,6 @@ class K8sServiceImpl implements K8sService {
                 .endSpec()
                 .build()
 
-        return k8sClient
-                .coreV1Api()
-                .createNamespacedPod(namespace, spec, null, null, null)
     }
 
     /**
