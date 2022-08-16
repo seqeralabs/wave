@@ -28,6 +28,7 @@ import io.seqera.wave.core.RouteHelper
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.exception.GenericException
 import io.seqera.wave.exchange.RegistryErrorResponse
+import io.seqera.wave.service.builder.BuildStatus
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
