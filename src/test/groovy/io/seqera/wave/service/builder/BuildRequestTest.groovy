@@ -26,6 +26,7 @@ class BuildRequestTest extends Specification {
         req.targetImage == "docker.io/wave:${req.id}"
         req.dockerFile == CONTENT
         req.user == USER
+        req.job =~ /b080f2a76aedb2108994872e8fd2945d-[a-z0-9]+/
     }
 
     def 'should check equals and hash code'() {

@@ -27,6 +27,7 @@ class BuildRequest {
     final String targetImage
     final User user
     final Instant startTime
+    final String job
     volatile Future<BuildResult> result
 
     BuildRequest(String dockerFile, Path workspace, String repo, String condaFile, User user) {
@@ -38,6 +39,7 @@ class BuildRequest {
         this.user = user
         this.workDir = workspace.resolve(id).toAbsolutePath()
         this.startTime = Instant.now()
+        this.job = "${id}-${startTime.toEpochMilli().toString().md5()[-5..-1]}"
     }
 
     @Override

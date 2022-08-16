@@ -32,7 +32,7 @@ class KubeBuildStrategy extends BuildStrategy {
     Duration buildTimeout
 
     private String podName(BuildRequest req) {
-        return "build-$req.id"
+        return "build-${req.job}"
     }
 
     @Override
