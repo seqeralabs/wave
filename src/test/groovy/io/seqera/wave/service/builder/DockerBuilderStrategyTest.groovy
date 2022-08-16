@@ -28,7 +28,7 @@ class DockerBuilderStrategyTest extends Specification {
                 '--rm',
                 '-w', '/work/foo',
                 '-v', '/work/foo:/work/foo',
-                '195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/kaniko:0.1.3']
+                'gcr.io/kaniko-project/executor:latest']
 
         when:
         cmd = service.dockerWrapper(work, Path.of('/foo/creds.json'))
@@ -39,7 +39,7 @@ class DockerBuilderStrategyTest extends Specification {
                 '-w', '/work/foo',
                 '-v', '/work/foo:/work/foo',
                 '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
-                '195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/kaniko:0.1.3']
+                'gcr.io/kaniko-project/executor:latest']
     }
 
     def 'should get build command' () {
@@ -56,8 +56,7 @@ class DockerBuilderStrategyTest extends Specification {
                 '-w', '/work/foo/ef16568120a7a0bd0c679942942ea8e8',
                 '-v', '/work/foo/ef16568120a7a0bd0c679942942ea8e8:/work/foo/ef16568120a7a0bd0c679942942ea8e8',
                 '-v', '/work/creds.json:/kaniko/.docker/config.json:ro',
-                '195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/kaniko:0.1.3',
-                '/kaniko/executor',
+                'gcr.io/kaniko-project/executor:latest',
                 '--dockerfile', '/work/foo/ef16568120a7a0bd0c679942942ea8e8/Dockerfile',
                 '--context', '/work/foo/ef16568120a7a0bd0c679942942ea8e8',
                 '--destination', 'repo:ef16568120a7a0bd0c679942942ea8e8',

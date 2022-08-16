@@ -24,7 +24,6 @@ class BuildStrategyTest extends Specification {
         def cmd = service.launchCmd(REQ)
         then:
         cmd == [
-                '/kaniko/executor',
                 '--dockerfile',
                 '/work/foo/ef16568120a7a0bd0c679942942ea8e8/Dockerfile',
                 '--context',

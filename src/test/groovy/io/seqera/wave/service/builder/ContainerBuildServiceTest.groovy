@@ -40,6 +40,8 @@ class ContainerBuildServiceTest extends Specification {
 
         when:
         def result = service.launch(REQ)
+        and:
+        println result.logs
         then:
         result.id
         result.startTime
