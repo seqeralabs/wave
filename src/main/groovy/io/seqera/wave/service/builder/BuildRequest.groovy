@@ -20,14 +20,51 @@ import static io.seqera.wave.util.StringUtils.trunc
 @CompileStatic
 class BuildRequest {
 
+    /**
+     * Unique request Id. This is computed as a consistent hash generated from
+     * the container build assets e.g. Dockerfile. Therefore the same container build
+     * request should result in the same `id`
+     */
     final String id
+
+    /**
+     * The dockerfile content corresponding to this request
+     */
     final String dockerFile
+
+    /**
+     * The conda file recipe associated with this request
+     */
     final String condaFile
+
+    /**
+     * The build context work directory
+     */
     final Path workDir
+
+    /**
+     * The target fully qualified image of the built container. It includes the target registry name
+     */
     final String targetImage
+
+    /**
+     * The (tower) user made this request
+     */
     final User user
+
+    /**
+     * Build request start time
+     */
     final Instant startTime
+
+    /**
+     * Build jon unique id
+     */
     final String job
+
+    /**
+     * Reference to the future build job result
+     */
     volatile Future<BuildResult> result
 
     BuildRequest(String dockerFile, Path workspace, String repo, String condaFile, User user) {
