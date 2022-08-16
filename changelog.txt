@@ -1,6 +1,12 @@
 # Wave changelog
-v0.12.0 
-- Add support for K8s build backend 
+v0.12.0 - 16 Aug 2022
+- Add support for Kubernetes based image build [3294a334]
+- Add support for creds file [2093d907]
+- Add support for build PV claim [b870b43c]
+- Improve error handling and reporting (#95) [50c0b5f5]
+- Improve logging and debugging [73ff8714]
+- Fix issue resolving cached manifest [5e73892f]
+- Minor changes [9a15e864]
 
 v0.11.1 - 9 Aug 2022
 - Fix build duration format
