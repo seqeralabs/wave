@@ -2,6 +2,7 @@ package io.seqera.wave.service.builder
 
 import java.nio.file.Path
 import java.time.Instant
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 
 import groovy.transform.CompileStatic
@@ -65,7 +66,7 @@ class BuildRequest {
     /**
      * Reference to the future build job result
      */
-    volatile Future<BuildResult> result
+    volatile CompletableFuture<BuildResult> result
 
     BuildRequest(String dockerFile, Path workspace, String repo, String condaFile, User user) {
         final content = condaFile ? dockerFile + condaFile : dockerFile

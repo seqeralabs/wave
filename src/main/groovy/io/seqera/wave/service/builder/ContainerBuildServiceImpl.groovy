@@ -4,6 +4,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
 import java.util.concurrent.Callable
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -93,37 +94,17 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     }
 
     @Override
-    BuildStatus waitImageBuild(String targetImage) {
+    CompletableFuture<BuildStatus> waitImageBuild(String targetImage) {
         final req = buildRequests.get(targetImage)
         if( !req )
-            return BuildStatus.UNKNOWN
+            return CompletableFuture.completedFuture(BuildStatus.UNKNOWN)
         final future = req.result
         if( future.isCancelled() )
-            return BuildStatus.FAILED
+            return CompletableFuture.completedFuture(BuildStatus.FAILED)
         if( future.isDone() )
-            return ret(req.result.get())
-        final begin = System.currentTimeMillis()
-        while( true ) {
-            try {
-                return ret(future.get(1, TimeUnit.SECONDS))
-            }
-            catch (TimeoutException e) {
-                final delta = System.currentTimeMillis() - begin
-                if( delta > buildTimeout.toMillis() ) {
-                    log.info "== Build timeout for image: $targetImage"
-                    return BuildStatus.FAILED
-                }
-                else if( delta>10_000 ) {
-                    log.info "== Build in progress for image: $targetImage"
-                }
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-            catch (Exception e) {
-                log.error "== Build failed for image: $targetImage -- cause: ${e.message}", e
-                return BuildStatus.FAILED
-            }
+            return CompletableFuture.completedFuture(ret(req.result.get()))
+        future.thenApply {buildResult ->
+            ret(buildResult)
         }
     }
 
@@ -172,15 +153,12 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         }
     }
 
-    protected Callable<BuildResult> callLaunch(BuildRequest request) {
-        new Callable<BuildResult>() {
-            @Override
-            BuildResult call() throws Exception {
-                final result = launch(request)
-                sendCompletionEmail(request,result)
-                return result
-            }
-        }
+    protected CompletableFuture<BuildResult> callLaunch(BuildRequest request) {
+        CompletableFuture.<BuildResult>supplyAsync({
+            final result = launch(request)
+            sendCompletionEmail(request,result)
+            return result
+        }, executor)
     }
 
     protected sendCompletionEmail(BuildRequest request, BuildResult result) {
@@ -197,7 +175,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         synchronized (buildRequests) {
             if( !buildRequests.containsKey(request.targetImage) ) {
                 log.info "== Submit build request request: $request"
-                request.result = executor.submit(callLaunch(request))
+                request.result = callLaunch(request)
+                attachListenerToTask(request.result, request.targetImage)
                 buildRequests.put(request.targetImage, request)
             }
             else {
@@ -205,6 +184,35 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             }
             return request.targetImage
         }
+    }
+
+    protected void attachListenerToTask(CompletableFuture<BuildResult> future, String targetImage){
+        executor.submit({
+            final begin = System.currentTimeMillis()
+            while( true ) {
+                try {
+                    return ret(future.get(1, TimeUnit.SECONDS))
+                }
+                catch (TimeoutException e) {
+                    final delta = System.currentTimeMillis() - begin
+                    if( delta > buildTimeout.toMillis() ) {
+                        log.info "== Build timeout for image: $targetImage"
+                        future.cancel(true)
+                        return
+                    }
+                    else if( delta>10_000 ) {
+                        log.info "== Build in progress for image: $targetImage"
+                    }
+                }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                catch (Exception e) {
+                    log.error "== Build failed for image: $targetImage -- cause: ${e.message}", e
+                    return
+                }
+            }
+        })
     }
 
 }

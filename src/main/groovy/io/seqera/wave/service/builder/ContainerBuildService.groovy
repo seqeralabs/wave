@@ -1,5 +1,7 @@
 package io.seqera.wave.service.builder
 
+import java.util.concurrent.CompletableFuture
+
 import io.seqera.wave.tower.User
 
 /**
@@ -22,6 +24,6 @@ interface ContainerBuildService {
     String buildImage(String dockerfileContent, String condaFile, User user)
 
 
-    BuildStatus waitImageBuild(String targetImage)
+    CompletableFuture<BuildStatus> waitImageBuild(String targetImage)
 
 }
