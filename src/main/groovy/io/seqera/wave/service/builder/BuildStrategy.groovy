@@ -26,7 +26,6 @@ abstract class BuildStrategy {
     List<String> launchCmd(BuildRequest req) {
         final result = new ArrayList(10)
         result
-                << "/kaniko/executor"
                 << "--dockerfile"
                 << "$req.workDir/Dockerfile".toString()
                 << '--context'

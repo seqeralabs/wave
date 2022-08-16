@@ -5,5 +5,5 @@ docker run \
   -e AWS_ACCESS_KEY_ID \
   -e AWS_SECRET_ACCESS_KEY \
   -it \
-  wave-base \
-   /kaniko/executor --dockerfile Dockerfile_test --no-push
+  gcr.io/kaniko-project/executor:latest \
+  --dockerfile Dockerfile_test --no-push

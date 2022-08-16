@@ -17,7 +17,7 @@ wave:
   server:
       url: "${WAVE_SERVER_URL:`https://reg.ngrok.io`}"
   build:
-    image: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/kaniko:0.1.3"
+    image: "gcr.io/kaniko-project/executor:latest"
     workspace: 'build-workspace'
     repo: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build"
     cache: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/cache"
