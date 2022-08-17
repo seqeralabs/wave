@@ -3,11 +3,8 @@ package io.seqera.wave.service.builder
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
-import java.util.concurrent.Callable
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 import javax.annotation.Nullable
 import javax.annotation.PostConstruct
 
@@ -22,11 +19,9 @@ import io.seqera.wave.tower.User
 import io.seqera.wave.util.ThreadPoolBuilder
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+import static io.seqera.wave.util.StringUtils.indent
 import static java.nio.file.StandardOpenOption.APPEND
 import static java.nio.file.StandardOpenOption.CREATE
-
-import static io.seqera.wave.util.StringUtils.indent
-
 /**
  * Implements container build service
  *
@@ -153,12 +148,10 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         }
     }
 
-    protected CompletableFuture<BuildResult> callLaunch(BuildRequest request) {
-        CompletableFuture.<BuildResult>supplyAsync({
-            final result = launch(request)
-            sendCompletionEmail(request,result)
-            return result
-        }, executor)
+    protected CompletableFuture<BuildResult> launchAsync(BuildRequest request) {
+        CompletableFuture
+                .<BuildResult>supplyAsync(() -> launch(request), executor)
+                .thenApply((result) -> { sendCompletionEmail(request,result); return result })
     }
 
     protected sendCompletionEmail(BuildRequest request, BuildResult result) {
@@ -175,7 +168,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         synchronized (buildRequests) {
             if( !buildRequests.containsKey(request.targetImage) ) {
                 log.info "== Submit build request request: $request"
-                request.result = callLaunch(request)
+                request.result = launchAsync(request)
                 buildRequests.put(request.targetImage, request)
             }
             else {
@@ -184,6 +177,5 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             return request.targetImage
         }
     }
-
 
 }
