@@ -1,6 +1,7 @@
 package io.seqera.wave.service.k8s
 
 import java.nio.file.Path
+import java.time.Duration
 import javax.annotation.Nullable
 import javax.annotation.PostConstruct
 
@@ -50,6 +51,9 @@ class K8sServiceImpl implements K8sService {
 
     @Value('${wave.build.workspace}')
     private String buildWorkspace
+
+    @Value('${wave.build.timeout:5m}')
+    private Duration buildTimeout
 
     @Inject
     private K8sClient k8sClient
@@ -256,6 +260,7 @@ class K8sServiceImpl implements K8sService {
                     .withName(name)
                 .endMetadata()
                 .withNewSpec()
+                    .withActiveDeadlineSeconds( buildTimeout.toSeconds() )
                     .addNewInitContainer()
                         .withName('init-secret')
                         .withImage('busybox')

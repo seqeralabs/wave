@@ -1,6 +1,7 @@
 package io.seqera.wave.controller
 
 import java.time.Instant
+import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -31,7 +32,8 @@ import reactor.core.publisher.Mono
 /**
  * Implement a registry proxy controller that forward registry pull requests to the target service
  *
- * @author : jorge <jorge.aguilera@seqera.io>
+ * @author: jorge <jorge.aguilera@seqera.io>
+ * @author: paolo di tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @CompileStatic
@@ -60,19 +62,36 @@ class RegistryProxyController {
     }
 
     @Get(uri="/{url:(.+)}", produces = "*/*")
-    MutableHttpResponse<?> handleGet(String url, HttpRequest httpRequest) {
+    CompletableFuture<MutableHttpResponse<?>> handleGet(String url, HttpRequest httpRequest) {
         log.info "> Request [$httpRequest.method] $httpRequest.path"
-        final route = routeHelper.parse("/v2/"+url)
+        final route = routeHelper.parse("/v2/" + url)
 
         // check if it's a container under build
-        final targetImage = route.request?.containerImage
-        final status = containerBuildService.waitImageBuild(targetImage)
+        final future = handleFutureBuild0(route, httpRequest)
+        if( future )
+            return future
+        else
+            return CompletableFuture.completedFuture(handleGet0(route, httpRequest))
+    }
 
+    protected CompletableFuture<MutableHttpResponse<?>> handleFutureBuild0(RoutePath route, HttpRequest httpRequest){
+        // check if there's a future build result
+        final future = containerBuildService.buildResult(route)
+        if( future ) {
+            // wait for the build completion, then apply the usual 'handleGet0' logic
+            future
+                .thenApply( (build) -> build.exitStatus==0 ? handleGet0(route, httpRequest) : badRequest(build.logs ) )
+        }
+        else
+            return null
+    }
+
+    protected MutableHttpResponse<?> handleGet0(RoutePath route, HttpRequest httpRequest) {
         if( httpRequest.method == HttpMethod.HEAD )
             return handleHead(route, httpRequest)
 
         if (!(route.manifest || route.blob)) {
-            return HttpResponse.notFound()
+            return notFound()
         }
 
         if( route.manifest ) {
@@ -114,16 +133,24 @@ class RegistryProxyController {
         return proxyService.handleManifest(route, headers)
     }
 
+    static protected MutableHttpResponse<?> notFound(){
+        return HttpResponse.notFound()
+    }
+
+    static protected MutableHttpResponse<?> badRequest(String message) {
+        return HttpResponse.badRequest(new RegistryErrorResponse(message))
+    }
+
     MutableHttpResponse<?> handleHead(RoutePath route, HttpRequest httpRequest) {
 
         if (!(route.manifest && route.tag)) {
-            return HttpResponse.notFound()
+            return notFound()
         }
 
         final entry = manifestForPath(route, httpRequest)
         if( !entry ) {
             log.warn "Unable to find cache manifest for $route"
-            return HttpResponse.notFound()
+            return notFound()
         }
         return fromCache(entry)
     }
@@ -140,7 +167,7 @@ class RegistryProxyController {
                 .headers(headers)
     }
 
-    MutableHttpResponse<StreamedFile>fromDelegateResponse(final DelegateResponse delegateResponse){
+    MutableHttpResponse<?>fromDelegateResponse(final DelegateResponse delegateResponse){
 
         final Long contentLength = delegateResponse.headers
                 .find {it.key.toLowerCase()=='content-length'}?.value?.first() as long ?: null
