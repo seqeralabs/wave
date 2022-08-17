@@ -22,7 +22,7 @@ class BuildResult {
 
     BuildResult(String id, int exitStatus, String content, Instant startTime, Duration duration=null) {
         this.id = id
-        this.logs = content
+        this.logs = content?.replaceAll("\u001B\\[[;\\d]*m", "") // strip ansi escape codes
         this.exitStatus = exitStatus
         this.startTime = startTime
         this.duration = duration ?: Duration.between(startTime, Instant.now())

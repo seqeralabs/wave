@@ -58,9 +58,7 @@ class MailServiceImpl implements MailService {
         binding.build_time = build.startTime?.toString() ?: '-'
         binding.build_duration = build.duration ? formatDuration(build.duration) : '-'
         binding.put('server_url', serverUrl)
-        // strip ansi escape codes
-        final logs = build.getLogs()?.replaceAll("\u001B\\[[;\\d]*m", "")
-        binding.put('logs', logs)
+        binding.put('logs', build.logs)
         // build the main object
         Mail mail = new Mail()
         mail.to(recipient)

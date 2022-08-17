@@ -80,7 +80,7 @@ class RegistryProxyController {
         if( future ) {
             // wait for the build completion, then apply the usual 'handleGet0' logic
             future
-                .thenApply( (buildResult) -> buildResult.exitStatus==0 ? handleGet0(route, httpRequest) : notFound() )
+                .thenApply( (build) -> build.exitStatus==0 ? handleGet0(route, httpRequest) : badRequest(build.logs ) )
         }
         else
             return null
@@ -136,6 +136,10 @@ class RegistryProxyController {
 
     static protected MutableHttpResponse<?> notFound(){
         return HttpResponse.notFound()
+    }
+
+    static protected MutableHttpResponse<?> badRequest(String message) {
+        return HttpResponse.badRequest(new RegistryErrorResponse(message))
     }
 
     MutableHttpResponse<?> handleHead(RoutePath route, HttpRequest httpRequest) {
