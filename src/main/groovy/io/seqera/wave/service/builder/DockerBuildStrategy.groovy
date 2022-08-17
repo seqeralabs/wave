@@ -8,6 +8,8 @@ import java.util.concurrent.TimeUnit
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.config.WaveConfiguration
+import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
  *  Build a container image using a Docker CLI tool
@@ -19,8 +21,8 @@ import jakarta.inject.Singleton
 @CompileStatic
 class DockerBuildStrategy extends BuildStrategy {
 
-    @Value('${wave.build.image}')
-    String buildImage
+    @Inject
+    WaveConfiguration configuration
 
     @Value('${wave.build.timeout:5m}')
     Duration buildTimeout
@@ -66,7 +68,7 @@ class DockerBuildStrategy extends BuildStrategy {
             wrapper.add("$credsFile:/kaniko/.docker/config.json:ro".toString())
         }
         // the container image to be used t
-        wrapper.add( buildImage )
+        wrapper.add( configuration.build.image )
         // return it
         return wrapper
     }

@@ -13,6 +13,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.config.WaveConfiguration
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.mail.MailService
 import io.seqera.wave.tower.User
@@ -33,27 +34,8 @@ import static java.nio.file.StandardOpenOption.CREATE
 @CompileStatic
 class ContainerBuildServiceImpl implements ContainerBuildService {
 
-    /**
-     * File system path there the dockerfile is save
-     */
-    @Value('${wave.build.workspace}')
-    String workspace
-
-    @Value('${wave.build.debug}')
-    @Nullable
-    Boolean debugMode
-
-    /**
-     * The registry repository where the build image will be stored
-     */
-    @Value('${wave.build.repo}')
-    String buildRepo
-
-    @Value('${wave.build.image}')
-    String buildImage
-
-    @Value('${wave.build.timeout:5m}')
-    Duration buildTimeout
+    @Inject
+    private WaveConfiguration configuration
 
     @Inject
     @Nullable
@@ -94,7 +76,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         if( !dockerfileContent )
             throw new BadRequestException("Missing dockerfile content")
         // create a unique digest to identify the request
-        final request = new BuildRequest(dockerfileContent, Path.of(workspace), buildRepo, condaFile, user)
+        final request = new BuildRequest(dockerfileContent, Path.of(configuration.build.workspace), configuration.build.repo, condaFile, user)
         return getOrSubmit(request)
     }
 
@@ -135,7 +117,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             Files.write(condaFile, req.condaFile.bytes, CREATE, APPEND)
         }
         // create creds file for target repo
-        final creds = credsJson(buildRepo)
+        final creds = credsJson(configuration.build.repo)
 
         // launch an external process to build the container
         try {
@@ -148,7 +130,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             return new BuildResult(req.id, -1, e.message, req.startTime)
         }
         finally {
-            if( !debugMode )
+            if( !configuration.build.debug )
                 buildStrategy.cleanup(req)
         }
     }

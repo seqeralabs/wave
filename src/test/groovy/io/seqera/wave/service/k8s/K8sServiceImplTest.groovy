@@ -11,7 +11,6 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@MicronautTest
 class K8sServiceImplTest extends Specification {
 
     def 'should validate context OK ' () {

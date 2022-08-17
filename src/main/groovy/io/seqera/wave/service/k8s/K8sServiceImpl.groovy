@@ -3,7 +3,6 @@ package io.seqera.wave.service.k8s
 import java.nio.file.Path
 import java.time.Duration
 import javax.annotation.Nullable
-import javax.annotation.PostConstruct
 
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
@@ -20,7 +19,7 @@ import io.kubernetes.client.openapi.models.V1PodBuilder
 import io.kubernetes.client.openapi.models.V1Volume
 import io.kubernetes.client.openapi.models.V1VolumeMount
 import io.micronaut.context.annotation.Requires
-import io.micronaut.context.annotation.Value
+import io.seqera.wave.config.WaveConfiguration
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
@@ -35,22 +34,8 @@ import jakarta.inject.Singleton
 @CompileStatic
 class K8sServiceImpl implements K8sService {
 
-    @Value('${wave.build.k8s.namespace}')
-    private String namespace
-
-    @Value('${wave.build.k8s.debug:false}')
-    private boolean debug
-
-    @Value('${wave.build.k8s.storage.claimName}')
-    @Nullable
-    private String storageClaimName
-
-    @Value('${wave.build.k8s.storage.mountPath}')
-    @Nullable
-    private String storageMountPath
-
-    @Value('${wave.build.workspace}')
-    private String buildWorkspace
+    @Inject
+    private WaveConfiguration configuration
 
     @Value('${wave.build.timeout:5m}')
     private Duration buildTimeout
@@ -58,22 +43,6 @@ class K8sServiceImpl implements K8sService {
     @Inject
     private K8sClient k8sClient
 
-    /**
-     * Validate config setting
-     */
-    @PostConstruct
-    private void init() {
-        if( storageClaimName && !storageMountPath )
-            throw new IllegalArgumentException("Missing 'wave.build.k8s.storage.mountPath' configuration attribute")
-        if( !storageClaimName && storageMountPath )
-            throw new IllegalArgumentException("Missing 'wave.build.k8s.storage.claimName' configuration attribute")
-        if( storageMountPath ) {
-            if( !buildWorkspace )
-                throw new IllegalArgumentException("Missing 'wave.build.workspace' configuration attribute")
-            if( !Path.of(buildWorkspace).startsWith(storageMountPath) )
-                throw new IllegalArgumentException("Build workspace should be a sub-directory of 'wave.build.k8s.storage.mountPath' - offending value: '$buildWorkspace' - expected value: '$storageMountPath'")
-        }
-    }
 
     /**
      * Create a K8s job with the specified name
@@ -93,7 +62,7 @@ class K8sServiceImpl implements K8sService {
 
         V1Job body = new V1JobBuilder()
                 .withNewMetadata()
-                    .withNamespace(namespace)
+                    .withNamespace(configuration.build.k8s.namespace)
                     .withName(name)
                 .endMetadata()
                 .withNewSpec()
@@ -126,7 +95,7 @@ class K8sServiceImpl implements K8sService {
     V1Job getJob(String name) {
         k8sClient
                 .batchV1Api()
-                .readNamespacedJob(name, namespace, null, null, null)
+                .readNamespacedJob(name, configuration.build.k8s.namespace, null, null, null)
     }
 
     /**
@@ -139,7 +108,7 @@ class K8sServiceImpl implements K8sService {
     JobStatus getJobStatus(String name) {
         def job = k8sClient
                 .batchV1Api()
-                .readNamespacedJob(name, namespace, null, null, null)
+                .readNamespacedJob(name, configuration.build.k8s.namespace, null, null, null)
         if( !job )
             return null
         if( job.status.succeeded==1 )
@@ -159,7 +128,7 @@ class K8sServiceImpl implements K8sService {
     V1Pod getPod(String name) {
         return k8sClient
                 .coreV1Api()
-                .readNamespacedPod(name, namespace, null, null, null)
+                .readNamespacedPod(name, configuration.build.k8s.namespace, null, null, null)
     }
 
     /**
@@ -249,7 +218,7 @@ class K8sServiceImpl implements K8sService {
         final spec = buildSpec(name, containerImage, args, workDir, creds)
         return k8sClient
                 .coreV1Api()
-                .createNamespacedPod(namespace, spec, null, null, null)
+                .createNamespacedPod(configuration.namespace, spec, null, null, null)
     }
 
     @CompileDynamic
@@ -271,7 +240,7 @@ class K8sServiceImpl implements K8sService {
 
         //metadata section
         builder.withNewMetadata()
-                .withNamespace(namespace)
+                .withNamespace(configuration.build.k8s.namespace)
                 .withName(name)
                 .endMetadata()
 
@@ -353,7 +322,7 @@ class K8sServiceImpl implements K8sService {
     String logsPod(String name) {
         try {
             final logs = k8sClient.podLogs()
-            logs.streamNamespacedPodLog(namespace, name, name).getText()
+            logs.streamNamespacedPodLog(configuration.build.k8s.namespace, name, name).getText()
         }
         catch (Exception e) {
             log.error "Unable to fetch logs for pod: $name", e
@@ -370,6 +339,6 @@ class K8sServiceImpl implements K8sService {
     void deletePod(String name) {
         k8sClient
                 .coreV1Api()
-                .deleteNamespacedPod(name, namespace, (String)null, (String)null, (Integer)null, (Boolean)null, (String)null, (V1DeleteOptions)null)
+                .deleteNamespacedPod(name, configuration.build.k8s.namespace, (String)null, (String)null, (Integer)null, (Boolean)null, (String)null, (V1DeleteOptions)null)
     }
 }
