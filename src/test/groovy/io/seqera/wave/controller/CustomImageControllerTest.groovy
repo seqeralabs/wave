@@ -18,6 +18,7 @@ import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.core.RoutePath
 import io.seqera.wave.model.ContentType
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.ContainerTokenService
@@ -53,7 +54,9 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
     @MockBean(ContainerBuildService)
     ContainerBuildService containerBuildService(){
         Mock(ContainerBuildServiceImpl){
-            buildResult(String) >> {
+            buildResult(RoutePath) >> {
+                if( !expected )
+                    return null
                 resolveImageAsync == false ? CompletableFuture.completedFuture(expected) : CompletableFuture.supplyAsync({
                     sleep(2*1000)
                     expected
@@ -79,6 +82,7 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
     Storage storageService(){
         Mock(MemoryStorage){
             getManifest(_) >> {
+                !expected ? Optional.empty() :
                 Optional.of(new DigestStore(){
                     @Override
                     byte[] getBytes() {
@@ -105,7 +109,7 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
 
     void 'should fails head manifest when no image'() {
         given:
-        expected = new BuildResult('xyz', 1, 'failed', Instant.now())
+        expected = null // no image requested previously
 
         when:
         HttpRequest request = HttpRequest.HEAD("/v2/wt/1234/${Base32.encode('library/hello-world'.bytes)}/manifests/latest").headers({h->
