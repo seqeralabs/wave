@@ -67,7 +67,7 @@ class RegistryProxyController {
         final route = routeHelper.parse("/v2/" + url)
 
         // check if it's a container under build
-        final future= handleFutureBuild0(route, httpRequest)
+        final future = handleFutureBuild0(route, httpRequest)
         if( future )
             return future
         else
@@ -84,7 +84,6 @@ class RegistryProxyController {
         }
         else
             return null
-
     }
 
     protected MutableHttpResponse<?> handleGet0(RoutePath route, HttpRequest httpRequest) {
