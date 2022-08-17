@@ -152,6 +152,7 @@ class K8sServiceImplTest extends Specification {
         given:
         def PROPS = [
                 'wave.build.workspace': '/build/work',
+                'wave.build.timeout': '10s',
                 'wave.build.k8s.namespace': 'my-ns',
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'build-claim',
@@ -165,6 +166,8 @@ class K8sServiceImplTest extends Specification {
         then:
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
+        and:
+        result.spec.activeDeadlineSeconds == 10
         and:
         result.spec.initContainers.get(0).name == 'init-secret'
         result.spec.initContainers.get(0).image == 'busybox'
