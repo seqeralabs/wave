@@ -37,8 +37,6 @@ class K8sServiceImpl implements K8sService {
     @Inject
     private WaveConfiguration configuration
 
-    @Value('${wave.build.timeout:5m}')
-    private Duration buildTimeout
 
     @Inject
     private K8sClient k8sClient
@@ -218,7 +216,7 @@ class K8sServiceImpl implements K8sService {
         final spec = buildSpec(name, containerImage, args, workDir, creds)
         return k8sClient
                 .coreV1Api()
-                .createNamespacedPod(configuration.namespace, spec, null, null, null)
+                .createNamespacedPod(configuration.build.k8s.namespace, spec, null, null, null)
     }
 
     @CompileDynamic

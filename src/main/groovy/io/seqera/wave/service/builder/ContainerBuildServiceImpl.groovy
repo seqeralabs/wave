@@ -130,7 +130,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             return new BuildResult(req.id, -1, e.message, req.startTime)
         }
         finally {
-            if( !configuration.build.debug )
+            if( !configuration.build.debug.orElse(false) )
                 buildStrategy.cleanup(req)
         }
     }

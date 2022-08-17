@@ -18,9 +18,9 @@ interface WaveConfiguration {
     @NotNull
     String getArch()
 
-    boolean isDebug()
+    Optional<Boolean> getDebug()
 
-    boolean isAllowAnonymous()
+    Optional<Boolean> getAllowAnonymous()
 
     @NotNull
     ServerConfiguration getServer()
@@ -31,13 +31,14 @@ interface WaveConfiguration {
 
     @ConfigurationProperties('server')
     interface ServerConfiguration {
+        @NotNull
         String getUrl()
     }
 
     @ConfigurationProperties('build')
     interface BuildConfiguration{
 
-        boolean isDebug()
+        Optional<Boolean> getDebug()
 
         /**
          * docker image to use as base
@@ -64,8 +65,7 @@ interface WaveConfiguration {
         @NotNull
         String getCache()
 
-        @Value('${timeout:5m}')
-        Duration getTimeout()
+        Optional<Duration> getTimeout()
 
         K8sConfiguration getK8s()
 
@@ -75,7 +75,7 @@ interface WaveConfiguration {
             @NotNull
             String getNamespace()
 
-            boolean isDebug()
+            Optional<Boolean> getDebug()
 
             @StorageConfigValidator
             StorageConfiguration getStorage()
