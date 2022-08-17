@@ -2,6 +2,7 @@ package io.seqera.wave.service.builder
 
 import java.util.concurrent.CompletableFuture
 
+import io.seqera.wave.core.RoutePath
 import io.seqera.wave.tower.User
 
 /**
@@ -23,7 +24,31 @@ interface ContainerBuildService {
      */
     String buildImage(String dockerfileContent, String condaFile, User user)
 
+    /**
+     * Get a completable future that holds the build result
+     *
+     * @param targetImage
+     *      the container repository name where the target image is expected to be retrieved once the
+     *      build it complete
+     * @return
+     *      A completable future that holds the resulting {@link BuildResult} or
+     *      {@code null} if not request has been submitted for such image
+     */
+    CompletableFuture<BuildResult> buildResult(String targetImage)
 
-    CompletableFuture<BuildStatus> waitImageBuild(String targetImage)
+    /**
+     * Get a completable future that holds the build result
+     *
+     * @param route
+     *      A {@link RoutePath} instance representing the container request
+     * @return
+     *      A completable future that holds the resulting {@link BuildResult} or
+     *      {@code null} if not request has been submitted for such image
+     */
+    default CompletableFuture<BuildResult> buildResult(RoutePath route) {
+        return route.request?.containerImage
+                ? buildResult(route.request.containerImage)
+                : null
+    }
 
 }

@@ -89,24 +89,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     }
 
     @Override
-    CompletableFuture<BuildStatus> waitImageBuild(String targetImage) {
-        final req = buildRequests.get(targetImage)
-        if( !req )
-            return CompletableFuture.completedFuture(BuildStatus.UNKNOWN)
-        final future = req.result
-        if( future.isCancelled() )
-            return CompletableFuture.completedFuture(BuildStatus.FAILED)
-        if( future.isDone() )
-            return CompletableFuture.completedFuture(ret(req.result.get()))
-        future.thenApply {buildResult ->
-            ret(buildResult)
-        }
+    CompletableFuture<BuildResult> buildResult(String targetImage) {
+        return buildRequests.get(targetImage)?.result
     }
-
-    protected BuildStatus ret(BuildResult result) {
-        result.exitStatus==0 ? BuildStatus.SUCCEED : BuildStatus.FAILED
-    }
-
 
     protected String credsJson(String registry) {
         final info = lookupService.lookup(registry)

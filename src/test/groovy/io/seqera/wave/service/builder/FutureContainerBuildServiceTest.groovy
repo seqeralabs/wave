@@ -1,6 +1,6 @@
 package io.seqera.wave.service.builder
 
-import spock.lang.Requires
+
 import spock.lang.Specification
 import spock.lang.Timeout
 
@@ -8,7 +8,6 @@ import java.nio.file.Files
 import java.time.Duration
 import java.time.Instant
 
-import io.micronaut.context.annotation.Value
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.tower.User
@@ -56,17 +55,17 @@ class FutureContainerBuildServiceTest extends Specification {
         result
 
         when:
-        def status = service.waitImageBuild(result).get()
+        def status = service.buildResult(result).get()
         then:
-        status == EXPECTED
+        status.getExitStatus() == EXIT_CODE
 
         cleanup:
         folder?.deleteDir()
 
         where:
-        EXIT_CODE | EXPECTED
-        0         | BuildStatus.SUCCEED
-        1         | BuildStatus.FAILED
+        EXIT_CODE | _
+        0         | _
+        1         | _
     }
 
 }

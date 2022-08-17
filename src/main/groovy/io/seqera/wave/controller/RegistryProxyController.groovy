@@ -23,7 +23,6 @@ import io.seqera.wave.core.RouteHelper
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.exception.GenericException
 import io.seqera.wave.exchange.RegistryErrorResponse
-import io.seqera.wave.service.builder.BuildStatus
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
@@ -33,7 +32,8 @@ import reactor.core.publisher.Mono
 /**
  * Implement a registry proxy controller that forward registry pull requests to the target service
  *
- * @author : jorge <jorge.aguilera@seqera.io>
+ * @author: jorge <jorge.aguilera@seqera.io>
+ * @author: paolo di tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @CompileStatic
@@ -67,25 +67,27 @@ class RegistryProxyController {
         final route = routeHelper.parse("/v2/" + url)
 
         // check if it's a container under build
-        final targetImage = route.request?.containerImage
-        if( targetImage )
-            return handleGetAsync(route, url, httpRequest)
-
-        return CompletableFuture.completedFuture( handleGet0(route, url, httpRequest) )
+        final future= handleFutureBuild0(route, httpRequest)
+        if( future )
+            return future
+        else
+            return CompletableFuture.completedFuture(handleGet0(route, httpRequest))
     }
 
-    protected CompletableFuture<MutableHttpResponse<?>> handleGetAsync(RoutePath route, String url, HttpRequest httpRequest){
-        containerBuildService.waitImageBuild(route.request?.containerImage).thenCompose {buildStatus ->
-            CompletableFuture.<MutableHttpResponse<?>>supplyAsync{
-                if( buildStatus == BuildStatus.FAILED){
-                    return HttpResponse.serverError()
-                }
-                handleGet0(route, url, httpRequest)
-            }
+    protected CompletableFuture<MutableHttpResponse<?>> handleFutureBuild0(RoutePath route, HttpRequest httpRequest){
+        // check if there's a future build result
+        final future = containerBuildService.buildResult(route)
+        if( future ) {
+            // wait for the build completion, then apply the usual 'handleGet0' logic
+            future
+                .thenApply( (buildResult) -> buildResult.exitStatus==0 ? handleGet0(route, httpRequest) : notFound() )
         }
+        else
+            return null
+
     }
 
-    protected MutableHttpResponse<?> handleGet0(RoutePath route, String url, HttpRequest httpRequest) {
+    protected MutableHttpResponse<?> handleGet0(RoutePath route, HttpRequest httpRequest) {
         if( httpRequest.method == HttpMethod.HEAD )
             return handleHead(route, httpRequest)
 
@@ -132,8 +134,8 @@ class RegistryProxyController {
         return proxyService.handleManifest(route, headers)
     }
 
-    static protected MutableHttpResponse<?>notFound(){
-        HttpResponse.notFound()
+    static protected MutableHttpResponse<?> notFound(){
+        return HttpResponse.notFound()
     }
 
     MutableHttpResponse<?> handleHead(RoutePath route, HttpRequest httpRequest) {
