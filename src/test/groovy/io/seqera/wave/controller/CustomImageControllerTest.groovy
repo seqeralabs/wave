@@ -4,6 +4,7 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Timeout
 
+import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
@@ -20,7 +21,7 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.model.ContentType
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.ContainerTokenService
-import io.seqera.wave.service.builder.BuildStatus
+import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.builder.ContainerBuildServiceImpl
 import io.seqera.wave.storage.DigestStore
@@ -29,14 +30,13 @@ import io.seqera.wave.storage.Storage
 import io.seqera.wave.test.DockerRegistryContainer
 import io.seqera.wave.util.Base32
 import jakarta.inject.Inject
-
 /**
  *
  * @author Jorge Aguilera <jorge.aguilera@seqera.io>
  */
 @MicronautTest(environments = ['test', 'h2', 'build'])
 @Timeout(value = 3, unit = TimeUnit.MINUTES)
-class CustomImageControllerTest extends Specification implements DockerRegistryContainer{
+class CustomImageControllerTest extends Specification implements DockerRegistryContainer {
 
     @Inject
     @Client("/")
@@ -46,14 +46,14 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
     @Shared
     ApplicationContext applicationContext
 
-    BuildStatus expected = BuildStatus.SUCCEED
+    BuildResult expected
 
     boolean resolveImageAsync = false
 
     @MockBean(ContainerBuildService)
     ContainerBuildService containerBuildService(){
         Mock(ContainerBuildServiceImpl){
-            waitImageBuild(_) >> {
+            buildResult(String) >> {
                 resolveImageAsync == false ? CompletableFuture.completedFuture(expected) : CompletableFuture.supplyAsync({
                     sleep(2*1000)
                     expected
@@ -105,7 +105,7 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
 
     void 'should fails head manifest when no image'() {
         given:
-        expected = BuildStatus.FAILED
+        expected = new BuildResult('xyz', 1, 'failed', Instant.now())
 
         when:
         HttpRequest request = HttpRequest.HEAD("/v2/wt/1234/${Base32.encode('library/hello-world'.bytes)}/manifests/latest").headers({h->
@@ -120,7 +120,7 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
 
     void 'should retrieve head manifest when image is completed'() {
         given:
-        expected = BuildStatus.SUCCEED
+        expected = new BuildResult('xyz', 0, 'OK', Instant.now())
 
         when:
         HttpRequest request = HttpRequest.HEAD("/v2/wt/1234/${Base32.encode('library/hello-world'.bytes)}/manifests/latest").headers({h->
@@ -135,7 +135,7 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
 
     void 'should wait for head manifest when image is under construction'() {
         given:
-        expected = BuildStatus.SUCCEED
+        expected = new BuildResult('xyz', 0, 'OK', Instant.now())
         resolveImageAsync = true
 
         when:
