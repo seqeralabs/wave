@@ -22,10 +22,8 @@ class DockerBuildStrategy extends BuildStrategy {
     @Value('${wave.build.image}')
     String buildImage
 
-
-    @Value('${wave.build.docker.timeout:5m}')
-    Duration timeout
-
+    @Value('${wave.build.timeout:5m}')
+    Duration buildTimeout
 
     @Override
     BuildResult build(BuildRequest req, String creds) {
@@ -45,7 +43,7 @@ class DockerBuildStrategy extends BuildStrategy {
                 .redirectErrorStream(true)
                 .start()
 
-        final completed = proc.waitFor(timeout.toSeconds(), TimeUnit.SECONDS)
+        final completed = proc.waitFor(buildTimeout.toSeconds(), TimeUnit.SECONDS)
         final stdout = proc.inputStream.text
         return new BuildResult(req.id, completed ? proc.exitValue() : -1, stdout, req.startTime)
 
