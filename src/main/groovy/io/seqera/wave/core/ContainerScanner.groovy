@@ -64,11 +64,6 @@ class ContainerScanner {
         return this
     }
 
-    @Deprecated
-    ContainerScanner withLayerConfig(Path configPath) {
-        containerConfig = configPath ? LayerConfig.containerConfigAdapter(configPath) : null
-        return this
-    }
 
     String resolve(RoutePath route, Map<String,List<String>> headers) {
         assert route, "Missing route"

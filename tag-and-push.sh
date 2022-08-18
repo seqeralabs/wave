@@ -25,7 +25,7 @@ if [[ $RELEASE ]]; then
   git tag $TAG $FORCE
   git push $REMOTE $TAG $FORCE
   # build and push image
-  make pack
+  make clean
   # push it
   make push
   # publish release notes

@@ -16,6 +16,7 @@ import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.core.ContainerScanner
 import io.seqera.wave.model.ContentType
+import io.seqera.wave.model.LayerConfig
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.test.ManifestConst
@@ -74,7 +75,7 @@ class ContainerScannerTest extends Specification {
         Files.write(json, CONFIG.bytes)
 
         when:
-        def scanner = new ContainerScanner().withLayerConfig(json)
+        def scanner = new ContainerScanner().withContainerConfig(LayerConfig.containerConfigAdapter(json))
 
         then:
         def config = scanner.getContainerConfig()
@@ -135,7 +136,7 @@ class ContainerScannerTest extends Specification {
 
         def scanner = new ContainerScanner()
                             .withStorage(storage)
-                            .withLayerConfig(Paths.get(layerJson.absolutePath))
+                            .withContainerConfig(LayerConfig.containerConfigAdapter(Paths.get(layerJson.absolutePath)))
         and:
         def digest = RegHelper.digest(layerPath.bytes)
 
@@ -173,7 +174,7 @@ class ContainerScannerTest extends Specification {
 
         and:
 
-        def scanner = new ContainerScanner().withStorage(storage).withLayerConfig(Paths.get(layerJson.absolutePath))
+        def scanner = new ContainerScanner().withStorage(storage).withContainerConfig(LayerConfig.containerConfigAdapter(Paths.get(layerJson.absolutePath)))
 
         when:
         def digest = scanner.updateImageManifest(IMAGE, MANIFEST, NEW_CONFIG_DIGEST)
@@ -217,7 +218,7 @@ class ContainerScannerTest extends Specification {
 
         and:
 
-        def scanner = new ContainerScanner().withStorage(storage).withLayerConfig(Paths.get(layerJson.absolutePath))
+        def scanner = new ContainerScanner().withStorage(storage).withContainerConfig(LayerConfig.containerConfigAdapter(Paths.get(layerJson.absolutePath)))
 
         when:
         def digest = scanner.updateManifestsList(IMAGE, MANIFEST, DIGEST, NEW_DIGEST)
@@ -349,7 +350,7 @@ class ContainerScannerTest extends Specification {
 
         and:
 
-        def scanner = new ContainerScanner().withStorage(storage).withLayerConfig(Paths.get(layerJson.absolutePath))
+        def scanner = new ContainerScanner().withStorage(storage).withContainerConfig(LayerConfig.containerConfigAdapter(Paths.get(layerJson.absolutePath)))
 
         when:
         def digest = scanner.updateImageConfig(IMAGE_NAME, IMAGE_CONFIG)
@@ -417,7 +418,7 @@ class ContainerScannerTest extends Specification {
 
         and:
 
-        def scanner = new ContainerScanner().withStorage(storage).withLayerConfig(Paths.get(layerJson.absolutePath))
+        def scanner = new ContainerScanner().withStorage(storage).withContainerConfig(LayerConfig.containerConfigAdapter(Paths.get(layerJson.absolutePath)))
 
         when:
         def digest = scanner.resolveV1Manifest(MANIFEST, IMAGE_NAME)
@@ -457,7 +458,7 @@ class ContainerScannerTest extends Specification {
         unpackLayer()
 
         and:
-        def scanner = new ContainerScanner().withLayerConfig(Paths.get(layerJson.absolutePath))
+        def scanner = new ContainerScanner().withContainerConfig(LayerConfig.containerConfigAdapter(Paths.get(layerJson.absolutePath)))
 
         when:
         scanner.rewriteHistoryV1(mutableManifest.history)
@@ -486,7 +487,7 @@ class ContainerScannerTest extends Specification {
         unpackLayer()
 
         and:
-        def scanner = new ContainerScanner().withLayerConfig(Paths.get(layerJson.absolutePath))
+        def scanner = new ContainerScanner().withContainerConfig(LayerConfig.containerConfigAdapter(Paths.get(layerJson.absolutePath)))
 
         when:
         scanner.rewriteHistoryV1(mutableManifest.history)
@@ -514,7 +515,7 @@ class ContainerScannerTest extends Specification {
         def IMAGE_NAME = 'hello-world'
 
         and:
-        def scanner = new ContainerScanner().withLayerConfig(Paths.get(layerJson.absolutePath))
+        def scanner = new ContainerScanner().withContainerConfig(LayerConfig.containerConfigAdapter(Paths.get(layerJson.absolutePath)))
 
         when:
         scanner.rewriteLayersV1(IMAGE_NAME, mutableManifest.fsLayers)
@@ -550,7 +551,7 @@ class ContainerScannerTest extends Specification {
 
         and:
 
-        def scanner = new ContainerScanner().withStorage(storage).withLayerConfig(Paths.get(layerJson.absolutePath))
+        def scanner = new ContainerScanner().withStorage(storage).withContainerConfig(LayerConfig.containerConfigAdapter(Paths.get(layerJson.absolutePath)))
 
         when:
         scanner.rewriteLayersV1(IMAGE_NAME, mutableManifest.fsLayers)
