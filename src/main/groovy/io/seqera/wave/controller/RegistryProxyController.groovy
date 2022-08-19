@@ -15,6 +15,7 @@ import io.micronaut.http.MutableHttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Error
 import io.micronaut.http.annotation.Get
+import io.micronaut.http.annotation.Head
 import io.micronaut.http.server.types.files.StreamedFile
 import io.seqera.wave.ErrorHandler
 import io.seqera.wave.core.RegistryProxyService
@@ -61,8 +62,8 @@ class RegistryProxyController {
         )
     }
 
-    @Get(uri="/{url:(.+)}", produces = "*/*")
-    CompletableFuture<MutableHttpResponse<?>> handleGet(String url, HttpRequest httpRequest) {
+    @Head(uri="/{url:(.+)}")
+    CompletableFuture<MutableHttpResponse<?>> handleHead(String url, HttpRequest httpRequest) {
         log.info "> Request [$httpRequest.method] $httpRequest.path"
         final route = routeHelper.parse("/v2/" + url)
 
@@ -71,7 +72,16 @@ class RegistryProxyController {
         if( future )
             return future
         else
-            return CompletableFuture.completedFuture(handleGet0(route, httpRequest))
+            return CompletableFuture.completedFuture(handleHead0(route, httpRequest))
+    }
+
+    @Get(uri="/{url:(.+)}", produces = "*/*", headRoute = false)
+    CompletableFuture<MutableHttpResponse<?>> handleGet(String url, HttpRequest httpRequest) {
+        log.info "> Request [$httpRequest.method] $httpRequest.path"
+        final route = routeHelper.parse("/v2/" + url)
+
+        // Get doesnt need to check if under build because head did
+        CompletableFuture.completedFuture(handleGet0(route, httpRequest))
     }
 
     protected CompletableFuture<MutableHttpResponse<?>> handleFutureBuild0(RoutePath route, HttpRequest httpRequest){
@@ -80,42 +90,52 @@ class RegistryProxyController {
         if( future ) {
             // wait for the build completion, then apply the usual 'handleGet0' logic
             future
-                .thenApply( (build) -> build.exitStatus==0 ? handleGet0(route, httpRequest) : badRequest(build.logs ) )
+                .thenApply( (build) -> build.exitStatus==0 ? handleHead0(route, httpRequest) : badRequest(build.logs ) )
         }
         else
             return null
     }
 
     protected MutableHttpResponse<?> handleGet0(RoutePath route, HttpRequest httpRequest) {
-        if( httpRequest.method == HttpMethod.HEAD )
-            return handleHead(route, httpRequest)
-
-        if (!(route.manifest || route.blob)) {
-            return notFound()
-        }
-
         if( route.manifest ) {
-            if ( !route.digest ) {
-                def entry = manifestForPath(route, httpRequest)
-                if (entry) {
-                    return fromCache(entry)
-                }
-            } else {
-                def entry = storage.getManifest(route.path)
-                if (entry.present) {
-                    return fromCache(entry.get())
-                }
-            }
+            return handleManifest0(route, httpRequest)
         }
 
         if( route.blob ) {
-            def entry = storage.getBlob(route.path)
+            return handleBlob0(route, httpRequest)
+        }
+
+        return notFound()
+    }
+
+    protected MutableHttpResponse<?> handleManifest0(RoutePath route, HttpRequest httpRequest) {
+        if (!route.digest) {
+            def entry = manifestForPath(route, httpRequest)
+            if (entry) {
+                return fromCache(entry)
+            }
+        } else {
+            def entry = storage.getManifest(route.path)
             if (entry.present) {
-                log.info "Blob found in the cache: $route.path"
                 return fromCache(entry.get())
             }
         }
 
+        handleRemote(route, httpRequest)
+    }
+
+    protected MutableHttpResponse<?> handleBlob0(RoutePath route, HttpRequest httpRequest) {
+
+        def entry = storage.getBlob(route.path)
+        if (entry.present) {
+            log.info "Blob found in the cache: $route.path"
+            return fromCache(entry.get())
+        }
+
+        handleRemote(route, httpRequest)
+    }
+
+    protected MutableHttpResponse<?> handleRemote(RoutePath route, HttpRequest httpRequest) {
         final type = route.isManifest() ? 'manifest' : 'blob'
         log.debug "Pulling $type from remote host: $route.path"
         def headers = httpRequest.headers.asMap() as Map<String, List<String>>
@@ -141,7 +161,7 @@ class RegistryProxyController {
         return HttpResponse.badRequest(new RegistryErrorResponse(message))
     }
 
-    MutableHttpResponse<?> handleHead(RoutePath route, HttpRequest httpRequest) {
+    MutableHttpResponse<?> handleHead0(RoutePath route, HttpRequest httpRequest) {
 
         if (!(route.manifest && route.tag)) {
             return notFound()
