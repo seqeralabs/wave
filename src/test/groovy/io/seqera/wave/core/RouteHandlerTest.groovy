@@ -9,13 +9,13 @@ import io.seqera.wave.service.ContainerTokenService
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class RouteHelperTest extends Specification {
+class RouteHandlerTest extends Specification {
 
     @Unroll
     def 'should match manifests route #PATH'() {
 
         when:
-        def matcher = RouteHelper.ROUTE_PATHS.matcher(PATH)
+        def matcher = RouteHandler.ROUTE_PATHS.matcher(PATH)
         then:
         matcher.matches() == MATCHES
         and:
@@ -40,11 +40,9 @@ class RouteHelperTest extends Specification {
         '/v2/hello-world/manifests/sha256'          | true      | 'hello-world'         | 'sha256'      | 'manifests'
         '/v2/hello-world/manifests/sha256:975f4b14f326b05db86e16de00144f9c12257553bba9484fed41f9b6f2257800' | true  | 'hello-world' | 'sha256:975f4b14f326b05db86e16de00144f9c12257553bba9484fed41f9b6f2257800' | 'manifests'
         and:
-        '/v2/tw/abc123/library/hello-world/blobs/latest' | true | 'abc123/library/hello-world' | 'latest' | 'blobs'
-        '/v2/wt/abc123/library/hello-world/blobs/latest' | true | 'abc123/library/hello-world' | 'latest' | 'blobs'
+        '/v2/wt/abc123/library/hello-world/blobs/latest' | true | 'abc123/library/hello-world'  | 'latest' | 'blobs'
         '/v2/wt/abc/123/library/hello-world/blobs/latest'| true | 'abc/123/library/hello-world' | 'latest' | 'blobs'
     }
-
 
     @Unroll
     def 'should get manifests route #PATH'() {
@@ -52,7 +50,7 @@ class RouteHelperTest extends Specification {
         def tokenService = Mock(ContainerTokenService)
         
         when:
-        def route = new RouteHelper(tokenService).parse(PATH)
+        def route = new RouteHandler(tokenService).parse(PATH)
         then:
         route == ROUTE
         and:
@@ -62,20 +60,17 @@ class RouteHelperTest extends Specification {
         PATH                                        | ROUTE
         '/v2/hello-world/manifests/latest'          | new RoutePath('manifests', null, 'hello-world', 'latest', '/v2/hello-world/manifests/latest')
         '/v2/library/hello-world/manifests/latest'  | new RoutePath('manifests', null, 'library/hello-world', 'latest', '/v2/library/hello-world/manifests/latest')
-        '/v1/library/hello-world/manifests/latest'  | RouteHelper.NOT_FOUND
-        '/v2/library/hello-world/foo/latest'        | RouteHelper.NOT_FOUND
-        '/v2/foo:bar/blobs/latest'                  | RouteHelper.NOT_FOUND
+        '/v1/library/hello-world/manifests/latest'  | RouteHandler.NOT_FOUND
+        '/v2/library/hello-world/foo/latest'        | RouteHandler.NOT_FOUND
+        '/v2/foo:bar/blobs/latest'                  | RouteHandler.NOT_FOUND
         and:
         '/v2/hello-world/blobs/latest'              | new RoutePath('blobs', null,'hello-world', 'latest', '/v2/hello-world/blobs/latest')
         '/v2/library/hello-world/blobs/latest'      | new RoutePath('blobs', null,'library/hello-world', 'latest', '/v2/library/hello-world/blobs/latest')
-        '/v1/library/hello-world/blobs/latest'      | RouteHelper.NOT_FOUND
-        '/v2/library/hello-world/foo/latest'        | RouteHelper.NOT_FOUND
-        '/v2/foo:bar/blobs/latest'                  | RouteHelper.NOT_FOUND
+        '/v1/library/hello-world/blobs/latest'      | RouteHandler.NOT_FOUND
+        '/v2/library/hello-world/foo/latest'        | RouteHandler.NOT_FOUND
+        '/v2/foo:bar/blobs/latest'                  | RouteHandler.NOT_FOUND
         and:
-        '/v2/tw/of2wc6jonfxs63tfpb2gm3dpo4/rnaseq-nf/manifests/v1.1'        | new RoutePath('manifests', 'quay.io', 'nextflow/rnaseq-nf', 'v1.1', '/v2/nextflow/rnaseq-nf/manifests/v1.1')
-        '/v2/tw/mjuw6y3pnz2gc2lomvzhg/biocontainers/manifests/v1.2.0_cv1'   | new RoutePath('manifests', null, 'biocontainers/biocontainers', 'v1.2.0_cv1', '/v2/biocontainers/biocontainers/manifests/v1.2.0_cv1')
-        and:
-        '/v2/github.io/biocontainers/biocontainers/manifests/v1.1'        | new RoutePath('manifests', 'github.io', 'biocontainers/biocontainers', 'v1.1', '/v2/biocontainers/biocontainers/manifests/v1.1')
+        '/v2/github.io/biocontainers/biocontainers/manifests/v1.1'          | new RoutePath('manifests', 'github.io', 'biocontainers/biocontainers', 'v1.1', '/v2/biocontainers/biocontainers/manifests/v1.1')
     }
 
     @Unroll
@@ -84,7 +79,7 @@ class RouteHelperTest extends Specification {
         def tokenService = Mock(ContainerTokenService)
 
         when:
-        def route = new RouteHelper(tokenService).parse(REQ_PATH)
+        def route = new RouteHandler(tokenService).parse(REQ_PATH)
         then:
         1 * tokenService.getRequest(ROUTE_TKN) >> new ContainerRequestData(null,null,REQ_IMAGE)
         and:
