@@ -1,4 +1,10 @@
 # Wave changelog
+v0.13.0 - 17 Aug 2022
+- Use CompletableFuture instead Future to listen progress in the task (#98) [e74194c6]
+- Remove custom base image [c20ce89f]
+- Add unique job id [147cfe6a]
+- Refactor pod build [085397b4]
+
 v0.12.0 - 16 Aug 2022
 - Add support for Kubernetes based image build [3294a334]
 - Add support for creds file [2093d907]
