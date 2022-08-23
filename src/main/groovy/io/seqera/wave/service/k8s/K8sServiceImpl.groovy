@@ -254,30 +254,50 @@ class K8sServiceImpl implements K8sService {
 
     @CompileDynamic
     V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, String creds) {
-        return new V1PodBuilder()
-                .withNewMetadata()
-                    .withNamespace(namespace)
-                    .withName(name)
-                .endMetadata()
-                .withNewSpec()
-                    .withActiveDeadlineSeconds( buildTimeout.toSeconds() )
-                    .addNewInitContainer()
-                        .withName('init-secret')
-                        .withImage('busybox')
-                        .withCommand(['sh','-c',"echo '$creds' > /kaniko/.docker/config.json".toString()])
-                        .withVolumeMounts(mountDockerConfig())
-                    .endInitContainer()
-                    .addNewContainer()
-                        .withName(name)
-                        .withImage(containerImage)
-                        .withArgs(args)
-                        .withVolumeMounts(mountDockerConfig(), mountBuildStorage(workDir, storageMountPath))
-                    .endContainer()
-                    .withRestartPolicy("Never")
-                    .addToVolumes(volumeDockerConfig(), volumeBuildStorage(workDir, storageClaimName))
-                .endSpec()
-                .build()
 
+        // required volumes
+        def mounts = [mountBuildStorage(workDir, storageMountPath)]
+        def volumes = [volumeBuildStorage(workDir, storageClaimName)]
+        if( creds ){
+            mounts.add 0, mountDockerConfig()
+            volumes.add 0, volumeDockerConfig()
+        }
+
+        V1PodBuilder builder = new V1PodBuilder()
+
+        //metadata section
+        builder.withNewMetadata()
+                .withNamespace(namespace)
+                .withName(name)
+                .endMetadata()
+
+
+        //spec section
+        def spec = builder
+                .withNewSpec()
+                .withActiveDeadlineSeconds( buildTimeout.toSeconds() )
+                .withRestartPolicy("Never")
+                .addAllToVolumes(volumes)
+
+        if( creds ) {
+            spec.addNewInitContainer()
+                    .withName('init-secret')
+                    .withImage('busybox')
+                    .withCommand(['sh', '-c', "echo '$creds' > /kaniko/.docker/config.json".toString()])
+                    .withVolumeMounts(mountDockerConfig())
+                    .endInitContainer()
+        }
+
+        //container section
+        spec.addNewContainer()
+                .withName(name)
+                .withImage(containerImage)
+                .withArgs(args)
+                .withVolumeMounts(mounts)
+            .endContainer()
+            .endSpec()
+
+        builder.build()
     }
 
     /**
