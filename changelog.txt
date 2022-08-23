@@ -1,4 +1,8 @@
 # Wave changelog
+v0.13.1 - 23 Aug 2022
+- Improve build mail notification [fcb88794]
+- Rename RouteHelper to RouteHandler [6d5652ee]
+
 v0.13.0 - 17 Aug 2022
 - Use CompletableFuture instead Future to listen progress in the task (#98) [e74194c6]
 - Remove custom base image [c20ce89f]
