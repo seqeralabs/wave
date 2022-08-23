@@ -22,6 +22,7 @@ import jakarta.inject.Singleton
 import static io.seqera.wave.util.StringUtils.indent
 import static java.nio.file.StandardOpenOption.APPEND
 import static java.nio.file.StandardOpenOption.CREATE
+
 /**
  * Implements container build service
  *
@@ -79,8 +80,20 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         executor = ThreadPoolBuilder.io(10, 10, 100, 'wave-builder')
     }
 
+    /**
+     * Build a container image for the given dockerfile and conda files
+     *
+     * @param dockerfileContent
+     *      The dockerfile text content to build the container
+     * @param condaFile
+     *      A Conda recipe file that may be used to build the container (optional)
+     * @param user
+     *      Tower user identifier that submitted the request
+     * @return
+     *      A fully qualified container repository where the built container is made available
+     */
     @Override
-    String buildImage(String dockerfileContent, String condaFile, User user) {
+    String buildImage(String dockerfileContent, @Nullable String condaFile, @Nullable User user) {
         if( !dockerfileContent )
             throw new BadRequestException("Missing dockerfile content")
         // create a unique digest to identify the request
@@ -88,6 +101,16 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         return getOrSubmit(request)
     }
 
+    /**
+     * Get a completable future that holds the build result
+     *
+     * @param targetImage
+     *      the container repository name where the target image is expected to be retrieved once the
+     *      build it complete
+     * @return
+     *      A completable future that holds the resulting {@link BuildResult} or
+     *      {@code null} if not request has been submitted for such image
+     */
     @Override
     CompletableFuture<BuildResult> buildResult(String targetImage) {
         return buildRequests.get(targetImage)?.result
@@ -141,7 +164,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     protected sendCompletionEmail(BuildRequest request, BuildResult result) {
         try {
-            mailService?.sendCompletionMail(result, request.user)
+            mailService?.sendCompletionMail(request, result)
         }
         catch (Exception e) {
             log.warn "Enable to send completion notication - reason: ${e.message?:e}"

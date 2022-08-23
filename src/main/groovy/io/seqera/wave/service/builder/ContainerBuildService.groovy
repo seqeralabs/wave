@@ -1,10 +1,10 @@
 package io.seqera.wave.service.builder
 
 import java.util.concurrent.CompletableFuture
+import javax.annotation.Nullable
 
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.tower.User
-
 /**
  * Declare container build service interface
  *
@@ -22,7 +22,7 @@ interface ContainerBuildService {
      * @return
      *      The container image where the resulting image is going to be hosted
      */
-    String buildImage(String dockerfileContent, String condaFile, User user)
+    String buildImage(String dockerfileContent, @Nullable String condaFile, @Nullable User user)
 
     /**
      * Get a completable future that holds the build result
