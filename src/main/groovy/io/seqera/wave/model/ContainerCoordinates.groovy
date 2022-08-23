@@ -16,7 +16,6 @@ class ContainerCoordinates {
     final String image
     final String reference
 
-
     static ContainerCoordinates parse(String path) {
 
         final coordinates = path.tokenize('/')
@@ -24,7 +23,7 @@ class ContainerCoordinates {
             coordinates.add(0,'library')
         }
 
-        String ref = null
+        String ref
         def last = coordinates.size()-1
         int pos
         if( (pos=coordinates[last].indexOf('@'))!=-1 || (pos=coordinates[last].indexOf(':'))!=-1 ) {

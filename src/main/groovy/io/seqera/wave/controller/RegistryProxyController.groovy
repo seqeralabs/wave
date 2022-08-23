@@ -20,7 +20,7 @@ import io.micronaut.http.server.types.files.StreamedFile
 import io.seqera.wave.ErrorHandler
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RegistryProxyService.DelegateResponse
-import io.seqera.wave.core.RouteHelper
+import io.seqera.wave.core.RouteHandler
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.exception.GenericException
 import io.seqera.wave.exchange.RegistryErrorResponse
@@ -43,7 +43,7 @@ class RegistryProxyController {
 
     @Inject RegistryProxyService proxyService
     @Inject Storage storage
-    @Inject RouteHelper routeHelper
+    @Inject RouteHandler routeHelper
     @Inject ContainerBuildService containerBuildService
     @Inject ErrorHandler errorHandler
 
