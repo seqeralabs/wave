@@ -1,14 +1,14 @@
 package io.seqera.wave.service.mail
 
+import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
-import io.seqera.wave.tower.User
-
 /**
+ * Implements mail notification service
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 interface MailService {
 
-    void sendCompletionMail(BuildResult build, User user)
+    void sendCompletionMail(BuildRequest request, BuildResult result)
 
 }
