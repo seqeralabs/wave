@@ -1,16 +1,18 @@
 package io.seqera.wave
 
+import spock.lang.Specification
+
 import java.nio.file.Paths
 
 import groovy.json.JsonSlurper
-import io.seqera.wave.model.LayerConfig
-import spock.lang.Specification
+
+import io.seqera.wave.util.ContainerConfigFactory
 
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class LayerConfigTest extends Specification {
+class ContainerConfigTest extends Specification {
 
     def 'should deserialize layer config' () {
         given:
@@ -27,21 +29,21 @@ class LayerConfigTest extends Specification {
             }
             '''
         when:
-        def config = new JsonSlurper().parseText(CONFIG) as LayerConfig
+        def config = ContainerConfigFactory.instance.from(CONFIG)
 
         then:
         config.workingDir == "/some/path"
         config.entrypoint == ["foo", "bar"]
         and:
-        config.append.locationPath == Paths.get("/some/path/layer.tag.gzip")
-        config.append.gzipDigest ==  "sha256:xxx"
-        config.append.tarDigest ==  "sha256:zzz"
-        config.append.gzipSize == 10167366
+        config.layers.first().locationPath == Paths.get("/some/path/layer.tag.gzip")
+        config.layers.first().gzipDigest ==  "sha256:xxx"
+        config.layers.first().tarDigest ==  "sha256:zzz"
+        config.layers.first().gzipSize == 10167366
 
         when:
-        config.append.withBase(Paths.get('/root'))
+        config.layers.first().withBase(Paths.get('/root'))
         then:
-        config.append.getLocationPath() == Paths.get("/some/path/layer.tag.gzip")
+        config.layers.first().locationPath == Paths.get("/some/path/layer.tag.gzip")
     }
 
 
@@ -60,17 +62,17 @@ class LayerConfigTest extends Specification {
             }
             '''
         when:
-        def config = new JsonSlurper().parseText(CONFIG) as LayerConfig
+        def config = ContainerConfigFactory.instance.from(CONFIG)
 
         then:
         config.workingDir == "/some/path"
         config.entrypoint == ["foo", "bar"]
         and:
-        config.append.locationPath == Paths.get("layer.tag.gzip")
+        config.layers.first().locationPath == Paths.get("layer.tag.gzip")
 
         when:
-        config.append.withBase(Paths.get('/root/dir'))
+        config.layers.first().withBase(Paths.get('/root/dir'))
         then:
-        config.append.getLocationPath() == Paths.get("/root/dir/layer.tag.gzip")
+        config.layers.first().getLocationPath() == Paths.get("/root/dir/layer.tag.gzip")
     }
 }

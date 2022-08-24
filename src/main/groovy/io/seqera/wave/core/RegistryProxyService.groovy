@@ -13,11 +13,12 @@ import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryCredentialsFactory
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
-import io.seqera.wave.model.LayerConfig
+
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.service.CredentialsService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
+import io.seqera.wave.util.ContainerConfigFactory
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -62,7 +63,7 @@ class RegistryProxyService {
     private ContainerScanner scanner(ProxyClient proxyClient) {
         return new ContainerScanner()
                 .withArch(arch)
-                .withContainerConfig( LayerConfig.containerConfigAdapter(Path.of(layerPath)) )
+                .withContainerConfig(layerPath ? Path.of(layerPath) : null)
                 .withStorage(storage)
                 .withClient(proxyClient)
     }

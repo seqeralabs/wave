@@ -1,5 +1,8 @@
 package io.seqera.wave.api
 
+import java.nio.file.Path
+import java.nio.file.Paths
+
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 
@@ -21,5 +24,21 @@ class ContainerLayer {
         if( !gzipDigest ) throw new IllegalArgumentException("Missing layer gzip digest")
         if( !gzipSize ) throw new IllegalArgumentException("Missing layer gzip size")
         if( !tarDigest ) throw new IllegalArgumentException("Missing layer tar digest")
+
+        if( !gzipDigest.startsWith('sha256:') )
+            throw new IllegalArgumentException("Missing layer gzip digest should start with the 'sha256:' prefix -- offending value: $gzipDigest")
+        if( !tarDigest.startsWith('sha256:') )
+            throw new IllegalArgumentException("Missing layer tar digest should start with the 'sha256:' prefix -- offending value: $tarDigest")
+    }
+
+    ContainerLayer withBase(Path path){
+        if( !Path.of(location).absolute ) {
+            location = Paths.get(path.toString(), location)
+        }
+        this
+    }
+
+    Path getLocationPath(){
+        Path.of(location)
     }
 }
