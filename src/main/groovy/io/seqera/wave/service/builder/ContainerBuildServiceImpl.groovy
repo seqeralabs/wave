@@ -49,9 +49,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     @Value('${wave.build.repo}')
     String buildRepo
 
-    @Value('${wave.build.cache}')
-    String cacheRepo
-
     @Value('${wave.build.image}')
     String buildImage
 
