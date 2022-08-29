@@ -256,11 +256,15 @@ class K8sServiceImpl implements K8sService {
     V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, String creds) {
 
         // required volumes
-        def mounts = [mountBuildStorage(workDir, storageMountPath)]
-        def volumes = [volumeBuildStorage(workDir, storageClaimName)]
+        final mounts = new ArrayList<V1VolumeMount>(5)
+        mounts.add(mountBuildStorage(workDir, storageMountPath))
+
+        final volumes = new ArrayList<V1Volume>(5)
+        volumes.add(volumeBuildStorage(workDir, storageClaimName))
+
         if( creds ){
-            mounts.add 0, mountDockerConfig()
-            volumes.add 0, volumeDockerConfig()
+            mounts.add(0, mountDockerConfig())
+            volumes.add(0, volumeDockerConfig())
         }
 
         V1PodBuilder builder = new V1PodBuilder()
