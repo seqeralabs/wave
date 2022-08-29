@@ -63,8 +63,8 @@ class ContainerTokenController {
     }
 
     ContainerRequestData makeRequestData(SubmitContainerTokenRequest req, User user) {
-        if( !req.containerImage && !req.containerFile )
-            throw new BadRequestException("Missing container image")
+        if( req.containerImage && req.containerFile )
+            throw new BadRequestException("Attributes 'containerImage' and 'containerFile' cannot be used in the same request")
 
         String targetImage
         String targetContent
@@ -74,11 +74,13 @@ class ContainerTokenController {
             condaContent = req.condaFile ? new String(req.condaFile.decodeBase64()) : null
             targetImage = buildService.buildImage(targetContent, condaContent, user)
         }
-        else {
+        else if( req.containerImage ) {
             targetImage = req.containerImage
             targetContent = null
             condaContent = null
         }
+        else
+            throw new BadRequestException("Specify either 'containerImage' or 'containerFile' attribute")
 
         final data = new ContainerRequestData(
                 user?.id,
