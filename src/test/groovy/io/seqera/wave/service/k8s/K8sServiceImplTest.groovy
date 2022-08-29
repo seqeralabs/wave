@@ -177,6 +177,8 @@ class K8sServiceImplTest extends Specification {
         result.spec.containers.get(0).image == 'my-image:latest'
         result.spec.containers.get(0).args ==  ['this','that']
         and:
+        result.spec.containers.get(0).volumeMounts.size() == 2
+        and:
         result.spec.containers.get(0).volumeMounts.get(0).name == 'docker-config'
         result.spec.containers.get(0).volumeMounts.get(0).mountPath == '/kaniko/.docker/'
         and:
@@ -190,6 +192,48 @@ class K8sServiceImplTest extends Specification {
         and:
         result.spec.volumes.get(1).name == 'build-data'
         result.spec.volumes.get(1).persistentVolumeClaim.claimName == 'build-claim'
+
+
+        cleanup:
+        ctx.close()
+    }
+
+    def 'should create build pod without init container' () {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.timeout': '10s',
+                'wave.build.k8s.namespace': 'my-ns',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.storage.claimName': 'build-claim',
+                'wave.build.k8s.storage.mountPath': '/build' ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+
+        when:
+        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null)
+        then:
+        result.metadata.name == 'foo'
+        result.metadata.namespace == 'my-ns'
+        and:
+        result.spec.activeDeadlineSeconds == 10
+        and:
+        !result.spec.initContainers
+        and:
+        result.spec.containers.get(0).name == 'foo'
+        result.spec.containers.get(0).image == 'my-image:latest'
+        result.spec.containers.get(0).args ==  ['this','that']
+        and:
+        result.spec.containers.get(0).volumeMounts.size() == 1
+        and:
+        result.spec.containers.get(0).volumeMounts.get(0).name == 'build-data'
+        result.spec.containers.get(0).volumeMounts.get(0).mountPath == '/build/work/xyz'
+        result.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz'
+
+        and:
+        result.spec.volumes.get(0).name == 'build-data'
+        result.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
 
 
         cleanup:
