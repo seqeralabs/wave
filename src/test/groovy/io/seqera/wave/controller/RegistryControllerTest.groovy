@@ -96,7 +96,7 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
         and:
         response.getHeaders().get('docker-content-digest').startsWith( 'sha256:')
         response.getHeaders().get('Content-Type') == 'application/vnd.docker.distribution.manifest.v2+json'
-        response.getContentLength() == 775
+        response.getContentLength() == 525
 
         when:
         storage.clearCache()
@@ -108,7 +108,7 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
         and:
         response.getHeaders().get('docker-content-digest').startsWith( 'sha256:')
         response.getHeaders().get('Content-Type') == 'application/vnd.docker.distribution.manifest.v2+json'
-        response.getContentLength() == 775
+        response.getContentLength() == 525
     }
 
     // Double download hello-world requesting all required layers refreshing cache between them
