@@ -1,10 +1,8 @@
 package io.seqera.wave.api
 
-import java.nio.file.Path
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
-
 /**
  * Model a container configuration
  *
@@ -28,16 +26,9 @@ class ContainerConfig {
         return entrypoint || cmd || env || workingDir || workingDir || layers
     }
 
-    ContainerConfig withBase(Path path){
-        layers?.each {layer->
-            layer.withBase(path)
-        }
-        this
-    }
-
     void validate(){
-        layers?.each{layer ->
-            layer.validate()
+        for( ContainerLayer it : layers ) {
+            it.validate()
         }
     }
 }

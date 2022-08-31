@@ -2,12 +2,7 @@ package io.seqera.wave
 
 import spock.lang.Specification
 
-import java.nio.file.Paths
-
-import groovy.json.JsonSlurper
-
 import io.seqera.wave.util.ContainerConfigFactory
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -35,15 +30,10 @@ class ContainerConfigTest extends Specification {
         config.workingDir == "/some/path"
         config.entrypoint == ["foo", "bar"]
         and:
-        config.layers.first().locationPath == Paths.get("/some/path/layer.tag.gzip")
         config.layers.first().gzipDigest ==  "sha256:xxx"
         config.layers.first().tarDigest ==  "sha256:zzz"
         config.layers.first().gzipSize == 10167366
 
-        when:
-        config.layers.first().withBase(Paths.get('/root'))
-        then:
-        config.layers.first().locationPath == Paths.get("/some/path/layer.tag.gzip")
     }
 
 
@@ -67,12 +57,6 @@ class ContainerConfigTest extends Specification {
         then:
         config.workingDir == "/some/path"
         config.entrypoint == ["foo", "bar"]
-        and:
-        config.layers.first().locationPath == Paths.get("layer.tag.gzip")
 
-        when:
-        config.layers.first().withBase(Paths.get('/root/dir'))
-        then:
-        config.layers.first().getLocationPath() == Paths.get("/root/dir/layer.tag.gzip")
     }
 }

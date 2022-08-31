@@ -1,11 +1,8 @@
 package io.seqera.wave.api
 
-import java.nio.file.Path
-import java.nio.file.Paths
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
-
 /**
  * Model a container layer meta-info
  *
@@ -31,14 +28,4 @@ class ContainerLayer {
             throw new IllegalArgumentException("Missing layer tar digest should start with the 'sha256:' prefix -- offending value: $tarDigest")
     }
 
-    ContainerLayer withBase(Path path){
-        if( !Path.of(location).absolute ) {
-            location = Paths.get(path.toString(), location)
-        }
-        this
-    }
-
-    Path getLocationPath(){
-        Path.of(location)
-    }
 }

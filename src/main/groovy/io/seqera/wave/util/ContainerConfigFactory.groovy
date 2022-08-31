@@ -5,12 +5,9 @@ import java.nio.file.Path
 
 import groovy.json.JsonSlurper
 import groovy.transform.CompileStatic
-import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
-
-
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  *
@@ -20,22 +17,18 @@ import io.seqera.wave.api.ContainerLayer
 @CompileStatic
 class ContainerConfigFactory {
 
-    @Memoized
     ContainerConfig from(Path path) {
         log.debug "ContainerConfig from path: $path"
         final layerConfigPath = path.toAbsolutePath()
         if( !Files.exists(layerConfigPath) ) {
             throw new IllegalArgumentException("Specific config path does not exist: $layerConfigPath")
         }
-        ContainerConfig ret = parse(path.text)
-        ret.withBase(path.parent.toAbsolutePath())
-        ret
+        return parse(path.text)
     }
 
-    @Memoized
     ContainerConfig from(String text) {
         log.debug "ContainerConfig from inputStream"
-        parse(text)
+        return parse(text)
     }
 
 
@@ -59,6 +52,6 @@ class ContainerConfigFactory {
         }
         containerConfig.validate()
         log.debug "Layer info: $containerConfig"
-        containerConfig
+        return containerConfig
     }
 }

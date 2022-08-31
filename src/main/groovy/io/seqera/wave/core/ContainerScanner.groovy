@@ -1,7 +1,6 @@
 package io.seqera.wave.core
 
 import java.net.http.HttpResponse
-import java.nio.file.Path
 
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
@@ -13,11 +12,9 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.exception.GenericException
 import io.seqera.wave.model.ContentType
-
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.storage.reader.ContentReaderFactory
-import io.seqera.wave.util.ContainerConfigFactory
 import io.seqera.wave.util.RegHelper
 /**
  * Implement the logic of container manifest manipulation and
@@ -65,10 +62,6 @@ class ContainerScanner {
         return this
     }
 
-    ContainerScanner withContainerConfig(Path configPath) {
-        ContainerConfig containerConfig = configPath ? ContainerConfigFactory.instance.from(configPath) : null
-        withContainerConfig(containerConfig)
-    }
 
     String resolve(RoutePath route, Map<String,List<String>> headers) {
         assert route, "Missing route"
