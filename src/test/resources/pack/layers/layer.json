@@ -1,0 +1,16 @@
+{
+  "entrypoint": [
+    "/opt/fusion/entry.sh"
+  ],
+  "workingDir": null,
+  "cmd": null,
+  "env": [
+    "FOO=bar"
+  ],
+  "append": {
+    "location": "layer.tar.gzip",
+    "gzipDigest": "sha256:fe73ccd62aa94aefddad4544b6436c718df9b7aff8cfcc6eb8cf9a2d833869ce",
+    "gzipSize": 13233364,
+    "tarDigest": "sha256:9da8322478e34933f34ab4e6ac22097dc7a52bd3c074b0e50948e8fcb3a56897"
+  }
+}

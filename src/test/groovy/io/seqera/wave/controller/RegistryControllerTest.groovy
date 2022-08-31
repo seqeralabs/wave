@@ -11,10 +11,9 @@ import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.storage.MemoryStorage
-import io.seqera.wave.storage.Storage
-import io.seqera.wave.test.DockerRegistryContainer
 import io.seqera.wave.model.ContentType
+import io.seqera.wave.storage.MemoryStorage
+import io.seqera.wave.test.DockerRegistryContainer
 import jakarta.inject.Inject
 /**
  *
@@ -51,7 +50,7 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
         and:
         response.body().indexOf('"schemaVersion":') != -1
         response.getContentType().get().getName() ==  'application/vnd.docker.distribution.manifest.v2+json'
-        response.getContentLength() == 775
+        response.getContentLength() == 525
 
         when:
         storage.clearCache()
@@ -64,7 +63,7 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
         and:
         response.body().indexOf('"schemaVersion":') != -1
         response.getContentType().get().getName() ==  'application/vnd.docker.distribution.manifest.v2+json'
-        response.getContentLength() == 775
+        response.getContentLength() == 525
     }
 
     void 'should head manifest'() {
@@ -81,7 +80,7 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
         and:
         response.getHeaders().get('docker-content-digest').startsWith( 'sha256:')
         response.getHeaders().get('Content-Type') == 'application/vnd.docker.distribution.manifest.v2+json'
-        response.getContentLength() == 775
+        response.getContentLength() == 525
     }
 
     void 'should head manifest and get blob of image'() {
@@ -97,7 +96,7 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
         and:
         response.getHeaders().get('docker-content-digest').startsWith( 'sha256:')
         response.getHeaders().get('Content-Type') == 'application/vnd.docker.distribution.manifest.v2+json'
-        response.getContentLength() == 775
+        response.getContentLength() == 525
 
         when:
         storage.clearCache()
@@ -109,7 +108,7 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
         and:
         response.getHeaders().get('docker-content-digest').startsWith( 'sha256:')
         response.getHeaders().get('Content-Type') == 'application/vnd.docker.distribution.manifest.v2+json'
-        response.getContentLength() == 775
+        response.getContentLength() == 525
     }
 
     // Double download hello-world requesting all required layers refreshing cache between them

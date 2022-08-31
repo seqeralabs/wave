@@ -1,7 +1,6 @@
 package io.seqera.wave.core
 
 import java.net.http.HttpResponse
-import java.nio.file.Path
 
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
@@ -13,7 +12,6 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.exception.GenericException
 import io.seqera.wave.model.ContentType
-import io.seqera.wave.model.LayerConfig
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.storage.reader.ContentReaderFactory
@@ -64,11 +62,6 @@ class ContainerScanner {
         return this
     }
 
-    @Deprecated
-    ContainerScanner withLayerConfig(Path configPath) {
-        containerConfig = configPath ? LayerConfig.containerConfigAdapter(configPath) : null
-        return this
-    }
 
     String resolve(RoutePath route, Map<String,List<String>> headers) {
         assert route, "Missing route"

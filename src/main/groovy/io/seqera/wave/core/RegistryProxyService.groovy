@@ -1,6 +1,6 @@
 package io.seqera.wave.core
 
-import java.nio.file.Path
+
 import javax.validation.constraints.NotBlank
 
 import groovy.transform.CompileStatic
@@ -35,10 +35,6 @@ class RegistryProxyService {
     @NotBlank
     private String arch
 
-    @Nullable
-    @Value('${wave.layerPath}')
-    private String layerPath
-
     @Inject
     private RegistryLookupService registryLookup
 
@@ -61,7 +57,6 @@ class RegistryProxyService {
     private ContainerScanner scanner(ProxyClient proxyClient) {
         return new ContainerScanner()
                 .withArch(arch)
-                .withLayerConfig(layerPath ? Path.of(layerPath) : null)
                 .withStorage(storage)
                 .withClient(proxyClient)
     }
