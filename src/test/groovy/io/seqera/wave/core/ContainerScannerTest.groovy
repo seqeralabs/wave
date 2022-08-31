@@ -50,10 +50,6 @@ class ContainerScannerTest extends Specification {
     @Inject RegistryLookupService lookupService
     @Inject RegistryCredentialsProvider credentialsProvider
 
-    def createConfig(Path folder, Map config, byte[] content ){
-        def location = folder.resolve('dummy.gzip')
-    }
-
     def 'should set layer paths' () {
         given:
         def folder = Files.createTempDirectory('test')
@@ -62,12 +58,12 @@ class ContainerScannerTest extends Specification {
         and:
         def CONFIG = """
                 {
-                    "append": {
+                    "layers": [{
                       "location": "${layer.toAbsolutePath()}",
                       "gzipDigest": "sha256:xxx",
                       "gzipSize": 1000,
                       "tarDigest": "sha256:zzz"
-                    }                  
+                    }]                  
                 }
                 """
         and:
@@ -121,7 +117,7 @@ class ContainerScannerTest extends Specification {
 
         def string = this.class.getResourceAsStream("/foo/layer.json").text
         def layerConfig = new JsonSlurper().parseText(string)
-        layerConfig.append.location = layerPath.absolutePath
+        layerConfig.layers[0].location = layerPath.absolutePath
 
         layerJson = new File("$folder/layer.json")
         layerJson.text = JsonOutput.prettyPrint(JsonOutput.toJson(layerConfig))
@@ -130,13 +126,13 @@ class ContainerScannerTest extends Specification {
     def 'create the layer' () {
         given:
         def IMAGE = 'hello-world'
-
         and:
         unpackLayer()
 
+        def config = ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath))
         def scanner = new ContainerScanner()
                             .withStorage(storage)
-                            .withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
+                            .withContainerConfig(config)
         and:
         def digest = RegHelper.digest(layerPath.bytes)
 

@@ -3,11 +3,12 @@ package io.seqera.wave.util
 import java.nio.file.Files
 import java.nio.file.Path
 
-import groovy.json.JsonSlurper
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.api.ContainerConfig
-import io.seqera.wave.api.ContainerLayer
+
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  *
@@ -33,24 +34,8 @@ class ContainerConfigFactory {
 
 
     protected ContainerConfig parse(String text){
-        final json = new JsonSlurper().parseText(text) as Map<String, Object>
-        final ContainerConfig containerConfig = new ContainerConfig()
-        for( obj in json.entrySet()){
-            if( containerConfig.properties.containsKey(obj.key)){
-                containerConfig.setProperty(obj.key, obj.value)
-            }
-        }
-        if( json.containsKey('append') ){
-            final jsonAppend = json['append'] as Map<String, Object>
-            final ContainerLayer layer = new ContainerLayer()
-            for( obj in jsonAppend.entrySet()){
-                if( layer.properties.containsKey(obj.key)){
-                    layer.setProperty(obj.key, obj.value)
-                }
-            }
-            containerConfig.layers.add layer
-        }
-        containerConfig.validate()
+        final type = new TypeToken<ContainerConfig>(){}.getType()
+        final ContainerConfig containerConfig = new Gson().fromJson(text, type)
         log.debug "Layer info: $containerConfig"
         return containerConfig
     }

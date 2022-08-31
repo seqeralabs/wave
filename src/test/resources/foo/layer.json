@@ -7,10 +7,12 @@
   "env": [
     "FOO=bar"
   ],
-  "append": {
-    "location": "replaced by the test",
-    "gzipDigest": "sha256:3639efcd08abb273b1619e82e78c29a7df02c1051b1820e99fc395dcaa3326b8",
-    "gzipSize": 2,
-    "tarDigest": "sha256:fb27fedd4167ca99809b566b799e62ea930cee9f70ec35dc4bcb623dbb357788"
-  }
+  "layers": [
+    {
+      "location": "replaced by the test",
+      "gzipDigest": "sha256:3639efcd08abb273b1619e82e78c29a7df02c1051b1820e99fc395dcaa3326b8",
+      "gzipSize": 2,
+      "tarDigest": "sha256:fb27fedd4167ca99809b566b799e62ea930cee9f70ec35dc4bcb623dbb357788"
+    }
+  ]
 }

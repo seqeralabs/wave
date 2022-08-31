@@ -15,12 +15,12 @@ class ContainerConfigTest extends Specification {
             {
               "entrypoint": ["foo", "bar"],
               "workingDir": "/some/path",
-              "append": {
+              "layers": [{
                 "location": "/some/path/layer.tag.gzip",
                 "gzipDigest": "sha256:xxx",
                 "gzipSize": 10167366,
                 "tarDigest": "sha256:zzz" 
-              } 
+              }] 
             }
             '''
         when:
@@ -43,12 +43,12 @@ class ContainerConfigTest extends Specification {
             {
               "entrypoint": ["foo", "bar"],
               "workingDir": "/some/path",
-              "append": {
+              "layers": [{
                 "location": "layer.tag.gzip",
                 "gzipDigest": "sha256:xxx",
                 "gzipSize": 10167366,
                 "tarDigest": "sha256:zzz" 
-              } 
+              }] 
             }
             '''
         when:
