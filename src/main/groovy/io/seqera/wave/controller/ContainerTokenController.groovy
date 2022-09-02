@@ -1,5 +1,6 @@
 package io.seqera.wave.controller
 
+import java.nio.file.Path
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
@@ -10,12 +11,14 @@ import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Post
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
+import io.seqera.wave.core.Container
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.model.ContainerCoordinates
-import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.ContainerTokenService
 import io.seqera.wave.service.UserService
+import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
 /**
@@ -39,6 +42,18 @@ class ContainerTokenController {
     @Value('${wave.server.url}')
     String serverUrl
 
+    /**
+     * The registry repository where the build image will be stored
+     */
+    @Value('${wave.build.repo}')
+    String buildRepo
+
+    /**
+     * File system path there the dockerfile is save
+     */
+    @Value('${wave.build.workspace}')
+    String workspace
+
     @Inject
     ContainerBuildService buildService
 
@@ -56,10 +71,22 @@ class ContainerTokenController {
             throw new BadRequestException("Missing access token")
 
         final data = makeRequestData(req, user)
-        final token = tokenService.getToken(data)
+        final token = tokenService.computeToken(data)
         final target = targetImage(token, data.containerImage)
         final resp = new SubmitContainerTokenResponse(containerToken: token, targetImage: target)
         HttpResponse.ok(resp)
+    }
+
+    BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, User user) {
+        if( !req.containerFile )
+            throw new BadRequestException("Missing dockerfile content")
+        if( !buildRepo )
+            throw new BadRequestException("Missing build repository attribute")
+        final dockerContent = new String(req.containerFile.decodeBase64())
+        final condaContent = req.condaFile ? new String(req.condaFile.decodeBase64()) : null as String
+        final platform = Container.platform(req.containerPlatform)
+        // create a unique digest to identify the request
+        return new BuildRequest(dockerContent, Path.of(workspace), buildRepo, condaContent, user, platform)
     }
 
     ContainerRequestData makeRequestData(SubmitContainerTokenRequest req, User user) {
@@ -70,9 +97,10 @@ class ContainerTokenController {
         String targetContent
         String condaContent
         if( req.containerFile ) {
-            targetContent = new String(req.containerFile.decodeBase64())
-            condaContent = req.condaFile ? new String(req.condaFile.decodeBase64()) : null
-            targetImage = buildService.buildImage(targetContent, condaContent, user)
+            final build = makeBuildRequest(req, user)
+            targetImage = buildService.buildImage(build)
+            targetContent = build.dockerFile
+            condaContent = build.condaFile
         }
         else if( req.containerImage ) {
             targetImage = req.containerImage
@@ -88,7 +116,8 @@ class ContainerTokenController {
                 targetImage,
                 targetContent,
                 req.containerConfig,
-                condaContent )
+                condaContent,
+                Container.platform(req.containerPlatform) )
 
         return data
     }

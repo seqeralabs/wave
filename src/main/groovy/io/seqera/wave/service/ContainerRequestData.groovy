@@ -22,6 +22,7 @@ class ContainerRequestData {
     final String containerFile
     final ContainerConfig containerConfig
     final String condaFile
+    final String containerPlatform
 
     ContainerCoordinates coordinates() { ContainerCoordinates.parse(containerImage) }
 

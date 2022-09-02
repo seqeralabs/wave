@@ -1,10 +1,8 @@
 package io.seqera.wave.service.builder
 
 import java.util.concurrent.CompletableFuture
-import javax.annotation.Nullable
 
 import io.seqera.wave.core.RoutePath
-import io.seqera.wave.tower.User
 /**
  * Declare container build service interface
  *
@@ -13,16 +11,14 @@ import io.seqera.wave.tower.User
 interface ContainerBuildService {
 
     /**
-     * Build a container image for the given dockerfile
+     * Build a container image for the given {@link BuildRequest}
      *
-     * @param dockerfileContent
-     *      The dockerfile encoded as base64 string of the container to build
-     * @param condaFile
-     *      A conda recipe file that can be associated this image build
+     * @param request
+     *      A {@link BuildRequest} modelling the build request
      * @return
      *      The container image where the resulting image is going to be hosted
      */
-    String buildImage(String dockerfileContent, @Nullable String condaFile, @Nullable User user)
+    String buildImage(BuildRequest request)
 
     /**
      * Get a completable future that holds the build result

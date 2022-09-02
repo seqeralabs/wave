@@ -1,7 +1,6 @@
 package io.seqera.wave.service.builder
 
 import java.nio.file.Files
-import java.nio.file.Path
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
@@ -13,16 +12,13 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
-import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.mail.MailService
-import io.seqera.wave.tower.User
 import io.seqera.wave.util.ThreadPoolBuilder
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.util.StringUtils.indent
 import static java.nio.file.StandardOpenOption.APPEND
 import static java.nio.file.StandardOpenOption.CREATE
-
 /**
  * Implements container build service
  *
@@ -32,12 +28,6 @@ import static java.nio.file.StandardOpenOption.CREATE
 @Singleton
 @CompileStatic
 class ContainerBuildServiceImpl implements ContainerBuildService {
-
-    /**
-     * File system path there the dockerfile is save
-     */
-    @Value('${wave.build.workspace}')
-    String workspace
 
     @Value('${wave.build.debug}')
     @Nullable
@@ -78,23 +68,15 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     }
 
     /**
-     * Build a container image for the given dockerfile and conda files
+     * Build a container image for the given {@link BuildRequest}
      *
-     * @param dockerfileContent
-     *      The dockerfile text content to build the container
-     * @param condaFile
-     *      A Conda recipe file that may be used to build the container (optional)
-     * @param user
-     *      Tower user identifier that submitted the request
+     * @param request
+     *      A {@link BuildRequest} modelling the build request
      * @return
-     *      A fully qualified container repository where the built container is made available
+     *      The container image where the resulting image is going to be hosted
      */
     @Override
-    String buildImage(String dockerfileContent, @Nullable String condaFile, @Nullable User user) {
-        if( !dockerfileContent )
-            throw new BadRequestException("Missing dockerfile content")
-        // create a unique digest to identify the request
-        final request = new BuildRequest(dockerfileContent, Path.of(workspace), buildRepo, condaFile, user)
+    String buildImage(BuildRequest request) {
         return getOrSubmit(request)
     }
 

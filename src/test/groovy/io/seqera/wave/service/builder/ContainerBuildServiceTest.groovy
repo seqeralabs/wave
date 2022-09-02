@@ -36,7 +36,7 @@ class ContainerBuildServiceTest extends Specification {
         RUN echo Hello > hello.txt
         '''.stripIndent()
         and:
-        def REQ = new BuildRequest(dockerfile, folder, repo, null, Mock(User))
+        def REQ = new BuildRequest(dockerfile, folder, repo, null, Mock(User), 'amd64')
 
         when:
         def result = service.launch(REQ)

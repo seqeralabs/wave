@@ -39,4 +39,19 @@ class SubmitContainerTokenRequest {
      */
     String condaFile
 
+    /**
+     * The container platform to be used
+     */
+    String containerPlatform
+
+    /**
+     * The repository where the build container should be pushed
+     */
+    String buildRepository
+
+    /**
+     * The repository where the build container should be pushed
+     */
+    String cacheRepository
+
 }

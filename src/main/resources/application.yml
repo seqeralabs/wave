@@ -11,7 +11,6 @@ netty:
       max-order: 3
 ---
 wave:
-  arch: 'x86_64'
   debug: true
   allowAnonymous: true
   server:

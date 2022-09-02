@@ -1,12 +1,9 @@
 package io.seqera.wave.core
 
 
-import javax.validation.constraints.NotBlank
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
-import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
@@ -31,10 +28,6 @@ class RegistryProxyService {
 
     @Inject Storage storage
 
-    @Value('${wave.arch}')
-    @NotBlank
-    private String arch
-
     @Inject
     private RegistryLookupService registryLookup
 
@@ -56,7 +49,6 @@ class RegistryProxyService {
 
     private ContainerScanner scanner(ProxyClient proxyClient) {
         return new ContainerScanner()
-                .withArch(arch)
                 .withStorage(storage)
                 .withClient(proxyClient)
     }

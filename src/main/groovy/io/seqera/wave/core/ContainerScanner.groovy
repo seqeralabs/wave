@@ -28,9 +28,9 @@ class ContainerScanner {
 
     private ProxyClient client
     private ContainerConfig containerConfig
-    private String arch
-
+    private String platform
     private Storage storage
+
 
     ContainerConfig getContainerConfig() {
         return containerConfig
@@ -46,11 +46,8 @@ class ContainerScanner {
         return this
     }
 
-    ContainerScanner withArch(String arch) {
-        assert arch, "Missing 'arch' parameter"
-        assert arch in ['x86_64', 'amd64', 'arm64'], "Unsupported architecture: $arch"
-
-        this.arch = arch == 'x86_64' ? 'amd64' : arch
+    ContainerScanner withPlatform(String value) {
+        this.platform = value
         return this
     }
 
@@ -65,6 +62,7 @@ class ContainerScanner {
 
     String resolve(RoutePath route, Map<String,List<String>> headers) {
         assert route, "Missing route"
+        this.platform = Container.platform(route.request?.containerPlatform)
         if( route.request?.containerConfig )
             this.containerConfig = route.request.containerConfig
         return resolve(route.image, route.reference, headers)
@@ -94,7 +92,7 @@ class ContainerScanner {
     String resolve(String imageName, String tag, Map<String,List<String>> headers) {
         assert client, "Missing client"
         assert storage, "Missing storage"
-        assert arch, "Missing 'arch' parameter"
+        assert platform, "Missing 'arch' parameter"
 
         // resolve image tag to digest
         final resp1 = client.head("/v2/$imageName/manifests/$tag", headers)
@@ -351,9 +349,9 @@ class ContainerScanner {
     @CompileDynamic
     protected String findTargetDigest(Map json) {
         final mediaType = ContentType.DOCKER_MANIFEST_V2_TYPE
-        final record = json.manifests.find( { record ->  record.mediaType == mediaType && record.platform.os=='linux' && record.platform.architecture==arch } )
+        final record = json.manifests.find( { record ->  record.mediaType == mediaType && record.platform.os=='linux' && record.platform.architecture==platform } )
         final result = record.digest
-        log.debug "Find target digest arch: $arch ==> digest: $result"
+        log.debug "Find target digest arch: $platform ==> digest: $result"
         return result
     }
 

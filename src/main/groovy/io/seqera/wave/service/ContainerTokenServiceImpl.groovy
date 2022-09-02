@@ -40,7 +40,7 @@ class ContainerTokenServiceImpl implements ContainerTokenService {
     }
 
     @Override
-    String getToken(ContainerRequestData request) {
+    String computeToken(ContainerRequestData request) {
         final token = LongRndKey.rndHex()
         cache.put(token, request)
         return token

@@ -18,18 +18,18 @@ class BuildStrategyTest extends Specification {
         service.cacheRepo = 'reg.io/wave/build/cache'
         and:
         def work = Path.of('/work/foo')
-        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, Mock(User))
+        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, Mock(User), 'amd64')
 
         when:
         def cmd = service.launchCmd(REQ)
         then:
         cmd == [
                 '--dockerfile',
-                '/work/foo/ef16568120a7a0bd0c679942942ea8e8/Dockerfile',
+                '/work/foo/4769bf5c5b2453ff8677b9b2c7b2a375/Dockerfile',
                 '--context',
-                '/work/foo/ef16568120a7a0bd0c679942942ea8e8',
+                '/work/foo/4769bf5c5b2453ff8677b9b2c7b2a375',
                 '--destination',
-                'quay.io/wave:ef16568120a7a0bd0c679942942ea8e8',
+                'quay.io/wave:4769bf5c5b2453ff8677b9b2c7b2a375',
                 '--cache=true',
                 '--cache-repo',
                 'reg.io/wave/build/cache'

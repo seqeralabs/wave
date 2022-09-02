@@ -3,15 +3,12 @@ package io.seqera.wave.service.builder
 import java.nio.file.Path
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Future
 
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import io.seqera.wave.tower.User
 import io.seqera.wave.util.DigestFunctions
-
 import static io.seqera.wave.util.StringUtils.trunc
-
 /**
  * Model a container builder result
  *
@@ -53,6 +50,8 @@ class BuildRequest {
      */
     final User user
 
+    final String containerPlatform
+
     /**
      * Build request start time
      */
@@ -68,16 +67,24 @@ class BuildRequest {
      */
     volatile CompletableFuture<BuildResult> result
 
-    BuildRequest(String dockerFile, Path workspace, String repo, String condaFile, User user) {
-        final content = condaFile ? dockerFile + condaFile : dockerFile
-        this.id = DigestFunctions.md5(content)
+    BuildRequest(String dockerFile, Path workspace, String repo, String condaFile, User user, String platform) {
+        this.id = computeDigest(dockerFile,condaFile,platform)
         this.dockerFile = dockerFile
         this.condaFile = condaFile
         this.targetImage = "${repo}:${id}"
         this.user = user
+        this.containerPlatform = platform
         this.workDir = workspace.resolve(id).toAbsolutePath()
         this.startTime = Instant.now()
         this.job = "${id}-${startTime.toEpochMilli().toString().md5()[-5..-1]}"
+    }
+
+    static private String computeDigest(String dockerFile, String condaFile, String containerPlatform) {
+        def content = containerPlatform
+        content += dockerFile
+        if( condaFile )
+            content += condaFile
+        return DigestFunctions.md5(content)
     }
 
     @Override

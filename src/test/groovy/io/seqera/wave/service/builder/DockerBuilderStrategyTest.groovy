@@ -46,20 +46,20 @@ class DockerBuilderStrategyTest extends Specification {
         given:
         def work = Path.of('/work/foo')
         def creds = Path.of('/work/creds.json')
-        def req = new BuildRequest('from foo', work, 'repo', null, Mock(User))
+        def req = new BuildRequest('from foo', work, 'repo', null, Mock(User), 'amd64')
         when:
         def cmd = service.buildCmd(req, creds)
         then:
         cmd == ['docker',
                 'run',
                 '--rm',
-                '-w', '/work/foo/ef16568120a7a0bd0c679942942ea8e8',
-                '-v', '/work/foo/ef16568120a7a0bd0c679942942ea8e8:/work/foo/ef16568120a7a0bd0c679942942ea8e8',
+                '-w', '/work/foo/4769bf5c5b2453ff8677b9b2c7b2a375',
+                '-v', '/work/foo/4769bf5c5b2453ff8677b9b2c7b2a375:/work/foo/4769bf5c5b2453ff8677b9b2c7b2a375',
                 '-v', '/work/creds.json:/kaniko/.docker/config.json:ro',
                 'gcr.io/kaniko-project/executor:latest',
-                '--dockerfile', '/work/foo/ef16568120a7a0bd0c679942942ea8e8/Dockerfile',
-                '--context', '/work/foo/ef16568120a7a0bd0c679942942ea8e8',
-                '--destination', 'repo:ef16568120a7a0bd0c679942942ea8e8',
+                '--dockerfile', '/work/foo/4769bf5c5b2453ff8677b9b2c7b2a375/Dockerfile',
+                '--context', '/work/foo/4769bf5c5b2453ff8677b9b2c7b2a375',
+                '--destination', 'repo:4769bf5c5b2453ff8677b9b2c7b2a375',
                 '--cache=true',
                 '--cache-repo', '195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/cache'
         ]

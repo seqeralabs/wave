@@ -12,7 +12,7 @@ interface ContainerTokenService {
      * @param request An instance of {@link ContainerRequestData}
      * @return A new token string that's used to track this request
      */
-    String getToken(ContainerRequestData request)
+    String computeToken(ContainerRequestData request)
 
     /**
      * Get the container image for the given container token
