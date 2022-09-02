@@ -8,6 +8,7 @@ import io.kubernetes.client.openapi.ApiClient
 import io.kubernetes.client.util.ClientBuilder
 import io.kubernetes.client.util.KubeConfig
 import io.micronaut.context.annotation.Requires
+import io.seqera.wave.config.K8sConfiguration
 import io.seqera.wave.config.WaveConfiguration
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -28,7 +29,7 @@ import jakarta.inject.Singleton
 class K8sConfigClient implements K8sClient {
 
     @Inject
-    WaveConfiguration.BuildConfiguration.K8sConfiguration k8sConfiguration
+    K8sConfiguration k8sConfiguration
 
     @Memoized
     ApiClient apiClient() {

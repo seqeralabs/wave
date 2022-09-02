@@ -8,12 +8,14 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpResponseFactory
 import io.micronaut.http.HttpStatus
+import io.seqera.wave.config.WaveConfiguration
 import io.seqera.wave.exception.ForbiddenException
 import io.seqera.wave.exception.GenericException
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.exception.UnauthorizedException
 import io.seqera.wave.exception.WaveException
 import io.seqera.wave.util.LongRndKey
+import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
  * Common error handling logic
@@ -24,8 +26,8 @@ import jakarta.inject.Singleton
 @Singleton
 class ErrorHandler {
 
-    @Value('${wave.debug}')
-    private Boolean debug
+    @Inject
+    private WaveConfiguration configuration
 
     def <T> HttpResponse<T> handle(HttpRequest request, Throwable t, BiFunction<String,String,T> responseFactory) {
         final errId = LongRndKey.rndHex()
@@ -34,9 +36,9 @@ class ErrorHandler {
             log.warn (t.cause ? "$msg -- Cause: ${t.cause.message ?: t.cause}".toString() : msg )
         }
         else {
-            if( debug && !msg )
+            if( configuration.debug && !msg )
                 msg = t.cause?.message
-            if ( !debug || !msg )
+            if ( !configuration.debug || !msg )
                 msg = "Oops... Unable to process request"
             msg += " - Error ID: ${errId}"
             log.error(msg, t)

@@ -224,10 +224,10 @@ class K8sServiceImpl implements K8sService {
 
         // required volumes
         final mounts = new ArrayList<V1VolumeMount>(5)
-        mounts.add(mountBuildStorage(workDir, configuration.build.k8s.storage.mountPath.orElse("")))
+        mounts.add(mountBuildStorage(workDir, configuration.build.k8s.storage.mountPath))
 
         final volumes = new ArrayList<V1Volume>(5)
-        volumes.add(volumeBuildStorage(workDir, configuration.build.k8s.storage.claimName.orElse("")))
+        volumes.add(volumeBuildStorage(workDir, configuration.build.k8s.storage.claimName))
 
         if( creds ){
             mounts.add(0, mountDockerConfig())
@@ -246,7 +246,7 @@ class K8sServiceImpl implements K8sService {
         //spec section
         def spec = builder
                 .withNewSpec()
-                .withActiveDeadlineSeconds( configuration.build.timeout.orElse(Duration.ofMinutes(5)).toSeconds() )
+                .withActiveDeadlineSeconds( configuration.build.timeout.toSeconds() )
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
 

@@ -10,6 +10,7 @@ import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Post
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
+import io.seqera.wave.config.WaveConfiguration
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.builder.ContainerBuildService
@@ -32,19 +33,14 @@ class ContainerTokenController {
     @Inject UserService userService
 
     @Inject
-    @Value('${wave.allowAnonymous}')
-    Boolean allowAnonymous
-
-    @Inject
-    @Value('${wave.server.url}')
-    String serverUrl
+    WaveConfiguration configuration
 
     @Inject
     ContainerBuildService buildService
 
     @PostConstruct
     private void init() {
-        log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous"
+        log.info "Wave server url: $configuration.server.url; allowAnonymous: $configuration.allowAnonymous"
     }
 
     @Post
@@ -52,7 +48,7 @@ class ContainerTokenController {
         final User user = req.towerAccessToken
                 ? userService.getUserByAccessToken(req.towerAccessToken)
                 : null
-        if( !user && !allowAnonymous )
+        if( !user && !configuration.allowAnonymous )
             throw new BadRequestException("Missing access token")
 
         final data = makeRequestData(req, user)
@@ -95,6 +91,6 @@ class ContainerTokenController {
 
     protected String targetImage(String token, String image) {
         final coords = ContainerCoordinates.parse(image)
-        return "${new URL(serverUrl).getAuthority()}/wt/$token/${coords.image}:${coords.reference}"
+        return "${new URL(configuration.server.url).getAuthority()}/wt/$token/${coords.image}:${coords.reference}"
     }
 }
