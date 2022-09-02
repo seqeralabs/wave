@@ -10,8 +10,10 @@ import javax.annotation.PostConstruct
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.WaveDefault
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.mail.MailService
 import io.seqera.wave.util.ThreadPoolBuilder
 import jakarta.inject.Inject
@@ -95,14 +97,34 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         return buildRequests.get(targetImage)?.result
     }
 
-    protected String credsJson(String registry) {
-        final info = lookupService.lookup(registry)
-        final creds = credentialsProvider.getCredentials(registry)
-        if( !creds ) {
-            return null
+    protected String credsJson(Set<String> registries) {
+        final result = new StringBuilder()
+        for( String reg : registries ) {
+            final info = lookupService.lookup(reg)
+            final creds = credentialsProvider.getCredentials(reg)
+            if( !creds ) {
+                return null
+            }
+            final encode = "${creds.username}:${creds.password}".getBytes().encodeBase64()
+            if( result.size() )
+                result.append(',')
+            result.append("\"${info.getHost()}\":{\"auth\":\"$encode\"}")
         }
-        final encode = "${creds.username}:${creds.password}".getBytes().encodeBase64()
-        return """{"auths":{"${info.getHost()}":{"auth":"$encode"}}}"""
+        return """{"auths":{$result}}"""
+    }
+
+    static protected Set<String> findRepositories(String dockerfile) {
+        final result = new HashSet()
+        if( !dockerfile )
+            return result
+        for( String line : dockerfile.readLines()) {
+            if( !line.trim().toLowerCase().startsWith('from '))
+                continue
+            final cords = ContainerCoordinates.parse(line.trim().substring(5))
+            final reg = cords.registry ?: WaveDefault.DOCKER_IO
+            result.add(reg)
+        }
+        return result
     }
 
     protected BuildResult launch(BuildRequest req) {
@@ -116,8 +138,11 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             final condaFile = req.workDir.resolve('conda.yml')
             Files.write(condaFile, req.condaFile.bytes, CREATE, APPEND)
         }
+        // find repos
+        final repos = findRepositories(req.dockerFile) + buildRepo
+        
         // create creds file for target repo
-        final creds = credsJson(buildRepo)
+        final creds = credsJson(repos)
 
         // launch an external process to build the container
         try {
