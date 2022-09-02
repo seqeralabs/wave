@@ -80,7 +80,7 @@ class K8sServiceImpl implements K8sService {
 
         return k8sClient
                 .batchV1Api()
-                .createNamespacedJob(namespace, body, null, null, null)
+                .createNamespacedJob(configuration.build.k8s.namespace, body, null, null, null)
     }
 
     /**
@@ -224,10 +224,10 @@ class K8sServiceImpl implements K8sService {
 
         // required volumes
         final mounts = new ArrayList<V1VolumeMount>(5)
-        mounts.add(mountBuildStorage(workDir, storageMountPath))
+        mounts.add(mountBuildStorage(workDir, configuration.build.k8s.storage.mountPath.orElse("")))
 
         final volumes = new ArrayList<V1Volume>(5)
-        volumes.add(volumeBuildStorage(workDir, storageClaimName))
+        volumes.add(volumeBuildStorage(workDir, configuration.build.k8s.storage.claimName.orElse("")))
 
         if( creds ){
             mounts.add(0, mountDockerConfig())
@@ -246,7 +246,7 @@ class K8sServiceImpl implements K8sService {
         //spec section
         def spec = builder
                 .withNewSpec()
-                .withActiveDeadlineSeconds( buildTimeout.toSeconds() )
+                .withActiveDeadlineSeconds( configuration.build.timeout.orElse(Duration.ofMinutes(5)).toSeconds() )
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
 
