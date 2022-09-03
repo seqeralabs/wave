@@ -11,6 +11,8 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import io.micronaut.context.annotation.Value
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
@@ -427,49 +429,147 @@ class ContainerScannerTest extends Specification {
         folder?.toFile()?.deleteDir()
     }
 
-    def 'should add a new layer v1 format' () {
+    def 'should not rewrite the history' () {
         given:
         def MANIFEST = '''
-{   
-   "history": [
-      {
-         "v1Compatibility": "{\\"architecture\\":\\"amd64\\",\\"config\\":{\\"Hostname\\":\\"\\",\\"Domainname\\":\\"\\",\\"User\\":\\"\\",\\"AttachStdin\\":false,\\"AttachStdout\\":false,\\"AttachStderr\\":false,\\"Tty\\":false,\\"OpenStdin\\":false,\\"StdinOnce\\":false,\\"Env\\":[\\"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\\"],\\"Cmd\\":[\\"/bin/sh\\"],\\"Image\\":\\"\\",\\"Volumes\\":null,\\"WorkingDir\\":\\"\\",\\"Entrypoint\\":null,\\"OnBuild\\":null,\\"Labels\\":{}},\\"container\\":\\"4be9f6b4406ec142e457fd7c43ff338511ab338b33585c30805ba2d5d3da29e3\\",\\"container_config\\":{\\"Hostname\\":\\"4be9f6b4406e\\",\\"Domainname\\":\\"\\",\\"User\\":\\"\\",\\"AttachStdin\\":false,\\"AttachStdout\\":false,\\"AttachStderr\\":false,\\"Tty\\":false,\\"OpenStdin\\":false,\\"StdinOnce\\":false,\\"Env\\":[\\"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\\"],\\"Cmd\\":[\\"/bin/sh\\"],\\"Image\\":\\"bgruening/busybox-bash:0.1\\",\\"Volumes\\":null,\\"WorkingDir\\":\\"\\",\\"Entrypoint\\":null,\\"OnBuild\\":null,\\"Labels\\":{}},\\"created\\":\\"2020-01-24T15:39:30.564518517Z\\",\\"docker_version\\":\\"17.09.0-ce\\",\\"id\\":\\"f235879f79194a5e3d4b10c3b714c36669e8e98160ba73bd9b044fdec624ceaf\\",\\"os\\":\\"linux\\",\\"parent\\":\\"b7c0567175be2a551a8ed4e60d695d33347ebae5d8cfc4a5d0381e0ce3c34222\\"}"
-      },
-      {
-         "v1Compatibility": "{\\"id\\":\\"b7c0567175be2a551a8ed4e60d695d33347ebae5d8cfc4a5d0381e0ce3c34222\\",\\"parent\\":\\"32dbc9f4b6f9f15dfcce38773db21d7aadfc059242a821fb98bc8cf0997d05ce\\",\\"created\\":\\"2016-05-09T06:21:02.266124295Z\\",\\"container_config\\":{\\"Cmd\\":[\\"/bin/sh -c #(nop) CMD [\\\\\\"/bin/sh\\\\\\" \\\\\\"-c\\\\\\" \\\\\\"/bin/bash\\\\\\"]\\"]},\\"author\\":\\"Bjoern Gruening \\\\u003cbjoern.gruening@gmail.com\\\\u003e\\",\\"throwaway\\":true}"
-      }
-   ]
-}
-       '''
-        def originalManifest = new JsonSlurper().parseText(MANIFEST)
-        def mutableManifest = new JsonSlurper().parseText(MANIFEST)
+            {   
+               "history": [
+                  {
+                     "v1Compatibility": "{\\"architecture\\":\\"amd64\\",\\"config\\":{\\"Hostname\\":\\"\\",\\"Domainname\\":\\"\\",\\"User\\":\\"\\",\\"AttachStdin\\":false,\\"AttachStdout\\":false,\\"AttachStderr\\":false,\\"Tty\\":false,\\"OpenStdin\\":false,\\"StdinOnce\\":false,\\"Env\\":[\\"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\\"],\\"Cmd\\":[\\"/bin/sh\\"],\\"Image\\":\\"\\",\\"Volumes\\":null,\\"WorkingDir\\":\\"\\",\\"Entrypoint\\":null,\\"OnBuild\\":null,\\"Labels\\":{}},\\"container\\":\\"4be9f6b4406ec142e457fd7c43ff338511ab338b33585c30805ba2d5d3da29e3\\",\\"container_config\\":{\\"Hostname\\":\\"4be9f6b4406e\\",\\"Domainname\\":\\"\\",\\"User\\":\\"\\",\\"AttachStdin\\":false,\\"AttachStdout\\":false,\\"AttachStderr\\":false,\\"Tty\\":false,\\"OpenStdin\\":false,\\"StdinOnce\\":false,\\"Env\\":[\\"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\\"],\\"Cmd\\":[\\"/bin/sh\\"],\\"Image\\":\\"bgruening/busybox-bash:0.1\\",\\"Volumes\\":null,\\"WorkingDir\\":\\"\\",\\"Entrypoint\\":null,\\"OnBuild\\":null,\\"Labels\\":{}},\\"created\\":\\"2020-01-24T15:39:30.564518517Z\\",\\"docker_version\\":\\"17.09.0-ce\\",\\"id\\":\\"f235879f79194a5e3d4b10c3b714c36669e8e98160ba73bd9b044fdec624ceaf\\",\\"os\\":\\"linux\\",\\"parent\\":\\"b7c0567175be2a551a8ed4e60d695d33347ebae5d8cfc4a5d0381e0ce3c34222\\"}"
+                  },
+                  {
+                     "v1Compatibility": "{\\"id\\":\\"b7c0567175be2a551a8ed4e60d695d33347ebae5d8cfc4a5d0381e0ce3c34222\\",\\"parent\\":\\"32dbc9f4b6f9f15dfcce38773db21d7aadfc059242a821fb98bc8cf0997d05ce\\",\\"created\\":\\"2016-05-09T06:21:02.266124295Z\\",\\"container_config\\":{\\"Cmd\\":[\\"/bin/sh -c #(nop) CMD [\\\\\\"/bin/sh\\\\\\" \\\\\\"-c\\\\\\" \\\\\\"/bin/bash\\\\\\"]\\"]},\\"author\\":\\"Bjoern Gruening \\\\u003cbjoern.gruening@gmail.com\\\\u003e\\",\\"throwaway\\":true}"
+                  }
+               ]
+            }
+            '''
 
         and:
-        unpackLayer()
+        def manifest = new JsonSlurper().parseText(MANIFEST) as Map
 
         and:
-        def scanner = new ContainerScanner().withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
+        def scanner = new ContainerScanner()
+        def history = new ArrayList(manifest.history)
 
         when:
-        scanner.rewriteHistoryV1(mutableManifest.history)
-
+        scanner.rewriteHistoryV1(history)
         then:
-        originalManifest.history.size() == mutableManifest.history.size() - 1
-        and:
-        mutableManifest.history.first()['v1Compatibility'].indexOf('parent') != -1
-        mutableManifest.history[1]['v1Compatibility'] == originalManifest.history[0]['v1Compatibility']
+        history == manifest.history
+    }
 
-        cleanup:
-        folder?.toFile()?.deleteDir()
+    def 'should update top history entry config' () {
+        given:
+        def MANIFEST = '''
+            {   
+               "history": [
+                  {
+                     "v1Compatibility": "{\\"architecture\\":\\"amd64\\",\\"config\\":{\\"Hostname\\":\\"\\",\\"Domainname\\":\\"\\",\\"User\\":\\"\\",\\"AttachStdin\\":false,\\"AttachStdout\\":false,\\"AttachStderr\\":false,\\"Tty\\":false,\\"OpenStdin\\":false,\\"StdinOnce\\":false,\\"Env\\":[\\"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\\"],\\"Cmd\\":[\\"/bin/sh\\"],\\"Image\\":\\"\\",\\"Volumes\\":null,\\"WorkingDir\\":\\"\\",\\"Entrypoint\\":null,\\"OnBuild\\":null,\\"Labels\\":{}},\\"container\\":\\"4be9f6b4406ec142e457fd7c43ff338511ab338b33585c30805ba2d5d3da29e3\\",\\"container_config\\":{\\"Hostname\\":\\"4be9f6b4406e\\",\\"Domainname\\":\\"\\",\\"User\\":\\"\\",\\"AttachStdin\\":false,\\"AttachStdout\\":false,\\"AttachStderr\\":false,\\"Tty\\":false,\\"OpenStdin\\":false,\\"StdinOnce\\":false,\\"Env\\":[\\"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\\"],\\"Cmd\\":[\\"/bin/sh\\"],\\"Image\\":\\"bgruening/busybox-bash:0.1\\",\\"Volumes\\":null,\\"WorkingDir\\":\\"\\",\\"Entrypoint\\":null,\\"OnBuild\\":null,\\"Labels\\":{}},\\"created\\":\\"2020-01-24T15:39:30.564518517Z\\",\\"docker_version\\":\\"17.09.0-ce\\",\\"id\\":\\"f235879f79194a5e3d4b10c3b714c36669e8e98160ba73bd9b044fdec624ceaf\\",\\"os\\":\\"linux\\",\\"parent\\":\\"b7c0567175be2a551a8ed4e60d695d33347ebae5d8cfc4a5d0381e0ce3c34222\\"}"
+                  },
+                  {
+                     "v1Compatibility": "{\\"id\\":\\"b7c0567175be2a551a8ed4e60d695d33347ebae5d8cfc4a5d0381e0ce3c34222\\",\\"parent\\":\\"32dbc9f4b6f9f15dfcce38773db21d7aadfc059242a821fb98bc8cf0997d05ce\\",\\"created\\":\\"2016-05-09T06:21:02.266124295Z\\",\\"container_config\\":{\\"Cmd\\":[\\"/bin/sh -c #(nop) CMD [\\\\\\"/bin/sh\\\\\\" \\\\\\"-c\\\\\\" \\\\\\"/bin/bash\\\\\\"]\\"]},\\"author\\":\\"Bjoern Gruening \\\\u003cbjoern.gruening@gmail.com\\\\u003e\\",\\"throwaway\\":true}"
+                  }
+               ]
+            }
+            '''
+
+        and:
+        def manifest = new JsonSlurper().parseText(MANIFEST) as Map
+
+        and:
+        def config = new ContainerConfig(workingDir: '/some/work/dir',entrypoint: ['my','entry'], env: ['THIS=THAT'])
+        def scanner = new ContainerScanner().withContainerConfig(config)
+        def history = new ArrayList(manifest.history)
+
+        when:
+        scanner.rewriteHistoryV1(history)
+        then:
+        history.size() == 2
+        history.size() == manifest.history.size()
+        and:
+        history[1] == manifest.history[1]
+        and:
+        history[0] != manifest.history[0]
+
+        and:
+        def v1Compatibility = new JsonSlurper().parseText(history[0].v1Compatibility) as Map
+        v1Compatibility.architecture == 'amd64'
+        v1Compatibility.id == 'f235879f79194a5e3d4b10c3b714c36669e8e98160ba73bd9b044fdec624ceaf'
+        v1Compatibility.parent == 'b7c0567175be2a551a8ed4e60d695d33347ebae5d8cfc4a5d0381e0ce3c34222'
+
+        and:
+        def v1Config = v1Compatibility.config as Map
+        and:
+        v1Config.WorkingDir == '/some/work/dir'
+        v1Config.Entrypoint == ['my','entry']
+        v1Config.Env == ['PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', 'THIS=THAT']
+
+    }
+
+    Map v1Compatibility(value) {
+        new JsonSlurper().parseText(value.v1Compatibility)
+    }
+
+    def 'should add new layers to v1 history' () {
+        given:
+        def MANIFEST = '''
+            {   
+               "history": [
+                  {
+                     "v1Compatibility": "{\\"architecture\\":\\"amd64\\",\\"config\\":{\\"Hostname\\":\\"\\",\\"Domainname\\":\\"\\",\\"User\\":\\"\\",\\"AttachStdin\\":false,\\"AttachStdout\\":false,\\"AttachStderr\\":false,\\"Tty\\":false,\\"OpenStdin\\":false,\\"StdinOnce\\":false,\\"Env\\":[\\"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\\"],\\"Cmd\\":[\\"/bin/sh\\"],\\"Image\\":\\"\\",\\"Volumes\\":null,\\"WorkingDir\\":\\"\\",\\"Entrypoint\\":null,\\"OnBuild\\":null,\\"Labels\\":{}},\\"container\\":\\"4be9f6b4406ec142e457fd7c43ff338511ab338b33585c30805ba2d5d3da29e3\\",\\"container_config\\":{\\"Hostname\\":\\"4be9f6b4406e\\",\\"Domainname\\":\\"\\",\\"User\\":\\"\\",\\"AttachStdin\\":false,\\"AttachStdout\\":false,\\"AttachStderr\\":false,\\"Tty\\":false,\\"OpenStdin\\":false,\\"StdinOnce\\":false,\\"Env\\":[\\"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\\"],\\"Cmd\\":[\\"/bin/sh\\"],\\"Image\\":\\"bgruening/busybox-bash:0.1\\",\\"Volumes\\":null,\\"WorkingDir\\":\\"\\",\\"Entrypoint\\":null,\\"OnBuild\\":null,\\"Labels\\":{}},\\"created\\":\\"2020-01-24T15:39:30.564518517Z\\",\\"docker_version\\":\\"17.09.0-ce\\",\\"id\\":\\"f235879f79194a5e3d4b10c3b714c36669e8e98160ba73bd9b044fdec624ceaf\\",\\"os\\":\\"linux\\",\\"parent\\":\\"b7c0567175be2a551a8ed4e60d695d33347ebae5d8cfc4a5d0381e0ce3c34222\\"}"
+                  },
+                  {
+                     "v1Compatibility": "{\\"id\\":\\"b7c0567175be2a551a8ed4e60d695d33347ebae5d8cfc4a5d0381e0ce3c34222\\",\\"parent\\":\\"32dbc9f4b6f9f15dfcce38773db21d7aadfc059242a821fb98bc8cf0997d05ce\\",\\"created\\":\\"2016-05-09T06:21:02.266124295Z\\",\\"container_config\\":{\\"Cmd\\":[\\"/bin/sh -c #(nop) CMD [\\\\\\"/bin/sh\\\\\\" \\\\\\"-c\\\\\\" \\\\\\"/bin/bash\\\\\\"]\\"]},\\"author\\":\\"Bjoern Gruening \\\\u003cbjoern.gruening@gmail.com\\\\u003e\\",\\"throwaway\\":true}"
+                  }
+               ]
+            }
+           '''
+        and:
+        def manifest = new JsonSlurper().parseText(MANIFEST) as Map
+
+        and:
+        def layers = new ArrayList<ContainerLayer>()
+        layers << new ContainerLayer(location: '/path1', tarDigest: 'sha256:123456', gzipDigest: 'sha256:123456', gzipSize: 1 )
+        layers << new ContainerLayer(location: '/path2', tarDigest: 'sha256:567890', gzipDigest: 'sha256:567890', gzipSize: 2 )
+        and:
+        def config = new ContainerConfig(workingDir: '/some/work/dir',entrypoint: ['my','entry'], env: ['THIS=THAT'], layers: layers)
+        def scanner = new ContainerScanner().withContainerConfig(config)
+        def history = new ArrayList(manifest.history)
+
+        when:
+        scanner.rewriteHistoryV1(history)
+        then:
+        history.size() == 4
+        manifest.history.size() == 2
+        and:
+        history[2] == manifest.history[0]        
+        history[3] == manifest.history[1]
+
+        and:
+        v1Compatibility(history[0]).id == RegHelper.stringToId(layers[-1].tarDigest)
+        v1Compatibility(history[1]).id == v1Compatibility(history[0]).parent
+        v1Compatibility(history[2]).id == v1Compatibility(history[1]).parent
+        v1Compatibility(history[3]).id == v1Compatibility(history[2]).parent
+        v1Compatibility(history[3]).parent == '32dbc9f4b6f9f15dfcce38773db21d7aadfc059242a821fb98bc8cf0997d05ce'
+
+        and:
+        def v1Compatibility = new JsonSlurper().parseText(history[0].v1Compatibility) as Map
+        v1Compatibility.architecture == 'amd64'
+
+        and:
+        def v1Config = v1Compatibility.config as Map
+        and:
+        v1Config.WorkingDir == '/some/work/dir'
+        v1Config.Entrypoint == ['my','entry']
+        v1Config.Env == ['PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', 'THIS=THAT']
     }
 
     def 'add a new layer v1 format requires an history' () {
         given:
         def MANIFEST = '''
-{   
-   "history": []
-}
-       '''
+            {   
+               "history": []
+            }
+           '''
         def originalManifest = new JsonSlurper().parseText(MANIFEST)
         def mutableManifest = new JsonSlurper().parseText(MANIFEST)
 

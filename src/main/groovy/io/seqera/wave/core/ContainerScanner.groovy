@@ -1,6 +1,7 @@
 package io.seqera.wave.core
 
 import java.net.http.HttpResponse
+import java.time.Instant
 
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
@@ -117,7 +118,8 @@ class ContainerScanner {
 
         if( type == ContentType.DOCKER_MANIFEST_V1_JWS_TYPE ) {
             final v1Digest = resolveV1Manifest(manifestsList, imageName)
-            log.debug "Resolve (4) ==> new manifest v1 digest: $v1Digest"
+            final v1Manifest = storage.getManifest("/v2/$imageName/manifests/$v1Digest").orElse(null)
+            log.debug "Resolve (4) ==> new manifest v1 digest: $v1Digest\n${JsonOutput.prettyPrint(new String(v1Manifest.bytes))}"
             return v1Digest
         }
 
@@ -311,7 +313,7 @@ class ContainerScanner {
             config.Env = appendEnv( config.Env as List, [ "WAVE_ENTRY_CHAIN="+entryChain ] )
         }
 
-        config
+        return config
     }
 
     protected String updateImageConfig(String imageName, String imageConfig) {
@@ -355,24 +357,44 @@ class ContainerScanner {
         return result
     }
 
-    protected void rewriteHistoryV1( List<Map> history){
+    protected void rewriteHistoryV1( List<Map> history ){
         assert history.size()
 
-        def first = history.first()
+        if( !containerConfig ) {
+            // nothing to do
+            return
+        }
 
-        def newHistoryId = RegHelper.stringToId(JsonOutput.toJson(history))
-        def newV1Compatibility = new JsonSlurper().parseText(first['v1Compatibility'].toString()) as Map
-        newV1Compatibility.parent = newV1Compatibility.id
-        newV1Compatibility.id = newHistoryId
+        final first = history.first()
+        final topEntry = (Map) new JsonSlurper().parseText(first['v1Compatibility'].toString())
 
-        // update the image config
-        enrichConfig(newV1Compatibility.config as Map)
+        def entry = new LinkedHashMap(topEntry)
+        def parentId = topEntry.id
+        final layers = containerConfig.layers ?: Collections.<ContainerLayer>emptyList()
+        for( ContainerLayer it : layers ) {
+            final now = Instant.now().toString()
+            final id = RegHelper.stringToId(it.tarDigest)
+            entry = new LinkedHashMap(10)
+            entry.id = id
+            entry.parent = parentId
+            entry.created = now
+            entry.container_config = [Cmd: ["\"/bin/sh -c #(nop) CMD [\"/bin/sh\"]"]]
+            // create the new item
+            history.add(0, Map.of('v1Compatibility', JsonOutput.toJson(entry)))
+            // roll the parent id
+            parentId = entry.id
+        }
 
-        // create the new item
-        def newHistoryItem = [
-                v1Compatibility: JsonOutput.toJson(newV1Compatibility)
-        ]
-        history.add(0, newHistoryItem)
+        // rewrite the top most history entry config
+        enrichConfig(topEntry.config as Map)
+        for( String it : topEntry.keySet() ) {
+            // ignore the fields set previously
+            if( it=='id' || it=='parent' || it=='created' )
+                continue
+            entry.put( it, topEntry.get(it) )
+        }
+
+        history.set(0, Map.of('v1Compatibility', JsonOutput.toJson(entry)))
     }
 
     protected void rewriteLayersV1(String imageName, List<Map> fsLayers){
