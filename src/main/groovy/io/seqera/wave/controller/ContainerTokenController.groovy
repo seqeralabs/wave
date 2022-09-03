@@ -46,7 +46,10 @@ class ContainerTokenController {
      * The registry repository where the build image will be stored
      */
     @Value('${wave.build.repo}')
-    String buildRepo
+    String defaultBuildRepo
+
+    @Value('${wave.build.cache}')
+    String defaultCacheRepo
 
     /**
      * File system path there the dockerfile is save
@@ -80,13 +83,24 @@ class ContainerTokenController {
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, User user) {
         if( !req.containerFile )
             throw new BadRequestException("Missing dockerfile content")
-        if( !buildRepo )
+        if( !defaultBuildRepo )
             throw new BadRequestException("Missing build repository attribute")
+        if( !defaultCacheRepo )
+            throw new BadRequestException("Missing build cache repository attribute")
         final dockerContent = new String(req.containerFile.decodeBase64())
         final condaContent = req.condaFile ? new String(req.condaFile.decodeBase64()) : null as String
         final platform = ContainerPlatform.of(req.containerPlatform)
+        final build = req.buildRepository ?: defaultBuildRepo
+        final cache = req.cacheRepository ?: defaultCacheRepo
         // create a unique digest to identify the request
-        return new BuildRequest(dockerContent, Path.of(workspace), buildRepo, condaContent, user, platform)
+        return new BuildRequest(
+                dockerContent,
+                Path.of(workspace),
+                build,
+                condaContent,
+                user,
+                platform,
+                cache )
     }
 
     ContainerRequestData makeRequestData(SubmitContainerTokenRequest req, User user) {

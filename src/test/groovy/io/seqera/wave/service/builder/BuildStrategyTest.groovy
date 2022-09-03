@@ -15,11 +15,11 @@ class BuildStrategyTest extends Specification {
 
     def 'should get kaniko command' () {
         given:
+        def cache = 'reg.io/wave/build/cache'
         def service = Spy(BuildStrategy)
-        service.cacheRepo = 'reg.io/wave/build/cache'
         and:
         def work = Path.of('/work/foo')
-        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, Mock(User), ContainerPlatform.of('amd64'))
+        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, Mock(User), ContainerPlatform.of('amd64'), cache)
 
         when:
         def cmd = service.launchCmd(REQ)

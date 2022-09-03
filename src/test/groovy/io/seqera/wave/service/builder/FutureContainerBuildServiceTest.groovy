@@ -8,6 +8,7 @@ import java.nio.file.Files
 import java.time.Duration
 import java.time.Instant
 
+import io.micronaut.context.annotation.Value
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.ContainerPlatform
@@ -19,6 +20,9 @@ import jakarta.inject.Inject
  */
 @MicronautTest
 class FutureContainerBuildServiceTest extends Specification {
+
+    @Value('${wave.build.repo}') String buildRepo
+    @Value('${wave.build.cache}') String cacheRepo
 
     @Inject
     ContainerBuildServiceImpl service
@@ -40,14 +44,13 @@ class FutureContainerBuildServiceTest extends Specification {
     def 'should wait to build container completion' () {
         given:
         def folder = Files.createTempDirectory('test')
-        def repo = '195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build'
         and:
         def dockerfile = """
         FROM busybox
         RUN echo $EXIT_CODE > hello.txt
         """.stripIndent()
         and:
-        def REQ = new BuildRequest(dockerfile, folder, repo, null, Mock(User), ContainerPlatform.of('amd64'))
+        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'), cacheRepo)
 
         when:
         exitCode = EXIT_CODE

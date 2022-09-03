@@ -57,6 +57,11 @@ class BuildRequest {
     final ContainerPlatform platform
 
     /**
+     * Container repository for caching purposes
+     */
+    final String cacheRepository
+
+    /**
      * Build request start time
      */
     final Instant startTime
@@ -71,13 +76,14 @@ class BuildRequest {
      */
     volatile CompletableFuture<BuildResult> result
 
-    BuildRequest(String dockerFile, Path workspace, String repo, String condaFile, User user, ContainerPlatform platform) {
+    BuildRequest(String dockerFile, Path workspace, String repo, String condaFile, User user, ContainerPlatform platform, String cacheRepo) {
         this.id = computeDigest(dockerFile,condaFile,platform)
         this.dockerFile = dockerFile
         this.condaFile = condaFile
         this.targetImage = "${repo}:${id}"
         this.user = user
         this.platform = platform
+        this.cacheRepository = cacheRepo
         this.workDir = workspace.resolve(id).toAbsolutePath()
         this.startTime = Instant.now()
         this.job = "${id}-${startTime.toEpochMilli().toString().md5()[-5..-1]}"

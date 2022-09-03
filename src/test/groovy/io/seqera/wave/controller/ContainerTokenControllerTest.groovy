@@ -64,7 +64,7 @@ class ContainerTokenControllerTest extends Specification {
     def 'should make a build request' () {
         given:
         def builder = Mock(ContainerBuildService)
-        def controller = new ContainerTokenController(buildService: builder, workspace: Path.of('/some/wsp'), buildRepo: 'wave/build')
+        def controller = new ContainerTokenController(buildService: builder, workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
         def DOCKER = 'FROM foo'
         def user = new User(id: 100)
         def cfg = new ContainerConfig()
@@ -87,7 +87,7 @@ class ContainerTokenControllerTest extends Specification {
 
     def 'should create build request' () {
         given:
-        def controller = new ContainerTokenController(workspace: Path.of('/some/wsp'), buildRepo: 'wave/build')
+        def controller = new ContainerTokenController(workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
 
         when:
         def submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'))

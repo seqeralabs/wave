@@ -47,7 +47,8 @@ class DockerBuilderStrategyTest extends Specification {
         given:
         def work = Path.of('/work/foo')
         def creds = Path.of('/work/creds.json')
-        def req = new BuildRequest('from foo', work, 'repo', null, Mock(User), ContainerPlatform.of('amd64'))
+        def cache = 'reg.io/wave/build/cache'
+        def req = new BuildRequest('from foo', work, 'repo', null, Mock(User), ContainerPlatform.of('amd64'), cache)
         when:
         def cmd = service.buildCmd(req, creds)
         then:
@@ -62,7 +63,7 @@ class DockerBuilderStrategyTest extends Specification {
                 '--context', '/work/foo/371f47bac77d67d55d29e0c111c508ef',
                 '--destination', 'repo:371f47bac77d67d55d29e0c111c508ef',
                 '--cache=true',
-                '--cache-repo', '195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/cache'
+                '--cache-repo', 'reg.io/wave/build/cache'
         ]
 
     }

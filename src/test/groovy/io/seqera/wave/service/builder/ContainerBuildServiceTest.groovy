@@ -5,6 +5,7 @@ import spock.lang.Specification
 
 import java.nio.file.Files
 
+import io.micronaut.context.annotation.Value
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
@@ -22,18 +23,21 @@ class ContainerBuildServiceTest extends Specification {
     @Inject RegistryLookupService lookupService
     @Inject RegistryCredentialsProvider credentialsProvider
 
+    @Value('${wave.build.repo}') String buildRepo
+    @Value('${wave.build.cache}') String cacheRepo
+
+
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
     def 'should build & push container' () {
         given:
         def folder = Files.createTempDirectory('test')
-        def repo = '195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build'
         and:
         def dockerfile = '''
         FROM busybox
         RUN echo Hello > hello.txt
         '''.stripIndent()
         and:
-        def REQ = new BuildRequest(dockerfile, folder, repo, null, Mock(User), ContainerPlatform.of('amd64'))
+        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'), cacheRepo)
 
         when:
         def result = service.launch(REQ)

@@ -1,8 +1,6 @@
 package io.seqera.wave.service.builder
 
 import groovy.transform.CompileStatic
-import io.micronaut.context.annotation.Value
-
 /**
  * Defines an abstract container build strategy.
  *
@@ -13,9 +11,6 @@ import io.micronaut.context.annotation.Value
  */
 @CompileStatic
 abstract class BuildStrategy {
-
-    @Value('${wave.build.cache}')
-    String cacheRepo
 
     abstract BuildResult build(BuildRequest req, String creds)
 
@@ -34,7 +29,7 @@ abstract class BuildStrategy {
                 << req.targetImage
                 << "--cache=true"
                 << "--cache-repo"
-                << cacheRepo
+                << req.cacheRepository
     }
 
 }
