@@ -7,6 +7,8 @@ import java.time.Duration
 import java.time.Instant
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import jakarta.inject.Inject
 /**
@@ -22,8 +24,14 @@ class MailServiceImplTest extends Specification {
         given:
         def recipient = 'foo@gmail.com'
         def result = new BuildResult('12345', 0, 'pull foo:latest', Instant.now())
+        def request= Mock(BuildRequest) {
+            getDockerFile() >> 'from foo';
+            getTargetImage() >> 'wave/build:xyz'
+            getPlatform() >> ContainerPlatform.DEFAULT
+        }
+        
         when:
-        def mail = service.buildCompletionMail(result, 'wave/build:xyz', 'from foo',recipient)
+        def mail = service.buildCompletionMail(request, result, recipient)
         then:
         mail.to == recipient
     }

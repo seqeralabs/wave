@@ -3,6 +3,7 @@ package io.seqera.wave.service
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.model.ContainerCoordinates
 
 import static io.seqera.wave.util.StringUtils.trunc
@@ -22,7 +23,7 @@ class ContainerRequestData {
     final String containerFile
     final ContainerConfig containerConfig
     final String condaFile
-    final String containerPlatform
+    final ContainerPlatform platform
 
     ContainerCoordinates coordinates() { ContainerCoordinates.parse(containerImage) }
 

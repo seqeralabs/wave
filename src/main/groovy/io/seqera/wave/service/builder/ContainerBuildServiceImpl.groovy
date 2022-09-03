@@ -171,7 +171,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             mailService?.sendCompletionMail(request, result)
         }
         catch (Exception e) {
-            log.warn "Enable to send completion notication - reason: ${e.message?:e}"
+            log.warn "Unable to send completion notication - reason: ${e.message?:e}"
         }
     }
 

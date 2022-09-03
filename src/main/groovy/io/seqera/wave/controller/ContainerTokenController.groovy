@@ -11,7 +11,7 @@ import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Post
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
-import io.seqera.wave.core.Container
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.ContainerRequestData
@@ -84,7 +84,7 @@ class ContainerTokenController {
             throw new BadRequestException("Missing build repository attribute")
         final dockerContent = new String(req.containerFile.decodeBase64())
         final condaContent = req.condaFile ? new String(req.condaFile.decodeBase64()) : null as String
-        final platform = Container.platform(req.containerPlatform)
+        final platform = ContainerPlatform.of(req.containerPlatform)
         // create a unique digest to identify the request
         return new BuildRequest(dockerContent, Path.of(workspace), buildRepo, condaContent, user, platform)
     }
@@ -117,7 +117,7 @@ class ContainerTokenController {
                 targetContent,
                 req.containerConfig,
                 condaContent,
-                Container.platform(req.containerPlatform) )
+                ContainerPlatform.of(req.containerPlatform) )
 
         return data
     }

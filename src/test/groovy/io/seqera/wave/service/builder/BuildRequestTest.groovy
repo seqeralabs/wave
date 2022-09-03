@@ -4,6 +4,7 @@ import spock.lang.Specification
 
 import java.nio.file.Path
 
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
 
 /**
@@ -19,14 +20,14 @@ class BuildRequestTest extends Specification {
         def PATH = Path.of('somewhere')
         def repo = 'docker.io/wave'
         when:
-        def req = new BuildRequest(CONTENT, PATH, repo, null, USER, 'amd64')
+        def req = new BuildRequest(CONTENT, PATH, repo, null, USER, ContainerPlatform.of('amd64'))
         then:
-        req.id == '15c52fa7417693a1173aa0d5cdb83076'
+        req.id == 'acc83dc6d094823894869bf3cf3de17b'
         req.workDir == PATH.resolve(req.id).toAbsolutePath()
         req.targetImage == "docker.io/wave:${req.id}"
         req.dockerFile == CONTENT
         req.user == USER
-        req.job =~ /15c52fa7417693a1173aa0d5cdb83076-[a-z0-9]+/
+        req.job =~ /acc83dc6d094823894869bf3cf3de17b-[a-z0-9]+/
     }
 
     def 'should check equals and hash code'() {
@@ -35,12 +36,12 @@ class BuildRequestTest extends Specification {
         def PATH = Path.of('somewhere')
         def repo = 'docker.io/wave'
         and:
-        def req1 = new BuildRequest('from foo', PATH, repo, null, USER, 'amd64')
-        def req2 = new BuildRequest('from foo', PATH, repo, null, USER, 'amd64')
-        def req3 = new BuildRequest('from bar', PATH, repo, null, USER, 'amd64')
-        def req4 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.3', USER, 'amd64')
-        def req5 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.3', USER, 'amd64')
-        def req6 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.5', USER, 'amd64')
+        def req1 = new BuildRequest('from foo', PATH, repo, null, USER, ContainerPlatform.of('amd64'))
+        def req2 = new BuildRequest('from foo', PATH, repo, null, USER, ContainerPlatform.of('amd64'))
+        def req3 = new BuildRequest('from bar', PATH, repo, null, USER, ContainerPlatform.of('amd64'))
+        def req4 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.3', USER, ContainerPlatform.of('amd64'))
+        def req5 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.3', USER, ContainerPlatform.of('amd64'))
+        def req6 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.5', USER, ContainerPlatform.of('amd64'))
 
         expect:
         req1 == req2

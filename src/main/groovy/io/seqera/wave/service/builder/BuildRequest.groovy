@@ -6,6 +6,7 @@ import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
 import io.seqera.wave.util.DigestFunctions
 import static io.seqera.wave.util.StringUtils.trunc
@@ -50,7 +51,10 @@ class BuildRequest {
      */
     final User user
 
-    final String containerPlatform
+    /**
+     * Container platform
+     */
+    final ContainerPlatform platform
 
     /**
      * Build request start time
@@ -67,20 +71,20 @@ class BuildRequest {
      */
     volatile CompletableFuture<BuildResult> result
 
-    BuildRequest(String dockerFile, Path workspace, String repo, String condaFile, User user, String platform) {
+    BuildRequest(String dockerFile, Path workspace, String repo, String condaFile, User user, ContainerPlatform platform) {
         this.id = computeDigest(dockerFile,condaFile,platform)
         this.dockerFile = dockerFile
         this.condaFile = condaFile
         this.targetImage = "${repo}:${id}"
         this.user = user
-        this.containerPlatform = platform
+        this.platform = platform
         this.workDir = workspace.resolve(id).toAbsolutePath()
         this.startTime = Instant.now()
         this.job = "${id}-${startTime.toEpochMilli().toString().md5()[-5..-1]}"
     }
 
-    static private String computeDigest(String dockerFile, String condaFile, String containerPlatform) {
-        def content = containerPlatform
+    static private String computeDigest(String dockerFile, String condaFile, ContainerPlatform platform) {
+        def content = platform.toString()
         content += dockerFile
         if( condaFile )
             content += condaFile

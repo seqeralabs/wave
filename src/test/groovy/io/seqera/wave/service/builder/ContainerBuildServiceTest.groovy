@@ -8,6 +8,7 @@ import java.nio.file.Files
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
 /**
@@ -32,7 +33,7 @@ class ContainerBuildServiceTest extends Specification {
         RUN echo Hello > hello.txt
         '''.stripIndent()
         and:
-        def REQ = new BuildRequest(dockerfile, folder, repo, null, Mock(User), 'amd64')
+        def REQ = new BuildRequest(dockerfile, folder, repo, null, Mock(User), ContainerPlatform.of('amd64'))
 
         when:
         def result = service.launch(REQ)

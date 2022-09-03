@@ -4,6 +4,7 @@ import spock.lang.Specification
 
 import java.nio.file.Path
 
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
 
 /**
@@ -18,18 +19,18 @@ class BuildStrategyTest extends Specification {
         service.cacheRepo = 'reg.io/wave/build/cache'
         and:
         def work = Path.of('/work/foo')
-        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, Mock(User), 'amd64')
+        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, Mock(User), ContainerPlatform.of('amd64'))
 
         when:
         def cmd = service.launchCmd(REQ)
         then:
         cmd == [
                 '--dockerfile',
-                '/work/foo/4769bf5c5b2453ff8677b9b2c7b2a375/Dockerfile',
+                '/work/foo/371f47bac77d67d55d29e0c111c508ef/Dockerfile',
                 '--context',
-                '/work/foo/4769bf5c5b2453ff8677b9b2c7b2a375',
+                '/work/foo/371f47bac77d67d55d29e0c111c508ef',
                 '--destination',
-                'quay.io/wave:4769bf5c5b2453ff8677b9b2c7b2a375',
+                'quay.io/wave:371f47bac77d67d55d29e0c111c508ef',
                 '--cache=true',
                 '--cache-repo',
                 'reg.io/wave/build/cache'

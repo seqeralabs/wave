@@ -5,6 +5,7 @@ import spock.lang.Specification
 import java.nio.file.Path
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
 /**
@@ -46,20 +47,20 @@ class DockerBuilderStrategyTest extends Specification {
         given:
         def work = Path.of('/work/foo')
         def creds = Path.of('/work/creds.json')
-        def req = new BuildRequest('from foo', work, 'repo', null, Mock(User), 'amd64')
+        def req = new BuildRequest('from foo', work, 'repo', null, Mock(User), ContainerPlatform.of('amd64'))
         when:
         def cmd = service.buildCmd(req, creds)
         then:
         cmd == ['docker',
                 'run',
                 '--rm',
-                '-w', '/work/foo/4769bf5c5b2453ff8677b9b2c7b2a375',
-                '-v', '/work/foo/4769bf5c5b2453ff8677b9b2c7b2a375:/work/foo/4769bf5c5b2453ff8677b9b2c7b2a375',
+                '-w', '/work/foo/371f47bac77d67d55d29e0c111c508ef',
+                '-v', '/work/foo/371f47bac77d67d55d29e0c111c508ef:/work/foo/371f47bac77d67d55d29e0c111c508ef',
                 '-v', '/work/creds.json:/kaniko/.docker/config.json:ro',
                 'gcr.io/kaniko-project/executor:latest',
-                '--dockerfile', '/work/foo/4769bf5c5b2453ff8677b9b2c7b2a375/Dockerfile',
-                '--context', '/work/foo/4769bf5c5b2453ff8677b9b2c7b2a375',
-                '--destination', 'repo:4769bf5c5b2453ff8677b9b2c7b2a375',
+                '--dockerfile', '/work/foo/371f47bac77d67d55d29e0c111c508ef/Dockerfile',
+                '--context', '/work/foo/371f47bac77d67d55d29e0c111c508ef',
+                '--destination', 'repo:371f47bac77d67d55d29e0c111c508ef',
                 '--cache=true',
                 '--cache-repo', '195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/cache'
         ]

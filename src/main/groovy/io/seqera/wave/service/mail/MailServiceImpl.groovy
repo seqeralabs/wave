@@ -40,8 +40,8 @@ class MailServiceImpl implements MailService {
         final user = request.user
         final recipient = user ? user.email : config.from
         if( recipient ) {
-            final arg = build ?: BuildResult.UNKNOWN
-            final mail = buildCompletionMail(arg, request.targetImage, request.dockerFile, recipient)
+            final result = build ?: BuildResult.UNKNOWN
+            final mail = buildCompletionMail(request, result, recipient)
             spooler.sendMail(mail)
         }
         else {
@@ -49,23 +49,24 @@ class MailServiceImpl implements MailService {
         }
     }
 
-    Mail buildCompletionMail(BuildResult build, String targetImage, String dockerfile, String recipient) {
+    Mail buildCompletionMail(BuildRequest req, BuildResult result, String recipient) {
         // create template binding
         final binding = new HashMap(5)
-        final status = build.exitStatus==0 ? 'DONE': 'FAILED'
-        binding.build_id = build.id
-        binding.build_success = build.exitStatus==0
-        binding.build_exit_status = build.exitStatus
-        binding.build_time = formatTimestamp(build.startTime) ?: '-'
-        binding.build_duration = formatDuration(build.duration) ?: '-'
-        binding.build_image = targetImage
-        binding.build_dockerfile = dockerfile ?: '-'
-        binding.put('build_logs', build.logs)
+        final status = result.exitStatus==0 ? 'DONE': 'FAILED'
+        binding.build_id = result.id
+        binding.build_success = result.exitStatus==0
+        binding.build_exit_status = result.exitStatus
+        binding.build_time = formatTimestamp(result.startTime) ?: '-'
+        binding.build_duration = formatDuration(result.duration) ?: '-'
+        binding.build_image = req.targetImage
+        binding.build_platform = req.platform
+        binding.build_dockerfile = req.dockerFile ?: '-'
+        binding.put('build_logs', result.logs)
         binding.put('server_url', serverUrl)
-        // build the main object
+        // result the main object
         Mail mail = new Mail()
         mail.to(recipient)
-        mail.subject("Wave container build completion - ${status}")
+        mail.subject("Wave container result completion - ${status}")
         mail.body(MailHelper.getTemplateFile('/io/seqera/wave/build-notification.html', binding))
         mail.attach(MailAttachment.resource('/io/seqera/wave/seqera-logo.png', contentId: '<seqera-logo>', disposition: 'inline'))
         return mail

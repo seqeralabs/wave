@@ -10,6 +10,7 @@ import java.time.Instant
 
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
 /**
@@ -46,7 +47,7 @@ class FutureContainerBuildServiceTest extends Specification {
         RUN echo $EXIT_CODE > hello.txt
         """.stripIndent()
         and:
-        def REQ = new BuildRequest(dockerfile, folder, repo, null, Mock(User), 'amd64')
+        def REQ = new BuildRequest(dockerfile, folder, repo, null, Mock(User), ContainerPlatform.of('amd64'))
 
         when:
         exitCode = EXIT_CODE

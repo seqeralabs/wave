@@ -6,6 +6,7 @@ import java.nio.file.Path
 
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.tower.User
@@ -35,7 +36,7 @@ class ContainerTokenControllerTest extends Specification {
         data.userId == 100
         data.workspaceId == 10 
         data.containerConfig == cfg
-        data.containerPlatform == 'arm64'
+        data.platform == ContainerPlatform.of('arm64')
 
 
         when:
@@ -81,7 +82,7 @@ class ContainerTokenControllerTest extends Specification {
         data.userId == 100
         data.containerImage ==  'some/repo:xyz'
         data.containerConfig == cfg
-        data.containerPlatform == 'arm64'
+        data.platform.toString() == 'linux/arm64/v8'
     }
 
     def 'should create build request' () {
@@ -92,42 +93,42 @@ class ContainerTokenControllerTest extends Specification {
         def submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'))
         def build = controller.makeBuildRequest(submit, null)
         then:
-        build.id == '15c52fa7417693a1173aa0d5cdb83076'
+        build.id == 'acc83dc6d094823894869bf3cf3de17b'
         build.dockerFile == 'FROM foo'
-        build.targetImage == 'wave/build:15c52fa7417693a1173aa0d5cdb83076'
+        build.targetImage == 'wave/build:acc83dc6d094823894869bf3cf3de17b'
         build.workDir == Path.of('/some/wsp').resolve(build.id)
-        build.containerPlatform == 'amd64'
+        build.platform == ContainerPlatform.of('amd64')
         
         when:
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerPlatform: 'amd64')
         build = controller.makeBuildRequest(submit, null)
         then:
-        build.id == '15c52fa7417693a1173aa0d5cdb83076'
+        build.id == 'acc83dc6d094823894869bf3cf3de17b'
         build.dockerFile == 'FROM foo'
-        build.targetImage == 'wave/build:15c52fa7417693a1173aa0d5cdb83076'
+        build.targetImage == 'wave/build:acc83dc6d094823894869bf3cf3de17b'
         build.workDir == Path.of('/some/wsp').resolve(build.id)
-        build.containerPlatform == 'amd64'
+        build.platform == ContainerPlatform.of('amd64')
 
         // using 'arm' platform changes the id
         when:
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerPlatform: 'arm64')
         build = controller.makeBuildRequest(submit, null)
         then:
-        build.id == '6a3f47e8e841c938ad3383e4dc555384'
+        build.id == 'b3692c4aa2a61e93e4ddde5491477eed'
         build.dockerFile == 'FROM foo'
-        build.targetImage == 'wave/build:6a3f47e8e841c938ad3383e4dc555384'
+        build.targetImage == 'wave/build:b3692c4aa2a61e93e4ddde5491477eed'
         build.workDir == Path.of('/some/wsp').resolve(build.id)
-        build.containerPlatform == 'arm64'
+        build.platform == ContainerPlatform.of('arm64')
 
         when:
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), condaFile: encode('some::conda-recipe'), containerPlatform: 'arm64')
         build = controller.makeBuildRequest(submit, null)
         then:
-        build.id == '4a51e1463584269e32b30c27b6bc1467'
+        build.id == 'c4e97d10f83ab8af1b58f4941cc51ceb'
         build.dockerFile == 'FROM foo'
         build.condaFile == 'some::conda-recipe'
-        build.targetImage == 'wave/build:4a51e1463584269e32b30c27b6bc1467'
+        build.targetImage == 'wave/build:c4e97d10f83ab8af1b58f4941cc51ceb'
         build.workDir == Path.of('/some/wsp').resolve(build.id)
-        build.containerPlatform == 'arm64'
+        build.platform == ContainerPlatform.of('arm64')
     }
 }

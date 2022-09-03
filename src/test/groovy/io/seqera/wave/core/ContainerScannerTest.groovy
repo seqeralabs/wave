@@ -90,16 +90,25 @@ class ContainerScannerTest extends Specification {
         def body = ManifestConst.MANIFEST_LIST_CONTENT
 
         when:
-        def scanner = new ContainerScanner().withPlatform('amd64')
-        def result = scanner.findTargetDigest(body)
+        def result = new ContainerScanner()
+                .withPlatform('amd64')
+                .findTargetDigest(body)
         then:
         result == 'sha256:f54a58bc1aac5ea1a25d796ae155dc228b3f0e11d046ae276b39c4bf2f13d8c4'
 
         when:
-        scanner = new ContainerScanner().withPlatform('arm64')
-        result = scanner.findTargetDigest(body)
+        result = new ContainerScanner()
+                .withPlatform('arm64')
+                .findTargetDigest(body)
         then:
         result == 'sha256:01433e86a06b752f228e3c17394169a5e21a0995f153268a9b36a16d4f2b2184'
+
+        when:
+        result = new ContainerScanner()
+                .withPlatform('linux/arm/v7')
+                .findTargetDigest(body)
+        then:
+        result == 'sha256:f130bd2d67e6e9280ac6d0a6c83857bfaf70234e8ef4236876eccfbd30973b1c'
     }
 
     Path folder
