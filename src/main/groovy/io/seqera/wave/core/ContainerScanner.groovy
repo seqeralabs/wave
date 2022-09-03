@@ -29,7 +29,7 @@ class ContainerScanner {
 
     private ProxyClient client
     private ContainerConfig containerConfig
-    private ContainerPlatform platform
+    private ContainerPlatform platform = ContainerPlatform.DEFAULT
     private Storage storage
 
 
@@ -63,7 +63,8 @@ class ContainerScanner {
 
     String resolve(RoutePath route, Map<String,List<String>> headers) {
         assert route, "Missing route"
-        this.platform = route.request?.platform
+        if( route.request?.platform )
+            this.platform = route.request.platform
         if( route.request?.containerConfig )
             this.containerConfig = route.request.containerConfig
         return resolve(route.image, route.reference, headers)
