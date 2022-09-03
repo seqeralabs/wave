@@ -22,7 +22,7 @@ class DockerBuilderStrategyTest extends Specification {
         given:
         def work = Path.of('/work/foo')
         when:
-        def cmd = service.dockerWrapper(work, null)
+        def cmd = service.dockerWrapper(work, null, null)
         then:
         cmd == ['docker',
                 'run',
@@ -32,7 +32,7 @@ class DockerBuilderStrategyTest extends Specification {
                 'gcr.io/kaniko-project/executor:v1.9.0']
 
         when:
-        cmd = service.dockerWrapper(work, Path.of('/foo/creds.json'))
+        cmd = service.dockerWrapper(work, Path.of('/foo/creds.json'), ContainerPlatform.of('arm64'))
         then:
         cmd == ['docker',
                 'run',
@@ -40,6 +40,7 @@ class DockerBuilderStrategyTest extends Specification {
                 '-w', '/work/foo',
                 '-v', '/work/foo:/work/foo',
                 '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
+                '--platform', 'linux/arm64/v8',
                 'gcr.io/kaniko-project/executor:v1.9.0']
     }
 
@@ -58,12 +59,14 @@ class DockerBuilderStrategyTest extends Specification {
                 '-w', '/work/foo/371f47bac77d67d55d29e0c111c508ef',
                 '-v', '/work/foo/371f47bac77d67d55d29e0c111c508ef:/work/foo/371f47bac77d67d55d29e0c111c508ef',
                 '-v', '/work/creds.json:/kaniko/.docker/config.json:ro',
+                '--platform', 'linux/amd64',
                 'gcr.io/kaniko-project/executor:v1.9.0',
                 '--dockerfile', '/work/foo/371f47bac77d67d55d29e0c111c508ef/Dockerfile',
                 '--context', '/work/foo/371f47bac77d67d55d29e0c111c508ef',
                 '--destination', 'repo:371f47bac77d67d55d29e0c111c508ef',
                 '--cache=true',
-                '--cache-repo', 'reg.io/wave/build/cache'
+                '--cache-repo', 'reg.io/wave/build/cache',
+                '--customPlatform', 'linux/amd64'
         ]
 
     }

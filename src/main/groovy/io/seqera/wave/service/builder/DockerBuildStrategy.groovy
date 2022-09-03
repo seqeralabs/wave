@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.core.ContainerPlatform
 import jakarta.inject.Singleton
 /**
  *  Build a container image using a Docker CLI tool
@@ -50,11 +51,11 @@ class DockerBuildStrategy extends BuildStrategy {
     }
 
     protected List<String> buildCmd(BuildRequest req, Path credsFile) {
-        final dockerCmd = dockerWrapper(req.workDir, credsFile)
+        final dockerCmd = dockerWrapper(req.workDir, credsFile, req.platform)
         return dockerCmd + launchCmd(req)
     }
 
-    protected List<String> dockerWrapper(Path workDir, Path credsFile) {
+    protected List<String> dockerWrapper(Path workDir, Path credsFile, ContainerPlatform platform) {
         final wrapper = ['docker',
                          'run',
                          '--rm',
@@ -64,6 +65,11 @@ class DockerBuildStrategy extends BuildStrategy {
         if( credsFile ) {
             wrapper.add('-v')
             wrapper.add("$credsFile:/kaniko/.docker/config.json:ro".toString())
+        }
+
+        if( platform ) {
+            wrapper.add('--platform')
+            wrapper.add(platform.toString())
         }
         // the container image to be used t
         wrapper.add( buildImage )

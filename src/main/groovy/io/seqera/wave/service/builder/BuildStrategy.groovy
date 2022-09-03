@@ -30,6 +30,8 @@ abstract class BuildStrategy {
                 << "--cache=true"
                 << "--cache-repo"
                 << req.cacheRepository
+                << "--customPlatform"
+                << req.platform.toString()
     }
 
 }
