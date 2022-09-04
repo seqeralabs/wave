@@ -87,8 +87,11 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         // 2. make a request against the authorization "realm" service using basic
         //    credentials to get the login token
         final basic =  "$username:$password".bytes.encodeBase64()
+        final endpoint = registry.auth.service
+                ? new URI("$registry.auth.realm?service=${registry.auth.service}")
+                : registry.auth.realm
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(registry.auth.realm)
+                .uri(endpoint)
                 .GET()
                 .header("Authorization", "Basic $basic")
                 .build()
@@ -97,11 +100,11 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
                 .send(request, HttpResponse.BodyHandlers.ofString())
 
         if( response.statusCode() == 200 ) {
-            log.debug "Container registry '$registryName' login - response: ${response.body()}"
+            log.debug "Container registry '$endpoint' login - response: ${response.body()}"
             return true
         }
         else {
-            log.debug "Container registry '$registryName' login FAILED: ${response.statusCode()} - response: ${response.body()}"
+            log.warn "Container registry '$endpoint' login FAILED: ${response.statusCode()} - response: ${response.body()}"
             return false
         }
     }
