@@ -99,5 +99,30 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
         then:
         resp.statusCode() == 200
     }
+
+    void 'should lookup google artifactory' () {
+        given:
+        def KEY = '''
+            {
+              "type": "service_account",
+              "project_id": "wave-test-361419",
+              "private_key_id": "d5803f8fed3f882c7169dbffec319961bb1b690a",
+              "private_key": "-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDjxHFu3uJBe/Rj\\nbm9akWuLm9QnTL52DOZCX7y9XSd/kqJfUK8mdMvkaJpGawQiqkhpEVJgtBlbFoTf\\n0ZURaNeA8XfMrgBKNcBP/abKmTCgMO5GvGbOgDlhL3aaXWCz/4yJYsY0k8dqXQ/G\\ncDksSlAdQC9/dkjXhfogGaHBSfu+pxaeB19EMwHQ/cNbEvaGRCx80iBIk82C0olo\\nkrc9gsnAPVbCRiNq6dwVN7QEU0d3LO9+UCRV/f4b5mzUrPdwWsoPdfctkl5avb81\\nCLqoPkUYCcsCTg7UZNBufhA5ApI36tB5BpCHohtkaM/vSaplKwa6Q5JoUygRQy0L\\nzy4qvfyTAgMBAAECggEAB4YbfnvfPl75a0aLEq+2oN2KsXGmNznd3AKMtm9UAAbU\\n4558eOkuWGL9+TSidB1cyaZk1VpIVs7YEidXFpnqOdijtOa+HJkB9GmbSG/JshZP\\nQZYKUSHBbiXCyTeA4rhl6PPoHnVlBsJycoM4vLZAnJMxxZZYeaYec8HlADmQ+nLJ\\ntEl60Jjs9Vg6xyNKV5CmyKavoYymq8qH2Tsk8+6k5+udYQjFAFvJWns15d6/Im79\\nwXeG243Jl83sGYsFvlc11Ktp1aWnJPA+d3jl840s3XmtIffu+zVqLFyOwuXHdZxi\\n6V8JJ3xz5Gcb60zfFoajQNq5RBRakW6Rgh5jao2nQQKBgQD28jRlu30fu4uvKwHF\\nVYd2ceRwIOAknpzUVJyfT3PudnNEmawJwQHvHsH6NTmPz3v2Wt7I3s56l3C6ZUML\\neIzuC8HrKtKKLJJYaYl66C6lNZOHPxC/eABI1p/PiuTPIWzLlURhbzc9/6ENOGTj\\naw3Qrl7Z3KpE2CR3RxOERsdDKwKBgQDsHjrTjaD9/DxnncUFcQbntjEwapJ4ik1Y\\n+b/3I5uOCwdNeFaJDdOllhxV+4oECXTukrWxtqZCeaNTsADyYFSKQGp84W/Zp7Lb\\nIn/r7EI9PTA27a8Iq2PXNzXPOUXmHBTYbgNeumpBTnT/3g85CsfOup5O1uLOdmxo\\nbhSd9DwYOQKBgFUQQ2pTthsrMEerqdV+y8XKH6VcPbl/hYhCiRz7cnTPCo+z26YU\\nfQUQdEMq+GQIVawbyygoT7m81tDuNrUJ1ondNPQ78QA1sEeSOxBCUGcKWII7ABrk\\nTDzK6YvFTWHoIqDSDxb9B2ts1d5G8cHAy6Z5miSztVc3mQAZVKi49MS3AoGBALm/\\nPj/WluO3Xj2VG70gIXJ/HUsdS4SQKDDqqF1fIawoeOI03L6MpgcJg9kQPI7YcaiM\\nuWrIaRq6XgYj21rQ9TCdZChBoJ/1EPratQ9/mMxcKmXLrXqAedaAlFAkmhxf0vY/\\n9V67/4LImbn/krIpDO5QWOFkoqARAU9V6doonG3hAoGABmKnn16paD2SppmrYFFS\\nSjAllpU46yreeG33aGcbSaMnnX7LHTO5/cg0u2TxvJrBjFQGf8AYedmrfRZICQcC\\nbuHJPD06Zd6XY77VZZXNsBtThqnUlX/dl9Mv4gyKzVJtH28oZFZfq5irDAG4pS4v\\nfMtnXx6Ok+KbwpWoVVgtqOA=\\n-----END PRIVATE KEY-----\\n",
+              "client_email": "wave-user@wave-test-361419.iam.gserviceaccount.com",
+              "client_id": "111715329731061897617",
+              "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+              "token_uri": "https://oauth2.googleapis.com/token",
+              "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+              "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/wave-user%40wave-test-361419.iam.gserviceaccount.com"
+            }
+            '''
+        and:
+        def registry = 'europe-southwest1-docker.pkg.dev'
+        def USER = '_json_key' // or '_json_key_base64'
+
+        expect:
+        loginService.login(registry, USER, KEY)
+
+    }
     
 }

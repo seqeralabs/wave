@@ -1,8 +1,8 @@
 package io.seqera.wave.auth
 
-import io.seqera.wave.auth.RegistryAuth
 import spock.lang.Specification
 
+import io.seqera.wave.auth.RegistryAuth
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -53,6 +53,10 @@ class RegistryAuthTest extends Specification {
         and:
         RegistryAuth.parse('Basic realm="http://foo",service="bar"')
                 == new RegistryAuth(new URI('http://foo'), 'bar', RegistryAuth.Type.Basic)
+
+        and:
+        RegistryAuth.parse('Bearer realm="https://europe-southwest1-docker.pkg.dev/v2/token"')
+                == new RegistryAuth(new URI('https://europe-southwest1-docker.pkg.dev/v2/token'), null, RegistryAuth.Type.Bearer)
 
         and:
         RegistryAuth.parse('foo') == null
