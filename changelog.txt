@@ -1,5 +1,6 @@
 # Wave changelog
 v0.14.1 - 5 Sep 2022
+- Fix registry auth invalid cache key [15bd1a57]
 - Fix retry policy for temportary IO exeception [15e2723f]
 - Add support for Azure CR [cac5b661]
 - Improve logging [7af3109f]
