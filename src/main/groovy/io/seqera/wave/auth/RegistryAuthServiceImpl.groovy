@@ -4,8 +4,10 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 
+import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import com.google.common.util.concurrent.UncheckedExecutionException
@@ -17,9 +19,6 @@ import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
-
-import com.google.common.cache.CacheBuilder
-
 /**
  * Implement Docker authentication & login service
  *
@@ -192,7 +191,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         try {
             return cacheTokens.get(key)
         }
-        catch (UncheckedExecutionException e) {
+        catch (UncheckedExecutionException | ExecutionException e) {
             // this catches the exception thrown in the cache loader lookup
             // and throws the causing exception that should be `RegistryUnauthorizedAccessException`
             throw e.cause

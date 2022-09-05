@@ -1,5 +1,6 @@
 package io.seqera.wave.service.aws
 
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 
@@ -90,7 +91,7 @@ class AwsEcrService {
             // fetch using the AWS ECR client
             return cache.get(new AwsCreds(accessKey,secretKey,region))
         }
-        catch (UncheckedExecutionException e) {
+        catch (UncheckedExecutionException | ExecutionException e) {
             throw e.cause
         }
     }
