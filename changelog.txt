@@ -1,4 +1,9 @@
 # Wave changelog
+v0.14.1 - 5 Sep 2022
+- Fix retry policy for temportary IO exeception [15e2723f]
+- Add support for Azure CR [cac5b661]
+- Improve logging [7af3109f]
+
 v0.14.0 - 3 Sep 2022
 - Add support for non x86/amd64 architecture #109 [06c7087b]
 - Add support for custom build and cache repos [68dfc6dd]
