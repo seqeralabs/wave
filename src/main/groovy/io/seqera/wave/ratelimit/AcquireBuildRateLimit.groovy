@@ -23,6 +23,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME
 @Around
 @interface AcquireBuildRateLimit {
 
-    String key()
+    String keyInArg()
 
 }

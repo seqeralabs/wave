@@ -2,7 +2,11 @@ package io.seqera.wave.test
 
 import spock.lang.Shared
 
-import com.redis.testcontainers.RedisContainer
+import org.testcontainers.containers.GenericContainer
+import org.testcontainers.containers.wait.strategy.Wait
+import org.testcontainers.utility.DockerImageName
+import org.testcontainers.utility.MountableFile
+
 
 /**
  *
@@ -11,12 +15,9 @@ import com.redis.testcontainers.RedisContainer
 trait RedisTestContainer {
 
     @Shared
-    static RedisContainer redisContainer = new RedisContainer(
-            RedisContainer.DEFAULT_IMAGE_NAME.withTag(RedisContainer.DEFAULT_TAG)).withKeyspaceNotifications()
+    static GenericContainer redisContainer = new GenericContainer(DockerImageName.parse("redis:7.0.4-alpine"))
+            .withExposedPorts(6379)
 
-    void startRedis(){
-        redisContainer.start()
-    }
 
     void restartRedis(){
         if( redisContainer.running)

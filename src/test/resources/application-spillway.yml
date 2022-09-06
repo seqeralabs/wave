@@ -1,0 +1,12 @@
+---
+ratelimit:
+  build:
+    max: 2
+    duration: 1m
+  request:
+    max: 2
+    duration: 1m
+  spillway:
+    impl: ${SPILLWAY_IMPL}
+    redis-host: ${REDIS_HOST}
+    redis-port: ${REDIS_PORT}

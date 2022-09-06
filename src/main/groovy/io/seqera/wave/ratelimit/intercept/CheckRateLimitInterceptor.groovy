@@ -29,7 +29,7 @@ class CheckRateLimitInterceptor implements MethodInterceptor<Object, Object> {
     Object intercept(MethodInvocationContext<Object, Object> context) {
         if( context.hasAnnotation(AcquireBuildRateLimit)) {
 
-            final def key = context.getAnnotation(AcquireBuildRateLimit).stringValue("key").get()
+            final def key = context.getAnnotation(AcquireBuildRateLimit).stringValue("keyInArg").get()
 
             def id = context.parameters.values().stream()
                     .filter( x-> x.name==key)

@@ -14,6 +14,7 @@ import io.seqera.wave.WaveDefault
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.model.ContainerCoordinates
+import io.seqera.wave.ratelimit.AcquireBuildRateLimit
 import io.seqera.wave.service.mail.MailService
 import io.seqera.wave.util.ThreadPoolBuilder
 import jakarta.inject.Inject
@@ -160,7 +161,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         }
     }
 
-    protected CompletableFuture<BuildResult> launchAsync(BuildRequest request) {
+    @AcquireBuildRateLimit(keyInArg='user')
+    protected CompletableFuture<BuildResult> launchAsync(BuildRequest request, String user) {
         CompletableFuture
                 .<BuildResult>supplyAsync(() -> launch(request), executor)
                 .thenApply((result) -> { sendCompletionEmail(request,result); return result })
@@ -180,7 +182,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         synchronized (buildRequests) {
             if( !buildRequests.containsKey(request.targetImage) ) {
                 log.info "== Submit build request request: $request"
-                request.result = launchAsync(request)
+                request.result = launchAsync(request, request.user?.id?.toString() ?: 'anonymous')
                 buildRequests.put(request.targetImage, request)
             }
             else {
