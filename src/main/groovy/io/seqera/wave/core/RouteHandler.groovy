@@ -5,6 +5,7 @@ import java.util.regex.Pattern
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.service.ContainerTokenService
 import jakarta.inject.Singleton
 /**
@@ -30,7 +31,7 @@ class RouteHandler {
     RoutePath parse(String path) {
         Matcher matcher = ROUTE_PATHS.matcher(path)
         if( !matcher.matches() )
-            return NOT_FOUND
+            throw new NotFoundException("Invalid request path '$path'")
 
         final String type = matcher.group(2)
         final String reference = matcher.group(3)
@@ -43,8 +44,7 @@ class RouteHandler {
             // find out the container request that must have been submitted for the token
             final request = tokenService.getRequest(token)
             if( !request ) {
-                log.warn "Token ${token} not found"
-                return NOT_FOUND
+                throw new NotFoundException("Invalid request token '$token'")
             }
             // the image name (without tag) must match
             final coords = request.coordinates()
