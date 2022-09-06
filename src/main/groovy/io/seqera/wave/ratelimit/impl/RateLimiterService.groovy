@@ -11,6 +11,4 @@ interface RateLimiterService {
 
     void acquireBuild(String key) throws RateLimitException
 
-    void acquireRequest(String key) throws RateLimitException
-
 }

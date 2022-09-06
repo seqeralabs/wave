@@ -11,7 +11,12 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME
 /**
  * Annotation to acquire resources for a build
  *
- * Given a key (i.e. userId, 'anonymous', etc) control how many requests are run in a given period
+ * Given a key (i.e. userId, 'anonymous', etc) control how many requests are run in a given period.
+ *
+ * This key is extracted from the named argument of the method as `keyInArg`:
+ *
+ * @AcquireBuildRateLimit(keyInArg='userId')
+ * public void runTaskForUser(Task task, int memory, String userId)
  *
  * @author : jorge <jorge.aguilera@seqera.io>
  *

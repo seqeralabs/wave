@@ -10,6 +10,9 @@ import io.seqera.wave.ratelimit.impl.RateLimiterService
 import jakarta.inject.Singleton
 
 /**
+ * Interceptor of methods annotated as AcquireBuildRateLimit to check if current request are allowed or rate limit
+ * has been reached
+ *
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */

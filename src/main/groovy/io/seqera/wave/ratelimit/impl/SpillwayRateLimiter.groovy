@@ -12,6 +12,8 @@ import jakarta.inject.Singleton
 
 
 /**
+ * This class manage how many requests can be requested from an user during a configurable period
+ *
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
@@ -39,8 +41,4 @@ class SpillwayRateLimiter implements RateLimiterService{
             throw new RateLimitException("$key exceeded rate limit")
     }
 
-    @Override
-    void acquireRequest(String key) throws RateLimitException{
-
-    }
 }
