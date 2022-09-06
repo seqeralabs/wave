@@ -69,6 +69,10 @@ dependencies {
 
     // --
     implementation("ch.qos.logback:logback-classic")
+
+    // rate limit
+    implementation 'com.coveo:spillway:2.1.1'
+    testImplementation "com.redis.testcontainers:testcontainers-redis-junit:1.6.2"
 }
 
 
