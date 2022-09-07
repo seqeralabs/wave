@@ -19,8 +19,10 @@ import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodBuilder
 import io.kubernetes.client.openapi.models.V1Volume
 import io.kubernetes.client.openapi.models.V1VolumeMount
+import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.micronaut.core.convert.format.MapFormat
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
@@ -54,6 +56,10 @@ class K8sServiceImpl implements K8sService {
 
     @Value('${wave.build.timeout:5m}')
     private Duration buildTimeout
+
+    @Property(name='wave.build.k8s.labels')
+    @Nullable
+    private Map<String, String> labels
 
     @Inject
     private K8sClient k8sClient
@@ -273,6 +279,7 @@ class K8sServiceImpl implements K8sService {
         builder.withNewMetadata()
                 .withNamespace(namespace)
                 .withName(name)
+                .addToLabels(labels)
                 .endMetadata()
 
 
