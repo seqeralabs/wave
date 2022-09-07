@@ -101,7 +101,6 @@ class K8sServiceImpl implements K8sService {
                 .withNewMetadata()
                     .withNamespace(namespace)
                     .withName(name)
-                    .addToLabels(labels)
                 .endMetadata()
                 .withNewSpec()
                     .withBackoffLimit(0)
