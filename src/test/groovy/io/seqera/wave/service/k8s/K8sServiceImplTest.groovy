@@ -239,4 +239,27 @@ class K8sServiceImplTest extends Specification {
         cleanup:
         ctx.close()
     }
+
+    def 'should add labels ' () {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'foo',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.storage.claimName': 'bar',
+                'wave.build.k8s.storage.mountPath': '/build',
+                'wave.build.k8s.labels': ['department': 'unit a','organization': 'org']
+        ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+
+        when:
+        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null)
+        then:
+        result.metadata.name == 'foo'
+        result.metadata.labels.toString() == PROPS['wave.build.k8s.labels'].toString()
+        and:
+        ctx.close()
+    }
 }
