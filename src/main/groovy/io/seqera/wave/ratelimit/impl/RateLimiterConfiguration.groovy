@@ -13,7 +13,7 @@ import io.micronaut.core.bind.annotation.Bindable
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
-@ConfigurationProperties('ratelimit')
+@ConfigurationProperties('rate-limit')
 @Context
 @CompileStatic
 class RateLimiterConfiguration {
