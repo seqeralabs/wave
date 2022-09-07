@@ -11,15 +11,15 @@ import io.micronaut.http.HttpStatus
  */
 @Slf4j
 @CompileStatic
-class GenericException extends WaveException implements HttpError {
+class DockerRegistryException extends WaveException implements HttpError {
 
     final HttpStatus statusCode
-    final String details
+    final String error
 
-    GenericException(String message, int code, String details=null) {
+    DockerRegistryException(String message, int code, String error) {
         super(message)
         this.statusCode = HttpStatus.valueOf(code)
-        this.details = details
+        this.error = error
     }
 
 }

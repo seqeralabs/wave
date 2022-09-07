@@ -11,7 +11,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.http.HttpStatus
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
-import io.seqera.wave.exception.GenericException
+import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.model.ContentType
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.storage.Storage
@@ -70,19 +70,22 @@ class ContainerScanner {
         return resolve(route.image, route.reference, headers)
     }
 
-    protected void checkResponseCode(HttpResponse<?> response, RoutePath route) {
+    protected void checkResponseCode(HttpResponse<?> response, RoutePath route, boolean blob) {
         final code = response.statusCode()
         final repository = route.getTargetRepository()
         final String body = response.body()?.toString()
         if( code==404 ) {
+            // see errors list https://docs.docker.com/registry/spec/api/#errors-2
+            final error = blob ? 'MANIFEST_BLOB_UNKNOWN' : 'MANIFEST_UNKNOWN'
             final msg = "repository '$repository' not found"
-            throw new GenericException(msg, code, body)
+            throw new DockerRegistryException(msg, code, error)
         }
 
         if( code>=400 ) {
+            final error = code==401 || code==403 ? 'UNAUTHORIZED' : 'UNKNOWN'
             final status = HttpStatus.valueOf(code)
             final msg = "repository '$repository' ${status.reason.toLowerCase()} (${status.code})"
-            throw new GenericException(msg, code, body)
+            throw new DockerRegistryException(msg, code, error)
         }
 
         if( code != 200 ) {
@@ -100,12 +103,12 @@ class ContainerScanner {
         final resp1 = client.head("/v2/$imageName/manifests/$tag", headers)
         final digest = resp1.headers().firstValue('docker-content-digest').orElse(null)
         log.debug "Resolve (1): image $imageName:$tag => digest=$digest"
-        checkResponseCode(resp1, client.route)
+        checkResponseCode(resp1, client.route, false)
 
         // get manifest list for digest
         final resp2 = client.getString("/v2/$imageName/manifests/$digest", headers)
         final type = resp2.headers().firstValue('content-type').orElse(null)
-        checkResponseCode(resp2, client.route)
+        checkResponseCode(resp2, client.route, false)
         final manifestsList = resp2.body()
         log.debug "Resolve (2): image $imageName:$tag => type=$type; manifests list:\n${JsonOutput.prettyPrint(manifestsList)}"
 
@@ -131,7 +134,7 @@ class ContainerScanner {
 
         // fetch the image config
         final resp5 = client.getString("/v2/$imageName/blobs/$configDigest", headers)
-        checkResponseCode(resp5, client.route)
+        checkResponseCode(resp5, client.route, true)
         final imageConfig = resp5.body()
         log.debug "Resolve (5): image $imageName:$tag => image config=\n${JsonOutput.prettyPrint(imageConfig)}"
 
