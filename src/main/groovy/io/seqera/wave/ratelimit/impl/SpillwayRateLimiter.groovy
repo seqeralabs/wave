@@ -7,7 +7,9 @@ import com.coveo.spillway.SpillwayFactory
 import com.coveo.spillway.limit.Limit
 import com.coveo.spillway.limit.LimitBuilder
 import com.coveo.spillway.storage.LimitUsageStorage
+import io.seqera.wave.configuration.RateLimiterConfiguration
 import io.seqera.wave.exception.RateLimitException
+import io.seqera.wave.ratelimit.RateLimiterService
 import jakarta.inject.Singleton
 
 

@@ -1,4 +1,4 @@
-package io.seqera.wave.ratelimit.impl
+package io.seqera.wave.configuration
 
 import java.time.Duration
 import javax.annotation.Nullable
@@ -27,22 +27,4 @@ class RateLimiterConfiguration {
         Duration duration
     }
 
-    Spillway spillway
-
-    @ConfigurationProperties('spillway')
-    static interface Spillway{
-
-        /*
-        * Implementation to use. Valid values: memory or redis
-         */
-        String getImpl()
-
-        @Bindable(defaultValue =  "localhost")
-        @Nullable
-        String getRedisHost()
-
-        @Bindable(defaultValue =  "6379")
-        @Nullable
-        int getRedisPort()
-    }
 }

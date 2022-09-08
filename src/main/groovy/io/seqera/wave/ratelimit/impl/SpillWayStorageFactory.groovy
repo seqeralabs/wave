@@ -9,6 +9,8 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Requires
+import io.seqera.wave.configuration.RateLimiterConfiguration
+import io.seqera.wave.configuration.RedisConfiguration
 import jakarta.inject.Singleton
 import redis.clients.jedis.JedisPool
 
@@ -24,19 +26,17 @@ import redis.clients.jedis.JedisPool
 class SpillWayStorageFactory {
 
     @Singleton
-    @Requires(property = 'rate-limit.spillway.impl')
-    protected LimitUsageStorage limitUsageStorage(@NotNull RateLimiterConfiguration configuration){
-        switch (configuration.spillway.impl){
-            case 'memory':
-                log.info "Using in memory storage for rate limit"
-                return new InMemoryStorage()
-            case 'redis':
-                log.info "Using redis $configuration.spillway.redisHost host as storage for rate limit"
-                def jedisPool = new JedisPool(configuration.spillway.redisHost, configuration.spillway.redisPort)
-                return RedisStorage.builder().withJedisPool(jedisPool).build()
-            default:
-                null
-        }
+    @Requires(missingProperty =  'redis.uri')
+    LimitUsageStorage inMemoryStorage(@NotNull RateLimiterConfiguration configuration){
+        log.info "Using in memory storage for rate limit"
+        new InMemoryStorage()
     }
 
+    @Singleton
+    @Requires(property = 'redis.uri')
+    LimitUsageStorage redisStorage(@NotNull RateLimiterConfiguration configuration, @NotNull RedisConfiguration redisConfiguration){
+        log.info "Using redis $redisConfiguration.uri as storage for rate limit"
+        def jedisPool = new JedisPool(redisConfiguration.uri)
+        RedisStorage.builder().withJedisPool(jedisPool).build()
+    }
 }

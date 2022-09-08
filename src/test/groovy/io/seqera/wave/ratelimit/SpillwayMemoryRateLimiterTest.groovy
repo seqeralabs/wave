@@ -4,7 +4,7 @@ import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
 import io.seqera.wave.exception.RateLimitException
-import io.seqera.wave.ratelimit.impl.RateLimiterConfiguration
+import io.seqera.wave.configuration.RateLimiterConfiguration
 import io.seqera.wave.ratelimit.impl.SpillwayRateLimiter
 
 /**

@@ -9,10 +9,8 @@ import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.RateLimitException
-import io.seqera.wave.ratelimit.impl.RateLimiterConfiguration
-import io.seqera.wave.ratelimit.impl.SpillwayRateLimiter
+import io.seqera.wave.configuration.RateLimiterConfiguration
 import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.builder.ContainerBuildServiceImpl
 import io.seqera.wave.tower.User
 
@@ -55,7 +53,7 @@ class BuildServiceRateLimitTest extends Specification{
 
         when:
         (0..configuration.build.max).each {
-            containerBuildService.launchAsync(REQ, 'user1')
+            containerBuildService.launchAsync(REQ)
         }
         then:
         thrown(RateLimitException)

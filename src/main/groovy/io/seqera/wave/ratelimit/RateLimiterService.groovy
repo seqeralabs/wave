@@ -1,4 +1,4 @@
-package io.seqera.wave.ratelimit.impl
+package io.seqera.wave.ratelimit
 
 import io.seqera.wave.exception.RateLimitException
 
