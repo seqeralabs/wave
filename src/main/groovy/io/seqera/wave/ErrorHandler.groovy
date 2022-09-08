@@ -11,6 +11,7 @@ import io.micronaut.http.HttpStatus
 import io.seqera.wave.exception.ForbiddenException
 import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.exception.NotFoundException
+import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.exception.UnauthorizedException
 import io.seqera.wave.exception.WaveException
 import io.seqera.wave.util.LongRndKey
@@ -57,6 +58,9 @@ class ErrorHandler {
             final resp = responseFactory.apply(msg, 'NOT_FOUND')
             return HttpResponse.notFound(resp)
         }
+
+        if( t instanceof SlowDownException )
+            return HttpResponseFactory.INSTANCE.status(HttpStatus.SERVICE_UNAVAILABLE)
 
         final resp = responseFactory.apply(msg, 'BAD_REQUEST')
         return HttpResponse.badRequest(resp)

@@ -8,8 +8,8 @@ import java.nio.file.Files
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.exception.RateLimitException
 import io.seqera.wave.configuration.RateLimiterConfiguration
+import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildServiceImpl
 import io.seqera.wave.tower.User
@@ -54,7 +54,7 @@ class BuildServiceRateLimitTest extends Specification{
             containerBuildService.launchAsync(REQ)
         }
         then:
-        thrown(RateLimitException)
+        thrown(SlowDownException)
 
         cleanup:
         folder?.deleteDir()

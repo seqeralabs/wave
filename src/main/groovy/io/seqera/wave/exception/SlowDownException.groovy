@@ -1,6 +1,7 @@
 package io.seqera.wave.exception
 
 import groovy.transform.CompileStatic
+import groovy.transform.InheritConstructors
 
 
 /**
@@ -8,9 +9,7 @@ import groovy.transform.CompileStatic
  *
  */
 @CompileStatic
-class RateLimitException extends Exception{
+@InheritConstructors
+class SlowDownException extends WaveException implements HttpError{
 
-    RateLimitException(String msg){
-        super(msg)
-    }
 }

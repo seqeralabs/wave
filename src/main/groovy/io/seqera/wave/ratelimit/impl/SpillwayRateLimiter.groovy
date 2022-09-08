@@ -1,5 +1,6 @@
 package io.seqera.wave.ratelimit.impl
 
+
 import javax.validation.constraints.NotNull
 
 import com.coveo.spillway.Spillway
@@ -10,7 +11,7 @@ import com.coveo.spillway.storage.LimitUsageStorage
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.RateLimiterConfiguration
-import io.seqera.wave.exception.RateLimitException
+import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.ratelimit.RateLimiterService
 import jakarta.inject.Singleton
 
@@ -42,9 +43,9 @@ class SpillwayRateLimiter implements RateLimiterService{
     }
 
     @Override
-    void acquireBuild(String key) throws RateLimitException{
+    void acquireBuild(String key) throws SlowDownException{
         if( !builds.tryCall(key) )
-            throw new RateLimitException("$key exceeded rate limit")
+            throw new SlowDownException("$key exceeded rate limit")
     }
 
 }

@@ -3,8 +3,8 @@ package io.seqera.wave.ratelimit
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
-import io.seqera.wave.exception.RateLimitException
 import io.seqera.wave.configuration.RateLimiterConfiguration
+import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.ratelimit.impl.SpillwayRateLimiter
 
 /**
@@ -46,7 +46,7 @@ class SpillwayMemoryRateLimiterTest extends Specification {
         rateLimiter.acquireBuild("test")
 
         then:
-        thrown(RateLimitException)
+        thrown(SlowDownException)
     }
 
 }

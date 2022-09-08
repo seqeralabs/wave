@@ -4,7 +4,7 @@ package io.seqera.wave.ratelimit
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
-import io.seqera.wave.exception.RateLimitException
+import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.configuration.RateLimiterConfiguration
 import io.seqera.wave.ratelimit.impl.SpillwayRateLimiter
 import io.seqera.wave.test.RedisTestContainer
@@ -60,7 +60,7 @@ class SpillwayRedisRateLimiterTest extends Specification implements RedisTestCon
         rateLimiter.acquireBuild("test")
 
         then:
-        thrown(RateLimitException)
+        thrown(SlowDownException)
     }
 
 }
