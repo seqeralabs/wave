@@ -64,7 +64,8 @@ class K8sServiceImpl implements K8sService {
     @Nullable
     private Map<String, String> nodeSelector
 
-    @Value('${wave.build.k8s.service-account:""}')
+    @Value('${wave.build.k8s.service-account}')
+    @Nullable
     private String serviceAccount
 
     @Inject
