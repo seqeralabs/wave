@@ -22,7 +22,6 @@ import io.kubernetes.client.openapi.models.V1VolumeMount
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
-import io.micronaut.core.convert.format.MapFormat
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
@@ -60,6 +59,14 @@ class K8sServiceImpl implements K8sService {
     @Property(name='wave.build.k8s.labels')
     @Nullable
     private Map<String, String> labels
+
+    @Property(name='wave.build.k8s.node-selector')
+    @Nullable
+    private Map<String, String> nodeSelector
+
+    @Value('${wave.build.k8s.service-account}')
+    @Nullable
+    private String serviceAccount
 
     @Inject
     private K8sClient k8sClient
@@ -286,6 +293,8 @@ class K8sServiceImpl implements K8sService {
         //spec section
         def spec = builder
                 .withNewSpec()
+                .withNodeSelector(nodeSelector)
+                .withServiceAccount(serviceAccount)
                 .withActiveDeadlineSeconds( buildTimeout.toSeconds() )
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
