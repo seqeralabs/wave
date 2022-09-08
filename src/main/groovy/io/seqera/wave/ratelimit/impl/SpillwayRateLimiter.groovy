@@ -7,6 +7,7 @@ import com.coveo.spillway.SpillwayFactory
 import com.coveo.spillway.limit.Limit
 import com.coveo.spillway.limit.LimitBuilder
 import com.coveo.spillway.storage.LimitUsageStorage
+import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.RateLimiterConfiguration
 import io.seqera.wave.exception.RateLimitException
 import io.seqera.wave.ratelimit.RateLimiterService
@@ -19,6 +20,7 @@ import jakarta.inject.Singleton
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
+@Requires(env = 'rate-limit')
 @Singleton
 class SpillwayRateLimiter implements RateLimiterService{
 

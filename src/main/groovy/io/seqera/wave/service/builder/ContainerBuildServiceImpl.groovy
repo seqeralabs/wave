@@ -66,6 +66,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     private BuildStrategy buildStrategy
 
     @Inject
+    @Nullable
     private RateLimiterService rateLimiterService
 
     @PostConstruct
@@ -166,7 +167,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     protected CompletableFuture<BuildResult> launchAsync(BuildRequest request) {
 
-        rateLimiterService.acquireBuild(request?.user?.id?.toString()?:'anonymous')
+        rateLimiterService?.acquireBuild(request?.user?.id?.toString()?:'anonymous')
 
         CompletableFuture
                 .<BuildResult>supplyAsync(() -> launch(request), executor)

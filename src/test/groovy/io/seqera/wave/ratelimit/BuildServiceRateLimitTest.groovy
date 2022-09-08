@@ -33,9 +33,7 @@ class BuildServiceRateLimitTest extends Specification{
     RateLimiterConfiguration configuration
 
     def setupSpec() {
-        applicationContext = ApplicationContext.run([
-                SPILLWAY_IMPL: 'memory'
-        ], 'test', 'spillwayredis')
+        applicationContext = ApplicationContext.run('test', 'rate-limit')
         containerBuildService = applicationContext.getBean(ContainerBuildServiceImpl)
         configuration = applicationContext.getBean(RateLimiterConfiguration)
     }
