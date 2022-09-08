@@ -1,0 +1,5 @@
+rate-limit:
+  build:
+    max: 10
+    duration: 1h
+

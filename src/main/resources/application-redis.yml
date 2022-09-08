@@ -1,0 +1,3 @@
+redis:
+  uri: redis://${REDIS_HOST}:${REDIS_PORT:6379}
+
