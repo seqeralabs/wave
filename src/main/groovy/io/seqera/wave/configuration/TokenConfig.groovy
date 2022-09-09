@@ -4,10 +4,7 @@ import java.time.Duration
 import javax.annotation.Nullable
 
 import io.micronaut.context.annotation.ConfigurationProperties
-import io.micronaut.context.annotation.Value
 import io.micronaut.core.bind.annotation.Bindable
-
-
 /**
  * Configuration to be used by a TokenService
  *
@@ -15,7 +12,7 @@ import io.micronaut.core.bind.annotation.Bindable
  *
  */
 @ConfigurationProperties('wave.tokens')
-interface TokenConfiguration {
+interface TokenConfig {
 
     Cache getCache()
 
@@ -29,5 +26,7 @@ interface TokenConfiguration {
         @Bindable(defaultValue = "10000")
         @Nullable
         int getMaxSize()
+
     }
+
 }

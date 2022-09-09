@@ -5,7 +5,7 @@ import spock.lang.Unroll
 
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.service.ContainerRequestData
-import io.seqera.wave.service.tokens.ContainerTokenService
+import io.seqera.wave.service.token.ContainerTokenService
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>

@@ -1,11 +1,8 @@
-package io.seqera.wave.service.tokens.impl
-
+package io.seqera.wave.service.token
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.service.ContainerRequestData
-import io.seqera.wave.service.tokens.ContainerTokenService
-import io.seqera.wave.service.tokens.ContainerTokenStorage
 import io.seqera.wave.util.LongRndKey
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -19,7 +16,7 @@ import jakarta.inject.Singleton
 @Singleton
 class ContainerTokenServiceImpl implements ContainerTokenService {
 
-    @Inject ContainerTokenStorage containerTokenStorage
+    @Inject ContainerTokenStore containerTokenStorage
 
     @Override
     String computeToken(ContainerRequestData request) {

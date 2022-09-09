@@ -1,4 +1,4 @@
-package io.seqera.wave.service.tokens.impl
+package io.seqera.wave.service.token
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import groovy.json.JsonBuilder
@@ -7,34 +7,35 @@ import groovy.util.logging.Slf4j
 import io.lettuce.core.api.StatefulRedisConnection
 import io.micronaut.context.annotation.Replaces
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.configuration.TokenConfiguration
+import io.seqera.wave.configuration.TokenConfig
 import io.seqera.wave.service.ContainerRequestData
-import io.seqera.wave.service.tokens.ContainerTokenStorage
 import jakarta.inject.Singleton
 
-
 /**
+ * Implements container request token store based on a Redis cache
+ *
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
 @Requires(property = 'redis.uri')
-@Replaces(LocalTokenStorage)
+@Replaces(LocalTokenStore)
 @Singleton
 @CompileStatic
 @Slf4j
-class RedisTokenStorage implements ContainerTokenStorage{
+class RedisTokenStore implements ContainerTokenStore {
 
     ObjectMapper mapper = new ObjectMapper()
 
     StatefulRedisConnection<String,String> redisConnection
 
-    TokenConfiguration tokenConfiguration
+    TokenConfig tokenConfiguration
 
-    RedisTokenStorage(
-            TokenConfiguration tokenConfiguration,
-            StatefulRedisConnection < String, String > redisConnection) {
-        this.tokenConfiguration = tokenConfiguration
+    RedisTokenStore(
+            TokenConfig config,
+            StatefulRedisConnection<String,String> redisConnection) {
+        this.tokenConfiguration = config
         this.redisConnection = redisConnection
+        log.info "Creating Redis cache store - duration=$config.cache.duration; maxSize=$config.cache.maxSize"
     }
 
     @Override
@@ -51,6 +52,6 @@ class RedisTokenStorage implements ContainerTokenStorage{
         if( !json )
             return null
         def requestData = mapper.readValue(json, ContainerRequestData)
-        requestData
+        return requestData
     }
 }

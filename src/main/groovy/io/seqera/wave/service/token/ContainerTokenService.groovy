@@ -1,4 +1,4 @@
-package io.seqera.wave.service.tokens
+package io.seqera.wave.service.token
 
 import io.seqera.wave.service.ContainerRequestData
 

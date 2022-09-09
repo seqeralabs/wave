@@ -1,13 +1,14 @@
-package io.seqera.wave.service.tokens
+package io.seqera.wave.service.token
 
 import io.seqera.wave.service.ContainerRequestData
 
-
 /**
+ * Define the container request token persistence operations
+ * 
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
-interface ContainerTokenStorage {
+interface ContainerTokenStore {
 
     ContainerRequestData put(String key, ContainerRequestData request)
 

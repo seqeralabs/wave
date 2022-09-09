@@ -1,6 +1,5 @@
 package io.seqera.wave.service
 
-
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
