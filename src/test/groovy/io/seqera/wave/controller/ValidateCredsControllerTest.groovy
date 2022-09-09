@@ -16,7 +16,7 @@ import io.seqera.wave.test.SecureDockerRegistryContainer
 import jakarta.inject.Inject
 
 @MicronautTest
-class ValidateCredsControllerSpec extends Specification implements SecureDockerRegistryContainer {
+class ValidateCredsControllerTest extends Specification implements SecureDockerRegistryContainer {
 
     @Inject
     @Client("/")

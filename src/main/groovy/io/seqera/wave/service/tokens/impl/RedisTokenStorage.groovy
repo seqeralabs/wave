@@ -18,7 +18,7 @@ import jakarta.inject.Singleton
  *
  */
 @Requires(property = 'redis.uri')
-@Replaces(MemoryTokenStorage)
+@Replaces(LocalTokenStorage)
 @Singleton
 @CompileStatic
 @Slf4j

@@ -9,6 +9,8 @@ import io.micronaut.core.bind.annotation.Bindable
 
 
 /**
+ * Configuration to be used by a TokenService
+ *
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */

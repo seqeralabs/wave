@@ -19,11 +19,11 @@ import jakarta.inject.Singleton
 @Singleton
 @CompileStatic
 @Slf4j
-class MemoryTokenStorage implements ContainerTokenStorage{
+class LocalTokenStorage implements ContainerTokenStorage{
 
     private Cache<String, ContainerRequestData> cache
 
-    MemoryTokenStorage(TokenConfiguration tokenConfiguration) {
+    LocalTokenStorage(TokenConfiguration tokenConfiguration) {
         init(tokenConfiguration.cache.maxSize, tokenConfiguration.cache.duration)
     }
 

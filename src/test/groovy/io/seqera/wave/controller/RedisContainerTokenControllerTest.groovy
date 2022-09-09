@@ -24,7 +24,7 @@ import redis.clients.jedis.JedisPool
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
-class RedisContainerTokenControllerSpec extends Specification implements RedisTestContainer {
+class RedisContainerTokenControllerTest extends Specification implements RedisTestContainer {
 
     EmbeddedServer embeddedServer
 
