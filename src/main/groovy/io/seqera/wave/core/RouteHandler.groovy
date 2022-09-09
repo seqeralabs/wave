@@ -6,7 +6,7 @@ import java.util.regex.Pattern
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.exception.NotFoundException
-import io.seqera.wave.service.ContainerTokenService
+import io.seqera.wave.service.token.ContainerTokenService
 import jakarta.inject.Singleton
 /**
  * Helper service to decode container request paths
@@ -19,8 +19,6 @@ import jakarta.inject.Singleton
 class RouteHandler {
 
     final public static Pattern ROUTE_PATHS = ~'/v2(?:/wt)?/([a-z0-9][a-z0-9_.-]+(?:/[a-z0-9][a-z0-9_.-]+)?(?:/[a-zA-Z0-9][a-zA-Z0-9_.-]+)*)/(manifests|blobs)/(.+)'
-
-    final public static RoutePath NOT_FOUND = RoutePath.empty()
 
     private ContainerTokenService tokenService
 

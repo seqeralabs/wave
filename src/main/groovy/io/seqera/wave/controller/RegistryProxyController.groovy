@@ -146,7 +146,7 @@ class RegistryProxyController {
         }
 
         if( route.manifest && !route.digest){
-            rateLimiterService?.acquireRequest(route.request?.userId?.toString() ?: 'anonymous')
+            rateLimiterService?.acquirePull(route.request?.userId?.toString() ?: 'anonymous')
         }
 
         final entry = manifestForPath(route, httpRequest)

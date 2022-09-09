@@ -4,11 +4,13 @@ import io.micronaut.context.annotation.ConfigurationProperties
 
 
 /**
+ * Model Redis server configuration settings
+ *
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
 @ConfigurationProperties('redis')
-interface RedisConfiguration {
+interface RedisConfig {
 
     String getUri()
 

@@ -11,7 +11,7 @@ import io.seqera.wave.test.SecureDockerRegistryContainer
 import jakarta.inject.Inject
 
 @MicronautTest
-class SecureRegistryControllerSpec extends Specification implements SecureDockerRegistryContainer {
+class SecureRegistryControllerTest extends Specification implements SecureDockerRegistryContainer {
 
     @Inject
     @Client("/")

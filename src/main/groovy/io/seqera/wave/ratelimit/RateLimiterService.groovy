@@ -11,5 +11,5 @@ interface RateLimiterService {
 
     void acquireBuild(String key) throws SlowDownException
 
-    void acquireRequest(String key) throws SlowDownException
+    void acquirePull(String key) throws SlowDownException
 }

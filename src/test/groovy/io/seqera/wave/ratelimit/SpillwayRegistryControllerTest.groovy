@@ -5,16 +5,13 @@ import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
-import io.micronaut.http.HttpResponse
-import io.micronaut.http.HttpStatus
 import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.configuration.RateLimiterConfiguration
+import io.seqera.wave.configuration.RateLimiterConfig
 import io.seqera.wave.model.ContentType
-import io.seqera.wave.storage.MemoryStorage
 import io.seqera.wave.test.DockerRegistryContainer
 import jakarta.inject.Inject
 /**
@@ -33,7 +30,7 @@ class SpillwayRegistryControllerTest extends Specification implements DockerRegi
     ApplicationContext applicationContext
 
     @Inject
-    RateLimiterConfiguration configuration
+    RateLimiterConfig configuration
 
     def setupSpec() {
         initRegistryContainer(applicationContext)

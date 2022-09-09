@@ -9,8 +9,9 @@ import com.coveo.spillway.limit.Limit
 import com.coveo.spillway.limit.LimitBuilder
 import com.coveo.spillway.storage.LimitUsageStorage
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.configuration.RateLimiterConfiguration
+import io.seqera.wave.configuration.RateLimiterConfig
 import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.ratelimit.RateLimiterService
 import jakarta.inject.Singleton
@@ -22,39 +23,42 @@ import jakarta.inject.Singleton
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
+@Slf4j
 @Requires(env = 'rate-limit')
 @Singleton
 @CompileStatic
-class SpillwayRateLimiter implements RateLimiterService{
+class SpillwayRateLimiter implements RateLimiterService {
 
     Spillway<String> builds
 
-    Spillway<String> requests
+    Spillway<String> pulls
 
-    SpillwayRateLimiter(@NotNull LimitUsageStorage storage, @NotNull RateLimiterConfiguration configuration) {
-        init(storage, configuration)
+    SpillwayRateLimiter(@NotNull LimitUsageStorage storage, @NotNull RateLimiterConfig config) {
+        init(storage, config)
     }
 
-    protected void init(@NotNull LimitUsageStorage storage, @NotNull RateLimiterConfiguration configuration) {
+    protected void init(@NotNull LimitUsageStorage storage, @NotNull RateLimiterConfig config){
         SpillwayFactory spillwayFactory = new SpillwayFactory(storage)
-        initBuilds(spillwayFactory, configuration)
-        initRequests(spillwayFactory, configuration)
+        initBuilds(spillwayFactory, config)
+        initRequests(spillwayFactory, config)
     }
 
-    private void initBuilds(SpillwayFactory spillwayFactory, RateLimiterConfiguration configuration) {
+    private void initBuilds(SpillwayFactory spillwayFactory, RateLimiterConfig config) {
         Limit<String> limit = LimitBuilder.of("builds")
-                .to(configuration.build.max)
-                .per(configuration.build.duration)
+                .to(config.build.max)
+                .per(config.build.duration)
                 .build();
         builds = spillwayFactory.enforce('builds', limit)
+        log.info "Builds rate limit: max=$config.build.max; duration:$config.build.duration"
     }
 
-    private void initRequests(SpillwayFactory spillwayFactory, RateLimiterConfiguration configuration) {
-        Limit<String> limit = LimitBuilder.of("requests")
-                .to(configuration.request.max)
-                .per(configuration.request.duration)
+    private void initRequests(SpillwayFactory spillwayFactory, RateLimiterConfig config) {
+        Limit<String> limit = LimitBuilder.of("pulls")
+                .to(config.pull.max)
+                .per(config.pull.duration)
                 .build();
-        requests = spillwayFactory.enforce('requests', limit)
+        pulls = spillwayFactory.enforce('pulls', limit)
+        log.info "Pulls rate limit: max=$config.pull.max; duration:$config.pull.duration"
     }
 
     @Override
@@ -64,8 +68,8 @@ class SpillwayRateLimiter implements RateLimiterService{
     }
 
     @Override
-    void acquireRequest(String key) throws SlowDownException {
-        if( !requests.tryCall(key) )
-            throw new SlowDownException("$key exceeded request rate limit")
+    void acquirePull(String key) throws SlowDownException {
+        if( !pulls.tryCall(key) )
+            throw new SlowDownException("$key exceeded oull rate limit")
     }
 }

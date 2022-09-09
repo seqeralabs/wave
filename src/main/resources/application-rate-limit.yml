@@ -2,7 +2,7 @@ rate-limit:
   build:
     max: 10
     duration: 1h
-  request:
+  pull:
     max: 100
     duration: 1h
 
