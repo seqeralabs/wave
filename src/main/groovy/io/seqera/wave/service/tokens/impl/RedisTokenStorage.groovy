@@ -40,6 +40,7 @@ class RedisTokenStorage implements ContainerTokenStorage{
     @Override
     ContainerRequestData put(String key, ContainerRequestData request) {
         def json = new JsonBuilder(request).toString()
+        // once created the token the user has `Duration` time to pull the layers of the image
         redisConnection.sync().psetex(key, tokenConfiguration.cache.duration.toMillis(), json)
         return request
     }
