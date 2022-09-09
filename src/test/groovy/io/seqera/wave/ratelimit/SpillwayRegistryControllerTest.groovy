@@ -43,7 +43,7 @@ class SpillwayRegistryControllerTest extends Specification implements DockerRegi
             h.add('Accept', ContentType.DOCKER_MANIFEST_V1_JWS_TYPE)
             h.add('Accept', MediaType.APPLICATION_JSON)
         })
-        (0..configuration.request.max).each {
+        (0..configuration.pull.max).each {
             client.toBlocking().exchange(request, String)
         }
         then:
