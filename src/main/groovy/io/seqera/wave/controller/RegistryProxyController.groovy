@@ -2,6 +2,7 @@ package io.seqera.wave.controller
 
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
+import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -23,6 +24,7 @@ import io.seqera.wave.core.RouteHandler
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.exchange.RegistryErrorResponse
+import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
@@ -44,6 +46,7 @@ class RegistryProxyController {
     @Inject Storage storage
     @Inject RouteHandler routeHelper
     @Inject ContainerBuildService containerBuildService
+    @Inject @Nullable RateLimiterService rateLimiterService
     @Inject ErrorHandler errorHandler
 
     @Error
@@ -140,6 +143,10 @@ class RegistryProxyController {
 
         if (!(route.manifest && route.tag)) {
             throw new DockerRegistryException("Invalid request HEAD '$httpRequest.path'", 400, 'UNKNOWN')
+        }
+
+        if( route.manifest && !route.digest){
+            rateLimiterService?.acquirePull(route.request?.userId?.toString() ?: 'anonymous')
         }
 
         final entry = manifestForPath(route, httpRequest)

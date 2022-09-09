@@ -10,7 +10,7 @@ import io.micronaut.context.annotation.ConfigurationProperties
  *
  */
 @ConfigurationProperties('redis')
-interface RedisConfiguration {
+interface RedisConfig {
 
     String getUri()
 

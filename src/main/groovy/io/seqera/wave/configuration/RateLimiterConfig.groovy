@@ -23,8 +23,14 @@ interface RateLimiterConfig {
     @ConfigurationProperties('build')
     static interface BuildLimit {
         int getMax()
-
         Duration getDuration()
     }
 
+    RequestLimit getPull()
+
+    @ConfigurationProperties('pull')
+    static class RequestLimit {
+        int max
+        Duration duration
+    }
 }
