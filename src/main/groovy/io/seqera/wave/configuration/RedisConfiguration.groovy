@@ -4,6 +4,8 @@ import io.micronaut.context.annotation.ConfigurationProperties
 
 
 /**
+ * Model Redis server configuration settings
+ *
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */

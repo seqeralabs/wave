@@ -5,7 +5,7 @@ import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
 import io.seqera.wave.exception.SlowDownException
-import io.seqera.wave.configuration.RateLimiterConfiguration
+import io.seqera.wave.configuration.RateLimiterConfig
 import io.seqera.wave.ratelimit.impl.SpillwayRateLimiter
 import io.seqera.wave.test.RedisTestContainer
 import redis.clients.jedis.JedisPool
@@ -45,7 +45,7 @@ class SpillwayRedisRateLimiterTest extends Specification implements RedisTestCon
 
     void "can't acquire more resources"() {
         given:
-        RateLimiterConfiguration config = applicationContext.getBean(RateLimiterConfiguration)
+        RateLimiterConfig config = applicationContext.getBean(RateLimiterConfig)
 
         when:
         (0..config.build.max - 1).each {

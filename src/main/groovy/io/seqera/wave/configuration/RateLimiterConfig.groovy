@@ -1,16 +1,14 @@
 package io.seqera.wave.configuration
 
 import java.time.Duration
-import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.ConfigurationProperties
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Requires
-import io.micronaut.core.bind.annotation.Bindable
-
-
 /**
+ * Model Rate limiter configuration
+ * 
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
@@ -18,15 +16,15 @@ import io.micronaut.core.bind.annotation.Bindable
 @ConfigurationProperties('rate-limit')
 @Context
 @CompileStatic
-class RateLimiterConfiguration {
+interface RateLimiterConfig {
 
-    BuildLimit build
+    BuildLimit getBuild()
 
     @ConfigurationProperties('build')
-    static class BuildLimit {
-        int max
+    static interface BuildLimit {
+        int getMax()
 
-        Duration duration
+        Duration getDuration()
     }
 
 }

@@ -10,7 +10,7 @@ import com.coveo.spillway.limit.LimitBuilder
 import com.coveo.spillway.storage.LimitUsageStorage
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.configuration.RateLimiterConfiguration
+import io.seqera.wave.configuration.RateLimiterConfig
 import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.ratelimit.RateLimiterService
 import jakarta.inject.Singleton
@@ -29,11 +29,11 @@ class SpillwayRateLimiter implements RateLimiterService{
 
     Spillway<String> builds
 
-    SpillwayRateLimiter(@NotNull LimitUsageStorage storage, @NotNull RateLimiterConfiguration configuration) {
+    SpillwayRateLimiter(@NotNull LimitUsageStorage storage, @NotNull RateLimiterConfig configuration) {
         init(storage, configuration)
     }
 
-    protected void init(@NotNull LimitUsageStorage storage, @NotNull RateLimiterConfiguration configuration){
+    protected void init(@NotNull LimitUsageStorage storage, @NotNull RateLimiterConfig configuration){
         SpillwayFactory spillwayFactory = new SpillwayFactory(storage)
         Limit<String> limitBuilds = LimitBuilder.of("builds")
                 .to(configuration.build.max)
