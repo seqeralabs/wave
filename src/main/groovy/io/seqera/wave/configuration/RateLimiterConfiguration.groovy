@@ -29,4 +29,12 @@ class RateLimiterConfiguration {
         Duration duration
     }
 
+    RequestLimit request
+
+    @ConfigurationProperties('request')
+    static class RequestLimit {
+        int max
+
+        Duration duration
+    }
 }
