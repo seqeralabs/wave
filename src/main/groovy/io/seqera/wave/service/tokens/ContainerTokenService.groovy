@@ -1,4 +1,7 @@
-package io.seqera.wave.service
+package io.seqera.wave.service.tokens
+
+import io.seqera.wave.service.ContainerRequestData
+
 /**
  * service to fulfill request for an augmented container
  *
@@ -9,7 +12,7 @@ interface ContainerTokenService {
     /**
      * Get (generate) a new container token for the specified container request data
      *
-     * @param request An instance of {@link ContainerRequestData}
+     * @param request An instance of {@link io.seqera.wave.service.ContainerRequestData}
      * @return A new token string that's used to track this request
      */
     String computeToken(ContainerRequestData request)

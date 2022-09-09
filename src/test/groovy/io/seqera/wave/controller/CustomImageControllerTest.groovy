@@ -21,7 +21,7 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.model.ContentType
 import io.seqera.wave.service.ContainerRequestData
-import io.seqera.wave.service.ContainerTokenService
+import io.seqera.wave.service.tokens.ContainerTokenService
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.builder.ContainerBuildServiceImpl

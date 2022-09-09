@@ -18,15 +18,15 @@ import io.micronaut.core.bind.annotation.Bindable
 @ConfigurationProperties('rate-limit')
 @Context
 @CompileStatic
-class RateLimiterConfiguration {
+interface RateLimiterConfiguration {
 
-    BuildLimit build
+    BuildLimit getBuild()
 
     @ConfigurationProperties('build')
-    static class BuildLimit {
-        int max
+    static interface BuildLimit {
+        int getMax()
 
-        Duration duration
+        Duration getDuration()
     }
 
 }

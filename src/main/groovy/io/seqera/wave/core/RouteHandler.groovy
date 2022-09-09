@@ -6,7 +6,7 @@ import java.util.regex.Pattern
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.exception.NotFoundException
-import io.seqera.wave.service.ContainerTokenService
+import io.seqera.wave.service.tokens.ContainerTokenService
 import jakarta.inject.Singleton
 /**
  * Helper service to decode container request paths
