@@ -20,6 +20,7 @@ import redis.clients.jedis.JedisPool
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
+@Requires(env = 'rate-limit')
 @Factory
 @Slf4j
 @CompileStatic
