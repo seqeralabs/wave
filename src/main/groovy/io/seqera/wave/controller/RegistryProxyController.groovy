@@ -2,6 +2,7 @@ package io.seqera.wave.controller
 
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
+import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -45,7 +46,7 @@ class RegistryProxyController {
     @Inject Storage storage
     @Inject RouteHandler routeHelper
     @Inject ContainerBuildService containerBuildService
-    @Inject RateLimiterService rateLimiterService
+    @Inject @Nullable RateLimiterService rateLimiterService
     @Inject ErrorHandler errorHandler
 
     @Error
@@ -145,7 +146,7 @@ class RegistryProxyController {
         }
 
         if( route.manifest && !route.digest){
-            rateLimiterService.acquireRequest(route.request?.userId?.toString() ?: 'anonymous')
+            rateLimiterService?.acquireRequest(route.request?.userId?.toString() ?: 'anonymous')
         }
 
         final entry = manifestForPath(route, httpRequest)
