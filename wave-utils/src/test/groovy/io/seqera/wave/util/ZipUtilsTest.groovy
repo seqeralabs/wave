@@ -1,8 +1,8 @@
 package io.seqera.wave.util
 
-import io.seqera.wave.util.ZipUtils
 import spock.lang.Specification
 
+import io.seqera.wave.util.ZipUtils
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
