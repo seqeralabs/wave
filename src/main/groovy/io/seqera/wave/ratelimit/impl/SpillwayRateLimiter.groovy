@@ -40,7 +40,7 @@ class SpillwayRateLimiter implements RateLimiterService {
     protected void init(@NotNull LimitUsageStorage storage, @NotNull RateLimiterConfig config){
         SpillwayFactory spillwayFactory = new SpillwayFactory(storage)
         initBuilds(spillwayFactory, config)
-        initRequests(spillwayFactory, config)
+        initPulls(spillwayFactory, config)
     }
 
     private void initBuilds(SpillwayFactory spillwayFactory, RateLimiterConfig config) {
@@ -52,7 +52,7 @@ class SpillwayRateLimiter implements RateLimiterService {
         log.info "Builds rate limit: max=$config.build.max; duration:$config.build.duration"
     }
 
-    private void initRequests(SpillwayFactory spillwayFactory, RateLimiterConfig config) {
+    private void initPulls(SpillwayFactory spillwayFactory, RateLimiterConfig config) {
         Limit<String> limit = LimitBuilder.of("pulls")
                 .to(config.pull.max)
                 .per(config.pull.duration)
