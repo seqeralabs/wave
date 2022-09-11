@@ -62,7 +62,7 @@ class SpillwayRateLimiter implements RateLimiterService {
     }
 
     @Override
-    void acquireBuild(String key) throws SlowDownException{
+    void acquireBuild(String key) throws SlowDownException {
         if( !builds.tryCall(key) )
             throw new SlowDownException("$key exceeded build rate limit")
     }
