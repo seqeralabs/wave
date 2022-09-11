@@ -16,7 +16,6 @@ import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.ratelimit.RateLimiterService
 import jakarta.inject.Singleton
 
-
 /**
  * This class manage how many requests can be requested from an user during a configurable period
  *
@@ -70,6 +69,6 @@ class SpillwayRateLimiter implements RateLimiterService {
     @Override
     void acquirePull(String key) throws SlowDownException {
         if( !pulls.tryCall(key) )
-            throw new SlowDownException("$key exceeded oull rate limit")
+            throw new SlowDownException("$key exceeded pull rate limit")
     }
 }
