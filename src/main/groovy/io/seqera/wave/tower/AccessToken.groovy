@@ -21,7 +21,7 @@ import jakarta.persistence.Version
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Table(name="TW_ACCESS_TOKEN")
+@Table(name="tw_access_token")
 @Entity
 @CompileStatic
 class AccessToken {

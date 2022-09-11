@@ -18,7 +18,7 @@ import jakarta.persistence.Version
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Table(name="TW_CREDENTIALS")
+@Table(name="tw_credentials")
 @Entity
 @CompileStatic
 class Credentials {

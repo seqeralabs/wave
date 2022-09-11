@@ -17,7 +17,7 @@ import jakarta.persistence.Version
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-@Table(name="TW_USER")
+@Table(name="tw_user")
 @Entity
 class User {
 

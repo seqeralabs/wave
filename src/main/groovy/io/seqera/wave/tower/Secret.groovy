@@ -18,7 +18,7 @@ import jakarta.persistence.Version
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-@Table(name="TW_SECRET")
+@Table(name="tw_secret")
 @Entity
 class Secret {
 
