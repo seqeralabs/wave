@@ -86,6 +86,7 @@ class K8sServiceImpl implements K8sService {
             if( !Path.of(buildWorkspace).startsWith(storageMountPath) )
                 throw new IllegalArgumentException("Build workspace should be a sub-directory of 'wave.build.k8s.storage.mountPath' - offending value: '$buildWorkspace' - expected value: '$storageMountPath'")
         }
+        log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; nodeSelector=$nodeSelector; buildTimeout=$buildTimeout"
     }
 
     /**
