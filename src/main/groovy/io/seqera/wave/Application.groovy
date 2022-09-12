@@ -5,11 +5,23 @@ import groovy.util.logging.Slf4j
 import io.micronaut.runtime.Micronaut
 import io.seqera.wave.util.BuildInfo
 import io.seqera.wave.util.RuntimeInfo
+import io.swagger.v3.oas.annotations.OpenAPIDefinition
+import io.swagger.v3.oas.annotations.info.Info
+import io.swagger.v3.oas.annotations.info.License
+
 /**
  * Registry app launcher
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@OpenAPIDefinition(
+        info = @Info(
+                title = "Wave",
+                version = '${api.version}',
+                description = "Wave API",
+                license = @License(name = "Apache 2.0", url = "https://XXXXXXXX")
+        )
+)
 @CompileStatic
 @Slf4j
 class Application {

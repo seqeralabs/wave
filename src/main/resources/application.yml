@@ -4,6 +4,11 @@ micronaut:
     name: wave-app
   server:
     port: 9090
+  router :
+    static-resources :
+      swagger :
+        paths: classpath:META-INF/swagger
+        mapping: /swagger/**
 ---
 netty:
   default:

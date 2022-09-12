@@ -20,6 +20,9 @@ import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.tower.User
+import io.swagger.annotations.ApiResponse
+import io.swagger.annotations.ApiResponses
+import io.swagger.v3.oas.annotations.Operation
 import jakarta.inject.Inject
 /**
  * Implement a controller to receive container token requests
@@ -66,6 +69,13 @@ class ContainerTokenController {
     }
 
     @Post
+    @Operation(summary = "Retrieve a token for a build",
+            operationId = "container-token",
+            description = "Every build request is associated with a token who can be retrieved with this endpoint")
+    @ApiResponses([
+            @ApiResponse(code = 200, response = SubmitContainerTokenResponse),
+            @ApiResponse(code = 400, message = "User not found or bad credentials")
+    ])
     HttpResponse<SubmitContainerTokenResponse> getToken(SubmitContainerTokenRequest req) {
         final User user = req.towerAccessToken
                 ? userService.getUserByAccessToken(req.towerAccessToken)

@@ -74,6 +74,9 @@ dependencies {
     implementation 'com.coveo:spillway:2.1.1'
     // distributed
     implementation "io.micronaut.redis:micronaut-redis-lettuce"
+    //open api
+    compileOnly("io.micronaut.openapi:micronaut-openapi")
+    implementation("io.swagger.core.v3:swagger-annotations")
 }
 
 
