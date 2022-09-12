@@ -1,4 +1,12 @@
 # Wave changelog
+v0.15.2 - 12 Sep 2022 
+- Add toString to domain objects [0169d508]
+- Improve K8s log info [da473fdf]
+- Add rate limit logic to test controller [7fe31c31]
+
+v0.15.1 - 11 Sep 2022
+- Fix tower table names case [256c0b65]
+
 v0.15.0 - 10 Sep 2022
 - Fix build workdir cleanup [ed60079e]
 - Refactor util classes [1dddae50]
