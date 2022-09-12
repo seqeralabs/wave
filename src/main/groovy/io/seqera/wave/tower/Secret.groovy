@@ -5,6 +5,7 @@ import java.time.OffsetDateTime
 import javax.validation.constraints.NotNull
 
 import groovy.transform.CompileStatic
+import groovy.transform.ToString
 import io.micronaut.data.annotation.DateCreated
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -17,6 +18,7 @@ import jakarta.persistence.Version
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@ToString(includeNames = true, includePackage = false, includes = 'id')
 @CompileStatic
 @Table(name="tw_secret")
 @Entity

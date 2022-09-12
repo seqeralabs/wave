@@ -7,6 +7,7 @@ import javax.validation.constraints.Size
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import groovy.transform.CompileStatic
+import groovy.transform.ToString
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.data.annotation.DateCreated
 import jakarta.persistence.Column
@@ -21,6 +22,7 @@ import jakarta.persistence.Version
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@ToString(includeNames = true, includePackage = false, includes = 'id,name')
 @Table(name="tw_access_token")
 @Entity
 @CompileStatic
