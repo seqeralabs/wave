@@ -5,6 +5,7 @@ import javax.validation.constraints.NotNull
 import javax.validation.constraints.Size
 
 import groovy.transform.CompileStatic
+import groovy.transform.ToString
 import io.micronaut.core.annotation.Nullable
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -18,7 +19,8 @@ import jakarta.persistence.Version
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Table(name="TW_CREDENTIALS")
+@ToString(includeNames = true, includePackage = false, includes = 'id,name,organizationId,workspaceId')
+@Table(name="tw_credentials")
 @Entity
 @CompileStatic
 class Credentials {

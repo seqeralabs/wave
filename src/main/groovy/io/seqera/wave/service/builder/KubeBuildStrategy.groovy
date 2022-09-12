@@ -51,7 +51,9 @@ class KubeBuildStrategy extends BuildStrategy {
         }
     }
 
+    @Override
     void cleanup(BuildRequest req) {
+        super.cleanup(req)
         final name = podName(req)
         try {
             k8sService.deletePod(name)

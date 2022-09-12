@@ -19,6 +19,7 @@ import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodBuilder
 import io.kubernetes.client.openapi.models.V1Volume
 import io.kubernetes.client.openapi.models.V1VolumeMount
+import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import jakarta.inject.Inject
@@ -55,6 +56,18 @@ class K8sServiceImpl implements K8sService {
     @Value('${wave.build.timeout:5m}')
     private Duration buildTimeout
 
+    @Property(name='wave.build.k8s.labels')
+    @Nullable
+    private Map<String, String> labels
+
+    @Property(name='wave.build.k8s.node-selector')
+    @Nullable
+    private Map<String, String> nodeSelector
+
+    @Value('${wave.build.k8s.service-account}')
+    @Nullable
+    private String serviceAccount
+
     @Inject
     private K8sClient k8sClient
 
@@ -73,6 +86,7 @@ class K8sServiceImpl implements K8sService {
             if( !Path.of(buildWorkspace).startsWith(storageMountPath) )
                 throw new IllegalArgumentException("Build workspace should be a sub-directory of 'wave.build.k8s.storage.mountPath' - offending value: '$buildWorkspace' - expected value: '$storageMountPath'")
         }
+        log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; nodeSelector=$nodeSelector; buildTimeout=$buildTimeout"
     }
 
     /**
@@ -273,12 +287,15 @@ class K8sServiceImpl implements K8sService {
         builder.withNewMetadata()
                 .withNamespace(namespace)
                 .withName(name)
+                .addToLabels(labels)
                 .endMetadata()
 
 
         //spec section
         def spec = builder
                 .withNewSpec()
+                .withNodeSelector(nodeSelector)
+                .withServiceAccount(serviceAccount)
                 .withActiveDeadlineSeconds( buildTimeout.toSeconds() )
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)

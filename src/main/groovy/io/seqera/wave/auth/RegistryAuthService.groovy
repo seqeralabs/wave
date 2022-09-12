@@ -17,6 +17,14 @@ interface RegistryAuthService {
      */
     boolean login(String registry, String user, String password)
 
+    /**
+     * Check if the provided credentials are valid
+     *
+     * @param registry The registry to check the credentials which e.g. {@code docker.io}
+     * @param user The registry username
+     * @param password The registry password or PAT
+     * @return {@code true} if the login was successful or {@code false} otherwise
+     */
     boolean validateUser(String registry, String user, String password)
 
     /**

@@ -2,9 +2,9 @@ package io.seqera.wave.auth
 
 import groovy.transform.CompileStatic
 import io.seqera.wave.service.aws.AwsEcrService
+import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 /**
  * Define service to create {@link RegistryCredentials} objects
  *
@@ -33,16 +33,39 @@ class RegistryCredentialsFactoryImpl implements RegistryCredentialsFactory {
         }
     }
 
-    private RegistryCredentials credentials(final String username, final String password) {
+    protected RegistryCredentials credentials(final String usr, final String pwd) {
         new RegistryCredentials() {
+    
             @Override
             String getUsername() {
-                return username
+                return usr
             }
 
             @Override
             String getPassword() {
-                return password
+                return pwd
+            }
+
+            boolean equals(Object object) {
+                if (this.is(object))
+                    return true
+                if (object == null)
+                    return false
+                // type check and cast
+                if (getClass() != object.getClass())
+                    return false
+                final that = (RegistryCredentials) object
+                return Objects.equals(usr, that.getUsername())
+                        && Objects.equals(pwd, that.getPassword());
+            }
+
+            @Override
+            int hashCode() {
+                return Objects.hash(usr, pwd)
+            }
+
+            String toString() {
+                return "RegistryCredentials[username=${usr}; password=${StringUtils.redact(pwd)}]"
             }
         }
     }

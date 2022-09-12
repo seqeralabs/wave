@@ -3,14 +3,11 @@ package io.seqera.wave.util;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 
-import groovy.transform.CompileStatic;
-
 /**
  * Generate the unique key in a random manner of `Long` type
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@CompileStatic
 public class LongRndKey {
 
     private static final int LEN = 6;

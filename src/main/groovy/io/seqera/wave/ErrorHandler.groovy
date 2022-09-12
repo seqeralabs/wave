@@ -9,8 +9,9 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpResponseFactory
 import io.micronaut.http.HttpStatus
 import io.seqera.wave.exception.ForbiddenException
-import io.seqera.wave.exception.GenericException
+import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.exception.NotFoundException
+import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.exception.UnauthorizedException
 import io.seqera.wave.exception.WaveException
 import io.seqera.wave.util.LongRndKey
@@ -42,19 +43,27 @@ class ErrorHandler {
             log.error(msg, t)
         }
 
-        final resp = responseFactory.apply(msg, errId)
-        if( t instanceof GenericException )
+        if( t instanceof DockerRegistryException ) {
+            final resp = responseFactory.apply(msg, t.error)
             return HttpResponseFactory.INSTANCE.status(t.statusCode).body(resp)
+        }
 
         if( t instanceof UnauthorizedException )
             return HttpResponse.unauthorized()
+
         if( t instanceof ForbiddenException )
             return HttpResponseFactory.INSTANCE.status(HttpStatus.FORBIDDEN)
 
-        if( t instanceof NotFoundException )
+        if( t instanceof NotFoundException ) {
+            final resp = responseFactory.apply(msg, 'NOT_FOUND')
             return HttpResponse.notFound(resp)
-        else
-            return HttpResponse.badRequest(resp)
+        }
+
+        if( t instanceof SlowDownException )
+            return HttpResponseFactory.INSTANCE.status(HttpStatus.SERVICE_UNAVAILABLE)
+
+        final resp = responseFactory.apply(msg, 'BAD_REQUEST')
+        return HttpResponse.badRequest(resp)
     }
 
 }

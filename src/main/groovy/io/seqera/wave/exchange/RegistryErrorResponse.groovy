@@ -18,7 +18,6 @@ class RegistryErrorResponse {
     static class RegistryError {
         final String code
         final String message
-        final String details
     }
 
     List<RegistryError> errors = new ArrayList<>(10)
@@ -32,8 +31,8 @@ class RegistryErrorResponse {
         this.errors = errors
     }
 
-    RegistryErrorResponse(String message, String code=null, String details=null) {
-        errors.add( new RegistryError(code, message, details) )
+    RegistryErrorResponse(String message, String code=null) {
+        errors.add( new RegistryError(code, message) )
     }
 
 }

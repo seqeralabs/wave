@@ -17,21 +17,14 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
     @Shared
     ApplicationContext applicationContext
 
-    @Shared
-    @Value('${wave.registries.docker.username}')
-    String dockerUsername
+    @Shared @Value('${wave.registries.docker.username}') String dockerUsername
+    @Shared @Value('${wave.registries.docker.password}') String dockerPassword
 
-    @Shared
-    @Value('${wave.registries.docker.password}')
-    String dockerPassword
+    @Shared @Value('${wave.registries.quay.username}') String quayUsername
+    @Shared @Value('${wave.registries.quay.password}') String quayPassword
 
-    @Shared
-    @Value('${wave.registries.quay.username}')
-    String quayUsername
-
-    @Shared
-    @Value('${wave.registries.quay.password}')
-    String quayPassword
+    @Shared @Value('${wave.registries.azurecr.username}') String azureUsername
+    @Shared @Value('${wave.registries.azurecr.password}') String azurePassword
 
     @Inject RegistryAuthService loginService
 
@@ -58,6 +51,8 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
         'nope'           | 'yepes'         | "https://registry-1.docker.io" | false
         quayUsername     | quayPassword    | "https://quay.io"              | true
         'nope'           | 'yepes'         | "https://quay.io"              | false
+        and:
+        azureUsername    | azurePassword   | 'seqeralabs.azurecr.io' | true
     }
 
 

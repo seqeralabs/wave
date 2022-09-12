@@ -3,8 +3,9 @@ package io.seqera.wave.core
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.service.ContainerRequestData
-import io.seqera.wave.service.ContainerTokenService
+import io.seqera.wave.service.token.ContainerTokenService
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -60,17 +61,32 @@ class RouteHandlerTest extends Specification {
         PATH                                        | ROUTE
         '/v2/hello-world/manifests/latest'          | new RoutePath('manifests', null, 'hello-world', 'latest', '/v2/hello-world/manifests/latest')
         '/v2/library/hello-world/manifests/latest'  | new RoutePath('manifests', null, 'library/hello-world', 'latest', '/v2/library/hello-world/manifests/latest')
-        '/v1/library/hello-world/manifests/latest'  | RouteHandler.NOT_FOUND
-        '/v2/library/hello-world/foo/latest'        | RouteHandler.NOT_FOUND
-        '/v2/foo:bar/blobs/latest'                  | RouteHandler.NOT_FOUND
         and:
         '/v2/hello-world/blobs/latest'              | new RoutePath('blobs', null,'hello-world', 'latest', '/v2/hello-world/blobs/latest')
         '/v2/library/hello-world/blobs/latest'      | new RoutePath('blobs', null,'library/hello-world', 'latest', '/v2/library/hello-world/blobs/latest')
-        '/v1/library/hello-world/blobs/latest'      | RouteHandler.NOT_FOUND
-        '/v2/library/hello-world/foo/latest'        | RouteHandler.NOT_FOUND
-        '/v2/foo:bar/blobs/latest'                  | RouteHandler.NOT_FOUND
         and:
         '/v2/github.io/biocontainers/biocontainers/manifests/v1.1'          | new RoutePath('manifests', 'github.io', 'biocontainers/biocontainers', 'v1.1', '/v2/biocontainers/biocontainers/manifests/v1.1')
+    }
+
+    def 'should throw bad not found exception' () {
+        given:
+        def tokenService = Mock(ContainerTokenService)
+
+        when:
+        new RouteHandler(tokenService).parse(PATH)
+        then:
+        thrown(NotFoundException)
+
+        where:
+        PATH                                        | _
+        '/v1/library/hello-world/manifests/latest'  | _
+        '/v2/library/hello-world/foo/latest'        | _
+        '/v2/foo:bar/blobs/latest'                  | _
+        and:
+        '/v1/library/hello-world/blobs/latest'      | _
+        '/v2/library/hello-world/foo/latest'        | _
+        '/v2/foo:bar/blobs/latest'                  | _
+
     }
 
     @Unroll
