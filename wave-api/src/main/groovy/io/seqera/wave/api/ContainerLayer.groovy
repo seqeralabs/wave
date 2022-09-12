@@ -11,6 +11,7 @@ import groovy.transform.CompileStatic
 @Canonical
 @CompileStatic
 class ContainerLayer {
+
     String location
     String gzipDigest
     Integer gzipSize
@@ -28,4 +29,9 @@ class ContainerLayer {
             throw new IllegalArgumentException("Missing layer tar digest should start with the 'sha256:' prefix -- offending value: $tarDigest")
     }
 
+    @Override
+    String toString() {
+        final loc = location?.startsWith('data:') ? location.substring(0,25) + '...' : location
+        return "ContainerLayer[location=${loc}; tarDigest=$tarDigest; gzipDigest=$gzipDigest; gzipSize=$gzipSize]"
+    }
 }

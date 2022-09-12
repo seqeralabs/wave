@@ -1,5 +1,20 @@
 plugins {
     id 'io.seqera.wave.groovy-library-conventions'
+    id 'groovy'
+    id "io.micronaut.application"
+}
+
+java {
+    sourceCompatibility = JavaVersion.toVersion("11")
+    targetCompatibility = JavaVersion.toVersion("11")
+}
+
+micronaut {
+    runtime("netty")
+    testRuntime("spock2")
+    processing {
+        incremental(true)
+    }
 }
 
 dependencies {

@@ -1,4 +1,36 @@
 # Wave changelog
+v0.15.0 - 10 Sep 2022
+- Fix build workdir cleanup [ed60079e]
+- Refactor util classes [1dddae50]
+- feature: add rate limiter for pull request (#120) [6ffdbd39]
+- Add external storage for token caching (#115) (#122) [dcc370ee]
+- bugfix: activate storage factory in rate-limit (#121) [c0f8cc69]
+- feature: rate limit for builds (#114) [00b71823]
+- feature: specify node-selector and service-account (#118) (#119) [d93b0cc0]
+- Improve error handling [28e491a9]
+- Allow customs labels for build pod (#117) [6841bca8]
+
+v0.14.2 - 7 Sep 2022
+- Return an actionable error on invalid path
+
+v0.14.1 - 5 Sep 2022
+- Fix registry auth invalid cache key [15bd1a57]
+- Fix retry policy for temportary IO exeception [15e2723f]
+- Add support for Azure CR [cac5b661]
+- Improve logging [7af3109f]
+
+v0.14.0 - 3 Sep 2022
+- Add support for non x86/amd64 architecture #109 [06c7087b]
+- Add support for custom build and cache repos [68dfc6dd]
+- Allow the build with private repositories [bd3a41b7]
+- Improve container platform handling [d5989cde]
+- Improve validation [49f001b6]
+- Fix history v1 rewrite for multi-layers config [ce799deb]
+- Fix init-container optional if no creds provided (#103) [f64c2636]
+- Remove build pack artifacts (#101) [b4f827f0]
+- Remove unused field [00fb321a]
+- Bump kaniko v1.9.0 [56c4ee63]
+
 v0.13.1 - 23 Aug 2022
 - Improve build mail notification [fcb88794]
 - Rename RouteHelper to RouteHandler [6d5652ee]

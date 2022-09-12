@@ -28,6 +28,10 @@ wave:
     amazon:
       username: "${AWS_ACCESS_KEY_ID}"
       password: "${AWS_SECRET_ACCESS_KEY}"
+    azurecr:
+      # seqeralabs.azurecr.io
+      username: "seqeralabs"
+      password: "36xEmc+uTBDv=kqBd0OeSqdja0UGlRYV"
 ---
 tower:
   crypto :

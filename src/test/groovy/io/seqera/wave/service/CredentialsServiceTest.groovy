@@ -5,9 +5,6 @@ import spock.lang.Specification
 import io.micronaut.context.annotation.Value
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.tower.crypto.CryptoHelper
-import io.seqera.wave.service.ContainerRegistryKeys
-import io.seqera.wave.service.CredentialServiceImpl
-import io.seqera.wave.service.CredentialsService
 import io.seqera.wave.tower.Credentials
 import io.seqera.wave.tower.CredentialsDao
 import io.seqera.wave.tower.Secret

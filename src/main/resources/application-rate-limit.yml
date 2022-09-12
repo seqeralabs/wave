@@ -1,0 +1,9 @@
+rate-limit:
+  build:
+    max: 10
+    duration: 1h
+  pull:
+    max: 100
+    duration: 1h
+
+

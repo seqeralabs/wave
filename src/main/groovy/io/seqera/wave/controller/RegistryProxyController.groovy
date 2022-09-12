@@ -2,6 +2,7 @@ package io.seqera.wave.controller
 
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
+import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -21,8 +22,9 @@ import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RegistryProxyService.DelegateResponse
 import io.seqera.wave.core.RouteHandler
 import io.seqera.wave.core.RoutePath
-import io.seqera.wave.exception.GenericException
+import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.exchange.RegistryErrorResponse
+import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
@@ -44,12 +46,12 @@ class RegistryProxyController {
     @Inject Storage storage
     @Inject RouteHandler routeHelper
     @Inject ContainerBuildService containerBuildService
+    @Inject @Nullable RateLimiterService rateLimiterService
     @Inject ErrorHandler errorHandler
 
     @Error
     HttpResponse<RegistryErrorResponse> handleError(HttpRequest request, Throwable t) {
-        final String details = t instanceof GenericException ? t.details : null
-        return errorHandler.handle(request, t, (msg, id) -> new RegistryErrorResponse(msg,id,details) )
+        return errorHandler.handle(request, t, (msg, code) -> new RegistryErrorResponse(msg,code) )
     }
 
     @Get
@@ -91,7 +93,7 @@ class RegistryProxyController {
             return handleHead(route, httpRequest)
 
         if (!(route.manifest || route.blob)) {
-            return notFound()
+            throw new DockerRegistryException("Invalid request GET '$httpRequest.path'", 400, 'UNKNOWN')
         }
 
         if( route.manifest ) {
@@ -133,10 +135,6 @@ class RegistryProxyController {
         return proxyService.handleManifest(route, headers)
     }
 
-    static protected MutableHttpResponse<?> notFound(){
-        return HttpResponse.notFound()
-    }
-
     static protected MutableHttpResponse<?> badRequest(String message) {
         return HttpResponse.badRequest(new RegistryErrorResponse(message))
     }
@@ -144,13 +142,16 @@ class RegistryProxyController {
     MutableHttpResponse<?> handleHead(RoutePath route, HttpRequest httpRequest) {
 
         if (!(route.manifest && route.tag)) {
-            return notFound()
+            throw new DockerRegistryException("Invalid request HEAD '$httpRequest.path'", 400, 'UNKNOWN')
+        }
+
+        if( route.manifest && !route.digest){
+            rateLimiterService?.acquirePull(route.request?.userId?.toString() ?: 'anonymous')
         }
 
         final entry = manifestForPath(route, httpRequest)
         if( !entry ) {
-            log.warn "Unable to find cache manifest for $route"
-            return notFound()
+            throw new DockerRegistryException("Unable to find cache manifest for '$httpRequest.path'", 400, 'UNKNOWN')
         }
         return fromCache(entry)
     }

@@ -4,8 +4,10 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 
+import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import com.google.common.util.concurrent.UncheckedExecutionException
@@ -17,9 +19,6 @@ import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
-
-import com.google.common.cache.CacheBuilder
-
 /**
  * Implement Docker authentication & login service
  *
@@ -87,8 +86,11 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         // 2. make a request against the authorization "realm" service using basic
         //    credentials to get the login token
         final basic =  "$username:$password".bytes.encodeBase64()
+        final endpoint = registry.auth.service
+                ? new URI("$registry.auth.realm?service=${registry.auth.service}")
+                : registry.auth.realm
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(registry.auth.realm)
+                .uri(endpoint)
                 .GET()
                 .header("Authorization", "Basic $basic")
                 .build()
@@ -97,11 +99,11 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
                 .send(request, HttpResponse.BodyHandlers.ofString())
 
         if( response.statusCode() == 200 ) {
-            log.debug "Container registry '$registryName' login - response: ${response.body()}"
+            log.debug "Container registry '$endpoint' login - response: ${response.body()}"
             return true
         }
         else {
-            log.debug "Container registry '$registryName' login FAILED: ${response.statusCode()} - response: ${response.body()}"
+            log.warn "Container registry '$endpoint' login FAILED: ${response.statusCode()} - response: ${response.body()}"
             return false
         }
     }
@@ -189,7 +191,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         try {
             return cacheTokens.get(key)
         }
-        catch (UncheckedExecutionException e) {
+        catch (UncheckedExecutionException | ExecutionException e) {
             // this catches the exception thrown in the cache loader lookup
             // and throws the causing exception that should be `RegistryUnauthorizedAccessException`
             throw e.cause

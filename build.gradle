@@ -69,6 +69,11 @@ dependencies {
 
     // --
     implementation("ch.qos.logback:logback-classic")
+
+    // rate limit
+    implementation 'com.coveo:spillway:2.1.1'
+    // distributed
+    implementation "io.micronaut.redis:micronaut-redis-lettuce"
 }
 
 
