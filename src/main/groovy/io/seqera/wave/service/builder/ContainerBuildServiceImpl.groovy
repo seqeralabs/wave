@@ -16,6 +16,7 @@ import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
+import io.seqera.wave.service.builder.cache.CacheStore
 import io.seqera.wave.service.mail.MailService
 import io.seqera.wave.util.ThreadPoolBuilder
 import jakarta.inject.Inject
@@ -53,7 +54,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     @Nullable
     private MailService mailService
 
-    private final Map<String,BuildRequest> buildRequests = new HashMap<>()
+    @Inject
+    private CacheStore<String,BuildRequest> buildRequests
 
     private ExecutorService executor
 
@@ -100,7 +102,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
      */
     @Override
     CompletableFuture<BuildResult> buildResult(String targetImage) {
-        return buildRequests.get(targetImage)?.result
+        return CompletableFuture.supplyAsync(() -> buildRequests.await(targetImage).result)
     }
 
     protected String credsJson(Set<String> registries) {
@@ -133,36 +135,40 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         return result
     }
 
-    protected BuildResult launch(BuildRequest req) {
+    protected BuildResult launch(BuildRequest request) {
         // create the workdir path
-        Files.createDirectories(req.workDir)
+        Files.createDirectories(request.workDir)
         // save the dockerfile
-        final dockerfile = req.workDir.resolve('Dockerfile')
-        Files.write(dockerfile, req.dockerFile.bytes, CREATE, APPEND)
+        final dockerfile = request.workDir.resolve('Dockerfile')
+        Files.write(dockerfile, request.dockerFile.bytes, CREATE, APPEND)
         // save the conda file
-        if( req.condaFile ) {
-            final condaFile = req.workDir.resolve('conda.yml')
-            Files.write(condaFile, req.condaFile.bytes, CREATE, APPEND)
+        if( request.condaFile ) {
+            final condaFile = request.workDir.resolve('conda.yml')
+            Files.write(condaFile, request.condaFile.bytes, CREATE, APPEND)
         }
         // find repos
-        final repos = findRepositories(req.dockerFile) + buildRepo
+        final repos = findRepositories(request.dockerFile) + buildRepo
         
         // create creds file for target repo
         final creds = credsJson(repos)
 
         // launch an external process to build the container
         try {
-            final resp = buildStrategy.build(req, creds)
-            log.info "== Build completed with status=$resp.exitStatus; stdout: (see below)\n${indent(resp.logs)}"
-            return resp
+            final result = buildStrategy.build(request, creds)
+            log.info "== Build completed with status=$result.exitStatus; stdout: (see below)\n${indent(result.logs)}"
+            request.result = result
+            return result
         }
         catch (Exception e) {
-            log.error "== Ouch! Unable to build container request=$req", e
-            return new BuildResult(req.id, -1, e.message, req.startTime)
+            log.error "== Ouch! Unable to build container request=$request", e
+            return request.result = new BuildResult(request.id, -1, e.message, request.startTime)
         }
         finally {
+            // update build cache
+            buildRequests.put(request.targetImage, request)
+            // cleanup build context
             if( !debugMode )
-                buildStrategy.cleanup(req)
+                buildStrategy.cleanup(request)
         }
     }
 
@@ -170,6 +176,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
         if( rateLimiterService )
             rateLimiterService.acquireBuild(new AcquireRequest(request.user?.id?.toString(),request.ip))
+
+        buildRequests.put(request.targetImage, request)
 
         CompletableFuture
                 .<BuildResult>supplyAsync(() -> launch(request), executor)
@@ -190,8 +198,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         synchronized (buildRequests) {
             if( !buildRequests.containsKey(request.targetImage) ) {
                 log.info "== Submit build request request: $request"
-                request.result = launchAsync(request)
-                buildRequests.put(request.targetImage, request)
+                launchAsync(request)
             }
             else {
                 log.info "== Hit build cache for request: $request"

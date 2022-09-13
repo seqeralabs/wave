@@ -2,7 +2,6 @@ package io.seqera.wave.service.builder
 
 import java.nio.file.Path
 import java.time.Instant
-import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
