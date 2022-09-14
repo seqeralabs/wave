@@ -16,6 +16,9 @@ import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+
+import static io.seqera.wave.proxy.ProxyClient.REDIRECT_CODES
+
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  *
@@ -94,18 +97,28 @@ class RegistryProxyService {
 
     DelegateResponse handleRequest(RoutePath route, Map<String,List<String>> headers){
         ProxyClient proxyClient = client(route)
-        final resp = proxyClient.getStream(route.path, headers)
-
+        final resp1 = proxyClient.head(route.path, headers)
+        final redirect = resp1.headers().firstValue('Location').orElse(null)
+        if( redirect && resp1.statusCode() in REDIRECT_CODES ) {
+            return new DelegateResponse(
+                    location: redirect,
+                    statusCode: resp1.statusCode(),
+                    headers:resp1.headers().map())
+        }
+        
+        final resp2 = proxyClient.getStream(route.path, headers)
         new DelegateResponse(
-                statusCode: resp.statusCode(),
-                headers: resp.headers().map(),
-                body: resp.body() )
+                statusCode: resp2.statusCode(),
+                headers: resp2.headers().map(),
+                body: resp2.body() )
     }
 
     static class DelegateResponse {
         int statusCode
         Map<String,List<String>> headers
         InputStream body
+        String location
+        boolean isRedirect() { location }
     }
 
 }

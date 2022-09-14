@@ -30,6 +30,8 @@ import io.seqera.wave.util.RegHelper
 @CompileStatic
 class ProxyClient {
 
+    public static final int[] REDIRECT_CODES = [301, 302, 307, 308]
+
     private static final long RETRY_MAX_DELAY_MILLIS = 30_000
     private static final int RETRY_MAX_ATTEMPTS = 5
 
@@ -124,8 +126,6 @@ class ProxyClient {
                 builder.header(entry.key, val)
         }
     }
-
-    private static final int[] REDIRECT_CODES = [301, 302, 307, 308]
 
     def <T> HttpResponse<T> get(URI origin, Map<String,List<String>> headers, BodyHandler<T> handler) {
         final policy = retryPolicy("Failure on GET request: $origin")
