@@ -1,4 +1,7 @@
 # Wave changelog
+v0.16.0 - 14 Sep 2022 
+- Improve scalability adding blob response redirection [4e50a0e3]
+
 v0.15.2 - 12 Sep 2022 
 - Add toString to domain objects [0169d508]
 - Improve K8s log info [da473fdf]

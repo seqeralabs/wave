@@ -2,6 +2,7 @@ package io.seqera.wave.controller
 
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
+import java.util.function.Consumer
 import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
@@ -122,10 +123,16 @@ class RegistryProxyController {
         }
 
         final type = route.isManifest() ? 'manifest' : 'blob'
-        log.debug "Pulling $type from remote host: $route.path"
-        def headers = httpRequest.headers.asMap() as Map<String, List<String>>
-        def response = proxyService.handleRequest(route, headers)
-        fromDelegateResponse(response)
+        final headers = httpRequest.headers.asMap() as Map<String, List<String>>
+        final resp = proxyService.handleRequest(route, headers)
+        if( resp.isRedirect()  ) {
+            log.debug "Redirecting $type request '$route.path' to '$resp.location'"
+            return fromRedirectResponse(resp)
+        }
+        else {
+            log.debug "Pulling $type from remote host: '$route.path'"
+            return fromDelegateResponse(resp)
+        }
     }
 
     protected DigestStore manifestForPath(RoutePath route, HttpRequest httpRequest) {
@@ -172,6 +179,12 @@ class RegistryProxyController {
                 .headers(headers)
     }
 
+    MutableHttpResponse<?>fromRedirectResponse(final DelegateResponse delegateResponse) {
+        HttpResponse
+                .status(HttpStatus.valueOf(delegateResponse.statusCode))
+                .headers(toMutableHeaders(delegateResponse.headers))
+    }
+
     MutableHttpResponse<?>fromDelegateResponse(final DelegateResponse delegateResponse){
 
         final Long contentLength = delegateResponse.headers
@@ -180,17 +193,23 @@ class RegistryProxyController {
 
         HttpResponse
                 .status(HttpStatus.valueOf(delegateResponse.statusCode))
-                .body( fluxInputStream )
-                .headers({MutableHttpHeaders mutableHttpHeaders ->
-                    delegateResponse.headers.each {entry->
-                        entry.value.each{ value ->
-                            mutableHttpHeaders.add(entry.key, value)
-                        }
-                    }
-                })
+                .body(fluxInputStream)
+                .headers(toMutableHeaders(delegateResponse.headers))
     }
 
-    static StreamedFile createFluxFromChunkBytes(InputStream inputStream, Long size){
+    static protected Consumer<MutableHttpHeaders> toMutableHeaders(Map<String,List<String>> headers) {
+        new Consumer<MutableHttpHeaders>() {
+            @Override
+            void accept(MutableHttpHeaders mutableHttpHeaders) {
+                for( Map.Entry<String,List<String>> entry : headers ) {
+                    for( String value : entry.value )
+                        mutableHttpHeaders.add(entry.key, value)
+                }
+            }
+        }
+    }
+
+    static protected StreamedFile createFluxFromChunkBytes(InputStream inputStream, Long size){
         if( size )
             new StreamedFile(inputStream, MediaType.APPLICATION_OCTET_STREAM_TYPE, Instant.now().toEpochMilli(), size)
         else
