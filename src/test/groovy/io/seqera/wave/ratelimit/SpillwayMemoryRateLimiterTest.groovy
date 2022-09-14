@@ -24,9 +24,16 @@ class SpillwayMemoryRateLimiterTest extends Specification {
         rateLimiter = applicationContext.getBean(SpillwayRateLimiter)
     }
 
-    void "can acquire 1 resource"() {
+    void "can acquire 1 auth resource"() {
         when:
-        rateLimiter.acquireBuild("test")
+        rateLimiter.acquireBuild(new AcquireRequest("test", null))
+        then:
+        noExceptionThrown()
+    }
+
+    void "can acquire 1 anon resource"() {
+        when:
+        rateLimiter.acquireBuild(new AcquireRequest(null, "test"))
         then:
         noExceptionThrown()
     }
@@ -36,14 +43,14 @@ class SpillwayMemoryRateLimiterTest extends Specification {
         RateLimiterConfig config = applicationContext.getBean(RateLimiterConfig)
 
         when:
-        (0..config.build.max - 1).each {
-            rateLimiter.acquireBuild("test")
+        (0..config.build.authenticated.max - 1).each {
+            rateLimiter.acquireBuild(new AcquireRequest("test", null))
         }
         then:
         noExceptionThrown()
 
         when:
-        rateLimiter.acquireBuild("test")
+        rateLimiter.acquireBuild(new AcquireRequest("test", null))
 
         then:
         thrown(SlowDownException)

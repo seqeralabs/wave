@@ -6,9 +6,11 @@ import javax.annotation.PostConstruct
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Post
+import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.core.ContainerPlatform
@@ -31,6 +33,7 @@ import jakarta.inject.Inject
 @Controller("/container-token")
 class ContainerTokenController {
 
+    @Inject HttpClientAddressResolver addressResolver
     @Inject ContainerTokenService tokenService
     @Inject UserService userService
 
@@ -66,21 +69,21 @@ class ContainerTokenController {
     }
 
     @Post
-    HttpResponse<SubmitContainerTokenResponse> getToken(SubmitContainerTokenRequest req) {
+    HttpResponse<SubmitContainerTokenResponse> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
         final User user = req.towerAccessToken
                 ? userService.getUserByAccessToken(req.towerAccessToken)
                 : null
         if( !user && !allowAnonymous )
             throw new BadRequestException("Missing access token")
-
-        final data = makeRequestData(req, user)
+        final ip = addressResolver.resolve(httpRequest)
+        final data = makeRequestData(req, user, ip)
         final token = tokenService.computeToken(data)
         final target = targetImage(token, data.containerImage)
         final resp = new SubmitContainerTokenResponse(containerToken: token, targetImage: target)
         HttpResponse.ok(resp)
     }
 
-    BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, User user) {
+    BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, User user, String ip) {
         if( !req.containerFile )
             throw new BadRequestException("Missing dockerfile content")
         if( !defaultBuildRepo )
@@ -100,10 +103,11 @@ class ContainerTokenController {
                 condaContent,
                 user,
                 platform,
-                cache )
+                cache,
+                ip )
     }
 
-    ContainerRequestData makeRequestData(SubmitContainerTokenRequest req, User user) {
+    ContainerRequestData makeRequestData(SubmitContainerTokenRequest req, User user, String ip) {
         if( req.containerImage && req.containerFile )
             throw new BadRequestException("Attributes 'containerImage' and 'containerFile' cannot be used in the same request")
 
@@ -111,7 +115,7 @@ class ContainerTokenController {
         String targetContent
         String condaContent
         if( req.containerFile ) {
-            final build = makeBuildRequest(req, user)
+            final build = makeBuildRequest(req, user, ip)
             targetImage = buildService.buildImage(build)
             targetContent = build.dockerFile
             condaContent = build.condaFile

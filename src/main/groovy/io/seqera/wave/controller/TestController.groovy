@@ -6,11 +6,14 @@ import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
+import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
+import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
+import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
@@ -46,11 +49,11 @@ class TestController {
     @Inject
     UserService userService
 
-    @Inject @Nullable
-    RateLimiterService rateLimiterService
+    @Inject HttpClientAddressResolver addressResolver
 
     @Get('/test-build')
-    HttpResponse<String> testBuild(@Nullable String platform, @Nullable String repo, @Nullable String cache, @Nullable String accessToken) {
+    HttpResponse<String> testBuild(@Nullable String platform, @Nullable String repo, @Nullable String cache, @Nullable String accessToken,
+                                    HttpRequest httpRequest) {
         if( !accessToken && !allowAnonymous )
             throw new BadRequestException("Missing user access token")
 
@@ -60,16 +63,13 @@ class TestController {
         if( accessToken && !user )
             throw new BadRequestException("Cannot find user for given access token")
 
-        if( rateLimiterService ) {
-            final key = user?.id?.toString() ?: 'anonymous'
-            rateLimiterService.acquireBuild(key)
-        }
-
         final String dockerFile = """\
             FROM quay.io/nextflow/bash
             RUN echo "Look ma' building 🐳🐳 on the fly!" > /hello.txt
             ENV NOW=${System.currentTimeMillis()}
             """
+
+        final ip = addressResolver.resolve(httpRequest)
 
         final req =  new BuildRequest( dockerFile,
                 Path.of(workspace),
@@ -77,7 +77,9 @@ class TestController {
                 null,
                 user,
                 ContainerPlatform.of(platform),
-                cache ?: cacheRepo )
+                cache ?: cacheRepo,
+                ip)
+
         final resp = builderService.buildImage(req)
         return HttpResponse.ok(resp)
     }

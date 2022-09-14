@@ -9,7 +9,7 @@ import io.seqera.wave.exception.SlowDownException
  */
 interface RateLimiterService {
 
-    void acquireBuild(String key) throws SlowDownException
+    void acquireBuild(AcquireRequest request) throws SlowDownException
 
-    void acquirePull(String key) throws SlowDownException
+    void acquirePull(AcquireRequest request) throws SlowDownException
 }

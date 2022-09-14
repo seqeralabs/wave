@@ -18,6 +18,7 @@ import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Error
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.server.types.files.StreamedFile
+import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.seqera.wave.ErrorHandler
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RegistryProxyService.DelegateResponse
@@ -25,6 +26,7 @@ import io.seqera.wave.core.RouteHandler
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.exchange.RegistryErrorResponse
+import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.storage.DigestStore
@@ -43,6 +45,7 @@ import reactor.core.publisher.Mono
 @Controller("/v2")
 class RegistryProxyController {
 
+    @Inject HttpClientAddressResolver addressResolver
     @Inject RegistryProxyService proxyService
     @Inject Storage storage
     @Inject RouteHandler routeHelper
@@ -152,8 +155,9 @@ class RegistryProxyController {
             throw new DockerRegistryException("Invalid request HEAD '$httpRequest.path'", 400, 'UNKNOWN')
         }
 
-        if( route.manifest && !route.digest){
-            rateLimiterService?.acquirePull(route.request?.userId?.toString() ?: 'anonymous')
+        if( route.manifest && !route.digest ){
+            String ip = addressResolver.resolve(httpRequest)
+            rateLimiterService?.acquirePull( new AcquireRequest(route.request?.userId?.toString(), ip) )
         }
 
         final entry = manifestForPath(route, httpRequest)
