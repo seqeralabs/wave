@@ -155,7 +155,7 @@ class RegistryProxyController {
             throw new DockerRegistryException("Invalid request HEAD '$httpRequest.path'", 400, 'UNKNOWN')
         }
 
-        if( route.manifest && !route.digest){
+        if( route.manifest && !route.digest ){
             String ip = addressResolver.resolve(httpRequest)
             rateLimiterService?.acquirePull( new AcquireRequest(route.request?.userId?.toString(), ip) )
         }

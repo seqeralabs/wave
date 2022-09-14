@@ -1,5 +1,6 @@
 package io.seqera.wave.ratelimit
 
+import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 
 
@@ -9,6 +10,7 @@ import groovy.transform.CompileStatic
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
+@Canonical
 @CompileStatic
 class AcquireRequest {
 
@@ -22,8 +24,4 @@ class AcquireRequest {
      */
     String ip
 
-    AcquireRequest(String userId, String ip) {
-        this.userId = userId
-        this.ip = ip
-    }
 }

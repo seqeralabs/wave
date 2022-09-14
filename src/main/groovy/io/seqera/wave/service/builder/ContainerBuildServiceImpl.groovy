@@ -168,7 +168,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     protected CompletableFuture<BuildResult> launchAsync(BuildRequest request) {
 
-        rateLimiterService?.acquireBuild(new AcquireRequest(request.user?.id?.toString(),request.ip))
+        if( rateLimiterService )
+            rateLimiterService.acquireBuild(new AcquireRequest(request.user?.id?.toString(),request.ip))
 
         CompletableFuture
                 .<BuildResult>supplyAsync(() -> launch(request), executor)
