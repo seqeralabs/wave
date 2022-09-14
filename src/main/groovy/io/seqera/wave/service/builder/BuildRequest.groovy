@@ -76,7 +76,12 @@ class BuildRequest {
      */
     volatile CompletableFuture<BuildResult> result
 
-    BuildRequest(String dockerFile, Path workspace, String repo, String condaFile, User user, ContainerPlatform platform, String cacheRepo) {
+    /**
+     * The client IP if available
+     */
+    final String ip;
+
+    BuildRequest(String dockerFile, Path workspace, String repo, String condaFile, User user, ContainerPlatform platform, String cacheRepo, String ip) {
         this.id = computeDigest(dockerFile,condaFile,platform)
         this.dockerFile = dockerFile
         this.condaFile = condaFile
@@ -87,6 +92,7 @@ class BuildRequest {
         this.workDir = workspace.resolve(id).toAbsolutePath()
         this.startTime = Instant.now()
         this.job = "${id}-${startTime.toEpochMilli().toString().md5()[-5..-1]}"
+        this.ip = ip
     }
 
     static private String computeDigest(String dockerFile, String condaFile, ContainerPlatform platform) {

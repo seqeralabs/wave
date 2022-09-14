@@ -28,14 +28,14 @@ class SpillWayStorageFactory {
 
     @Singleton
     @Requires(missingProperty =  'redis.uri')
-    LimitUsageStorage inMemoryStorage(@NotNull RateLimiterConfig config){
+    LimitUsageStorage inMemoryStorage(){
         log.info "Using in memory storage for rate limit"
         return new InMemoryStorage()
     }
 
     @Singleton
     @Requires(property = 'redis.uri')
-    LimitUsageStorage redisStorage(@NotNull RateLimiterConfig config, @NotNull RedisConfig redisConfig){
+    LimitUsageStorage redisStorage(@NotNull RedisConfig redisConfig){
         log.info "Using redis $redisConfig.uri as storage for rate limit"
         def jedisPool = new JedisPool(redisConfig.uri)
         return RedisStorage.builder().withJedisPool(jedisPool).build()

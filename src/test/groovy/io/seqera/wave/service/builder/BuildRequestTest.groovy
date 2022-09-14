@@ -21,7 +21,7 @@ class BuildRequestTest extends Specification {
         def repo = 'docker.io/wave'
         def cache = 'docker.io/cache'
         when:
-        def req = new BuildRequest(CONTENT, PATH, repo, null, USER, ContainerPlatform.of('amd64'),cache)
+        def req = new BuildRequest(CONTENT, PATH, repo, null, USER, ContainerPlatform.of('amd64'),cache, "")
         then:
         req.id == 'acc83dc6d094823894869bf3cf3de17b'
         req.workDir == PATH.resolve(req.id).toAbsolutePath()
@@ -39,12 +39,12 @@ class BuildRequestTest extends Specification {
         def repo = 'docker.io/wave'
         def cache = 'docker.io/cache'
         and:
-        def req1 = new BuildRequest('from foo', PATH, repo, null, USER, ContainerPlatform.of('amd64'), cache)
-        def req2 = new BuildRequest('from foo', PATH, repo, null, USER, ContainerPlatform.of('amd64'), cache)
-        def req3 = new BuildRequest('from bar', PATH, repo, null, USER, ContainerPlatform.of('amd64'), cache)
-        def req4 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.3', USER, ContainerPlatform.of('amd64'), cache)
-        def req5 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.3', USER, ContainerPlatform.of('amd64'), cache)
-        def req6 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.5', USER, ContainerPlatform.of('amd64'), cache)
+        def req1 = new BuildRequest('from foo', PATH, repo, null, USER, ContainerPlatform.of('amd64'), cache, "")
+        def req2 = new BuildRequest('from foo', PATH, repo, null, USER, ContainerPlatform.of('amd64'), cache, "")
+        def req3 = new BuildRequest('from bar', PATH, repo, null, USER, ContainerPlatform.of('amd64'), cache, "")
+        def req4 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.3', USER, ContainerPlatform.of('amd64'), cache, "")
+        def req5 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.3', USER, ContainerPlatform.of('amd64'), cache, "")
+        def req6 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.5', USER, ContainerPlatform.of('amd64'), cache, "")
 
         expect:
         req1 == req2
