@@ -51,16 +51,16 @@ class SpillwayRateLimiter implements RateLimiterService {
 
     @Override
     void acquireBuild(AcquireRequest request) throws SlowDownException {
-        Spillway<String> resource = request.key ? authsBuilds : anonymousBuilds
-        String key = request.key ?: request.subKey
+        Spillway<String> resource = request.userId ? authsBuilds : anonymousBuilds
+        String key = request.userId ?: request.ip
         if (!resource.tryCall(key))
             throw new SlowDownException("$key request exceeded pull rate limit")
     }
 
     @Override
     void acquirePull(AcquireRequest request) throws SlowDownException {
-        Spillway<String> resource = request.key ? authsPulls : anonymousPulls
-        String key = request.key ?: request.subKey
+        Spillway<String> resource = request.userId ? authsPulls : anonymousPulls
+        String key = request.userId ?: request.ip
         if (!resource.tryCall(key))
             throw new SlowDownException("$key request exceeded pull rate limit")
     }

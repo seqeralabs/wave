@@ -1,24 +1,29 @@
 package io.seqera.wave.ratelimit
 
+import groovy.transform.CompileStatic
+
 
 /**
+ * A simple bean to contain the userId and Ip of a request
+ *
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
+@CompileStatic
 class AcquireRequest {
 
     /**
-     * Principal key to use if present, for example the userId
+     * Principal key to use in the search. Can be null
      */
-    String key
+    String userId
 
     /**
-     * Secondary key to use if principal is not present, for example the ip of the request
+     * Secondary key to use if principal is not present
      */
-    String subKey
+    String ip
 
-    AcquireRequest(String key, String subKey) {
-        this.key = key
-        this.subKey = subKey
+    AcquireRequest(String userId, String ip) {
+        this.userId = userId
+        this.ip = ip
     }
 }
