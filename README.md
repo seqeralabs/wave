@@ -1,29 +1,28 @@
 # Wave registry 
 
-Ephemeral container registry that injects 
-a custom payloads during an arbitrary image pull.
+Ephemeral container registry that injects custom payloads during an arbitrary image pull.
 
-The main goal is to have a custom registry server how append a layer into any Linux
+The main goal is to have a custom registry server to append a layer into any Linux
 container including a FUSE driver to access a S3 bucket.
 
 ### How it works 
 
-This project act like a proxy server in between the Docker client, putting an 
+This project acts like a proxy server in between the Docker client, putting an 
 arbitrary container image and the target registry i.e. docker.io hosting the 
 image to be downloaded. 
 
-When an imaged is pulled the proxy server forward the request to the target registry, 
-fetch the image manifest, and appended to the layer configuration a new layer 
-which provides the FUSE client required access the AWS S3 storage.
+When an image is pulled, the proxy server forwards the request to the target registry, 
+fetches the image manifest, and appends a new layer to the layer configuration.
+This provides the FUSE client required access to the AWS S3 storage.
 
 It also changes the entry point of the container setting the script [entry.sh](.layer/opt/fusion/entry.sh)
-which takes care to automatically mount FusionFS when the env variable 
-`$NXF_FUSION_BUCKETS` is defined into the container. It mounts 
-the path `/fusion/s3`, and then any S3 bucket it is available as `/fusion/s3/<bucket_name>`.
+which takes care to automatically mount FusionFS in the container when the env variable 
+`$NXF_FUSION_BUCKETS` is defined. It mounts 
+the path `/fusion/s3`, and then any S3 bucket is available as `/fusion/s3/<bucket_name>`.
 
 ### Get started 
 
-1. Clone this repo and change into the project root
+1. Clone this repo and change into the project root.
 
 
 2. Assemble a container layer using this command:
@@ -31,30 +30,30 @@ the path `/fusion/s3`, and then any S3 bucket it is available as `/fusion/s3/<bu
    
         make clean all
 
-3. Prepare a new layer (will create a new `pack` directory with the layer to inject)
+3. Prepare a new layer (this creates a new `pack` directory with the layer to inject)
 
          make pack
 
-4. Create a `dev` configuration: copy `config.yml` into `src/main/resources/application-dev.yml`
-and set the user/pwd for at least 1 registry
+4. To create a `dev` configuration, copy `config.yml` into `src/main/resources/application-dev.yml`
+and set the user/pwd for at least 1 registry.
 
 5. Compile and run the registry service:  
 
         bash run.sh
 
-6. Use reverse proxy service to expose the registry with public name, e.g. 
+6. Use the reverse proxy service to expose the registry with public name, e.g. 
 
         ngrok http 9090 -subdomain reg
 
-    **NOTE**: in case you don't want/can use ngrok you can access to the local server `docker pull localhost:9090/library/busybox` 
+    **NOTE**: To use the service without ngrok, you can access the local server using `docker pull localhost:9090/library/busybox`.
 
 7. Pull a container using the docker client: 
 
         docker pull reg.ngrok.io/library/busybox
         
-    **NOTE**: replace the registry name `reg.ngrok.io` with the one provided by the reverse proxy command in the previous step.
+    **NOTE**: replace the registry name `reg.ngrok.io` with the name used in step 6.
 
-8. The pulled images contains the files from the appended layer. Check it with the following command:
+8. The pulled image contains the files from the appended layer. Check image contents using this command:
 
         docker run \
           --rm \
@@ -62,7 +61,7 @@ and set the user/pwd for at least 1 registry
           reg.ngrok.io/library/busybox \
           cat foo.txt
 
-1. List the content of a bucket using `ls`
+8a. List the content of a bucket using `ls`:
 
         docker run \
           --rm \
@@ -172,10 +171,10 @@ docker run \
 
 == EC2 profile
 
-To run the application using the AWS ParameterStore configuration you need to activate the `ec2` profile.
+To run the application using the AWS ParameterStore configuration, you need to activate the `ec2` profile.
 
-In dev you can do it running following command:
+In `dev`, run this command:
 
 `./gradlew run -Penvs=dev,h2,mail,ec2`
 
-In prod profiles are activated via MICRONAUT_ENVIRONMENTS (i.e. `MICRONAUT_ENVIRONMENTS=mysql,mail,ec2`)
+In `prod`, profiles are activated via MICRONAUT_ENVIRONMENTS (i.e. `MICRONAUT_ENVIRONMENTS=mysql,mail,ec2`)
