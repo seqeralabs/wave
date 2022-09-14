@@ -14,6 +14,7 @@ import io.seqera.wave.WaveDefault
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.model.ContainerCoordinates
+import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.mail.MailService
 import io.seqera.wave.util.ThreadPoolBuilder
@@ -167,7 +168,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     protected CompletableFuture<BuildResult> launchAsync(BuildRequest request) {
 
-        rateLimiterService?.acquireBuild(request?.user?.id?.toString()?:'anonymous')
+        rateLimiterService?.acquireBuild(new AcquireRequest(request.user?.id?.toString(),request.ip))
 
         CompletableFuture
                 .<BuildResult>supplyAsync(() -> launch(request), executor)

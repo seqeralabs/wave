@@ -23,14 +23,14 @@ class ContainerTokenControllerTest extends Specification {
 
         when:
         def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest')
-        def data = controller.makeRequestData(req, null)
+        def data = controller.makeRequestData(req, null, "")
         then:
         data.containerImage == 'ubuntu:latest'
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
         req = new SubmitContainerTokenRequest(towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64')
-        data = controller.makeRequestData(req, new User(id: 100))
+        data = controller.makeRequestData(req, new User(id: 100), "127.0.0.1")
         then:
         data.containerImage == 'ubuntu:latest'
         data.userId == 100
@@ -41,13 +41,13 @@ class ContainerTokenControllerTest extends Specification {
 
         when:
         req = new SubmitContainerTokenRequest()
-        controller.makeRequestData(req, new User(id: 100))
+        controller.makeRequestData(req, new User(id: 100),"")
         then:
         thrown(BadRequestException)
 
         when:
         req = new SubmitContainerTokenRequest(containerImage: 'ubuntu', containerFile: 'from foo')
-        controller.makeRequestData(req, new User(id: 100))
+        controller.makeRequestData(req, new User(id: 100),"")
         then:
         thrown(BadRequestException)
 
@@ -74,7 +74,7 @@ class ContainerTokenControllerTest extends Specification {
                 containerConfig: cfg)
 
         when:
-        def data = controller.makeRequestData(req, user)
+        def data = controller.makeRequestData(req, user, "")
         then:
         1 * builder.buildImage(_) >> 'some/repo:xyz'
         and:
@@ -91,7 +91,7 @@ class ContainerTokenControllerTest extends Specification {
 
         when:
         def submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'))
-        def build = controller.makeBuildRequest(submit, null)
+        def build = controller.makeBuildRequest(submit, null,"")
         then:
         build.id == 'acc83dc6d094823894869bf3cf3de17b'
         build.dockerFile == 'FROM foo'
@@ -101,7 +101,7 @@ class ContainerTokenControllerTest extends Specification {
         
         when:
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerPlatform: 'amd64')
-        build = controller.makeBuildRequest(submit, null)
+        build = controller.makeBuildRequest(submit, null, null)
         then:
         build.id == 'acc83dc6d094823894869bf3cf3de17b'
         build.dockerFile == 'FROM foo'
@@ -112,7 +112,7 @@ class ContainerTokenControllerTest extends Specification {
         // using 'arm' platform changes the id
         when:
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerPlatform: 'arm64')
-        build = controller.makeBuildRequest(submit, null)
+        build = controller.makeBuildRequest(submit, null, "")
         then:
         build.id == 'b3692c4aa2a61e93e4ddde5491477eed'
         build.dockerFile == 'FROM foo'
@@ -122,7 +122,7 @@ class ContainerTokenControllerTest extends Specification {
 
         when:
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), condaFile: encode('some::conda-recipe'), containerPlatform: 'arm64')
-        build = controller.makeBuildRequest(submit, null)
+        build = controller.makeBuildRequest(submit, null, "")
         then:
         build.id == 'c4e97d10f83ab8af1b58f4941cc51ceb'
         build.dockerFile == 'FROM foo'
