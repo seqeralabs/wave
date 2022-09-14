@@ -108,18 +108,4 @@ class BuildRequest {
         return "BuildRequest[id=$id; targetImage=$targetImage; user=$user; dockerFile=${trunc(dockerFile)}; condaFile=${trunc(condaFile)}]"
     }
 
-    /**
-     * Return the unique identifier of the request. If it's an auth request the user.id is used, in other case
-     * IP, if available, will be used
-     * @return the user.id or the ip. Can return null if any of them are present
-     */
-    String getKey(){
-        if( user && user.id ){
-            return user.id.toString()
-        }
-        if( ip ){
-            return ip
-        }
-        null
-    }
 }
