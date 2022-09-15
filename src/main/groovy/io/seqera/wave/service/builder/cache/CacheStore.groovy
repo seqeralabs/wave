@@ -3,14 +3,14 @@ package io.seqera.wave.service.builder.cache
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface CacheStore<K,V> {
+interface CacheStore<String , BuildRequest> {
 
-    boolean containsKey(K key)
+    boolean containsKey(String key)
 
-    V get(K key)
+    BuildRequest get(String key)
 
-    void put(K key, V value)
+    void put(String key, BuildRequest value)
 
-    V await(K key)
+    BuildRequest await(String key)
 
 }

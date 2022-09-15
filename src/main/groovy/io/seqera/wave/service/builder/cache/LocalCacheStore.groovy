@@ -5,31 +5,34 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 
 import groovy.transform.CompileStatic
+import io.micronaut.context.annotation.Requires
+import io.seqera.wave.service.builder.BuildRequest
 import jakarta.inject.Singleton
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Requires(missingProperty = 'redis.uri')
 @Singleton
 @CompileStatic
-class LocalCacheStore<K,V> implements CacheStore<K,V> {
+class LocalCacheStore implements CacheStore<String , BuildRequest> {
 
-    private ConcurrentHashMap<K,V> store = new ConcurrentHashMap<>()
+    private ConcurrentHashMap<String, BuildRequest> store = new ConcurrentHashMap<>()
 
-    private ConcurrentHashMap<K, CountDownLatch> watchers = new ConcurrentHashMap<>()
+    private ConcurrentHashMap<String, CountDownLatch> watchers = new ConcurrentHashMap<>()
 
     @Override
-    boolean containsKey(K key) {
+    boolean containsKey(String key) {
         return store.containsKey(key)
     }
 
     @Override
-    V get(K key) {
+    BuildRequest get(String key) {
         return store.get(key)
     }
 
     @Override
-    V await(K key) {
+    BuildRequest await(String key) {
         final latch = watchers.get(key)
         if( latch ) {
             latch.await()
@@ -40,7 +43,7 @@ class LocalCacheStore<K,V> implements CacheStore<K,V> {
     }
 
     @Override
-    void put(K key, V value) {
+    void put(String key, BuildRequest value) {
         store.put(key, value)
         final latch = watchers.putIfAbsent(key, new CountDownLatch(1))
         if( latch!=null )

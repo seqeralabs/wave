@@ -2,6 +2,7 @@ package io.seqera.wave.service.builder
 
 import java.nio.file.Files
 import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 import javax.annotation.Nullable
@@ -161,7 +162,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         }
         catch (Exception e) {
             log.error "== Ouch! Unable to build container request=$request", e
-            return request.result = new BuildResult(request.id, -1, e.message, request.startTime)
+            return request.result = new BuildResult(request.id, -1, e.message, request.startTime, Duration.between(request.startTime, Instant.now()))
         }
         finally {
             // update build cache
@@ -175,7 +176,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     protected CompletableFuture<BuildResult> launchAsync(BuildRequest request) {
 
         if( rateLimiterService )
-            rateLimiterService.acquireBuild(new AcquireRequest(request.user?.id?.toString(),request.ip))
+            rateLimiterService?.acquireBuild(request?.userId?.toString()?:'anonymous')
 
         buildRequests.put(request.targetImage, request)
 

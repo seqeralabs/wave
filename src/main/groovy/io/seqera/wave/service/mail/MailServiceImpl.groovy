@@ -37,8 +37,8 @@ class MailServiceImpl implements MailService {
     @Override
     void sendCompletionMail(BuildRequest request, BuildResult build) {
         // send to user email address or fallback to the system `mail.from` address
-        final user = request.user
-        final recipient = user ? user.email : config.from
+        final user = request.email
+        final recipient = user ? user : config.from
         if( recipient ) {
             final result = build ?: BuildResult.UNKNOWN
             final mail = buildCompletionMail(request, result, recipient)

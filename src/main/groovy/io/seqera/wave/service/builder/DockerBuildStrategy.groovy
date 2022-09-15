@@ -3,6 +3,7 @@ package io.seqera.wave.service.builder
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 import groovy.transform.CompileStatic
@@ -45,7 +46,7 @@ class DockerBuildStrategy extends BuildStrategy {
 
         final completed = proc.waitFor(buildTimeout.toSeconds(), TimeUnit.SECONDS)
         final stdout = proc.inputStream.text
-        return new BuildResult(req.id, completed ? proc.exitValue() : -1, stdout, req.startTime)
+        return new BuildResult(req.id, completed ? proc.exitValue() : -1, stdout, req.startTime, Duration.between(req.startTime, Instant.now()))
 
     }
 

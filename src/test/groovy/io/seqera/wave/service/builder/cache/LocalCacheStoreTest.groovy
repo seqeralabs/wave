@@ -2,11 +2,18 @@ package io.seqera.wave.service.builder.cache
 
 import spock.lang.Specification
 
+import io.seqera.wave.service.builder.BuildRequest
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 class LocalCacheStoreTest extends Specification {
+
+    BuildRequest zero = new BuildRequest("0","","","",0,null,null,null)
+    BuildRequest one = new BuildRequest("1","","","",0,null,null,null)
+    BuildRequest two = new BuildRequest("2","","","",0,null,null,null)
+    BuildRequest three = new BuildRequest("3","","","",0,null,null,null)
 
     def 'should get and put key values' () {
         given:
@@ -18,9 +25,9 @@ class LocalCacheStoreTest extends Specification {
         !cache.containsKey('foo')
 
         when:
-        cache.put('foo', 1)
+        cache.put('foo', one)
         then:
-        cache.get('foo') == 1
+        cache.get('foo') == one
         and:
         cache.containsKey('foo')
     }
@@ -34,19 +41,19 @@ class LocalCacheStoreTest extends Specification {
 
         when:
         // insert a value
-        cache.put('foo',0)
+        cache.put('foo',zero)
         // update a value in a separate thread
-        Thread.start { sleep 500; cache.put('foo',1) }
+        Thread.start { sleep 500; cache.put('foo',one) }
         // stops until the value is updated
         def result = cache.await('foo')
         then:
-        result == 1
+        result == one
 
         when:
-        cache.put('foo',2)
-        cache.put('foo',3)
+        cache.put('foo',two)
+        cache.put('foo',three)
         then:
-        cache.await('foo')==3
+        cache.await('foo')==three
 
     }
 

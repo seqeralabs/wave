@@ -72,10 +72,10 @@ class TestController {
         final ip = addressResolver.resolve(httpRequest)
 
         final req =  new BuildRequest( dockerFile,
-                Path.of(workspace),
+                workspace,
                 repo ?: buildRepo,
                 null,
-                user,
+                user.id, user.email,
                 ContainerPlatform.of(platform),
                 cache ?: cacheRepo,
                 ip)
