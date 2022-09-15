@@ -48,7 +48,7 @@ class DockerBuilderStrategyTest extends Specification {
         def work = Path.of('/work/foo')
         def creds = Path.of('/work/creds.json')
         def cache = 'reg.io/wave/build/cache'
-        def req = new BuildRequest('from foo', work, 'repo', null, Mock(User), ContainerPlatform.of('amd64'), cache, "")
+        def req = new BuildRequest('from foo', "$work", 'repo', null, null,null, ContainerPlatform.of('amd64'), cache, "")
         when:
         def cmd = service.buildCmd(req, creds)
         then:

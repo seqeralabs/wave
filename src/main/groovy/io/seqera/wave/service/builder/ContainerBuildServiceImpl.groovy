@@ -176,7 +176,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     protected CompletableFuture<BuildResult> launchAsync(BuildRequest request) {
 
         if( rateLimiterService )
-            rateLimiterService?.acquireBuild(request?.userId?.toString()?:'anonymous')
+            rateLimiterService.acquireBuild(new AcquireRequest(request.userId?.toString(),request.ip))
 
         buildRequests.put(request.targetImage, request)
 

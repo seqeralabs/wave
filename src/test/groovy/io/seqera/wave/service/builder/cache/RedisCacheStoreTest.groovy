@@ -51,7 +51,7 @@ class RedisCacheStoreTest extends Specification implements RedisTestContainer {
         def PATH = 'somewhere'
         def repo = 'docker.io/wave'
         def cache = 'docker.io/cache'
-        def req1 = new BuildRequest('from foo', PATH, repo, null, USER.id, USER.email, ContainerPlatform.of('amd64'), cache)
+        def req1 = new BuildRequest('from foo', PATH, repo, null, USER.id, USER.email, ContainerPlatform.of('amd64'), cache, "")
 
         def cacheStore = applicationContext.getBean(CacheStore)
         
@@ -75,7 +75,7 @@ class RedisCacheStoreTest extends Specification implements RedisTestContainer {
         def PATH = 'somewhere'
         def repo = 'docker.io/wave'
         def cache = 'docker.io/cache'
-        def req1 = new BuildRequest('from foo', PATH, repo, null, USER.id, USER.email, ContainerPlatform.of('amd64'), cache)
+        def req1 = new BuildRequest('from foo', PATH, repo, null, USER.id, USER.email, ContainerPlatform.of('amd64'), cache, "")
 
         def cacheStore = applicationContext.getBean(CacheStore) as CacheStore<String, BuildRequest>
 
@@ -104,7 +104,7 @@ class RedisCacheStoreTest extends Specification implements RedisTestContainer {
         def PATH = 'somewhere'
         def repo = 'docker.io/wave'
         def cache = 'docker.io/cache'
-        def req1 = new BuildRequest('from foo', PATH, repo, null, USER.id, USER.email, ContainerPlatform.of('amd64'), cache)
+        def req1 = new BuildRequest('from foo', PATH, repo, null, USER.id, USER.email, ContainerPlatform.of('amd64'), cache, "")
 
         def cacheStore = applicationContext.getBean(CacheStore) as CacheStore<String, BuildRequest>
         // insert a value

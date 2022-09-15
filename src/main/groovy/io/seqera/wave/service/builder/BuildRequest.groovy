@@ -2,6 +2,7 @@ package io.seqera.wave.service.builder
 
 import java.nio.file.Path
 import java.time.Instant
+import java.util.concurrent.CompletableFuture
 
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -88,14 +89,13 @@ class BuildRequest {
     /**
      * Reference to the future build job result
      */
-    volatile CompletableFuture<BuildResult> result
+    volatile BuildResult result
 
     /**
      * The client IP if available
      */
     final String ip;
 
-    BuildRequest(String dockerFile, Path workspace, String repo, String condaFile, User user, ContainerPlatform platform, String cacheRepo, String ip) {
     @JsonCreator
     BuildRequest(
             @JsonProperty("dockerFile")String dockerFile,
@@ -105,7 +105,8 @@ class BuildRequest {
             @JsonProperty("userId")Long userId,
             @JsonProperty("email")String email,
             @JsonProperty("platform")ContainerPlatform platform,
-            @JsonProperty("cacheRepo")String cacheRepo) {
+            @JsonProperty("cacheRepo")String cacheRepo,
+            @JsonProperty("ip")String ip) {
         this.id = computeDigest(dockerFile,condaFile,platform)
         this.workspace = workspace
         this.dockerFile = dockerFile
@@ -115,14 +116,10 @@ class BuildRequest {
         this.email = email
         this.platform = platform
         this.cacheRepository = cacheRepo
-        this.workDir = workspace.resolve(id).toAbsolutePath()
-        this.startTime = Instant.now()
-        this.job = "${id}-${startTime.toEpochMilli().toString().md5()[-5..-1]}"
         this.ip = ip
         this.workDir = workspace ? Path.of(workspace).resolve(id).toAbsolutePath() : null
         this.startTimeStr = Instant.now().toString()
         this.job = "${id}-${startTimeStr.md5()[-5..-1]}"
-        this.result = new BuildResult(id, -1, "(created)", startTimeStr)
     }
 
     boolean isFinished(){

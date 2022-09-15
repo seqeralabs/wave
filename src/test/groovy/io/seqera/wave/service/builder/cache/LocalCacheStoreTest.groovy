@@ -10,10 +10,10 @@ import io.seqera.wave.service.builder.BuildRequest
  */
 class LocalCacheStoreTest extends Specification {
 
-    BuildRequest zero = new BuildRequest("0","","","",0,null,null,null)
-    BuildRequest one = new BuildRequest("1","","","",0,null,null,null)
-    BuildRequest two = new BuildRequest("2","","","",0,null,null,null)
-    BuildRequest three = new BuildRequest("3","","","",0,null,null,null)
+    BuildRequest zero = new BuildRequest("0","","","",0,null,null,null,null)
+    BuildRequest one = new BuildRequest("1","","","",0,null,null,null,null)
+    BuildRequest two = new BuildRequest("2","","","",0,null,null,null,null)
+    BuildRequest three = new BuildRequest("3","","","",0,null,null,null,null)
 
     def 'should get and put key values' () {
         given:
