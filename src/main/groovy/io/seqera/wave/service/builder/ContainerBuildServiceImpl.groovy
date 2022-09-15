@@ -56,7 +56,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     private MailService mailService
 
     @Inject
-    private CacheStore<String,BuildRequest> buildRequests
+    private CacheStore buildRequests
 
     private ExecutorService executor
 
@@ -103,7 +103,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
      */
     @Override
     CompletableFuture<BuildResult> buildResult(String targetImage) {
-        return CompletableFuture.supplyAsync(() -> buildRequests.await(targetImage).result)
+        return buildRequests
+                .await(targetImage)
+                ?.thenApply( (it) -> it.result )
     }
 
     protected String credsJson(Set<String> registries) {

@@ -50,13 +50,13 @@ class LocalCacheStoreTest extends Specification {
         // stops until the value is updated
         def result = cache.await('foo')
         then:
-        result == one
+        result.get() == one
 
         when:
         cache.put('foo',two)
         cache.put('foo',three)
         then:
-        cache.await('foo')==three
+        cache.await('foo').get()==three
 
     }
 

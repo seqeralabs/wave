@@ -1,6 +1,6 @@
 package io.seqera.wave.service.builder.cache
 
-
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 
@@ -15,7 +15,7 @@ import jakarta.inject.Singleton
 @Requires(missingProperty = 'redis.uri')
 @Singleton
 @CompileStatic
-class LocalCacheStore implements CacheStore<String , BuildRequest> {
+class LocalCacheStore implements CacheStore {
 
     private ConcurrentHashMap<String, BuildRequest> store = new ConcurrentHashMap<>()
 
@@ -32,14 +32,16 @@ class LocalCacheStore implements CacheStore<String , BuildRequest> {
     }
 
     @Override
-    BuildRequest await(String key) {
+    CompletableFuture<BuildRequest> await(String key) {
         final latch = watchers.get(key)
-        if( latch ) {
+        if( !latch ) {
+             return null
+        }
+
+        CompletableFuture<BuildRequest>.supplyAsync(() -> {
             latch.await()
             return store.get(key)
-        }
-        else
-            return null
+        })
     }
 
     @Override

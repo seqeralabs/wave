@@ -6,9 +6,11 @@ import spock.lang.Timeout
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.ExecutionException
 
 import io.micronaut.context.ApplicationContext
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.test.RedisTestContainer
@@ -27,13 +29,7 @@ class RedisCacheStoreTest extends Specification implements RedisTestContainer {
     def setup() {
         restartRedis()
         applicationContext = ApplicationContext.run([
-                redis:[
-                        store:[
-                                cache:[
-                                        attempts:2
-                                ]
-                        ]
-                ],
+                wave:[ build:[ timeout: '5s' ]],
                 REDIS_HOST: redisHostName,
                 REDIS_PORT: redisPort
         ], 'test', 'redis')
@@ -72,7 +68,7 @@ class RedisCacheStoreTest extends Specification implements RedisTestContainer {
         def cache = 'docker.io/cache'
         def req1 = new BuildRequest('from foo', PATH, repo, null, USER, ContainerPlatform.of('amd64'), cache, "")
 
-        def cacheStore = applicationContext.getBean(CacheStore) as CacheStore<String, BuildRequest>
+        def cacheStore = applicationContext.getBean(CacheStore) as CacheStore
 
         when:
         // insert a value
@@ -89,7 +85,7 @@ class RedisCacheStoreTest extends Specification implements RedisTestContainer {
         def result = cacheStore.await('foo')
 
         then:
-        result == req1
+        result.get() == req1
     }
 
     @Timeout(value=10)
@@ -101,15 +97,15 @@ class RedisCacheStoreTest extends Specification implements RedisTestContainer {
         def cache = 'docker.io/cache'
         def req1 = new BuildRequest('from foo', PATH, repo, null, USER, ContainerPlatform.of('amd64'), cache, "")
 
-        def cacheStore = applicationContext.getBean(CacheStore) as CacheStore<String, BuildRequest>
+        def cacheStore = applicationContext.getBean(CacheStore) as CacheStore
         // insert a value
         cacheStore.put('foo', req1)
 
         when: "wait for an update never will arrive"
-        def resp = cacheStore.await('foo')
-
+        cacheStore.await('foo').get()
         then:
-        !resp
+        def e = thrown(ExecutionException)
+        e.cause.class == BadRequestException
     }
 
 }
