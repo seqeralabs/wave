@@ -2,16 +2,18 @@ package io.seqera.wave.service.builder
 
 import java.time.Duration
 import java.time.Instant
-import javax.annotation.Nullable
 
-import com.fasterxml.jackson.annotation.JsonCreator
-import com.fasterxml.jackson.annotation.JsonProperty
 import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
+import groovy.transform.ToString
+
 /**
  * Model a container builder request
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@ToString(includePackage = false, includeNames = true)
+@EqualsAndHashCode
 @CompileStatic
 class BuildResult {
 
@@ -20,26 +22,19 @@ class BuildResult {
     final String id
     final int exitStatus
     final String logs
-    final String startTimeStr
+    final Instant startTime
     final Duration duration
 
     BuildResult(String id, int exitStatus, String content, Instant startTime, Duration duration=null) {
-        this(id, exitStatus, content, startTime?.toString(), duration)
-    }
-
-    @JsonCreator
-    BuildResult(
-            @JsonProperty("id")String id,
-            @JsonProperty("exitStatus")int exitStatus,
-            @JsonProperty("content")String content,
-            @JsonProperty("startTimeStr")String startTimeStr,
-            @JsonProperty("duration")Duration duration=null) {
         this.id = id
         this.logs = content?.replaceAll("\u001B\\[[;\\d]*m", "") // strip ansi escape codes
         this.exitStatus = exitStatus
-        this.startTimeStr =  startTimeStr
-        this.duration = duration// ?: Duration.between(startTime, Instant.now())
+        this.startTime = startTime
+        this.duration = duration ?: Duration.between(startTime, Instant.now())
     }
+
+    /* Do not remove - required by jackson de-ser */
+    protected BuildResult() {}
 
     String getId() { id }
 
@@ -47,7 +42,7 @@ class BuildResult {
 
     int getExitStatus() { exitStatus }
 
-    Instant getStartTime() { Instant.parse(startTimeStr) }
+    Instant getStartTime() { startTime }
 
     String getLogs() { logs }
 

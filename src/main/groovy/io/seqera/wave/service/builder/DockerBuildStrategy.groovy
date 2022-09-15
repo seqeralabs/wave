@@ -46,7 +46,7 @@ class DockerBuildStrategy extends BuildStrategy {
 
         final completed = proc.waitFor(buildTimeout.toSeconds(), TimeUnit.SECONDS)
         final stdout = proc.inputStream.text
-        return new BuildResult(req.id, completed ? proc.exitValue() : -1, stdout, req.startTime, Duration.between(req.startTime, Instant.now()))
+        return new BuildResult(req.id, completed ? proc.exitValue() : -1, stdout, req.startTime)
 
     }
 

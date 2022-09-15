@@ -45,10 +45,10 @@ class KubeBuildStrategy extends BuildStrategy {
         final terminated = k8sService.waitPod(pod, buildTimeout.toMillis())
         final stdout = k8sService.logsPod(name)
         if( terminated ) {
-            return new BuildResult(req.id, terminated.exitCode, stdout, req.startTime, Duration.between(req.startTime, Instant.now()) )
+            return new BuildResult(req.id, terminated.exitCode, stdout, req.startTime )
         }
         else {
-            return new BuildResult(req.id, -1, stdout, req.startTime, Duration.between(req.startTime, Instant.now()) )
+            return new BuildResult(req.id, -1, stdout, req.startTime )
         }
     }
 
