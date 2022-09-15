@@ -63,14 +63,14 @@ class RedisCacheStoreTest extends Specification implements RedisTestContainer {
         cacheStore.containsKey('foo')
     }
 
-    @Timeout( value=10)
+    @Timeout(value=10)
     def 'should await for a value' () {
         given:
         def USER = new User(id:1, email: 'foo@user.com')
-        def PATH = 'somewhere'
+        def PATH = Path.of('somewhere')
         def repo = 'docker.io/wave'
         def cache = 'docker.io/cache'
-        def req1 = new BuildRequest('from foo', PATH, repo, null, USER.id, USER.email, ContainerPlatform.of('amd64'), cache, "")
+        def req1 = new BuildRequest('from foo', PATH, repo, null, USER, ContainerPlatform.of('amd64'), cache, "")
 
         def cacheStore = applicationContext.getBean(CacheStore) as CacheStore<String, BuildRequest>
 
@@ -92,14 +92,14 @@ class RedisCacheStoreTest extends Specification implements RedisTestContainer {
         result == req1
     }
 
-    @Timeout( value=10)
+    @Timeout(value=10)
     def 'should abort an await if build never finish' () {
         given:
         def USER = new User(id:1, email: 'foo@user.com')
-        def PATH = 'somewhere'
+        def PATH = Path.of('somewhere')
         def repo = 'docker.io/wave'
         def cache = 'docker.io/cache'
-        def req1 = new BuildRequest('from foo', PATH, repo, null, USER.id, USER.email, ContainerPlatform.of('amd64'), cache, "")
+        def req1 = new BuildRequest('from foo', PATH, repo, null, USER, ContainerPlatform.of('amd64'), cache, "")
 
         def cacheStore = applicationContext.getBean(CacheStore) as CacheStore<String, BuildRequest>
         // insert a value

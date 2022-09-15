@@ -6,13 +6,11 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.lettuce.core.api.StatefulRedisConnection
 import io.micronaut.context.annotation.Requires
-import io.micronaut.context.annotation.Value
 import io.micronaut.retry.annotation.Retryable
 import io.seqera.wave.configuration.RedisConfig
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Singleton
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -27,10 +25,10 @@ class RedisCacheStore implements CacheStore<String, BuildRequest> {
     private Duration duration
 
     RedisCacheStore(StatefulRedisConnection<String,String> senderConn, RedisConfig redisConfig) {
+        log.info "Creating Redis build store - duration=$redisConfig.tokenExpired"
         this.senderConn = senderConn
         this.duration = redisConfig.tokenExpired
     }
-
 
     @Override
     boolean containsKey(String key) {
