@@ -45,7 +45,7 @@ class DockerBuildStrategy extends BuildStrategy {
 
         final completed = proc.waitFor(buildTimeout.toSeconds(), TimeUnit.SECONDS)
         final stdout = proc.inputStream.text
-        return BuildResult.succeed(req.id, completed ? proc.exitValue() : -1, stdout, req.startTime)
+        return BuildResult.completed(req.id, completed ? proc.exitValue() : -1, stdout, req.startTime)
     }
 
     protected List<String> buildCmd(BuildRequest req, Path credsFile) {

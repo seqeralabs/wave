@@ -1,7 +1,8 @@
 package io.seqera.wave.configuration
 
-
 import io.micronaut.context.annotation.ConfigurationProperties
+
+
 /**
  * Model Redis server configuration settings
  *

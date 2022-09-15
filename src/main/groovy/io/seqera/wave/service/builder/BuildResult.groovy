@@ -5,6 +5,7 @@ import java.time.Instant
 
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
+import groovy.transform.Memoized
 import groovy.transform.ToString
 /**
  * Model a container builder request
@@ -15,8 +16,6 @@ import groovy.transform.ToString
 @EqualsAndHashCode
 @CompileStatic
 class BuildResult {
-
-    public static final BuildResult UNKNOWN = new BuildResult('-', -1, 'Unknown', null as Instant, Duration.ZERO)
 
     final String id
     final int exitStatus
@@ -52,7 +51,7 @@ class BuildResult {
         return "BuildRequest[id=$id; exitStatus=$exitStatus; duration=$duration]"
     }
 
-    static BuildResult succeed(String id, int exitStatus, String content, Instant startTime) {
+    static BuildResult completed(String id, int exitStatus, String content, Instant startTime) {
         new BuildResult(id, exitStatus, content, startTime, Duration.between(startTime, Instant.now()))
     }
 
@@ -66,5 +65,10 @@ class BuildResult {
 
     static BuildResult create(String id) {
         new BuildResult(id, 0, null, Instant.now(), null)
+    }
+
+    @Memoized
+    static BuildResult unknown() {
+        new BuildResult('-', -1, 'Unknown', null as Instant, Duration.ZERO)
     }
 }

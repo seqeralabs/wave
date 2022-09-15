@@ -71,12 +71,6 @@ class BuildRequest {
     final String job
 
     /**
-     * Reference to the future build job result
-     */
-    @Deprecated
-    volatile BuildResult result
-
-    /**
      * The client IP if available
      */
     final String ip;

@@ -64,7 +64,7 @@ class RedisBuildStoreTest extends Specification implements RedisTestContainer {
 
         // update a value in a separate thread
         Thread.start {
-            req1 = BuildResult.succeed('1', 0, '', Instant.now())
+            req1 = BuildResult.completed('1', 0, '', Instant.now())
             cacheStore.storeBuild('foo',req1)
         }
 
