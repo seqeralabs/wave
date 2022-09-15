@@ -9,7 +9,7 @@ import io.lettuce.core.api.StatefulRedisConnection
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.exception.BadRequestException
-import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildStore
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Singleton
@@ -45,37 +45,37 @@ class RedisCacheStore implements BuildStore {
     }
 
     @Override
-    BuildRequest getBuild(String imageName) {
+    BuildResult getBuild(String imageName) {
         final json = senderConn.sync().get(imageName)
         if( json==null )
             return null
-        return JacksonHelper.fromJson(json, BuildRequest)
+        return JacksonHelper.fromJson(json, BuildResult)
     }
 
     @Override
-    void storeBuild(String imageName, BuildRequest request) {
+    void storeBuild(String imageName, BuildResult request) {
         def json = JacksonHelper.toJson(request)
         // once created the token the user has `Duration` time to pull the layers of the image
         senderConn.sync().psetex(imageName, duration.toMillis(), json)
     }
 
     @Override
-    CompletableFuture<BuildRequest> awaitBuild(String imageName) {
+    CompletableFuture<BuildResult> awaitBuild(String imageName) {
         final payload = senderConn.sync().get(imageName)
         if( !payload )
             return null
-        CompletableFuture<BuildRequest>.supplyAsync(() -> awaitCompletion0(imageName,payload))
+        CompletableFuture<BuildResult>.supplyAsync(() -> awaitCompletion0(imageName,payload))
     }
 
-    protected BuildRequest awaitCompletion0(String key, String payload) {
+    protected BuildResult awaitCompletion0(String key, String payload) {
         final beg = System.currentTimeMillis()
         // add 10% delay gap to pevent race condition with timeout expiration
         final max = (timeout.toMillis() * 0.10) as long
         while( true ) {
             // de-serialise the json payload
-            final current = JacksonHelper.fromJson(payload, BuildRequest)
-            // check is finished
-            if( current.finished )
+            final current = JacksonHelper.fromJson(payload, BuildResult)
+            // check is completed
+            if( current.done() )
                 return current
             // check if it's timed out
             final delta = System.currentTimeMillis()-beg

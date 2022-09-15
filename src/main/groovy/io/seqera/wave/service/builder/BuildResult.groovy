@@ -6,7 +6,6 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-
 /**
  * Model a container builder request
  *
@@ -25,12 +24,12 @@ class BuildResult {
     final Instant startTime
     final Duration duration
 
-    BuildResult(String id, int exitStatus, String content, Instant startTime, Duration duration=null) {
+    BuildResult(String id, int exitStatus, String content, Instant startTime, Duration duration) {
         this.id = id
         this.logs = content?.replaceAll("\u001B\\[[;\\d]*m", "") // strip ansi escape codes
         this.exitStatus = exitStatus
         this.startTime = startTime
-        this.duration = duration ?: Duration.between(startTime, Instant.now())
+        this.duration = duration
     }
 
     /* Do not remove - required by jackson de-ser */
@@ -46,8 +45,26 @@ class BuildResult {
 
     String getLogs() { logs }
 
+    boolean done() { duration!=null }
+
     @Override
     String toString() {
         return "BuildRequest[id=$id; exitStatus=$exitStatus; duration=$duration]"
+    }
+
+    static BuildResult succeed(String id, int exitStatus, String content, Instant startTime) {
+        new BuildResult(id, exitStatus, content, startTime, Duration.between(startTime, Instant.now()))
+    }
+
+    static BuildResult failed(String id, String content, Instant startTime) {
+        new BuildResult(id, -1, content, startTime, Duration.between(startTime, Instant.now()))
+    }
+
+    static BuildResult create(BuildRequest req) {
+        new BuildResult(req.id, 0, null, req.startTime, null)
+    }
+
+    static BuildResult create(String id) {
+        new BuildResult(id, 0, null, Instant.now(), null)
     }
 }

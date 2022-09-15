@@ -6,7 +6,7 @@ import java.util.concurrent.CountDownLatch
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildStore
 import jakarta.inject.Singleton
 /**
@@ -18,7 +18,7 @@ import jakarta.inject.Singleton
 @CompileStatic
 class LocalCacheStore implements BuildStore {
 
-    private ConcurrentHashMap<String, BuildRequest> store = new ConcurrentHashMap<>()
+    private ConcurrentHashMap<String, BuildResult> store = new ConcurrentHashMap<>()
 
     private ConcurrentHashMap<String, CountDownLatch> watchers = new ConcurrentHashMap<>()
 
@@ -28,25 +28,25 @@ class LocalCacheStore implements BuildStore {
     }
 
     @Override
-    BuildRequest getBuild(String imageName) {
+    BuildResult getBuild(String imageName) {
         return store.get(imageName)
     }
 
     @Override
-    CompletableFuture<BuildRequest> awaitBuild(String imageName) {
+    CompletableFuture<BuildResult> awaitBuild(String imageName) {
         final latch = watchers.get(imageName)
         if( !latch ) {
              return null
         }
 
-        CompletableFuture<BuildRequest>.supplyAsync(() -> {
+        CompletableFuture<BuildResult>.supplyAsync(() -> {
             latch.await()
             return store.get(imageName)
         })
     }
 
     @Override
-    void storeBuild(String imageName, BuildRequest request) {
+    void storeBuild(String imageName, BuildResult request) {
         store.put(imageName, request)
         final latch = watchers.putIfAbsent(imageName, new CountDownLatch(1))
         if( latch!=null )

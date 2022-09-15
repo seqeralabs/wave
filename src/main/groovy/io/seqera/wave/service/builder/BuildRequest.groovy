@@ -73,6 +73,7 @@ class BuildRequest {
     /**
      * Reference to the future build job result
      */
+    @Deprecated
     volatile BuildResult result
 
     /**
@@ -95,10 +96,6 @@ class BuildRequest {
     }
 
     protected BuildRequest() {}
-
-    boolean isFinished() {
-        this.result?.duration != null
-    }
 
     static private String computeDigest(String dockerFile, String condaFile, ContainerPlatform platform) {
         def content = platform.toString()

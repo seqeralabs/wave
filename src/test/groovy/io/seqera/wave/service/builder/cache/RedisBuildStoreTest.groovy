@@ -3,19 +3,14 @@ package io.seqera.wave.service.builder.cache
 import spock.lang.Specification
 import spock.lang.Timeout
 
-import java.nio.file.Path
-import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ExecutionException
 
 import io.micronaut.context.ApplicationContext
-import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
-import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildStore
 import io.seqera.wave.test.RedisTestContainer
-import io.seqera.wave.tower.User
 import redis.clients.jedis.JedisPool
 /**
  *
@@ -39,12 +34,8 @@ class RedisBuildStoreTest extends Specification implements RedisTestContainer {
 
     def 'should get and put key values' () {
         given:
-        def USER = new User(id:1, email: 'foo@user.com')
-        def PATH = Path.of('somewhere')
-        def repo = 'docker.io/wave'
-        def cache = 'docker.io/cache'
-        def req1 = new BuildRequest('from foo', PATH, repo, null, USER, ContainerPlatform.of('amd64'), cache, "")
-
+        def req1 = BuildResult.create('1')
+        and:
         def cacheStore = applicationContext.getBean(BuildStore)
         
         expect:
@@ -63,12 +54,8 @@ class RedisBuildStoreTest extends Specification implements RedisTestContainer {
     @Timeout(value=10)
     def 'should await for a value' () {
         given:
-        def USER = new User(id:1, email: 'foo@user.com')
-        def PATH = Path.of('somewhere')
-        def repo = 'docker.io/wave'
-        def cache = 'docker.io/cache'
-        def req1 = new BuildRequest('from foo', PATH, repo, null, USER, ContainerPlatform.of('amd64'), cache, "")
-
+        def req1 = BuildResult.create('1')
+        and:
         def cacheStore = applicationContext.getBean(BuildStore) as BuildStore
 
         when:
@@ -77,7 +64,7 @@ class RedisBuildStoreTest extends Specification implements RedisTestContainer {
 
         // update a value in a separate thread
         Thread.start {
-            req1.result = new BuildResult(req1.id, -1, "test", req1.startTime, Duration.between(req1.startTime, Instant.now()))
+            req1 = BuildResult.succeed('1', 0, '', Instant.now())
             cacheStore.storeBuild('foo',req1)
         }
 
@@ -92,12 +79,8 @@ class RedisBuildStoreTest extends Specification implements RedisTestContainer {
     @Timeout(value=10)
     def 'should abort an await if build never finish' () {
         given:
-        def USER = new User(id:1, email: 'foo@user.com')
-        def PATH = Path.of('somewhere')
-        def repo = 'docker.io/wave'
-        def cache = 'docker.io/cache'
-        def req1 = new BuildRequest('from foo', PATH, repo, null, USER, ContainerPlatform.of('amd64'), cache, "")
-
+        def req1 = BuildResult.create('1')
+        and:
         def cacheStore = applicationContext.getBean(BuildStore) as BuildStore
         // insert a value
         cacheStore.storeBuild('foo', req1)

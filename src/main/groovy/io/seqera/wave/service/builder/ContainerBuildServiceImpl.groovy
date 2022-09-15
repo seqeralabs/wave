@@ -2,7 +2,6 @@ package io.seqera.wave.service.builder
 
 import java.nio.file.Files
 import java.time.Duration
-import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 import javax.annotation.Nullable
@@ -104,7 +103,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     CompletableFuture<BuildResult> buildResult(String targetImage) {
         return buildRequests
                 .awaitBuild(targetImage)
-                ?.thenApply( (it) -> it.result )
     }
 
     protected String credsJson(Set<String> registries) {
@@ -155,19 +153,19 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         final creds = credsJson(repos)
 
         // launch an external process to build the container
+        BuildResult result=null
         try {
-            final result = buildStrategy.build(request, creds)
+            result = buildStrategy.build(request, creds)
             log.info "== Build completed with status=$result.exitStatus; stdout: (see below)\n${indent(result.logs)}"
-            request.result = result
             return result
         }
         catch (Exception e) {
             log.error "== Ouch! Unable to build container request=$request", e
-            return request.result = new BuildResult(request.id, -1, e.message, request.startTime, Duration.between(request.startTime, Instant.now()))
+            return result = BuildResult.failed(request.id, e.message, request.startTime)
         }
         finally {
-            // update build cache
-            buildRequests.storeBuild(request.targetImage, request)
+            // update build status store
+            buildRequests.storeBuild(request.targetImage, result)
             // cleanup build context
             if( !debugMode )
                 buildStrategy.cleanup(request)
@@ -177,9 +175,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     protected CompletableFuture<BuildResult> launchAsync(BuildRequest request) {
 
         if( rateLimiterService )
-            rateLimiterService.acquireBuild(new AcquireRequest(request.user?.id?.toString(),request.ip))
+            rateLimiterService.acquireBuild(new AcquireRequest(request.user?.id?.toString(), request.ip))
 
-        buildRequests.storeBuild(request.targetImage, request)
+        buildRequests.storeBuild(request.targetImage, BuildResult.create(request))
 
         CompletableFuture
                 .<BuildResult>supplyAsync(() -> launch(request), executor)
