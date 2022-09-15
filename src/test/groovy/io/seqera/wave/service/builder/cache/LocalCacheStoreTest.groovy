@@ -2,6 +2,9 @@ package io.seqera.wave.service.builder.cache
 
 import spock.lang.Specification
 
+import java.nio.file.Path
+
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildRequest
 
 /**
@@ -10,10 +13,10 @@ import io.seqera.wave.service.builder.BuildRequest
  */
 class LocalCacheStoreTest extends Specification {
 
-    BuildRequest zero = new BuildRequest("0","","","",0,null,null,null,null)
-    BuildRequest one = new BuildRequest("1","","","",0,null,null,null,null)
-    BuildRequest two = new BuildRequest("2","","","",0,null,null,null,null)
-    BuildRequest three = new BuildRequest("3","","","",0,null,null,null,null)
+    BuildRequest zero = new BuildRequest("0", Path.of('work'),"","",null, ContainerPlatform.DEFAULT,null,null)
+    BuildRequest one = new BuildRequest("1", Path.of('work'),"","",null,ContainerPlatform.DEFAULT,null,null)
+    BuildRequest two = new BuildRequest("2", Path.of('work'),"","",null,ContainerPlatform.DEFAULT,null,null)
+    BuildRequest three = new BuildRequest("3", Path.of('work'),"","",null,ContainerPlatform.DEFAULT,null,null)
 
     def 'should get and put key values' () {
         given:

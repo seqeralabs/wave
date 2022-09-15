@@ -6,19 +6,14 @@ import spock.lang.Timeout
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
-import java.util.concurrent.TimeUnit
 
 import io.micronaut.context.ApplicationContext
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.ratelimit.impl.SpillwayRateLimiter
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.test.RedisTestContainer
 import io.seqera.wave.tower.User
-import org.spockframework.runtime.SpockTimeoutError
-import org.spockframework.runtime.extension.builtin.TimeoutExtension
 import redis.clients.jedis.JedisPool
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -48,10 +43,10 @@ class RedisCacheStoreTest extends Specification implements RedisTestContainer {
     def 'should get and put key values' () {
         given:
         def USER = new User(id:1, email: 'foo@user.com')
-        def PATH = 'somewhere'
+        def PATH = Path.of('somewhere')
         def repo = 'docker.io/wave'
         def cache = 'docker.io/cache'
-        def req1 = new BuildRequest('from foo', PATH, repo, null, USER.id, USER.email, ContainerPlatform.of('amd64'), cache, "")
+        def req1 = new BuildRequest('from foo', PATH, repo, null, USER, ContainerPlatform.of('amd64'), cache, "")
 
         def cacheStore = applicationContext.getBean(CacheStore)
         
