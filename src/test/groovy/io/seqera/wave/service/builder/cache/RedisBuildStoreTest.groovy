@@ -13,6 +13,7 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.service.builder.BuildStore
 import io.seqera.wave.test.RedisTestContainer
 import io.seqera.wave.tower.User
 import redis.clients.jedis.JedisPool
@@ -20,7 +21,7 @@ import redis.clients.jedis.JedisPool
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class RedisCacheStoreTest extends Specification implements RedisTestContainer {
+class RedisBuildStoreTest extends Specification implements RedisTestContainer {
 
     ApplicationContext applicationContext
 
@@ -44,19 +45,19 @@ class RedisCacheStoreTest extends Specification implements RedisTestContainer {
         def cache = 'docker.io/cache'
         def req1 = new BuildRequest('from foo', PATH, repo, null, USER, ContainerPlatform.of('amd64'), cache, "")
 
-        def cacheStore = applicationContext.getBean(CacheStore)
+        def cacheStore = applicationContext.getBean(BuildStore)
         
         expect:
-        cacheStore.get('foo') == null
+        cacheStore.getBuild('foo') == null
         and:
-        !cacheStore.containsKey('foo')
+        !cacheStore.hasBuild('foo')
 
         when:
-        cacheStore.put('foo', req1)
+        cacheStore.storeBuild('foo', req1)
         then:
-        cacheStore.get('foo') == req1
+        cacheStore.getBuild('foo') == req1
         and:
-        cacheStore.containsKey('foo')
+        cacheStore.hasBuild('foo')
     }
 
     @Timeout(value=10)
@@ -68,21 +69,21 @@ class RedisCacheStoreTest extends Specification implements RedisTestContainer {
         def cache = 'docker.io/cache'
         def req1 = new BuildRequest('from foo', PATH, repo, null, USER, ContainerPlatform.of('amd64'), cache, "")
 
-        def cacheStore = applicationContext.getBean(CacheStore) as CacheStore
+        def cacheStore = applicationContext.getBean(BuildStore) as BuildStore
 
         when:
         // insert a value
-        cacheStore.put('foo', req1)
+        cacheStore.storeBuild('foo', req1)
 
         // update a value in a separate thread
         Thread.start {
             req1.result = new BuildResult(req1.id, -1, "test", req1.startTime, Duration.between(req1.startTime, Instant.now()))
-            cacheStore.put('foo',req1)
+            cacheStore.storeBuild('foo',req1)
         }
 
         // wait the value is updated
         sleep 1500
-        def result = cacheStore.await('foo')
+        def result = cacheStore.awaitBuild('foo')
 
         then:
         result.get() == req1
@@ -97,12 +98,12 @@ class RedisCacheStoreTest extends Specification implements RedisTestContainer {
         def cache = 'docker.io/cache'
         def req1 = new BuildRequest('from foo', PATH, repo, null, USER, ContainerPlatform.of('amd64'), cache, "")
 
-        def cacheStore = applicationContext.getBean(CacheStore) as CacheStore
+        def cacheStore = applicationContext.getBean(BuildStore) as BuildStore
         // insert a value
-        cacheStore.put('foo', req1)
+        cacheStore.storeBuild('foo', req1)
 
         when: "wait for an update never will arrive"
-        cacheStore.await('foo').get()
+        cacheStore.awaitBuild('foo').get()
         then:
         def e = thrown(ExecutionException)
         e.cause.class == BadRequestException

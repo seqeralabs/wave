@@ -1,4 +1,4 @@
-package io.seqera.wave.service.builder.cache
+package io.seqera.wave.service.builder.impl
 
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
@@ -10,6 +10,7 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.builder.BuildStore
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Singleton
 /**
@@ -20,7 +21,7 @@ import jakarta.inject.Singleton
 @Requires(property = 'redis.uri')
 @Singleton
 @CompileStatic
-class RedisCacheStore implements CacheStore {
+class RedisCacheStore implements BuildStore {
 
     private StatefulRedisConnection<String,String> senderConn
 
@@ -39,40 +40,44 @@ class RedisCacheStore implements CacheStore {
     }
 
     @Override
-    boolean containsKey(String key) {
-        return senderConn.sync().get(key) != null
+    boolean hasBuild(String imageName) {
+        return senderConn.sync().get(imageName) != null
     }
 
     @Override
-    BuildRequest get(String key) {
-        final json = senderConn.sync().get(key)
+    BuildRequest getBuild(String imageName) {
+        final json = senderConn.sync().get(imageName)
         if( json==null )
             return null
         return JacksonHelper.fromJson(json, BuildRequest)
     }
 
     @Override
-    void put(String key, BuildRequest value) {
-        def json = JacksonHelper.toJson(value)
+    void storeBuild(String imageName, BuildRequest request) {
+        def json = JacksonHelper.toJson(request)
         // once created the token the user has `Duration` time to pull the layers of the image
-        senderConn.sync().psetex(key, duration.toMillis(), json)
+        senderConn.sync().psetex(imageName, duration.toMillis(), json)
     }
 
     @Override
-    CompletableFuture<BuildRequest> await(String key) {
-        final payload = senderConn.sync().get(key)
+    CompletableFuture<BuildRequest> awaitBuild(String imageName) {
+        final payload = senderConn.sync().get(imageName)
         if( !payload )
             return null
-        CompletableFuture<BuildRequest>.supplyAsync(() -> awaitCompletion(key,payload))
+        CompletableFuture<BuildRequest>.supplyAsync(() -> awaitCompletion0(imageName,payload))
     }
 
-    protected BuildRequest awaitCompletion(String key, String payload) {
+    protected BuildRequest awaitCompletion0(String key, String payload) {
         final beg = System.currentTimeMillis()
+        // add 10% delay gap to pevent race condition with timeout expiration
         final max = (timeout.toMillis() * 0.10) as long
         while( true ) {
+            // de-serialise the json payload
             final current = JacksonHelper.fromJson(payload, BuildRequest)
+            // check is finished
             if( current.finished )
                 return current
+            // check if it's timed out
             final delta = System.currentTimeMillis()-beg
             if( delta > max)
                 throw new BadRequestException("Build of container '$key' timed out")

@@ -17,7 +17,6 @@ import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
-import io.seqera.wave.service.builder.cache.CacheStore
 import io.seqera.wave.service.mail.MailService
 import io.seqera.wave.util.ThreadPoolBuilder
 import jakarta.inject.Inject
@@ -56,7 +55,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     private MailService mailService
 
     @Inject
-    private CacheStore buildRequests
+    private BuildStore buildRequests
 
     private ExecutorService executor
 
@@ -104,7 +103,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     @Override
     CompletableFuture<BuildResult> buildResult(String targetImage) {
         return buildRequests
-                .await(targetImage)
+                .awaitBuild(targetImage)
                 ?.thenApply( (it) -> it.result )
     }
 
@@ -168,7 +167,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         }
         finally {
             // update build cache
-            buildRequests.put(request.targetImage, request)
+            buildRequests.storeBuild(request.targetImage, request)
             // cleanup build context
             if( !debugMode )
                 buildStrategy.cleanup(request)
@@ -180,7 +179,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         if( rateLimiterService )
             rateLimiterService.acquireBuild(new AcquireRequest(request.user?.id?.toString(),request.ip))
 
-        buildRequests.put(request.targetImage, request)
+        buildRequests.storeBuild(request.targetImage, request)
 
         CompletableFuture
                 .<BuildResult>supplyAsync(() -> launch(request), executor)
@@ -199,7 +198,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     protected String getOrSubmit(BuildRequest request) {
         // use the target image as the cache key
         synchronized (buildRequests) {
-            if( !buildRequests.containsKey(request.targetImage) ) {
+            if( !buildRequests.hasBuild(request.targetImage) ) {
                 log.info "== Submit build request request: $request"
                 launchAsync(request)
             }

@@ -6,12 +6,13 @@ import java.nio.file.Path
 
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.builder.impl.LocalCacheStore
 
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class LocalCacheStoreTest extends Specification {
+class LocalBuildStoreTest extends Specification {
 
     BuildRequest zero = new BuildRequest("0", Path.of('work'),"","",null, ContainerPlatform.DEFAULT,null,null)
     BuildRequest one = new BuildRequest("1", Path.of('work'),"","",null,ContainerPlatform.DEFAULT,null,null)
@@ -23,16 +24,16 @@ class LocalCacheStoreTest extends Specification {
         def cache = new LocalCacheStore()
         
         expect:
-        cache.get('foo') == null
+        cache.getBuild('foo') == null
         and:
-        !cache.containsKey('foo')
+        !cache.hasBuild('foo')
 
         when:
-        cache.put('foo', one)
+        cache.storeBuild('foo', one)
         then:
-        cache.get('foo') == one
+        cache.getBuild('foo') == one
         and:
-        cache.containsKey('foo')
+        cache.hasBuild('foo')
     }
 
     def 'should await for a value' () {
@@ -40,23 +41,23 @@ class LocalCacheStoreTest extends Specification {
         def cache = new LocalCacheStore()
 
         expect:
-        cache.await('foo') == null
+        cache.awaitBuild('foo') == null
 
         when:
         // insert a value
-        cache.put('foo',zero)
+        cache.storeBuild('foo',zero)
         // update a value in a separate thread
-        Thread.start { sleep 500; cache.put('foo',one) }
+        Thread.start { sleep 500; cache.storeBuild('foo',one) }
         // stops until the value is updated
-        def result = cache.await('foo')
+        def result = cache.awaitBuild('foo')
         then:
         result.get() == one
 
         when:
-        cache.put('foo',two)
-        cache.put('foo',three)
+        cache.storeBuild('foo',two)
+        cache.storeBuild('foo',three)
         then:
-        cache.await('foo').get()==three
+        cache.awaitBuild('foo').get()==three
 
     }
 

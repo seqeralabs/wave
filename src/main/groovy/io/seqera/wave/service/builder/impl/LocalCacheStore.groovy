@@ -1,4 +1,4 @@
-package io.seqera.wave.service.builder.cache
+package io.seqera.wave.service.builder.impl
 
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -7,6 +7,7 @@ import java.util.concurrent.CountDownLatch
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.builder.BuildStore
 import jakarta.inject.Singleton
 /**
  *
@@ -15,39 +16,39 @@ import jakarta.inject.Singleton
 @Requires(missingProperty = 'redis.uri')
 @Singleton
 @CompileStatic
-class LocalCacheStore implements CacheStore {
+class LocalCacheStore implements BuildStore {
 
     private ConcurrentHashMap<String, BuildRequest> store = new ConcurrentHashMap<>()
 
     private ConcurrentHashMap<String, CountDownLatch> watchers = new ConcurrentHashMap<>()
 
     @Override
-    boolean containsKey(String key) {
-        return store.containsKey(key)
+    boolean hasBuild(String imageName) {
+        return store.containsKey(imageName)
     }
 
     @Override
-    BuildRequest get(String key) {
-        return store.get(key)
+    BuildRequest getBuild(String imageName) {
+        return store.get(imageName)
     }
 
     @Override
-    CompletableFuture<BuildRequest> await(String key) {
-        final latch = watchers.get(key)
+    CompletableFuture<BuildRequest> awaitBuild(String imageName) {
+        final latch = watchers.get(imageName)
         if( !latch ) {
              return null
         }
 
         CompletableFuture<BuildRequest>.supplyAsync(() -> {
             latch.await()
-            return store.get(key)
+            return store.get(imageName)
         })
     }
 
     @Override
-    void put(String key, BuildRequest value) {
-        store.put(key, value)
-        final latch = watchers.putIfAbsent(key, new CountDownLatch(1))
+    void storeBuild(String imageName, BuildRequest request) {
+        store.put(imageName, request)
+        final latch = watchers.putIfAbsent(imageName, new CountDownLatch(1))
         if( latch!=null )
             latch.countDown()
     }
