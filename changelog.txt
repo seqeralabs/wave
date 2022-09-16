@@ -1,4 +1,8 @@
 # Wave changelog
+v0.17.0 - 16 Sep 2022
+- Build cache storage (#129) [d007184d]
+- Add different rate limit for auths or anonymous requests [99372a3a]
+
 v0.16.0 - 14 Sep 2022 
 - Improve scalability adding blob response redirection [4e50a0e3]
 
