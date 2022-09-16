@@ -14,7 +14,8 @@ import io.seqera.wave.service.builder.BuildStore
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Singleton
 /**
- *
+ *  Implement Redis based version of {@link BuildStore}
+ *  
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j

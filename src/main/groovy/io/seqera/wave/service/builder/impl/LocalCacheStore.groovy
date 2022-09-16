@@ -10,6 +10,7 @@ import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildStore
 import jakarta.inject.Singleton
 /**
+ * Implement local version of {@link BuildStore}
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
