@@ -1,6 +1,5 @@
 package io.seqera.wave.controller
 
-
 import java.nio.file.Path
 import javax.annotation.Nullable
 
@@ -13,8 +12,6 @@ import io.micronaut.http.annotation.Get
 import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
-import io.seqera.wave.ratelimit.AcquireRequest
-import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService

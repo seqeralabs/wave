@@ -2,7 +2,6 @@ package io.seqera.wave.service.builder
 
 import java.nio.file.Path
 import java.time.Instant
-import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
@@ -70,11 +69,6 @@ class BuildRequest {
      * Build jon unique id
      */
     final String job
-
-    /**
-     * Reference to the future build job result
-     */
-    volatile CompletableFuture<BuildResult> result
 
     /**
      * The client IP if available

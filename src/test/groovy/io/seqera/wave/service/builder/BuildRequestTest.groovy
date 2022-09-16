@@ -6,7 +6,6 @@ import java.nio.file.Path
 
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -66,4 +65,5 @@ class BuildRequestTest extends Specification {
         req1.hashCode() != req5.hashCode()
         req1.hashCode() != req6.hashCode()
     }
+
 }

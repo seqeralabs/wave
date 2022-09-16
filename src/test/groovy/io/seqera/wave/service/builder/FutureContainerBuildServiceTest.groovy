@@ -1,6 +1,5 @@
 package io.seqera.wave.service.builder
 
-
 import spock.lang.Specification
 import spock.lang.Timeout
 

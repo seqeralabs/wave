@@ -53,7 +53,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     @Nullable
     private MailService mailService
 
-    private final Map<String,BuildRequest> buildRequests = new HashMap<>()
+    @Inject
+    private BuildStore buildRequests
 
     private ExecutorService executor
 
@@ -100,7 +101,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
      */
     @Override
     CompletableFuture<BuildResult> buildResult(String targetImage) {
-        return buildRequests.get(targetImage)?.result
+        return buildRequests
+                .awaitBuild(targetImage)
     }
 
     protected String credsJson(Set<String> registries) {
@@ -151,16 +153,20 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         final creds = credsJson(repos)
 
         // launch an external process to build the container
+        BuildResult resp=null
         try {
-            final resp = buildStrategy.build(req, creds)
+            resp = buildStrategy.build(req, creds)
             log.info "== Build completed with status=$resp.exitStatus; stdout: (see below)\n${indent(resp.logs)}"
             return resp
         }
         catch (Exception e) {
-            log.error "== Ouch! Unable to build container request=$req", e
-            return new BuildResult(req.id, -1, e.message, req.startTime)
+            log.error "== Ouch! Unable to build container req=$req", e
+            return resp = BuildResult.failed(req.id, e.message, req.startTime)
         }
         finally {
+            // update build status store
+            buildRequests.storeBuild(req.targetImage, resp)
+            // cleanup build context
             if( !debugMode )
                 buildStrategy.cleanup(req)
         }
@@ -169,7 +175,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     protected CompletableFuture<BuildResult> launchAsync(BuildRequest request) {
 
         if( rateLimiterService )
-            rateLimiterService.acquireBuild(new AcquireRequest(request.user?.id?.toString(),request.ip))
+            rateLimiterService.acquireBuild(new AcquireRequest(request.user?.id?.toString(), request.ip))
+
+        buildRequests.storeBuild(request.targetImage, BuildResult.create(request))
 
         CompletableFuture
                 .<BuildResult>supplyAsync(() -> launch(request), executor)
@@ -188,10 +196,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     protected String getOrSubmit(BuildRequest request) {
         // use the target image as the cache key
         synchronized (buildRequests) {
-            if( !buildRequests.containsKey(request.targetImage) ) {
+            if( !buildRequests.hasBuild(request.targetImage) ) {
                 log.info "== Submit build request request: $request"
-                request.result = launchAsync(request)
-                buildRequests.put(request.targetImage, request)
+                launchAsync(request)
             }
             else {
                 log.info "== Hit build cache for request: $request"

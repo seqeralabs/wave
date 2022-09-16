@@ -40,7 +40,7 @@ class MailServiceImpl implements MailService {
         final user = request.user
         final recipient = user ? user.email : config.from
         if( recipient ) {
-            final result = build ?: BuildResult.UNKNOWN
+            final result = build ?: BuildResult.unknown()
             final mail = buildCompletionMail(request, result, recipient)
             spooler.sendMail(mail)
         }
