@@ -2,13 +2,11 @@ package io.seqera.wave.service.builder
 
 import java.nio.file.Path
 import java.time.Instant
-import java.util.concurrent.CompletableFuture
 
-import com.fasterxml.jackson.annotation.JsonCreator
-import com.fasterxml.jackson.annotation.JsonProperty
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.tower.User
 import io.seqera.wave.util.DigestFunctions
 import static io.seqera.wave.util.StringUtils.trunc
 /**
@@ -26,11 +24,6 @@ class BuildRequest {
      * request should result in the same `id`
      */
     final String id
-
-    /**
-     * Local workspace used to build the image
-     */
-    final String workspace
 
     /**
      * The dockerfile content corresponding to this request
@@ -55,12 +48,7 @@ class BuildRequest {
     /**
      * The (tower) user made this request
      */
-    final Long userId
-
-    /**
-     * The email of the user
-     */
-    final String email
+    final User user
 
     /**
      * Container platform
@@ -75,11 +63,7 @@ class BuildRequest {
     /**
      * Build request start time
      */
-    final String startTimeStr
-
-    Instant getStartTime(){
-        Instant.parse(startTimeStr)
-    }
+    final Instant startTime
 
     /**
      * Build jon unique id
@@ -87,47 +71,28 @@ class BuildRequest {
     final String job
 
     /**
-     * Reference to the future build job result
-     */
-    volatile BuildResult result
-
-    /**
      * The client IP if available
      */
     final String ip;
 
-    @JsonCreator
-    BuildRequest(
-            @JsonProperty("dockerFile")String dockerFile,
-            @JsonProperty("workspace")String workspace,
-            @JsonProperty("repo")String repo,
-            @JsonProperty("condaFile")String condaFile,
-            @JsonProperty("userId")Long userId,
-            @JsonProperty("email")String email,
-            @JsonProperty("platform")ContainerPlatform platform,
-            @JsonProperty("cacheRepo")String cacheRepo,
-            @JsonProperty("ip")String ip) {
+    BuildRequest(String dockerFile, Path workspace, String repo, String condaFile, User user, ContainerPlatform platform, String cacheRepo, String ip) {
         this.id = computeDigest(dockerFile,condaFile,platform)
-        this.workspace = workspace
         this.dockerFile = dockerFile
         this.condaFile = condaFile
         this.targetImage = "${repo}:${id}"
-        this.userId = userId
-        this.email = email
+        this.user = user
         this.platform = platform
         this.cacheRepository = cacheRepo
+        this.workDir = workspace.resolve(id).toAbsolutePath()
+        this.startTime = Instant.now()
+        this.job = "${id}-${startTime.toEpochMilli().toString().md5()[-5..-1]}"
         this.ip = ip
-        this.workDir = workspace ? Path.of(workspace).resolve(id).toAbsolutePath() : null
-        this.startTimeStr = Instant.now().toString()
-        this.job = "${id}-${startTimeStr.md5()[-5..-1]}"
     }
 
-    boolean isFinished(){
-        this.result?.duration != null
-    }
+    protected BuildRequest() {}
 
     static private String computeDigest(String dockerFile, String condaFile, ContainerPlatform platform) {
-        def content = platform?.toString() ?:""
+        def content = platform.toString()
         content += dockerFile
         if( condaFile )
             content += condaFile
@@ -136,7 +101,7 @@ class BuildRequest {
 
     @Override
     String toString() {
-        return "BuildRequest[id=$id; targetImage=$targetImage; user=$userId; dockerFile=${trunc(dockerFile)}; condaFile=${trunc(condaFile)}]"
+        return "BuildRequest[id=$id; targetImage=$targetImage; user=$user; dockerFile=${trunc(dockerFile)}; condaFile=${trunc(condaFile)}]"
     }
 
 }

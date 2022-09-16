@@ -98,10 +98,10 @@ class ContainerTokenController {
         // create a unique digest to identify the request
         return new BuildRequest(
                 dockerContent,
-                workspace,
+                Path.of(workspace),
                 build,
                 condaContent,
-                user?.id, user?.email,
+                user,
                 platform,
                 cache,
                 ip )

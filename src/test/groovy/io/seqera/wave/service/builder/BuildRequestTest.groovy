@@ -6,7 +6,7 @@ import java.nio.file.Path
 
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
-
+import io.seqera.wave.util.JacksonHelper
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -21,13 +21,13 @@ class BuildRequestTest extends Specification {
         def repo = 'docker.io/wave'
         def cache = 'docker.io/cache'
         when:
-        def req = new BuildRequest(CONTENT, "$PATH", repo, null, USER.id, USER.email, ContainerPlatform.of('amd64'),cache, "")
+        def req = new BuildRequest(CONTENT, PATH, repo, null, USER, ContainerPlatform.of('amd64'),cache, "")
         then:
         req.id == 'acc83dc6d094823894869bf3cf3de17b'
         req.workDir == PATH.resolve(req.id).toAbsolutePath()
         req.targetImage == "docker.io/wave:${req.id}"
         req.dockerFile == CONTENT
-        req.userId == USER.id
+        req.user == USER
         req.job =~ /acc83dc6d094823894869bf3cf3de17b-[a-z0-9]+/
         req.cacheRepository == cache
     }
@@ -39,12 +39,12 @@ class BuildRequestTest extends Specification {
         def repo = 'docker.io/wave'
         def cache = 'docker.io/cache'
         and:
-        def req1 = new BuildRequest('from foo', "$PATH", repo, null, USER.id, USER.email, ContainerPlatform.of('amd64'), cache, "")
-        def req2 = new BuildRequest('from foo', "$PATH", repo, null, USER.id, USER.email, ContainerPlatform.of('amd64'), cache, "")
-        def req3 = new BuildRequest('from bar', "$PATH", repo, null, USER.id, USER.email, ContainerPlatform.of('amd64'), cache, "")
-        def req4 = new BuildRequest('from bar', "$PATH", repo, 'salmon=1.2.3', USER.id, USER.email, ContainerPlatform.of('amd64'), cache, "")
-        def req5 = new BuildRequest('from bar', "$PATH", repo, 'salmon=1.2.3', USER.id, USER.email, ContainerPlatform.of('amd64'), cache, "")
-        def req6 = new BuildRequest('from bar', "$PATH", repo, 'salmon=1.2.5', USER.id, USER.email, ContainerPlatform.of('amd64'), cache, "")
+        def req1 = new BuildRequest('from foo', PATH, repo, null, USER, ContainerPlatform.of('amd64'), cache, "")
+        def req2 = new BuildRequest('from foo', PATH, repo, null, USER, ContainerPlatform.of('amd64'), cache, "")
+        def req3 = new BuildRequest('from bar', PATH, repo, null, USER, ContainerPlatform.of('amd64'), cache, "")
+        def req4 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.3', USER, ContainerPlatform.of('amd64'), cache, "")
+        def req5 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.3', USER, ContainerPlatform.of('amd64'), cache, "")
+        def req6 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.5', USER, ContainerPlatform.of('amd64'), cache, "")
 
         expect:
         req1 == req2
@@ -65,5 +65,34 @@ class BuildRequestTest extends Specification {
         and:
         req1.hashCode() != req5.hashCode()
         req1.hashCode() != req6.hashCode()
+    }
+
+    def 'should ser-deser request' () {
+        given:
+        def USER = new User(id:1, email: 'foo@user.com')
+        def PATH = Path.of('somewhere')
+        def repo = 'docker.io/wave'
+        def cache = 'docker.io/cache'
+        and:
+        def req = new BuildRequest('from foo', PATH, repo, null, USER, ContainerPlatform.of('amd64'), cache, "")
+        when:
+        def json = JacksonHelper.toJson(req)
+        then:
+        noExceptionThrown()
+
+        when:
+        def copy = JacksonHelper.fromJson(json, BuildRequest)
+        then:
+        copy.id == req.id
+        copy.dockerFile == req.dockerFile
+        copy.condaFile == req.condaFile
+        copy.workDir == req.workDir
+        copy.targetImage == req.targetImage
+        copy.user == req.user
+        copy.platform == req.platform
+        copy.cacheRepository == req.cacheRepository
+        copy.startTime == req.startTime
+        copy.job == req.job
+        copy.ip == req.ip
     }
 }

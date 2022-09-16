@@ -2,7 +2,6 @@ package io.seqera.wave.service.builder
 
 import java.nio.file.Files
 import java.time.Duration
-import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 import javax.annotation.Nullable
@@ -17,7 +16,6 @@ import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
-import io.seqera.wave.service.builder.cache.CacheStore
 import io.seqera.wave.service.mail.MailService
 import io.seqera.wave.util.ThreadPoolBuilder
 import jakarta.inject.Inject
@@ -56,7 +54,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     private MailService mailService
 
     @Inject
-    private CacheStore<String,BuildRequest> buildRequests
+    private BuildStore buildRequests
 
     private ExecutorService executor
 
@@ -103,7 +101,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
      */
     @Override
     CompletableFuture<BuildResult> buildResult(String targetImage) {
-        return CompletableFuture.supplyAsync(() -> buildRequests.await(targetImage).result)
+        return buildRequests
+                .awaitBuild(targetImage)
     }
 
     protected String credsJson(Set<String> registries) {
@@ -154,19 +153,19 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         final creds = credsJson(repos)
 
         // launch an external process to build the container
+        BuildResult result=null
         try {
-            final result = buildStrategy.build(request, creds)
+            result = buildStrategy.build(request, creds)
             log.info "== Build completed with status=$result.exitStatus; stdout: (see below)\n${indent(result.logs)}"
-            request.result = result
             return result
         }
         catch (Exception e) {
             log.error "== Ouch! Unable to build container request=$request", e
-            return request.result = new BuildResult(request.id, -1, e.message, request.startTime, Duration.between(request.startTime, Instant.now()))
+            return result = BuildResult.failed(request.id, e.message, request.startTime)
         }
         finally {
-            // update build cache
-            buildRequests.put(request.targetImage, request)
+            // update build status store
+            buildRequests.storeBuild(request.targetImage, result)
             // cleanup build context
             if( !debugMode )
                 buildStrategy.cleanup(request)
@@ -176,9 +175,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     protected CompletableFuture<BuildResult> launchAsync(BuildRequest request) {
 
         if( rateLimiterService )
-            rateLimiterService.acquireBuild(new AcquireRequest(request.userId?.toString(),request.ip))
+            rateLimiterService.acquireBuild(new AcquireRequest(request.user?.id?.toString(), request.ip))
 
-        buildRequests.put(request.targetImage, request)
+        buildRequests.storeBuild(request.targetImage, BuildResult.create(request))
 
         CompletableFuture
                 .<BuildResult>supplyAsync(() -> launch(request), executor)
@@ -197,7 +196,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     protected String getOrSubmit(BuildRequest request) {
         // use the target image as the cache key
         synchronized (buildRequests) {
-            if( !buildRequests.containsKey(request.targetImage) ) {
+            if( !buildRequests.hasBuild(request.targetImage) ) {
                 log.info "== Submit build request request: $request"
                 launchAsync(request)
             }
