@@ -5,6 +5,7 @@ import javax.validation.constraints.NotNull
 import javax.validation.constraints.Size
 
 import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
@@ -18,6 +19,7 @@ import jakarta.persistence.Version
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @ToString(includeNames = true, includePackage = false, includes = 'id,userName')
+@EqualsAndHashCode
 @CompileStatic
 @Table(name="tw_user")
 @Entity
