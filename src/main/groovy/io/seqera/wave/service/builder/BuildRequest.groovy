@@ -89,8 +89,6 @@ class BuildRequest {
         this.ip = ip
     }
 
-    protected BuildRequest() {}
-
     static private String computeDigest(String dockerFile, String condaFile, ContainerPlatform platform) {
         def content = platform.toString()
         content += dockerFile

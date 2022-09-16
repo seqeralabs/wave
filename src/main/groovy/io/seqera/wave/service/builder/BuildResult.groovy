@@ -10,6 +10,9 @@ import groovy.transform.ToString
 /**
  * Model a container builder request
  *
+ * WARNING: this class is stored as JSON serialized object in the {@link BuildStore}.
+ * Make sure changes are backward compatible with previous object versions
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @ToString(includePackage = false, includeNames = true)

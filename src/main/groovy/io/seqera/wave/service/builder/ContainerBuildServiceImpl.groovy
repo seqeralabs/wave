@@ -135,40 +135,40 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         return result
     }
 
-    protected BuildResult launch(BuildRequest request) {
+    protected BuildResult launch(BuildRequest req) {
         // create the workdir path
-        Files.createDirectories(request.workDir)
+        Files.createDirectories(req.workDir)
         // save the dockerfile
-        final dockerfile = request.workDir.resolve('Dockerfile')
-        Files.write(dockerfile, request.dockerFile.bytes, CREATE, APPEND)
+        final dockerfile = req.workDir.resolve('Dockerfile')
+        Files.write(dockerfile, req.dockerFile.bytes, CREATE, APPEND)
         // save the conda file
-        if( request.condaFile ) {
-            final condaFile = request.workDir.resolve('conda.yml')
-            Files.write(condaFile, request.condaFile.bytes, CREATE, APPEND)
+        if( req.condaFile ) {
+            final condaFile = req.workDir.resolve('conda.yml')
+            Files.write(condaFile, req.condaFile.bytes, CREATE, APPEND)
         }
         // find repos
-        final repos = findRepositories(request.dockerFile) + buildRepo
+        final repos = findRepositories(req.dockerFile) + buildRepo
         
         // create creds file for target repo
         final creds = credsJson(repos)
 
         // launch an external process to build the container
-        BuildResult result=null
+        BuildResult resp=null
         try {
-            result = buildStrategy.build(request, creds)
-            log.info "== Build completed with status=$result.exitStatus; stdout: (see below)\n${indent(result.logs)}"
-            return result
+            resp = buildStrategy.build(req, creds)
+            log.info "== Build completed with status=$resp.exitStatus; stdout: (see below)\n${indent(resp.logs)}"
+            return resp
         }
         catch (Exception e) {
-            log.error "== Ouch! Unable to build container request=$request", e
-            return result = BuildResult.failed(request.id, e.message, request.startTime)
+            log.error "== Ouch! Unable to build container req=$req", e
+            return resp = BuildResult.failed(req.id, e.message, req.startTime)
         }
         finally {
             // update build status store
-            buildRequests.storeBuild(request.targetImage, result)
+            buildRequests.storeBuild(req.targetImage, resp)
             // cleanup build context
             if( !debugMode )
-                buildStrategy.cleanup(request)
+                buildStrategy.cleanup(req)
         }
     }
 

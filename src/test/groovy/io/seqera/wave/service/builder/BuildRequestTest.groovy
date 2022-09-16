@@ -6,7 +6,6 @@ import java.nio.file.Path
 
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
-import io.seqera.wave.util.JacksonHelper
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -67,32 +66,4 @@ class BuildRequestTest extends Specification {
         req1.hashCode() != req6.hashCode()
     }
 
-    def 'should ser-deser request' () {
-        given:
-        def USER = new User(id:1, email: 'foo@user.com')
-        def PATH = Path.of('somewhere')
-        def repo = 'docker.io/wave'
-        def cache = 'docker.io/cache'
-        and:
-        def req = new BuildRequest('from foo', PATH, repo, null, USER, ContainerPlatform.of('amd64'), cache, "")
-        when:
-        def json = JacksonHelper.toJson(req)
-        then:
-        noExceptionThrown()
-
-        when:
-        def copy = JacksonHelper.fromJson(json, BuildRequest)
-        then:
-        copy.id == req.id
-        copy.dockerFile == req.dockerFile
-        copy.condaFile == req.condaFile
-        copy.workDir == req.workDir
-        copy.targetImage == req.targetImage
-        copy.user == req.user
-        copy.platform == req.platform
-        copy.cacheRepository == req.cacheRepository
-        copy.startTime == req.startTime
-        copy.job == req.job
-        copy.ip == req.ip
-    }
 }
