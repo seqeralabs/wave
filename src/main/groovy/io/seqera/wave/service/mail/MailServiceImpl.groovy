@@ -41,7 +41,7 @@ class MailServiceImpl implements MailService {
         final recipient = user ? user.email : config.from
         if( recipient ) {
             final result = build ?: BuildResult.unknown()
-            final mail = buildCompletionEmail(request, result, recipient)
+            final mail = buildCompletionMail(request, result, recipient)
             spooler.sendMail(mail)
         }
         else {
@@ -49,7 +49,7 @@ class MailServiceImpl implements MailService {
         }
     }
 
-    Mail buildCompletionEmail(BuildRequest req, BuildResult result, String recipient) {
+    Mail buildCompletionMail(BuildRequest req, BuildResult result, String recipient) {
         // create template binding
         final binding = new HashMap(5)
         final status = result.exitStatus==0 ? 'DONE': 'FAILED'
