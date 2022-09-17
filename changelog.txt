@@ -1,4 +1,8 @@
 # Wave changelog
+v0.17.1 - 17 Sep 2022
+- Add user to completion email [2e45eee7]
+- Remove equals annotation from User [853513af]
+
 v0.17.0 - 16 Sep 2022
 - Build cache storage (#129) [d007184d]
 - Add different rate limit for auths or anonymous requests [99372a3a]
