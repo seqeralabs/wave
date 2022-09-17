@@ -31,7 +31,7 @@ class MailServiceImplTest extends Specification {
         }
         
         when:
-        def mail = service.buildCompletionMail(request, result, recipient)
+        def mail = service.buildCompletionEmail(request, result, recipient)
         then:
         mail.to == recipient
     }
