@@ -9,6 +9,6 @@ import io.seqera.wave.service.builder.BuildResult
  */
 interface MailService {
 
-    void sendCompletionMail(BuildRequest request, BuildResult result)
+    void sendCompletionEmail(BuildRequest request, BuildResult result)
 
 }

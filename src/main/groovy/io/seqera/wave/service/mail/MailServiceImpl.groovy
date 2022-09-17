@@ -35,13 +35,13 @@ class MailServiceImpl implements MailService {
     private String serverUrl
 
     @Override
-    void sendCompletionMail(BuildRequest request, BuildResult build) {
+    void sendCompletionEmail(BuildRequest request, BuildResult build) {
         // send to user email address or fallback to the system `mail.from` address
         final user = request.user
         final recipient = user ? user.email : config.from
         if( recipient ) {
             final result = build ?: BuildResult.unknown()
-            final mail = buildCompletionMail(request, result, recipient)
+            final mail = buildCompletionEmail(request, result, recipient)
             spooler.sendMail(mail)
         }
         else {
@@ -49,11 +49,12 @@ class MailServiceImpl implements MailService {
         }
     }
 
-    Mail buildCompletionMail(BuildRequest req, BuildResult result, String recipient) {
+    Mail buildCompletionEmail(BuildRequest req, BuildResult result, String recipient) {
         // create template binding
         final binding = new HashMap(5)
         final status = result.exitStatus==0 ? 'DONE': 'FAILED'
         binding.build_id = result.id
+        binding.build_user =  "${req.user ? req.user.userName : 'n/a'} (${req.ip})"
         binding.build_success = result.exitStatus==0
         binding.build_exit_status = result.exitStatus
         binding.build_time = formatTimestamp(result.startTime) ?: '-'
