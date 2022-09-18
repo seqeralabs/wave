@@ -49,7 +49,11 @@ class TestController {
     @Inject HttpClientAddressResolver addressResolver
 
     @Get('/test-build')
-    HttpResponse<String> testBuild(@Nullable String platform, @Nullable String repo, @Nullable String cache, @Nullable String accessToken,
+    HttpResponse<String> testBuild(@Nullable String platform,
+                                   @Nullable String repo,
+                                   @Nullable String cache,
+                                   @Nullable String accessToken,
+                                   @Nullable Long workspaceId,
                                     HttpRequest httpRequest) {
         if( !accessToken && !allowAnonymous )
             throw new BadRequestException("Missing user access token")
@@ -73,6 +77,7 @@ class TestController {
                 repo ?: buildRepo,
                 null,
                 user,
+                workspaceId,
                 ContainerPlatform.of(platform),
                 cache ?: cacheRepo,
                 ip)

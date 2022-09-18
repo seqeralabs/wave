@@ -72,7 +72,7 @@ class ContainerScanner {
 
     protected void checkResponseCode(HttpResponse<?> response, RoutePath route, boolean blob) {
         final code = response.statusCode()
-        final repository = route.getTargetRepository()
+        final repository = route.getTargetContainer()
         final String body = response.body()?.toString()
         if( code==404 ) {
             // see errors list https://docs.docker.com/registry/spec/api/#errors-2

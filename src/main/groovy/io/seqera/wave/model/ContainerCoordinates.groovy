@@ -2,6 +2,8 @@ package io.seqera.wave.model
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import io.seqera.wave.core.ContainerPath
+import static io.seqera.wave.WaveDefault.DOCKER_IO
 
 /**
  * Model a container image coordinates
@@ -10,11 +12,15 @@ import groovy.transform.CompileStatic
  */
 @Canonical
 @CompileStatic
-class ContainerCoordinates {
+class ContainerCoordinates implements ContainerPath {
 
     final String registry
     final String image
     final String reference
+
+    String getRepository() { "$registry/$image" }
+
+    String getTargetContainer() { "$registry/$image:$reference" }
 
     static ContainerCoordinates parse(String path) {
 
@@ -45,6 +51,6 @@ class ContainerCoordinates {
             throw new IllegalArgumentException("Invalid container image name: $path")
 
         final image = coordinates.join('/')
-        return new ContainerCoordinates(reg, image, ref)
+        return new ContainerCoordinates(reg ?: DOCKER_IO, image, ref)
     }
 }

@@ -70,17 +70,10 @@ class RegistryProxyService {
     }
 
     protected RegistryCredentials getCredentials(RoutePath route) {
-        log.debug "Checking credentials for route=$route"
         final req = route.request
-        if(  req?.userId ) {
-            final result = credentialsService.findRegistryCreds(route.registry, req.userId, req.workspaceId)
-            log.debug "Credentials for container image: $req.containerImage; userId=$req.userId; workspaceId=$req.workspaceId => userName=${result?.userName}; password=${result?.password}"
-            return result
-                    ? credentialsFactory.create(route.registry, result.userName, result.password)
-                    : null
-        }
-        else
-            return credentialsProvider.getCredentials(route.registry)
+        final result = credentialsProvider.getUserCredentials(route, req?.userId, req?.workspaceId)
+        log.debug "Credentials for route path=${route.targetContainer} => ${result}"
+        return result
     }
 
     DigestStore handleManifest(RoutePath route, Map<String,List<String>> headers){

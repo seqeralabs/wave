@@ -35,6 +35,6 @@ class ErrorHandlingTest extends Specification {
         then:
         final exception = thrown(HttpClientResponseException)
         RegistryErrorResponse error = exception.response.getBody(RegistryErrorResponse).get()
-        error.errors.get(0).message == "repository 'hello-world:latest' unauthorized (401)"
+        error.errors.get(0).message == "repository 'docker.io/hello-world:latest' unauthorized (401)"
     }
 }

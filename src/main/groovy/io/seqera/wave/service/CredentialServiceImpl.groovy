@@ -14,6 +14,9 @@ import io.seqera.tower.crypto.Sealed
 import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+
+import static io.seqera.wave.WaveDefault.DOCKER_IO
+
 /**
  * Define operations to access container registry credentials from Tower
  *
@@ -24,8 +27,6 @@ import jakarta.inject.Singleton
 @CompileStatic
 @Singleton
 class CredentialServiceImpl implements CredentialsService {
-
-    static final public String DOCKER_IO = 'docker.io'
 
     @Inject
     private CredentialsDao credentialsDao
@@ -50,7 +51,7 @@ class CredentialServiceImpl implements CredentialsService {
         
         final all = workspaceId
                 ? credentialsDao.findRegistryCredentialsByWorkspaceId(workspaceId)
-                : credentialsDao.findRegistryCredentialsByUser(userId)
+                : credentialsDao.findRegistryCredentialsByUserId(userId)
 
         if (!all)
             return null

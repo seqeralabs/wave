@@ -669,7 +669,7 @@ class ContainerScannerTest extends Specification {
         def REG = 'docker.io'
         def IMAGE = 'library/busybox'
         def registry = lookupService.lookup(REG)
-        def creds = credentialsProvider.getCredentials(REG)
+        def creds = credentialsProvider.getDefaultCredentials(REG)
         and:
 
         def client = new ProxyClient()

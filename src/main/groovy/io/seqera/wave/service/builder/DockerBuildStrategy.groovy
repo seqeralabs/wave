@@ -5,10 +5,16 @@ import java.nio.file.Path
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 
+import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import jakarta.inject.Singleton
+
+import static java.nio.file.StandardOpenOption.CREATE
+import static java.nio.file.StandardOpenOption.WRITE
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
+
 /**
  *  Build a container image using a Docker CLI tool
  *
@@ -25,18 +31,28 @@ class DockerBuildStrategy extends BuildStrategy {
     @Value('${wave.build.timeout:5m}')
     Duration buildTimeout
 
+    @Value('${wave.debug}')
+    Boolean debug
+
     @Override
     BuildResult build(BuildRequest req, String creds) {
 
         Path credsFile = null
         if( creds ) {
             credsFile = req.workDir.resolve('config.json')
-            Files.write(credsFile, creds.bytes)
+            Files.write(credsFile, JsonOutput.prettyPrint(creds).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
         }
 
         // comand the docker build command
         final buildCmd= buildCmd(req, credsFile)
         log.debug "Build run command: ${buildCmd.join(' ')}"
+        // save docker cli for debugging purpose
+        if( debug ) {
+            Files.write(req.workDir.resolve('docker.sh'),
+                    buildCmd.join(' ').bytes,
+                    CREATE, WRITE, TRUNCATE_EXISTING)
+        }
+        
         final proc = new ProcessBuilder()
                 .command(buildCmd)
                 .directory(req.workDir.toFile())
