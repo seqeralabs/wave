@@ -18,7 +18,7 @@ import io.seqera.wave.tower.CredentialsDao
 interface CredentialsDaoH2 extends CredentialsDao{
 
     @Query("select  * from tw_credentials c where c.provider = 'container-reg' and (c.deleted is null or c.deleted = false) and c.user_id = :userId and c.workspace_id is null")
-    List<Credentials> findRegistryCredentialsByUser(Long userId)
+    List<Credentials> findRegistryCredentialsByUserId(Long userId)
 
     @Query("select * from tw_credentials c where c.provider = 'container-reg' and (c.deleted is null or c.deleted = false) and c.workspace_id = :workspaceId")
     List<Credentials> findRegistryCredentialsByWorkspaceId(Long workspaceId)

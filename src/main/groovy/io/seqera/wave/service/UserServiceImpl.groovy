@@ -40,7 +40,7 @@ class UserServiceImpl implements UserService {
     }
 
     @Inject
-    AccessTokenDao accessTokenDao
+    private AccessTokenDao accessTokenDao
 
     @Override
     User getUserByAccessToken(String encodedToken) {
