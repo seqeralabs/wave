@@ -61,13 +61,14 @@ dependencies {
     runtimeOnly "software.amazon.awssdk:sts"
 
     runtimeOnly("com.h2database:h2")
+    runtimeOnly 'mysql:mysql-connector-java:5.1.49'
     runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
     implementation("io.micronaut.sql:micronaut-jdbc-hikari")
 
     runtimeOnly("io.netty:netty-tcnative-boringssl-static:2.0.0.Final")
     testImplementation "org.apache.commons:commons-compress:1.21"
     testImplementation("org.testcontainers:testcontainers")
-    testImplementation("org.testcontainers:mariadb:1.17.3")
+    testImplementation("org.testcontainers:mysql:1.17.3")
 
     // --
     implementation("ch.qos.logback:logback-classic")
