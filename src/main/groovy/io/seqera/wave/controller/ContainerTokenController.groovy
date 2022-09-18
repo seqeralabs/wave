@@ -102,6 +102,7 @@ class ContainerTokenController {
                 build,
                 condaContent,
                 user,
+                req.towerWorkspaceId,
                 platform,
                 cache,
                 ip )

@@ -59,11 +59,11 @@ class RouteHandlerTest extends Specification {
         
         where:
         PATH                                        | ROUTE
-        '/v2/hello-world/manifests/latest'          | new RoutePath('manifests', null, 'hello-world', 'latest', '/v2/hello-world/manifests/latest')
-        '/v2/library/hello-world/manifests/latest'  | new RoutePath('manifests', null, 'library/hello-world', 'latest', '/v2/library/hello-world/manifests/latest')
+        '/v2/hello-world/manifests/latest'          | new RoutePath('manifests', 'docker.io', 'hello-world', 'latest', '/v2/hello-world/manifests/latest')
+        '/v2/library/hello-world/manifests/latest'  | new RoutePath('manifests', 'docker.io', 'library/hello-world', 'latest', '/v2/library/hello-world/manifests/latest')
         and:
-        '/v2/hello-world/blobs/latest'              | new RoutePath('blobs', null,'hello-world', 'latest', '/v2/hello-world/blobs/latest')
-        '/v2/library/hello-world/blobs/latest'      | new RoutePath('blobs', null,'library/hello-world', 'latest', '/v2/library/hello-world/blobs/latest')
+        '/v2/hello-world/blobs/latest'              | new RoutePath('blobs', 'docker.io','hello-world', 'latest', '/v2/hello-world/blobs/latest')
+        '/v2/library/hello-world/blobs/latest'      | new RoutePath('blobs', 'docker.io','library/hello-world', 'latest', '/v2/library/hello-world/blobs/latest')
         and:
         '/v2/github.io/biocontainers/biocontainers/manifests/v1.1'          | new RoutePath('manifests', 'github.io', 'biocontainers/biocontainers', 'v1.1', '/v2/biocontainers/biocontainers/manifests/v1.1')
     }
@@ -107,42 +107,12 @@ class RouteHandlerTest extends Specification {
 
         where:
         REQ_IMAGE                                   | REQ_PATH                                                      | ROUTE_REG     | ROUTE_TKN     | ROUTE_TYPE    | ROUTE_IMAGE                       | ROUTE_REF         | ROUTE_PATH
-        'ubuntu:latest'                             | '/v2/wt/a1/ubuntu/manifests/latest'                           | null          | 'a1'          | 'manifests'   | 'library/ubuntu'                  | 'latest'          | '/v2/library/ubuntu/manifests/latest'
-        'canonical/ubuntu:latest'                   | '/v2/wt/b2/canonical/ubuntu/manifests/latest'                 | null          | 'b2'          | 'manifests'   | 'canonical/ubuntu'                | 'latest'          | '/v2/canonical/ubuntu/manifests/latest'
+        'ubuntu:latest'                             | '/v2/wt/a1/ubuntu/manifests/latest'                           | 'docker.io'   | 'a1'          | 'manifests'   | 'library/ubuntu'                  | 'latest'          | '/v2/library/ubuntu/manifests/latest'
+        'canonical/ubuntu:latest'                   | '/v2/wt/b2/canonical/ubuntu/manifests/latest'                 | 'docker.io'   | 'b2'          | 'manifests'   | 'canonical/ubuntu'                | 'latest'          | '/v2/canonical/ubuntu/manifests/latest'
         'quay.io/canonical/ubuntu:latest'           | '/v2/wt/c3/canonical/ubuntu/manifests/latest'                 | 'quay.io'     | 'c3'          | 'manifests'   | 'canonical/ubuntu'                | 'latest'          | '/v2/canonical/ubuntu/manifests/latest'
-        'biocontainers/biocontainers:v1.2.0_cv1'    | '/v2/wt/d4/biocontainers/biocontainers/blobs/v1.2.0_cv1'      | null          | 'd4'          | 'blobs'       | 'biocontainers/biocontainers'     | 'v1.2.0_cv1'      | '/v2/biocontainers/biocontainers/blobs/v1.2.0_cv1'
+        'biocontainers/biocontainers:v1.2.0_cv1'    | '/v2/wt/d4/biocontainers/biocontainers/blobs/v1.2.0_cv1'      | 'docker.io'   | 'd4'          | 'blobs'       | 'biocontainers/biocontainers'     | 'v1.2.0_cv1'      | '/v2/biocontainers/biocontainers/blobs/v1.2.0_cv1'
         'my_host:2000/canonical/ubuntu:latest'      | '/v2/wt/e5/canonical/ubuntu/blobs/latest'                     | 'my_host:2000'| 'e5'          | 'blobs'       | 'canonical/ubuntu'                | 'latest'          | '/v2/canonical/ubuntu/blobs/latest'
 
-    }
-
-    def 'should validate route type' () {
-
-        when:
-        def route = new RoutePath(TYPE, REG, IMAGE, REF)
-        then:
-        route.isManifest() == IS_MANIFEST
-        route.isBlob() == IS_BLOB
-        route.isTag() == IS_TAG
-        route.isDigest() == IS_DIGEST
-
-
-        where:
-        TYPE        | REG  | IMAGE | REF           | IS_MANIFEST   | IS_BLOB   | IS_TAG    | IS_DIGEST
-        'manifests' | 'io' | 'foo' | 'latest'      | true          | false     | true      | false
-        'manifests' | 'io' | 'foo' | 'sha256:1234' | true          | false     | false     | true
-        and:
-        'blobs'     |  'io' | 'foo' | 'latest'      | false         | true      | true      | false
-        'blobs'     |  'io' | 'foo' | 'sha256:1234' | false         | true      | false     | true
-
-    }
-
-    def 'should check target image' () {
-        expect:
-        new RoutePath(null, null, 'library/busybox','latest',null)
-                .targetRepository == 'library/busybox:latest'
-        and:
-        new RoutePath(null, 'quay.io', 'library/busybox','latest',null)
-                .targetRepository == 'quay.io/library/busybox:latest'
     }
 
 }

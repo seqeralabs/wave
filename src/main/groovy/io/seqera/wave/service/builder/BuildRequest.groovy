@@ -66,21 +66,27 @@ class BuildRequest {
     final Instant startTime
 
     /**
-     * Build jon unique id
+     * Build job unique id
      */
     final String job
 
     /**
      * The client IP if available
      */
-    final String ip;
+    final String ip
 
-    BuildRequest(String dockerFile, Path workspace, String repo, String condaFile, User user, ContainerPlatform platform, String cacheRepo, String ip) {
+    /**
+     * Tower workspace id
+     */
+    final Long workspaceId
+
+    BuildRequest(String dockerFile, Path workspace, String repo, String condaFile, User user, Long workspaceId, ContainerPlatform platform, String cacheRepo, String ip) {
         this.id = computeDigest(dockerFile,condaFile,platform)
         this.dockerFile = dockerFile
         this.condaFile = condaFile
         this.targetImage = "${repo}:${id}"
         this.user = user
+        this.workspaceId = workspaceId
         this.platform = platform
         this.cacheRepository = cacheRepo
         this.workDir = workspace.resolve(id).toAbsolutePath()

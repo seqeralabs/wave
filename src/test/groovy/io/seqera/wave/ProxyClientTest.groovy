@@ -54,7 +54,7 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
         def REG = 'quay.io'
         def IMAGE = 'biocontainers/fastqc'
         def registry = lookupService.lookup(REG)
-        def creds = credentialsProvider.getCredentials(REG)
+        def creds = credentialsProvider.getDefaultCredentials(REG)
         and:
         def proxy = new ProxyClient()
                 .withImage(IMAGE)
@@ -86,7 +86,7 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
         def IMAGE = 'wave/kaniko'
         def REG = '195996028523.dkr.ecr.eu-west-1.amazonaws.com'
         def registry = lookupService.lookup(REG)
-        def creds = credentialsProvider.getCredentials(REG)
+        def creds = credentialsProvider.getDefaultCredentials(REG)
         and:
         def proxy = new ProxyClient()
                 .withImage(IMAGE)

@@ -10,7 +10,6 @@ import javax.annotation.PostConstruct
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
-import io.seqera.wave.WaveDefault
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.model.ContainerCoordinates
@@ -21,8 +20,9 @@ import io.seqera.wave.util.ThreadPoolBuilder
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.util.StringUtils.indent
-import static java.nio.file.StandardOpenOption.APPEND
 import static java.nio.file.StandardOpenOption.CREATE
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
+import static java.nio.file.StandardOpenOption.WRITE
 /**
  * Implements container build service
  *
@@ -33,15 +33,9 @@ import static java.nio.file.StandardOpenOption.CREATE
 @CompileStatic
 class ContainerBuildServiceImpl implements ContainerBuildService {
 
-    @Value('${wave.build.debug}')
+    @Value('${wave.debug}')
     @Nullable
     Boolean debugMode
-
-    /**
-     * The registry repository where the build image will be stored
-     */
-    @Value('${wave.build.repo}')
-    String buildRepo
 
     @Value('${wave.build.image}')
     String buildImage
@@ -105,20 +99,21 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 .awaitBuild(targetImage)
     }
 
-    protected String credsJson(Set<String> registries) {
+    protected String credsJson(Set<String> repositories, Long userId, Long workspaceId) {
         final result = new StringBuilder()
-        for( String reg : registries ) {
-            final info = lookupService.lookup(reg)
-            final creds = credentialsProvider.getCredentials(reg)
-            if( !creds ) {
-                return null
-            }
+        for( String repo : repositories ) {
+            final path = ContainerCoordinates.parse(repo)
+            final info = lookupService.lookup(path.registry)
+            final creds = credentialsProvider.getUserCredentials(path, userId, workspaceId)
+            log.debug "Build credentials for repository: $repo => $creds"
+            if( !creds )
+                continue
             final encode = "${creds.username}:${creds.password}".getBytes().encodeBase64()
             if( result.size() )
                 result.append(',')
-            result.append("\"${info.getHost()}\":{\"auth\":\"$encode\"}")
+            result.append("\"${info.index}\":{\"auth\":\"$encode\"}")
         }
-        return """{"auths":{$result}}"""
+        return result.size() ? """{"auths":{$result}}""" : null
     }
 
     static protected Set<String> findRepositories(String dockerfile) {
@@ -128,38 +123,39 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         for( String line : dockerfile.readLines()) {
             if( !line.trim().toLowerCase().startsWith('from '))
                 continue
-            final cords = ContainerCoordinates.parse(line.trim().substring(5))
-            final reg = cords.registry ?: WaveDefault.DOCKER_IO
-            result.add(reg)
+            def repo = line.trim().substring(5)
+            def p = repo.indexOf(' ')
+            if( p!=-1 )
+                repo = repo.substring(0,p)
+            result.add(repo)
         }
         return result
     }
 
     protected BuildResult launch(BuildRequest req) {
-        // create the workdir path
-        Files.createDirectories(req.workDir)
-        // save the dockerfile
-        final dockerfile = req.workDir.resolve('Dockerfile')
-        Files.write(dockerfile, req.dockerFile.bytes, CREATE, APPEND)
-        // save the conda file
-        if( req.condaFile ) {
-            final condaFile = req.workDir.resolve('conda.yml')
-            Files.write(condaFile, req.condaFile.bytes, CREATE, APPEND)
-        }
-        // find repos
-        final repos = findRepositories(req.dockerFile) + buildRepo
-        
-        // create creds file for target repo
-        final creds = credsJson(repos)
-
         // launch an external process to build the container
         BuildResult resp=null
         try {
+            // create the workdir path
+            Files.createDirectories(req.workDir)
+            // save the dockerfile
+            final dockerfile = req.workDir.resolve('Dockerfile')
+            Files.write(dockerfile, req.dockerFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            // save the conda file
+            if( req.condaFile ) {
+                final condaFile = req.workDir.resolve('conda.yml')
+                Files.write(condaFile, req.condaFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            }
+            // find repos
+            final repos = findRepositories(req.dockerFile) + req.targetImage + req.cacheRepository
+            // create creds file for target repo
+            final creds = credsJson(repos, req.user?.id, req.workspaceId)
+
             resp = buildStrategy.build(req, creds)
             log.info "== Build completed with status=$resp.exitStatus; stdout: (see below)\n${indent(resp.logs)}"
             return resp
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             log.error "== Ouch! Unable to build container req=$req", e
             return resp = BuildResult.failed(req.id, e.message, req.startTime)
         }

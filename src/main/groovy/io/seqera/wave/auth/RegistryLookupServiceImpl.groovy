@@ -11,6 +11,8 @@ import com.google.common.cache.LoadingCache
 import groovy.transform.CompileStatic
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
+import static io.seqera.wave.WaveDefault.DOCKER_REGISTRY_1
+
 /**
  * Lookup service for container registry. The role of this component
  * is to registry the retrieve the registry authentication realm
@@ -74,7 +76,6 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
         return new RegistryInfo(registry, endpoint, auth)
     }
 
-
     /**
      * Given a registry name maps to the corresponding registry URI e.g.
      * quay.io -> https://quay.io/v2/
@@ -85,7 +86,7 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
     protected URI registryEndpoint(String registry) {
         def result = registry ?: DOCKER_IO
         if( result==DOCKER_IO )
-            result = 'registry-1.docker.io'
+            result = DOCKER_REGISTRY_1
         if( !result.startsWith('http://') && !result.startsWith('https://') )
             result = 'https://' + result
         if( result.endsWith('/v2'))

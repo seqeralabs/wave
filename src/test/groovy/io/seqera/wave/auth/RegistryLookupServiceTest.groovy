@@ -1,13 +1,12 @@
 package io.seqera.wave.auth
 
-import io.seqera.wave.auth.RegistryAuth
-import io.seqera.wave.auth.RegistryInfo
-import io.seqera.wave.auth.RegistryLookupServiceImpl
 import spock.lang.Specification
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.auth.RegistryAuth
+import io.seqera.wave.auth.RegistryInfo
+import io.seqera.wave.auth.RegistryLookupServiceImpl
 import jakarta.inject.Inject
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -18,25 +17,32 @@ class RegistryLookupServiceTest extends Specification {
     @Inject RegistryLookupServiceImpl service
 
     def 'should find registry realm' () {
+        given:
+        RegistryInfo info
 
-        expect:
-        service.lookup('docker.io')
-                == new RegistryInfo(
-                'docker.io',
-                        new URI('https://registry-1.docker.io'),
-                        new RegistryAuth(new URI('https://auth.docker.io/token'),'registry.docker.io', RegistryAuth.Type.Bearer))
-        and:
-        service.lookup('quay.io') ==
-                new RegistryInfo(
-                'quay.io',
-                        new URI('https://quay.io'),
-                        new RegistryAuth(new URI('https://quay.io/v2/auth'),'quay.io', RegistryAuth.Type.Bearer) )
-        and:
-        service.lookup('195996028523.dkr.ecr.eu-west-1.amazonaws.com') ==
-                new RegistryInfo(
-                        '195996028523.dkr.ecr.eu-west-1.amazonaws.com',
-                        new URI('https://195996028523.dkr.ecr.eu-west-1.amazonaws.com'),
-                        new RegistryAuth(new URI('https://195996028523.dkr.ecr.eu-west-1.amazonaws.com/'), 'ecr.amazonaws.com', RegistryAuth.Type.Basic))
+        when:
+        info = service.lookup('docker.io')
+        then:
+        info.name == 'docker.io'
+        info.host == new URI('https://registry-1.docker.io')
+        info.index == 'https://index.docker.io/v1/'
+        info.auth == new RegistryAuth(new URI('https://auth.docker.io/token'),'registry.docker.io', RegistryAuth.Type.Bearer)
+
+        when:
+        info = service.lookup('quay.io')
+        then:
+        info.name == 'quay.io'
+        info.host == new URI('https://quay.io')
+        info.index == 'https://quay.io'
+        info.auth == new RegistryAuth(new URI('https://quay.io/v2/auth'),'quay.io', RegistryAuth.Type.Bearer)
+
+        when:
+        info = service.lookup('195996028523.dkr.ecr.eu-west-1.amazonaws.com')
+        then:
+        info.name == '195996028523.dkr.ecr.eu-west-1.amazonaws.com'
+        info.host == new URI('https://195996028523.dkr.ecr.eu-west-1.amazonaws.com')
+        info.index == 'https://195996028523.dkr.ecr.eu-west-1.amazonaws.com'
+        info.auth == new RegistryAuth(new URI('https://195996028523.dkr.ecr.eu-west-1.amazonaws.com/'), 'ecr.amazonaws.com', RegistryAuth.Type.Basic)
     }
 
     def 'should normalize registry url' () {
