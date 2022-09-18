@@ -45,19 +45,31 @@ class MySqlAccessTokenDaoTest extends Specification {
         def t1 = accessTokenDao.findById(100).orElse(null)
         then:
         t1.name == 'foo'
+        t1.secret == 'secret1'.bytes
+        and:
         t1.user.id == 1
+        t1.user.userName == 'me'
+        t1.user.email == 'me@google.com'
 
         when:
         def t2 = accessTokenDao.findById(200).orElse(null)
         then:
         t2.name == 'bar'
+        t2.secret == 'secret2'.bytes
+        and:
         t2.user.id == 2
+        t2.user.userName == 'you'
+        t2.user.email == 'you@google.com'
 
         when:
         def t3 = accessTokenDao.findById(300).orElse(null)
         then:
         t3.name == 'baz'
+        t3.secret == 'secret4'.bytes
+        and:
         t3.user.id == 1
+        t3.user.userName == 'me'
+        t3.user.email == 'me@google.com'
 
     }
 

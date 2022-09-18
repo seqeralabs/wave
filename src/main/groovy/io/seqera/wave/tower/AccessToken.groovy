@@ -12,7 +12,6 @@ import io.micronaut.core.annotation.Nullable
 import io.micronaut.data.annotation.DateCreated
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
-import jakarta.persistence.FetchType
 import jakarta.persistence.Id
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
@@ -32,7 +31,7 @@ class AccessToken {
     Long id
 
     @NotNull
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @ManyToOne(optional = false)
     User user
 
     @NotNull
