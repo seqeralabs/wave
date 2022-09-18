@@ -1,4 +1,9 @@
 # Wave changelog
+v0.18.0 - 19 Sep 2022
+- Add support for workspace credentials + fix docker push [7850a2f1]
+- Fix user attributes lazy loading [c8f692fb]
+- Bump mysql driver for testing [f0ddf36d]
+
 v0.17.1 - 17 Sep 2022
 - Add user to completion email [2e45eee7]
 - Remove equals annotation from User [853513af]
