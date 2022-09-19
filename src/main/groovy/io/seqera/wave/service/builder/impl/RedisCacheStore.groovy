@@ -2,6 +2,7 @@ package io.seqera.wave.service.builder.impl
 
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
+import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -36,10 +37,13 @@ class RedisCacheStore implements BuildStore {
     private Duration timeout
 
     RedisCacheStore(StatefulRedisConnection<String,String> senderConn) {
-        log.info "Creating Redis build store - duration=$duration; timeout=$timeout; delay=$delay"
         this.senderConn = senderConn
     }
 
+    @PostConstruct
+    void init() {
+        log.info "Creating Redis build store - duration=$duration; timeout=$timeout; delay=$delay"
+    }
     @Override
     boolean hasBuild(String imageName) {
         return senderConn.sync().get(imageName) != null
