@@ -11,7 +11,7 @@ netty:
       max-order: 3
 ---
 wave:
-  debug: true
+  debug: false
   allowAnonymous: true
   server:
       url: "${WAVE_SERVER_URL:`https://reg.ngrok.io`}"
