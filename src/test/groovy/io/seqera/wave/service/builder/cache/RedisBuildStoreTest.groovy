@@ -76,7 +76,7 @@ class RedisBuildStoreTest extends Specification implements RedisTestContainer {
         result.get() == req1
     }
 
-    @Timeout(value=10)
+    @Timeout(value=30)
     def 'should abort an await if build never finish' () {
         given:
         def req1 = BuildResult.create('1')
