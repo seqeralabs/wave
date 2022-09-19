@@ -1,6 +1,5 @@
 wave:
-  build:
-    debug: false
+  debug: true
 ---
 # uses TOWER_xxx variable because the dev environment is expected to be
 # the same as of tower
