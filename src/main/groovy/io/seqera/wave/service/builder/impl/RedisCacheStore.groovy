@@ -70,8 +70,8 @@ class RedisCacheStore implements BuildStore {
 
     protected BuildResult awaitCompletion0(String key, String payload) {
         final beg = System.currentTimeMillis()
-        // add 10% delay gap to pevent race condition with timeout expiration
-        final max = (timeout.toMillis() * 0.10) as long
+        // add 10% delay gap to prevent race condition with timeout expiration
+        final max = (timeout.toMillis() * 1.10) as long
         while( true ) {
             // de-serialise the json payload
             final current = JacksonHelper.fromJson(payload, BuildResult)
