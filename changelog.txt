@@ -1,4 +1,8 @@
 # Wave changelog
+v0.18.1 - 19 Sep 2022 
+- Fix wave debug option [a72d97e5]
+- Fix build invalid timeout interval [2dace3ed]
+
 v0.18.0 - 19 Sep 2022
 - Add support for workspace credentials + fix docker push [7850a2f1]
 - Fix user attributes lazy loading [c8f692fb]
