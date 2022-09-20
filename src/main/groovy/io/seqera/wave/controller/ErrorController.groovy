@@ -9,6 +9,9 @@ import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Error
 import io.micronaut.http.hateoas.JsonError
 import io.seqera.wave.ErrorHandler
+import io.seqera.wave.exception.DockerRegistryException
+import io.seqera.wave.exception.SlowDownException
+import io.seqera.wave.exchange.RegistryErrorResponse
 import jakarta.inject.Inject
 /**
  * Handle application errors
@@ -23,8 +26,17 @@ class ErrorController {
     @Inject ErrorHandler handler
 
     @Error(global = true)
-    HttpResponse<JsonDockerError> handleException(HttpRequest request, Throwable exception) {
-        handler.handle(request, exception, (msg, id) -> { new JsonDockerError(msg, id) })
+    HttpResponse<JsonError> handleException(HttpRequest request, Throwable exception) {
+        handler.handle(request, exception, (msg, id) -> { new JsonError(msg) })
     }
 
+    @Error(global = true)
+    HttpResponse<RegistryErrorResponse> handleException(HttpRequest request, DockerRegistryException exception) {
+        handler.handle(request, exception, (msg, id) -> { new RegistryErrorResponse(msg,id) })
+    }
+
+    @Error(global = true)
+    HttpResponse<RegistryErrorResponse> handleException(HttpRequest request, SlowDownException exception) {
+        handler.handle(request, exception, (msg, id) -> { new RegistryErrorResponse(msg,id) })
+    }
 }
