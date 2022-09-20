@@ -72,6 +72,11 @@ class RegistryProxyController {
         log.info "> Request [$httpRequest.method] $httpRequest.path"
         final route = routeHelper.parse("/v2/" + url)
 
+        if( route.manifest && !route.digest ){
+            String ip = addressResolver.resolve(httpRequest)
+            rateLimiterService?.acquirePull( new AcquireRequest(route.request?.userId?.toString(), ip) )
+        }
+
         // check if it's a container under build
         final future = handleFutureBuild0(route, httpRequest)
         if( future )
@@ -153,11 +158,6 @@ class RegistryProxyController {
 
         if (!(route.manifest && route.tag)) {
             throw new DockerRegistryException("Invalid request HEAD '$httpRequest.path'", 400, 'UNKNOWN')
-        }
-
-        if( route.manifest && !route.digest ){
-            String ip = addressResolver.resolve(httpRequest)
-            rateLimiterService?.acquirePull( new AcquireRequest(route.request?.userId?.toString(), ip) )
         }
 
         final entry = manifestForPath(route, httpRequest)

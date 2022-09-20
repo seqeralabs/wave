@@ -23,8 +23,8 @@ class ErrorController {
     @Inject ErrorHandler handler
 
     @Error(global = true)
-    HttpResponse<JsonError> handleException(HttpRequest request, Throwable exception) {
-        handler.handle(request, exception, (msg, id) -> { new JsonError(msg) })
+    HttpResponse<JsonDockerError> handleException(HttpRequest request, Throwable exception) {
+        handler.handle(request, exception, (msg, id) -> { new JsonDockerError(msg, id) })
     }
 
 }

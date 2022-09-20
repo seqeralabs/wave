@@ -59,8 +59,10 @@ class ErrorHandler {
             return HttpResponse.notFound(resp)
         }
 
-        if( t instanceof SlowDownException )
-            return HttpResponseFactory.INSTANCE.status(HttpStatus.SERVICE_UNAVAILABLE)
+        if( t instanceof SlowDownException ) {
+            final resp = responseFactory.apply(msg, 'DENIED')
+            return HttpResponseFactory.INSTANCE.status(HttpStatus.TOO_MANY_REQUESTS).body(resp)
+        }
 
         final resp = responseFactory.apply(msg, 'BAD_REQUEST')
         return HttpResponse.badRequest(resp)
