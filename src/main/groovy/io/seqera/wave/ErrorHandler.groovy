@@ -1,5 +1,6 @@
 package io.seqera.wave
 
+import java.util.concurrent.TimeoutException
 import java.util.function.BiFunction
 
 import groovy.util.logging.Slf4j
@@ -37,7 +38,7 @@ class ErrorHandler {
         else {
             if( debug && !msg )
                 msg = t.cause?.message
-            if ( !debug || !msg )
+            if ( !debug && !msg )
                 msg = "Oops... Unable to process request"
             msg += " - Error ID: ${errId}"
             log.error(msg, t)
@@ -62,6 +63,11 @@ class ErrorHandler {
         if( t instanceof SlowDownException ) {
             final resp = responseFactory.apply(msg, 'DENIED')
             return HttpResponseFactory.INSTANCE.status(HttpStatus.TOO_MANY_REQUESTS).body(resp)
+        }
+
+        if( t instanceof TimeoutException ) {
+            final resp = responseFactory.apply(msg, 'TIMEOUT')
+            return HttpResponseFactory.INSTANCE.status(HttpStatus.REQUEST_TIMEOUT).body(resp)
         }
 
         final resp = responseFactory.apply(msg, 'BAD_REQUEST')
