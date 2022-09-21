@@ -55,7 +55,7 @@ class RegistryProxyController {
     @Inject ErrorHandler errorHandler
 
     @Error
-    HttpResponse<RegistryErrorResponse> handleError(HttpRequest request, SlowDownException t) {
+    HttpResponse<RegistryErrorResponse> handleError(HttpRequest request, Throwable t) {
         return errorHandler.handle(request, t, (msg, code) -> new RegistryErrorResponse(msg,code) )
     }
 
