@@ -65,7 +65,7 @@ class SpillwayRegistryControllerTest extends Specification implements DockerRegi
         true
 
         when:
-        (0..configuration.pull.anonymous.max).each {
+        (0..configuration.pull.anonymous.max*2).each {
             client.toBlocking().exchange(request, String)
         }
 
