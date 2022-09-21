@@ -1,5 +1,7 @@
 package io.seqera.wave.exception
 
+import groovy.transform.CompileStatic
+
 
 /**
  *
@@ -8,6 +10,7 @@ package io.seqera.wave.exception
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
+@CompileStatic
 class BuildTimeoutException extends WaveException{
 
     BuildTimeoutException(String message) {
