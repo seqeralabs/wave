@@ -5,6 +5,7 @@ import spock.lang.Specification
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import groovy.json.JsonSlurper
 import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.MediaType
@@ -50,9 +51,9 @@ class SpillwayRegistryControllerTest extends Specification implements DockerRegi
         initRegistryContainer(applicationContext)
     }
 
-    void 'should check rate limit in ip of anonymous head manifest'() {
+    void 'should check rate limit in ip of anonymous manifest'() {
         when:
-        HttpRequest request = HttpRequest.HEAD("/v2/library/hello-world/manifests/latest").headers({h->
+        HttpRequest request = HttpRequest.GET("/v2/library/hello-world/manifests/latest").headers({h->
             h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
             h.add('Accept', ContentType.DOCKER_MANIFEST_V1_JWS_TYPE)
             h.add('Accept', MediaType.APPLICATION_JSON)
@@ -69,7 +70,12 @@ class SpillwayRegistryControllerTest extends Specification implements DockerRegi
         }
 
         then:
-        thrown(HttpClientResponseException)
+        def e = thrown(HttpClientResponseException)
+        e.message == 'Too Many Requests'
+        def b = new JsonSlurper().parseText( e.response.body.get() as String)
+        b.errors.size()
+        b.errors.first().code == 'DENIED'
+        b.errors.first().message.contains('request exceeded pull rate limit')
     }
 
 }

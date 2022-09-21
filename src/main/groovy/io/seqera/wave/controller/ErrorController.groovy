@@ -1,6 +1,5 @@
 package io.seqera.wave.controller
 
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.http.HttpRequest
@@ -26,5 +25,5 @@ class ErrorController {
     HttpResponse<JsonError> handleException(HttpRequest request, Throwable exception) {
         handler.handle(request, exception, (msg, id) -> { new JsonError(msg) })
     }
-
+    
 }
