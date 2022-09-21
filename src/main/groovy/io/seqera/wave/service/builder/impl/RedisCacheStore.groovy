@@ -25,6 +25,8 @@ import jakarta.inject.Singleton
 @CompileStatic
 class RedisCacheStore implements BuildStore {
 
+    private static final String PREFIX = 'wave/status/'
+
     private StatefulRedisConnection<String,String> senderConn
 
     @Value('${wave.build.status.duration:`1d`}')
@@ -46,12 +48,12 @@ class RedisCacheStore implements BuildStore {
     }
     @Override
     boolean hasBuild(String imageName) {
-        return senderConn.sync().get(imageName) != null
+        return senderConn.sync().get(PREFIX+imageName.toString()) != null
     }
 
     @Override
     BuildResult getBuild(String imageName) {
-        final json = senderConn.sync().get(imageName)
+        final json = senderConn.sync().get(PREFIX+imageName)
         if( json==null )
             return null
         return JacksonHelper.fromJson(json, BuildResult)
@@ -61,12 +63,12 @@ class RedisCacheStore implements BuildStore {
     void storeBuild(String imageName, BuildResult request) {
         def json = JacksonHelper.toJson(request)
         // once created the token the user has `Duration` time to pull the layers of the image
-        senderConn.sync().psetex(imageName, duration.toMillis(), json)
+        senderConn.sync().psetex(PREFIX+imageName, duration.toMillis(), json)
     }
 
     @Override
     CompletableFuture<BuildResult> awaitBuild(String imageName) {
-        final payload = senderConn.sync().get(imageName)
+        final payload = senderConn.sync().get(PREFIX+imageName)
         if( !payload )
             return null
         CompletableFuture<BuildResult>.supplyAsync(() -> awaitCompletion0(imageName,payload))
@@ -89,7 +91,7 @@ class RedisCacheStore implements BuildStore {
             // sleep a bit
             Thread.sleep(delay.toMillis())
             // fetch the build status again
-            payload = senderConn.sync().get(key)
+            payload = senderConn.sync().get(PREFIX+key)
         }
     }
 
