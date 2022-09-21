@@ -8,6 +8,7 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpResponseFactory
 import io.micronaut.http.HttpStatus
+import io.seqera.wave.exception.BuildTimeoutException
 import io.seqera.wave.exception.ForbiddenException
 import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.exception.NotFoundException
@@ -37,7 +38,7 @@ class ErrorHandler {
         else {
             if( debug && !msg )
                 msg = t.cause?.message
-            if ( !debug || !msg )
+            if ( !debug && !msg )
                 msg = "Oops... Unable to process request"
             msg += " - Error ID: ${errId}"
             log.error(msg, t)
@@ -62,6 +63,11 @@ class ErrorHandler {
         if( t instanceof SlowDownException ) {
             final resp = responseFactory.apply(msg, 'DENIED')
             return HttpResponseFactory.INSTANCE.status(HttpStatus.TOO_MANY_REQUESTS).body(resp)
+        }
+
+        if( t instanceof BuildTimeoutException ) {
+            final resp = responseFactory.apply(msg, 'TIMEOUT')
+            return HttpResponseFactory.INSTANCE.status(HttpStatus.REQUEST_TIMEOUT).body(resp)
         }
 
         final resp = responseFactory.apply(msg, 'BAD_REQUEST')
