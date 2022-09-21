@@ -1,6 +1,5 @@
 package io.seqera.wave
 
-import java.util.concurrent.TimeoutException
 import java.util.function.BiFunction
 
 import groovy.util.logging.Slf4j
@@ -9,6 +8,7 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpResponseFactory
 import io.micronaut.http.HttpStatus
+import io.seqera.wave.exception.BuildTimeoutException
 import io.seqera.wave.exception.ForbiddenException
 import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.exception.NotFoundException
@@ -65,7 +65,7 @@ class ErrorHandler {
             return HttpResponseFactory.INSTANCE.status(HttpStatus.TOO_MANY_REQUESTS).body(resp)
         }
 
-        if( t instanceof TimeoutException ) {
+        if( t instanceof BuildTimeoutException ) {
             final resp = responseFactory.apply(msg, 'TIMEOUT')
             return HttpResponseFactory.INSTANCE.status(HttpStatus.REQUEST_TIMEOUT).body(resp)
         }

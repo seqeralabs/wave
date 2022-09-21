@@ -106,6 +106,6 @@ class RedisRegistryControllerTest extends Specification implements DockerRegistr
         then:
         final exception = thrown(HttpClientResponseException)
         RegistryErrorResponse error = exception.response.getBody(RegistryErrorResponse).get()
-        error.errors.get(0).message.contains('Build of container \'hello-world\' timed out - Error ID: ')
+        error.errors.get(0).message.contains('Build of container \'hello-world\' timed out')
     }
 }

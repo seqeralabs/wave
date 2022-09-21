@@ -9,6 +9,7 @@ import java.util.concurrent.TimeoutException
 
 import io.micronaut.context.ApplicationContext
 import io.seqera.wave.exception.BadRequestException
+import io.seqera.wave.exception.BuildTimeoutException
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildStore
 import io.seqera.wave.test.RedisTestContainer
@@ -92,7 +93,7 @@ class RedisBuildStoreTest extends Specification implements RedisTestContainer {
         cacheStore.awaitBuild('foo').get()
         then:
         def e = thrown(ExecutionException)
-        e.cause.cause.class == TimeoutException
+        e.cause.class == BuildTimeoutException
     }
 
 }

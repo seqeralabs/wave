@@ -2,7 +2,6 @@ package io.seqera.wave.service.builder.impl
 
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeoutException
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
@@ -11,6 +10,7 @@ import io.lettuce.core.api.StatefulRedisConnection
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.exception.BadRequestException
+import io.seqera.wave.exception.BuildTimeoutException
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildStore
 import io.seqera.wave.util.JacksonHelper
@@ -88,7 +88,7 @@ class RedisCacheStore implements BuildStore {
             // check if it's timed out
             final delta = System.currentTimeMillis()-beg
             if( delta > max)
-                throw new TimeoutException("Build of container '$key' timed out")
+                throw new BuildTimeoutException("Build of container '$key' timed out")
             // sleep a bit
             Thread.sleep(delay.toMillis())
             // fetch the build status again
