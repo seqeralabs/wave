@@ -35,8 +35,4 @@ class ErrorController {
         handler.handle(request, exception, (msg, id) -> { new RegistryErrorResponse(msg,id) })
     }
 
-    @Error(global = true)
-    HttpResponse<RegistryErrorResponse> handleException(HttpRequest request, SlowDownException exception) {
-        handler.handle(request, exception, (msg, id) -> { new RegistryErrorResponse(msg,id) })
-    }
 }

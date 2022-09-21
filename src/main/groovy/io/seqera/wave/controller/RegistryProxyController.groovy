@@ -25,6 +25,7 @@ import io.seqera.wave.core.RegistryProxyService.DelegateResponse
 import io.seqera.wave.core.RouteHandler
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.exception.DockerRegistryException
+import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.exchange.RegistryErrorResponse
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
@@ -54,7 +55,7 @@ class RegistryProxyController {
     @Inject ErrorHandler errorHandler
 
     @Error
-    HttpResponse<RegistryErrorResponse> handleError(HttpRequest request, Throwable t) {
+    HttpResponse<RegistryErrorResponse> handleError(HttpRequest request, SlowDownException t) {
         return errorHandler.handle(request, t, (msg, code) -> new RegistryErrorResponse(msg,code) )
     }
 
