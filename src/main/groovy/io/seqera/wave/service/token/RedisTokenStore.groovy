@@ -24,6 +24,8 @@ import jakarta.inject.Singleton
 @Slf4j
 class RedisTokenStore implements ContainerTokenStore {
 
+    private static final String PREFIX = 'wave/token/'
+
     ObjectMapper mapper = new ObjectMapper()
 
     StatefulRedisConnection<String,String> redisConnection
@@ -42,13 +44,13 @@ class RedisTokenStore implements ContainerTokenStore {
     ContainerRequestData put(String key, ContainerRequestData request) {
         def json = new JsonBuilder(request).toString()
         // once created the token the user has `Duration` time to pull the layers of the image
-        redisConnection.sync().psetex(key, tokenConfiguration.cache.duration.toMillis(), json)
+        redisConnection.sync().psetex(PREFIX+key, tokenConfiguration.cache.duration.toMillis(), json)
         return request
     }
 
     @Override
     ContainerRequestData get(String key) {
-        def json = redisConnection.sync().get(key)
+        def json = redisConnection.sync().get(PREFIX+key.toString())
         if( !json )
             return null
         def requestData = mapper.readValue(json, ContainerRequestData)
