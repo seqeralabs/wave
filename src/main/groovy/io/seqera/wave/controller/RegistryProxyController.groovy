@@ -25,6 +25,7 @@ import io.seqera.wave.core.RegistryProxyService.DelegateResponse
 import io.seqera.wave.core.RouteHandler
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.exception.DockerRegistryException
+import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.exchange.RegistryErrorResponse
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
@@ -71,6 +72,11 @@ class RegistryProxyController {
     CompletableFuture<MutableHttpResponse<?>> handleGet(String url, HttpRequest httpRequest) {
         log.info "> Request [$httpRequest.method] $httpRequest.path"
         final route = routeHelper.parse("/v2/" + url)
+
+        if( route.manifest && !route.digest ){
+            String ip = addressResolver.resolve(httpRequest)
+            rateLimiterService?.acquirePull( new AcquireRequest(route.request?.userId?.toString(), ip) )
+        }
 
         // check if it's a container under build
         final future = handleFutureBuild0(route, httpRequest)
@@ -153,11 +159,6 @@ class RegistryProxyController {
 
         if (!(route.manifest && route.tag)) {
             throw new DockerRegistryException("Invalid request HEAD '$httpRequest.path'", 400, 'UNKNOWN')
-        }
-
-        if( route.manifest && !route.digest ){
-            String ip = addressResolver.resolve(httpRequest)
-            rateLimiterService?.acquirePull( new AcquireRequest(route.request?.userId?.toString(), ip) )
         }
 
         final entry = manifestForPath(route, httpRequest)
