@@ -65,9 +65,9 @@ class RedisContainerTokenControllerTest extends Specification implements RedisTe
         noExceptionThrown()
 
         and:
-        new JsonSlurper().parseText(jedisPool.resource.get(body.containerToken)).platform.arch == 'arm64'
-        new JsonSlurper().parseText(jedisPool.resource.get(body.containerToken)).workspaceId == 10
-        new JsonSlurper().parseText(jedisPool.resource.get(body.containerToken)).containerImage == 'ubuntu:latest'
+        new JsonSlurper().parseText(jedisPool.resource.get("wave/token/"+body.containerToken)).platform.arch == 'arm64'
+        new JsonSlurper().parseText(jedisPool.resource.get("wave/token/"+body.containerToken)).workspaceId == 10
+        new JsonSlurper().parseText(jedisPool.resource.get("wave/token/"+body.containerToken)).containerImage == 'ubuntu:latest'
     }
 
     def 'should not retrieve an expired build request' () {
@@ -86,7 +86,7 @@ class RedisContainerTokenControllerTest extends Specification implements RedisTe
         noExceptionThrown()
 
         when:
-        jedisPool.resource.del(body.containerToken)
+        jedisPool.resource.del("wave/token/"+body.containerToken)
 
         and:
         RouteHandler routeHelper = applicationContext.getBean(RouteHandler)
