@@ -1,4 +1,11 @@
 # Wave changelog
+v0.19.0 - 22 Sep 2022 
+- Refactor config json moving into request [554bdd9a]
+- render build timeout exception using docker format (#143) [3d98d9b6]
+- improve ratelimit test (#142) [e5f54067]
+- prefix objects store in redis (#141) [371541e3]
+- return a clear error message when rate limit is hit (#138) [b188e156]
+
 v0.18.1 - 19 Sep 2022 
 - Fix wave debug option [a72d97e5]
 - Fix build invalid timeout interval [2dace3ed]
