@@ -12,7 +12,7 @@ import groovy.transform.CompileStatic
 @CompileStatic
 abstract class BuildStrategy {
 
-    abstract BuildResult build(BuildRequest req, String creds)
+    abstract BuildResult build(BuildRequest req)
 
     void cleanup(BuildRequest req) {
         req.workDir?.deleteDir()

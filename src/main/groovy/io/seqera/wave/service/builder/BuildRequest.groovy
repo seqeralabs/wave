@@ -76,18 +76,18 @@ class BuildRequest {
     final String ip
 
     /**
-     * Tower workspace id
+     * Docker config json holding repository authentication
      */
-    final Long workspaceId
+    final String configJson
 
-    BuildRequest(String dockerFile, Path workspace, String repo, String condaFile, User user, Long workspaceId, ContainerPlatform platform, String cacheRepo, String ip) {
-        this.id = computeDigest(dockerFile,condaFile,platform)
+    BuildRequest(String dockerFile, Path workspace, String repo, String condaFile, User user, ContainerPlatform platform, String configJson, String cacheRepo, String ip) {
+        this.id = computeDigest(dockerFile,condaFile,platform,configJson,user)
         this.dockerFile = dockerFile
         this.condaFile = condaFile
         this.targetImage = "${repo}:${id}"
         this.user = user
-        this.workspaceId = workspaceId
         this.platform = platform
+        this.configJson = configJson
         this.cacheRepository = cacheRepo
         this.workDir = workspace.resolve(id).toAbsolutePath()
         this.startTime = Instant.now()
@@ -95,11 +95,15 @@ class BuildRequest {
         this.ip = ip
     }
 
-    static private String computeDigest(String dockerFile, String condaFile, ContainerPlatform platform) {
+    static private String computeDigest(String dockerFile, String condaFile, ContainerPlatform platform, String configJson, User user) {
         def content = platform.toString()
         content += dockerFile
         if( condaFile )
             content += condaFile
+        if( configJson )
+            content += configJson
+        if( user )
+            content += user.id
         return DigestFunctions.md5(content)
     }
 

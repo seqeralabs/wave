@@ -12,7 +12,6 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
-import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.mail.MailService
@@ -99,39 +98,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 .awaitBuild(targetImage)
     }
 
-    protected String credsJson(Set<String> repositories, Long userId, Long workspaceId) {
-        final result = new StringBuilder()
-        for( String repo : repositories ) {
-            final path = ContainerCoordinates.parse(repo)
-            final info = lookupService.lookup(path.registry)
-            final creds = credentialsProvider.getUserCredentials(path, userId, workspaceId)
-            log.debug "Build credentials for repository: $repo => $creds"
-            if( !creds )
-                continue
-            final encode = "${creds.username}:${creds.password}".getBytes().encodeBase64()
-            if( result.size() )
-                result.append(',')
-            result.append("\"${info.index}\":{\"auth\":\"$encode\"}")
-        }
-        return result.size() ? """{"auths":{$result}}""" : null
-    }
-
-    static protected Set<String> findRepositories(String dockerfile) {
-        final result = new HashSet()
-        if( !dockerfile )
-            return result
-        for( String line : dockerfile.readLines()) {
-            if( !line.trim().toLowerCase().startsWith('from '))
-                continue
-            def repo = line.trim().substring(5)
-            def p = repo.indexOf(' ')
-            if( p!=-1 )
-                repo = repo.substring(0,p)
-            result.add(repo)
-        }
-        return result
-    }
-
     protected BuildResult launch(BuildRequest req) {
         // launch an external process to build the container
         BuildResult resp=null
@@ -146,12 +112,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 final condaFile = req.workDir.resolve('conda.yml')
                 Files.write(condaFile, req.condaFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             }
-            // find repos
-            final repos = findRepositories(req.dockerFile) + req.targetImage + req.cacheRepository
-            // create creds file for target repo
-            final creds = credsJson(repos, req.user?.id, req.workspaceId)
 
-            resp = buildStrategy.build(req, creds)
+            resp = buildStrategy.build(req)
             log.info "== Build completed with status=$resp.exitStatus; stdout: (see below)\n${indent(resp.logs)}"
             return resp
         }
