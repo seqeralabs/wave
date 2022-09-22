@@ -13,6 +13,7 @@ import io.micronaut.http.annotation.Post
 import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
+import io.seqera.wave.auth.DockerAuthService
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.model.ContainerCoordinates
@@ -63,6 +64,9 @@ class ContainerTokenController {
     @Inject
     ContainerBuildService buildService
 
+    @Inject
+    DockerAuthService dockerAuthService
+
     @PostConstruct
     private void init() {
         log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous"
@@ -95,6 +99,7 @@ class ContainerTokenController {
         final platform = ContainerPlatform.of(req.containerPlatform)
         final build = req.buildRepository ?: defaultBuildRepo
         final cache = req.cacheRepository ?: defaultCacheRepo
+        final configJson = dockerAuthService.credentialsConfigJson(dockerContent, build, cache, user?.id, req.towerWorkspaceId)
         // create a unique digest to identify the request
         return new BuildRequest(
                 dockerContent,
@@ -102,8 +107,8 @@ class ContainerTokenController {
                 build,
                 condaContent,
                 user,
-                req.towerWorkspaceId,
                 platform,
+                configJson,
                 cache,
                 ip )
     }

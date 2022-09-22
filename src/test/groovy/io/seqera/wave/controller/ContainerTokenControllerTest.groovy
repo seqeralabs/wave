@@ -6,6 +6,7 @@ import java.nio.file.Path
 
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.auth.DockerAuthService
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.builder.ContainerBuildService
@@ -64,7 +65,8 @@ class ContainerTokenControllerTest extends Specification {
     def 'should make a build request' () {
         given:
         def builder = Mock(ContainerBuildService)
-        def controller = new ContainerTokenController(buildService: builder, workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
+        def dockerAuth = Mock(DockerAuthService)
+        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
         def DOCKER = 'FROM foo'
         def user = new User(id: 100)
         def cfg = new ContainerConfig()
@@ -87,7 +89,8 @@ class ContainerTokenControllerTest extends Specification {
 
     def 'should create build request' () {
         given:
-        def controller = new ContainerTokenController(workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
+        def dockerAuth = Mock(DockerAuthService)
+        def controller = new ContainerTokenController(dockerAuthService: dockerAuth, workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
 
         when:
         def submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'))

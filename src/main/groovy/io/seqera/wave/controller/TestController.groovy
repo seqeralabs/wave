@@ -10,6 +10,7 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.server.util.HttpClientAddressResolver
+import io.seqera.wave.auth.DockerAuthService
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.UserService
@@ -33,18 +34,20 @@ class TestController {
     String workspace
 
     @Value('${wave.build.repo}')
-    String buildRepo
+    String defaultBuildRepo
 
     @Value('${wave.build.cache}')
-    String cacheRepo
+    String defaultCacheRepo
 
     @Inject
     @Value('${wave.allowAnonymous}')
     Boolean allowAnonymous
 
-
     @Inject
     UserService userService
+
+    @Inject
+    DockerAuthService dockerAuthService
 
     @Inject HttpClientAddressResolver addressResolver
 
@@ -71,15 +74,18 @@ class TestController {
             """
 
         final ip = addressResolver.resolve(httpRequest)
+        final buildRepo = repo ?: defaultBuildRepo
+        final cacheRepo = cache ?: defaultCacheRepo
+        final configJson = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, cacheRepo, user?.id, workspaceId)
 
         final req =  new BuildRequest( dockerFile,
                 Path.of(workspace),
-                repo ?: buildRepo,
+                buildRepo,
                 null,
                 user,
-                workspaceId,
                 ContainerPlatform.of(platform),
-                cache ?: cacheRepo,
+                configJson,
+                cacheRepo,
                 ip)
 
         final resp = builderService.buildImage(req)

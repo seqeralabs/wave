@@ -36,11 +36,11 @@ class KubeBuildStrategy extends BuildStrategy {
     }
 
     @Override
-    BuildResult build(BuildRequest req, String creds) {
+    BuildResult build(BuildRequest req) {
 
         final buildCmd = launchCmd(req)
         final name = podName(req)
-        final pod = k8sService.buildContainer(name, buildImage, buildCmd, req.workDir, creds)
+        final pod = k8sService.buildContainer(name, buildImage, buildCmd, req.workDir, req.configJson)
         final terminated = k8sService.waitPod(pod, buildTimeout.toMillis())
         final stdout = k8sService.logsPod(name)
         if( terminated ) {

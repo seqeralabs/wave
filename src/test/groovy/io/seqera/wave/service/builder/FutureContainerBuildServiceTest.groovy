@@ -32,7 +32,7 @@ class FutureContainerBuildServiceTest extends Specification {
     BuildStrategy fakeBuildStrategy(){
         new BuildStrategy() {
             @Override
-            BuildResult build(BuildRequest req, String creds) {
+            BuildResult build(BuildRequest req) {
                 new BuildResult("", exitCode, "a fake build result in a test", Instant.now(), Duration.ofSeconds(3))
             }
         }
@@ -49,7 +49,7 @@ class FutureContainerBuildServiceTest extends Specification {
         RUN echo $EXIT_CODE > hello.txt
         """.stripIndent()
         and:
-        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User),0, ContainerPlatform.of('amd64'), cacheRepo, "")
+        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User),ContainerPlatform.of('amd64'),'{auth}', cacheRepo, "")
 
         when:
         exitCode = EXIT_CODE
