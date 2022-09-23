@@ -77,6 +77,13 @@ dependencies {
     implementation 'com.coveo:spillway:2.1.1'
     // distributed
     implementation "io.micronaut.redis:micronaut-redis-lettuce"
+
+
+    // monitoring
+    implementation "io.micronaut.micrometer:micronaut-micrometer-registry-prometheus"
+    // Also required to enable endpoint
+    implementation "io.micronaut:micronaut-management"
+
 }
 
 
