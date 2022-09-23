@@ -1,6 +1,6 @@
 package io.seqera.wave.controller
 
-import spock.lang.Shared
+
 import spock.lang.Specification
 import spock.lang.Timeout
 
@@ -11,7 +11,6 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
-import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.server.EmbeddedServer
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
@@ -20,9 +19,7 @@ import io.seqera.wave.model.ContentType
 import io.seqera.wave.storage.MemoryStorage
 import io.seqera.wave.test.DockerRegistryContainer
 import io.seqera.wave.test.RedisTestContainer
-import jakarta.inject.Inject
 import redis.clients.jedis.JedisPool
-
 /**
  *
  * @author Jorge Aguilera <jorge.aguilera@seqera.io>
@@ -94,8 +91,8 @@ class RedisRegistryControllerTest extends Specification implements DockerRegistr
         given:
         HttpClient client = applicationContext.createBean(HttpClient)
         MemoryStorage storage = applicationContext.getBean(MemoryStorage)
-        jedisPool.resource.set("wave/token/1234", '{"containerImage":"hello-world"}')
-        jedisPool.resource.set("wave/status/hello-world", '{"containerImage":"hello-world"}')
+        jedisPool.resource.set("wave:tokens:1234", '{"containerImage":"hello-world"}')
+        jedisPool.resource.set("wave:status:hello-world", '{"containerImage":"hello-world"}')
         when:
         HttpRequest request = HttpRequest.GET("http://localhost:$port/v2/wt/1234/hello-world/manifests/latest").headers({h->
             h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
