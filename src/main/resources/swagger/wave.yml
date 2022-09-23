@@ -1,0 +1,250 @@
+openapi: 3.0.1
+info:
+  title: Wave
+  description: Wave API
+  license:
+    name: Apache 2.0
+    url: https://XXXXXXXX
+  version: "${api.version}"
+servers: https://wave.dev-tower.net 
+  - url: https://wave.dev-tower.net 
+    description: Dev environment 
+security: 
+  - {}  
+paths:
+  /container-token:
+    post:
+      summary: Get build token
+      description: |
+        Use this endpoint to retrieve a token associated with a given build request. 
+      operationId: container-token
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                req:
+                  $ref: '#/components/schemas/SubmitContainerTokenRequest'
+        required: true
+      responses:
+        "200":
+          description: Object containing buold token details. 
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitContainerTokenResponse'
+  /service-info:
+    get:
+      summary: Get service info
+      description: |
+        Use this endpoint to get information about the service, including the service version and last commit to the repository. 
+      operationId: service-info
+      parameters: []
+      responses:
+        "200":
+          description: Object containing service details. 
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceInfoResponse'
+  /test-build:
+    get:
+      summary: Test build 
+      description: | 
+        Use this endpoint to test the build.
+
+        `repo` is a required parameter, to be appended to the endpoint URL as a query tag (append `?repo=`). 
+
+        Results can be filtered using optional parameters:
+          
+          `platform`, `cache`, `accessToken` 
+      operationId: testBuild
+      parameters:
+      - name: platform
+        in: query
+        required: false
+        schema:
+          type: string
+          nullable: true
+      - name: repo
+        in: query
+        required: false
+        schema:
+          type: string
+          nullable: true
+      - name: cache
+        in: query
+        required: false
+        schema:
+          type: string
+          nullable: true
+      - name: accessToken
+        in: query
+        required: false
+        schema:
+          type: string
+          nullable: true
+      responses:
+        "200":
+          description: Object containing build test result details. 
+          content:
+            application/json:
+              schema:
+                type: string
+  /v2:
+    get:
+      summary: Ping
+      description: | 
+        Use this endpoint to establish API and connection health. Returns an HTTP 200 response if service is live. 
+      operationId: index
+      parameters: []
+      responses:
+        "200":
+          description: OK - service is live. 
+          content:
+            application/json:
+              schema:
+                type: string
+  /v2/{url:(.+)}:
+    get:
+      operationId: handleGet
+      parameters:
+      - name: url
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: handleGet 200 response
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/MutableHttpResponse_Object_'
+  /validate-creds:
+    post:
+      summary: Validate credentials
+      description: |
+        Use this endpoint to validate the given user credentials against the login service.
+
+        The following request body fields are required parameters: 
+
+          `userName`
+
+          `password`
+
+          `registry`
+      operationId: validate-creds
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                request:
+                  $ref: '#/components/schemas/ValidateRegistryCredsRequest'
+        required: true
+      responses:
+        "200":
+          description: Boolean response. If true, user credentials are valid. 
+          content:
+            application/json:
+              schema:
+                type: boolean
+components:
+  schemas:
+    ContainerConfig:
+      type: object
+      properties:
+        entrypoint:
+          type: array
+          items:
+            type: string
+        cmd:
+          type: array
+          items:
+            type: string
+        env:
+          type: array
+          items:
+            type: string
+        workingDir:
+          type: string
+        layers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContainerLayer'
+    ContainerLayer:
+      type: object
+      properties:
+        location:
+          type: string
+        gzipDigest:
+          type: string
+        gzipSize:
+          type: integer
+          format: int32
+        tarDigest:
+          type: string
+    MutableHttpResponse_Object_:
+      type: object
+    ServiceInfo:
+      type: object
+      properties:
+        version:
+          type: string
+        commitId:
+          type: string
+    ServiceInfoResponse:
+      type: object
+      properties:
+        serviceInfo:
+          $ref: '#/components/schemas/ServiceInfo'
+    SubmitContainerTokenRequest:
+      type: object
+      properties:
+        towerAccessToken:
+          type: string
+        towerWorkspaceId:
+          type: integer
+          format: int64
+        containerImage:
+          type: string
+        containerFile:
+          type: string
+        containerConfig:
+          $ref: '#/components/schemas/ContainerConfig'
+        condaFile:
+          type: string
+        containerPlatform:
+          type: string
+        buildRepository:
+          type: string
+        cacheRepository:
+          type: string
+    SubmitContainerTokenResponse:
+      type: object
+      properties:
+        containerToken:
+          type: string
+        targetImage:
+          type: string
+    ValidateRegistryCredsRequest:
+      required:
+      - password
+      - registry
+      - userName
+      type: object
+      properties:
+        userName:
+          minLength: 1
+          type: string
+        password:
+          minLength: 1
+          type: string
+        registry:
+          minLength: 1
+          type: string
