@@ -1,4 +1,7 @@
 # Wave changelog
+v0.19.1 - 23 Sep 2022
+- Adds prometheus configuration for monitoring [cb28d80]
+
 v0.19.0 - 22 Sep 2022 
 - Refactor config json moving into request [554bdd9a]
 - render build timeout exception using docker format (#143) [3d98d9b6]
