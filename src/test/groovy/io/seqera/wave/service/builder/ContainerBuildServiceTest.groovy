@@ -30,7 +30,7 @@ class ContainerBuildServiceTest extends Specification {
 
 
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
-    def 'should build & push container' () {
+    def 'should build & push container to aws' () {
         given:
         def folder = Files.createTempDirectory('test')
         and:
@@ -56,4 +56,90 @@ class ContainerBuildServiceTest extends Specification {
         folder?.deleteDir()
     }
 
+    @Requires({System.getenv('DOCKER_USER') && System.getenv('DOCKER_PAT')})
+    def 'should build & push container to docker.io' () {
+        given:
+        def folder = Files.createTempDirectory('test')
+        and:
+        def dockerfile = '''
+        FROM busybox
+        RUN echo Hello > hello.txt
+        '''.stripIndent()
+        and:
+        buildRepo = "docker.io/${System.getenv('DOCKER_USER')}/wave-tests"
+        cacheRepo = buildRepo
+        def cfg = dockerAuthService.credentialsConfigJson(dockerfile, buildRepo, cacheRepo, null, null)
+        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'),cfg, cacheRepo, "")
+
+        when:
+        def result = service.launch(REQ)
+        and:
+        println result.logs
+        then:
+        result.id
+        result.startTime
+        result.duration
+        result.exitStatus == 0
+
+        cleanup:
+        folder?.deleteDir()
+    }
+
+    @Requires({System.getenv('QUAY_USER') && System.getenv('QUAY_PAT')})
+    def 'should build & push container to quay.io' () {
+        given:
+        def folder = Files.createTempDirectory('test')
+        and:
+        def dockerfile = '''
+        FROM busybox
+        RUN echo Hello > hello.txt
+        '''.stripIndent()
+        and:
+        buildRepo = "quay.io/${System.getenv('QUAY_USER')}/wave-tests"
+        cacheRepo = buildRepo
+        def cfg = dockerAuthService.credentialsConfigJson(dockerfile, buildRepo, cacheRepo, null, null)
+        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'),cfg, cacheRepo, "")
+
+        when:
+        def result = service.launch(REQ)
+        and:
+        println result.logs
+        then:
+        result.id
+        result.startTime
+        result.duration
+        result.exitStatus == 0
+
+        cleanup:
+        folder?.deleteDir()
+    }
+
+    @Requires({System.getenv('AZURECR_USER') && System.getenv('AZURECR_PAT')})
+    def 'should build & push container to azure' () {
+        given:
+        def folder = Files.createTempDirectory('test')
+        and:
+        def dockerfile = '''
+        FROM busybox
+        RUN echo Hello > hello.txt
+        '''.stripIndent()
+        and:
+        buildRepo = "${System.getenv('AZURECR_USER')}.azurecr.io/wave-tests"
+        cacheRepo = buildRepo
+        def cfg = dockerAuthService.credentialsConfigJson(dockerfile, buildRepo, cacheRepo, null, null)
+        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'),cfg, cacheRepo, "")
+
+        when:
+        def result = service.launch(REQ)
+        and:
+        println result.logs
+        then:
+        result.id
+        result.startTime
+        result.duration
+        result.exitStatus == 0
+
+        cleanup:
+        folder?.deleteDir()
+    }
 }

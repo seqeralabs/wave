@@ -52,6 +52,16 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
     private String awsSecretKey
 
     @Inject
+    @Nullable
+    @Value('${wave.registries.azurecr.username}')
+    private String azurecrUsername
+
+    @Inject
+    @Nullable
+    @Value('${wave.registries.azurecr.password}')
+    private String azurecrPassword
+
+    @Inject
     private RegistryCredentialsFactory credentialsFactory
 
     @Inject
@@ -94,6 +104,11 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
         else if( AwsEcrService.isEcrHost(registry) ) {
             if( awsAccessKey && awsSecretKey ) {
                 return credentialsFactory.create(registry, awsAccessKey, awsSecretKey)
+            }
+        }
+        else if( registry.endsWith('azurecr.io') ) {
+            if( azurecrUsername && azurecrPassword ) {
+                return credentialsFactory.create(registry, azurecrUsername, azurecrPassword)
             }
         }
         log.debug "Unable to find credentials for registry '$registry'"

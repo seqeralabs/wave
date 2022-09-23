@@ -20,18 +20,18 @@ datasources:
 wave:
   registries:
     docker:
-      username: "pditommaso"
-      password: "d213e955-3357-4612-8c48-fa5652ad968b"
+      username: "${DOCKER_USER:pditommaso}"
+      password: "${DOCKER_PAT:d213e955-3357-4612-8c48-fa5652ad968b}"
     quay:
-      username: "pditommaso"
-      password: "SVO9GmXzeDJfB3Ba7PDSN90Pv7ggvzIGjYNT7QD4Ol05riiSuWu+ioBWiPIYd39v"
+      username: "${QUAY_USER:pditommaso}"
+      password: "${QUAY_PAT:SVO9GmXzeDJfB3Ba7PDSN90Pv7ggvzIGjYNT7QD4Ol05riiSuWu+ioBWiPIYd39v}"
     amazon:
       username: "${AWS_ACCESS_KEY_ID}"
       password: "${AWS_SECRET_ACCESS_KEY}"
     azurecr:
       # seqeralabs.azurecr.io
-      username: "seqeralabs"
-      password: "36xEmc+uTBDv=kqBd0OeSqdja0UGlRYV"
+      username: "${AZURECR_USER:seqeralabs}"
+      password: "${AZURECR_PAT:36xEmc+uTBDv=kqBd0OeSqdja0UGlRYV}"
 ---
 tower:
   crypto :
