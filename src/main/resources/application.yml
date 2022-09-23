@@ -4,11 +4,21 @@ micronaut:
     name: wave-app
   server:
     port: 9090
+  metrics:
+    enabled: true
+    export :
+      prometheus :
+        enabled : true
+        step : PT1M
+        descriptions : true
 ---
 netty:
   default:
     allocator:
       max-order: 3
+endpoints:
+  prometheus:
+    sensitive: false
 ---
 wave:
   debug: false
