@@ -71,6 +71,18 @@ jobs:
           QUAY_PAT: ${{ secrets.QUAY_PAT }}
           GITHUB_TOKEN: ${{ secrets.GH_SEQERA_TOKEN }}
 
+      - name: Deploy to staging cluster
+        if: "contains(github.event.head_commit.message, '[deploy staging]')"
+        uses: ./.github/actions/deploy
+        with:
+          app: "wave"
+          container: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/app"
+          namespace: "wave-stage"
+          aws-region: "eu-west-2"
+          aws-access-key-id: ${{ secrets.TOWER_CI_AWS_ACCESS }}
+          aws-secret-access-key: ${{ secrets.TOWER_CI_AWS_SECRET }}
+          kube-config-data: ${{ secrets.TOWER_STAGE_KUBE_CONFIG_DATA }}
+
       - name: Publish tests report
         if: failure()
         uses: actions/upload-artifact@v2
