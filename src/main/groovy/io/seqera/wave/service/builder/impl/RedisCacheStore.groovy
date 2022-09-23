@@ -9,7 +9,6 @@ import groovy.util.logging.Slf4j
 import io.lettuce.core.api.StatefulRedisConnection
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
-import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.exception.BuildTimeoutException
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildStore
@@ -25,8 +24,6 @@ import jakarta.inject.Singleton
 @Singleton
 @CompileStatic
 class RedisCacheStore implements BuildStore {
-
-    private static final String PREFIX = 'wave/status/'
 
     private StatefulRedisConnection<String,String> senderConn
 
@@ -47,14 +44,17 @@ class RedisCacheStore implements BuildStore {
     void init() {
         log.info "Creating Redis build store - duration=$duration; timeout=$timeout; delay=$delay"
     }
+
+    private String key(String name) {  'wave:status:' + name }
+
     @Override
     boolean hasBuild(String imageName) {
-        return senderConn.sync().get(PREFIX+imageName.toString()) != null
+        return senderConn.sync().get(key(imageName)) != null
     }
 
     @Override
     BuildResult getBuild(String imageName) {
-        final json = senderConn.sync().get(PREFIX+imageName)
+        final json = senderConn.sync().get(key(imageName))
         if( json==null )
             return null
         return JacksonHelper.fromJson(json, BuildResult)
@@ -64,18 +64,18 @@ class RedisCacheStore implements BuildStore {
     void storeBuild(String imageName, BuildResult request) {
         def json = JacksonHelper.toJson(request)
         // once created the token the user has `Duration` time to pull the layers of the image
-        senderConn.sync().psetex(PREFIX+imageName, duration.toMillis(), json)
+        senderConn.sync().psetex(key(imageName), duration.toMillis(), json)
     }
 
     @Override
     CompletableFuture<BuildResult> awaitBuild(String imageName) {
-        final payload = senderConn.sync().get(PREFIX+imageName)
+        final payload = senderConn.sync().get(key(imageName))
         if( !payload )
             return null
         CompletableFuture<BuildResult>.supplyAsync(() -> awaitCompletion0(imageName,payload))
     }
 
-    protected BuildResult awaitCompletion0(String key, String payload) {
+    protected BuildResult awaitCompletion0(String imageName, String payload) {
         final beg = System.currentTimeMillis()
         // add 10% delay gap to prevent race condition with timeout expiration
         final max = (timeout.toMillis() * 1.10) as long
@@ -88,11 +88,11 @@ class RedisCacheStore implements BuildStore {
             // check if it's timed out
             final delta = System.currentTimeMillis()-beg
             if( delta > max)
-                throw new BuildTimeoutException("Build of container '$key' timed out")
+                throw new BuildTimeoutException("Build of container '$imageName' timed out")
             // sleep a bit
             Thread.sleep(delay.toMillis())
             // fetch the build status again
-            payload = senderConn.sync().get(PREFIX+key)
+            payload = senderConn.sync().get(key(imageName))
         }
     }
 

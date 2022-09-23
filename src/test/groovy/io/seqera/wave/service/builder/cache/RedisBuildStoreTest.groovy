@@ -5,10 +5,8 @@ import spock.lang.Timeout
 
 import java.time.Instant
 import java.util.concurrent.ExecutionException
-import java.util.concurrent.TimeoutException
 
 import io.micronaut.context.ApplicationContext
-import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.exception.BuildTimeoutException
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildStore
@@ -50,7 +48,7 @@ class RedisBuildStoreTest extends Specification implements RedisTestContainer {
         then:
         cacheStore.getBuild('foo') == req1
         and:
-        jedisPool.resource.get("wave/status/foo").toString()
+        jedisPool.resource.get("wave:status:foo").toString()
         and:
         cacheStore.hasBuild('foo')
     }
