@@ -20,8 +20,8 @@ datasources:
 wave:
   registries:
     docker:
-      username: "${DOCKER_USER:pditommaso}"
-      password: "${DOCKER_PAT:d213e955-3357-4612-8c48-fa5652ad968b}"
+      username: "${DOCKER_USER}"
+      password: "${DOCKER_PAT}"
     quay:
       username: "${QUAY_USER}"
       password: "${QUAY_PAT}"
