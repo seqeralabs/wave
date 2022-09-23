@@ -1,4 +1,7 @@
 # Wave changelog
+v0.19.2 - 23 Sep 2022 
+- Use column prefix keys for redis [e9b39cbc]
+
 v0.19.1 - 23 Sep 2022
 - Adds prometheus configuration for monitoring [cb28d80]
 
