@@ -48,7 +48,7 @@ class RedisBuildStoreTest extends Specification implements RedisTestContainer {
         then:
         cacheStore.getBuild('foo') == req1
         and:
-        jedisPool.resource.get("wave:status:foo").toString()
+        jedisPool.resource.get("wave-build:foo").toString()
         and:
         cacheStore.hasBuild('foo')
     }

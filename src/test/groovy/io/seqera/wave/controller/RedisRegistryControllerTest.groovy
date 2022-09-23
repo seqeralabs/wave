@@ -91,8 +91,8 @@ class RedisRegistryControllerTest extends Specification implements DockerRegistr
         given:
         HttpClient client = applicationContext.createBean(HttpClient)
         MemoryStorage storage = applicationContext.getBean(MemoryStorage)
-        jedisPool.resource.set("wave:tokens:1234", '{"containerImage":"hello-world"}')
-        jedisPool.resource.set("wave:status:hello-world", '{"containerImage":"hello-world"}')
+        jedisPool.resource.set("wave-tokens:1234", '{"containerImage":"hello-world"}')
+        jedisPool.resource.set("wave-build:hello-world", '{"containerImage":"hello-world"}')
         when:
         HttpRequest request = HttpRequest.GET("http://localhost:$port/v2/wt/1234/hello-world/manifests/latest").headers({h->
             h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
