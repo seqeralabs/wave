@@ -23,8 +23,8 @@ wave:
       username: "${DOCKER_USER:pditommaso}"
       password: "${DOCKER_PAT:d213e955-3357-4612-8c48-fa5652ad968b}"
     quay:
-      username: "${QUAY_USER:pditommaso}"
-      password: "${QUAY_PAT:SVO9GmXzeDJfB3Ba7PDSN90Pv7ggvzIGjYNT7QD4Ol05riiSuWu+ioBWiPIYd39v}"
+      username: "${QUAY_USER}"
+      password: "${QUAY_PAT}"
     amazon:
       username: "${AWS_ACCESS_KEY_ID}"
       password: "${AWS_SECRET_ACCESS_KEY}"
