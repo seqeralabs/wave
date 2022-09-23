@@ -55,6 +55,8 @@ jobs:
           DOCKER_PAT: ${{ secrets.DOCKER_PAT }}
           QUAY_USER: ${{ secrets.QUAY_USER }}
           QUAY_PAT: ${{ secrets.QUAY_PAT }}
+          AZURECR_USER: ${{ secrets.AZURECR_USER }}
+          AZURECR_PAT: ${{ secrets.AZURECR_PAT }}
 
       - name: Release
         if: "contains(github.event.head_commit.message, '[release]')"

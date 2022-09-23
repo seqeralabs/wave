@@ -30,8 +30,8 @@ wave:
       password: "${AWS_SECRET_ACCESS_KEY}"
     azurecr:
       # seqeralabs.azurecr.io
-      username: "${AZURECR_USER:seqeralabs}"
-      password: "${AZURECR_PAT:36xEmc+uTBDv=kqBd0OeSqdja0UGlRYV}"
+      username: "${AZURECR_USER}"
+      password: "${AZURECR_PAT}"
 ---
 tower:
   crypto :
