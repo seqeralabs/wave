@@ -28,8 +28,12 @@ abstract class BuildStrategy {
                 << "--destination"
                 << req.targetImage
                 << "--cache=true"
-                << "--cache-repo"
-                << req.cacheRepository
+
+        if( req.cacheRepository ) {
+            result << "--cache-repo" << req.cacheRepository
+        }
+
+        return result
     }
 
 }

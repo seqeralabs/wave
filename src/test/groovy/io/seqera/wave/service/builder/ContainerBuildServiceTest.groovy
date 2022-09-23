@@ -5,6 +5,7 @@ import spock.lang.Specification
 
 import java.nio.file.Files
 
+import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.auth.DockerAuthService
@@ -17,6 +18,7 @@ import jakarta.inject.Inject
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @MicronautTest
 class ContainerBuildServiceTest extends Specification {
 
@@ -30,7 +32,7 @@ class ContainerBuildServiceTest extends Specification {
 
 
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
-    def 'should build & push container' () {
+    def 'should build & push container to aws' () {
         given:
         def folder = Files.createTempDirectory('test')
         and:
@@ -56,4 +58,88 @@ class ContainerBuildServiceTest extends Specification {
         folder?.deleteDir()
     }
 
+    @Requires({System.getenv('DOCKER_USER') && System.getenv('DOCKER_PAT')})
+    def 'should build & push container to docker.io' () {
+        given:
+        def folder = Files.createTempDirectory('test')
+        and:
+        def dockerfile = '''
+        FROM busybox
+        RUN echo Hello > hello.txt
+        '''.stripIndent()
+        and:
+        buildRepo = "docker.io/pditommaso/wave-tests"
+        and:
+        def cfg = dockerAuthService.credentialsConfigJson(dockerfile, buildRepo, null, null, null)
+        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'),cfg, null, null)
+
+        when:
+        def result = service.launch(REQ)
+        and:
+        println result.logs
+        then:
+        result.id
+        result.startTime
+        result.duration
+        result.exitStatus == 0
+
+        cleanup:
+        folder?.deleteDir()
+    }
+
+    @Requires({System.getenv('QUAY_USER') && System.getenv('QUAY_PAT')})
+    def 'should build & push container to quay.io' () {
+        given:
+        def folder = Files.createTempDirectory('test')
+        and:
+        def dockerfile = '''
+        FROM busybox
+        RUN echo Hello > hello.txt
+        '''.stripIndent()
+        and:
+        buildRepo = "quay.io/pditommaso/wave-tests"
+        def cfg = dockerAuthService.credentialsConfigJson(dockerfile, buildRepo, null, null, null)
+        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'),cfg, null, "")
+
+        when:
+        def result = service.launch(REQ)
+        and:
+        println result.logs
+        then:
+        result.id
+        result.startTime
+        result.duration
+        result.exitStatus == 0
+
+        cleanup:
+        folder?.deleteDir()
+    }
+
+    @Requires({System.getenv('AZURECR_USER') && System.getenv('AZURECR_PAT')})
+    def 'should build & push container to azure' () {
+        given:
+        def folder = Files.createTempDirectory('test')
+        and:
+        def dockerfile = '''
+        FROM busybox
+        RUN echo Hello > hello.txt
+        '''.stripIndent()
+        and:
+        buildRepo = "seqeralabs.azurecr.io/wave-tests"
+        def cfg = dockerAuthService.credentialsConfigJson(dockerfile, buildRepo, null, null, null)
+        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'),cfg, null, "")
+
+        when:
+        def result = service.launch(REQ)
+        and:
+        println result.logs
+        then:
+        result.id
+        result.startTime
+        result.duration
+        result.exitStatus == 0
+
+        cleanup:
+        folder?.deleteDir()
+    }
 }

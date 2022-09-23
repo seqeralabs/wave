@@ -49,6 +49,14 @@ jobs:
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
           GITHUB_TOKEN: ${{ secrets.GH_SEQERA_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{secrets.TOWER_CI_AWS_ACCESS}}
+          AWS_SECRET_ACCESS_KEY: ${{secrets.TOWER_CI_AWS_SECRET}}
+          DOCKER_USER: ${{ secrets.DOCKER_USER }}
+          DOCKER_PAT: ${{ secrets.DOCKER_PAT }}
+          QUAY_USER: ${{ secrets.QUAY_USER }}
+          QUAY_PAT: ${{ secrets.QUAY_PAT }}
+          AZURECR_USER: ${{ secrets.AZURECR_USER }}
+          AZURECR_PAT: ${{ secrets.AZURECR_PAT }}
 
       - name: Release
         if: "contains(github.event.head_commit.message, '[release]')"
