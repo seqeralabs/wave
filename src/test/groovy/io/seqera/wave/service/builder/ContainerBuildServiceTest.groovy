@@ -5,6 +5,7 @@ import spock.lang.Specification
 
 import java.nio.file.Files
 
+import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.auth.DockerAuthService
@@ -17,6 +18,7 @@ import jakarta.inject.Inject
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @MicronautTest
 class ContainerBuildServiceTest extends Specification {
 
@@ -66,10 +68,13 @@ class ContainerBuildServiceTest extends Specification {
         RUN echo Hello > hello.txt
         '''.stripIndent()
         and:
-        buildRepo = "docker.io/${System.getenv('DOCKER_USER')}/wave-tests"
-        cacheRepo = buildRepo
-        def cfg = dockerAuthService.credentialsConfigJson(dockerfile, buildRepo, cacheRepo, null, null)
-        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'),cfg, cacheRepo, "")
+        def creds = credentialsProvider.getDefaultCredentials('docker.io')
+        log.debug "Using docker credentials=$creds"
+        and:
+        buildRepo = "docker.io/$creds.username/wave-tests"
+        and:
+        def cfg = dockerAuthService.credentialsConfigJson(dockerfile, buildRepo, null, null, null)
+        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'),cfg, null, null)
 
         when:
         def result = service.launch(REQ)
