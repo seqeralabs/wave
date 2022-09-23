@@ -92,9 +92,7 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
             }
         }
         else if( AwsEcrService.isEcrHost(registry) ) {
-            if( awsAccessKey && awsSecretKey ) {
-                return credentialsFactory.create(registry, awsAccessKey, awsSecretKey)
-            }
+            return credentialsFactory.create(registry, awsAccessKey, awsSecretKey)
         }
         log.debug "Unable to find credentials for registry '$registry'"
         return null

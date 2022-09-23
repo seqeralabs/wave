@@ -14,6 +14,8 @@ import groovy.util.logging.Slf4j
 import io.seqera.wave.util.StringUtils
 import jakarta.inject.Singleton
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.ecr.EcrClient
@@ -58,9 +60,13 @@ class AwsEcrService {
 
 
     private EcrClient ecrClient(String accessKey, String secretKey, String region) {
+        AwsCredentialsProvider credentialsProvider = accessKey && secretKey ?
+                StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)) :
+                DefaultCredentialsProvider.create()
+
         EcrClient.builder()
                 .region( Region.of(region))
-                .credentialsProvider( StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)))
+                .credentialsProvider( credentialsProvider )
                 .build()
     }
 
@@ -76,14 +82,14 @@ class AwsEcrService {
     /**
      * Get AWS ECR login token
      *
-     * @param accessKey The AWS access key
-     * @param secretKey The AWS secret key
+     * @param accessKey The AWS access key, if null StandardCred will be used
+     * @param secretKey The AWS secret key, if null StandardCred will be used
      * @param region The AWS region
      * @return The ECR login token. The token is made up by the aws username and password separated by a `:`
      */
     String getLoginToken(String accessKey, String secretKey, String region) {
-        assert accessKey, "Missing AWS accessKey argument"
-        assert secretKey, "Missing AWS secretKet argument"
+        //assert accessKey, "Missing AWS accessKey argument"
+        //assert secretKey, "Missing AWS secretKet argument"
         assert region, "Missing AWS region argument"
 
         try {
