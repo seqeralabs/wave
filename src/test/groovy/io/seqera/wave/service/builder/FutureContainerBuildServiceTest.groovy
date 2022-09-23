@@ -10,6 +10,7 @@ import java.time.Instant
 import io.micronaut.context.annotation.Value
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
@@ -35,6 +36,13 @@ class FutureContainerBuildServiceTest extends Specification {
             BuildResult build(BuildRequest req, String creds) {
                 new BuildResult("", exitCode, "a fake build result in a test", Instant.now(), Duration.ofSeconds(3))
             }
+        }
+    }
+
+    @MockBean(RegistryCredentialsProvider)
+    RegistryCredentialsProvider fakeCredentialsProvider(){
+        Mock(RegistryCredentialsProvider){
+            getUserCredentials(_,_,_) >> null
         }
     }
 
