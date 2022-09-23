@@ -20,7 +20,7 @@ class MicronautClientTest extends Specification{
         def username = System.getenv("DOCKER_USER")
         def IMAGE = 'library/hello-world'
         def DIGEST = 'sha256:feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412'
-        def pat = System.getenv("DOCKER_PASSWORD")
+        def pat = System.getenv("DOCKER_PAT")
         def client = HttpClient.create(new URL('https://auth.docker.io'))
         def login = "/token?service=registry.docker.io&scope=repository:${IMAGE}:pull"
         def basic = "$username:$pat".bytes.encodeBase64()
