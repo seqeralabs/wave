@@ -100,10 +100,12 @@ class ContainerBuildServiceTest extends Specification {
         RUN echo Hello > hello.txt
         '''.stripIndent()
         and:
-        buildRepo = "quay.io/${System.getenv('QUAY_USER')}/wave-tests"
-        cacheRepo = buildRepo
-        def cfg = dockerAuthService.credentialsConfigJson(dockerfile, buildRepo, cacheRepo, null, null)
-        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'),cfg, cacheRepo, "")
+        def creds = credentialsProvider.getDefaultCredentials('quay.io')
+        log.debug "Using docker credentials=$creds"
+        and:
+        buildRepo = "quay.io/pditommaso/wave-tests"
+        def cfg = dockerAuthService.credentialsConfigJson(dockerfile, buildRepo, null, null, null)
+        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'),cfg, null, "")
 
         when:
         def result = service.launch(REQ)
