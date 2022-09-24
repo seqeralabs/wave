@@ -1,4 +1,8 @@
 # Wave changelog
+v0.20.0 - 24 Sep 2022 
+- Add manifest/blob caching via redis 
+- Improve error reporting when missing auth token [d0e4ce61] 
+
 v0.19.4 - 24 Sep 2022 
 - Revert "notask: adds monitoring endpoint for prometheus (#147)" 
 
