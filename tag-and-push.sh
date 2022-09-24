@@ -24,8 +24,8 @@ if [[ $RELEASE ]]; then
   # tag repo
   git tag $TAG $FORCE
   git push $REMOTE $TAG $FORCE
-  # push it
-  make push
+  # build and push the container
+  ./gradlew jib
   # publish release notes
   gh release create $TAG --generate-notes
 fi
