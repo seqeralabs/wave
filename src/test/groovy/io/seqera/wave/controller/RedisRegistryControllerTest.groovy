@@ -1,6 +1,5 @@
 package io.seqera.wave.controller
 
-
 import spock.lang.Specification
 import spock.lang.Timeout
 
@@ -16,7 +15,7 @@ import io.micronaut.runtime.server.EmbeddedServer
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.exchange.RegistryErrorResponse
 import io.seqera.wave.model.ContentType
-import io.seqera.wave.storage.MemoryStorage
+import io.seqera.wave.storage.RedisStorage
 import io.seqera.wave.test.DockerRegistryContainer
 import io.seqera.wave.test.RedisTestContainer
 import redis.clients.jedis.JedisPool
@@ -56,7 +55,7 @@ class RedisRegistryControllerTest extends Specification implements DockerRegistr
     void 'should get manifest'() {
         given:
         HttpClient client = applicationContext.createBean(HttpClient)
-        MemoryStorage storage = applicationContext.getBean(MemoryStorage)
+        RedisStorage storage = applicationContext.getBean(RedisStorage)
 
         when:
         HttpRequest request = HttpRequest.GET("http://localhost:$port/v2/library/hello-world/manifests/latest").headers({h->
@@ -90,7 +89,7 @@ class RedisRegistryControllerTest extends Specification implements DockerRegistr
     void 'should render a timeout when build failed'() {
         given:
         HttpClient client = applicationContext.createBean(HttpClient)
-        MemoryStorage storage = applicationContext.getBean(MemoryStorage)
+        and:
         jedisPool.resource.set("wave-tokens:1234", '{"containerImage":"hello-world"}')
         jedisPool.resource.set("wave-build:hello-world", '{"containerImage":"hello-world"}')
         when:

@@ -1,6 +1,5 @@
 package io.seqera.wave.storage.reader;
 
-import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
@@ -24,9 +23,4 @@ public class ContentReaderFactory {
         throw new IllegalArgumentException("Unsupported content location: " + location);
     }
 
-    public static ContentReader of(Path location) {
-        if( location==null )
-            throw new IllegalArgumentException("Missing content location");
-        return new PathContentReader(location);
-    }
 }
