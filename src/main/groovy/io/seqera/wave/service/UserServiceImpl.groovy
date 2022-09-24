@@ -4,13 +4,13 @@ import groovy.json.JsonSlurper
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.tower.crypto.HmacSha1Signature
+import io.seqera.wave.exception.UnauthorizedException
 import io.seqera.wave.tower.AccessToken
 import io.seqera.wave.tower.AccessTokenDao
 import io.seqera.wave.tower.User
-import io.seqera.tower.crypto.HmacSha1Signature
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 /**
  * Define a service to access a Tower user
  *
@@ -48,12 +48,12 @@ class UserServiceImpl implements UserService {
         final decoded = DecodedAccessToken.fromString(encodedToken)
         final token = accessTokenDao.findById(decoded.tokenId).orElse(null)
         if( !token) {
-            log.warn "Unable to find any user for tokenId: '$decoded.tokenId'"
-            return null
+            log.warn "Unable to find any user for tokenId: '$decoded.tokenId' - access token: $encodedToken"
+            throw new UnauthorizedException("Unknown access token")
         }
         if( !isValid(token, decoded) ) {
-            log.warn "Access Token is not valid: '$decoded.tokenId'"
-            return null
+            log.warn "Invalid access token: '$decoded.tokenId'- access token: $encodedToken"
+            throw new UnauthorizedException("Invalid access token")
         }
 
         return token.user
