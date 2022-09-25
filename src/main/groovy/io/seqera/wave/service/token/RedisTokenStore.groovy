@@ -38,7 +38,7 @@ class RedisTokenStore implements ContainerTokenStore {
         log.info "Redis tokens store - duration=$config.cache.duration; maxSize=$config.cache.maxSize"
     }
 
-    private String key(String name) { "wave-tokens:$name" }
+    private String key(String name) { "wave-tokens/v0:$name" }
 
     @Override
     ContainerRequestData put(String name, ContainerRequestData request) {

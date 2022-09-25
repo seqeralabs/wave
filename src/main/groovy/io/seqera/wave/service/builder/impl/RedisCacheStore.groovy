@@ -48,7 +48,7 @@ class RedisCacheStore implements BuildStore {
         log.info "Redis build store - duration=$duration; timeout=$timeout; delay=$delay"
     }
 
-    private String key(String name) {  'wave-build:' + name }
+    private String key(String name) {  'wave-build/v0:' + name }
 
     @Override
     BuildResult getBuild(String imageName) {
