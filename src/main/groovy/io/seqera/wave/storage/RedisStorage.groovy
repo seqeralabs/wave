@@ -32,7 +32,7 @@ class RedisStorage implements Storage {
     @Value('${wave.storage.cache.duration:`1h`}')
     private Duration maxDuration
 
-    private String key(String name) { "wave-blobs:$name" }
+    private String key(String name) { "wave-blobs/v0:$name" }
 
     @PostConstruct
     private void init() {
