@@ -42,7 +42,7 @@ class RedisCacheStore implements BuildStore {
 
     @PostConstruct
     void init() {
-        log.info "Creating Redis build store - duration=$duration; timeout=$timeout; delay=$delay"
+        log.info "Redis build store - duration=$duration; timeout=$timeout; delay=$delay"
     }
 
     private String key(String name) {  'wave-build:' + name }
