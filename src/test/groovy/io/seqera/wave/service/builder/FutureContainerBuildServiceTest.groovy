@@ -39,7 +39,7 @@ class FutureContainerBuildServiceTest extends Specification {
     }
 
 
-    @Timeout(5)
+    @Timeout(30)
     def 'should wait to build container completion' () {
         given:
         def folder = Files.createTempDirectory('test')

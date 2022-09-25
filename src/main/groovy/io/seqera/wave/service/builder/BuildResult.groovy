@@ -72,6 +72,6 @@ class BuildResult {
 
     @Memoized
     static BuildResult unknown() {
-        new BuildResult('-', -1, 'Unknown', null as Instant, Duration.ZERO)
+        new BuildResult('-', -1, 'Unknown build status', null as Instant, Duration.ZERO)
     }
 }

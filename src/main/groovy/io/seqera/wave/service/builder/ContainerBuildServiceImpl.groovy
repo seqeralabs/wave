@@ -47,7 +47,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     private MailService mailService
 
     @Inject
-    private BuildStore buildRequests
+    private BuildStore buildStore
 
     private ExecutorService executor
 
@@ -94,7 +94,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
      */
     @Override
     CompletableFuture<BuildResult> buildResult(String targetImage) {
-        return buildRequests
+        return buildStore
                 .awaitBuild(targetImage)
     }
 
@@ -123,7 +123,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         }
         finally {
             // update build status store
-            buildRequests.storeBuild(req.targetImage, resp)
+            buildStore.storeBuild(req.targetImage, resp)
             // cleanup build context
             if( !debugMode )
                 buildStrategy.cleanup(req)
@@ -131,12 +131,16 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     }
 
     protected CompletableFuture<BuildResult> launchAsync(BuildRequest request) {
-
-        if( rateLimiterService )
-            rateLimiterService.acquireBuild(new AcquireRequest(request.user?.id?.toString(), request.ip))
-
-        buildRequests.storeBuild(request.targetImage, BuildResult.create(request))
-
+        // check the build rate limit
+        try {
+            if( rateLimiterService )
+                rateLimiterService.acquireBuild(new AcquireRequest(request.user?.id?.toString(), request.ip))
+        }
+        catch (Exception e) {
+            buildStore.removeBuild(request.targetImage)
+            throw e
+        }
+        // launch the build async
         CompletableFuture
                 .<BuildResult>supplyAsync(() -> launch(request), executor)
                 .thenApply((result) -> { sendCompletionEmail(request,result); return result })
@@ -152,17 +156,24 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     }
 
     protected String getOrSubmit(BuildRequest request) {
-        // use the target image as the cache key
-        synchronized (buildRequests) {
-            if( !buildRequests.hasBuild(request.targetImage) ) {
-                log.info "== Submit build request request: $request"
-                launchAsync(request)
-            }
-            else {
-                log.info "== Hit build cache for request: $request"
-            }
+        // try to store a new build status for the given target image
+        // this returns true if and only if such container image was not set yet
+        final ret1 = BuildResult.create(request)
+        if( buildStore.storeIfAbsent(request.targetImage, ret1) ) {
+            // go ahead
+            log.info "== Submit build request request: $request"
+            launchAsync(request)
             return request.targetImage
         }
+        // since it was unable to initialise the build result status
+        // this means the build status already exists, retrieve it
+        final ret2 = buildStore.getBuild(request.targetImage)
+        if( ret2 ) {
+            log.info "== Hit build cache for request: $request"
+            return request.targetImage
+        }
+        // invalid state
+        throw new IllegalStateException("Unable to determine build status for '$request.targetImage'")
     }
 
 }
