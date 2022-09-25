@@ -36,7 +36,7 @@ class RedisStorage implements Storage {
 
     @PostConstruct
     private void init() {
-        log.info "Creating Redis blob store - duration=$maxDuration"
+        log.info "Redis blob store - duration=$maxDuration"
     }
 
     @Override

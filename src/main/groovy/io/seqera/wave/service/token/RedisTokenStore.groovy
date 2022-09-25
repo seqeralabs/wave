@@ -35,7 +35,7 @@ class RedisTokenStore implements ContainerTokenStore {
             StatefulRedisConnection<String,String> redisConnection) {
         this.tokenConfiguration = config
         this.redisConnection = redisConnection
-        log.info "Creating Redis cache store - duration=$config.cache.duration; maxSize=$config.cache.maxSize"
+        log.info "Redis tokens store - duration=$config.cache.duration; maxSize=$config.cache.maxSize"
     }
 
     private String key(String name) { "wave-tokens:$name" }
