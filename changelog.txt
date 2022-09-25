@@ -1,4 +1,8 @@
 # Wave changelog
+v0.20.1 - 25 Sep 2022 
+- Fix synchronisation for distributed build [e227bdf1]
+- Add versioned redis keys [80ec83b2]
+
 v0.20.0 - 24 Sep 2022 
 - Add manifest/blob caching via redis 
 - Improve error reporting when missing auth token [d0e4ce61] 
