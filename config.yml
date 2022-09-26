@@ -11,4 +11,9 @@ wave:
     amazon:
       username : "${AWS_ACCESS_KEY_ID}"
       password : "${AWS_SECRET_ACCESS_KEY}"
+    azurecr:
+      username : "${AZURECR_USER}"
+      password : "${AZURECR_PAT}"
+    google:
+      credentials : "${GOOGLE_APPLICATION_CREDENTIALS}"
 ...

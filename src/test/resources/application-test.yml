@@ -32,6 +32,8 @@ wave:
       # seqeralabs.azurecr.io
       username: "${AZURECR_USER}"
       password: "${AZURECR_PAT}"
+    google:
+      credentials : "${GOOGLE_APPLICATION_CREDENTIALS}"
 ---
 tower:
   crypto :
