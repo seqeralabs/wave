@@ -126,9 +126,7 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
         }
         else if( registry.endsWith('-docker.pkg.dev') || registry.endsWith('gcr.io')) {
             if( googleUsername && googleCredentials  ) {
-                String pwd = Files.exists(Path.of(googleCredentials)) ?
-                        Path.of(googleCredentials).text : googleCredentials
-                return credentialsFactory.create(registry, googleUsername, pwd)
+                return credentialsFactory.create(registry, googleUsername, googleCredentials)
             }
         }
         log.debug "Unable to find credentials for registry '$registry'"
