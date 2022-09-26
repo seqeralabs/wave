@@ -1,4 +1,9 @@
 # Wave changelog
+v0.20.3 - 26 Sep 2022
+- Add build clean setting  [55b83101]
+- Add compress caching build option [ba4b788b]
+- Add support for pod resources [359743aa]
+
 v0.20.2 - 26 Sep 2022 
 - Minor change object ser-deser [e7796e87]
 - Duplicate host name in the creds file [43827fff]
