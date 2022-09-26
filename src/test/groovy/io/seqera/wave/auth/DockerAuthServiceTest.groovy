@@ -49,6 +49,12 @@ class DockerAuthServiceTest extends Specification {
         then:
         // note: the auth below depends on the docker user and password used for test
         result == """{"auths":{"https://index.docker.io/v1/":{"auth":"$EXPECTED1"}}}"""
+
+        when:
+        result = service.credsJson(['busybox','docker.io/ubuntu:latest'] as Set, null, null)
+        then:
+        // note: the auth below depends on the docker user and password used for test
+        result == """{"auths":{"https://index.docker.io/v1/":{"auth":"$EXPECTED1"}}}"""
     }
 
     def 'should find repos' () {
