@@ -1,6 +1,8 @@
 package io.seqera.wave.service.builder
 
 import groovy.transform.CompileStatic
+import io.micronaut.context.annotation.Value
+
 /**
  * Defines an abstract container build strategy.
  *
@@ -11,6 +13,9 @@ import groovy.transform.CompileStatic
  */
 @CompileStatic
 abstract class BuildStrategy {
+
+    @Value('${wave.build.compress-caching:true}')
+    private Boolean compressCaching = true
 
     abstract BuildResult build(BuildRequest req)
 
@@ -32,6 +37,9 @@ abstract class BuildStrategy {
         if( req.cacheRepository ) {
             result << "--cache-repo" << req.cacheRepository
         }
+
+        if( !compressCaching )
+            result << "--compressed-caching" << 'false'
 
         return result
     }
