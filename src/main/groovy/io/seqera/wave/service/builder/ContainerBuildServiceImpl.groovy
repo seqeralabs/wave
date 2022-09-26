@@ -42,6 +42,10 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     @Value('${wave.build.timeout:5m}')
     Duration buildTimeout
 
+    @Value('${wave.build.cleanup}')
+    @Nullable
+    String cleanup
+
     @Inject
     @Nullable
     private MailService mailService
@@ -125,9 +129,23 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             // update build status store
             buildStore.storeBuild(req.targetImage, resp)
             // cleanup build context
-            if( !debugMode )
+            if( shouldCleanup(resp) )
                 buildStrategy.cleanup(req)
         }
+    }
+
+    protected boolean shouldCleanup(BuildResult result) {
+        if( cleanup==null )
+            return !debugMode
+        if( cleanup == 'true' )
+            return true
+        if( cleanup == 'false' )
+            return false
+        if( cleanup.toLowerCase() == 'onsuccess' ) {
+            return result?.exitStatus==0
+        }
+        log.debug "Invalid cleanup value: '$cleanup'"
+        return true
     }
 
     protected CompletableFuture<BuildResult> launchAsync(BuildRequest request) {
