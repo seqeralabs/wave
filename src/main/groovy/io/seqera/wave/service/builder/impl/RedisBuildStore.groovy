@@ -48,7 +48,7 @@ class RedisBuildStore implements BuildStore {
         log.info "Redis build store - duration=$duration; timeout=$timeout; delay=$delay"
     }
 
-    private String key(String name) {  'wave-build/v0:' + name }
+    private String key(String name) {  'wave-build/v1:' + name }
 
     @Override
     BuildResult getBuild(String imageName) {
