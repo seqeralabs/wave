@@ -1,4 +1,9 @@
 # Wave changelog
+v0.20.2 - 26 Sep 2022 
+- Minor change object ser-deser [e7796e87]
+- Duplicate host name in the creds file [43827fff]
+- Rename CacheStore to BuildStore [80a12ce5]
+
 v0.20.1 - 25 Sep 2022 
 - Fix synchronisation for distributed build [e227bdf1]
 - Add versioned redis keys [80ec83b2]
