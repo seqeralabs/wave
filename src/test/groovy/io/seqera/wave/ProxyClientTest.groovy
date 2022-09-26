@@ -99,5 +99,48 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
         then:
         resp.statusCode() == 200
     }
-    
+
+    void 'should lookup google artifactory' () {
+        when:
+        def registry = lookupService.lookup('europe-southwest1-docker.pkg.dev')
+        then:
+        registry.name == 'europe-southwest1-docker.pkg.dev'
+        registry.host == new URI('https://europe-southwest1-docker.pkg.dev')
+        registry.auth.realm == new URI('https://europe-southwest1-docker.pkg.dev/v2/token')
+        !registry.auth.service
+        registry.auth.type == RegistryAuth.Type.Bearer
+
+    }
+
+    @Requires({System.getenv('GOOGLE_SERVICE_CREDENTIALS')})
+    def 'should login on google' () {
+        given:
+        def KEY = new File(System.getenv('GOOGLE_SERVICE_CREDENTIALS')).text
+        and:
+        def registry = 'europe-southwest1-docker.pkg.dev'
+        def USER = '_json_key' // or '_json_key_base64'
+
+        expect:
+        loginService.login(registry, USER, KEY)
+    }
+
+    @Requires({System.getenv('GOOGLE_SERVICE_CREDENTIALS')})
+    def 'should call target manifest on google' () {
+        given:
+        def IMAGE = 'wave-test-361419/wave-build/hello-world'
+        def REG = 'europe-southwest1-docker.pkg.dev'
+        def registry = lookupService.lookup(REG)
+        def creds = credentialsProvider.getDefaultCredentials(REG)
+        and:
+        def proxy = new ProxyClient()
+                .withImage(IMAGE)
+                .withRegistry(registry)
+                .withLoginService(loginService)
+                .withCredentials(creds)
+
+        when:
+        def resp = proxy.getString("/v2/$IMAGE/manifests/latest")
+        then:
+        resp.statusCode() == 200
+    }
 }

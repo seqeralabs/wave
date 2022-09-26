@@ -171,7 +171,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
      * @return The resulting bearer token to authorise a pull request
      */
     protected String getToken0(CacheKey key) {
-        final login = "${key.auth.realm}?service=${key.auth.service}&scope=repository:${key.image}:pull"
+        final login = "${key.auth.realm}?${key.auth.service ? 'service='+key.auth.service+'&' : ''}scope=repository:${key.image}:pull"
         final req = makeRequest(login, key.creds)
         log.debug "Token request=$req"
 

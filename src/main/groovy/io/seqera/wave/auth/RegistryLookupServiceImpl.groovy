@@ -42,6 +42,7 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
     RegistryLookupServiceImpl() {
         httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
+                .followRedirects(HttpClient.Redirect.NORMAL)
                 .build()
     }
 
