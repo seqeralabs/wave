@@ -17,7 +17,7 @@ import jakarta.inject.Singleton
 @Requires(missingProperty = 'redis.uri')
 @Singleton
 @CompileStatic
-class LocalCacheStore implements BuildStore {
+class LocalBuildStore implements BuildStore {
 
     private ConcurrentHashMap<String, BuildResult> store = new ConcurrentHashMap<>()
 

@@ -22,7 +22,7 @@ import jakarta.inject.Singleton
 @Requires(property = 'redis.uri')
 @Singleton
 @CompileStatic
-class RedisCacheStore implements BuildStore {
+class RedisBuildStore implements BuildStore {
 
     private StatefulRedisConnection<String,String> senderConn
 
@@ -39,7 +39,7 @@ class RedisCacheStore implements BuildStore {
 
     Duration getTimeout() { timeout }
 
-    RedisCacheStore(StatefulRedisConnection<String,String> senderConn) {
+    RedisBuildStore(StatefulRedisConnection<String,String> senderConn) {
         this.senderConn = senderConn
     }
 

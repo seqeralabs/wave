@@ -15,7 +15,7 @@ public class LazyDigestStore implements DigestStore{
     final private String digest;
     final private ContentReader contentReader;
 
-    LazyDigestStore(ContentReader content, String mediaType, String digest) {
+    public LazyDigestStore(ContentReader content, String mediaType, String digest) {
         this.contentReader = content;
         this.mediaType = mediaType;
         this.digest = digest;
