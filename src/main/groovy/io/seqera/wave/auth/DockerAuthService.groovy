@@ -34,18 +34,26 @@ class DockerAuthService {
     }
 
     protected String credsJson(Set<String> repositories, Long userId, Long workspaceId) {
+        final hosts = new HashSet()
         final result = new StringBuilder()
         for( String repo : repositories ) {
             final path = ContainerCoordinates.parse(repo)
             final info = lookupService.lookup(path.registry)
+            final hostName = info.getIndexHost()
+            if( !hosts.add(hostName)) {
+                // skip this index host because it has already be addede to the list
+                continue
+            }
             final creds = credentialsProvider.getUserCredentials(path, userId, workspaceId)
             log.debug "Build credentials for repository: $repo => $creds"
-            if( !creds )
+            if( !creds ) {
+                // skip this host because there are no credentials
                 continue
+            }
             final encode = "${creds.username}:${creds.password}".getBytes().encodeBase64()
             if( result.size() )
                 result.append(',')
-            result.append("\"${info.index}\":{\"auth\":\"$encode\"}")
+            result.append("\"${hostName}\":{\"auth\":\"$encode\"}")
         }
         return result.size() ? """{"auths":{$result}}""" : null
     }

@@ -40,6 +40,16 @@ class DockerAuthServiceTest extends Specification {
         result == """{"auths":{"https://index.docker.io/v1/":{"auth":"$EXPECTED1"},"https://quay.io":{"auth":"$EXPECTED2"}}}"""
     }
 
+    def 'should remove duplicates' () {
+        given:
+        def creds1 = credentialsProvider.getDefaultCredentials('docker.io')
+        def EXPECTED1 = "$creds1.username:$creds1.password".bytes.encodeBase64()
+        when:
+        def result = service.credsJson(['docker.io/busybox','docker.io/ubuntu:latest'] as Set, null, null)
+        then:
+        // note: the auth below depends on the docker user and password used for test
+        result == """{"auths":{"https://index.docker.io/v1/":{"auth":"$EXPECTED1"}}}"""
+    }
 
     def 'should find repos' () {
 
