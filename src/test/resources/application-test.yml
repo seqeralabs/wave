@@ -20,20 +20,20 @@ datasources:
 wave:
   registries:
     docker:
-      username: "${DOCKER_USER}"
-      password: "${DOCKER_PAT}"
+      username: ${DOCKER_USER:test}
+      password: ${DOCKER_PAT:test}
     quay:
-      username: "${QUAY_USER}"
-      password: "${QUAY_PAT}"
+      username: ${QUAY_USER:test}
+      password: ${QUAY_PAT:test}
     amazon:
-      username: "${AWS_ACCESS_KEY_ID}"
-      password: "${AWS_SECRET_ACCESS_KEY}"
+      username: ${AWS_ACCESS_KEY_ID:test}
+      password: ${AWS_SECRET_ACCESS_KEY:test}
     azurecr:
       # seqeralabs.azurecr.io
-      username: "${AZURECR_USER}"
-      password: "${AZURECR_PAT}"
+      username: ${AZURECR_USER:test}
+      password: ${AZURECR_PAT:test}
     google:
-      credentials : "${GOOGLECR_KEYS}"
+      credentials : ${GOOGLECR_KEYS:test}
 ---
 tower:
   crypto :
