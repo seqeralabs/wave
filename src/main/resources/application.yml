@@ -2,6 +2,9 @@
 micronaut:
   application:
     name: wave-app
+  caches :
+    discovery-client :
+      enabled : false
   server:
     port: 9090
 ---
