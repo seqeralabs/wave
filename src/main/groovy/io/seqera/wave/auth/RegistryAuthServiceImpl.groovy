@@ -171,7 +171,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
      * @return The resulting bearer token to authorise a pull request
      */
     protected String getToken0(CacheKey key) {
-        final login = "${key.auth.realm}?${key.auth.service ? 'service='+key.auth.service+'&' : ''}scope=repository:${key.image}:pull"
+        final login = buildLoginUrl(key.auth.realm, key.image, key.auth.service)
         final req = makeRequest(login, key.creds)
         log.debug "Token request=$req"
 
@@ -184,6 +184,13 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         }
 
         throw new RegistryUnauthorizedAccessException("Unable to authorize request: $login", body)
+    }
+
+    String buildLoginUrl(URI realm, String image, String service){
+        String ret = "${realm}?scope=repository:${image}:pull"
+        if(service)
+            ret+= "&service=$service"
+        ret
     }
 
     protected String getAuthToken(String image, RegistryAuth auth, RegistryCredentials creds) {

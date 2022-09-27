@@ -17,16 +17,29 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
     @Shared
     ApplicationContext applicationContext
 
-    @Shared @Value('${wave.registries.docker.username}') String dockerUsername
-    @Shared @Value('${wave.registries.docker.password}') String dockerPassword
+    @Shared
+    @Value('${wave.registries.docker.username}')
+    String dockerUsername
+    @Shared
+    @Value('${wave.registries.docker.password}')
+    String dockerPassword
 
-    @Shared @Value('${wave.registries.quay.username}') String quayUsername
-    @Shared @Value('${wave.registries.quay.password}') String quayPassword
+    @Shared
+    @Value('${wave.registries.quay.username}')
+    String quayUsername
+    @Shared
+    @Value('${wave.registries.quay.password}')
+    String quayPassword
 
-    @Shared @Value('${wave.registries.azurecr.username}') String azureUsername
-    @Shared @Value('${wave.registries.azurecr.password}') String azurePassword
+    @Shared
+    @Value('${wave.registries.azurecr.username}')
+    String azureUsername
+    @Shared
+    @Value('${wave.registries.azurecr.password}')
+    String azurePassword
 
-    @Inject RegistryAuthService loginService
+    @Inject
+    RegistryAuthService loginService
 
     def setupSpec() {
         initRegistryContainer(applicationContext)
@@ -44,15 +57,15 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
         logged == VALID
 
         where:
-        USER             | PWD             | REGISTRY_URL                   | VALID
-        'test'           | 'test'          | 'localhost'                    | true
-        'nope'           | 'yepes'         | 'localhost'                    | false
-        dockerUsername   | dockerPassword  | "https://registry-1.docker.io" | true
-        'nope'           | 'yepes'         | "https://registry-1.docker.io" | false
-        quayUsername     | quayPassword    | "https://quay.io"              | true
-        'nope'           | 'yepes'         | "https://quay.io"              | false
+        USER           | PWD            | REGISTRY_URL                   | VALID
+        'test'         | 'test'         | 'localhost'                    | true
+        'nope'         | 'yepes'        | 'localhost'                    | false
+        dockerUsername | dockerPassword | "https://registry-1.docker.io" | true
+        'nope'         | 'yepes'        | "https://registry-1.docker.io" | false
+        quayUsername   | quayPassword   | "https://quay.io"              | true
+        'nope'         | 'yepes'        | "https://quay.io"              | false
         and:
-        azureUsername    | azurePassword   | 'seqeralabs.azurecr.io' | true
+        azureUsername  | azurePassword  | 'seqeralabs.azurecr.io'        | true
     }
 
 
@@ -67,14 +80,29 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
         logged == VALID
 
         where:
-        USER             | PWD             | REGISTRY_URL                   | VALID
-        'test'           | 'test'          | 'localhost'                    | true
-        'nope'           | 'yepes'         | 'localhost'                    | false
-        dockerUsername   | dockerPassword  | "https://registry-1.docker.io" | true
-        'nope'           | 'yepes'         | "https://registry-1.docker.io" | false
-        quayUsername     | quayPassword    | "https://quay.io"              | true
-        'nope'           | 'yepes'         | "https://quay.io"              | false
+        USER           | PWD            | REGISTRY_URL                   | VALID
+        'test'         | 'test'         | 'localhost'                    | true
+        'nope'         | 'yepes'        | 'localhost'                    | false
+        dockerUsername | dockerPassword | "https://registry-1.docker.io" | true
+        'nope'         | 'yepes'        | "https://registry-1.docker.io" | false
+        quayUsername   | quayPassword   | "https://quay.io"              | true
+        'nope'         | 'yepes'        | "https://quay.io"              | false
     }
 
+    void 'test buildLoginUrl'() {
+        given:
+        RegistryAuthServiceImpl impl = loginService as RegistryAuthServiceImpl
+
+        when:
+        def url = impl.buildLoginUrl(new URI(REALM), IMAGE, SERVICE)
+
+        then:
+        url == EXPECTED
+
+        where:
+        REALM       | IMAGE  | SERVICE   | EXPECTED
+        'localhost' | 'test' | 'service' | "localhost?scope=repository:test:pull&service=service"
+        'localhost' | 'test' | null      | "localhost?scope=repository:test:pull"
+    }
 
 }

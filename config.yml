@@ -14,6 +14,4 @@ wave:
     azurecr:
       username : "${AZURECR_USER}"
       password : "${AZURECR_PAT}"
-    google:
-      credentials : "${GOOGLECR_KEYS}"
 ...

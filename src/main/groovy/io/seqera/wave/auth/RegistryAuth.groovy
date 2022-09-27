@@ -32,14 +32,14 @@ class RegistryAuth {
         final m1 = AUTH.matcher(auth)
         if( m1.matches() ) {
             final type = Type.valueOf(m1.group('type'))
-            if( m1.group("realm").startsWith("http") ) {
+            if( m1.group("realm").startsWith("http://") || m1.group("realm").startsWith("https://") ) {
                 return new RegistryAuth(new URI(m1.group('realm')), m1.group('service'), type)
             }
         }
         final m2 = AUTH2.matcher(auth)
         if( m2.matches() ) {
             final type = Type.valueOf(m2.group('type'))
-            if( m2.group("realm").startsWith("http") ) {
+            if( m2.group("realm").startsWith("http://") || m2.group("realm").startsWith("https://") ) {
                 return new RegistryAuth(new URI(m2.group('realm')), null, type)
             }
         }
