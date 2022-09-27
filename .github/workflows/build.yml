@@ -57,7 +57,7 @@ jobs:
           QUAY_PAT: ${{ secrets.QUAY_PAT }}
           AZURECR_USER: ${{ secrets.AZURECR_USER }}
           AZURECR_PAT: ${{ secrets.AZURECR_PAT }}
-          GOOGLE_SERVICE_KEYS: ${{ secrets.GOOGLE_SERVICE_KEYS }}
+          GOOGLECR_KEYS: ${{ secrets.GOOGLECR_KEYS }}
 
       - name: Release
         if: "contains(github.event.head_commit.message, '[release]')"

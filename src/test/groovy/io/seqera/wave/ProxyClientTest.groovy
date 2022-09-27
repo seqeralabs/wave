@@ -100,6 +100,7 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
         resp.statusCode() == 200
     }
 
+    @Requires({System.getenv('GOOGLECR_KEYS')})
     void 'should lookup google artifactory' () {
         when:
         def registry = lookupService.lookup('europe-southwest1-docker.pkg.dev')
@@ -112,10 +113,18 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
 
     }
 
-    @Requires({System.getenv('GOOGLE_SERVICE_KEYS')})
+    /*
+    This test requires a key for an account service created in the project wave-test-361419
+    https://console.cloud.google.com/welcome?project=wave-test-361419
+
+    This account needs to have following roles:
+    - Cloud Storage read/write
+    - Artifact read/write
+     */
+    @Requires({System.getenv('GOOGLECR_KEYS')})
     def 'should login on google' () {
         given:
-        def KEY = new File(System.getenv('GOOGLE_SERVICE_KEYS')).text
+        def KEY = System.getenv('GOOGLECR_KEYS')
         and:
         def registry = 'europe-southwest1-docker.pkg.dev'
         def USER = '_json_key' // or '_json_key_base64'
@@ -132,7 +141,7 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
     - Cloud Storage read/write
     - Artifact read/write
      */
-    @Requires({System.getenv('GOOGLE_SERVICE_KEYS')})
+    @Requires({System.getenv('GOOGLECR_KEYS')})
     def 'should call target manifest on google' () {
         given:
         def IMAGE = 'wave-test-361419/wave-build/hello-world'
