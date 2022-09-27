@@ -1,4 +1,9 @@
 # Wave changelog
+v0.21.0 - 27 Sep 2022
+- Bump nf-jdk:corretto-17.0.4 as base image [fbabf800]
+- Fix Disable discovery client caching and re enable prometheus config (#156) [d94e391a]
+- Add support for google artifact registry (#157) [468ed9e7]
+
 v0.20.3 - 26 Sep 2022
 - Add build clean setting  [55b83101]
 - Add compress caching build option [ba4b788b]
