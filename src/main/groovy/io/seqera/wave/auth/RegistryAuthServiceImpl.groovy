@@ -187,10 +187,11 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     }
 
     String buildLoginUrl(URI realm, String image, String service){
-        String ret = "${realm}?scope=repository:${image}:pull"
-        if(service)
-            ret+= "&service=$service"
-        ret
+        String result = "${realm}?scope=repository:${image}:pull"
+        if(service) {
+            result += "&service=$service"
+        }
+        return result
     }
 
     protected String getAuthToken(String image, RegistryAuth auth, RegistryCredentials creds) {
