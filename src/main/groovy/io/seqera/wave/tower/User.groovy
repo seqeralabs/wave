@@ -5,11 +5,9 @@ import javax.validation.constraints.Size
 
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
-import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
-import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import jakarta.persistence.Version
 /**
@@ -25,9 +23,6 @@ class User {
 
     @Id
     Long id
-
-    @OneToMany(mappedBy = 'user', cascade = CascadeType.PERSIST, orphanRemoval = true)
-    Set<AccessToken> accessTokens = new HashSet<>()
 
     @Column(unique = true)
     @NotNull

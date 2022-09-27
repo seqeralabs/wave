@@ -1,13 +1,14 @@
 ---
+tower:
+  api:
+    endpoint: "${TOWER_API_ENDPOINT:`http://localhost:8000/api`}"
+  crypto:
+    secretKey: "${TOWER_CRYPTO_SECRETKEY}"
+---
 datasources:
   default:
     url: "${TOWER_DB_URL}"
     driverClassName: "${TOWER_DB_DRIVER}"
     username: "${TOWER_DB_USER}"
     password: "${TOWER_DB_PASSWORD}"
-    dialect: "${TOWER_DB_DIALECT}"
----
-tower:
-  crypto:
-    secretKey: "${TOWER_CRYPTO_SECRETKEY}"
 ...
