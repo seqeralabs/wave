@@ -27,17 +27,12 @@ class UserServiceImpl implements UserService {
     User getUserByAccessToken(String encodedToken) {
         if( !towerClient )
             throw new IllegalStateException("Missing Tower client - make sure the 'tower' micronaut environment has been provided")
-        try {
-            final resp = towerClient.userInfo("Bearer $encodedToken")
-            if( !resp || !resp.user )
-                throw new UnauthorizedException("Unauthorized resp - Make sure you have provided a valid access token")
-            log.debug("Authorized user=$resp.user")
-            return resp.user
-        }
-        catch (Exception e) {
-            throw new UnauthorizedException("Failed access - Make sure you have provided a valid access token", e)
-        }
-    }
 
+        final resp = towerClient.userInfo(encodedToken)
+        if( !resp || !resp.user )
+            throw new UnauthorizedException("Unauthorized - Make sure you have provided a valid access token")
+        log.debug("Authorized user=$resp.user")
+        return resp.user
+    }
 
 }

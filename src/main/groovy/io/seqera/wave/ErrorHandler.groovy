@@ -11,6 +11,7 @@ import io.micronaut.http.HttpStatus
 import io.seqera.wave.exception.BuildTimeoutException
 import io.seqera.wave.exception.ForbiddenException
 import io.seqera.wave.exception.DockerRegistryException
+import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.exception.UnauthorizedException
@@ -68,6 +69,11 @@ class ErrorHandler {
         if( t instanceof BuildTimeoutException ) {
             final resp = responseFactory.apply(msg, 'TIMEOUT')
             return HttpResponseFactory.INSTANCE.status(HttpStatus.REQUEST_TIMEOUT).body(resp)
+        }
+
+        if( t instanceof HttpResponseException ) {
+            final resp = responseFactory.apply(t.message, t.statusCode().name())
+            return HttpResponseFactory.INSTANCE.status(t.statusCode()).body(resp)
         }
 
         final resp = responseFactory.apply(msg, 'BAD_REQUEST')
