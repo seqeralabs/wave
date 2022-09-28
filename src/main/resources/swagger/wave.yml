@@ -30,7 +30,7 @@ paths:
         required: true
       responses:
         "200":
-          description: Object containing buold token details. 
+          description: Object containing build token details. 
           content:
             application/json:
               schema:
@@ -88,7 +88,7 @@ paths:
           nullable: true
       responses:
         "200":
-          description: Object containing build test result details. 
+          description: Object containing build test details. 
           content:
             application/json:
               schema:
@@ -97,7 +97,7 @@ paths:
     get:
       summary: Ping
       description: | 
-        Use this endpoint to establish API and connection health. Returns an HTTP 200 response if service is live. 
+        Use this endpoint to establish API and connection health. Returns an HTTP 200 response if the service is live. 
       operationId: index
       parameters: []
       responses:
@@ -131,11 +131,7 @@ paths:
 
         The following request body fields are required parameters: 
 
-          `userName`
-
-          `password`
-
-          `registry`
+          `userName`, `password`, `registry`
       operationId: validate-creds
       parameters: []
       requestBody:
