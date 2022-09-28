@@ -15,6 +15,11 @@ class SubmitContainerTokenRequest {
     String towerAccessToken
 
     /**
+     * The refresh token to update the access token when expired
+     */
+    String towerRefreshToken
+
+    /**
      * Tower workspace id
      */
     Long towerWorkspaceId
