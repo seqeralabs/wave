@@ -1,4 +1,10 @@
 # Wave changelog
+v0.21.2 - 29 Sep 2022
+- Add new get direct response in proxyclient (#162) [cb49c475]
+- Add test for user info (#161) [c199ed41]
+- Add proxy client trace response [ef3c78e3]
+- Refactor Tower client using Java http client [f891e825]
+
 v0.21.1 - 27 Sep 2022
 - Add support for Tower user auth [a62c6836]
 
