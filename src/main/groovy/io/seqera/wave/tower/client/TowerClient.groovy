@@ -33,6 +33,8 @@ class TowerClient {
                 .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(Duration.ofSeconds(10))
                 .build()
+        if( !endpoint.endsWith('/') )
+            endpoint+='/'
         this.userInfoEndpoint = new URI("${endpoint}user-info")
         log.debug "tower=$endpoint"
     }
