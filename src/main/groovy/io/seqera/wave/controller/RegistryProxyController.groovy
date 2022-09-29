@@ -25,7 +25,6 @@ import io.seqera.wave.core.RegistryProxyService.DelegateResponse
 import io.seqera.wave.core.RouteHandler
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.exception.DockerRegistryException
-import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.exchange.RegistryErrorResponse
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
@@ -131,7 +130,7 @@ class RegistryProxyController {
         final type = route.isManifest() ? 'manifest' : 'blob'
         final headers = httpRequest.headers.asMap() as Map<String, List<String>>
         final resp = proxyService.handleRequest(route, headers)
-        if( resp.isRedirect()  ) {
+        if( resp.isRedirect() ) {
             log.debug "Redirecting $type request '$route.path' to '$resp.location'"
             return fromRedirectResponse(resp)
         }
@@ -183,7 +182,7 @@ class RegistryProxyController {
     MutableHttpResponse<?>fromRedirectResponse(final DelegateResponse delegateResponse) {
         HttpResponse
                 .status(HttpStatus.valueOf(delegateResponse.statusCode))
-                .headers(toMutableHeaders(delegateResponse.headers))
+                .headers(toMutableHeaders(delegateResponse.headers, [Connection: 'close'])) // <-- make sure to return connection: close header otherwise docker hangs
     }
 
     MutableHttpResponse<?>fromDelegateResponse(final DelegateResponse delegateResponse){
@@ -198,13 +197,17 @@ class RegistryProxyController {
                 .headers(toMutableHeaders(delegateResponse.headers))
     }
 
-    static protected Consumer<MutableHttpHeaders> toMutableHeaders(Map<String,List<String>> headers) {
+    static protected Consumer<MutableHttpHeaders> toMutableHeaders(Map<String,List<String>> headers, Map<String,String> override=Collections.emptyMap()) {
         new Consumer<MutableHttpHeaders>() {
             @Override
             void accept(MutableHttpHeaders mutableHttpHeaders) {
                 for( Map.Entry<String,List<String>> entry : headers ) {
                     for( String value : entry.value )
                         mutableHttpHeaders.add(entry.key, value)
+                }
+                // override headers with specified value
+                for( Map.Entry<String,String> entry : override ) {
+                    mutableHttpHeaders.add(entry.key, entry.value)
                 }
             }
         }

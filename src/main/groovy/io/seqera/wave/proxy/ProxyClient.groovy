@@ -270,12 +270,12 @@ class ProxyClient {
         final trace = new StringBuilder()
         trace.append("= ${resp.request().method() ?: ''} [${resp.statusCode()}] ${resp.request().uri()}\n")
         trace.append('- request headers:\n')
-        for( Map.Entry entry : resp.request().headers().map() ) {
-            trace.append("> ${entry.key}=${entry.value}\n")
+        for( Map.Entry<String,List<String>> entry : resp.request().headers().map() ) {
+            trace.append("> ${entry.key}=${entry.value?.join(',')}\n")
         }
         trace.append('- response headers:\n')
-        for( Map.Entry entry : resp.headers().map() ) {
-            trace.append("< ${entry.key}=${entry.value}\n")
+        for( Map.Entry<String,List<String>> entry : resp.headers().map() ) {
+            trace.append("< ${entry.key}=${entry.value?.join(',')}\n")
         }
         log.trace(trace.toString())
     }
