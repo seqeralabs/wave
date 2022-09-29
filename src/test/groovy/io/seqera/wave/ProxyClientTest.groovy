@@ -83,7 +83,7 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
                 .withCredentials(creds)
 
         when:
-        def resp1 = proxy.getDirectRequest('/v2/biocontainers/fastqc/blobs/sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4')
+        def resp1 = proxy.getString('/v2/biocontainers/fastqc/blobs/sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4',null,false)
         and:
         then:
         resp1.statusCode() == 302
