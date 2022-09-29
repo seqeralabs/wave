@@ -26,12 +26,9 @@ class TowerClient {
 
     private HttpClient httpClient
 
-    @Value('${tower.api.endpoint}')
-    private String endpoint
-
     private URI userInfoEndpoint
 
-    TowerClient() {
+    TowerClient(@Value('${tower.api.endpoint}')String endpoint) {
         this.httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(Duration.ofSeconds(10))

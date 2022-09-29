@@ -6,10 +6,12 @@ import spock.lang.Specification
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.io.socket.SocketUtils
+import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.Header
 import io.micronaut.runtime.server.EmbeddedServer
+import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.exception.UnauthorizedException
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.client.UserInfoResponse
@@ -25,10 +27,10 @@ class UserServiceTest extends Specification {
     static class TowerController {
 
         @Get('/user-info')
-        UserInfoResponse userInfo(@Header("Authorization") String authorization) {
+        HttpResponse<UserInfoResponse> userInfo(@Header("Authorization") String authorization) {
             if( authorization == 'Bearer foo')
-                throw new UnauthorizedException()
-            new UserInfoResponse(user: new User(id:1))
+                return HttpResponse.unauthorized()
+            HttpResponse.ok(new UserInfoResponse(user: new User(id:1)))
         }
 
     }
@@ -54,7 +56,8 @@ class UserServiceTest extends Specification {
         when: // an invalid token
         service.getUserByAccessToken("foo")
         then:
-        thrown(UnauthorizedException)
+        def exp = thrown(HttpResponseException)
+        exp.statusCode().code == 401
     }
 
 }
