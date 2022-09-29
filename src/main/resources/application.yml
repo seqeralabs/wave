@@ -20,7 +20,7 @@ wave:
   debug: false
   allowAnonymous: true
   server:
-      url: "${WAVE_SERVER_URL:`https://reg.ngrok.io`}"
+      url: "${WAVE_SERVER_URL:`http://localhost:9090`}"
   build:
     image: "gcr.io/kaniko-project/executor:v1.9.0"
     workspace: 'build-workspace'

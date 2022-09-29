@@ -90,7 +90,7 @@ class RegistryProxyService {
 
     DelegateResponse handleRequest(RoutePath route, Map<String,List<String>> headers){
         ProxyClient proxyClient = client(route)
-        final resp1 = proxyClient.head(route.path, headers)
+        final resp1 = proxyClient.getString(route.path, headers, false)
         final redirect = resp1.headers().firstValue('Location').orElse(null)
         if( redirect && resp1.statusCode() in REDIRECT_CODES ) {
             return new DelegateResponse(

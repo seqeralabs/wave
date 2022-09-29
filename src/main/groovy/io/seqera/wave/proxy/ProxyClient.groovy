@@ -85,27 +85,28 @@ class ProxyClient {
         URI.create(registry.host.toString() + path)
     }
 
-    HttpResponse<String> getString(String path, Map<String,List<String>> headers=null) {
+
+    HttpResponse<String> getString(String path, Map<String,List<String>> headers=null, boolean followRedirect=true) {
         try {
-            return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofString() )
+            return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofString(), followRedirect )
         }
         catch (ClientResponseException e) {
             return ErrResponse<String>.forString(e.message, e.request)
         }
     }
 
-    HttpResponse<InputStream> getStream(String path, Map<String,List<String>> headers=null) {
+    HttpResponse<InputStream> getStream(String path, Map<String,List<String>> headers=null, boolean followRedirect=true) {
         try {
-            return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofInputStream() )
+            return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofInputStream(), followRedirect )
         }
         catch (ClientResponseException e) {
             return ErrResponse.forStream(e.message, e.request)
         }
     }
 
-    HttpResponse<byte[]> getBytes(String path, Map<String,List<String>> headers=null) {
+    HttpResponse<byte[]> getBytes(String path, Map<String,List<String>> headers=null, boolean followRedirect=true) {
         try {
-            return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofByteArray() )
+            return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofByteArray(), followRedirect )
         }
         catch (ClientResponseException e) {
             return ErrResponse.forByteArray(e.message, e.request)
@@ -127,18 +128,18 @@ class ProxyClient {
         }
     }
 
-    def <T> HttpResponse<T> get(URI origin, Map<String,List<String>> headers, BodyHandler<T> handler) {
+    def <T> HttpResponse<T> get(URI origin, Map<String,List<String>> headers, BodyHandler<T> handler, boolean followRedirect) {
         final policy = retryPolicy("Failure on GET request: $origin")
         final supplier = new CheckedSupplier<HttpResponse<T>>() {
             @Override
             HttpResponse<T> get() throws Throwable {
-                return get0(origin, headers, handler)
+                return get0(origin, headers, handler, followRedirect)
             }
         }
         return Failsafe.with(policy).get(supplier)
     }
 
-    def <T> HttpResponse<T> get0(URI origin, Map<String,List<String>> headers, BodyHandler<T> handler) {
+    def <T> HttpResponse<T> get0(URI origin, Map<String,List<String>> headers, BodyHandler<T> handler, boolean followRedirect) {
         final host = origin.getHost()
         final visited = new HashSet<URI>(10)
         def target = origin
@@ -160,7 +161,7 @@ class ProxyClient {
                 loginService.invalidateAuthorization(image, registry.auth, credentials)
                 continue
             }
-            if( result.statusCode() in REDIRECT_CODES  ) {
+            if( result.statusCode() in REDIRECT_CODES && followRedirect  ) {
                 final redirect = result.headers().firstValue('location').orElse(null)
                 log.trace "Redirecting (${++redirectCount}) $target ==> $redirect ${RegHelper.dumpHeaders(result.headers())}"
                 if( !redirect ) {
@@ -269,12 +270,12 @@ class ProxyClient {
         final trace = new StringBuilder()
         trace.append("= ${resp.request().method() ?: ''} [${resp.statusCode()}] ${resp.request().uri()}\n")
         trace.append('- request headers:\n')
-        for( Map.Entry entry : resp.request().headers().map() ) {
-            trace.append("> ${entry.key}=${entry.value}\n")
+        for( Map.Entry<String,List<String>> entry : resp.request().headers().map() ) {
+            trace.append("> ${entry.key}=${entry.value?.join(',')}\n")
         }
         trace.append('- response headers:\n')
-        for( Map.Entry entry : resp.headers().map() ) {
-            trace.append("< ${entry.key}=${entry.value}\n")
+        for( Map.Entry<String,List<String>> entry : resp.headers().map() ) {
+            trace.append("< ${entry.key}=${entry.value?.join(',')}\n")
         }
         log.trace(trace.toString())
     }
