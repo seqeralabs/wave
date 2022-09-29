@@ -185,7 +185,7 @@ class ProxyClient {
 
     }
 
-    <T> HttpResponse<T> get1(URI uri, Map<String,List<String>> headers, BodyHandler<T> handler, boolean authorize) {
+    private <T> HttpResponse<T> get1(URI uri, Map<String,List<String>> headers, BodyHandler<T> handler, boolean authorize) {
         final builder = HttpRequest.newBuilder(uri) .GET()
         copyHeaders(headers, builder)
         if( authorize ) {
