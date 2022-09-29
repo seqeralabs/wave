@@ -178,3 +178,8 @@ In `dev`, run this command:
 `./gradlew run -Penvs=dev,h2,mail,ec2`
 
 In `prod`, profiles are activated via MICRONAUT_ENVIRONMENTS (i.e. `MICRONAUT_ENVIRONMENTS=mysql,mail,ec2`)
+
+
+== Debugging 
+
+* To debug http requests made proxy client add the following Jvm setting `'-Djdk.httpclient.HttpClient.log=requests,headers'` 

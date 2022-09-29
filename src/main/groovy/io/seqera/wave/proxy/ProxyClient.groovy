@@ -265,12 +265,17 @@ class ProxyClient {
 
     private void traceResponse(HttpResponse resp) {
         // dump response
-        if( !log.isTraceEnabled() )
+        if( !log.isTraceEnabled() || !resp )
             return
         final trace = new StringBuilder()
-        trace.append("= ${resp.request().method()} [${resp.statusCode()}] ${route.path} > response headers:\n")
-        for( Map.Entry entry : resp.headers().map() ) {
+        trace.append("= ${resp.request().method() ?: ''} [${resp.statusCode()}] ${resp.request().uri()}\n")
+        trace.append('- request headers:\n')
+        for( Map.Entry entry : resp.request().headers().map() ) {
             trace.append("> ${entry.key}=${entry.value}\n")
+        }
+        trace.append('- response headers:\n')
+        for( Map.Entry entry : resp.headers().map() ) {
+            trace.append("< ${entry.key}=${entry.value}\n")
         }
         log.trace(trace.toString())
     }

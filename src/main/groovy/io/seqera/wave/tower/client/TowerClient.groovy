@@ -13,8 +13,10 @@ import io.micronaut.http.HttpStatus
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Singleton
+import org.apache.commons.lang.StringUtils
+
 /**
- * Declarative Tower API client
+ * Tower API client
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -26,16 +28,18 @@ class TowerClient {
 
     private HttpClient httpClient
 
-    @Value('${tower.api.endpoint}')
-    private String endpoint
-
     private URI userInfoEndpoint
 
-    TowerClient() {
+    TowerClient(@Value('${tower.api.endpoint}')String endpoint) {
         this.httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(Duration.ofSeconds(10))
                 .build()
+        if( !endpoint )
+            throw new IllegalArgumentException("Missing Tower endpoint")
+        // cleanup ending slashes
+        endpoint = StringUtils.stripEnd(endpoint, '/')
+        log.debug "Tower client endpoint=$endpoint"
         this.userInfoEndpoint = new URI("${endpoint}/user-info")
     }
 
