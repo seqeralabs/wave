@@ -85,6 +85,15 @@ class ProxyClient {
         URI.create(registry.host.toString() + path)
     }
 
+    HttpResponse<String> getDirectRequest(String path, Map<String,List<String>> headers=null) {
+        try {
+            return get1( makeUri(path), headers, HttpResponse.BodyHandlers.ofString(), true )
+        }
+        catch (ClientResponseException e) {
+            return ErrResponse<String>.forString(e.message, e.request)
+        }
+    }
+
     HttpResponse<String> getString(String path, Map<String,List<String>> headers=null) {
         try {
             return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofString() )
@@ -184,7 +193,7 @@ class ProxyClient {
 
     }
 
-    private <T> HttpResponse<T> get1(URI uri, Map<String,List<String>> headers, BodyHandler<T> handler, boolean authorize) {
+    <T> HttpResponse<T> get1(URI uri, Map<String,List<String>> headers, BodyHandler<T> handler, boolean authorize) {
         final builder = HttpRequest.newBuilder(uri) .GET()
         copyHeaders(headers, builder)
         if( authorize ) {

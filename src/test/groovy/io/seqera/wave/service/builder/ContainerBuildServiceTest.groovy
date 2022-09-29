@@ -68,7 +68,7 @@ class ContainerBuildServiceTest extends Specification {
         RUN echo Hello > hello.txt
         '''.stripIndent()
         and:
-        buildRepo = "docker.io/pditommaso/wave-tests"
+        buildRepo = "docker.io/${System.getenv('DOCKER_USER')}/wave-tests"
         and:
         def cfg = dockerAuthService.credentialsConfigJson(dockerfile, buildRepo, null, null, null)
         def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'),cfg, null, null)
@@ -97,7 +97,7 @@ class ContainerBuildServiceTest extends Specification {
         RUN echo Hello > hello.txt
         '''.stripIndent()
         and:
-        buildRepo = "quay.io/pditommaso/wave-tests"
+        buildRepo = "quay.io/${System.getenv('DOCKER_USER')}/wave-tests"
         def cfg = dockerAuthService.credentialsConfigJson(dockerfile, buildRepo, null, null, null)
         def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'),cfg, null, "")
 
