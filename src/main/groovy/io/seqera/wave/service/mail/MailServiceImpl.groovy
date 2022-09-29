@@ -7,10 +7,12 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.micronaut.context.event.ApplicationEventListener
 import io.seqera.wave.mail.Mail
 import io.seqera.wave.mail.MailAttachment
 import io.seqera.wave.mail.MailHelper
 import io.seqera.wave.mail.MailerConfig
+import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import jakarta.inject.Inject
@@ -23,7 +25,7 @@ import jakarta.inject.Singleton
 @Requires(env = 'mail')
 @Singleton
 @CompileStatic
-class MailServiceImpl implements MailService {
+class MailServiceImpl implements MailService, ApplicationEventListener<BuildEvent> {
 
     @Inject
     private MailSpooler spooler
@@ -33,6 +35,16 @@ class MailServiceImpl implements MailService {
 
     @Value('${wave.server.url}')
     private String serverUrl
+
+    @Override
+    void onApplicationEvent(BuildEvent event) {
+        try {
+            sendCompletionEmail(event.buildRequest, event.buildResult)
+        }
+        catch (Exception e) {
+            log.warn "Unable to send completion notication - reason: ${e.message?:e}"
+        }
+    }
 
     @Override
     void sendCompletionEmail(BuildRequest request, BuildResult build) {

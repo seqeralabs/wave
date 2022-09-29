@@ -1,0 +1,6 @@
+stats :
+  surrealdb :
+    ns : ${SURREALDB_NS:seqeraio}
+    db : ${SURREALDB_DB:wave}
+    url: ${SURREALDB_URL}
+

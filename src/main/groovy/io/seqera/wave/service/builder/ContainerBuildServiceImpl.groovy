@@ -10,11 +10,11 @@ import javax.annotation.PostConstruct
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.micronaut.context.event.ApplicationEventPublisher
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
-import io.seqera.wave.service.mail.MailService
 import io.seqera.wave.util.ThreadPoolBuilder
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -47,8 +47,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     String cleanup
 
     @Inject
-    @Nullable
-    private MailService mailService
+    ApplicationEventPublisher<BuildEvent> eventPublisher
 
     @Inject
     private BuildStore buildStore
@@ -161,16 +160,11 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         // launch the build async
         CompletableFuture
                 .<BuildResult>supplyAsync(() -> launch(request), executor)
-                .thenApply((result) -> { sendCompletionEmail(request,result); return result })
+                .thenApply((result) -> { sendCompletion(request,result); return result })
     }
 
-    protected sendCompletionEmail(BuildRequest request, BuildResult result) {
-        try {
-            mailService?.sendCompletionEmail(request, result)
-        }
-        catch (Exception e) {
-            log.warn "Unable to send completion notication - reason: ${e.message?:e}"
-        }
+    protected sendCompletion(BuildRequest request, BuildResult result) {
+        eventPublisher.publishEvent(new BuildEvent(buildRequest: request, buildResult: result))
     }
 
     protected String getOrSubmit(BuildRequest request) {
