@@ -33,7 +33,8 @@ class TowerClient {
                 .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(Duration.ofSeconds(10))
                 .build()
-        this.userInfoEndpoint = new URI("${endpoint}/user-info")
+        this.userInfoEndpoint = new URI("${endpoint}user-info")
+        log.debug "tower=$endpoint"
     }
 
     UserInfoResponse userInfo(String authorization) {
