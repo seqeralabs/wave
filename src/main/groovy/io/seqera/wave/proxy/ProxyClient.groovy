@@ -196,7 +196,9 @@ class ProxyClient {
         // build the request
         final request = builder.build()
         // send it
-        return httpClient.send(request, handler)
+        final response = httpClient.send(request, handler)
+        traceResponse(response)
+        return response
     }
 
     HttpResponse<Void> head(String path, Map<String,List<String>> headers=null) {
@@ -255,7 +257,20 @@ class ProxyClient {
         // build the request
         final request = builder.build()
         // send it 
-        return httpClient.send(request, HttpResponse.BodyHandlers.discarding())
+        final response = httpClient.send(request, HttpResponse.BodyHandlers.discarding())
+        traceResponse(response)
+        return response
     }
 
+    private void traceResponse(HttpResponse resp) {
+        // dump response
+        if( !log.isTraceEnabled() )
+            return
+        final trace = new StringBuilder()
+        trace.append("= ${resp.request().method()} [${resp.statusCode()}] ${route.path} > response headers:\n")
+        for( Map.Entry entry : resp.headers().map() ) {
+            trace.append("> ${entry.key}=${entry.value}\n")
+        }
+        log.trace(trace.toString())
+    }
 }
