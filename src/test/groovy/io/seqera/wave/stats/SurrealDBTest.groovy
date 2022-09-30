@@ -98,4 +98,32 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
         map.result.first().ip == '127.0.0.1'
     }
 
+    void "can't insert a build but ends without error"() {
+        given:
+        HttpClient httpClient = HttpClient.create(new URL(surrealDbURL))
+        SurrealStorage storage = applicationContext.getBean(SurrealStorage)
+        BuildBean build = new BuildBean(
+                id: 'test',
+                dockerFile: 'test',
+                condaFile: 'test',
+                targetImage: 'test',
+                userName: 'test',
+                userEmail: 'test',
+                userId: 1,
+                ip: '127.0.0.1',
+                startTime: Instant.now(),
+                duration: Duration.ofSeconds(1),
+                exitStatus: 0,
+        )
+
+        when:
+        surrealContainer.stop()
+
+        storage.addBuild(build)
+
+        sleep 100 //as we are using async, let database a while to store the item
+        then:
+        true
+    }
+
 }
