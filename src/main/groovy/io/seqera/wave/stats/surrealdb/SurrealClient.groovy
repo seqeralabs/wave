@@ -26,15 +26,15 @@ import reactor.core.publisher.Flux
 interface SurrealClient {
 
     @Post("/sql")
-    Flux<Map<String, String>> sqlAsync(@Header String authorization, @Body String body)
+    Flux<Map<String, Object>> sqlAsync(@Header String authorization, @Body String body)
 
     @Post("/sql")
-    Map<String, String> sql(@Header String authorization, @Body String body)
+    Map<String, Object> sql(@Header String authorization, @Body String body)
 
     @Post(value = SurrealConstants.BUILD_WAVE_ENDPOINT)
-    Flux<Map<String, String>> insertBuildAsync(@Header String authorization, @Body BuildBean body)
+    Flux<Map<String, Object>> insertBuildAsync(@Header String authorization, @Body BuildBean body)
 
     @Post(SurrealConstants.BUILD_WAVE_ENDPOINT)
-    Map<String, String> insertBuild(@Header String authorization, @Body BuildBean body)
+    Map<String, Object> insertBuild(@Header String authorization, @Body BuildBean body)
 
 }

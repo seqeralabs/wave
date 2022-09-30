@@ -1,6 +1,6 @@
 package io.seqera.wave.auth
 
-import spock.lang.Requires
+
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -64,24 +64,10 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
         'nope'         | 'yepes'        | "https://registry-1.docker.io" | false
         quayUsername   | quayPassword   | "https://quay.io"              | true
         'nope'         | 'yepes'        | "https://quay.io"              | false
-    }
-
-    @Requires({System.getenv('AZURECR_USER') && System.getenv('AZURECR_PAT')})
-    void 'test valid azure login'() {
-        given:
-
-        String uri = getTestRegistryUrl(REGISTRY_URL)
-
-        when:
-        boolean logged = loginService.login(uri, USER, PWD)
-
-        then:
-        logged == VALID
-
-        where:
-        USER           | PWD            | REGISTRY_URL                   | VALID
+        and:
         azureUsername  | azurePassword  | 'seqeralabs.azurecr.io'        | true
     }
+
 
     void 'test containerService valid login'() {
         given:
