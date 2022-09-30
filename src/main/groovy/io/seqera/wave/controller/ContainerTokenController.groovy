@@ -24,6 +24,8 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
+import reactor.core.publisher.Mono
+
 /**
  * Implement a controller to receive container token requests
  * 
@@ -73,10 +75,17 @@ class ContainerTokenController {
     }
 
     @Post
-    HttpResponse<SubmitContainerTokenResponse> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
-        final User user = req.towerAccessToken
-                ? userService.getUserByAccessToken(req.towerAccessToken)
-                : null
+    Mono<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
+        if( req.towerAccessToken ) {
+            userService.getUserByAccessTokenAsync(req.towerAccessToken).map( user-> makeResponse(httpRequest, req, user))
+        }else{
+            Mono.<HttpResponse<SubmitContainerTokenResponse>>create( {emitter->
+                emitter.success(makeResponse(httpRequest, req, null))
+            })
+        }
+    }
+
+    protected HttpResponse<SubmitContainerTokenResponse> makeResponse(HttpRequest httpRequest, SubmitContainerTokenRequest req, User user) {
         if( !user && !allowAnonymous )
             throw new BadRequestException("Missing access token")
         final ip = addressResolver.resolve(httpRequest)
