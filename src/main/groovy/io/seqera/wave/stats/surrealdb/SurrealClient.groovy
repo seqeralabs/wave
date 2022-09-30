@@ -2,13 +2,11 @@ package io.seqera.wave.stats.surrealdb
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
-import io.micronaut.http.HttpRequest
 import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Header
 import io.micronaut.http.annotation.Post
 import io.micronaut.http.client.annotation.Client
 import io.seqera.wave.stats.BuildBean
-import org.reactivestreams.Publisher
 import reactor.core.publisher.Flux
 
 
@@ -33,10 +31,10 @@ interface SurrealClient {
     @Post("/sql")
     Map<String, String> sql(@Header String authorization, @Body String body)
 
-    @Post("/key/build_wave")
-    Flux<Map<String, String>> insertBuildAsync(@Header String authorization, BuildBean body)
+    @Post(value = SurrealConstants.BUILD_WAVE_ENDPOINT)
+    Flux<Map<String, String>> insertBuildAsync(@Header String authorization, @Body BuildBean body)
 
-    @Post("/key/build_wave")
-    Map<String, String> insertBuild(@Header String authorization, BuildBean body)
+    @Post(SurrealConstants.BUILD_WAVE_ENDPOINT)
+    Map<String, String> insertBuild(@Header String authorization, @Body BuildBean body)
 
 }

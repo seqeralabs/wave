@@ -3,6 +3,7 @@ package io.seqera.wave.stats
 import spock.lang.Specification
 
 import java.time.Duration
+import java.time.Instant
 
 import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
@@ -32,18 +33,16 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
     def setup() {
         restartDb()
         applicationContext = ApplicationContext.run([
-                stats: [surrealdb: [user:'root', password:'root', ns: 'test', db: 'test', url: surrealDbURL]]
+                stats: [
+                        surrealdb: [
+                                user     : 'root',
+                                password : 'root',
+                                ns       : 'test',
+                                db       : 'test',
+                                url      : surrealDbURL,
+                                'init-db': false
+                        ]]
         ], 'test', 'surreal')
-    }
-
-    String getAuthorization(){
-        "Basic "+"root:root".bytes.encodeBase64()
-    }
-
-    def createTables(){
-        SurrealClient client = applicationContext.getBean(SurrealClient)
-        def ok = client.sql( authorization, "define table build_wave SCHEMALESS")
-        println ok
     }
 
     void "can connect"() {
@@ -61,23 +60,30 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
         str.result.first() == 1
     }
 
-    void "can insert a build"() {
+    void "can insert an async build"() {
         given:
         HttpClient httpClient = HttpClient.create(new URL(surrealDbURL))
         SurrealStorage storage = applicationContext.getBean(SurrealStorage)
         BuildBean build = new BuildBean(
-                image: "image",
-                userName: "userName",
-                userEmail: "email",
+                id: 'test',
+                dockerFile: 'test',
+                condaFile: 'test',
+                targetImage: 'test',
+                userName: 'test',
+                userEmail: 'test',
                 userId: 1,
-                ip: "127.0.0.1",
-                duration: Duration.ofSeconds(10),
-                exitStatus: 0
+                ip: '127.0.0.1',
+                startTime: Instant.now(),
+                duration: Duration.ofSeconds(1),
+                exitStatus: 0,
         )
-        createTables()
+
         when:
+        storage.initializeDb()
+
         storage.addBuild(build)
-        sleep 100
+
+        sleep 100 //as we are using async, let database a while to store the item
         then:
         def map = httpClient.toBlocking()
                 .retrieve(
@@ -87,8 +93,9 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
                                         'db'          : 'test',
                                         'User-Agent'  : 'micronaut/1.0',
                                         'Content-Type': 'application/json'])
-                                .basicAuth('root', 'root'), Map<String, String>)
+                                .basicAuth('root', 'root'), Map<String, Object>)
         map.result.size()
+        map.result.first().ip == '127.0.0.1'
     }
 
 }
