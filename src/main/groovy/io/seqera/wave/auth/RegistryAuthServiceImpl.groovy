@@ -177,8 +177,8 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
 
         HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
         final body = resp.body()
-        final result = (Map) new JsonSlurper().parseText(body)
         if( resp.statusCode()==200 ) {
+            final result = (Map) new JsonSlurper().parseText(body)
             log.debug "Registry '$login' => token: ${result.token}"
             return result.get('token')
         }
