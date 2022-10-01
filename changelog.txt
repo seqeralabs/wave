@@ -1,4 +1,10 @@
 # Wave changelog
+v0.21.3 - 1 Oct 2022
+0e8adfcc - Improve slow down error message (77 minutes ago) <Paolo Di Tommaso>
+1342a1fd - Improve logging (78 minutes ago) <Paolo Di Tommaso>
+65029477 - Rename ContainerScanner to ContainerAugmenter (79 minutes ago) <Paolo Di Tommaso>
+5a66a7d1 - Parse token body only when status code is 200 (#164) (24 hours ago) <Jorge Aguilera>
+
 v0.21.2 - 29 Sep 2022
 - Add new get direct response in proxyclient (#162) [cb49c475]
 - Add test for user info (#161) [c199ed41]
