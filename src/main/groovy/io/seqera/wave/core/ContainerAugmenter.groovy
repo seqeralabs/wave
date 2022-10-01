@@ -25,7 +25,7 @@ import io.seqera.wave.util.RegHelper
  */
 @Slf4j
 @CompileStatic
-class ContainerScanner {
+class ContainerAugmenter {
 
     private ProxyClient client
     private ContainerConfig containerConfig
@@ -37,22 +37,22 @@ class ContainerScanner {
         return containerConfig
     }
 
-    ContainerScanner withStorage(Storage cache) {
+    ContainerAugmenter withStorage(Storage cache) {
         this.storage = cache
         return this
     }
 
-    ContainerScanner withClient(ProxyClient client) {
+    ContainerAugmenter withClient(ProxyClient client) {
         this.client = client
         return this
     }
 
-    ContainerScanner withPlatform(String value) {
+    ContainerAugmenter withPlatform(String value) {
         this.platform = ContainerPlatform.of(value)
         return this
     }
 
-    ContainerScanner withContainerConfig(ContainerConfig containerConfig) {
+    ContainerAugmenter withContainerConfig(ContainerConfig containerConfig) {
         this.containerConfig = containerConfig
         final l = containerConfig?.layers ?: Collections.<ContainerLayer>emptyList()
         for( ContainerLayer it : l )
@@ -102,7 +102,7 @@ class ContainerScanner {
         // resolve image tag to digest
         final resp1 = client.head("/v2/$imageName/manifests/$tag", headers)
         final digest = resp1.headers().firstValue('docker-content-digest').orElse(null)
-        log.debug "Resolve (1): image $imageName:$tag => digest=$digest"
+        log.trace "Resolve (1): image $imageName:$tag => digest=$digest"
         checkResponseCode(resp1, client.route, false)
 
         // get manifest list for digest
@@ -110,12 +110,12 @@ class ContainerScanner {
         final type = resp2.headers().firstValue('content-type').orElse(null)
         checkResponseCode(resp2, client.route, false)
         final manifestsList = resp2.body()
-        log.debug "Resolve (2): image $imageName:$tag => type=$type; manifests list:\n${JsonOutput.prettyPrint(manifestsList)}"
+        log.trace "Resolve (2): image $imageName:$tag => type=$type; manifests list:\n${JsonOutput.prettyPrint(manifestsList)}"
 
         // when there's no container config, not much to do
         // just cache the manifest content and return the digest
         if( !containerConfig ) {
-            log.debug "Resolve (3): container config provided for image=$imageName:$tag"
+            log.trace "Resolve (3): container config provided for image=$imageName:$tag"
             storage.saveManifest("/v2/$imageName/manifests/$digest", manifestsList, type, digest)
             return digest
         }
@@ -123,7 +123,7 @@ class ContainerScanner {
         if( type == ContentType.DOCKER_MANIFEST_V1_JWS_TYPE ) {
             final v1Digest = resolveV1Manifest(manifestsList, imageName)
             final v1Manifest = storage.getManifest("/v2/$imageName/manifests/$v1Digest").orElse(null)
-            log.debug "Resolve (4) ==> new manifest v1 digest: $v1Digest\n${JsonOutput.prettyPrint(new String(v1Manifest.bytes))}"
+            log.trace "Resolve (4) ==> new manifest v1 digest: $v1Digest\n${JsonOutput.prettyPrint(new String(v1Manifest.bytes))}"
             return v1Digest
         }
 
@@ -136,16 +136,16 @@ class ContainerScanner {
         final resp5 = client.getString("/v2/$imageName/blobs/$configDigest", headers)
         checkResponseCode(resp5, client.route, true)
         final imageConfig = resp5.body()
-        log.debug "Resolve (5): image $imageName:$tag => image config=\n${JsonOutput.prettyPrint(imageConfig)}"
+        log.trace "Resolve (5): image $imageName:$tag => image config=\n${JsonOutput.prettyPrint(imageConfig)}"
 
         // update the image config adding the new layer
         final newConfigDigest = updateImageConfig(imageName, imageConfig)
-        log.debug "Resolve (6) ==> new config digest: $newConfigDigest"
+        log.trace "Resolve (6) ==> new config digest: $newConfigDigest"
 
         // update the image manifest adding a new layer
         // returns the updated image manifest digest
         final newManifestDigest = updateImageManifest(imageName, imageManifest, newConfigDigest)
-        log.debug "Resolve (7) ==> new image digest: $newManifestDigest"
+        log.trace "Resolve (7) ==> new image digest: $newManifestDigest"
 
         if( !targetDigest ) {
             return newManifestDigest
@@ -154,7 +154,7 @@ class ContainerScanner {
             // update the manifests list with the new digest
             // returns the manifests list digest
             final newListDigest = updateManifestsList(imageName, manifestsList, targetDigest, newManifestDigest)
-            log.debug "Resolve (8) ==> new list digest: $newListDigest"
+            log.trace "Resolve (8) ==> new list digest: $newListDigest"
             return newListDigest
         }
 
@@ -174,7 +174,7 @@ class ContainerScanner {
             targetDigest = findTargetDigest(json)
             final resp3 = client.getString("/v2/$imageName/manifests/$targetDigest", headers)
             manifest = resp3.body()
-            log.debug "Image $imageName:$tag => image manifest=\n${JsonOutput.prettyPrint(manifest)}"
+            log.trace("Image $imageName:$tag => image manifest=\n${JsonOutput.prettyPrint(manifest)}")
             // parse the new manifest
             json = new JsonSlurper().parseText(manifest) as Map
             media = json.mediaType
@@ -361,7 +361,7 @@ class ContainerScanner {
                     && record.platform.variant==platform.variant }
         final record = json.manifests.find(finder)
         final result = record.digest
-        log.debug "Find target digest platform: $platform ==> digest: $result"
+        log.trace "Find target digest platform: $platform ==> digest: $result"
         return result
     }
 
