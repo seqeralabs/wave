@@ -89,8 +89,7 @@ class ContainerAugmenter {
         }
 
         if( code != 200 ) {
-            final msg = "Unexpected response code ${code} on ${response.uri()}"
-            log.debug(msg)
+            log.debug("Unexpected response code ${code} on ${response.uri()}")
         }
     }
 

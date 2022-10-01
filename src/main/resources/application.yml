@@ -29,4 +29,6 @@ wave:
 ---
 logger:
   levels:
-    io.seqera.wave.proxy.ProxyClient: "TRACE"
+    io.seqera: "DEBUG"
+#    io.seqera.wave.core: 'TRACE'
+...

@@ -112,7 +112,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     boolean validateUser(String registry, String user, String password){
         try {
             final result = login(registry, user, password)
-            log.debug "Validate registry credentials userName=$user; password=${StringUtils.redact(password)}; registry=$registry; host=$registry; -> result=$result"
+            log.debug "Validate registry credentials userName=$user; password=${StringUtils.redact(password)}; registry=$registry; host=$registry; => result=$result"
             return result
         }
         catch (Exception e) {
@@ -127,7 +127,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
                 .uri(URI.create(uri))
         if( creds && creds.username && creds.password ) {
             final basic = "${creds.username}:${creds.password}".bytes.encodeBase64()
-            log.debug "Request uri=$uri; 'Authorization Basic $basic'"
+            log.trace "Request uri=$uri; 'Authorization Basic $basic'"
             builder.setHeader("Authorization", "Basic $basic")
         }
         return builder.build()
@@ -173,13 +173,13 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     protected String getToken0(CacheKey key) {
         final login = buildLoginUrl(key.auth.realm, key.image, key.auth.service)
         final req = makeRequest(login, key.creds)
-        log.debug "Token request=$req"
+        log.trace "Token request=$req"
 
         HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
         final body = resp.body()
         if( resp.statusCode()==200 ) {
             final result = (Map) new JsonSlurper().parseText(body)
-            log.debug "Registry '$login' => token: ${result.token}"
+            log.debug "Registry '$login' => token: ${StringUtils.redact(result.token)}"
             return result.get('token')
         }
 
