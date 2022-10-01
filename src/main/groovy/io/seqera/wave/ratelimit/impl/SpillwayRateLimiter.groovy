@@ -53,16 +53,20 @@ class SpillwayRateLimiter implements RateLimiterService {
     void acquireBuild(AcquireRequest request) throws SlowDownException {
         Spillway<String> resource = request.userId ? authsBuilds : anonymousBuilds
         String key = request.userId ?: request.ip
-        if (!resource.tryCall(key))
-            throw new SlowDownException("$key request exceeded pull rate limit")
+        if (!resource.tryCall(key)) {
+            final prefix = request.userId ? 'user' : 'IP'
+            throw new SlowDownException("Request exceeded pull rate limit for $prefix $key")
+        }
     }
 
     @Override
     void acquirePull(AcquireRequest request) throws SlowDownException {
         Spillway<String> resource = request.userId ? authsPulls : anonymousPulls
         String key = request.userId ?: request.ip
-        if (!resource.tryCall(key))
-            throw new SlowDownException("$key request exceeded pull rate limit")
+        if (!resource.tryCall(key)) {
+            final prefix = request.userId ? 'user' : 'IP'
+            throw new SlowDownException("Request exceeded pull rate limit for $prefix $key")
+        }
     }
 
     private void initBuilds(SpillwayFactory spillwayFactory, RateLimiterConfig config) {
