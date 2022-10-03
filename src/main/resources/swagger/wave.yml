@@ -6,7 +6,7 @@ info:
     name: Apache 2.0
     url: https://XXXXXXXX
   version: "${api.version}"
-servers: https://wave.dev-tower.net 
+servers:
   - url: https://wave.dev-tower.net 
     description: Dev environment 
 security: 
