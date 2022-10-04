@@ -1,5 +1,6 @@
 package io.seqera.wave.stats
 
+import spock.lang.Ignore
 import spock.lang.Specification
 
 import java.time.Duration
@@ -62,6 +63,7 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
         str.result.first() == 1
     }
 
+    @Ignore
     void "can insert an async build"() {
         given:
         HttpClient httpClient = HttpClient.create(new URL(surrealDbURL))
@@ -100,6 +102,7 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
         map.result.first().ip == '127.0.0.1'
     }
 
+    @Ignore
     void "can't insert a build but ends without error"() {
         given:
         HttpClient httpClient = HttpClient.create(new URL(surrealDbURL))
