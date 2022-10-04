@@ -47,6 +47,8 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
 
     void "can connect"() {
         given:
+        println "surrealDbURL $surrealDbURL"
+        println "-"*20
         HttpClient httpClient = HttpClient.create(new URL(surrealDbURL))
 
         when:
