@@ -1,4 +1,18 @@
 # Wave changelog
+v0.21.4 - 3 Oct 2022
+- Count all manifest digest requests [02435bff] <Paolo Di Tommaso>
+- Add timestamp + fingerprint to request [5ccc08bd] <Paolo Di Tommaso>
+- Test on Java 17 [9085d00d] <Paolo Di Tommaso>
+- Update changelog [a823eb6d] <Paolo Di Tommaso>
+
+v0.21.3 - 1 Oct 2022
+- [release] 0.21.3 [c028de57] <Paolo Di Tommaso>
+- Fix test [80ee2fba] <Paolo Di Tommaso>
+- Improve slow down error message [0e8adfcc] <Paolo Di Tommaso>
+- Improve logging [1342a1fd] <Paolo Di Tommaso>
+- Rename ContainerScanner to ContainerAugmenter [65029477] <Paolo Di Tommaso>
+- Parse token body only when status code is 200 (#164) [5a66a7d1] <Jorge Aguilera>
+
 v0.21.2 - 29 Sep 2022
 - Add new get direct response in proxyclient (#162) [cb49c475]
 - Add test for user info (#161) [c199ed41]

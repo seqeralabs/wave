@@ -72,7 +72,7 @@ class RegistryProxyController {
         log.info "> Request [$httpRequest.method] $httpRequest.path"
         final route = routeHelper.parse("/v2/" + url)
 
-        if( route.manifest && !route.digest ){
+        if( route.manifest && route.digest ){
             String ip = addressResolver.resolve(httpRequest)
             rateLimiterService?.acquirePull( new AcquireRequest(route.request?.userId?.toString(), ip) )
         }

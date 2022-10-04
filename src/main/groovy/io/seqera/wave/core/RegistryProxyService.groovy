@@ -50,8 +50,8 @@ class RegistryProxyService {
     @Inject
     private RegistryCredentialsFactory credentialsFactory
 
-    private ContainerScanner scanner(ProxyClient proxyClient) {
-        return new ContainerScanner()
+    private ContainerAugmenter scanner(ProxyClient proxyClient) {
+        return new ContainerAugmenter()
                 .withStorage(storage)
                 .withClient(proxyClient)
     }
