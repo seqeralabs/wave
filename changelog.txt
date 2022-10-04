@@ -1,4 +1,7 @@
 # Wave changelog
+v0.21.5 - 4 Oct 2022
+- Rollback timestamp and fingerpint fields [466b3a46] <Paolo Di Tommaso>
+
 v0.21.4 - 3 Oct 2022
 - Count all manifest digest requests [02435bff] <Paolo Di Tommaso>
 - Add timestamp + fingerprint to request [5ccc08bd] <Paolo Di Tommaso>
