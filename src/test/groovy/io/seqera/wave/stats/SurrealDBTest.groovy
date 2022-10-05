@@ -44,6 +44,7 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
                                 'init-db': false
                         ]]
         ], 'test', 'surreal')
+        sleep 1000L //let surrealdb starts
     }
 
     void "can connect"() {
