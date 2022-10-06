@@ -30,6 +30,7 @@ import redis.clients.jedis.JedisPool
  */
 class HttpContainerTokenControllerTest extends Specification {
 
+    @Requires(property = 'spec.name', value = 'HttpContainerTokenController')
     @Controller("/")
     static class TowerController {
         @Get('/user-info')
@@ -48,7 +49,7 @@ class HttpContainerTokenControllerTest extends Specification {
         port = SocketUtils.findAvailableTcpPort()
 
         embeddedServer = ApplicationContext.run(EmbeddedServer, [
-                'spec.name': specificationContext.currentIteration.name,
+                'spec.name': 'HttpContainerTokenController',
                 'micronaut.server.port': port,
                 'tower.api.endpoint':"http://localhost:${port}",
                 'micronaut.http.services.default.url' : "http://localhost:$port".toString(),

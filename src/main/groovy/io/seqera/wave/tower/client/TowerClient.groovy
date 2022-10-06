@@ -15,6 +15,7 @@ import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Singleton
 import org.apache.commons.lang.StringUtils
 import reactor.core.publisher.Mono
+import reactor.core.publisher.MonoSink
 
 /**
  * Tower API client
@@ -45,7 +46,7 @@ class TowerClient {
     }
 
     Mono<UserInfoResponse> userInfo(String authorization) {
-        Mono.create { emitter ->
+        Mono.<UserInfoResponse>create { MonoSink<UserInfoResponse> emitter ->
             final req = HttpRequest.newBuilder()
                     .uri(userInfoEndpoint)
                     .headers('Content-Type', 'application/json', 'Authorization', "Bearer $authorization")
@@ -53,15 +54,19 @@ class TowerClient {
                     .build()
 
             try {
-                final resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString())
-                log.debug "Tower auth response: [${resp.statusCode()}] ${resp.body()}"
-                if (resp.statusCode() == 200) {
-                    return emitter.success(JacksonHelper.fromJson(resp.body(), UserInfoResponse))
-                }
-                if (resp.statusCode() == 401)
-                    emitter.error(new HttpResponseException(401, "Unauthorized"))
-                else
-                    emitter.error(new HttpResponseException(resp.statusCode(), resp.body()))
+                httpClient.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept((resp)-> {
+                    log.debug "Tower auth response: [${resp.statusCode()}] ${resp.body()}"
+                    switch (resp.statusCode()) {
+                        case 200:
+                            emitter.success(JacksonHelper.fromJson(resp.body(), UserInfoResponse))
+                            break
+                        case 401:
+                            emitter.error(new HttpResponseException(401, "Unauthorized"))
+                            break
+                        default:
+                            emitter.error(new HttpResponseException(resp.statusCode(), resp.body()))
+                    }
+                })
             }
             catch (HttpResponseException e) {
                 emitter.error(e)
