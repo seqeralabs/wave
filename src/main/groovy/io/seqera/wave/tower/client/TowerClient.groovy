@@ -4,6 +4,7 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
+import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -45,35 +46,32 @@ class TowerClient {
         this.userInfoEndpoint = new URI("${endpoint}/user-info")
     }
 
-    Mono<UserInfoResponse> userInfo(String authorization) {
-        Mono.<UserInfoResponse>create { MonoSink<UserInfoResponse> emitter ->
-            final req = HttpRequest.newBuilder()
-                    .uri(userInfoEndpoint)
-                    .headers('Content-Type', 'application/json', 'Authorization', "Bearer $authorization")
-                    .GET()
-                    .build()
-
-            try {
-                httpClient.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept((resp)-> {
-                    log.debug "Tower auth response: [${resp.statusCode()}] ${resp.body()}"
-                    switch (resp.statusCode()) {
-                        case 200:
-                            emitter.success(JacksonHelper.fromJson(resp.body(), UserInfoResponse))
-                            break
-                        case 401:
-                            emitter.error(new HttpResponseException(401, "Unauthorized"))
-                            break
-                        default:
-                            emitter.error(new HttpResponseException(resp.statusCode(), resp.body()))
-                    }
-                })
-            }
-            catch (HttpResponseException e) {
-                emitter.error(e)
-            }
-            catch (Throwable e) {
-                emitter.error(new HttpResponseException(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error = ${e.message}", e))
-            }
+    CompletableFuture<UserInfoResponse> userInfo(String authorization) {
+        final req = HttpRequest.newBuilder()
+                .uri(userInfoEndpoint)
+                .headers('Content-Type', 'application/json', 'Authorization', "Bearer $authorization")
+                .GET()
+                .build()
+        try {
+            return httpClient.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenApply((resp)-> {
+                log.debug "Tower auth response: [${resp.statusCode()}] ${resp.body()}"
+                switch (resp.statusCode()) {
+                    case 200:
+                        return JacksonHelper.fromJson(resp.body(), UserInfoResponse)
+                        break
+                    case 401:
+                        throw new HttpResponseException(401, "Unauthorized")
+                        break
+                    default:
+                        throw new HttpResponseException(resp.statusCode(), resp.body())
+                }
+            })
+        }
+        catch (HttpResponseException e) {
+            throw e
+        }
+        catch (Throwable e) {
+            throw new HttpResponseException(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error = ${e.message}", e)
         }
     }
 }

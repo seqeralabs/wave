@@ -1,7 +1,8 @@
 package io.seqera.wave.service
 
+import java.util.concurrent.CompletableFuture
+
 import io.seqera.wave.tower.User
-import reactor.core.publisher.Mono
 
 /**
  * Declare a service to access a Tower user
@@ -12,6 +13,6 @@ interface UserService {
 
     User getUserByAccessToken(String accessToken)
 
-    Mono<User> getUserByAccessTokenAsync(String accessToken)
+    CompletableFuture<User> getUserByAccessTokenAsync(String accessToken)
 
 }

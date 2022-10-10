@@ -1,5 +1,6 @@
 package io.seqera.wave.service
 
+import java.util.concurrent.CompletableFuture
 import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
@@ -7,6 +8,7 @@ import groovy.util.logging.Slf4j
 import io.seqera.wave.exception.UnauthorizedException
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.client.TowerClient
+import io.seqera.wave.tower.client.UserInfoResponse
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import reactor.core.publisher.Mono
@@ -26,25 +28,20 @@ class UserServiceImpl implements UserService {
     private TowerClient towerClient
 
     @Override
-    User getUserByAccessToken(String accessToken) {
-        getUserByAccessTokenAsync(accessToken).block()
+    CompletableFuture<User> getUserByAccessTokenAsync(String encodedToken) {
+        if( !towerClient )
+            throw new IllegalStateException("Missing Tower client - make sure the 'tower' micronaut environment has been provided")
+
+        towerClient.userInfo(encodedToken).thenApply( {resp->
+            if (!resp || !resp.user)
+                throw new UnauthorizedException("Unauthorized - Make sure you have provided a valid access token")
+            log.debug("Authorized user=$resp.user")
+            return resp.user
+        })
+
     }
 
-    @Override
-    Mono<User> getUserByAccessTokenAsync(String encodedToken) {
-        Mono.create { emitter ->
-            if (!towerClient)
-                emitter.error(new IllegalStateException("Missing Tower client - make sure the 'tower' micronaut environment has been provided"))
-
-            towerClient.userInfo(encodedToken).subscribe({resp->
-                if (!resp || !resp.user)
-                    emitter.error(new UnauthorizedException("Unauthorized - Make sure you have provided a valid access token"))
-                log.debug("Authorized user=$resp.user")
-                emitter.success(resp.user)
-            }, {t->
-                emitter.error(t)
-            })
-        }
+    User getUserByAccessToken(String encodedToken) {
+        getUserByAccessTokenAsync(encodedToken).get()
     }
-
 }

@@ -1,6 +1,7 @@
 package io.seqera.wave.controller
 
 import java.nio.file.Path
+import java.util.concurrent.CompletableFuture
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
@@ -75,13 +76,11 @@ class ContainerTokenController {
     }
 
     @Post
-    Mono<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
+    CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
         if( req.towerAccessToken ) {
-            userService.getUserByAccessTokenAsync(req.towerAccessToken).map( user-> makeResponse(httpRequest, req, user))
+            userService.getUserByAccessTokenAsync(req.towerAccessToken).thenApply( user-> makeResponse(httpRequest, req, user))
         }else{
-            Mono.<HttpResponse<SubmitContainerTokenResponse>>create( {emitter->
-                emitter.success(makeResponse(httpRequest, req, null))
-            })
+            CompletableFuture.completedFuture(makeResponse(httpRequest, req, null))
         }
     }
 
