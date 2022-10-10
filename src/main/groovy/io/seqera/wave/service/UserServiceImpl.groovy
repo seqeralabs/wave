@@ -1,6 +1,7 @@
 package io.seqera.wave.service
 
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutionException
 import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
@@ -32,7 +33,9 @@ class UserServiceImpl implements UserService {
         if( !towerClient )
             throw new IllegalStateException("Missing Tower client - make sure the 'tower' micronaut environment has been provided")
 
-        towerClient.userInfo(encodedToken).thenApply( {resp->
+        towerClient.userInfo(encodedToken).handle( {resp, throwable->
+            if( throwable )
+                throw throwable
             if (!resp || !resp.user)
                 throw new UnauthorizedException("Unauthorized - Make sure you have provided a valid access token")
             log.debug("Authorized user=$resp.user")
@@ -42,6 +45,10 @@ class UserServiceImpl implements UserService {
     }
 
     User getUserByAccessToken(String encodedToken) {
-        getUserByAccessTokenAsync(encodedToken).get()
+        try {
+            getUserByAccessTokenAsync(encodedToken).get()
+        }catch(ExecutionException e){
+            throw e.cause
+        }
     }
 }
