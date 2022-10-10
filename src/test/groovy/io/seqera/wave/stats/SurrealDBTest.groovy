@@ -44,13 +44,11 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
                                 'init-db': false
                         ]]
         ], 'test', 'surreal')
-        sleep 1000L //let surrealdb starts
+        sleep 2000L //let surrealdb starts
     }
 
     void "can connect"() {
         given:
-        println "surrealDbURL $surrealDbURL"
-        println "-"*20
         HttpClient httpClient = HttpClient.create(new URL(surrealDbURL))
 
         when:
