@@ -2,6 +2,8 @@ package io.seqera.wave.service.mail
 
 import java.time.Duration
 import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -51,13 +53,15 @@ class MailServiceImpl implements MailService {
 
     Mail buildCompletionMail(BuildRequest req, BuildResult result, String recipient) {
         // create template binding
+        final String kk = req.dockerFile
+
         final binding = new HashMap(5)
         final status = result.exitStatus==0 ? 'DONE': 'FAILED'
         binding.build_id = result.id
-        binding.build_user =  "${req.user ? req.user.userName : 'n/a'} (${req.ip})"
+        binding.build_user =  "${req.user ? req.user.userName : 'n/a'} (IP: ${req.ip})"
         binding.build_success = result.exitStatus==0
         binding.build_exit_status = result.exitStatus
-        binding.build_time = formatTimestamp(result.startTime) ?: '-'
+        binding.build_time = formatTimestamp(result.startTime, req.zoneId) ?: '-'
         binding.build_duration = formatDuration(result.duration) ?: '-'
         binding.build_image = req.targetImage
         binding.build_platform = req.platform
@@ -82,9 +86,11 @@ class MailServiceImpl implements MailService {
         return String.format("%d:%02d", minutes, seconds);
     }
 
-    protected String formatTimestamp(Instant instant) {
+    protected String formatTimestamp(Instant instant, String zoneId) {
         if( instant==null )
             return null
-        return instant.toString()
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+                .withZone(ZoneOffset.of(zoneId));
+        return dateTimeFormatter.format(instant)
     }
 }

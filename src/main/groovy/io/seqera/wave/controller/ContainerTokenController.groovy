@@ -110,7 +110,8 @@ class ContainerTokenController {
                 platform,
                 configJson,
                 cache,
-                ip )
+                ip,
+                req.timestamp)
     }
 
     ContainerRequestData makeRequestData(SubmitContainerTokenRequest req, User user, String ip) {
