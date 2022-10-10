@@ -2,6 +2,7 @@ package io.seqera.wave.service.mail
 
 import java.time.Duration
 import java.time.Instant
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
@@ -90,7 +91,7 @@ class MailServiceImpl implements MailService {
         if( instant==null )
             return null
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
-                .withZone(ZoneOffset.of(zoneId));
+                .withZone(ZoneId.of(zoneId));
         return dateTimeFormatter.format(instant)
     }
 }
