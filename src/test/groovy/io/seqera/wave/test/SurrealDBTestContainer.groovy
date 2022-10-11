@@ -16,7 +16,7 @@ trait SurrealDBTestContainer {
     private static final def LOGGER = LoggerFactory.getLogger(SurrealDBTestContainer.class);
 
     @Shared
-    static GenericContainer surrealContainer = new GenericContainer(DockerImageName.parse("surrealdb/surrealdb:latest"))
+    static GenericContainer surrealContainer = new GenericContainer(DockerImageName.parse("surrealdb/surrealdb:1.0.0-beta.8"))
             .withExposedPorts(8000)
             .withCommand("start","--user", "root", "--pass", "root", '--log', 'debug')
             .waitingFor(

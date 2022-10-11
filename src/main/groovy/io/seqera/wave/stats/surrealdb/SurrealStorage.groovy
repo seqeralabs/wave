@@ -4,6 +4,7 @@ import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.context.event.ApplicationEventListener
@@ -19,6 +20,7 @@ import jakarta.inject.Singleton
  *
  */
 @Requires(env='surreal')
+@Primary
 @Slf4j
 @Singleton
 @CompileStatic

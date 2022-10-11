@@ -1,23 +1,21 @@
 package io.seqera.wave.stats
 
-import spock.lang.Ignore
 import spock.lang.Specification
 
+import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
 import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
-import io.seqera.wave.configuration.RateLimiterConfig
-import io.seqera.wave.exception.SlowDownException
-import io.seqera.wave.ratelimit.AcquireRequest
-import io.seqera.wave.ratelimit.impl.SpillwayRateLimiter
-import io.seqera.wave.stats.surrealdb.SurrealClient
+import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.stats.surrealdb.SurrealStorage
-import io.seqera.wave.test.RedisTestContainer
 import io.seqera.wave.test.SurrealDBTestContainer
-import redis.clients.jedis.JedisPool
+import io.seqera.wave.tower.User
 
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
@@ -44,7 +42,6 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
                                 'init-db': false
                         ]]
         ], 'test', 'surreal')
-        sleep 2000L //let surrealdb starts
     }
 
     void "can connect"() {
@@ -55,14 +52,13 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
         def str = httpClient.toBlocking()
                 .retrieve(
                         HttpRequest.POST("/sql", "SELECT * FROM count()")
-                                .headers(['ns': 'test', 'db': 'test'])
+                                .headers(['ns': 'test', 'db': 'test', 'accept':'application/json'])
                                 .basicAuth('root', 'root'), Map<String, String>)
 
         then:
         str.result.first() == 1
     }
 
-    @Ignore
     void "can insert an async build"() {
         given:
         HttpClient httpClient = HttpClient.create(new URL(surrealDbURL))
@@ -95,16 +91,14 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
                                         'ns'          : 'test',
                                         'db'          : 'test',
                                         'User-Agent'  : 'micronaut/1.0',
-                                        'Content-Type': 'application/json'])
+                                        'Accept': 'application/json'])
                                 .basicAuth('root', 'root'), Map<String, Object>)
         map.result.size()
         map.result.first().ip == '127.0.0.1'
     }
 
-    @Ignore
     void "can't insert a build but ends without error"() {
         given:
-        HttpClient httpClient = HttpClient.create(new URL(surrealDbURL))
         SurrealStorage storage = applicationContext.getBean(SurrealStorage)
         BuildBean build = new BuildBean(
                 id: 'test',
@@ -130,4 +124,45 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
         true
     }
 
+    void "an event insert a build"() {
+        given:
+        HttpClient httpClient = HttpClient.create(new URL(surrealDbURL))
+        SurrealStorage storage = applicationContext.getBean(SurrealStorage)
+        storage.initializeDb()
+        StatsService service = applicationContext.getBean(StatsService)
+        BuildRequest request = new BuildRequest("test", Path.of("."), "test", "test", Mock(User), ContainerPlatform.of('amd64'),'{auth}', "test", "127.0.0.1")
+        BuildResult result = new BuildResult("id", 0, "content", Instant.now(), Duration.ofSeconds(1))
+        BuildEvent event = new BuildEvent(buildRequest: request, buildResult: result)
+
+        when:
+        service.onApplicationEvent(event)
+        sleep 100 //as we are using async, let database a while to store the item
+        then:
+        def map = httpClient.toBlocking()
+                .retrieve(
+                        HttpRequest.GET("/key/build_wave")
+                                .headers([
+                                        'ns'          : 'test',
+                                        'db'          : 'test',
+                                        'User-Agent'  : 'micronaut/1.0',
+                                        'Accept': 'application/json'])
+                                .basicAuth('root', 'root'), Map<String, Object>)
+        map.result.size()
+        map.result.first().ip == '127.0.0.1'
+    }
+
+    void "an event is not inserted if no database"() {
+        given:
+        surrealContainer.stop()
+        StatsService service = applicationContext.getBean(StatsService)
+        BuildRequest request = new BuildRequest("test", Path.of("."), "test", "test", Mock(User), ContainerPlatform.of('amd64'),'{auth}', "test", "127.0.0.1")
+        BuildResult result = new BuildResult("id", 0, "content", Instant.now(), Duration.ofSeconds(1))
+        BuildEvent event = new BuildEvent(buildRequest: request, buildResult: result)
+
+        when:
+        service.onApplicationEvent(event)
+        sleep 100 //as we are using async, let database a while to store the item
+        then:
+        true
+    }
 }
