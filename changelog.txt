@@ -1,4 +1,7 @@
 # Wave changelog
+v0.21.6 - 4 Oct 2022
+- Improve registry auth lookup error [0f696146] 
+
 v0.21.5 - 4 Oct 2022
 - Rollback timestamp and fingerpint fields [466b3a46] <Paolo Di Tommaso>
 
