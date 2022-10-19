@@ -58,8 +58,6 @@ class RegistryProxyService {
 
     private ProxyClient client(RoutePath route) {
         final registry = registryLookup.lookup(route.registry)
-        if( !registry )
-            throw new IllegalArgumentException("Unable to resolve target registry for name: '$route.registry'")
         final creds = getCredentials(route)
         new ProxyClient()
                 .withRoute(route)
