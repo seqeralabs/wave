@@ -19,14 +19,12 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.ContainerRequestData
-import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
+import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
-import reactor.core.publisher.Mono
-
 /**
  * Implement a controller to receive container token requests
  * 
@@ -78,9 +76,12 @@ class ContainerTokenController {
     @Post
     CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
         if( req.towerAccessToken ) {
-            userService.getUserByAccessTokenAsync(req.towerAccessToken).thenApply( user-> makeResponse(httpRequest, req, user))
-        }else{
-            CompletableFuture.completedFuture(makeResponse(httpRequest, req, null))
+            return userService
+                    .getUserByAccessTokenAsync(req.towerAccessToken)
+                    .thenApply( user-> makeResponse(httpRequest, req, user))
+        }
+        else{
+            return CompletableFuture.completedFuture(makeResponse(httpRequest, req, null))
         }
     }
 
@@ -92,7 +93,7 @@ class ContainerTokenController {
         final token = tokenService.computeToken(data)
         final target = targetImage(token, data.containerImage)
         final resp = new SubmitContainerTokenResponse(containerToken: token, targetImage: target)
-        HttpResponse.ok(resp)
+        return HttpResponse.ok(resp)
     }
 
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, User user, String ip) {

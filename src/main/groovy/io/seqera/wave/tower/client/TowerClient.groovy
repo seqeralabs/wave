@@ -10,20 +10,16 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
-import io.micronaut.http.HttpStatus
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Singleton
 import org.apache.commons.lang.StringUtils
-import reactor.core.publisher.Mono
-import reactor.core.publisher.MonoSink
-
 /**
  * Tower API client
- * 
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Requires(env = 'tower')
+@Requires(property = 'tower.api.endpoint')
 @Slf4j
 @Singleton
 @CompileStatic
@@ -52,8 +48,8 @@ class TowerClient {
                 .headers('Content-Type', 'application/json', 'Authorization', "Bearer $authorization")
                 .GET()
                 .build()
-        try {
-            return httpClient.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenApply((resp)-> {
+
+            httpClient.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenApply((resp)-> {
                 log.debug "Tower auth response: [${resp.statusCode()}] ${resp.body()}"
                 switch (resp.statusCode()) {
                     case 200:
@@ -67,11 +63,4 @@ class TowerClient {
                 }
             })
         }
-        catch (HttpResponseException e) {
-            throw e
-        }
-        catch (Throwable e) {
-            throw new HttpResponseException(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error = ${e.message}", e)
-        }
-    }
 }

@@ -1,14 +1,13 @@
 package io.seqera.wave.controller
 
-
 import spock.lang.Specification
 
-import groovy.json.JsonSlurper
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.io.socket.SocketUtils
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.Header
@@ -18,12 +17,8 @@ import io.micronaut.runtime.server.EmbeddedServer
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
-import io.seqera.wave.core.RouteHandler
-import io.seqera.wave.exception.NotFoundException
-import io.seqera.wave.test.RedisTestContainer
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.client.UserInfoResponse
-import redis.clients.jedis.JedisPool
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  *
@@ -103,11 +98,15 @@ class HttpContainerTokenControllerTest extends Specification {
         SubmitContainerTokenRequest request =
                 new SubmitContainerTokenRequest(towerAccessToken: 'foo',
                         towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64',)
-        def ret = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", request), SubmitContainerTokenResponse)
-
-        def body = ret.body()
+        and:
+        client
+                .toBlocking()
+                .exchange(HttpRequest.POST("http://localhost:$port/container-token", request), SubmitContainerTokenResponse)
+                .body()
 
         then:
-        thrown(HttpClientResponseException)
+        def err = thrown(HttpClientResponseException)
+        and:
+        err.status == HttpStatus.UNAUTHORIZED
     }
 }

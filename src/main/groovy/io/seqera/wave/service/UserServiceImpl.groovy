@@ -12,8 +12,6 @@ import io.seqera.wave.tower.client.TowerClient
 import io.seqera.wave.tower.client.UserInfoResponse
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import reactor.core.publisher.Mono
-
 /**
  * Define a service to access a Tower user
  *
@@ -33,9 +31,9 @@ class UserServiceImpl implements UserService {
         if( !towerClient )
             throw new IllegalStateException("Missing Tower client - make sure the 'tower' micronaut environment has been provided")
 
-        towerClient.userInfo(encodedToken).handle( {resp, throwable->
-            if( throwable )
-                throw throwable
+        towerClient.userInfo(encodedToken).handle( (UserInfoResponse resp, Throwable error) -> {
+            if( error )
+                throw error
             if (!resp || !resp.user)
                 throw new UnauthorizedException("Unauthorized - Make sure you have provided a valid access token")
             log.debug("Authorized user=$resp.user")
@@ -47,7 +45,8 @@ class UserServiceImpl implements UserService {
     User getUserByAccessToken(String encodedToken) {
         try {
             getUserByAccessTokenAsync(encodedToken).get()
-        }catch(ExecutionException e){
+        }
+        catch(ExecutionException e){
             throw e.cause
         }
     }
