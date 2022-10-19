@@ -1,6 +1,7 @@
 package io.seqera.wave.controller
 
 import java.nio.file.Path
+import java.util.concurrent.CompletableFuture
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
@@ -18,10 +19,10 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.ContainerRequestData
-import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
+import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
 /**
@@ -73,10 +74,18 @@ class ContainerTokenController {
     }
 
     @Post
-    HttpResponse<SubmitContainerTokenResponse> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
-        final User user = req.towerAccessToken
-                ? userService.getUserByAccessToken(req.towerAccessToken)
-                : null
+    CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
+        if( req.towerAccessToken ) {
+            return userService
+                    .getUserByAccessTokenAsync(req.towerAccessToken)
+                    .thenApply( user-> makeResponse(httpRequest, req, user))
+        }
+        else{
+            return CompletableFuture.completedFuture(makeResponse(httpRequest, req, null))
+        }
+    }
+
+    protected HttpResponse<SubmitContainerTokenResponse> makeResponse(HttpRequest httpRequest, SubmitContainerTokenRequest req, User user) {
         if( !user && !allowAnonymous )
             throw new BadRequestException("Missing access token")
         final ip = addressResolver.resolve(httpRequest)
@@ -84,7 +93,7 @@ class ContainerTokenController {
         final token = tokenService.computeToken(data)
         final target = targetImage(token, data.containerImage)
         final resp = new SubmitContainerTokenResponse(containerToken: token, targetImage: target)
-        HttpResponse.ok(resp)
+        return HttpResponse.ok(resp)
     }
 
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, User user, String ip) {
