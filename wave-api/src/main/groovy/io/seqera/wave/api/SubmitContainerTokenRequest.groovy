@@ -54,5 +54,14 @@ class SubmitContainerTokenRequest {
      * The repository where the build container should be pushed
      */
     String cacheRepository
-    
+
+    /**
+     * Request timestamp 
+     */
+    String timestamp
+
+    /**
+     * Request unique fingerprint
+     */
+    String fingerprint
 }

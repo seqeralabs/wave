@@ -2,6 +2,7 @@ package io.seqera.wave.service.builder
 
 import java.nio.file.Path
 import java.time.Instant
+import java.time.OffsetDateTime
 
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
@@ -80,7 +81,12 @@ class BuildRequest {
      */
     final String configJson
 
-    BuildRequest(String dockerFile, Path workspace, String repo, String condaFile, User user, ContainerPlatform platform, String configJson, String cacheRepo, String ip) {
+    /**
+     * The time offset at the user timezone
+     */
+    final String offsetId
+
+    BuildRequest(String dockerFile, Path workspace, String repo, String condaFile, User user, ContainerPlatform platform, String configJson, String cacheRepo, String ip, String offsetId =null) {
         this.id = computeDigest(dockerFile,condaFile,platform,configJson,user)
         this.dockerFile = dockerFile
         this.condaFile = condaFile
@@ -90,6 +96,7 @@ class BuildRequest {
         this.configJson = configJson
         this.cacheRepository = cacheRepo
         this.workDir = workspace.resolve(id).toAbsolutePath()
+        this.offsetId = offsetId ?: OffsetDateTime.now().offset.id
         this.startTime = Instant.now()
         this.job = "${id}-${startTime.toEpochMilli().toString().md5()[-5..-1]}"
         this.ip = ip

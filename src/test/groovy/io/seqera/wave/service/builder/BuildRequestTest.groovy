@@ -3,6 +3,7 @@ package io.seqera.wave.service.builder
 import spock.lang.Specification
 
 import java.nio.file.Path
+import java.time.OffsetDateTime
 
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
@@ -45,6 +46,7 @@ class BuildRequestTest extends Specification {
         def req4 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.3', USER, ContainerPlatform.of('amd64'),'{auth}', cache, "")
         def req5 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.3', USER, ContainerPlatform.of('amd64'),'{auth}', cache, "")
         def req6 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.5', USER, ContainerPlatform.of('amd64'),'{auth}', cache, "")
+        def req7 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.5', USER, ContainerPlatform.of('amd64'),'{auth}', cache, "", "UTC+2")
 
         expect:
         req1 == req2
@@ -55,6 +57,7 @@ class BuildRequestTest extends Specification {
         and:
         req1 != req5
         req1 != req6
+        req1 != req7
 
         and:
         req1.hashCode() == req2.hashCode()
@@ -65,6 +68,10 @@ class BuildRequestTest extends Specification {
         and:
         req1.hashCode() != req5.hashCode()
         req1.hashCode() != req6.hashCode()
+
+        and:
+        req1.offsetId == OffsetDateTime.now().offset.id
+        req7.offsetId == 'UTC+2'
     }
 
 }
