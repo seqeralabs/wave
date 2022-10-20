@@ -1,4 +1,10 @@
 # Wave changelog
+v0.21.7 - 18 Oct 2022 
+- Switch to quay.io/seqeralabs/nf-jdk:corretto-17.0.4 as base image 
+ 
+v0.21.6 - 17 Oct 2022 [BROKEN BASE IMAGE]
+- Improve registry auth lookup error [0f696146] 
+
 v0.21.5 - 4 Oct 2022
 - Rollback timestamp and fingerpint fields [466b3a46] <Paolo Di Tommaso>
 
