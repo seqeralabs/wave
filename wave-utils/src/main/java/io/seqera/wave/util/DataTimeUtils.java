@@ -19,10 +19,15 @@ public class DataTimeUtils {
     }
 
     static public String formatTimestamp(Instant ts, String zoneId) {
-        return DateTimeFormatter
+        if( ts==null )
+            return null;
+        if( zoneId==null )
+            zoneId = OffsetDateTime.now().getOffset().getId();
+        return  DateTimeFormatter
                 .ofPattern("yyyy-MM-dd HH:mm")
                 .withZone(ZoneId.of(zoneId))
                 .format(ts);
+
     }
 
 }
