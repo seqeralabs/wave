@@ -4,7 +4,6 @@ import spock.lang.Specification
 
 import java.nio.file.Path
 import java.time.OffsetDateTime
-import java.time.ZoneId
 
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
@@ -47,7 +46,7 @@ class BuildRequestTest extends Specification {
         def req4 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.3', USER, ContainerPlatform.of('amd64'),'{auth}', cache, "")
         def req5 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.3', USER, ContainerPlatform.of('amd64'),'{auth}', cache, "")
         def req6 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.5', USER, ContainerPlatform.of('amd64'),'{auth}', cache, "")
-        def req7 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.5', USER, ContainerPlatform.of('amd64'),'{auth}', cache, "", OffsetDateTime.now(ZoneId.of("UTC+2")))
+        def req7 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.5', USER, ContainerPlatform.of('amd64'),'{auth}', cache, "", "UTC+2")
 
         expect:
         req1 == req2
@@ -71,8 +70,8 @@ class BuildRequestTest extends Specification {
         req1.hashCode() != req6.hashCode()
 
         and:
-        req1.zoneId == ZoneId.systemDefault().id
-        req7.zoneId == '+02:00'
+        req1.offsetId == OffsetDateTime.now().offset.id
+        req7.offsetId == 'UTC+2'
     }
 
 }

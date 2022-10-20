@@ -1,6 +1,5 @@
 package io.seqera.wave.api
 
-import java.time.OffsetDateTime
 
 import groovy.transform.CompileStatic
 /**
@@ -57,9 +56,9 @@ class SubmitContainerTokenRequest {
     String cacheRepository
 
     /**
-     * Request
+     * Request timestamp 
      */
-    OffsetDateTime timestamp
+    String timestamp
 
     /**
      * Request unique fingerprint

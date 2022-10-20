@@ -24,6 +24,7 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.tower.User
+import io.seqera.wave.util.DataTimeUtils
 import jakarta.inject.Inject
 /**
  * Implement a controller to receive container token requests
@@ -109,6 +110,7 @@ class ContainerTokenController {
         final build = req.buildRepository ?: defaultBuildRepo
         final cache = req.cacheRepository ?: defaultCacheRepo
         final configJson = dockerAuthService.credentialsConfigJson(dockerContent, build, cache, user?.id, req.towerWorkspaceId)
+        final offset = DataTimeUtils.toOffsetId(req.timestamp)
         // create a unique digest to identify the request
         return new BuildRequest(
                 dockerContent,
@@ -120,7 +122,7 @@ class ContainerTokenController {
                 configJson,
                 cache,
                 ip,
-                req.timestamp)
+                offset )
     }
 
     ContainerRequestData makeRequestData(SubmitContainerTokenRequest req, User user, String ip) {
