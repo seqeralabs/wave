@@ -12,7 +12,7 @@ import java.time.format.DateTimeFormatter;
  */
 public class DataTimeUtils {
 
-    static public String toOffsetId(String timestamp) {
+    static public String offsetId(String timestamp) {
         return timestamp!=null
                 ? OffsetDateTime.parse(timestamp).getOffset().getId()
                 : null;

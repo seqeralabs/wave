@@ -110,7 +110,7 @@ class ContainerTokenController {
         final build = req.buildRepository ?: defaultBuildRepo
         final cache = req.cacheRepository ?: defaultCacheRepo
         final configJson = dockerAuthService.credentialsConfigJson(dockerContent, build, cache, user?.id, req.towerWorkspaceId)
-        final offset = DataTimeUtils.toOffsetId(req.timestamp)
+        final offset = DataTimeUtils.offsetId(req.timestamp)
         // create a unique digest to identify the request
         return new BuildRequest(
                 dockerContent,

@@ -16,8 +16,8 @@ class DateTimeUtilsTest extends Specification {
         def ts2 = '2022-10-20T17:00:00.00+02:00'
 
         expect:
-        DataTimeUtils.toOffsetId(ts1) == 'Z'
-        DataTimeUtils.toOffsetId(ts2) == '+02:00'
+        DataTimeUtils.offsetId(ts1) == 'Z'
+        DataTimeUtils.offsetId(ts2) == '+02:00'
     }
 
     def 'should format ts' () {
