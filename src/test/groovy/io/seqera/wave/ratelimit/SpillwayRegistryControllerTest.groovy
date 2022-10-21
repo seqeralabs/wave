@@ -71,7 +71,7 @@ class SpillwayRegistryControllerTest extends Specification implements DockerRegi
 
         then:
         def e = thrown(HttpClientResponseException)
-        e.message == 'Client \'/\': Too Many Requests'
+        e.message == "Client '/': Too Many Requests"
         def b = new JsonSlurper().parseText( e.response.body.get() as String)
         b.errors.size()
         b.errors.first().code == 'DENIED'
