@@ -138,7 +138,7 @@ class ContainerTokenController {
         String condaContent
         if( req.containerFile ) {
             final build = makeBuildRequest(req, user, ip)
-            targetImage = registryProxyService.isManifestPresent(build.targetImage) ?
+            targetImage = !req.forceBuild && registryProxyService.isManifestPresent(build.targetImage) ?
                     build.targetImage :
                     buildService.buildImage(build)
             targetContent = build.dockerFile

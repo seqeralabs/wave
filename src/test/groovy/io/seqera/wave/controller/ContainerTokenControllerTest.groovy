@@ -81,11 +81,40 @@ class ContainerTokenControllerTest extends Specification {
         when:
         def data = controller.makeRequestData(req, user, "")
         then:
+        1 * proxyRegistry.isManifestPresent(_) >> false
         1 * builder.buildImage(_) >> 'some/repo:xyz'
         and:
         data.containerFile == 'FROM foo'
         data.userId == 100
         data.containerImage ==  'some/repo:xyz'
+        data.containerConfig == cfg
+        data.platform.toString() == 'linux/arm64/v8'
+    }
+
+    def 'should not run a build request if manifest is present' () {
+        given:
+        def builder = Mock(ContainerBuildService)
+        def dockerAuth = Mock(DockerAuthService)
+        def proxyRegistry = Mock(RegistryProxyService)
+        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry,
+                workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
+        def DOCKER = 'FROM foo'
+        def user = new User(id: 100)
+        def cfg = new ContainerConfig()
+        def req = new SubmitContainerTokenRequest(
+                containerFile: encode(DOCKER),
+                containerPlatform: 'arm64',
+                containerConfig: cfg)
+
+        when:
+        def data = controller.makeRequestData(req, user, "")
+        then:
+        1 * proxyRegistry.isManifestPresent(_) >> true
+        0 * builder.buildImage(_) >> 'some/repo:xyz'
+        and:
+        data.containerFile == 'FROM foo'
+        data.userId == 100
+        data.containerImage ==  'wave/build:046b16bf8645cc27ae0ae88e0f3a424e'
         data.containerConfig == cfg
         data.platform.toString() == 'linux/arm64/v8'
     }
