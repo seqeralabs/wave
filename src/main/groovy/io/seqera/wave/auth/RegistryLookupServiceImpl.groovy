@@ -12,7 +12,6 @@ import groovy.transform.CompileStatic
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
 import static io.seqera.wave.WaveDefault.DOCKER_REGISTRY_1
-
 /**
  * Lookup service for container registry. The role of this component
  * is to registry the retrieve the registry authentication realm
@@ -42,6 +41,7 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
     RegistryLookupServiceImpl() {
         httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
+                .followRedirects(HttpClient.Redirect.NORMAL)
                 .build()
     }
 
@@ -71,9 +71,14 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
      */
     @Override
     RegistryInfo lookup(String registry) {
-        final endpoint = registryEndpoint(registry)
-        final auth = cache.get(endpoint)
-        return new RegistryInfo(registry, endpoint, auth)
+        try {
+            final endpoint = registryEndpoint(registry)
+            final auth = cache.get(endpoint)
+            return new RegistryInfo(registry, endpoint, auth)
+        }
+        catch (Throwable t) {
+            throw new RegistryLookupException("Unable to lookup authority for registry '$registry'", t)
+        }
     }
 
     /**

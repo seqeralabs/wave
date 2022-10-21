@@ -1,5 +1,6 @@
 package io.seqera.wave.api
 
+
 import groovy.transform.CompileStatic
 /**
  * Model a request for an augmented container
@@ -54,4 +55,13 @@ class SubmitContainerTokenRequest {
      */
     String cacheRepository
 
+    /**
+     * Request timestamp 
+     */
+    String timestamp
+
+    /**
+     * Request unique fingerprint
+     */
+    String fingerprint
 }

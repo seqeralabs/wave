@@ -8,6 +8,7 @@ import com.google.common.cache.Cache
 import com.google.common.cache.CacheBuilder
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.storage.reader.ContentReader
 import jakarta.inject.Singleton
@@ -18,6 +19,7 @@ import jakarta.inject.Singleton
  */
 @Slf4j
 @Singleton
+@Requires(missingProperty = 'redis.uri')
 @CompileStatic
 class MemoryStorage implements Storage {
 

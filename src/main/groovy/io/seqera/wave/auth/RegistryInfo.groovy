@@ -14,13 +14,13 @@ class RegistryInfo {
     final String name
     final URI host
     final RegistryAuth auth
-    final String index
+    final String indexHost
 
     RegistryInfo(String name, URI endpoint, RegistryAuth auth) {
         this.name = name
         this.host = new URI("${endpoint.scheme}://${endpoint.authority}")
         this.auth = auth
-        this.index = indexHostname0(endpoint)
+        this.indexHost = indexHostname0(endpoint)
     }
 
     protected String indexHostname0(URI uri) {

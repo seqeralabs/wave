@@ -8,6 +8,7 @@ import javax.annotation.PostConstruct
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1DeleteOptions
 import io.kubernetes.client.openapi.models.V1EmptyDirVolumeSource
@@ -17,6 +18,7 @@ import io.kubernetes.client.openapi.models.V1JobBuilder
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodBuilder
+import io.kubernetes.client.openapi.models.V1ResourceRequirements
 import io.kubernetes.client.openapi.models.V1Volume
 import io.kubernetes.client.openapi.models.V1VolumeMount
 import io.micronaut.context.annotation.Property
@@ -68,6 +70,14 @@ class K8sServiceImpl implements K8sService {
     @Nullable
     private String serviceAccount
 
+    @Value('${wave.build.k8s.resources.requests.cpu}')
+    @Nullable
+    private String requestsCpu
+
+    @Value('${wave.build.k8s.resources.requests.memory}')
+    @Nullable
+    private String requestsMemory
+
     @Inject
     private K8sClient k8sClient
 
@@ -86,7 +96,7 @@ class K8sServiceImpl implements K8sService {
             if( !Path.of(buildWorkspace).startsWith(storageMountPath) )
                 throw new IllegalArgumentException("Build workspace should be a sub-directory of 'wave.build.k8s.storage.mountPath' - offending value: '$buildWorkspace' - expected value: '$storageMountPath'")
         }
-        log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; nodeSelector=$nodeSelector; buildTimeout=$buildTimeout"
+        log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; nodeSelector=$nodeSelector; buildTimeout=$buildTimeout; cpus=$requestsCpu; memory=$requestsMemory"
     }
 
     /**
@@ -309,12 +319,19 @@ class K8sServiceImpl implements K8sService {
                     .endInitContainer()
         }
 
+        final requests = new V1ResourceRequirements()
+        if( requestsCpu )
+            requests.putRequestsItem('cpu', new Quantity(requestsCpu))
+        if( requestsMemory )
+            requests.putRequestsItem('memory', new Quantity(requestsMemory))
+
         //container section
         spec.addNewContainer()
                 .withName(name)
                 .withImage(containerImage)
                 .withArgs(args)
                 .withVolumeMounts(mounts)
+                .withResources(requests)
             .endContainer()
             .endSpec()
 

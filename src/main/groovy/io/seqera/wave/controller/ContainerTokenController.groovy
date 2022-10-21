@@ -1,6 +1,7 @@
 package io.seqera.wave.controller
 
 import java.nio.file.Path
+import java.util.concurrent.CompletableFuture
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
@@ -13,15 +14,17 @@ import io.micronaut.http.annotation.Post
 import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
+import io.seqera.wave.auth.DockerAuthService
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.ContainerRequestData
-import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
+import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.tower.User
+import io.seqera.wave.util.DataTimeUtils
 import jakarta.inject.Inject
 /**
  * Implement a controller to receive container token requests
@@ -63,16 +66,27 @@ class ContainerTokenController {
     @Inject
     ContainerBuildService buildService
 
+    @Inject
+    DockerAuthService dockerAuthService
+
     @PostConstruct
     private void init() {
         log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous"
     }
 
     @Post
-    HttpResponse<SubmitContainerTokenResponse> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
-        final User user = req.towerAccessToken
-                ? userService.getUserByAccessToken(req.towerAccessToken)
-                : null
+    CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
+        if( req.towerAccessToken ) {
+            return userService
+                    .getUserByAccessTokenAsync(req.towerAccessToken)
+                    .thenApply( user-> makeResponse(httpRequest, req, user))
+        }
+        else{
+            return CompletableFuture.completedFuture(makeResponse(httpRequest, req, null))
+        }
+    }
+
+    protected HttpResponse<SubmitContainerTokenResponse> makeResponse(HttpRequest httpRequest, SubmitContainerTokenRequest req, User user) {
         if( !user && !allowAnonymous )
             throw new BadRequestException("Missing access token")
         final ip = addressResolver.resolve(httpRequest)
@@ -80,7 +94,7 @@ class ContainerTokenController {
         final token = tokenService.computeToken(data)
         final target = targetImage(token, data.containerImage)
         final resp = new SubmitContainerTokenResponse(containerToken: token, targetImage: target)
-        HttpResponse.ok(resp)
+        return HttpResponse.ok(resp)
     }
 
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, User user, String ip) {
@@ -95,6 +109,8 @@ class ContainerTokenController {
         final platform = ContainerPlatform.of(req.containerPlatform)
         final build = req.buildRepository ?: defaultBuildRepo
         final cache = req.cacheRepository ?: defaultCacheRepo
+        final configJson = dockerAuthService.credentialsConfigJson(dockerContent, build, cache, user?.id, req.towerWorkspaceId)
+        final offset = DataTimeUtils.offsetId(req.timestamp)
         // create a unique digest to identify the request
         return new BuildRequest(
                 dockerContent,
@@ -102,10 +118,11 @@ class ContainerTokenController {
                 build,
                 condaContent,
                 user,
-                req.towerWorkspaceId,
                 platform,
+                configJson,
                 cache,
-                ip )
+                ip,
+                offset )
     }
 
     ContainerRequestData makeRequestData(SubmitContainerTokenRequest req, User user, String ip) {

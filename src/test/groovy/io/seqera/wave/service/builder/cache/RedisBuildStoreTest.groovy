@@ -5,10 +5,8 @@ import spock.lang.Timeout
 
 import java.time.Instant
 import java.util.concurrent.ExecutionException
-import java.util.concurrent.TimeoutException
 
 import io.micronaut.context.ApplicationContext
-import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.exception.BuildTimeoutException
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildStore
@@ -42,17 +40,53 @@ class RedisBuildStoreTest extends Specification implements RedisTestContainer {
         
         expect:
         cacheStore.getBuild('foo') == null
-        and:
-        !cacheStore.hasBuild('foo')
 
         when:
         cacheStore.storeBuild('foo', req1)
         then:
         cacheStore.getBuild('foo') == req1
         and:
-        jedisPool.resource.get("wave/status/foo").toString()
+        jedisPool.resource.get("wave-build:foo").toString()
+
+    }
+
+    def 'should store if absent' () {
+        given:
+        def req1 = BuildResult.create('1')
+        def req2 = BuildResult.create('2')
         and:
-        cacheStore.hasBuild('foo')
+        def store = applicationContext.getBean(BuildStore)
+
+        expect:
+        // the value is store because the key does not exists
+        store.storeIfAbsent('foo', req1)
+        and:
+        // the value is return
+        store.getBuild('foo') == req1
+        and:
+        // storing a new value fails because the key already exist
+        !store.storeIfAbsent('foo', req2)
+        and:
+        // the previous value is returned
+        store.getBuild('foo') == req1
+
+    }
+
+    def 'should remove a build entry' () {
+        given:
+        def zero = BuildResult.create('1')
+        def cache = applicationContext.getBean(BuildStore)
+
+        when:
+        cache.storeBuild('foo', zero)
+        then:
+        cache.getBuild('foo') == zero
+
+        when:
+        cache.removeBuild('foo')
+        then:
+        cache.getBuild('foo') == null
+
     }
 
     @Timeout(value=10)

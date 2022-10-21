@@ -55,6 +55,10 @@ class RegistryAuthTest extends Specification {
                 == new RegistryAuth(new URI('http://foo'), 'bar', RegistryAuth.Type.Basic)
 
         and:
+        RegistryAuth.parse('Basic realm="http://foo"')
+                == new RegistryAuth(new URI('http://foo'), null, RegistryAuth.Type.Basic)
+
+        and:
         RegistryAuth.parse('foo') == null
         RegistryAuth.parse(null) == null
     }

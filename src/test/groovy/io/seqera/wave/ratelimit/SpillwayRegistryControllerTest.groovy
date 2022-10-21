@@ -53,7 +53,7 @@ class SpillwayRegistryControllerTest extends Specification implements DockerRegi
 
     void 'should check rate limit in ip of anonymous manifest'() {
         when:
-        HttpRequest request = HttpRequest.GET("/v2/library/hello-world/manifests/latest").headers({h->
+        HttpRequest request = HttpRequest.GET("/v2/library/hello-world/manifests/sha256:975f4b14f326b05db86e16de00144f9c12257553bba9484fed41f9b6f2257800").headers({h->
             h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
             h.add('Accept', ContentType.DOCKER_MANIFEST_V1_JWS_TYPE)
             h.add('Accept', MediaType.APPLICATION_JSON)
@@ -71,11 +71,11 @@ class SpillwayRegistryControllerTest extends Specification implements DockerRegi
 
         then:
         def e = thrown(HttpClientResponseException)
-        e.message == 'Too Many Requests'
+        e.message == "Client '/': Too Many Requests"
         def b = new JsonSlurper().parseText( e.response.body.get() as String)
         b.errors.size()
         b.errors.first().code == 'DENIED'
-        b.errors.first().message.contains('request exceeded pull rate limit')
+        b.errors.first().message.contains('Request exceeded pull rate limit for IP')
     }
 
 }

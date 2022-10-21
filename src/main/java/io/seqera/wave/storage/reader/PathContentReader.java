@@ -10,6 +10,7 @@ import java.nio.file.Path;
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Deprecated
 public class PathContentReader implements ContentReader {
 
     final private Path path;

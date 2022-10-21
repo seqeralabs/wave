@@ -35,16 +35,16 @@ class DockerBuildStrategy extends BuildStrategy {
     Boolean debug
 
     @Override
-    BuildResult build(BuildRequest req, String creds) {
+    BuildResult build(BuildRequest req) {
 
-        Path credsFile = null
-        if( creds ) {
-            credsFile = req.workDir.resolve('config.json')
-            Files.write(credsFile, JsonOutput.prettyPrint(creds).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+        Path configFile = null
+        if( req.configJson ) {
+            configFile = req.workDir.resolve('config.json')
+            Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
         }
 
         // comand the docker build command
-        final buildCmd= buildCmd(req, credsFile)
+        final buildCmd= buildCmd(req, configFile)
         log.debug "Build run command: ${buildCmd.join(' ')}"
         // save docker cli for debugging purpose
         if( debug ) {

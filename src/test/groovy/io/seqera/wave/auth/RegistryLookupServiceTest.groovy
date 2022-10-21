@@ -3,9 +3,6 @@ package io.seqera.wave.auth
 import spock.lang.Specification
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.auth.RegistryAuth
-import io.seqera.wave.auth.RegistryInfo
-import io.seqera.wave.auth.RegistryLookupServiceImpl
 import jakarta.inject.Inject
 /**
  *
@@ -25,7 +22,7 @@ class RegistryLookupServiceTest extends Specification {
         then:
         info.name == 'docker.io'
         info.host == new URI('https://registry-1.docker.io')
-        info.index == 'https://index.docker.io/v1/'
+        info.indexHost == 'https://index.docker.io/v1/'
         info.auth == new RegistryAuth(new URI('https://auth.docker.io/token'),'registry.docker.io', RegistryAuth.Type.Bearer)
 
         when:
@@ -33,7 +30,7 @@ class RegistryLookupServiceTest extends Specification {
         then:
         info.name == 'quay.io'
         info.host == new URI('https://quay.io')
-        info.index == 'https://quay.io'
+        info.indexHost == 'https://quay.io'
         info.auth == new RegistryAuth(new URI('https://quay.io/v2/auth'),'quay.io', RegistryAuth.Type.Bearer)
 
         when:
@@ -41,7 +38,7 @@ class RegistryLookupServiceTest extends Specification {
         then:
         info.name == '195996028523.dkr.ecr.eu-west-1.amazonaws.com'
         info.host == new URI('https://195996028523.dkr.ecr.eu-west-1.amazonaws.com')
-        info.index == 'https://195996028523.dkr.ecr.eu-west-1.amazonaws.com'
+        info.indexHost == 'https://195996028523.dkr.ecr.eu-west-1.amazonaws.com'
         info.auth == new RegistryAuth(new URI('https://195996028523.dkr.ecr.eu-west-1.amazonaws.com/'), 'ecr.amazonaws.com', RegistryAuth.Type.Basic)
     }
 

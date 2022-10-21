@@ -51,7 +51,7 @@ class BuildServiceRateLimitTest extends Specification{
         RUN echo hi > hello.txt
         """.stripIndent()
         and:
-        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), 0, ContainerPlatform.of('amd64'), cacheRepo, "127.0.0.1")
+        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'),'{auth}', cacheRepo, "127.0.0.1")
 
         when:
         (0..configuration.build.authenticated.max).each {
@@ -73,7 +73,7 @@ class BuildServiceRateLimitTest extends Specification{
         RUN echo hi > hello.txt
         """.stripIndent()
         and:
-        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), 0, ContainerPlatform.of('amd64'), cacheRepo,"127.0.0.1")
+        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'),'{auth}', cacheRepo,"127.0.0.1")
 
         when:
         (0..configuration.build.anonymous.max).each {

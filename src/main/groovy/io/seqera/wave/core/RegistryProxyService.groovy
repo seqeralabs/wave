@@ -50,16 +50,14 @@ class RegistryProxyService {
     @Inject
     private RegistryCredentialsFactory credentialsFactory
 
-    private ContainerScanner scanner(ProxyClient proxyClient) {
-        return new ContainerScanner()
+    private ContainerAugmenter scanner(ProxyClient proxyClient) {
+        return new ContainerAugmenter()
                 .withStorage(storage)
                 .withClient(proxyClient)
     }
 
     private ProxyClient client(RoutePath route) {
         final registry = registryLookup.lookup(route.registry)
-        if( !registry )
-            throw new IllegalArgumentException("Unable to resolve target registry for name: '$route.registry'")
         final creds = getCredentials(route)
         new ProxyClient()
                 .withRoute(route)
@@ -90,7 +88,7 @@ class RegistryProxyService {
 
     DelegateResponse handleRequest(RoutePath route, Map<String,List<String>> headers){
         ProxyClient proxyClient = client(route)
-        final resp1 = proxyClient.head(route.path, headers)
+        final resp1 = proxyClient.getString(route.path, headers, false)
         final redirect = resp1.headers().firstValue('Location').orElse(null)
         if( redirect && resp1.statusCode() in REDIRECT_CODES ) {
             return new DelegateResponse(

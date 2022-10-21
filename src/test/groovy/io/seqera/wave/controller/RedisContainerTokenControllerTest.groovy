@@ -1,10 +1,8 @@
 package io.seqera.wave.controller
 
-import spock.lang.AutoCleanup
-import spock.lang.Shared
+
 import spock.lang.Specification
 
-import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 import io.micronaut.context.ApplicationContext
 import io.micronaut.core.io.socket.SocketUtils
@@ -18,8 +16,6 @@ import io.seqera.wave.core.RouteHandler
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.test.RedisTestContainer
 import redis.clients.jedis.JedisPool
-
-
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  *
@@ -65,9 +61,9 @@ class RedisContainerTokenControllerTest extends Specification implements RedisTe
         noExceptionThrown()
 
         and:
-        new JsonSlurper().parseText(jedisPool.resource.get("wave/token/"+body.containerToken)).platform.arch == 'arm64'
-        new JsonSlurper().parseText(jedisPool.resource.get("wave/token/"+body.containerToken)).workspaceId == 10
-        new JsonSlurper().parseText(jedisPool.resource.get("wave/token/"+body.containerToken)).containerImage == 'ubuntu:latest'
+        new JsonSlurper().parseText(jedisPool.resource.get("wave-tokens/v1:"+body.containerToken)).platform.arch == 'arm64'
+        new JsonSlurper().parseText(jedisPool.resource.get("wave-tokens/v1:"+body.containerToken)).workspaceId == 10
+        new JsonSlurper().parseText(jedisPool.resource.get("wave-tokens/v1:"+body.containerToken)).containerImage == 'ubuntu:latest'
     }
 
     def 'should not retrieve an expired build request' () {
@@ -86,7 +82,7 @@ class RedisContainerTokenControllerTest extends Specification implements RedisTe
         noExceptionThrown()
 
         when:
-        jedisPool.resource.del("wave/token/"+body.containerToken)
+        jedisPool.resource.del("wave-tokens/v1:"+body.containerToken)
 
         and:
         RouteHandler routeHelper = applicationContext.getBean(RouteHandler)

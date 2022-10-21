@@ -1,5 +1,8 @@
 package io.seqera.wave.auth
 
+import java.nio.file.Files
+import java.nio.file.Path
+
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
@@ -52,6 +55,26 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
     private String awsSecretKey
 
     @Inject
+    @Nullable
+    @Value('${wave.registries.azurecr.username}')
+    private String azurecrUsername
+
+    @Inject
+    @Nullable
+    @Value('${wave.registries.azurecr.password}')
+    private String azurecrPassword
+
+    @Inject
+    @Nullable
+    @Value('${wave.registries.google.user:_json_key}')
+    private String googleUsername
+
+    @Inject
+    @Nullable
+    @Value('${wave.registries.google.credentials}')
+    private String googleCredentials
+
+    @Inject
     private RegistryCredentialsFactory credentialsFactory
 
     @Inject
@@ -93,6 +116,16 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
         }
         else if( AwsEcrService.isEcrHost(registry) ) {
             return credentialsFactory.create(registry, awsAccessKey, awsSecretKey)
+        }
+        else if( registry.endsWith('azurecr.io') ) {
+            if( azurecrUsername && azurecrPassword ) {
+                return credentialsFactory.create(registry, azurecrUsername, azurecrPassword)
+            }
+        }
+        else if( registry.endsWith('-docker.pkg.dev') || registry.endsWith('gcr.io')) {
+            if( googleUsername && googleCredentials  ) {
+                return credentialsFactory.create(registry, googleUsername, googleCredentials)
+            }
         }
         log.debug "Unable to find credentials for registry '$registry'"
         return null

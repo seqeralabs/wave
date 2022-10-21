@@ -12,7 +12,6 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
-import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.mail.MailService
@@ -43,12 +42,16 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     @Value('${wave.build.timeout:5m}')
     Duration buildTimeout
 
+    @Value('${wave.build.cleanup}')
+    @Nullable
+    String cleanup
+
     @Inject
     @Nullable
     private MailService mailService
 
     @Inject
-    private BuildStore buildRequests
+    private BuildStore buildStore
 
     private ExecutorService executor
 
@@ -95,41 +98,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
      */
     @Override
     CompletableFuture<BuildResult> buildResult(String targetImage) {
-        return buildRequests
+        return buildStore
                 .awaitBuild(targetImage)
-    }
-
-    protected String credsJson(Set<String> repositories, Long userId, Long workspaceId) {
-        final result = new StringBuilder()
-        for( String repo : repositories ) {
-            final path = ContainerCoordinates.parse(repo)
-            final info = lookupService.lookup(path.registry)
-            final creds = credentialsProvider.getUserCredentials(path, userId, workspaceId)
-            log.debug "Build credentials for repository: $repo => $creds"
-            if( !creds )
-                continue
-            final encode = "${creds.username}:${creds.password}".getBytes().encodeBase64()
-            if( result.size() )
-                result.append(',')
-            result.append("\"${info.index}\":{\"auth\":\"$encode\"}")
-        }
-        return result.size() ? """{"auths":{$result}}""" : null
-    }
-
-    static protected Set<String> findRepositories(String dockerfile) {
-        final result = new HashSet()
-        if( !dockerfile )
-            return result
-        for( String line : dockerfile.readLines()) {
-            if( !line.trim().toLowerCase().startsWith('from '))
-                continue
-            def repo = line.trim().substring(5)
-            def p = repo.indexOf(' ')
-            if( p!=-1 )
-                repo = repo.substring(0,p)
-            result.add(repo)
-        }
-        return result
     }
 
     protected BuildResult launch(BuildRequest req) {
@@ -146,12 +116,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 final condaFile = req.workDir.resolve('conda.yml')
                 Files.write(condaFile, req.condaFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             }
-            // find repos
-            final repos = findRepositories(req.dockerFile) + req.targetImage + req.cacheRepository
-            // create creds file for target repo
-            final creds = credsJson(repos, req.user?.id, req.workspaceId)
 
-            resp = buildStrategy.build(req, creds)
+            resp = buildStrategy.build(req)
             log.info "== Build completed with status=$resp.exitStatus; stdout: (see below)\n${indent(resp.logs)}"
             return resp
         }
@@ -161,20 +127,38 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         }
         finally {
             // update build status store
-            buildRequests.storeBuild(req.targetImage, resp)
+            buildStore.storeBuild(req.targetImage, resp)
             // cleanup build context
-            if( !debugMode )
+            if( shouldCleanup(resp) )
                 buildStrategy.cleanup(req)
         }
     }
 
+    protected boolean shouldCleanup(BuildResult result) {
+        if( cleanup==null )
+            return !debugMode
+        if( cleanup == 'true' )
+            return true
+        if( cleanup == 'false' )
+            return false
+        if( cleanup.toLowerCase() == 'onsuccess' ) {
+            return result?.exitStatus==0
+        }
+        log.debug "Invalid cleanup value: '$cleanup'"
+        return true
+    }
+
     protected CompletableFuture<BuildResult> launchAsync(BuildRequest request) {
-
-        if( rateLimiterService )
-            rateLimiterService.acquireBuild(new AcquireRequest(request.user?.id?.toString(), request.ip))
-
-        buildRequests.storeBuild(request.targetImage, BuildResult.create(request))
-
+        // check the build rate limit
+        try {
+            if( rateLimiterService )
+                rateLimiterService.acquireBuild(new AcquireRequest(request.user?.id?.toString(), request.ip))
+        }
+        catch (Exception e) {
+            buildStore.removeBuild(request.targetImage)
+            throw e
+        }
+        // launch the build async
         CompletableFuture
                 .<BuildResult>supplyAsync(() -> launch(request), executor)
                 .thenApply((result) -> { sendCompletionEmail(request,result); return result })
@@ -190,17 +174,24 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     }
 
     protected String getOrSubmit(BuildRequest request) {
-        // use the target image as the cache key
-        synchronized (buildRequests) {
-            if( !buildRequests.hasBuild(request.targetImage) ) {
-                log.info "== Submit build request request: $request"
-                launchAsync(request)
-            }
-            else {
-                log.info "== Hit build cache for request: $request"
-            }
+        // try to store a new build status for the given target image
+        // this returns true if and only if such container image was not set yet
+        final ret1 = BuildResult.create(request)
+        if( buildStore.storeIfAbsent(request.targetImage, ret1) ) {
+            // go ahead
+            log.info "== Submit build request request: $request"
+            launchAsync(request)
             return request.targetImage
         }
+        // since it was unable to initialise the build result status
+        // this means the build status already exists, retrieve it
+        final ret2 = buildStore.getBuild(request.targetImage)
+        if( ret2 ) {
+            log.info "== Hit build cache for request: $request"
+            return request.targetImage
+        }
+        // invalid state
+        throw new IllegalStateException("Unable to determine build status for '$request.targetImage'")
     }
 
 }

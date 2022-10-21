@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java_version: [11]
+        java_version: [17]
 
     steps:
       - name: Environment
@@ -49,6 +49,15 @@ jobs:
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
           GITHUB_TOKEN: ${{ secrets.GH_SEQERA_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{secrets.TOWER_CI_AWS_ACCESS}}
+          AWS_SECRET_ACCESS_KEY: ${{secrets.TOWER_CI_AWS_SECRET}}
+          DOCKER_USER: ${{ secrets.DOCKER_USER }}
+          DOCKER_PAT: ${{ secrets.DOCKER_PAT }}
+          QUAY_USER: ${{ secrets.QUAY_USER }}
+          QUAY_PAT: ${{ secrets.QUAY_PAT }}
+          AZURECR_USER: ${{ secrets.AZURECR_USER }}
+          AZURECR_PAT: ${{ secrets.AZURECR_PAT }}
+          GOOGLECR_KEYS: ${{ secrets.GOOGLECR_KEYS }}
 
       - name: Release
         if: "contains(github.event.head_commit.message, '[release]')"
@@ -62,6 +71,18 @@ jobs:
           DOCKER_PAT: ${{ secrets.DOCKER_PAT }}
           QUAY_PAT: ${{ secrets.QUAY_PAT }}
           GITHUB_TOKEN: ${{ secrets.GH_SEQERA_TOKEN }}
+
+      - name: Deploy to staging cluster
+        if: "contains(github.event.head_commit.message, '[deploy staging]')"
+        uses: ./.github/actions/deploy
+        with:
+          app: "wave"
+          container: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/app"
+          namespace: "wave-stage"
+          aws-region: "eu-west-2"
+          aws-access-key-id: ${{ secrets.TOWER_CI_AWS_ACCESS }}
+          aws-secret-access-key: ${{ secrets.TOWER_CI_AWS_SECRET }}
+          kube-config-data: ${{ secrets.TOWER_STAGE_KUBE_CONFIG_DATA }}
 
       - name: Publish tests report
         if: failure()
