@@ -16,6 +16,7 @@ import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.auth.DockerAuthService
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.ContainerRequestData
@@ -68,6 +69,9 @@ class ContainerTokenController {
 
     @Inject
     DockerAuthService dockerAuthService
+
+    @Inject
+    RegistryProxyService registryProxyService
 
     @PostConstruct
     private void init() {
@@ -134,7 +138,9 @@ class ContainerTokenController {
         String condaContent
         if( req.containerFile ) {
             final build = makeBuildRequest(req, user, ip)
-            targetImage = buildService.buildImage(build)
+            targetImage = registryProxyService.isManifestPresent(build.targetImage) ?
+                    build.targetImage :
+                    buildService.buildImage(build)
             targetContent = build.dockerFile
             condaContent = build.condaFile
         }

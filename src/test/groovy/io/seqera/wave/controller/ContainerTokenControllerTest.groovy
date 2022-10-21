@@ -8,6 +8,7 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.auth.DockerAuthService
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.tower.User
@@ -66,7 +67,9 @@ class ContainerTokenControllerTest extends Specification {
         given:
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(DockerAuthService)
-        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
+        def proxyRegistry = Mock(RegistryProxyService)
+        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry,
+                workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
         def DOCKER = 'FROM foo'
         def user = new User(id: 100)
         def cfg = new ContainerConfig()

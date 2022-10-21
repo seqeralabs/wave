@@ -5,11 +5,13 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
 import io.micronaut.core.annotation.Nullable
+import io.micronaut.http.MediaType
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryCredentialsFactory
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.model.ContentType
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.service.CredentialsService
 import io.seqera.wave.storage.DigestStore
@@ -49,6 +51,8 @@ class RegistryProxyService {
 
     @Inject
     private RegistryCredentialsFactory credentialsFactory
+
+    @Inject RouteHandler routeHelper
 
     private ContainerAugmenter scanner(ProxyClient proxyClient) {
         return new ContainerAugmenter()
@@ -102,6 +106,27 @@ class RegistryProxyService {
                 statusCode: resp2.statusCode(),
                 headers: resp2.headers().map(),
                 body: resp2.body() )
+    }
+
+    boolean isManifestPresent(String image){
+        try {
+            def parts = image.split(':')
+            def tag = parts.size() == 2 ? parts.last() : 'latest'
+            def path = "/v2/" + parts[0] + "/manifests/$tag"
+            final route = routeHelper.parse(path)
+
+            ProxyClient proxyClient = client(route)
+            final digest = scanner(proxyClient).resolve(route, Map.of(
+                    'Accept', List.of(
+                    ContentType.DOCKER_MANIFEST_V2_TYPE,
+                    ContentType.DOCKER_MANIFEST_V1_JWS_TYPE,
+                    MediaType.APPLICATION_JSON)))
+
+            digest != null
+        }catch(Exception e){
+            log.error "Error checking if manifest for $image is present", e
+            return false
+        }
     }
 
     static class DelegateResponse {

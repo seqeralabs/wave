@@ -64,4 +64,9 @@ class SubmitContainerTokenRequest {
      * Request unique fingerprint
      */
     String fingerprint
+
+    /**
+     * if the image is present Wave will use if forceBuild=true is not specified
+     */
+    boolean forceBuild
 }
