@@ -66,7 +66,7 @@ class SubmitContainerTokenRequest {
     String fingerprint
 
     /**
-     * if the image is present Wave will use if forceBuild=true is not specified
+     * Force a build even when a cached image already exists
      */
     boolean forceBuild
 }

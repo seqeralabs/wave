@@ -11,6 +11,7 @@ import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryCredentialsFactory
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.model.ContentType
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.service.CredentialsService
@@ -51,8 +52,6 @@ class RegistryProxyService {
 
     @Inject
     private RegistryCredentialsFactory credentialsFactory
-
-    @Inject RouteHandler routeHelper
 
     private ContainerAugmenter scanner(ProxyClient proxyClient) {
         return new ContainerAugmenter()
@@ -110,21 +109,19 @@ class RegistryProxyService {
 
     boolean isManifestPresent(String image){
         try {
-            def parts = image.split(':')
-            def tag = parts.size() == 2 ? parts.last() : 'latest'
-            def path = "/v2/" + parts[0] + "/manifests/$tag"
-            final route = routeHelper.parse(path)
-
-            ProxyClient proxyClient = client(route)
-            final digest = scanner(proxyClient).resolve(route, Map.of(
+            final coords = ContainerCoordinates.parse(image)
+            final route = RoutePath.v2manifestPath(coords)
+            final proxyClient = client(route)
+            final headers = Map.of(
                     'Accept', List.of(
                     ContentType.DOCKER_MANIFEST_V2_TYPE,
                     ContentType.DOCKER_MANIFEST_V1_JWS_TYPE,
-                    MediaType.APPLICATION_JSON)))
-
-            digest != null
-        }catch(Exception e){
-            log.error "Error checking if manifest for $image is present", e
+                    MediaType.APPLICATION_JSON))
+            final resp = proxyClient.head(route.path, headers)
+            return resp.statusCode() == 200
+        }
+        catch(Exception e) {
+            log.warn "Unable to check status for container image '$image' -- cause: ${e.message}"
             return false
         }
     }

@@ -82,8 +82,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
      *      The container image where the resulting image is going to be hosted
      */
     @Override
-    String buildImage(BuildRequest request) {
-        return getOrSubmit(request)
+    void buildImage(BuildRequest request) {
+        checkOrSubmit(request)
     }
 
     /**
@@ -173,7 +173,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         }
     }
 
-    protected String getOrSubmit(BuildRequest request) {
+    protected void checkOrSubmit(BuildRequest request) {
         // try to store a new build status for the given target image
         // this returns true if and only if such container image was not set yet
         final ret1 = BuildResult.create(request)
@@ -181,14 +181,14 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             // go ahead
             log.info "== Submit build request request: $request"
             launchAsync(request)
-            return request.targetImage
+            return
         }
         // since it was unable to initialise the build result status
         // this means the build status already exists, retrieve it
         final ret2 = buildStore.getBuild(request.targetImage)
         if( ret2 ) {
             log.info "== Hit build cache for request: $request"
-            return request.targetImage
+            return
         }
         // invalid state
         throw new IllegalStateException("Unable to determine build status for '$request.targetImage'")

@@ -82,11 +82,11 @@ class ContainerTokenControllerTest extends Specification {
         def data = controller.makeRequestData(req, user, "")
         then:
         1 * proxyRegistry.isManifestPresent(_) >> false
-        1 * builder.buildImage(_) >> 'some/repo:xyz'
+        1 * builder.buildImage(_) >> null
         and:
         data.containerFile == 'FROM foo'
         data.userId == 100
-        data.containerImage ==  'some/repo:xyz'
+        data.containerImage ==  'wave/build:046b16bf8645cc27ae0ae88e0f3a424e'
         data.containerConfig == cfg
         data.platform.toString() == 'linux/arm64/v8'
     }
@@ -110,7 +110,7 @@ class ContainerTokenControllerTest extends Specification {
         def data = controller.makeRequestData(req, user, "")
         then:
         1 * proxyRegistry.isManifestPresent(_) >> true
-        0 * builder.buildImage(_) >> 'some/repo:xyz'
+        0 * builder.buildImage(_) >> null
         and:
         data.containerFile == 'FROM foo'
         data.userId == 100

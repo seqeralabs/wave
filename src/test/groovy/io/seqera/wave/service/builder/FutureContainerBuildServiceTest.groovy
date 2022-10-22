@@ -53,12 +53,12 @@ class FutureContainerBuildServiceTest extends Specification {
 
         when:
         exitCode = EXIT_CODE
-        def result = service.getOrSubmit(REQ)
+        service.checkOrSubmit(REQ)
         then:
-        result
+        noExceptionThrown()
 
         when:
-        def status = service.buildResult(result).get()
+        def status = service.buildResult(REQ.targetImage).get()
         then:
         status.getExitStatus() == EXIT_CODE
 
