@@ -40,8 +40,8 @@ class DockerAuthService {
             final path = ContainerCoordinates.parse(repo)
             final info = lookupService.lookup(path.registry)
             final hostName = info.getIndexHost()
-            if( !hosts.add(hostName)) {
-                // skip this index host because it has already be addede to the list
+            if( !hosts.add(hostName) ) {
+                // skip this index host because it has already be added to the list
                 continue
             }
             final creds = credentialsProvider.getUserCredentials(path, userId, workspaceId)
