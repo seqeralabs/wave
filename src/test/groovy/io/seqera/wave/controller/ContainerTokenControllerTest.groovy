@@ -8,6 +8,7 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.auth.DockerAuthService
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.tower.User
@@ -66,7 +67,9 @@ class ContainerTokenControllerTest extends Specification {
         given:
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(DockerAuthService)
-        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
+        def proxyRegistry = Mock(RegistryProxyService)
+        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry,
+                workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
         def DOCKER = 'FROM foo'
         def user = new User(id: 100)
         def cfg = new ContainerConfig()
@@ -78,11 +81,40 @@ class ContainerTokenControllerTest extends Specification {
         when:
         def data = controller.makeRequestData(req, user, "")
         then:
-        1 * builder.buildImage(_) >> 'some/repo:xyz'
+        1 * proxyRegistry.isManifestPresent(_) >> false
+        1 * builder.buildImage(_) >> null
         and:
         data.containerFile == 'FROM foo'
         data.userId == 100
-        data.containerImage ==  'some/repo:xyz'
+        data.containerImage ==  'wave/build:046b16bf8645cc27ae0ae88e0f3a424e'
+        data.containerConfig == cfg
+        data.platform.toString() == 'linux/arm64/v8'
+    }
+
+    def 'should not run a build request if manifest is present' () {
+        given:
+        def builder = Mock(ContainerBuildService)
+        def dockerAuth = Mock(DockerAuthService)
+        def proxyRegistry = Mock(RegistryProxyService)
+        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry,
+                workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
+        def DOCKER = 'FROM foo'
+        def user = new User(id: 100)
+        def cfg = new ContainerConfig()
+        def req = new SubmitContainerTokenRequest(
+                containerFile: encode(DOCKER),
+                containerPlatform: 'arm64',
+                containerConfig: cfg)
+
+        when:
+        def data = controller.makeRequestData(req, user, "")
+        then:
+        1 * proxyRegistry.isManifestPresent(_) >> true
+        0 * builder.buildImage(_) >> null
+        and:
+        data.containerFile == 'FROM foo'
+        data.userId == 100
+        data.containerImage ==  'wave/build:046b16bf8645cc27ae0ae88e0f3a424e'
         data.containerConfig == cfg
         data.platform.toString() == 'linux/arm64/v8'
     }

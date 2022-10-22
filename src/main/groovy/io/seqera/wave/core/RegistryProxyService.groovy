@@ -5,11 +5,14 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
 import io.micronaut.core.annotation.Nullable
+import io.micronaut.http.MediaType
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryCredentialsFactory
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.model.ContainerCoordinates
+import io.seqera.wave.model.ContentType
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.service.CredentialsService
 import io.seqera.wave.storage.DigestStore
@@ -102,6 +105,25 @@ class RegistryProxyService {
                 statusCode: resp2.statusCode(),
                 headers: resp2.headers().map(),
                 body: resp2.body() )
+    }
+
+    boolean isManifestPresent(String image){
+        try {
+            final coords = ContainerCoordinates.parse(image)
+            final route = RoutePath.v2manifestPath(coords)
+            final proxyClient = client(route)
+            final headers = Map.of(
+                    'Accept', List.of(
+                    ContentType.DOCKER_MANIFEST_V2_TYPE,
+                    ContentType.DOCKER_MANIFEST_V1_JWS_TYPE,
+                    MediaType.APPLICATION_JSON))
+            final resp = proxyClient.head(route.path, headers)
+            return resp.statusCode() == 200
+        }
+        catch(Exception e) {
+            log.warn "Unable to check status for container image '$image' -- cause: ${e.message}"
+            return false
+        }
     }
 
     static class DelegateResponse {

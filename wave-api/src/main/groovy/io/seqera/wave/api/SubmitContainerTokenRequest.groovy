@@ -64,4 +64,9 @@ class SubmitContainerTokenRequest {
      * Request unique fingerprint
      */
     String fingerprint
+
+    /**
+     * Force a build even when a cached image already exists
+     */
+    boolean forceBuild
 }

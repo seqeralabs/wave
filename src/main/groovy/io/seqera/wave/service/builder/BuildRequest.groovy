@@ -87,7 +87,7 @@ class BuildRequest {
     final String offsetId
 
     BuildRequest(String dockerFile, Path workspace, String repo, String condaFile, User user, ContainerPlatform platform, String configJson, String cacheRepo, String ip, String offsetId =null) {
-        this.id = computeDigest(dockerFile,condaFile,platform,configJson,user)
+        this.id = computeDigest(dockerFile,condaFile,platform,user)
         this.dockerFile = dockerFile
         this.condaFile = condaFile
         this.targetImage = "${repo}:${id}"
@@ -102,13 +102,11 @@ class BuildRequest {
         this.ip = ip
     }
 
-    static private String computeDigest(String dockerFile, String condaFile, ContainerPlatform platform, String configJson, User user) {
+    static private String computeDigest(String dockerFile, String condaFile, ContainerPlatform platform, User user) {
         def content = platform.toString()
         content += dockerFile
         if( condaFile )
             content += condaFile
-        if( configJson )
-            content += configJson
         if( user )
             content += user.id
         return DigestFunctions.md5(content)

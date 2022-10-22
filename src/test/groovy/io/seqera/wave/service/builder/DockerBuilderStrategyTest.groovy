@@ -61,13 +61,13 @@ class DockerBuilderStrategyTest extends Specification {
         cmd == ['docker',
                 'run',
                 '--rm',
-                '-w', '/work/foo/2f6d45fae801bd000d175c58148354cc',
-                '-v', '/work/foo/2f6d45fae801bd000d175c58148354cc:/work/foo/2f6d45fae801bd000d175c58148354cc',
+                '-w', '/work/foo/dd34842d87d7a8aaeda862c5b24c0132',
+                '-v', '/work/foo/dd34842d87d7a8aaeda862c5b24c0132:/work/foo/dd34842d87d7a8aaeda862c5b24c0132',
                 '-v', '/work/creds.json:/kaniko/.docker/config.json:ro',
                 'gcr.io/kaniko-project/executor:v1.9.0',
-                '--dockerfile', '/work/foo/2f6d45fae801bd000d175c58148354cc/Dockerfile',
-                '--context', '/work/foo/2f6d45fae801bd000d175c58148354cc',
-                '--destination', 'repo:2f6d45fae801bd000d175c58148354cc',
+                '--dockerfile', '/work/foo/dd34842d87d7a8aaeda862c5b24c0132/Dockerfile',
+                '--context', '/work/foo/dd34842d87d7a8aaeda862c5b24c0132',
+                '--destination', 'repo:dd34842d87d7a8aaeda862c5b24c0132',
                 '--cache=true',
                 '--cache-repo', 'reg.io/wave/build/cache'
         ]
@@ -89,9 +89,9 @@ class DockerBuilderStrategyTest extends Specification {
         def cmd = service.launchCmd(req)
         then:
         cmd == [
-                '--dockerfile', '/work/foo/2f6d45fae801bd000d175c58148354cc/Dockerfile',
-                '--context', '/work/foo/2f6d45fae801bd000d175c58148354cc',
-                '--destination', 'repo:2f6d45fae801bd000d175c58148354cc',
+                '--dockerfile', '/work/foo/dd34842d87d7a8aaeda862c5b24c0132/Dockerfile',
+                '--context', '/work/foo/dd34842d87d7a8aaeda862c5b24c0132',
+                '--destination', 'repo:dd34842d87d7a8aaeda862c5b24c0132',
                 '--cache=true',
                 '--cache-repo', 'reg.io/wave/build/cache',
                 '--compressed-caching', 'false'
