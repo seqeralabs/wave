@@ -86,9 +86,9 @@ class BuildRequest {
      */
     final String offsetId
 
-    BuildRequest(String dockerFile, Path workspace, String repo, String condaFile, User user, ContainerPlatform platform, String configJson, String cacheRepo, String ip, String offsetId =null) {
-        this.id = computeDigest(dockerFile,condaFile,platform,user)
-        this.dockerFile = dockerFile
+    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, User user, ContainerPlatform platform, String configJson, String cacheRepo, String ip, String offsetId = null) {
+        this.id = computeDigest(containerFile, condaFile, platform, repo)
+        this.dockerFile = containerFile
         this.condaFile = condaFile
         this.targetImage = "${repo}:${id}"
         this.user = user
@@ -102,14 +102,13 @@ class BuildRequest {
         this.ip = ip
     }
 
-    static private String computeDigest(String dockerFile, String condaFile, ContainerPlatform platform, User user) {
-        def content = platform.toString()
-        content += dockerFile
-        if( condaFile )
-            content += condaFile
-        if( user )
-            content += user.id
-        return DigestFunctions.md5(content)
+    static private String computeDigest(String containerFile, String condaFile, ContainerPlatform platform, String repository) {
+        final attrs = new LinkedHashMap<String,Object>(10)
+        attrs.containerFile = containerFile
+        attrs.condaFile = condaFile
+        attrs.platform =  platform.toString()
+        attrs.repository = repository
+        return DigestFunctions.md5(attrs)
     }
 
     @Override

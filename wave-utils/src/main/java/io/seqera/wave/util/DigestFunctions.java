@@ -9,6 +9,9 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Random;
 
 import com.google.common.io.BaseEncoding;
@@ -31,8 +34,47 @@ public class DigestFunctions {
     }
 
     public static String md5(String str) throws NoSuchAlgorithmException {
+        if( str==null )
+            str = Character.toString(0);
         final byte[] digest = getMd5().digest(str.getBytes());
         return bytesToHex(digest);
+    }
+
+    public static String md5(Map<String,Object> map) throws NoSuchAlgorithmException {
+        if( map==null || map.size()==0 )
+            throw new IllegalArgumentException("Cannot compute MD5 checksum for a null or empty map");
+        final String result = concat0(map, new StringBuilder());
+        return md5(result);
+    }
+
+    private static String concat0(Map<String,Object> map, StringBuilder result) throws NoSuchAlgorithmException {
+        for( Map.Entry<String,Object> entry : map.entrySet() ) {
+            // compute key checksum
+            result.append( entry.getKey() );
+            result.append( Character.toString(0x1C) );
+            // compute key checksum
+            final Object value = entry.getValue();
+            if( value instanceof Map ) {
+                concat0( (Map<String, Object>) value, result );
+            }
+            else if( value instanceof Collection ) {
+                final Iterator<?> itr = ((Collection<?>) value).iterator();
+                int i=0;
+                while(itr.hasNext()) {
+                    if( i++>0 ) result.append( Character.toString(0x1D) );
+                    result.append( str0(itr.next()) );
+                }
+            }
+            else {
+                result.append( str0(value) );
+            }
+            result.append( Character.toString(0x1E) );
+        }
+        return result.toString();
+    }
+
+    private static String str0(Object object) {
+        return object != null ? object.toString() : Character.toString(0x0);
     }
 
     public static String bytesToHex(byte[] bytes) {

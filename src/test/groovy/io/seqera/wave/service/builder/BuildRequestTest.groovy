@@ -23,13 +23,13 @@ class BuildRequestTest extends Specification {
         when:
         def req = new BuildRequest(CONTENT, PATH, repo, null, USER, ContainerPlatform.of('amd64'), '{auth}', cache, "")
         then:
-        req.id == 'a7cd092a927a1fefc51ee8e5e886c5c1'
+        req.id == 'b89bf284c5e66424ec2829bf8945290e'
         req.workDir == PATH.resolve(req.id).toAbsolutePath()
         req.targetImage == "docker.io/wave:${req.id}"
         req.dockerFile == CONTENT
         req.user == USER
         req.configJson == '{auth}'
-        req.job =~ /a7cd092a927a1fefc51ee8e5e886c5c1-[a-z0-9]+/
+        req.job =~ /b89bf284c5e66424ec2829bf8945290e-[a-z0-9]+/
         req.cacheRepository == cache
     }
 

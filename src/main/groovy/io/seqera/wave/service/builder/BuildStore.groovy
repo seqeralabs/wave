@@ -31,7 +31,9 @@ interface BuildStore {
      * @param imageName The container image name
      * @param request The {@link BuildResult} object associated to the image name
      */
-    void storeBuild(String imageName, BuildResult request)
+    void storeBuild(String imageName, BuildResult result)
+
+    void storeBuild(String imageName, BuildResult result, Duration ttl)
 
     /**
      * Store a build result only if the specified key does not exit

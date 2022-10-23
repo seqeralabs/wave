@@ -42,6 +42,12 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     @Value('${wave.build.timeout:5m}')
     Duration buildTimeout
 
+    @Value('${wave.build.status.duration:`1d`}')
+    private Duration statusDuration
+
+    @Value('${wave.build.status.delay:5s}')
+    private Duration statusDelay
+
     @Value('${wave.build.cleanup}')
     @Nullable
     String cleanup
@@ -126,8 +132,14 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             return resp = BuildResult.failed(req.id, e.message, req.startTime)
         }
         finally {
+            // use a short time-to-live for failed build
+            // this is needed to allow re-try builds failed for
+            // temporary error conditions e.g. expired credentials
+            final ttl = resp.failed()
+                    ? statusDelay.multipliedBy(10)
+                    : statusDuration
             // update build status store
-            buildStore.storeBuild(req.targetImage, resp)
+            buildStore.storeBuild(req.targetImage, resp, ttl)
             // cleanup build context
             if( shouldCleanup(resp) )
                 buildStrategy.cleanup(req)
