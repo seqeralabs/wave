@@ -1,4 +1,7 @@
 # Wave changelog
+v0.22.1 - 23 Oct 2022
+- Revert to MN 3.3.4 [db0e6fc3]
+
 v0.22.0 - 23 Oct 2022 
 - Improve build cache for failed builds (#176) [41972309]
 - Improve the time format in the completion email (#169) [84357efe]
