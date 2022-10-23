@@ -29,7 +29,7 @@ class DockerBuilderStrategyTest extends Specification {
                 '--rm',
                 '-w', '/work/foo',
                 '-v', '/work/foo:/work/foo',
-                'gcr.io/kaniko-project/executor:v1.9.0']
+                'gcr.io/kaniko-project/executor:v1.9.1']
 
         when:
         cmd = service.dockerWrapper(work, Path.of('/foo/creds.json'))
@@ -40,7 +40,7 @@ class DockerBuilderStrategyTest extends Specification {
                 '-w', '/work/foo',
                 '-v', '/work/foo:/work/foo',
                 '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
-                'gcr.io/kaniko-project/executor:v1.9.0']
+                'gcr.io/kaniko-project/executor:v1.9.1']
 
         cleanup:
         ctx.close()
@@ -64,7 +64,7 @@ class DockerBuilderStrategyTest extends Specification {
                 '-w', '/work/foo/dd34842d87d7a8aaeda862c5b24c0132',
                 '-v', '/work/foo/dd34842d87d7a8aaeda862c5b24c0132:/work/foo/dd34842d87d7a8aaeda862c5b24c0132',
                 '-v', '/work/creds.json:/kaniko/.docker/config.json:ro',
-                'gcr.io/kaniko-project/executor:v1.9.0',
+                'gcr.io/kaniko-project/executor:v1.9.1',
                 '--dockerfile', '/work/foo/dd34842d87d7a8aaeda862c5b24c0132/Dockerfile',
                 '--context', '/work/foo/dd34842d87d7a8aaeda862c5b24c0132',
                 '--destination', 'repo:dd34842d87d7a8aaeda862c5b24c0132',
