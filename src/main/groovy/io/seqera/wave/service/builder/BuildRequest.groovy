@@ -106,7 +106,7 @@ class BuildRequest {
         final attrs = new LinkedHashMap<String,Object>(10)
         attrs.containerFile = containerFile
         attrs.condaFile = condaFile
-        attrs.platform =  platform.toString()
+        attrs.platform =  platform
         attrs.repository = repository
         return DigestFunctions.md5(attrs)
     }
