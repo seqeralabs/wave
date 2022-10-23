@@ -1,4 +1,15 @@
 # Wave changelog
+v0.22.0 - 23 Oct 2022 
+- Improve build cache for failed builds (#176) [41972309]
+- Improve the time format in the completion email (#169) [84357efe]
+- Make Tower user auth async (#166) [55f06451] <Jorge Aguilera>
+- Check if target image exist before building a new one (#173) [78a5fa2e]
+- Add basic k8s deployment [ci skip] [6c81171a]
+- Update ngrok launcher script [e72979ce]
+- Bump Micronaut 3.7.2 (#174) [28172705] 
+- Bump kaniko 1.9.1 (#175) [8bb72c47]
+- Bump base image seqera-labs/nf-jdk:corretto-17.0.5 [85921df3] 
+
 v0.21.7 - 18 Oct 2022 
 - Switch to quay.io/seqeralabs/nf-jdk:corretto-17.0.4 as base image 
  
