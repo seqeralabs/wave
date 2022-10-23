@@ -3,6 +3,7 @@ package io.seqera.wave.service.builder.cache
 import spock.lang.Specification
 import spock.lang.Timeout
 
+import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ExecutionException
 
@@ -48,6 +49,35 @@ class RedisBuildStoreTest extends Specification implements RedisTestContainer {
         and:
         jedisPool.resource.get("wave-build:foo").toString()
 
+    }
+
+    def 'should expire entry' () {
+        given:
+        def req1 = BuildResult.create('1')
+        and:
+        def cacheStore = applicationContext.getBean(BuildStore)
+
+        expect:
+        cacheStore.getBuild('foo') == null
+
+        when:
+        cacheStore.storeBuild('foo', req1)
+        then:
+        cacheStore.getBuild('foo') == req1
+        and:
+        sleep 1000
+        cacheStore.getBuild('foo') == req1
+
+        when:
+        cacheStore.storeBuild('foo', req1, Duration.ofSeconds(1))
+        then:
+        cacheStore.getBuild('foo') == req1
+        and:
+        sleep 500
+        cacheStore.getBuild('foo') == req1
+        and:
+        sleep 1_500
+        cacheStore.getBuild('foo') == null
     }
 
     def 'should store if absent' () {

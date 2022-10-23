@@ -49,6 +49,10 @@ class BuildResult {
 
     boolean done() { duration!=null }
 
+    boolean succeeded() { done() && exitStatus==0 }
+
+    boolean failed() { done() && exitStatus!=0 }
+
     @Override
     String toString() {
         return "BuildRequest[id=$id; exitStatus=$exitStatus; duration=$duration]"

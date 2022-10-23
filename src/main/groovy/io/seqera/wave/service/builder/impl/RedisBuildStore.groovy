@@ -66,10 +66,17 @@ class RedisBuildStore implements BuildStore {
     }
 
     @Override
+    void storeBuild(String imageName, BuildResult request, Duration ttl) {
+        final json = JacksonHelper.toJson(request)
+        // once created the token the user has `Duration` time to pull the layers of the image
+        senderConn.sync().psetex(key(imageName), ttl.toMillis(), json)
+    }
+
+    @Override
     boolean storeIfAbsent(String imageName, BuildResult build) {
         final json = JacksonHelper.toJson(build)
         final SetArgs args = SetArgs.Builder.ex(duration).nx()
-        final result = senderConn.sync().set(key(imageName),json, args)
+        final result = senderConn.sync().set(key(imageName), json, args)
         return result == 'OK'
     }
 

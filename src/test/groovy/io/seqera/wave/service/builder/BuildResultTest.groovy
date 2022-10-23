@@ -1,6 +1,7 @@
 package io.seqera.wave.service.builder
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.time.Duration
 import java.time.Instant
@@ -26,6 +27,25 @@ class BuildResultTest extends Specification {
         and:
         r1.hashCode() == r2.hashCode()
         r1.hashCode() != r3.hashCode()
+    }
+
+    @Unroll
+    def 'should validate status methods' () {
+        when:
+        def result = new BuildResult('100', EXIT, 'blah', Instant.now(), DURATION)
+        then:
+        result.done() == DONE
+        result.succeeded() == SUCCEEDED
+        result.failed() == FAILED
+
+        where:
+        EXIT    | DURATION              | DONE  | SUCCEEDED | FAILED
+        0       | null                  | false | false     | false
+        1       | null                  | false | false     | false
+        and:
+        0       | Duration.ofSeconds(1) | true  | true      | false
+        1       | Duration.ofSeconds(1) | true  | false     | true
+        
     }
 
     def 'should ser-deser build result' () {
