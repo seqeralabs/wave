@@ -38,7 +38,7 @@ interface BuildStore {
      *
      * @param imageName The container image name
      * @param result The {@link BuildResult} object associated to the image name
-     * @param ttl The {@link Duration} after which the enrry is expired
+     * @param ttl The {@link Duration} after which the entry is expired
      */
     void storeBuild(String imageName, BuildResult result, Duration ttl)
 
