@@ -24,7 +24,7 @@ public class DataTimeUtils {
         if( zoneId==null )
             zoneId = OffsetDateTime.now().getOffset().getId();
         return  DateTimeFormatter
-                .ofPattern("yyyy-MM-dd HH:mm")
+                .ofPattern("yyyy-MM-dd HH:mm (O)")
                 .withZone(ZoneId.of(zoneId))
                 .format(ts);
 
