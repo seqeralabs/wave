@@ -80,8 +80,6 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         // 1. look up the registry authorisation info for the given registry name
         final registry = lookupService.lookup(registryName)
         log.debug "Registry '$registryName' => auth: $registry"
-        if( !registry )
-            throw new RegistryUnauthorizedAccessException("Unable to find authorization service for registry: $registryName")
 
         // 2. make a request against the authorization "realm" service using basic
         //    credentials to get the login token
@@ -112,7 +110,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     boolean validateUser(String registry, String user, String password){
         try {
             final result = login(registry, user, password)
-            log.debug "Validate registry credentials userName=$user; password=${StringUtils.redact(password)}; registry=$registry; host=$registry; -> result=$result"
+            log.debug "Validate registry credentials userName=$user; password=${StringUtils.redact(password)}; registry=$registry; host=$registry; => result=$result"
             return result
         }
         catch (Exception e) {
@@ -127,7 +125,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
                 .uri(URI.create(uri))
         if( creds && creds.username && creds.password ) {
             final basic = "${creds.username}:${creds.password}".bytes.encodeBase64()
-            log.debug "Request uri=$uri; 'Authorization Basic $basic'"
+            log.trace "Request uri=$uri; 'Authorization Basic $basic'"
             builder.setHeader("Authorization", "Basic $basic")
         }
         return builder.build()
@@ -171,19 +169,27 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
      * @return The resulting bearer token to authorise a pull request
      */
     protected String getToken0(CacheKey key) {
-        final login = "${key.auth.realm}?service=${key.auth.service}&scope=repository:${key.image}:pull"
+        final login = buildLoginUrl(key.auth.realm, key.image, key.auth.service)
         final req = makeRequest(login, key.creds)
-        log.debug "Token request=$req"
+        log.trace "Token request=$req"
 
         HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
         final body = resp.body()
-        final result = (Map) new JsonSlurper().parseText(body)
         if( resp.statusCode()==200 ) {
-            log.debug "Registry '$login' => token: ${result.token}"
+            final result = (Map) new JsonSlurper().parseText(body)
+            log.debug "Registry '$login' => token: ${StringUtils.redact(result.token)}"
             return result.get('token')
         }
 
         throw new RegistryUnauthorizedAccessException("Unable to authorize request: $login", body)
+    }
+
+    String buildLoginUrl(URI realm, String image, String service){
+        String result = "${realm}?scope=repository:${image}:pull"
+        if(service) {
+            result += "&service=$service"
+        }
+        return result
     }
 
     protected String getAuthToken(String image, RegistryAuth auth, RegistryCredentials creds) {

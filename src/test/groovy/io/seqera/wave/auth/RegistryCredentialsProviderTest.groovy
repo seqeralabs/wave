@@ -6,7 +6,9 @@ import spock.lang.Specification
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.auth.RegistryCredentialsProviderImpl
+import io.seqera.wave.service.ContainerRegistryKeys
+import io.seqera.wave.service.CredentialsService
+import io.seqera.wave.service.aws.AwsEcrService
 import jakarta.inject.Inject
 /**
  *
@@ -40,13 +42,13 @@ class RegistryCredentialsProviderTest extends Specification {
     
     def 'should find docker creds' () {
         when:
-        def creds1 = credentialsProvider.getCredentials(null)
+        def creds1 = credentialsProvider.getDefaultCredentials(null)
         then:
         creds1.username == dockerUsername
         creds1.password == dockerPassword
 
         when:
-        def creds2 = credentialsProvider.getCredentials('docker.io')
+        def creds2 = credentialsProvider.getDefaultCredentials('docker.io')
         then:
         creds2.username == dockerUsername
         creds2.password == dockerPassword
@@ -54,7 +56,7 @@ class RegistryCredentialsProviderTest extends Specification {
 
     def 'should find quay creds' () {
         when:
-        def creds = credentialsProvider.getCredentials('quay.io')
+        def creds = credentialsProvider.getDefaultCredentials('quay.io')
         then:
         creds.username == quayUsername
         creds.password == quayPassword
@@ -65,7 +67,7 @@ class RegistryCredentialsProviderTest extends Specification {
         given:
         def reg = '195996028523.dkr.ecr.eu-west-1.amazonaws.com'
         when:
-        def creds = credentialsProvider.getCredentials(reg)
+        def creds = credentialsProvider.getDefaultCredentials(reg)
         then:
         creds.username == 'AWS'
         creds.password.size() > 0
@@ -73,7 +75,26 @@ class RegistryCredentialsProviderTest extends Specification {
 
     def 'should not find creds' () {
         expect:
-        credentialsProvider.getCredentials('foo') == null
+        credentialsProvider.getDefaultCredentials('foo') == null
     }
 
+    def 'should get credentials from user' () {
+        given:
+        def REGISTRY = 'foo'
+        def USER_ID = 100
+        def WORKSPACE_ID = 200
+        and:
+        def credentialService = Mock(CredentialsService)
+        def credentialsFactory = new RegistryCredentialsFactoryImpl(awsEcrService: Mock(AwsEcrService))
+        def provider = Spy(new RegistryCredentialsProviderImpl(credentialsFactory: credentialsFactory, credentialsService: credentialService))
+        and:
+
+        when:
+        def result = provider.getUserCredentials0(REGISTRY, USER_ID, WORKSPACE_ID)
+        then:
+        1 * credentialService.findRegistryCreds(REGISTRY, USER_ID, WORKSPACE_ID) >> new ContainerRegistryKeys(userName:'usr1',password:'pwd2',registry:REGISTRY)
+        and:
+        result.getUsername() == 'usr1'
+        result.getPassword() == 'pwd2'
+    }
 }

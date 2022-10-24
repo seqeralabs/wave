@@ -1,12 +1,18 @@
 package io.seqera.wave.auth
 
+import java.nio.file.Files
+import java.nio.file.Path
+
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.seqera.wave.core.ContainerPath
+import io.seqera.wave.service.CredentialsService
 import io.seqera.wave.service.aws.AwsEcrService
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+
 /**
  * Implements a basic credentials provider fetching the registry creds
  * from the application config file
@@ -49,7 +55,38 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
     private String awsSecretKey
 
     @Inject
+    @Nullable
+    @Value('${wave.registries.azurecr.username}')
+    private String azurecrUsername
+
+    @Inject
+    @Nullable
+    @Value('${wave.registries.azurecr.password}')
+    private String azurecrPassword
+
+    @Inject
+    @Nullable
+    @Value('${wave.registries.google.user:_json_key}')
+    private String googleUsername
+
+    @Inject
+    @Nullable
+    @Value('${wave.registries.google.credentials}')
+    private String googleCredentials
+
+    @Inject
     private RegistryCredentialsFactory credentialsFactory
+
+    @Inject
+    @Nullable
+    private CredentialsService credentialsService
+
+    @Value('${wave.build.repo}')
+    private String defaultBuildRepository
+
+    @Value('${wave.build.cache}')
+    private String defaultCacheRepository
+
 
     /**
      * Find the corresponding credentials for the specified registry
@@ -61,7 +98,11 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
      *      if not credentials can be found
      */
     @Override
-    RegistryCredentials getCredentials(String registry) {
+    RegistryCredentials getDefaultCredentials(String registry) {
+        return getDefaultCredentials0(registry)
+    }
+
+    protected RegistryCredentials getDefaultCredentials0(String registry) {
 
         if( !registry || registry == 'docker.io' ) {
             if( dockerUsername && dockerPassword ) {
@@ -78,8 +119,55 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
                 return credentialsFactory.create(registry, awsAccessKey, awsSecretKey)
             }
         }
+        else if( registry.endsWith('azurecr.io') ) {
+            if( azurecrUsername && azurecrPassword ) {
+                return credentialsFactory.create(registry, azurecrUsername, azurecrPassword)
+            }
+        }
+        else if( registry.endsWith('-docker.pkg.dev') || registry.endsWith('gcr.io')) {
+            if( googleUsername && googleCredentials  ) {
+                return credentialsFactory.create(registry, googleUsername, googleCredentials)
+            }
+        }
         log.debug "Unable to find credentials for registry '$registry'"
         return null
     }
 
+    /**
+     * Provides the credentials for the specified container associated with the user and tower
+     * workspace specified.
+     *
+     * @param container
+     *      A container name e.g. docker.io/library/ubuntu.
+     * @param userId
+     *      The tower user Id.
+     * @param workspaceId
+     *      The tower workspace Id.
+     * @return
+     *      A {@link RegistryCredentials} object holding the credentials for the specified container or {@code null}
+     *      if not credentials can be found
+     */
+    @Override
+    RegistryCredentials getUserCredentials(ContainerPath container, @Nullable Long userId, @Nullable Long workspaceId) {
+        // use default credentials for anonymous requests
+        if( !userId )
+            return getDefaultCredentials(container.registry)
+        // use default credentials for default repositories
+        if( container.repository==defaultBuildRepository || container.repository==defaultCacheRepository )
+            return getDefaultCredentials(container.registry)
+
+        return getUserCredentials0(container.registry, userId, workspaceId)
+    }
+
+    protected RegistryCredentials getUserCredentials0(String registry, @Nullable Long userId, @Nullable Long workspaceId) {
+        if( !credentialsService ) {
+            throw new IllegalStateException("Missing Credentials service -- Make sure the 'tower' micronaut environment has been specified in the Wave configuration environment")
+        }
+
+        final keys = credentialsService.findRegistryCreds(registry, userId, workspaceId)
+        final result = keys
+                ? credentialsFactory.create(registry, keys.userName, keys.password)
+                : null as RegistryCredentials
+        return result
+    }
 }

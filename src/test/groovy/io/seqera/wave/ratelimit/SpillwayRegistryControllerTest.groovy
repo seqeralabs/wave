@@ -3,12 +3,17 @@ package io.seqera.wave.ratelimit
 import spock.lang.Shared
 import spock.lang.Specification
 
+import java.util.concurrent.atomic.AtomicInteger
+
+import groovy.json.JsonSlurper
 import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
+import io.micronaut.http.server.util.HttpClientAddressResolver
+import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.RateLimiterConfig
 import io.seqera.wave.model.ContentType
@@ -32,22 +37,45 @@ class SpillwayRegistryControllerTest extends Specification implements DockerRegi
     @Inject
     RateLimiterConfig configuration
 
+    @MockBean(HttpClientAddressResolver)
+    HttpClientAddressResolver addressResolver(){
+        final AtomicInteger counter = new AtomicInteger()
+        Mock(HttpClientAddressResolver){
+            resolve(_) >> {
+                counter.incrementAndGet() % 2 == 0 ? "127.0.0.1" : "10.0.0.1"
+            }
+        }
+    }
+
     def setupSpec() {
         initRegistryContainer(applicationContext)
     }
 
-    void 'should check rate limit in head manifest'() {
+    void 'should check rate limit in ip of anonymous manifest'() {
         when:
-        HttpRequest request = HttpRequest.HEAD("/v2/library/hello-world/manifests/latest").headers({h->
+        HttpRequest request = HttpRequest.GET("/v2/library/hello-world/manifests/sha256:975f4b14f326b05db86e16de00144f9c12257553bba9484fed41f9b6f2257800").headers({h->
             h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
             h.add('Accept', ContentType.DOCKER_MANIFEST_V1_JWS_TYPE)
             h.add('Accept', MediaType.APPLICATION_JSON)
         })
-        (0..configuration.pull.max).each {
+        (0..configuration.pull.anonymous.max).each {
             client.toBlocking().exchange(request, String)
         }
         then:
-        thrown(HttpClientResponseException)
+        true
+
+        when:
+        (0..configuration.pull.anonymous.max*2).each {
+            client.toBlocking().exchange(request, String)
+        }
+
+        then:
+        def e = thrown(HttpClientResponseException)
+        e.message == "Client '/': Too Many Requests"
+        def b = new JsonSlurper().parseText( e.response.body.get() as String)
+        b.errors.size()
+        b.errors.first().code == 'DENIED'
+        b.errors.first().message.contains('Request exceeded pull rate limit for IP')
     }
 
 }

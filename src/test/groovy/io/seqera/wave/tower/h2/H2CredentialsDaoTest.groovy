@@ -43,9 +43,12 @@ class H2CredentialsDaoTest extends Specification {
 
 
         when:
-        def result = credentialsDao.findRegistryCredentialsByUser(USER_ID)
+        def result = credentialsDao.findRegistryCredentialsByUserId(USER_ID)
         then:
         result.size() == 2
+        and:
+        result[0].user.id == USER_ID
+        result[1].user.id == USER_ID
     }
 
     def 'should find creds by workspace' () {
@@ -76,6 +79,7 @@ class H2CredentialsDaoTest extends Specification {
         result.size() == 1
         and:
         result.get(0).id == creds2.id
+        result.get(0).user.id == USER_ID
 
         when:
         result = credentialsDao.findRegistryCredentialsByWorkspaceId(WORKSPACE_2)
@@ -83,6 +87,8 @@ class H2CredentialsDaoTest extends Specification {
         result.size() == 1
         and:
         result.get(0).id == creds3.id
+        result.get(0).user.id == USER_ID
+
     }
 
 }

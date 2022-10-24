@@ -1,5 +1,7 @@
 package io.seqera.wave
 
+import spock.lang.Requires
+
 import groovy.json.JsonSlurper
 import spock.lang.Specification
 
@@ -14,12 +16,13 @@ import java.time.Duration
  */
 class JavaClientTest extends Specification{
 
+    @Requires({System.getenv('DOCKER_USER') && System.getenv('DOCKER_PAT')})
     def 'should call target blob' () {
         given:
-        def username = "pditommaso"
+        def username = System.getenv('DOCKER_USER')
         def IMAGE = 'library/hello-world'
         def DIGEST = 'sha256:feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412'
-        def pat = 'd213e955-3357-4612-8c48-fa5652ad968b'
+        def pat = System.getenv('DOCKER_PAT')
         def basic = "$username:$pat".bytes.encodeBase64()
         def auth = "Basic $basic"
         and:

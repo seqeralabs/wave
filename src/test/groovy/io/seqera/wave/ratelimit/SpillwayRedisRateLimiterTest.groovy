@@ -33,14 +33,24 @@ class SpillwayRedisRateLimiterTest extends Specification implements RedisTestCon
         jedisPool = new JedisPool(redisHostName, redisPort as int)
     }
 
-    void "can acquire 1 resource"() {
+    void "can acquire 1 auth resource"() {
         when:
-        rateLimiter.acquireBuild("test")
+        rateLimiter.acquireBuild(new AcquireRequest("test", null))
         then:
         noExceptionThrown()
         and:
         jedisPool.resource.scan("0").result.size() == 1
-        jedisPool.resource.scan("0").result.first().startsWith('spillway|builds|builds|test|')
+        jedisPool.resource.scan("0").result.first().startsWith('spillway|authenticatedBuilds|perUser|test')
+    }
+
+    void "can acquire 1 anon resource"() {
+        when:
+        rateLimiter.acquireBuild(new AcquireRequest(null, "test"))
+        then:
+        noExceptionThrown()
+        and:
+        jedisPool.resource.scan("0").result.size() == 1
+        jedisPool.resource.scan("0").result.first().startsWith('spillway|anonymousBuilds|perUser|test')
     }
 
     void "can't acquire more resources"() {
@@ -48,8 +58,8 @@ class SpillwayRedisRateLimiterTest extends Specification implements RedisTestCon
         RateLimiterConfig config = applicationContext.getBean(RateLimiterConfig)
 
         when:
-        (0..config.build.max - 1).each {
-            rateLimiter.acquireBuild("test")
+        (0..config.build.authenticated.max - 1).each {
+            rateLimiter.acquireBuild( new AcquireRequest("test", null))
         }
         then:
         noExceptionThrown()
@@ -57,7 +67,7 @@ class SpillwayRedisRateLimiterTest extends Specification implements RedisTestCon
         jedisPool.resource.scan("0").result.size() == 1
 
         when:
-        rateLimiter.acquireBuild("test")
+        rateLimiter.acquireBuild( new AcquireRequest("test", null))
 
         then:
         thrown(SlowDownException)

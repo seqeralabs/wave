@@ -49,9 +49,12 @@ dependencies {
     implementation('io.projectreactor:reactor-core')
     implementation("io.seqera:tower-crypto:22.1.1") { transitive = false }
     implementation 'org.apache.commons:commons-compress:1.21'
+    implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'io.kubernetes:client-java:10.0.1'
     implementation 'com.google.code.gson:gson:2.9.0'
-    
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
+
     implementation("io.micronaut.aws:micronaut-aws-parameter-store")
     implementation "software.amazon.awssdk:ecr"
     // this sts dependency is require by micronaut-aws-parameter-store,
@@ -59,13 +62,14 @@ dependencies {
     runtimeOnly "software.amazon.awssdk:sts"
 
     runtimeOnly("com.h2database:h2")
+    runtimeOnly 'mysql:mysql-connector-java:5.1.49'
     runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
     implementation("io.micronaut.sql:micronaut-jdbc-hikari")
 
     runtimeOnly("io.netty:netty-tcnative-boringssl-static:2.0.0.Final")
     testImplementation "org.apache.commons:commons-compress:1.21"
     testImplementation("org.testcontainers:testcontainers")
-    testImplementation("org.testcontainers:mariadb:1.17.3")
+    testImplementation("org.testcontainers:mysql:1.17.3")
 
     // --
     implementation("ch.qos.logback:logback-classic")
@@ -74,6 +78,11 @@ dependencies {
     implementation 'com.coveo:spillway:2.1.1'
     // distributed
     implementation "io.micronaut.redis:micronaut-redis-lettuce"
+
+    // monitoring
+    implementation "io.micronaut.micrometer:micronaut-micrometer-registry-prometheus"
+    // Also required to enable endpoint
+    implementation "io.micronaut:micronaut-management"
 }
 
 
@@ -103,7 +112,7 @@ micronaut {
 //
 jib {
     from {
-        image = 'public.ecr.aws/ews-network/amazoncorretto:17'
+        image = 'public.ecr.aws/seqera-labs/nf-jdk:corretto-17.0.5'
         platforms {
             platform { architecture = 'amd64'; os = 'linux' }
         }
@@ -146,6 +155,10 @@ test {
         outputs.upToDateWhen {false}
         showStandardStreams = true
     }
+    environment 'DOCKER_USER', project.findProperty('DOCKER_USER') ?: environment['DOCKER_USER']
+    environment 'DOCKER_PAT', project.findProperty('DOCKER_PAT') ?: environment['DOCKER_PAT']
+    environment 'QUAY_USER', project.findProperty('QUAY_USER') ?: environment['QUAY_USER']
+    environment 'QUAY_PAT', project.findProperty('QUAY_PAT') ?: environment['QUAY_PAT']
 }
 
 /** Update version number for backend app and modules */

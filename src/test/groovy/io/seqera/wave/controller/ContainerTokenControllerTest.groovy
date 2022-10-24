@@ -6,7 +6,9 @@ import java.nio.file.Path
 
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.auth.DockerAuthService
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.tower.User
@@ -23,14 +25,14 @@ class ContainerTokenControllerTest extends Specification {
 
         when:
         def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest')
-        def data = controller.makeRequestData(req, null)
+        def data = controller.makeRequestData(req, null, "")
         then:
         data.containerImage == 'ubuntu:latest'
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
         req = new SubmitContainerTokenRequest(towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64')
-        data = controller.makeRequestData(req, new User(id: 100))
+        data = controller.makeRequestData(req, new User(id: 100), "127.0.0.1")
         then:
         data.containerImage == 'ubuntu:latest'
         data.userId == 100
@@ -41,13 +43,13 @@ class ContainerTokenControllerTest extends Specification {
 
         when:
         req = new SubmitContainerTokenRequest()
-        controller.makeRequestData(req, new User(id: 100))
+        controller.makeRequestData(req, new User(id: 100),"")
         then:
         thrown(BadRequestException)
 
         when:
         req = new SubmitContainerTokenRequest(containerImage: 'ubuntu', containerFile: 'from foo')
-        controller.makeRequestData(req, new User(id: 100))
+        controller.makeRequestData(req, new User(id: 100),"")
         then:
         thrown(BadRequestException)
 
@@ -64,7 +66,10 @@ class ContainerTokenControllerTest extends Specification {
     def 'should make a build request' () {
         given:
         def builder = Mock(ContainerBuildService)
-        def controller = new ContainerTokenController(buildService: builder, workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
+        def dockerAuth = Mock(DockerAuthService)
+        def proxyRegistry = Mock(RegistryProxyService)
+        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry,
+                workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
         def DOCKER = 'FROM foo'
         def user = new User(id: 100)
         def cfg = new ContainerConfig()
@@ -74,60 +79,90 @@ class ContainerTokenControllerTest extends Specification {
                 containerConfig: cfg)
 
         when:
-        def data = controller.makeRequestData(req, user)
+        def data = controller.makeRequestData(req, user, "")
         then:
-        1 * builder.buildImage(_) >> 'some/repo:xyz'
+        1 * proxyRegistry.isManifestPresent(_) >> false
+        1 * builder.buildImage(_) >> null
         and:
         data.containerFile == 'FROM foo'
         data.userId == 100
-        data.containerImage ==  'some/repo:xyz'
+        data.containerImage ==  'wave/build:dad96f3a4b65ce5fc6e0fc49296d614b'
+        data.containerConfig == cfg
+        data.platform.toString() == 'linux/arm64/v8'
+    }
+
+    def 'should not run a build request if manifest is present' () {
+        given:
+        def builder = Mock(ContainerBuildService)
+        def dockerAuth = Mock(DockerAuthService)
+        def proxyRegistry = Mock(RegistryProxyService)
+        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry,
+                workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
+        def DOCKER = 'FROM foo'
+        def user = new User(id: 100)
+        def cfg = new ContainerConfig()
+        def req = new SubmitContainerTokenRequest(
+                containerFile: encode(DOCKER),
+                containerPlatform: 'arm64',
+                containerConfig: cfg)
+
+        when:
+        def data = controller.makeRequestData(req, user, "")
+        then:
+        1 * proxyRegistry.isManifestPresent(_) >> true
+        0 * builder.buildImage(_) >> null
+        and:
+        data.containerFile == 'FROM foo'
+        data.userId == 100
+        data.containerImage ==  'wave/build:dad96f3a4b65ce5fc6e0fc49296d614b'
         data.containerConfig == cfg
         data.platform.toString() == 'linux/arm64/v8'
     }
 
     def 'should create build request' () {
         given:
-        def controller = new ContainerTokenController(workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
+        def dockerAuth = Mock(DockerAuthService)
+        def controller = new ContainerTokenController(dockerAuthService: dockerAuth, workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
 
         when:
         def submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'))
-        def build = controller.makeBuildRequest(submit, null)
+        def build = controller.makeBuildRequest(submit, null,"")
         then:
-        build.id == 'acc83dc6d094823894869bf3cf3de17b'
+        build.id == '21159a79b614be796103c7b752fdfbf0'
         build.dockerFile == 'FROM foo'
-        build.targetImage == 'wave/build:acc83dc6d094823894869bf3cf3de17b'
+        build.targetImage == 'wave/build:21159a79b614be796103c7b752fdfbf0'
         build.workDir == Path.of('/some/wsp').resolve(build.id)
         build.platform == ContainerPlatform.of('amd64')
         
         when:
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerPlatform: 'amd64')
-        build = controller.makeBuildRequest(submit, null)
+        build = controller.makeBuildRequest(submit, null, null)
         then:
-        build.id == 'acc83dc6d094823894869bf3cf3de17b'
+        build.id == '21159a79b614be796103c7b752fdfbf0'
         build.dockerFile == 'FROM foo'
-        build.targetImage == 'wave/build:acc83dc6d094823894869bf3cf3de17b'
+        build.targetImage == 'wave/build:21159a79b614be796103c7b752fdfbf0'
         build.workDir == Path.of('/some/wsp').resolve(build.id)
         build.platform == ContainerPlatform.of('amd64')
 
         // using 'arm' platform changes the id
         when:
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerPlatform: 'arm64')
-        build = controller.makeBuildRequest(submit, null)
+        build = controller.makeBuildRequest(submit, null, "")
         then:
-        build.id == 'b3692c4aa2a61e93e4ddde5491477eed'
+        build.id == 'dad96f3a4b65ce5fc6e0fc49296d614b'
         build.dockerFile == 'FROM foo'
-        build.targetImage == 'wave/build:b3692c4aa2a61e93e4ddde5491477eed'
+        build.targetImage == 'wave/build:dad96f3a4b65ce5fc6e0fc49296d614b'
         build.workDir == Path.of('/some/wsp').resolve(build.id)
         build.platform == ContainerPlatform.of('arm64')
 
         when:
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), condaFile: encode('some::conda-recipe'), containerPlatform: 'arm64')
-        build = controller.makeBuildRequest(submit, null)
+        build = controller.makeBuildRequest(submit, null, "")
         then:
-        build.id == 'c4e97d10f83ab8af1b58f4941cc51ceb'
+        build.id == '35d6c9e2004569c9723dfc601b542b28'
         build.dockerFile == 'FROM foo'
         build.condaFile == 'some::conda-recipe'
-        build.targetImage == 'wave/build:c4e97d10f83ab8af1b58f4941cc51ceb'
+        build.targetImage == 'wave/build:35d6c9e2004569c9723dfc601b542b28'
         build.workDir == Path.of('/some/wsp').resolve(build.id)
         build.platform == ContainerPlatform.of('arm64')
     }

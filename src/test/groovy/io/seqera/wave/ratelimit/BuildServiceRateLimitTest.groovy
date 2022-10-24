@@ -38,7 +38,11 @@ class BuildServiceRateLimitTest extends Specification{
         configuration = applicationContext.getBean(RateLimiterConfig)
     }
 
-    def 'should not allow more builds than rate limit' () {
+    def mockUser = Mock(User){
+        getId() >> 1234
+    }
+
+    def 'should not allow more auth builds than rate limit' () {
         given:
         def folder = Files.createTempDirectory('test')
         and:
@@ -47,10 +51,32 @@ class BuildServiceRateLimitTest extends Specification{
         RUN echo hi > hello.txt
         """.stripIndent()
         and:
-        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'), cacheRepo)
+        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'),'{auth}', cacheRepo, "127.0.0.1")
 
         when:
-        (0..configuration.build.max).each {
+        (0..configuration.build.authenticated.max).each {
+            containerBuildService.launchAsync(REQ)
+        }
+        then:
+        thrown(SlowDownException)
+
+        cleanup:
+        folder?.deleteDir()
+    }
+
+    def 'should not allow more anonymous builds than rate limit' () {
+        given:
+        def folder = Files.createTempDirectory('test')
+        and:
+        def dockerfile = """
+        FROM busybox
+        RUN echo hi > hello.txt
+        """.stripIndent()
+        and:
+        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'),'{auth}', cacheRepo,"127.0.0.1")
+
+        when:
+        (0..configuration.build.anonymous.max).each {
             containerBuildService.launchAsync(REQ)
         }
         then:

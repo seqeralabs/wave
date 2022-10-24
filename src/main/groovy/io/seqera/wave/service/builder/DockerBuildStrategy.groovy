@@ -5,11 +5,17 @@ import java.nio.file.Path
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 
+import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.core.ContainerPlatform
 import jakarta.inject.Singleton
+
+import static java.nio.file.StandardOpenOption.CREATE
+import static java.nio.file.StandardOpenOption.WRITE
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
+
 /**
  *  Build a container image using a Docker CLI tool
  *
@@ -26,18 +32,28 @@ class DockerBuildStrategy extends BuildStrategy {
     @Value('${wave.build.timeout:5m}')
     Duration buildTimeout
 
-    @Override
-    BuildResult build(BuildRequest req, String creds) {
+    @Value('${wave.debug}')
+    Boolean debug
 
-        Path credsFile = null
-        if( creds ) {
-            credsFile = req.workDir.resolve('config.json')
-            Files.write(credsFile, creds.bytes)
+    @Override
+    BuildResult build(BuildRequest req) {
+
+        Path configFile = null
+        if( req.configJson ) {
+            configFile = req.workDir.resolve('config.json')
+            Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
         }
 
         // comand the docker build command
-        final buildCmd= buildCmd(req, credsFile)
+        final buildCmd= buildCmd(req, configFile)
         log.debug "Build run command: ${buildCmd.join(' ')}"
+        // save docker cli for debugging purpose
+        if( debug ) {
+            Files.write(req.workDir.resolve('docker.sh'),
+                    buildCmd.join(' ').bytes,
+                    CREATE, WRITE, TRUNCATE_EXISTING)
+        }
+        
         final proc = new ProcessBuilder()
                 .command(buildCmd)
                 .directory(req.workDir.toFile())
@@ -46,8 +62,7 @@ class DockerBuildStrategy extends BuildStrategy {
 
         final completed = proc.waitFor(buildTimeout.toSeconds(), TimeUnit.SECONDS)
         final stdout = proc.inputStream.text
-        return new BuildResult(req.id, completed ? proc.exitValue() : -1, stdout, req.startTime)
-
+        return BuildResult.completed(req.id, completed ? proc.exitValue() : -1, stdout, req.startTime)
     }
 
     protected List<String> buildCmd(BuildRequest req, Path credsFile) {

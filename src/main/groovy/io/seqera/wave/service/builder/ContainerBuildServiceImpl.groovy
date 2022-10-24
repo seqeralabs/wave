@@ -10,18 +10,18 @@ import javax.annotation.PostConstruct
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
-import io.seqera.wave.WaveDefault
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
-import io.seqera.wave.model.ContainerCoordinates
+import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.mail.MailService
 import io.seqera.wave.util.ThreadPoolBuilder
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.util.StringUtils.indent
-import static java.nio.file.StandardOpenOption.APPEND
 import static java.nio.file.StandardOpenOption.CREATE
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
+import static java.nio.file.StandardOpenOption.WRITE
 /**
  * Implements container build service
  *
@@ -32,15 +32,9 @@ import static java.nio.file.StandardOpenOption.CREATE
 @CompileStatic
 class ContainerBuildServiceImpl implements ContainerBuildService {
 
-    @Value('${wave.build.debug}')
+    @Value('${wave.debug}')
     @Nullable
     Boolean debugMode
-
-    /**
-     * The registry repository where the build image will be stored
-     */
-    @Value('${wave.build.repo}')
-    String buildRepo
 
     @Value('${wave.build.image}')
     String buildImage
@@ -48,11 +42,22 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     @Value('${wave.build.timeout:5m}')
     Duration buildTimeout
 
+    @Value('${wave.build.status.duration:`1d`}')
+    private Duration statusDuration
+
+    @Value('${wave.build.status.delay:5s}')
+    private Duration statusDelay
+
+    @Value('${wave.build.cleanup}')
+    @Nullable
+    String cleanup
+
     @Inject
     @Nullable
     private MailService mailService
 
-    private final Map<String,BuildRequest> buildRequests = new HashMap<>()
+    @Inject
+    private BuildStore buildStore
 
     private ExecutorService executor
 
@@ -83,8 +88,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
      *      The container image where the resulting image is going to be hosted
      */
     @Override
-    String buildImage(BuildRequest request) {
-        return getOrSubmit(request)
+    void buildImage(BuildRequest request) {
+        checkOrSubmit(request)
     }
 
     /**
@@ -99,76 +104,73 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
      */
     @Override
     CompletableFuture<BuildResult> buildResult(String targetImage) {
-        return buildRequests.get(targetImage)?.result
-    }
-
-    protected String credsJson(Set<String> registries) {
-        final result = new StringBuilder()
-        for( String reg : registries ) {
-            final info = lookupService.lookup(reg)
-            final creds = credentialsProvider.getCredentials(reg)
-            if( !creds ) {
-                return null
-            }
-            final encode = "${creds.username}:${creds.password}".getBytes().encodeBase64()
-            if( result.size() )
-                result.append(',')
-            result.append("\"${info.getHost()}\":{\"auth\":\"$encode\"}")
-        }
-        return """{"auths":{$result}}"""
-    }
-
-    static protected Set<String> findRepositories(String dockerfile) {
-        final result = new HashSet()
-        if( !dockerfile )
-            return result
-        for( String line : dockerfile.readLines()) {
-            if( !line.trim().toLowerCase().startsWith('from '))
-                continue
-            final cords = ContainerCoordinates.parse(line.trim().substring(5))
-            final reg = cords.registry ?: WaveDefault.DOCKER_IO
-            result.add(reg)
-        }
-        return result
+        return buildStore
+                .awaitBuild(targetImage)
     }
 
     protected BuildResult launch(BuildRequest req) {
-        // create the workdir path
-        Files.createDirectories(req.workDir)
-        // save the dockerfile
-        final dockerfile = req.workDir.resolve('Dockerfile')
-        Files.write(dockerfile, req.dockerFile.bytes, CREATE, APPEND)
-        // save the conda file
-        if( req.condaFile ) {
-            final condaFile = req.workDir.resolve('conda.yml')
-            Files.write(condaFile, req.condaFile.bytes, CREATE, APPEND)
-        }
-        // find repos
-        final repos = findRepositories(req.dockerFile) + buildRepo
-        
-        // create creds file for target repo
-        final creds = credsJson(repos)
-
         // launch an external process to build the container
+        BuildResult resp=null
         try {
-            final resp = buildStrategy.build(req, creds)
+            // create the workdir path
+            Files.createDirectories(req.workDir)
+            // save the dockerfile
+            final dockerfile = req.workDir.resolve('Dockerfile')
+            Files.write(dockerfile, req.dockerFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            // save the conda file
+            if( req.condaFile ) {
+                final condaFile = req.workDir.resolve('conda.yml')
+                Files.write(condaFile, req.condaFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            }
+
+            resp = buildStrategy.build(req)
             log.info "== Build completed with status=$resp.exitStatus; stdout: (see below)\n${indent(resp.logs)}"
             return resp
         }
-        catch (Exception e) {
-            log.error "== Ouch! Unable to build container request=$req", e
-            return new BuildResult(req.id, -1, e.message, req.startTime)
+        catch (Throwable e) {
+            log.error "== Ouch! Unable to build container req=$req", e
+            return resp = BuildResult.failed(req.id, e.message, req.startTime)
         }
         finally {
-            if( !debugMode )
+            // use a short time-to-live for failed build
+            // this is needed to allow re-try builds failed for
+            // temporary error conditions e.g. expired credentials
+            final ttl = resp.failed()
+                    ? statusDelay.multipliedBy(10)
+                    : statusDuration
+            // update build status store
+            buildStore.storeBuild(req.targetImage, resp, ttl)
+            // cleanup build context
+            if( shouldCleanup(resp) )
                 buildStrategy.cleanup(req)
         }
     }
 
+    protected boolean shouldCleanup(BuildResult result) {
+        if( cleanup==null )
+            return !debugMode
+        if( cleanup == 'true' )
+            return true
+        if( cleanup == 'false' )
+            return false
+        if( cleanup.toLowerCase() == 'onsuccess' ) {
+            return result?.exitStatus==0
+        }
+        log.debug "Invalid cleanup value: '$cleanup'"
+        return true
+    }
+
     protected CompletableFuture<BuildResult> launchAsync(BuildRequest request) {
-
-        rateLimiterService?.acquireBuild(request?.user?.id?.toString()?:'anonymous')
-
+        // check the build rate limit
+        try {
+            if( rateLimiterService )
+                rateLimiterService.acquireBuild(new AcquireRequest(request.user?.id?.toString(), request.ip))
+        }
+        catch (Exception e) {
+            buildStore.removeBuild(request.targetImage)
+            throw e
+        }
+        // launch the build async
         CompletableFuture
                 .<BuildResult>supplyAsync(() -> launch(request), executor)
                 .thenApply((result) -> { sendCompletionEmail(request,result); return result })
@@ -176,26 +178,32 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     protected sendCompletionEmail(BuildRequest request, BuildResult result) {
         try {
-            mailService?.sendCompletionMail(request, result)
+            mailService?.sendCompletionEmail(request, result)
         }
         catch (Exception e) {
             log.warn "Unable to send completion notication - reason: ${e.message?:e}"
         }
     }
 
-    protected String getOrSubmit(BuildRequest request) {
-        // use the target image as the cache key
-        synchronized (buildRequests) {
-            if( !buildRequests.containsKey(request.targetImage) ) {
-                log.info "== Submit build request request: $request"
-                request.result = launchAsync(request)
-                buildRequests.put(request.targetImage, request)
-            }
-            else {
-                log.info "== Hit build cache for request: $request"
-            }
-            return request.targetImage
+    protected void checkOrSubmit(BuildRequest request) {
+        // try to store a new build status for the given target image
+        // this returns true if and only if such container image was not set yet
+        final ret1 = BuildResult.create(request)
+        if( buildStore.storeIfAbsent(request.targetImage, ret1) ) {
+            // go ahead
+            log.info "== Submit build request request: $request"
+            launchAsync(request)
+            return
         }
+        // since it was unable to initialise the build result status
+        // this means the build status already exists, retrieve it
+        final ret2 = buildStore.getBuild(request.targetImage)
+        if( ret2 ) {
+            log.info "== Hit build cache for request: $request"
+            return
+        }
+        // invalid state
+        throw new IllegalStateException("Unable to determine build status for '$request.targetImage'")
     }
 
 }

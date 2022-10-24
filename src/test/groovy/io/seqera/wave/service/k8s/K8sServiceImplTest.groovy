@@ -4,6 +4,7 @@ import spock.lang.Specification
 
 import java.nio.file.Path
 
+import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.openapi.models.V1EmptyDirVolumeSource
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
@@ -271,7 +272,9 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'bar',
                 'wave.build.k8s.storage.mountPath': '/build',
-                'wave.build.k8s.node-selector': ['cpu':'tiny']
+                'wave.build.k8s.node-selector': ['cpu':'tiny'],
+                'wave.build.k8s.resources.requests.cpu': '2',
+                'wave.build.k8s.resources.requests.memory': '4Gi',
         ]
         and:
         def ctx = ApplicationContext.run(PROPS)
@@ -281,6 +284,9 @@ class K8sServiceImplTest extends Specification {
         def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null)
         then:
         result.spec.nodeSelector.toString() == PROPS['wave.build.k8s.node-selector'].toString()
+        and:
+        result.spec.getContainers().get(0).getResources().getRequests().get('cpu') == new Quantity('2')
+        result.spec.getContainers().get(0).getResources().getRequests().get('memory') == new Quantity('4Gi')
         and:
         ctx.close()
     }

@@ -23,7 +23,7 @@ class MailServiceImplTest extends Specification {
     def 'should build build mail' () {
         given:
         def recipient = 'foo@gmail.com'
-        def result = new BuildResult('12345', 0, 'pull foo:latest', Instant.now())
+        def result = BuildResult.completed('12345', 0, 'pull foo:latest', Instant.now())
         def request= Mock(BuildRequest) {
             getDockerFile() >> 'from foo';
             getTargetImage() >> 'wave/build:xyz'

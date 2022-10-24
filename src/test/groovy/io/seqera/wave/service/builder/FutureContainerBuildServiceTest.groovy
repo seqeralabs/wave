@@ -1,6 +1,5 @@
 package io.seqera.wave.service.builder
 
-
 import spock.lang.Specification
 import spock.lang.Timeout
 
@@ -33,14 +32,14 @@ class FutureContainerBuildServiceTest extends Specification {
     BuildStrategy fakeBuildStrategy(){
         new BuildStrategy() {
             @Override
-            BuildResult build(BuildRequest req, String creds) {
+            BuildResult build(BuildRequest req) {
                 new BuildResult("", exitCode, "a fake build result in a test", Instant.now(), Duration.ofSeconds(3))
             }
         }
     }
 
 
-    @Timeout(5)
+    @Timeout(30)
     def 'should wait to build container completion' () {
         given:
         def folder = Files.createTempDirectory('test')
@@ -50,16 +49,16 @@ class FutureContainerBuildServiceTest extends Specification {
         RUN echo $EXIT_CODE > hello.txt
         """.stripIndent()
         and:
-        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'), cacheRepo)
+        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User),ContainerPlatform.of('amd64'),'{auth}', cacheRepo, "")
 
         when:
         exitCode = EXIT_CODE
-        def result = service.getOrSubmit(REQ)
+        service.checkOrSubmit(REQ)
         then:
-        result
+        noExceptionThrown()
 
         when:
-        def status = service.buildResult(result).get()
+        def status = service.buildResult(REQ.targetImage).get()
         then:
         status.getExitStatus() == EXIT_CODE
 

@@ -2,7 +2,7 @@ package io.seqera.wave.service.builder
 
 import java.nio.file.Path
 import java.time.Instant
-import java.util.concurrent.CompletableFuture
+import java.time.OffsetDateTime
 
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
@@ -67,34 +67,48 @@ class BuildRequest {
     final Instant startTime
 
     /**
-     * Build jon unique id
+     * Build job unique id
      */
     final String job
 
     /**
-     * Reference to the future build job result
+     * The client IP if available
      */
-    volatile CompletableFuture<BuildResult> result
+    final String ip
 
-    BuildRequest(String dockerFile, Path workspace, String repo, String condaFile, User user, ContainerPlatform platform, String cacheRepo) {
-        this.id = computeDigest(dockerFile,condaFile,platform)
-        this.dockerFile = dockerFile
+    /**
+     * Docker config json holding repository authentication
+     */
+    final String configJson
+
+    /**
+     * The time offset at the user timezone
+     */
+    final String offsetId
+
+    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, User user, ContainerPlatform platform, String configJson, String cacheRepo, String ip, String offsetId = null) {
+        this.id = computeDigest(containerFile, condaFile, platform, repo)
+        this.dockerFile = containerFile
         this.condaFile = condaFile
         this.targetImage = "${repo}:${id}"
         this.user = user
         this.platform = platform
+        this.configJson = configJson
         this.cacheRepository = cacheRepo
         this.workDir = workspace.resolve(id).toAbsolutePath()
+        this.offsetId = offsetId ?: OffsetDateTime.now().offset.id
         this.startTime = Instant.now()
         this.job = "${id}-${startTime.toEpochMilli().toString().md5()[-5..-1]}"
+        this.ip = ip
     }
 
-    static private String computeDigest(String dockerFile, String condaFile, ContainerPlatform platform) {
-        def content = platform.toString()
-        content += dockerFile
-        if( condaFile )
-            content += condaFile
-        return DigestFunctions.md5(content)
+    static private String computeDigest(String containerFile, String condaFile, ContainerPlatform platform, String repository) {
+        final attrs = new LinkedHashMap<String,Object>(10)
+        attrs.containerFile = containerFile
+        attrs.condaFile = condaFile
+        attrs.platform =  platform
+        attrs.repository = repository
+        return DigestFunctions.md5(attrs)
     }
 
     @Override

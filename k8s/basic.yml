@@ -1,0 +1,78 @@
+##
+## Basic Wave deplyoment into a Kubernetes cluster
+##
+---
+# the wave app main config settings
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: wave-cfg
+  labels:
+    app: wave-cfg
+data:
+  config.yml: |
+    wave:
+      debug: true
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wave
+  labels:
+    app: wave-app
+spec:
+  selector:
+    matchLabels:
+      app: wave-app
+  template:
+    metadata:
+      labels:
+        app: wave-app
+    spec:
+      containers:
+        - image: 195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/app:0.21.5
+          name: wave-app
+          ports:
+            - containerPort: 9090
+          env:
+            - name: MICRONAUT_ENV_DEDUCTION
+              value: "false"
+            - name: MICRONAUT_ENVIRONMENTS
+              value: "prometheus"
+          workingDir: "/work"
+          volumeMounts:
+            - name: wave-cfg
+              mountPath: /work/config.yml
+              subPath: "config.yml"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9090
+            initialDelaySeconds: 5
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9090
+            initialDelaySeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 10
+      volumes:
+        - name: wave-cfg
+          configMap:
+            name: wave-cfg
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wave
+spec:
+  ports:
+    - port: 80
+      targetPort: 9090
+      protocol: TCP
+  type: NodePort
+  selector:
+    app: "wave-app"
+...

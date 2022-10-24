@@ -18,7 +18,6 @@ class ValidateController {
         Mono.just(
             loginService.validateUser(request.registry, request.userName, request.password)
         )
-
     }
 
 }

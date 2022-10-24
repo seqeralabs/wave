@@ -2,6 +2,7 @@ package io.seqera.wave.controller
 
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
+import java.util.function.Consumer
 import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
@@ -17,6 +18,7 @@ import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Error
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.server.types.files.StreamedFile
+import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.seqera.wave.ErrorHandler
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RegistryProxyService.DelegateResponse
@@ -24,6 +26,7 @@ import io.seqera.wave.core.RouteHandler
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.exchange.RegistryErrorResponse
+import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.storage.DigestStore
@@ -42,6 +45,7 @@ import reactor.core.publisher.Mono
 @Controller("/v2")
 class RegistryProxyController {
 
+    @Inject HttpClientAddressResolver addressResolver
     @Inject RegistryProxyService proxyService
     @Inject Storage storage
     @Inject RouteHandler routeHelper
@@ -67,6 +71,11 @@ class RegistryProxyController {
     CompletableFuture<MutableHttpResponse<?>> handleGet(String url, HttpRequest httpRequest) {
         log.info "> Request [$httpRequest.method] $httpRequest.path"
         final route = routeHelper.parse("/v2/" + url)
+
+        if( route.manifest && route.digest ){
+            String ip = addressResolver.resolve(httpRequest)
+            rateLimiterService?.acquirePull( new AcquireRequest(route.request?.userId?.toString(), ip) )
+        }
 
         // check if it's a container under build
         final future = handleFutureBuild0(route, httpRequest)
@@ -119,10 +128,16 @@ class RegistryProxyController {
         }
 
         final type = route.isManifest() ? 'manifest' : 'blob'
-        log.debug "Pulling $type from remote host: $route.path"
-        def headers = httpRequest.headers.asMap() as Map<String, List<String>>
-        def response = proxyService.handleRequest(route, headers)
-        fromDelegateResponse(response)
+        final headers = httpRequest.headers.asMap() as Map<String, List<String>>
+        final resp = proxyService.handleRequest(route, headers)
+        if( resp.isRedirect() ) {
+            log.debug "Redirecting $type request '$route.path' to '$resp.location'"
+            return fromRedirectResponse(resp)
+        }
+        else {
+            log.debug "Pulling $type from remote host: '$route.path'"
+            return fromDelegateResponse(resp)
+        }
     }
 
     protected DigestStore manifestForPath(RoutePath route, HttpRequest httpRequest) {
@@ -145,10 +160,6 @@ class RegistryProxyController {
             throw new DockerRegistryException("Invalid request HEAD '$httpRequest.path'", 400, 'UNKNOWN')
         }
 
-        if( route.manifest && !route.digest){
-            rateLimiterService?.acquirePull(route.request?.userId?.toString() ?: 'anonymous')
-        }
-
         final entry = manifestForPath(route, httpRequest)
         if( !entry ) {
             throw new DockerRegistryException("Unable to find cache manifest for '$httpRequest.path'", 400, 'UNKNOWN')
@@ -168,6 +179,12 @@ class RegistryProxyController {
                 .headers(headers)
     }
 
+    MutableHttpResponse<?>fromRedirectResponse(final DelegateResponse delegateResponse) {
+        HttpResponse
+                .status(HttpStatus.valueOf(delegateResponse.statusCode))
+                .headers(toMutableHeaders(delegateResponse.headers, [Connection: 'close'])) // <-- make sure to return connection: close header otherwise docker hangs
+    }
+
     MutableHttpResponse<?>fromDelegateResponse(final DelegateResponse delegateResponse){
 
         final Long contentLength = delegateResponse.headers
@@ -176,17 +193,27 @@ class RegistryProxyController {
 
         HttpResponse
                 .status(HttpStatus.valueOf(delegateResponse.statusCode))
-                .body( fluxInputStream )
-                .headers({MutableHttpHeaders mutableHttpHeaders ->
-                    delegateResponse.headers.each {entry->
-                        entry.value.each{ value ->
-                            mutableHttpHeaders.add(entry.key, value)
-                        }
-                    }
-                })
+                .body(fluxInputStream)
+                .headers(toMutableHeaders(delegateResponse.headers))
     }
 
-    static StreamedFile createFluxFromChunkBytes(InputStream inputStream, Long size){
+    static protected Consumer<MutableHttpHeaders> toMutableHeaders(Map<String,List<String>> headers, Map<String,String> override=Collections.emptyMap()) {
+        new Consumer<MutableHttpHeaders>() {
+            @Override
+            void accept(MutableHttpHeaders mutableHttpHeaders) {
+                for( Map.Entry<String,List<String>> entry : headers ) {
+                    for( String value : entry.value )
+                        mutableHttpHeaders.add(entry.key, value)
+                }
+                // override headers with specified value
+                for( Map.Entry<String,String> entry : override ) {
+                    mutableHttpHeaders.add(entry.key, entry.value)
+                }
+            }
+        }
+    }
+
+    static protected StreamedFile createFluxFromChunkBytes(InputStream inputStream, Long size){
         if( size )
             new StreamedFile(inputStream, MediaType.APPLICATION_OCTET_STREAM_TYPE, Instant.now().toEpochMilli(), size)
         else

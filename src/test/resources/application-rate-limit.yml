@@ -1,8 +1,8 @@
 ---
 rate-limit:
   build:
-    max: 2
-    duration: 1m
+    anonymous: 2/1m
+    authenticated: 2/1m
   pull:
-    max: 2
-    duration: 1m
+    anonymous: 2/1m
+    authenticated: 2/1m

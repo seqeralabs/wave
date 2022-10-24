@@ -1,7 +1,6 @@
 package io.seqera.wave.service.mail
 
 import java.time.Duration
-import java.time.Instant
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -15,6 +14,7 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -35,12 +35,12 @@ class MailServiceImpl implements MailService {
     private String serverUrl
 
     @Override
-    void sendCompletionMail(BuildRequest request, BuildResult build) {
+    void sendCompletionEmail(BuildRequest request, BuildResult build) {
         // send to user email address or fallback to the system `mail.from` address
         final user = request.user
         final recipient = user ? user.email : config.from
         if( recipient ) {
-            final result = build ?: BuildResult.UNKNOWN
+            final result = build ?: BuildResult.unknown()
             final mail = buildCompletionMail(request, result, recipient)
             spooler.sendMail(mail)
         }
@@ -54,9 +54,10 @@ class MailServiceImpl implements MailService {
         final binding = new HashMap(5)
         final status = result.exitStatus==0 ? 'DONE': 'FAILED'
         binding.build_id = result.id
+        binding.build_user =  "${req.user ? req.user.userName : 'n/a'} (${req.ip})"
         binding.build_success = result.exitStatus==0
         binding.build_exit_status = result.exitStatus
-        binding.build_time = formatTimestamp(result.startTime) ?: '-'
+        binding.build_time = formatTimestamp(result.startTime, req.offsetId) ?: '-'
         binding.build_duration = formatDuration(result.duration) ?: '-'
         binding.build_image = req.targetImage
         binding.build_platform = req.platform
@@ -81,9 +82,4 @@ class MailServiceImpl implements MailService {
         return String.format("%d:%02d", minutes, seconds);
     }
 
-    protected String formatTimestamp(Instant instant) {
-        if( instant==null )
-            return null
-        return instant.toString()
-    }
 }

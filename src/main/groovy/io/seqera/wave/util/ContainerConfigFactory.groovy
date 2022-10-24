@@ -28,7 +28,7 @@ class ContainerConfigFactory {
     }
 
     ContainerConfig from(String text) {
-        log.debug "ContainerConfig from inputStream"
+        log.trace "ContainerConfig from inputStream"
         return parse(text)
     }
 
@@ -36,7 +36,7 @@ class ContainerConfigFactory {
     protected ContainerConfig parse(String text){
         final type = new TypeToken<ContainerConfig>(){}.getType()
         final ContainerConfig containerConfig = new Gson().fromJson(text, type)
-        log.debug "Layer info: $containerConfig"
+        log.trace "Layer info: $containerConfig"
         return containerConfig
     }
 }

@@ -1,5 +1,4 @@
 package io.seqera.wave
-
 /**
  * Wave app defaults
  *
@@ -7,6 +6,8 @@ package io.seqera.wave
  */
 interface WaveDefault {
 
-    final static String DOCKER_IO = 'docker.io'
+    final static public String DOCKER_IO = 'docker.io'
+    final static public String DOCKER_REGISTRY_1 = 'https://registry-1.docker.io'
+    final static public String DOCKER_INDEX_V1 = 'https://index.docker.io/v1/'
 
 }

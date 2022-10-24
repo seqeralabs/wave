@@ -1,0 +1,4 @@
+---
+datasources:
+  default:
+    dialect: MYSQL

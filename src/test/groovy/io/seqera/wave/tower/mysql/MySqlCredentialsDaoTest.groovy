@@ -44,7 +44,7 @@ class MySqlCredentialsDaoTest extends Specification {
 
 
         when:
-        def result = credentialsDao.findRegistryCredentialsByUser(USER_ID)
+        def result = credentialsDao.findRegistryCredentialsByUserId(USER_ID)
         then:
         result.size() == 2
     }

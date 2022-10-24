@@ -1,17 +1,18 @@
 package io.seqera.wave.controller
 
-
 import java.nio.file.Path
 import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
+import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
+import io.micronaut.http.server.util.HttpClientAddressResolver
+import io.seqera.wave.auth.DockerAuthService
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
-import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
@@ -33,24 +34,30 @@ class TestController {
     String workspace
 
     @Value('${wave.build.repo}')
-    String buildRepo
+    String defaultBuildRepo
 
     @Value('${wave.build.cache}')
-    String cacheRepo
+    String defaultCacheRepo
 
     @Inject
     @Value('${wave.allowAnonymous}')
     Boolean allowAnonymous
 
-
     @Inject
     UserService userService
 
-    @Inject @Nullable
-    RateLimiterService rateLimiterService
+    @Inject
+    DockerAuthService dockerAuthService
+
+    @Inject HttpClientAddressResolver addressResolver
 
     @Get('/test-build')
-    HttpResponse<String> testBuild(@Nullable String platform, @Nullable String repo, @Nullable String cache, @Nullable String accessToken) {
+    HttpResponse<String> testBuild(@Nullable String platform,
+                                   @Nullable String repo,
+                                   @Nullable String cache,
+                                   @Nullable String accessToken,
+                                   @Nullable Long workspaceId,
+                                    HttpRequest httpRequest) {
         if( !accessToken && !allowAnonymous )
             throw new BadRequestException("Missing user access token")
 
@@ -60,26 +67,29 @@ class TestController {
         if( accessToken && !user )
             throw new BadRequestException("Cannot find user for given access token")
 
-        if( rateLimiterService ) {
-            final key = user?.id?.toString() ?: 'anonymous'
-            rateLimiterService.acquireBuild(key)
-        }
-
         final String dockerFile = """\
             FROM quay.io/nextflow/bash
             RUN echo "Look ma' building 🐳🐳 on the fly!" > /hello.txt
             ENV NOW=${System.currentTimeMillis()}
             """
 
+        final ip = addressResolver.resolve(httpRequest)
+        final buildRepo = repo ?: defaultBuildRepo
+        final cacheRepo = cache ?: defaultCacheRepo
+        final configJson = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, cacheRepo, user?.id, workspaceId)
+
         final req =  new BuildRequest( dockerFile,
                 Path.of(workspace),
-                repo ?: buildRepo,
+                buildRepo,
                 null,
                 user,
                 ContainerPlatform.of(platform),
-                cache ?: cacheRepo )
-        final resp = builderService.buildImage(req)
-        return HttpResponse.ok(resp)
+                configJson,
+                cacheRepo,
+                ip)
+
+        builderService.buildImage(req)
+        return HttpResponse.ok(req.targetImage)
     }
 
 }
