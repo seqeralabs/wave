@@ -64,12 +64,12 @@ class DockerBuilderStrategyTest extends Specification {
                 '-v', '/work/creds.json:/kaniko/.docker/config.json:ro',
                 '--platform', 'linux/amd64',
                 'gcr.io/kaniko-project/executor:v1.9.1',
-                '--dockerfile', '/work/foo/371f47bac77d67d55d29e0c111c508ef/Dockerfile',
-                '--context', '/work/foo/371f47bac77d67d55d29e0c111c508ef',
-                '--destination', 'repo:371f47bac77d67d55d29e0c111c508ef',
+                '--dockerfile', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f/Dockerfile',
+                '--context', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f',
+                '--destination', 'repo:17e58f4434c26104c2cf9f0eb8fbc16f',
                 '--cache=true',
-                '--cache-repo', 'reg.io/wave/build/cache',
-                '--customPlatform', 'linux/amd64'
+                '--customPlatform', 'linux/amd64',
+                '--cache-repo', 'reg.io/wave/build/cache'
         ]
 
         cleanup:
@@ -93,6 +93,7 @@ class DockerBuilderStrategyTest extends Specification {
                 '--context', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f',
                 '--destination', 'repo:17e58f4434c26104c2cf9f0eb8fbc16f',
                 '--cache=true',
+                '--customPlatform', 'linux/amd64',
                 '--cache-repo', 'reg.io/wave/build/cache',
                 '--compressed-caching', 'false'
         ]
