@@ -269,15 +269,15 @@ class K8sServiceImpl implements K8sService {
      */
     @Override
     @CompileDynamic
-    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, String creds) {
-        final spec = buildSpec(name, containerImage, args, workDir, creds)
+    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, String creds, Map<String,String> nodeSelector) {
+        final spec = buildSpec(name, containerImage, args, workDir, creds, nodeSelector)
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec, null, null, null)
     }
 
     @CompileDynamic
-    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, String creds) {
+    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, String creds, Map<String,String> nodeSelector) {
 
         // required volumes
         final mounts = new ArrayList<V1VolumeMount>(5)
