@@ -235,10 +235,11 @@ class K8sServiceImpl implements K8sService {
      *
      * @return A {@link V1VolumeMount} representing the docker config for kaniko
      */
-    protected V1VolumeMount mountDockerConfig() {
+    protected V1VolumeMount mountDockerConfig(Path credsFile) {
         new V1VolumeMount()
                 .name('docker-config')
-                .mountPath('/kaniko/.docker/')
+                .mountPath('/kaniko/.docker/config.json')
+                .subPath("$credsFile")
     }
 
     /**
@@ -269,15 +270,16 @@ class K8sServiceImpl implements K8sService {
      */
     @Override
     @CompileDynamic
-    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, String creds) {
+    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds) {
         final spec = buildSpec(name, containerImage, args, workDir, creds)
+        println spec.toString()
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec, null, null, null)
     }
 
     @CompileDynamic
-    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, String creds) {
+    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path creds) {
 
         // required volumes
         final mounts = new ArrayList<V1VolumeMount>(5)
@@ -287,7 +289,7 @@ class K8sServiceImpl implements K8sService {
         volumes.add(volumeBuildStorage(workDir, storageClaimName))
 
         if( creds ){
-            mounts.add(0, mountDockerConfig())
+            mounts.add(0, mountDockerConfig(creds))
             volumes.add(0, volumeDockerConfig())
         }
 
@@ -311,12 +313,14 @@ class K8sServiceImpl implements K8sService {
                 .addAllToVolumes(volumes)
 
         if( creds ) {
+            /*
             spec.addNewInitContainer()
                     .withName('init-secret')
                     .withImage('busybox')
                     .withCommand(['sh', '-c', "echo '$creds' > /kaniko/.docker/config.json".toString()])
                     .withVolumeMounts(mountDockerConfig())
                     .endInitContainer()
+             */
         }
 
         final requests = new V1ResourceRequirements()

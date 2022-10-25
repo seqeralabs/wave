@@ -118,7 +118,7 @@ jib {
         }
     }
     to {
-        image = "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/app:$version"
+        image = findProperty("jibRepo") ?: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/app:$version"
     }
     container {
         creationTime = "${OffsetDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME)}"
@@ -140,7 +140,7 @@ jib {
 }
 
 run{
-    def envs = findProperty('envs') ?: "dev,h2,mail"
+    def envs = findProperty('envs') ?: "dev,h2,mail,dev-k8s"
     def args = ["-Dmicronaut.environments=$envs"]
     if( environment['JVM_OPTS'] ) args.add(environment['JVM_OPTS'])
     jvmArgs args
