@@ -1,9 +1,10 @@
 wave:
+  debug: true
   build:
-    debug: true
     k8s:
       configPath: "${HOME}/.kube/config"
       context: 'docker-desktop'
       namespace: 'wave-local'
-      volumeClaim: 'wave-logs'
-
+      storage:
+        mountPath: "/Users/pditommaso/nf-tower-stack/wave/k8s/data"
+    workspace: "/Users/pditommaso/nf-tower-stack/wave/k8s/data"

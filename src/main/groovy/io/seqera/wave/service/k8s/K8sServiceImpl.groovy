@@ -88,8 +88,6 @@ class K8sServiceImpl implements K8sService {
     private void init() {
         if( storageClaimName && !storageMountPath )
             throw new IllegalArgumentException("Missing 'wave.build.k8s.storage.mountPath' configuration attribute")
-        if( !storageClaimName && storageMountPath )
-            throw new IllegalArgumentException("Missing 'wave.build.k8s.storage.claimName' configuration attribute")
         if( storageMountPath ) {
             if( !buildWorkspace )
                 throw new IllegalArgumentException("Missing 'wave.build.workspace' configuration attribute")
@@ -204,7 +202,7 @@ class K8sServiceImpl implements K8sService {
         if( storageMountPath ) {
             // check sub-path
             final rel = Path.of(storageMountPath).relativize(workDir).toString()
-            if (rel)
+            if (rel && storageClaimName)
                 vol.subPath(rel)
         }
         return vol

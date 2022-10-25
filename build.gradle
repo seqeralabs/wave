@@ -140,7 +140,7 @@ jib {
 }
 
 run{
-    def envs = findProperty('envs') ?: "dev,h2,mail"
+    def envs = findProperty('envs') ?: "dev,h2,mail,dev-k8s"
     def args = ["-Dmicronaut.environments=$envs"]
     if( environment['JVM_OPTS'] ) args.add(environment['JVM_OPTS'])
     jvmArgs args
