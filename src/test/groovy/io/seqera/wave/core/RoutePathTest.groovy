@@ -2,6 +2,8 @@ package io.seqera.wave.core
 
 import spock.lang.Specification
 
+import io.seqera.wave.model.ContainerCoordinates
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -41,6 +43,16 @@ class RoutePathTest extends Specification{
         'blobs' | 'docker.io'   | 'busybox' | 'latest'  | 'docker.io/busybox'       | 'docker.io/busybox:latest'
         'blobs' | 'quay.io'     | 'busybox' | 'v1'      | 'quay.io/busybox'         | 'quay.io/busybox:v1'
 
+    }
+
+    def 'should get manifest path' () {
+        expect:
+        RoutePath.v2manifestPath(ContainerCoordinates.parse(CONTAINER)).path == PATH
+
+        where:
+        CONTAINER               | PATH
+        'ubuntu'                | '/v2/library/ubuntu/manifests/latest'
+        'quay.io/foo/bar:v1.0'  | '/v2/foo/bar/manifests/v1.0'
     }
 
 }

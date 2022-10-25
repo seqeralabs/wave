@@ -3,6 +3,7 @@ package io.seqera.wave.core
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
+import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.ContainerRequestData
 
 import static io.seqera.wave.WaveDefault.DOCKER_IO
@@ -38,6 +39,10 @@ class RoutePath implements ContainerPath {
     static RoutePath v2path(String type, String registry, String image, String ref, ContainerRequestData request=null) {
         assert type in ALLOWED_TYPES, "Unknown container path type: '$type'"
         new RoutePath(type, registry ?: DOCKER_IO, image, ref, "/v2/$image/$type/$ref", request)
+    }
+
+    static RoutePath v2manifestPath(ContainerCoordinates container) {
+        new RoutePath('manifests', container.registry, container.image, container.reference, "/v2/${container.image}/manifests/${container.reference}")
     }
 
     static RoutePath empty() {

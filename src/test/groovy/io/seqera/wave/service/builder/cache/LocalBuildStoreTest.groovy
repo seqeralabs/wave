@@ -20,7 +20,7 @@ class LocalBuildStoreTest extends Specification {
 
     def 'should get and put key values' () {
         given:
-        def cache = new LocalBuildStore(delay: Duration.ofSeconds(5), timeout: Duration.ofSeconds(30))
+        def cache = new LocalBuildStore(delay: Duration.ofSeconds(5), timeout: Duration.ofSeconds(30), duration: Duration.ofSeconds(60))
         
         expect:
         cache.getBuild('foo') == null
@@ -31,9 +31,38 @@ class LocalBuildStoreTest extends Specification {
         cache.getBuild('foo') == one
     }
 
+    def 'should retain value for max duration' () {
+        given:
+        def DURATION = Duration.ofSeconds(2)
+        def cache = new LocalBuildStore(delay: Duration.ofSeconds(5), timeout: Duration.ofSeconds(30), duration: DURATION)
+
+        expect:
+        cache.getBuild('foo') == null
+
+        when:
+        cache.storeBuild('foo', one)
+        then:
+        cache.getBuild('foo') == one
+        and:
+        sleep DURATION.toMillis().intdiv(2)
+        cache.getBuild('foo') == one
+        and:
+        sleep DURATION.toMillis()
+        cache.getBuild('foo') == null
+
+        when:
+        cache.storeBuild('foo', one, Duration.ofSeconds(1))
+        then:
+        sleep 500
+        cache.getBuild('foo') == one
+        and:
+        sleep 1_000
+        cache.getBuild('foo') == null
+    }
+
     def 'should store if absent' () {
         given:
-        def cache = new LocalBuildStore(delay: Duration.ofSeconds(5), timeout: Duration.ofSeconds(30))
+        def cache = new LocalBuildStore(delay: Duration.ofSeconds(5), timeout: Duration.ofSeconds(30), duration: Duration.ofSeconds(60))
 
         expect:
         cache.storeIfAbsent('foo', zero)
@@ -50,7 +79,7 @@ class LocalBuildStoreTest extends Specification {
 
     def 'should remove a build entry' () {
         given:
-        def cache = new LocalBuildStore(delay: Duration.ofSeconds(5), timeout: Duration.ofSeconds(30))
+        def cache = new LocalBuildStore(delay: Duration.ofSeconds(5), timeout: Duration.ofSeconds(30), duration: Duration.ofSeconds(60))
 
         when:
         cache.storeBuild('foo', zero)
@@ -66,7 +95,7 @@ class LocalBuildStoreTest extends Specification {
 
     def 'should await for a value' () {
         given:
-        def cache = new LocalBuildStore(delay: Duration.ofSeconds(5), timeout: Duration.ofSeconds(30))
+        def cache = new LocalBuildStore(delay: Duration.ofSeconds(5), timeout: Duration.ofSeconds(30), duration: Duration.ofSeconds(60))
 
         expect:
         cache.awaitBuild('foo') == null

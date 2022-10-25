@@ -2,6 +2,7 @@ package io.seqera.wave.service.builder
 
 import java.nio.file.Path
 import java.time.Instant
+import java.time.OffsetDateTime
 
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
@@ -80,9 +81,14 @@ class BuildRequest {
      */
     final String configJson
 
-    BuildRequest(String dockerFile, Path workspace, String repo, String condaFile, User user, ContainerPlatform platform, String configJson, String cacheRepo, String ip) {
-        this.id = computeDigest(dockerFile,condaFile,platform,configJson,user)
-        this.dockerFile = dockerFile
+    /**
+     * The time offset at the user timezone
+     */
+    final String offsetId
+
+    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, User user, ContainerPlatform platform, String configJson, String cacheRepo, String ip, String offsetId = null) {
+        this.id = computeDigest(containerFile, condaFile, platform, repo)
+        this.dockerFile = containerFile
         this.condaFile = condaFile
         this.targetImage = "${repo}:${id}"
         this.user = user
@@ -90,21 +96,19 @@ class BuildRequest {
         this.configJson = configJson
         this.cacheRepository = cacheRepo
         this.workDir = workspace.resolve(id).toAbsolutePath()
+        this.offsetId = offsetId ?: OffsetDateTime.now().offset.id
         this.startTime = Instant.now()
         this.job = "${id}-${startTime.toEpochMilli().toString().md5()[-5..-1]}"
         this.ip = ip
     }
 
-    static private String computeDigest(String dockerFile, String condaFile, ContainerPlatform platform, String configJson, User user) {
-        def content = platform.toString()
-        content += dockerFile
-        if( condaFile )
-            content += condaFile
-        if( configJson )
-            content += configJson
-        if( user )
-            content += user.id
-        return DigestFunctions.md5(content)
+    static private String computeDigest(String containerFile, String condaFile, ContainerPlatform platform, String repository) {
+        final attrs = new LinkedHashMap<String,Object>(10)
+        attrs.containerFile = containerFile
+        attrs.condaFile = condaFile
+        attrs.platform =  platform
+        attrs.repository = repository
+        return DigestFunctions.md5(attrs)
     }
 
     @Override

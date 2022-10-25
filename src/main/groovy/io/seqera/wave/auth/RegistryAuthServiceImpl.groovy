@@ -80,8 +80,6 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         // 1. look up the registry authorisation info for the given registry name
         final registry = lookupService.lookup(registryName)
         log.debug "Registry '$registryName' => auth: $registry"
-        if( !registry )
-            throw new RegistryUnauthorizedAccessException("Unable to find authorization service for registry: $registryName")
 
         // 2. make a request against the authorization "realm" service using basic
         //    credentials to get the login token

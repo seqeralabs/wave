@@ -3,6 +3,7 @@ package io.seqera.wave.service.builder
 import spock.lang.Specification
 
 import java.nio.file.Path
+import java.time.OffsetDateTime
 
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
@@ -22,13 +23,13 @@ class BuildRequestTest extends Specification {
         when:
         def req = new BuildRequest(CONTENT, PATH, repo, null, USER, ContainerPlatform.of('amd64'), '{auth}', cache, "")
         then:
-        req.id == '86e13166182946a6d6cc80a72a8024c8'
+        req.id == 'b89bf284c5e66424ec2829bf8945290e'
         req.workDir == PATH.resolve(req.id).toAbsolutePath()
         req.targetImage == "docker.io/wave:${req.id}"
         req.dockerFile == CONTENT
         req.user == USER
         req.configJson == '{auth}'
-        req.job =~ /86e13166182946a6d6cc80a72a8024c8-[a-z0-9]+/
+        req.job =~ /b89bf284c5e66424ec2829bf8945290e-[a-z0-9]+/
         req.cacheRepository == cache
     }
 
@@ -45,6 +46,7 @@ class BuildRequestTest extends Specification {
         def req4 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.3', USER, ContainerPlatform.of('amd64'),'{auth}', cache, "")
         def req5 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.3', USER, ContainerPlatform.of('amd64'),'{auth}', cache, "")
         def req6 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.5', USER, ContainerPlatform.of('amd64'),'{auth}', cache, "")
+        def req7 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.5', USER, ContainerPlatform.of('amd64'),'{auth}', cache, "", "UTC+2")
 
         expect:
         req1 == req2
@@ -55,6 +57,7 @@ class BuildRequestTest extends Specification {
         and:
         req1 != req5
         req1 != req6
+        req1 != req7
 
         and:
         req1.hashCode() == req2.hashCode()
@@ -65,6 +68,10 @@ class BuildRequestTest extends Specification {
         and:
         req1.hashCode() != req5.hashCode()
         req1.hashCode() != req6.hashCode()
+
+        and:
+        req1.offsetId == OffsetDateTime.now().offset.id
+        req7.offsetId == 'UTC+2'
     }
 
 }

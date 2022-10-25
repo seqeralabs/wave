@@ -88,8 +88,8 @@ class TestController {
                 cacheRepo,
                 ip)
 
-        final resp = builderService.buildImage(req)
-        return HttpResponse.ok(resp)
+        builderService.buildImage(req)
+        return HttpResponse.ok(req.targetImage)
     }
 
 }

@@ -4,23 +4,22 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
+import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
-import io.micronaut.http.HttpStatus
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Singleton
 import org.apache.commons.lang.StringUtils
-
 /**
  * Tower API client
- * 
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Requires(env = 'tower')
+@Requires(property = 'tower.api.endpoint')
 @Slf4j
 @Singleton
 @CompileStatic
@@ -43,30 +42,25 @@ class TowerClient {
         this.userInfoEndpoint = new URI("${endpoint}/user-info")
     }
 
-    UserInfoResponse userInfo(String authorization) {
+    CompletableFuture<UserInfoResponse> userInfo(String authorization) {
         final req = HttpRequest.newBuilder()
                 .uri(userInfoEndpoint)
-                .headers('Content-Type','application/json', 'Authorization', "Bearer $authorization")
+                .headers('Content-Type', 'application/json', 'Authorization', "Bearer $authorization")
                 .GET()
                 .build()
 
-        try {
-            final resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString())
-            log.debug "Tower auth response: [${resp.statusCode()}] ${resp.body()}"
-            if( resp.statusCode()==200 ) {
-                return JacksonHelper.fromJson(resp.body(), UserInfoResponse)
-            }
-            if( resp.statusCode()==401 )
-                throw new HttpResponseException(401, "Unauthorized")
-            else
-                throw new HttpResponseException(resp.statusCode(), resp.body())
+            httpClient.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenApply((resp)-> {
+                log.debug "Tower auth response: [${resp.statusCode()}] ${resp.body()}"
+                switch (resp.statusCode()) {
+                    case 200:
+                        return JacksonHelper.fromJson(resp.body(), UserInfoResponse)
+                        break
+                    case 401:
+                        throw new HttpResponseException(401, "Unauthorized")
+                        break
+                    default:
+                        throw new HttpResponseException(resp.statusCode(), resp.body())
+                }
+            })
         }
-        catch (HttpResponseException e) {
-            throw e
-        }
-        catch (Throwable e) {
-            throw new HttpResponseException(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error = ${e.message}", e)
-        }
-    }
-    
 }

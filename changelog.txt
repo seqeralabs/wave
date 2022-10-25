@@ -1,4 +1,32 @@
 # Wave changelog
+v0.22.2 - 24 Oct 2022
+- Bump dev build repository [f9131b70] 
+- Enable redis pool configuration + Bump Micronaut 3.7.2 (#179) [d8d9ca04]
+- Improve date fmt [4af6376f]
+
+v0.22.1 - 23 Oct 2022
+- Revert to MN 3.3.4 [db0e6fc3]
+
+v0.22.0 - 23 Oct 2022 
+- Improve build cache for failed builds (#176) [41972309]
+- Improve the time format in the completion email (#169) [84357efe]
+- Make Tower user auth async (#166) [55f06451] <Jorge Aguilera>
+- Check if target image exist before building a new one (#173) [78a5fa2e]
+- Add basic k8s deployment [ci skip] [6c81171a]
+- Update ngrok launcher script [e72979ce]
+- Bump Micronaut 3.7.2 (#174) [28172705] 
+- Bump kaniko 1.9.1 (#175) [8bb72c47]
+- Bump base image seqera-labs/nf-jdk:corretto-17.0.5 [85921df3] 
+
+v0.21.7 - 18 Oct 2022 
+- Switch to quay.io/seqeralabs/nf-jdk:corretto-17.0.4 as base image 
+ 
+v0.21.6 - 17 Oct 2022 [BROKEN BASE IMAGE]
+- Improve registry auth lookup error [0f696146] 
+
+v0.21.5 - 4 Oct 2022
+- Rollback timestamp and fingerpint fields [466b3a46] <Paolo Di Tommaso>
+
 v0.21.4 - 3 Oct 2022
 - Count all manifest digest requests [02435bff] <Paolo Di Tommaso>
 - Add timestamp + fingerprint to request [5ccc08bd] <Paolo Di Tommaso>

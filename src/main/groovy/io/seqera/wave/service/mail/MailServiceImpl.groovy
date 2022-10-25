@@ -1,7 +1,6 @@
 package io.seqera.wave.service.mail
 
 import java.time.Duration
-import java.time.Instant
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -17,6 +16,7 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -69,7 +69,7 @@ class MailServiceImpl implements MailService, ApplicationEventListener<BuildEven
         binding.build_user =  "${req.user ? req.user.userName : 'n/a'} (${req.ip})"
         binding.build_success = result.exitStatus==0
         binding.build_exit_status = result.exitStatus
-        binding.build_time = formatTimestamp(result.startTime) ?: '-'
+        binding.build_time = formatTimestamp(result.startTime, req.offsetId) ?: '-'
         binding.build_duration = formatDuration(result.duration) ?: '-'
         binding.build_image = req.targetImage
         binding.build_platform = req.platform
@@ -94,9 +94,4 @@ class MailServiceImpl implements MailService, ApplicationEventListener<BuildEven
         return String.format("%d:%02d", minutes, seconds);
     }
 
-    protected String formatTimestamp(Instant instant) {
-        if( instant==null )
-            return null
-        return instant.toString()
-    }
 }
