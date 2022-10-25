@@ -24,7 +24,7 @@ wave:
   build:
     image: "gcr.io/kaniko-project/executor:v1.9.1"
     workspace: 'build-workspace'
-    repo: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build"
+    repo: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/dev"
     cache: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/cache"
 ---
 logger:

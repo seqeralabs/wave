@@ -1,4 +1,9 @@
 # Wave changelog
+v0.22.2 - 24 Oct 2022
+- Bump dev build repository [f9131b70] 
+- Enable redis pool configuration + Bump Micronaut 3.7.2 (#179) [d8d9ca04]
+- Improve date fmt [4af6376f]
+
 v0.22.1 - 23 Oct 2022
 - Revert to MN 3.3.4 [db0e6fc3]
 
