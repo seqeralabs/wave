@@ -1,4 +1,8 @@
 # Wave changelog
+v0.22.4 - 26 Oct 2022
+- Update readme [614c8143] <Paolo Di Tommaso>
+- Fix Docker config.json mount in K8s [5e5a67f7] <Paolo Di Tommaso>
+
 v0.22.3 - 26 Oct 2022
 - Allow empty K8s storageClaim [4f6d7e69] <Paolo Di Tommaso>
 - wait for redis testcontainer is ready (#181) [08d2b0ed] <Jorge Aguilera>
