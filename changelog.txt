@@ -1,4 +1,9 @@
 # Wave changelog
+v0.22.3 - 26 Oct 2022
+- Allow empty K8s storageClaim [4f6d7e69] <Paolo Di Tommaso>
+- wait for redis testcontainer is ready (#181) [08d2b0ed] <Jorge Aguilera>
+- Remove the use of the init container (#180) [b77aabca] <Jorge Aguilera>
+
 v0.22.2 - 24 Oct 2022
 - Bump dev build repository [f9131b70] 
 - Enable redis pool configuration + Bump Micronaut 3.7.2 (#179) [d8d9ca04]
