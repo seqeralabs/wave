@@ -1,8 +1,11 @@
 package io.seqera.wave.service.builder
 
+import java.nio.file.Files
+import java.nio.file.Path
 import java.time.Duration
 import javax.annotation.Nullable
 
+import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Primary
@@ -13,6 +16,10 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+import static java.nio.file.StandardOpenOption.CREATE
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
+import static java.nio.file.StandardOpenOption.WRITE
+
 /**
  * Build a container image using running a K8s job
  *
@@ -45,8 +52,15 @@ class KubeBuildStrategy extends BuildStrategy {
     @Override
     BuildResult build(BuildRequest req) {
 
+        Path configFile = null
+        if( req.configJson ) {
+            configFile = req.workDir.resolve('config.json')
+            Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+        }
+
         final buildCmd = launchCmd(req)
         final name = podName(req)
+        final pod = k8sService.buildContainer(name, buildImage, buildCmd, req.workDir, configFile)
         final selector = getPlatformSelector(req.platform, nodeSelector)
         final pod = k8sService.buildContainer(name, buildImage, buildCmd, req.workDir, req.configJson, selector)
         final terminated = k8sService.waitPod(pod, buildTimeout.toMillis())
