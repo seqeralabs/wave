@@ -133,16 +133,10 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def vol = k8sService.volumeDockerConfig()
+        def mount = k8sService.mountDockerConfig(Path.of('/foo/work/x1'), '/foo')
         then:
-        vol.name == 'docker-config'
-        vol.emptyDir instanceof V1EmptyDirVolumeSource
-
-        when:
-        def mount = k8sService.mountDockerConfig()
-        then:
-        mount.name == 'docker-config'
-        mount.mountPath == '/kaniko/.docker/'
+        mount.name == 'build-data'
+        mount.mountPath == '/kaniko/.docker'
 
         cleanup:
         ctx.close()
@@ -163,16 +157,12 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), 'secret')
+        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), Path.of('secret'))
         then:
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
         and:
         result.spec.activeDeadlineSeconds == 10
-        and:
-        result.spec.initContainers.get(0).name == 'init-secret'
-        result.spec.initContainers.get(0).image == 'busybox'
-        result.spec.initContainers.get(0).getVolumeMounts().get(0).getName() == 'docker-config'
         and:
         result.spec.containers.get(0).name == 'foo'
         result.spec.containers.get(0).image == 'my-image:latest'
@@ -180,19 +170,16 @@ class K8sServiceImplTest extends Specification {
         and:
         result.spec.containers.get(0).volumeMounts.size() == 2
         and:
-        result.spec.containers.get(0).volumeMounts.get(0).name == 'docker-config'
-        result.spec.containers.get(0).volumeMounts.get(0).mountPath == '/kaniko/.docker/'
+        result.spec.containers.get(0).volumeMounts.get(0).name == 'build-data'
+        result.spec.containers.get(0).volumeMounts.get(0).mountPath == '/kaniko/.docker'
         and:
         result.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
         result.spec.containers.get(0).volumeMounts.get(1).mountPath == '/build/work/xyz'
         result.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz'
 
         and:
-        result.spec.volumes.get(0).name == 'docker-config'
-        result.spec.volumes.get(0).emptyDir == new V1EmptyDirVolumeSource()
-        and:
-        result.spec.volumes.get(1).name == 'build-data'
-        result.spec.volumes.get(1).persistentVolumeClaim.claimName == 'build-claim'
+        result.spec.volumes.get(0).name == 'build-data'
+        result.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
 
 
         cleanup:
