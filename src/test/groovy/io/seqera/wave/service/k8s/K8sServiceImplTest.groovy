@@ -5,7 +5,6 @@ import spock.lang.Specification
 import java.nio.file.Path
 
 import io.kubernetes.client.custom.Quantity
-import io.kubernetes.client.openapi.models.V1EmptyDirVolumeSource
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 /**
@@ -133,10 +132,12 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def mount = k8sService.mountDockerConfig(Path.of('/foo/work/x1'), '/foo')
+        def mount = k8sService.mountDockerConfig()
         then:
         mount.name == 'build-data'
-        mount.mountPath == '/kaniko/.docker'
+        mount.mountPath == '/kaniko/.docker/config.json'
+        mount.readOnly
+        mount.subPath == 'config.json'
 
         cleanup:
         ctx.close()
@@ -171,7 +172,8 @@ class K8sServiceImplTest extends Specification {
         result.spec.containers.get(0).volumeMounts.size() == 2
         and:
         result.spec.containers.get(0).volumeMounts.get(0).name == 'build-data'
-        result.spec.containers.get(0).volumeMounts.get(0).mountPath == '/kaniko/.docker'
+        result.spec.containers.get(0).volumeMounts.get(0).mountPath == '/kaniko/.docker/config.json'
+        result.spec.containers.get(0).volumeMounts.get(0).subPath == 'config.json'
         and:
         result.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
         result.spec.containers.get(0).volumeMounts.get(1).mountPath == '/build/work/xyz'

@@ -11,7 +11,6 @@ import groovy.util.logging.Slf4j
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1DeleteOptions
-import io.kubernetes.client.openapi.models.V1EmptyDirVolumeSource
 import io.kubernetes.client.openapi.models.V1HostPathVolumeSource
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1JobBuilder
@@ -26,7 +25,6 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 /**
  * implements the support for Kubernetes cluster
  *
@@ -235,16 +233,13 @@ class K8sServiceImpl implements K8sService {
      *
      * @return A {@link V1VolumeMount} representing the docker config for kaniko
      */
-    protected V1VolumeMount mountDockerConfig(Path workDir, @Nullable String storageMountPath) {
-        assert workDir, "K8s mount build storage is mandatory"
+    protected V1VolumeMount mountDockerConfig() {
 
         final vol = new V1VolumeMount()
                 .name('build-data')
-                .mountPath('/kaniko/.docker')
+                .mountPath('/kaniko/.docker/config.json')
+                .subPath('config.json')
                 .readOnly(true)
-        final rel = Path.of(storageMountPath).relativize(workDir).toString()
-        if (rel)
-            vol.subPath(rel)
         return vol
     }
 
@@ -284,7 +279,7 @@ class K8sServiceImpl implements K8sService {
         volumes.add(volumeBuildStorage(workDir, storageClaimName))
 
         if( creds ){
-            mounts.add(0, mountDockerConfig(workDir, storageMountPath))
+            mounts.add(0, mountDockerConfig())
         }
 
         V1PodBuilder builder = new V1PodBuilder()
