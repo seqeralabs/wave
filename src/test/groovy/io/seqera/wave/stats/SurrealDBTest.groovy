@@ -63,7 +63,7 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
         given:
         HttpClient httpClient = HttpClient.create(new URL(surrealDbURL))
         SurrealStorage storage = applicationContext.getBean(SurrealStorage)
-        BuildBean build = new BuildBean(
+        BuildRecord build = new BuildRecord(
                 id: 'test',
                 dockerFile: 'test',
                 condaFile: 'test',
@@ -100,7 +100,7 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
     void "can't insert a build but ends without error"() {
         given:
         SurrealStorage storage = applicationContext.getBean(SurrealStorage)
-        BuildBean build = new BuildBean(
+        BuildRecord build = new BuildRecord(
                 id: 'test',
                 dockerFile: 'test',
                 condaFile: 'test',

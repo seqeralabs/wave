@@ -27,8 +27,8 @@ class StatsService implements ApplicationEventListener<BuildEvent> {
         storage.addBuild(fromEvent(event))
     }
 
-    static BuildBean fromEvent(BuildEvent event) {
-        return new BuildBean(
+    static BuildRecord fromEvent(BuildEvent event) {
+        return new BuildRecord(
                 id: event.buildRequest.id,
                 dockerFile:event.buildRequest.dockerFile,
                 condaFile:event.buildRequest.condaFile,

@@ -12,6 +12,6 @@ import groovy.transform.CompileStatic
 @CompileStatic
 interface Storage {
 
-    void addBuild(BuildBean build)
+    void addBuild(BuildRecord build)
 
 }

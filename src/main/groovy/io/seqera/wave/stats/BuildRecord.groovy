@@ -15,7 +15,7 @@ import groovy.transform.ToString
  */
 @ToString
 @CompileStatic
-class BuildBean {
+class BuildRecord {
 
     String id
     String dockerFile

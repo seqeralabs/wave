@@ -1,6 +1,5 @@
 package io.seqera.wave.stats.surrealdb
 
-import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -8,10 +7,10 @@ import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.context.event.ApplicationEventListener
+import io.micronaut.core.annotation.Nullable
 import io.micronaut.runtime.event.ApplicationStartupEvent
-import io.seqera.wave.stats.BuildBean
+import io.seqera.wave.stats.BuildRecord
 import io.seqera.wave.stats.Storage
-import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
 
@@ -19,7 +18,7 @@ import jakarta.inject.Singleton
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
-@Requires(env='surreal')
+@Requires(env='surrealdb')
 @Primary
 @Slf4j
 @Singleton
@@ -36,11 +35,11 @@ class SurrealStorage implements Storage, ApplicationEventListener<ApplicationSta
     SurrealStorage(SurrealClient surrealClient,
                    @Value('${stats.surrealdb.user}')String user,
                    @Value('${stats.surrealdb.password}')String password,
-                   @Value('${stats.surrealdb.init-db}')boolean initDb) {
+                   @Nullable @Value('${stats.surrealdb.init-db}')java.util.Optional<Boolean> initDb) {
         this.surrealClient = surrealClient
         this.user = user
         this.password = password
-        this.initDb = initDb
+        this.initDb = initDb.present ? initDb.get() : false
     }
 
     @Override
@@ -64,9 +63,9 @@ class SurrealStorage implements Storage, ApplicationEventListener<ApplicationSta
     }
 
     @Override
-    void addBuild(BuildBean build) {
+    void addBuild(BuildRecord build) {
         surrealClient.insertBuildAsync(authorization, build).subscribe({result->
-            log.debug "BuildBean saved, {}", result
+            log.info "BuildBean saved, {}", result
         }, {error->
             log.error "Error saving build bean {}", build, error
         })

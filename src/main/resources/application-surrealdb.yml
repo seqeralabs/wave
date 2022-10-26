@@ -2,5 +2,5 @@ stats :
   surrealdb :
     ns : ${SURREALDB_NS:seqeraio}
     db : ${SURREALDB_DB:wave}
-    url: ${SURREALDB_URL}
+    url: ${SURREALDB_URL:`http://surrealdb:8000`}
 

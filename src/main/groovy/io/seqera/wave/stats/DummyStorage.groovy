@@ -17,7 +17,7 @@ import jakarta.inject.Singleton
 class DummyStorage implements Storage{
 
     @Override
-    void addBuild(BuildBean build) {
+    void addBuild(BuildRecord build) {
         log.debug "AddBuild $build"
     }
 }
