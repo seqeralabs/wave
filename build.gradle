@@ -118,7 +118,7 @@ jib {
         }
     }
     to {
-        image = "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/app:$version"
+        image = findProperty("jibRepo") ?: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/app:$version"
     }
     container {
         creationTime = "${OffsetDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME)}"
