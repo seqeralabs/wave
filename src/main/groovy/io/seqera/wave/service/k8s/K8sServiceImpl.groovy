@@ -11,7 +11,6 @@ import groovy.util.logging.Slf4j
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1DeleteOptions
-import io.kubernetes.client.openapi.models.V1EmptyDirVolumeSource
 import io.kubernetes.client.openapi.models.V1HostPathVolumeSource
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1JobBuilder
@@ -26,7 +25,6 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 /**
  * implements the support for Kubernetes cluster
  *
@@ -236,19 +234,13 @@ class K8sServiceImpl implements K8sService {
      * @return A {@link V1VolumeMount} representing the docker config for kaniko
      */
     protected V1VolumeMount mountDockerConfig() {
-        new V1VolumeMount()
-                .name('docker-config')
-                .mountPath('/kaniko/.docker/')
-    }
 
-    /**
-     * Create the docker config volume
-     * @return A {@link V1Volume} representing the docker config required by Kaniko
-     */
-    protected V1Volume volumeDockerConfig() {
-        new V1Volume()
-                .name('docker-config')
-                .emptyDir( new V1EmptyDirVolumeSource() )
+        final vol = new V1VolumeMount()
+                .name('build-data')
+                .mountPath('/kaniko/.docker/config.json')
+                .subPath('config.json')
+                .readOnly(true)
+        return vol
     }
 
     /**
@@ -269,7 +261,7 @@ class K8sServiceImpl implements K8sService {
      */
     @Override
     @CompileDynamic
-    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, String creds) {
+    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds) {
         final spec = buildSpec(name, containerImage, args, workDir, creds)
         return k8sClient
                 .coreV1Api()
@@ -277,7 +269,7 @@ class K8sServiceImpl implements K8sService {
     }
 
     @CompileDynamic
-    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, String creds) {
+    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path creds) {
 
         // required volumes
         final mounts = new ArrayList<V1VolumeMount>(5)
@@ -288,7 +280,6 @@ class K8sServiceImpl implements K8sService {
 
         if( creds ){
             mounts.add(0, mountDockerConfig())
-            volumes.add(0, volumeDockerConfig())
         }
 
         V1PodBuilder builder = new V1PodBuilder()
@@ -310,14 +301,6 @@ class K8sServiceImpl implements K8sService {
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
 
-        if( creds ) {
-            spec.addNewInitContainer()
-                    .withName('init-secret')
-                    .withImage('busybox')
-                    .withCommand(['sh', '-c', "echo '$creds' > /kaniko/.docker/config.json".toString()])
-                    .withVolumeMounts(mountDockerConfig())
-                    .endInitContainer()
-        }
 
         final requests = new V1ResourceRequirements()
         if( requestsCpu )
