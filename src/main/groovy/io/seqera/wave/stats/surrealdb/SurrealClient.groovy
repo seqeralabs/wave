@@ -20,9 +20,9 @@ import reactor.core.publisher.Flux
 @Requires(env='surrealdb')
 @CompileStatic
 @Header(name = "Content-type", value = "application/json")
-@Header(name = "ns", value = '${stats.surrealdb.ns}')
-@Header(name = "db", value = '${stats.surrealdb.db}')
-@Client(value = '${stats.surrealdb.url}')
+@Header(name = "ns", value = '${surrealdb.ns}')
+@Header(name = "db", value = '${surrealdb.db}')
+@Client(value = '${surrealdb.url}')
 interface SurrealClient {
 
     @Post("/sql")

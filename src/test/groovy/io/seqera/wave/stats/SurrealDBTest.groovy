@@ -32,7 +32,6 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
     def setup() {
         restartDb()
         applicationContext = ApplicationContext.run([
-                stats: [
                         surrealdb: [
                                 user     : 'root',
                                 password : 'root',
@@ -41,7 +40,7 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
                                 url      : surrealDbURL,
                                 'init-db': false
                         ]]
-        ], 'test', 'surreal')
+        , 'test', 'surrealdb')
     }
 
     void "can connect"() {

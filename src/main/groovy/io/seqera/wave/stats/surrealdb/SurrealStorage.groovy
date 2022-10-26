@@ -33,9 +33,9 @@ class SurrealStorage implements Storage, ApplicationEventListener<ApplicationSta
 
     boolean initDb
     SurrealStorage(SurrealClient surrealClient,
-                   @Value('${stats.surrealdb.user}')String user,
-                   @Value('${stats.surrealdb.password}')String password,
-                   @Nullable @Value('${stats.surrealdb.init-db}')java.util.Optional<Boolean> initDb) {
+                   @Value('${surrealdb.user}')String user,
+                   @Value('${surrealdb.password}')String password,
+                   @Nullable @Value('${surrealdb.init-db}')java.util.Optional<Boolean> initDb) {
         this.surrealClient = surrealClient
         this.user = user
         this.password = password
