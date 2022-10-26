@@ -261,7 +261,10 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'bar',
                 'wave.build.k8s.storage.mountPath': '/build',
-                'wave.build.k8s.node-selector': ['cpu':'tiny'],
+                'wave.build.k8s.node-selector': [
+                        'linux/amd64': 'service=wave-build',
+                        'linux/arm64': 'service=wave-build-arm64'
+                ],
                 'wave.build.k8s.resources.requests.cpu': '2',
                 'wave.build.k8s.resources.requests.memory': '4Gi',
         ]
@@ -270,7 +273,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null)
+        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null, PROPS['wave.build.k8s.node-selector'])
         then:
         result.spec.nodeSelector.toString() == PROPS['wave.build.k8s.node-selector'].toString()
         and:
