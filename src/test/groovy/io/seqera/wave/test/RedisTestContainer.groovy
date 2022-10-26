@@ -17,6 +17,7 @@ trait RedisTestContainer {
     @Shared
     static GenericContainer redisContainer = new GenericContainer(DockerImageName.parse("redis:7.0.4-alpine"))
             .withExposedPorts(6379)
+            .waitingFor(Wait.forLogMessage(".*Ready to accept connections.*\\n", 1));
 
 
     void restartRedis(){
