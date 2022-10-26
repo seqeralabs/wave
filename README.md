@@ -187,9 +187,11 @@ Use statistics are stored in a surrealdb database (if profile `surrealdb` is pro
 ```
 DATA="INFO FOR DB;"
 
-curl --request POST --header "Accept: application/json" \
+curl --request POST \
+    --header "Content-Type: application/json" \
+    --header "NS:seqeraio" \
+    --header "DB:wave" \
     --user "root:root" --data "${DATA}" \
-    --header "NS:seqeraio" --header "DB:wave"\ 
     http://surrealdb:8000/sql 
 ```
 
@@ -198,7 +200,7 @@ curl --request POST --header "Accept: application/json" \
 After a build we can request statistics
 
 ```
-curl --request GET --header "Accept: application/json" \
+curl --request GET --header "Content-Type: application/json" \
     --user "root:root" --header "NS:seqeraio" --header "DB:wave" http://surrealdb:8000/key/build_wave 
 ```
 

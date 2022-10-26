@@ -29,4 +29,17 @@ class ZipUtilsTest extends Specification {
         bytes == TEXT.bytes
     }
 
+
+    def 'should encode and decode string' () {
+        when:
+        def encoded = ZipUtils.encode('Hola mundo')
+        then:
+        ZipUtils.decode(encoded) == 'Hola mundo'
+
+        expect:
+        ZipUtils.encode((String)null) == null
+        ZipUtils.encode((InputStream)null) == null
+        ZipUtils.decode(null) == null
+    }
+
 }

@@ -3,11 +3,12 @@ package io.seqera.wave.util;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Base64;
 import java.util.zip.DeflaterInputStream;
 import java.util.zip.InflaterInputStream;
 
 /**
- * Helper class to basic compress/decompress funcionality
+ * Helper class to basic compress/decompress functionality
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -45,5 +46,26 @@ public class ZipUtils {
         catch (IOException e) {
             throw new RuntimeException("Unable to decompress provider buffer", e);
         }
+    }
+
+    public static String encode(String data) throws IOException {
+        if( data==null )
+            return null;
+        byte[] result = compress(data);
+        return Base64.getEncoder().encodeToString(result);
+    }
+
+    public static String encode(InputStream data) {
+        if( data==null )
+            return null;
+        byte[] result = compress(data);
+        return Base64.getEncoder().encodeToString(result);
+    }
+
+    public static String decode(String encoded) throws IOException {
+        if( encoded==null )
+            return null;
+        byte[] result = Base64.getDecoder().decode(encoded);
+        return decompressAsString(result);
     }
 }

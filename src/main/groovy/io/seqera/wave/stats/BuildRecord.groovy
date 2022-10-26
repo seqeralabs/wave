@@ -4,6 +4,7 @@ import java.time.Duration
 import java.time.Instant
 
 import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 
 
@@ -14,10 +15,11 @@ import groovy.transform.ToString
  *
  */
 @ToString
+@EqualsAndHashCode
 @CompileStatic
 class BuildRecord {
 
-    String id
+    String buildId
     String dockerFile
     String condaFile
     String targetImage

@@ -60,11 +60,17 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
 
     void "can insert an async build"() {
         given:
+        final String dockerFile = """\
+            FROM quay.io/nextflow/bash
+            RUN echo "Look ma' building 🐳🐳 on the fly!" > /hello.txt
+            ENV NOW=${System.currentTimeMillis()}
+            """
+
         HttpClient httpClient = HttpClient.create(new URL(surrealDbURL))
         SurrealStorage storage = applicationContext.getBean(SurrealStorage)
         BuildRecord build = new BuildRecord(
-                id: 'test',
-                dockerFile: 'test',
+                buildId: 'test',
+                dockerFile: dockerFile,
                 condaFile: 'test',
                 targetImage: 'test',
                 userName: 'test',
@@ -79,7 +85,7 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
         when:
         storage.initializeDb()
 
-        storage.addBuild(build)
+        storage.storeBuild(build)
 
         sleep 100 //as we are using async, let database a while to store the item
         then:
@@ -100,7 +106,7 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
         given:
         SurrealStorage storage = applicationContext.getBean(SurrealStorage)
         BuildRecord build = new BuildRecord(
-                id: 'test',
+                buildId: 'test',
                 dockerFile: 'test',
                 condaFile: 'test',
                 targetImage: 'test',
@@ -116,7 +122,7 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
         when:
         surrealContainer.stop()
 
-        storage.addBuild(build)
+        storage.storeBuild(build)
 
         sleep 100 //as we are using async, let database a while to store the item
         then:

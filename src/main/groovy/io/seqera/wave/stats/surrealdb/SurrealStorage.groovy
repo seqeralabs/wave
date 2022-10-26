@@ -11,6 +11,7 @@ import io.micronaut.core.annotation.Nullable
 import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.seqera.wave.stats.BuildRecord
 import io.seqera.wave.stats.Storage
+import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Singleton
 
 
@@ -63,8 +64,10 @@ class SurrealStorage implements Storage, ApplicationEventListener<ApplicationSta
     }
 
     @Override
-    void addBuild(BuildRecord build) {
-        surrealClient.insertBuildAsync(authorization, build).subscribe({result->
+    void storeBuild(BuildRecord build) {
+        final payload = JacksonHelper.toJson(build)
+        log.info "Saving build payload: $payload"
+        surrealClient.insertBuildAsync(getAuthorization(), payload).subscribe({result->
             log.info "BuildBean saved, {}", result
         }, {error->
             log.error "Error saving build bean {}", build, error
