@@ -93,7 +93,7 @@ class DockerBuilderStrategyTest extends Specification {
                 '--context', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f',
                 '--destination', 'repo:17e58f4434c26104c2cf9f0eb8fbc16f',
                 '--cache=true',
-                '--custom--platform', 'linux/amd64',
+                '--custom-platform', 'linux/amd64',
                 '--cache-repo', 'reg.io/wave/build/cache',
                 '--compressed-caching', 'false'
         ].sort()
