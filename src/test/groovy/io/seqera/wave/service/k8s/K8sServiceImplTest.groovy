@@ -104,13 +104,13 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.volumeBuildStorage(Path.of('/foo/work/x1'), null)
+        def result = k8sService.volumeBuildStorage('/foo/work/x1', null)
         then:
         result.name == 'build-data'
         result.hostPath.path == '/foo/work/x1'
 
         when:
-        result = k8sService.volumeBuildStorage(Path.of('/foo/work/x1'), 'foo')
+        result = k8sService.volumeBuildStorage('/foo/work/x1', 'foo')
         then:
         result.name == 'build-data'
         result.persistentVolumeClaim.claimName == 'foo'
@@ -132,12 +132,12 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def mount = k8sService.mountDockerConfig()
+        def mount = k8sService.mountDockerConfig(Path.of('/foo/work/x1'), '/foo')
         then:
         mount.name == 'build-data'
         mount.mountPath == '/kaniko/.docker/config.json'
         mount.readOnly
-        mount.subPath == 'config.json'
+        mount.subPath == 'work/x1/config.json'
 
         cleanup:
         ctx.close()
@@ -173,7 +173,7 @@ class K8sServiceImplTest extends Specification {
         and:
         result.spec.containers.get(0).volumeMounts.get(0).name == 'build-data'
         result.spec.containers.get(0).volumeMounts.get(0).mountPath == '/kaniko/.docker/config.json'
-        result.spec.containers.get(0).volumeMounts.get(0).subPath == 'config.json'
+        result.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz/config.json'
         and:
         result.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
         result.spec.containers.get(0).volumeMounts.get(1).mountPath == '/build/work/xyz'

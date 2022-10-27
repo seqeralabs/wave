@@ -183,3 +183,24 @@ In `prod`, profiles are activated via MICRONAUT_ENVIRONMENTS (i.e. `MICRONAUT_EN
 == Debugging 
 
 * To debug http requests made proxy client add the following Jvm setting `'-Djdk.httpclient.HttpClient.log=requests,headers'` 
+
+
+=== Test local K8s build  
+
+To test the image build with a local K8s cluster use the following setting: 
+
+```
+wave:
+  debug: true
+  build:
+    workspace: "/<YOUR_HOME>/wave/build-workspace"
+    k8s:
+      configPath: "${HOME}/.kube/config"
+      context: 'docker-desktop'
+      namespace: 'wave-local'
+      storage:
+        mountPath: "/<YOUR_HOME>/wave/build-workspace"
+
+```
+     
+Replace in the above setting the `context` and `namespace` with the ones in the local K8s cluster.
