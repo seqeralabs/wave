@@ -33,10 +33,6 @@ class SpillwayRedisRateLimiterTest extends Specification implements RedisTestCon
         jedisPool = new JedisPool(redisHostName, redisPort as int)
     }
 
-    def cleanup(){
-        redisContainer.stop()
-    }
-
     void "can acquire 1 auth resource"() {
         when:
         rateLimiter.acquireBuild(new AcquireRequest("test", null))

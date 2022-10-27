@@ -33,10 +33,6 @@ class RedisBuildStoreTest extends Specification implements RedisTestContainer {
         jedisPool = new JedisPool(redisHostName, redisPort as int)
     }
 
-    def cleanup(){
-        redisContainer.stop()
-    }
-
     def 'should get and put key values' () {
         given:
         def req1 = BuildResult.create('1')
