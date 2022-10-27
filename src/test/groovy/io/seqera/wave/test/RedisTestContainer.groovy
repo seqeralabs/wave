@@ -33,4 +33,8 @@ trait RedisTestContainer {
     String getRedisPort(){
         redisContainer.getMappedPort(6379)
     }
+
+    def cleanup(){
+        redisContainer.stop()
+    }
 }
