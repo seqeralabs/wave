@@ -56,7 +56,7 @@ class DockerBuilderStrategyTest extends Specification {
         when:
         def cmd = service.buildCmd(req, creds)
         then:
-        cmd == ['docker',
+        cmd.sort() == ['docker',
                 'run',
                 '--rm',
                 '-w', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f',
@@ -68,9 +68,9 @@ class DockerBuilderStrategyTest extends Specification {
                 '--context', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f',
                 '--destination', 'repo:17e58f4434c26104c2cf9f0eb8fbc16f',
                 '--cache=true',
-                '--customPlatform', 'linux/amd64',
+                '--custom-platform', 'linux/amd64',
                 '--cache-repo', 'reg.io/wave/build/cache'
-        ]
+        ].sort()
 
         cleanup:
         ctx.close()
@@ -88,15 +88,15 @@ class DockerBuilderStrategyTest extends Specification {
         when:
         def cmd = service.launchCmd(req)
         then:
-        cmd == [
+        cmd.sort() == [
                 '--dockerfile', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f/Dockerfile',
                 '--context', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f',
                 '--destination', 'repo:17e58f4434c26104c2cf9f0eb8fbc16f',
                 '--cache=true',
-                '--customPlatform', 'linux/amd64',
+                '--custom--platform', 'linux/amd64',
                 '--cache-repo', 'reg.io/wave/build/cache',
                 '--compressed-caching', 'false'
-        ]
+        ].sort()
 
         cleanup:
         ctx.close()

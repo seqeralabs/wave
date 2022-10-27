@@ -24,7 +24,7 @@ class BuildStrategyTest extends Specification {
         when:
         def cmd = service.launchCmd(REQ)
         then:
-        cmd == [
+        cmd.sort() == [
                 '--dockerfile',
                 '/work/foo/40e8a6dba50e9b3b609a19c12420d3eb/Dockerfile',
                 '--context',
@@ -34,9 +34,9 @@ class BuildStrategyTest extends Specification {
                 '--cache=true',
                 '--cache-repo',
                 'reg.io/wave/build/cache',
-                '--customPlatform',
+                '--custom-platform',
                 'linux/amd64'
-        ]
+        ].sort()
     }
 
 }
