@@ -1,6 +1,6 @@
 ---
 surrealdb :
-  ns : ${SURREALDB_NS:seqeraio}
+  ns : ${SURREALDB_NS:seqera}
   db : ${SURREALDB_DB:wave}
   url: ${SURREALDB_URL:`http://surrealdb:8000`}
   user: "${SURREALDB_USER:root}"

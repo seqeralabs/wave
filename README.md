@@ -182,14 +182,16 @@ In `prod`, profiles are activated via MICRONAUT_ENVIRONMENTS (i.e. `MICRONAUT_EN
 
 == Surrealdb
 
-Use statistics are stored in a surrealdb database (if profile `surrealdb` is provided)
+Use statistics are stored in a SurrealDB database (if the Micronaut environment `surrealdb` is provided)
 
 ```
 DATA="INFO FOR DB;"
 
-curl --request POST --header "Accept: application/json" \
+curl --request POST \
+    --header "Accept: application/json" \
+    --header "NS:seqera" \
+    --header "DB:wave" \
     --user "root:root" --data "${DATA}" \
-    --header "NS:seqeraio" --header "DB:wave"\ 
     http://surrealdb:8000/sql 
 ```
 
@@ -198,8 +200,12 @@ curl --request POST --header "Accept: application/json" \
 After a build we can request statistics
 
 ```
-curl --request GET --header "Accept: application/json" \
-    --user "root:root" --header "NS:seqeraio" --header "DB:wave" http://surrealdb:8000/key/build_wave 
+curl --request GET \
+    --header "Accept: application/json" \
+    --header "NS:seqera" \
+    --header "DB:wave" \
+    --user "root:root" \
+    http://surrealdb:8000/key/build_wave 
 ```
 
 ```
