@@ -21,7 +21,7 @@ import reactor.core.publisher.Flux
 @Header(name = "ns", value = '${surrealdb.ns}')
 @Header(name = "db", value = '${surrealdb.db}')
 @Client(value = '${surrealdb.url}')
-interface SurrealClient {
+interface SurrealDbClient {
 
     @Post("/sql")
     Flux<Map<String, Object>> sqlAsync(@Header String authorization, @Body String body)

@@ -7,7 +7,6 @@ import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import io.seqera.wave.service.builder.BuildEvent
 
-
 /**
  * A collection of request and response properties to be stored
  *

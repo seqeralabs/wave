@@ -27,7 +27,7 @@ import jakarta.inject.Singleton
 class PersistenceServiceImpl implements PersistenceService {
 
     @Inject
-    private SurrealClient surrealClient
+    private SurrealDbClient surrealDb
 
     @Value('${surrealdb.user}')
     private String user
@@ -51,7 +51,7 @@ class PersistenceServiceImpl implements PersistenceService {
     }
 
     void initializeDb(){
-        final result = surrealClient.sql(authorization, "define table wave_build SCHEMALESS")
+        final result = surrealDb.sql(authorization, "define table wave_build SCHEMALESS")
         if( result.status != "OK")
             throw new IllegalStateException("Unable to initiliase SurrealDB - cause: $result")
     }
@@ -62,11 +62,11 @@ class PersistenceServiceImpl implements PersistenceService {
 
     @Override
     void saveBuild(BuildRecord build) {
-        surrealClient.insertBuildAsync(authorization, build).subscribe({result->
+        surrealDb.insertBuildAsync(authorization, build).subscribe({ result->
             log.info "Build record saved ${result}"
         }, {error->
             def msg = error.message
-            if( error instanceof HttpClientResponseException){
+            if( error instanceof HttpClientResponseException ){
                 msg += ":\n $error.response.body"
             }
             log.error "Error saving build record ${msg}\n${build}", error
