@@ -48,7 +48,6 @@ class RedisRegistryControllerTest extends Specification implements DockerRegistr
         initRegistryContainer(applicationContext)
     }
 
-
     ApplicationContext getApplicationContext() {
         embeddedServer.applicationContext
     }
