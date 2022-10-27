@@ -41,7 +41,6 @@ class RedisContainerTokenControllerTest extends Specification implements RedisTe
         jedisPool = new JedisPool(redisHostName, redisPort as int)
     }
 
-
     ApplicationContext getApplicationContext() {
         embeddedServer.applicationContext
     }
