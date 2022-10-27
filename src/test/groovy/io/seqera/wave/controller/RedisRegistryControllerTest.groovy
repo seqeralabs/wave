@@ -48,6 +48,10 @@ class RedisRegistryControllerTest extends Specification implements DockerRegistr
         initRegistryContainer(applicationContext)
     }
 
+    def cleanup(){
+        redisContainer.stop()
+    }
+
     ApplicationContext getApplicationContext() {
         embeddedServer.applicationContext
     }

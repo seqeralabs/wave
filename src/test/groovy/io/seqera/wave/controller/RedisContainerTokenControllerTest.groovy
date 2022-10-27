@@ -41,6 +41,10 @@ class RedisContainerTokenControllerTest extends Specification implements RedisTe
         jedisPool = new JedisPool(redisHostName, redisPort as int)
     }
 
+    def cleanup(){
+        redisContainer.stop()
+    }
+
     ApplicationContext getApplicationContext() {
         embeddedServer.applicationContext
     }
