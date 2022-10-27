@@ -42,3 +42,7 @@ tower:
 logger:
   levels:
     io.micronaut.data.query: "DEBUG"
+---
+redis :
+  pool :
+    enabled : false
