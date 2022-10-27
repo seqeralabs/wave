@@ -8,6 +8,8 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.context.event.ApplicationEventListener
 import io.micronaut.core.annotation.Nullable
+import io.micronaut.http.client.exceptions.HttpClientResponseException
+import io.micronaut.http.exceptions.HttpException
 import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.seqera.wave.stats.BuildRecord
 import io.seqera.wave.stats.Storage
@@ -67,7 +69,11 @@ class SurrealStorage implements Storage, ApplicationEventListener<ApplicationSta
         surrealClient.insertBuildAsync(authorization, build).subscribe({result->
             log.info "BuildBean saved, {}", result
         }, {error->
-            log.error "Error saving build bean {}", build, error
+            def msg = error.message
+            if( error instanceof HttpClientResponseException){
+                msg += ":\n $error.response.body"
+            }
+            log.error "Error saving build bean {}\n{}", msg, build, error
         })
     }
 }
