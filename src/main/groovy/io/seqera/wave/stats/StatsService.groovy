@@ -24,7 +24,7 @@ class StatsService implements ApplicationEventListener<BuildEvent> {
 
     @Override
     void onApplicationEvent(BuildEvent event) {
-        storage.addBuild(fromEvent(event))
+        storage.saveBuild(fromEvent(event))
     }
 
     static BuildRecord fromEvent(BuildEvent event) {

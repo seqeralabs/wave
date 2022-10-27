@@ -83,7 +83,7 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
         when:
         storage.initializeDb()
 
-        storage.addBuild(build)
+        storage.saveBuild(build)
 
         sleep 100 //as we are using async, let database a while to store the item
         then:
@@ -120,7 +120,7 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
         when:
         surrealContainer.stop()
 
-        storage.addBuild(build)
+        storage.saveBuild(build)
 
         sleep 100 //as we are using async, let database a while to store the item
         then:

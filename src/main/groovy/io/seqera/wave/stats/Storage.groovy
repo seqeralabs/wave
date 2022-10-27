@@ -4,7 +4,7 @@ import groovy.transform.CompileStatic
 
 
 /**
- * A storage for statistic datas
+ * A storage for statistic data
  *
  * @author : jorge <jorge.aguilera@seqera.io>
  *
@@ -12,6 +12,6 @@ import groovy.transform.CompileStatic
 @CompileStatic
 interface Storage {
 
-    void addBuild(BuildRecord build)
+    void saveBuild(BuildRecord build)
 
 }

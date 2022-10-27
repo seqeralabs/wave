@@ -65,7 +65,7 @@ class SurrealStorage implements Storage, ApplicationEventListener<ApplicationSta
     }
 
     @Override
-    void addBuild(BuildRecord build) {
+    void saveBuild(BuildRecord build) {
         surrealClient.insertBuildAsync(authorization, build).subscribe({result->
             log.info "BuildBean saved, {}", result
         }, {error->
