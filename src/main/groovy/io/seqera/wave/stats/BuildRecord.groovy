@@ -17,7 +17,7 @@ import groovy.transform.ToString
 @CompileStatic
 class BuildRecord {
 
-    String id
+    String buildId
     String dockerFile
     String condaFile
     String targetImage

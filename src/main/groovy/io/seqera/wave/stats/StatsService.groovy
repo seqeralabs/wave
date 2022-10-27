@@ -29,9 +29,9 @@ class StatsService implements ApplicationEventListener<BuildEvent> {
 
     static BuildRecord fromEvent(BuildEvent event) {
         return new BuildRecord(
-                id: event.buildRequest.id,
-                dockerFile:event.buildRequest.dockerFile,
-                condaFile:event.buildRequest.condaFile,
+                buildId: event.buildRequest.id,
+                dockerFile:event.buildRequest.dockerFile?.replaceAll("[\ud83c\udf00-\ud83d\ude4f]|[\ud83d\ude80-\ud83d\udeff]", ""),
+                condaFile:event.buildRequest.condaFile?.replaceAll("[\ud83c\udf00-\ud83d\ude4f]|[\ud83d\ude80-\ud83d\udeff]", ""),
                 targetImage:event.buildRequest.targetImage,
                 userName:event.buildRequest.user?.userName,
                 userEmail:event.buildRequest.user?.email,

@@ -60,21 +60,25 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
 
     void "can insert an async build"() {
         given:
+        final String dockerFile = """\
+            FROM quay.io/nextflow/bash
+            RUN echo "Look ma' building 🐳🐳 on the fly!" > /hello.txt
+            ENV NOW=${System.currentTimeMillis()}
+            """
+        final String condaFile = """
+            echo "Look ma' building 🐳🐳 on the fly!" > /hello.txt
+        """
         HttpClient httpClient = HttpClient.create(new URL(surrealDbURL))
         SurrealStorage storage = applicationContext.getBean(SurrealStorage)
-        BuildRecord build = new BuildRecord(
-                id: 'test',
-                dockerFile: 'test',
-                condaFile: 'test',
-                targetImage: 'test',
-                userName: 'test',
-                userEmail: 'test',
-                userId: 1,
-                ip: '127.0.0.1',
-                startTime: Instant.now(),
-                duration: Duration.ofSeconds(1),
-                exitStatus: 0,
+        BuildEvent event = new BuildEvent(
+                buildRequest: new BuildRequest(dockerFile,
+                        Path.of("."), "buildrepo", condaFile, null,
+                        ContainerPlatform.of('amd64'),'{auth}', null, "127.0.0.1"),
+                buildResult: new BuildResult(
+                        "id", -1, "ok", Instant.now(), Duration.ofSeconds(3)
+                )
         )
+        BuildRecord build = StatsService.fromEvent(event)
 
         when:
         storage.initializeDb()
@@ -100,7 +104,7 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
         given:
         SurrealStorage storage = applicationContext.getBean(SurrealStorage)
         BuildRecord build = new BuildRecord(
-                id: 'test',
+                buildId: 'test',
                 dockerFile: 'test',
                 condaFile: 'test',
                 targetImage: 'test',
