@@ -1,7 +1,6 @@
-package io.seqera.wave.stats
+package io.seqera.wave.service.persistence
 
 import groovy.transform.CompileStatic
-
 
 /**
  * A storage for statistic data
@@ -10,7 +9,7 @@ import groovy.transform.CompileStatic
  *
  */
 @CompileStatic
-interface Storage {
+interface PersistenceService {
 
     void saveBuild(BuildRecord build)
 

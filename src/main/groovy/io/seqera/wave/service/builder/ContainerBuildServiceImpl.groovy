@@ -172,11 +172,11 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         // launch the build async
         CompletableFuture
                 .<BuildResult>supplyAsync(() -> launch(request), executor)
-                .thenApply((result) -> { sendCompletion(request,result); return result })
+                .thenApply((result) -> { notifyCompletion(request,result); return result })
     }
 
-    protected sendCompletion(BuildRequest request, BuildResult result) {
-        eventPublisher.publishEvent(new BuildEvent(buildRequest: request, buildResult: result))
+    protected notifyCompletion(BuildRequest request, BuildResult result) {
+        eventPublisher.publishEvent(new BuildEvent(request, result))
     }
 
     protected void checkOrSubmit(BuildRequest request) {

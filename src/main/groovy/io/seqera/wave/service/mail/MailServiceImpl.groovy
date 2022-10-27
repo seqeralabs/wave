@@ -6,7 +6,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
-import io.micronaut.context.event.ApplicationEventListener
+import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.mail.Mail
 import io.seqera.wave.mail.MailAttachment
 import io.seqera.wave.mail.MailHelper
@@ -25,7 +25,7 @@ import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
 @Requires(env = 'mail')
 @Singleton
 @CompileStatic
-class MailServiceImpl implements MailService, ApplicationEventListener<BuildEvent> {
+class MailServiceImpl implements MailService {
 
     @Inject
     private MailSpooler spooler
@@ -36,8 +36,8 @@ class MailServiceImpl implements MailService, ApplicationEventListener<BuildEven
     @Value('${wave.server.url}')
     private String serverUrl
 
-    @Override
-    void onApplicationEvent(BuildEvent event) {
+    @EventListener
+    void onBuildEvent(BuildEvent event) {
         try {
             sendCompletionEmail(event.buildRequest, event.buildResult)
         }

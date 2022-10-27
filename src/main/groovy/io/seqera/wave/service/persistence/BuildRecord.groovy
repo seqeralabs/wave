@@ -1,31 +1,34 @@
-package io.seqera.wave.stats
+package io.seqera.wave.service.persistence
+
+import java.time.Duration
+import java.time.Instant
 
 import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
-import io.micronaut.context.event.ApplicationEventListener
+import groovy.transform.ToString
 import io.seqera.wave.service.builder.BuildEvent
-import jakarta.inject.Inject
-import jakarta.inject.Singleton
 
 
 /**
- * A listener to model events as statistics data
+ * A collection of request and response properties to be stored
  *
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
-@Slf4j
-@Singleton
+@ToString
 @CompileStatic
-class StatsService implements ApplicationEventListener<BuildEvent> {
+class BuildRecord {
 
-    @Inject
-    Storage storage
-
-    @Override
-    void onApplicationEvent(BuildEvent event) {
-        storage.saveBuild(fromEvent(event))
-    }
+    String buildId
+    String dockerFile
+    String condaFile
+    String targetImage
+    String userName
+    String userEmail
+    Long userId
+    String ip
+    Instant startTime
+    Duration duration
+    int exitStatus
 
     static BuildRecord fromEvent(BuildEvent event) {
         return new BuildRecord(

@@ -1,4 +1,4 @@
-package io.seqera.wave.stats
+package io.seqera.wave.service.persistence
 
 import spock.lang.Specification
 
@@ -13,15 +13,13 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
-import io.seqera.wave.stats.surrealdb.SurrealStorage
 import io.seqera.wave.test.SurrealDBTestContainer
 import io.seqera.wave.tower.User
-
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
-class SurrealDBTest extends Specification implements SurrealDBTestContainer {
+class PersistenceServiceTest extends Specification implements SurrealDBTestContainer {
 
     ApplicationContext applicationContext
 
@@ -69,16 +67,13 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
             echo "Look ma' building 🐳🐳 on the fly!" > /hello.txt
         """
         HttpClient httpClient = HttpClient.create(new URL(surrealDbURL))
-        SurrealStorage storage = applicationContext.getBean(SurrealStorage)
-        BuildEvent event = new BuildEvent(
-                buildRequest: new BuildRequest(dockerFile,
-                        Path.of("."), "buildrepo", condaFile, null,
-                        ContainerPlatform.of('amd64'),'{auth}', null, "127.0.0.1"),
-                buildResult: new BuildResult(
-                        "id", -1, "ok", Instant.now(), Duration.ofSeconds(3)
-                )
-        )
-        BuildRecord build = StatsService.fromEvent(event)
+        PersistenceServiceImpl storage = applicationContext.getBean(PersistenceServiceImpl)
+        BuildRequest request = new BuildRequest(dockerFile,
+                Path.of("."), "buildrepo", condaFile, null,
+                ContainerPlatform.of('amd64'),'{auth}', null, "127.0.0.1")
+        BuildResult result = new BuildResult("id", -1, "ok", Instant.now(), Duration.ofSeconds(3))
+        BuildEvent event = new BuildEvent(request, result)
+        BuildRecord build = BuildRecord.fromEvent(event)
 
         when:
         storage.initializeDb()
@@ -89,7 +84,7 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
         then:
         def map = httpClient.toBlocking()
                 .retrieve(
-                        HttpRequest.GET("/key/build_wave")
+                        HttpRequest.GET("/key/wave_build")
                                 .headers([
                                         'ns'          : 'test',
                                         'db'          : 'test',
@@ -102,7 +97,7 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
 
     void "can't insert a build but ends without error"() {
         given:
-        SurrealStorage storage = applicationContext.getBean(SurrealStorage)
+        PersistenceServiceImpl storage = applicationContext.getBean(PersistenceServiceImpl)
         BuildRecord build = new BuildRecord(
                 buildId: 'test',
                 dockerFile: 'test',
@@ -130,20 +125,20 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
     void "an event insert a build"() {
         given:
         HttpClient httpClient = HttpClient.create(new URL(surrealDbURL))
-        SurrealStorage storage = applicationContext.getBean(SurrealStorage)
+        PersistenceServiceImpl storage = applicationContext.getBean(PersistenceServiceImpl)
         storage.initializeDb()
-        StatsService service = applicationContext.getBean(StatsService)
+        final service = applicationContext.getBean(PersistenceServiceImpl)
         BuildRequest request = new BuildRequest("test", Path.of("."), "test", "test", Mock(User), ContainerPlatform.of('amd64'),'{auth}', "test", "127.0.0.1")
         BuildResult result = new BuildResult("id", 0, "content", Instant.now(), Duration.ofSeconds(1))
-        BuildEvent event = new BuildEvent(buildRequest: request, buildResult: result)
+        BuildEvent event = new BuildEvent(request, result)
 
         when:
-        service.onApplicationEvent(event)
+        service.onBuildEvent(event)
         sleep 100 //as we are using async, let database a while to store the item
         then:
         def map = httpClient.toBlocking()
                 .retrieve(
-                        HttpRequest.GET("/key/build_wave")
+                        HttpRequest.GET("/key/wave_build")
                                 .headers([
                                         'ns'          : 'test',
                                         'db'          : 'test',
@@ -157,13 +152,13 @@ class SurrealDBTest extends Specification implements SurrealDBTestContainer {
     void "an event is not inserted if no database"() {
         given:
         surrealContainer.stop()
-        StatsService service = applicationContext.getBean(StatsService)
+        final service = applicationContext.getBean(PersistenceServiceImpl)
         BuildRequest request = new BuildRequest("test", Path.of("."), "test", "test", Mock(User), ContainerPlatform.of('amd64'),'{auth}', "test", "127.0.0.1")
         BuildResult result = new BuildResult("id", 0, "content", Instant.now(), Duration.ofSeconds(1))
-        BuildEvent event = new BuildEvent(buildRequest: request, buildResult: result)
+        BuildEvent event = new BuildEvent(request, result)
 
         when:
-        service.onApplicationEvent(event)
+        service.onBuildEvent(event)
         sleep 100 //as we are using async, let database a while to store the item
         then:
         true
