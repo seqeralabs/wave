@@ -83,6 +83,9 @@ dependencies {
     implementation "io.micronaut.micrometer:micronaut-micrometer-registry-prometheus"
     // Also required to enable endpoint
     implementation "io.micronaut:micronaut-management"
+
+    implementation("io.micronaut.security:micronaut-security")
+    compileOnly("io.micronaut.security:micronaut-security-annotations")
 }
 
 

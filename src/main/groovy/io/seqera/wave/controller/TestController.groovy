@@ -1,15 +1,19 @@
 package io.seqera.wave.controller
 
 import java.nio.file.Path
+import java.security.Principal
 import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.server.util.HttpClientAddressResolver
+import io.micronaut.security.annotation.Secured
+import io.micronaut.security.rules.SecurityRule
 import io.seqera.wave.auth.DockerAuthService
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
@@ -25,6 +29,7 @@ import jakarta.inject.Inject
  */
 @Controller("/")
 @CompileStatic
+@Slf4j
 class TestController {
 
     @Inject
@@ -51,13 +56,17 @@ class TestController {
 
     @Inject HttpClientAddressResolver addressResolver
 
+    @Secured(SecurityRule.IS_AUTHENTICATED)
     @Get('/test-build')
-    HttpResponse<String> testBuild(@Nullable String platform,
+    HttpResponse<String> testBuild(Principal principal,
+                                   @Nullable String platform,
                                    @Nullable String repo,
                                    @Nullable String cache,
                                    @Nullable String accessToken,
                                    @Nullable Long workspaceId,
-                                    HttpRequest httpRequest) {
+                                   HttpRequest httpRequest) {
+        log.info("Test build requested by $principal.name")
+
         if( !accessToken && !allowAnonymous )
             throw new BadRequestException("Missing user access token")
 

@@ -14,6 +14,8 @@ import io.micronaut.http.annotation.Header
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.server.EmbeddedServer
+import io.micronaut.security.annotation.Secured
+import io.micronaut.security.rules.SecurityRule
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
@@ -27,6 +29,7 @@ class HttpContainerTokenControllerTest extends Specification {
 
     @Requires(property = 'spec.name', value = 'HttpContainerTokenController')
     @Controller("/")
+    @Secured(SecurityRule.IS_ANONYMOUS)
     static class TowerController {
         @Get('/user-info')
         HttpResponse<UserInfoResponse> userInfo(@Header("Authorization") String authorization) {

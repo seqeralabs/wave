@@ -7,6 +7,8 @@ micronaut:
     json:
       additionalTypes:
         - application/vnd.docker.distribution.manifest.list.v2+json
+  metrics:
+    enabled: false
 ---
 datasources:
   default:

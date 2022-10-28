@@ -19,6 +19,8 @@ import io.micronaut.http.annotation.Error
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.http.server.util.HttpClientAddressResolver
+import io.micronaut.security.annotation.Secured
+import io.micronaut.security.rules.SecurityRule
 import io.seqera.wave.ErrorHandler
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RegistryProxyService.DelegateResponse
@@ -42,6 +44,7 @@ import reactor.core.publisher.Mono
  */
 @Slf4j
 @CompileStatic
+@Secured(SecurityRule.IS_ANONYMOUS)
 @Controller("/v2")
 class RegistryProxyController {
 

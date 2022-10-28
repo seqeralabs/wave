@@ -26,6 +26,9 @@ wave:
     workspace: 'build-workspace'
     repo: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/dev"
     cache: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/cache"
+  security:
+    username: ${WAVE_USERNAME:root}
+    password: ${WAVE_PASSWORD:Wave!1234}
 ---
 logger:
   levels:
