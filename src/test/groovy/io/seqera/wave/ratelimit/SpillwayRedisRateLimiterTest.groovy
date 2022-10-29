@@ -16,7 +16,6 @@ import redis.clients.jedis.JedisPool
  */
 class SpillwayRedisRateLimiterTest extends Specification implements RedisTestContainer {
 
-
     ApplicationContext applicationContext
 
     SpillwayRateLimiter rateLimiter
@@ -24,13 +23,13 @@ class SpillwayRedisRateLimiterTest extends Specification implements RedisTestCon
     JedisPool jedisPool
 
     def setup() {
-        restartRedis()
         applicationContext = ApplicationContext.run([
                 REDIS_HOST   : redisHostName,
                 REDIS_PORT   : redisPort
         ], 'test', 'redis','rate-limit')
         rateLimiter = applicationContext.getBean(SpillwayRateLimiter)
         jedisPool = new JedisPool(redisHostName, redisPort as int)
+        jedisPool.resource.flushAll()
     }
 
     void "can acquire 1 auth resource"() {

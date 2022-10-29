@@ -30,7 +30,6 @@ class RedisContainerTokenControllerTest extends Specification implements RedisTe
 
     def setup() {
         port = SocketUtils.findAvailableTcpPort()
-        restartRedis()
         embeddedServer = ApplicationContext.run(EmbeddedServer, [
                 REDIS_HOST   : redisHostName,
                 REDIS_PORT   : redisPort,
@@ -39,6 +38,7 @@ class RedisContainerTokenControllerTest extends Specification implements RedisTe
         ], 'test', 'h2', 'redis')
 
         jedisPool = new JedisPool(redisHostName, redisPort as int)
+        jedisPool.resource.flushAll()
     }
 
     ApplicationContext getApplicationContext() {

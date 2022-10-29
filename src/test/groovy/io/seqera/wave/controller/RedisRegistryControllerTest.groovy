@@ -34,7 +34,6 @@ class RedisRegistryControllerTest extends Specification implements DockerRegistr
 
     def setup() {
         port = SocketUtils.findAvailableTcpPort()
-        restartRedis()
         embeddedServer = ApplicationContext.run(EmbeddedServer, [
                 REDIS_HOST   : redisHostName,
                 REDIS_PORT   : redisPort,
@@ -44,7 +43,7 @@ class RedisRegistryControllerTest extends Specification implements DockerRegistr
         ], 'test', 'h2', 'redis')
 
         jedisPool = new JedisPool(redisHostName, redisPort as int)
-
+        jedisPool.resource.flushAll()
         initRegistryContainer(applicationContext)
     }
 

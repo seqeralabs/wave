@@ -24,13 +24,13 @@ class RedisBuildStoreTest extends Specification implements RedisTestContainer {
     JedisPool jedisPool
 
     def setup() {
-        restartRedis()
         applicationContext = ApplicationContext.run([
                 wave:[ build:[ timeout: '5s' ]],
                 REDIS_HOST: redisHostName,
                 REDIS_PORT: redisPort
         ], 'test', 'redis')
         jedisPool = new JedisPool(redisHostName, redisPort as int)
+        jedisPool.resource.flushAll()
     }
 
     def 'should get and put key values' () {
