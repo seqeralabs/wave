@@ -22,6 +22,16 @@ class RegistryCredentialsProviderTest extends Specification {
 
     @Inject
     @Nullable
+    @Value('${wave.registries.default.username}')
+    private String defaultUsername
+
+    @Inject
+    @Nullable
+    @Value('${wave.registries.default.password}')
+    private String defaultPassword
+
+    @Inject
+    @Nullable
     @Value('${wave.registries.docker.username}')
     private String dockerUsername
 
@@ -44,8 +54,8 @@ class RegistryCredentialsProviderTest extends Specification {
         when:
         def creds1 = credentialsProvider.getDefaultCredentials(null)
         then:
-        creds1.username == dockerUsername
-        creds1.password == dockerPassword
+        creds1.username == defaultUsername
+        creds1.password == defaultPassword
 
         when:
         def creds2 = credentialsProvider.getDefaultCredentials('docker.io')

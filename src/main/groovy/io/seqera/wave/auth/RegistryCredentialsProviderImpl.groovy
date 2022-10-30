@@ -26,6 +26,21 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
 
     @Inject
     @Nullable
+    @Value('${wave.registries.default.url}')
+    private String defaultRegistry
+
+    @Inject
+    @Nullable
+    @Value('${wave.registries.default.username}')
+    private String defaultUsername
+
+    @Inject
+    @Nullable
+    @Value('${wave.registries.default.password}')
+    private String defaultPassword
+
+    @Inject
+    @Nullable
     @Value('${wave.registries.docker.username}')
     private String dockerUsername
 
@@ -104,7 +119,9 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
 
     protected RegistryCredentials getDefaultCredentials0(String registry) {
 
-        if( !registry || registry == 'docker.io' ) {
+        if( !registry || registry == defaultRegistry ) {
+            return credentialsFactory.create(defaultRegistry, defaultUsername, defaultPassword)
+        }else if( registry == 'docker.io' ) {
             if( dockerUsername && dockerPassword ) {
                 return credentialsFactory.create('docker.io', dockerUsername, dockerPassword)
             }

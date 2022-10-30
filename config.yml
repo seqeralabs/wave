@@ -2,6 +2,9 @@
 wave:
   arch: "x86_64"
   registries:
+    default:
+      username: "${DOCKER_USER}"
+      password: "${DOCKER_PAT}"
     docker:
       username: "${DOCKER_USER}"
       password: "${DOCKER_PAT}"
