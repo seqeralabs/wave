@@ -1,6 +1,5 @@
 package io.seqera.wave.service.mail
 
-import java.time.Duration
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -16,7 +15,9 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+import static io.seqera.wave.util.DataTimeUtils.formatDuration
 import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -39,7 +40,7 @@ class MailServiceImpl implements MailService {
     @EventListener
     void onBuildEvent(BuildEvent event) {
         try {
-            sendCompletionEmail(event.buildRequest, event.buildResult)
+            sendCompletionEmail(event.request, event.result)
         }
         catch (Exception e) {
             log.warn "Unable to send completion notication - reason: ${e.message?:e}"
@@ -75,6 +76,7 @@ class MailServiceImpl implements MailService {
         binding.build_platform = req.platform
         binding.build_dockerfile = req.dockerFile ?: '-'
         binding.put('build_logs', result.logs)
+        binding.build_url = "$serverUrl/view/builds/${result.id}"
         binding.put('server_url', serverUrl)
         // result the main object
         Mail mail = new Mail()
@@ -83,15 +85,6 @@ class MailServiceImpl implements MailService {
         mail.body(MailHelper.getTemplateFile('/io/seqera/wave/build-notification.html', binding))
         mail.attach(MailAttachment.resource('/io/seqera/wave/seqera-logo.png', contentId: '<seqera-logo>', disposition: 'inline'))
         return mail
-    }
-
-    protected String formatDuration(Duration duration) {
-        if( duration==null )
-            return null
-        final time = duration.toMillis()
-        int minutes = time / (60 * 1_000) as int
-        int seconds = (time / 1_000 as int) % 60
-        return String.format("%d:%02d", minutes, seconds);
     }
 
 }

@@ -1,12 +1,12 @@
 <html>
 <head>
-<head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Wave container build notification email">
-    <title>Wave container build notification</title>
-</head>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="Wave container build notification email">
+        <title>Wave container build notification</title>
+    </head>
 <body>
 <div style="font-family:'-apple-system', BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; padding: 30px; max-width: 800px; margin: 0 auto;">
 
@@ -31,7 +31,7 @@
     <table cellpadding="4" >
         <tr>
             <td>Request ID</td>
-            <td><a href="${build_url}">${build_id}</a></td>
+            <td>${build_id}</td>
         </tr>
 
         <tr>
@@ -60,16 +60,13 @@
         </tr>
 
         <tr>
-        <td>Exit status</td>
-        <td>${build_exit_status}</td>
+            <td>Exit status</td>
+            <td>${build_exit_status}</td>
         </tr>
     </table>
 
     <h3>Dockerfile</h3>
     <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">${build_dockerfile}</pre>
-
-    <h3>Build logs</h3>
-    <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">${build_logs}</pre>
 
     <div class="footer" style="clear:both;width:100%;">
         <hr class="footer-hr" style="height:0;overflow:visible;margin-top:30px;border:0;border-top:1px solid #eee;color:#999999;font-size:12px;line-height:18px;margin-bottom:30px;">

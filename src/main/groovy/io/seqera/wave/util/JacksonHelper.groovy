@@ -12,6 +12,7 @@
 package io.seqera.wave.util
 
 import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -69,6 +70,10 @@ class JacksonHelper {
      * @return A concrete instance of {@code T}
      */
     static <T> T fromJson(String str, Class<T> type) {
+        str != null ? DEFAULT_JSON_MAPPER.readValue(str, type) : null
+    }
+
+    static <T> T fromJson(String str, TypeReference<T> type) {
         str != null ? DEFAULT_JSON_MAPPER.readValue(str, type) : null
     }
 
