@@ -58,8 +58,8 @@ class SpillwayRedisRateLimiterTest extends Specification  {
         then:
         noExceptionThrown()
         and:
-        jedis.scan("0").result.size() == 1
-        jedis.scan("0").result.first().startsWith('spillway|anonymousBuilds|perUser|test')
+        jedisPool.resource.scan("0").result.size() == 1
+        jedisPool.resource.scan("0").result.first().startsWith('spillway|anonymousBuilds|perUser|test')
     }
 
     void "can't acquire more resources"() {

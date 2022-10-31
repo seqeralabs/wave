@@ -1,5 +1,6 @@
-package io.seqera.wave.service.persistence
+package io.seqera.wave.service.persistence.impl
 
+import com.fasterxml.jackson.core.type.TypeReference
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Primary
@@ -9,10 +10,11 @@ import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
-import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.persistence.BuildRecord
+import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 /**
  * Implements a persistince service based based on SurrealDB
  *
@@ -24,10 +26,10 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-class PersistenceServiceImpl implements PersistenceService {
+class SurrealPersistenceService implements PersistenceService {
 
     @Inject
-    private SurrealDbClient surrealDb
+    private SurrealClient surrealDb
 
     @Value('${surrealdb.user}')
     private String user
@@ -45,13 +47,8 @@ class PersistenceServiceImpl implements PersistenceService {
             initializeDb()
     }
 
-    @EventListener
-    void onBuildEvent(BuildEvent event) {
-        saveBuild(BuildRecord.fromEvent(event))
-    }
-
     void initializeDb(){
-        final result = surrealDb.sql(authorization, "define table wave_build SCHEMALESS")
+        final result = surrealDb.sqlAsMap(authorization, "define table wave_build SCHEMALESS")
         if( result.status != "OK")
             throw new IllegalStateException("Unable to initiliase SurrealDB - cause: $result")
     }
@@ -71,5 +68,27 @@ class PersistenceServiceImpl implements PersistenceService {
             }
             log.error "Error saving build record ${msg}\n${build}", error
         })
+    }
+
+    void saveBuildBlocking(BuildRecord record) {
+        surrealDb.insertBuild(getAuthorization(), record)
+    }
+
+    BuildRecord loadBuild(String buildId) {
+        if( !buildId )
+            throw new IllegalArgumentException('Missing build id argument')
+        final query = "select * from wave_build where buildId = '$buildId'"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<BuildRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(patchDuration(json), type) : null
+        final result = data && data[0].result ? data[0].result[0] : null
+        return result
+    }
+
+    static protected String patchDuration(String value) {
+        if( !value )
+            return value
+        // Yet another SurrealDB bug: it wraps number values with double quotes as a string
+        value.replaceAll(/"duration":"(\d+\.\d+)"/,'"duration":$1')
     }
 }
