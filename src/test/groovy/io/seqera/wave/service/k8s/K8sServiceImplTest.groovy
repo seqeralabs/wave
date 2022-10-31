@@ -267,13 +267,13 @@ class K8sServiceImplTest extends Specification {
                 ],
                 'wave.build.k8s.resources.requests.cpu': '2',
                 'wave.build.k8s.resources.requests.memory': '4Gi',
-        ]
+        ] as Map<String,Object>
         and:
         def ctx = ApplicationContext.run(PROPS)
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null, PROPS['wave.build.k8s.node-selector'])
+        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null, PROPS['wave.build.k8s.node-selector'] as Map<String,String>)
         then:
         result.spec.nodeSelector.toString() == PROPS['wave.build.k8s.node-selector'].toString()
         and:

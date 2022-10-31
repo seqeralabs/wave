@@ -3,18 +3,16 @@ package io.seqera.wave.service.builder
 import spock.lang.Specification
 
 import java.nio.file.Files
-import java.nio.file.Path
 
-import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Property
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
 import io.seqera.wave.service.k8s.K8sServiceImpl
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -42,7 +40,7 @@ class KubeBuildStrategyTest extends Specification {
 
     def 'should get platform selector' () {
         expect:
-        strategy.getPlatformSelector(ContainerPlatform.of(PLATFORM), SELECTORS) == EXPECTED
+        strategy.getSelectorLabel(ContainerPlatform.of(PLATFORM), SELECTORS) == EXPECTED
 
         where:
         PLATFORM        | SELECTORS                                             | EXPECTED
@@ -53,6 +51,17 @@ class KubeBuildStrategyTest extends Specification {
         'x86_64'        | ['linux/amd64': 'foo=1', 'linux/arm64': 'bar=2']      | ['foo': '1']
         'arm64'         | ['linux/amd64': 'foo=1', 'linux/arm64': 'bar=2']      | ['bar': '2']
         
+    }
+
+    def 'should check unmatched platform' () {
+        expect:
+        strategy.getSelectorLabel(ContainerPlatform.of('amd64'), [:]) == [:]
+
+        when:
+        strategy.getSelectorLabel(ContainerPlatform.of('amd64'), [arm64:'x=1'])
+        then:
+        def err = thrown(BadRequestException)
+        err.message == "Unsupported container platform 'linux/amd64'"
     }
 
     def "request to build a container with right selector"(){
