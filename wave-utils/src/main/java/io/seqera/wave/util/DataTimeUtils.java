@@ -1,5 +1,6 @@
 package io.seqera.wave.util;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -28,6 +29,15 @@ public class DataTimeUtils {
                 .withZone(ZoneId.of(zoneId))
                 .format(ts);
 
+    }
+
+    static public String formatDuration(Duration duration) {
+        if( duration==null )
+            return null;
+        final long time = duration.toMillis();
+        int minutes = (int) time / (60 * 1_000) ;
+        int seconds = (int) (time / 1_000) % 60;
+        return String.format("%d:%02d", minutes, seconds);
     }
 
 }

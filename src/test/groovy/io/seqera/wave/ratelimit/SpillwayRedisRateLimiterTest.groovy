@@ -8,7 +8,7 @@ import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.configuration.RateLimiterConfig
 import io.seqera.wave.ratelimit.impl.SpillwayRateLimiter
 import io.seqera.wave.test.RedisTestContainer
-import redis.clients.jedis.JedisPool
+import redis.clients.jedis.Jedis
 
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
@@ -20,7 +20,7 @@ class SpillwayRedisRateLimiterTest extends Specification implements RedisTestCon
 
     SpillwayRateLimiter rateLimiter
 
-    JedisPool jedisPool
+    Jedis jedis
 
     def setup() {
         applicationContext = ApplicationContext.run([
@@ -28,8 +28,12 @@ class SpillwayRedisRateLimiterTest extends Specification implements RedisTestCon
                 REDIS_PORT   : redisPort
         ], 'test', 'redis','rate-limit')
         rateLimiter = applicationContext.getBean(SpillwayRateLimiter)
-        jedisPool = new JedisPool(redisHostName, redisPort as int)
-        jedisPool.resource.flushAll()
+        jedis = new Jedis(redisHostName, redisPort as int)
+        jedis.flushAll()
+    }
+
+    def cleanup(){
+        jedis.close()
     }
 
     void "can acquire 1 auth resource"() {
@@ -38,8 +42,8 @@ class SpillwayRedisRateLimiterTest extends Specification implements RedisTestCon
         then:
         noExceptionThrown()
         and:
-        jedisPool.resource.scan("0").result.size() == 1
-        jedisPool.resource.scan("0").result.first().startsWith('spillway|authenticatedBuilds|perUser|test')
+        jedis.scan("0").result.size() == 1
+        jedis.scan("0").result.first().startsWith('spillway|authenticatedBuilds|perUser|test')
     }
 
     void "can acquire 1 anon resource"() {
@@ -48,8 +52,8 @@ class SpillwayRedisRateLimiterTest extends Specification implements RedisTestCon
         then:
         noExceptionThrown()
         and:
-        jedisPool.resource.scan("0").result.size() == 1
-        jedisPool.resource.scan("0").result.first().startsWith('spillway|anonymousBuilds|perUser|test')
+        jedis.scan("0").result.size() == 1
+        jedis.scan("0").result.first().startsWith('spillway|anonymousBuilds|perUser|test')
     }
 
     void "can't acquire more resources"() {
@@ -63,7 +67,7 @@ class SpillwayRedisRateLimiterTest extends Specification implements RedisTestCon
         then:
         noExceptionThrown()
         and:
-        jedisPool.resource.scan("0").result.size() == 1
+        jedis.scan("0").result.size() == 1
 
         when:
         rateLimiter.acquireBuild( new AcquireRequest("test", null))

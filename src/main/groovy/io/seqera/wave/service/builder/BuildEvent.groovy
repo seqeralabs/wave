@@ -14,7 +14,7 @@ import groovy.transform.CompileStatic
 @CompileStatic
 class BuildEvent {
 
-    BuildRequest buildRequest
-    BuildResult buildResult
+    BuildRequest request
+    BuildResult result
 
 }
