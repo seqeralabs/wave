@@ -23,8 +23,10 @@ import io.kubernetes.client.openapi.models.V1VolumeMount
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.core.ContainerPlatform
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+
 /**
  * implements the support for Kubernetes cluster
  *
@@ -62,7 +64,7 @@ class K8sServiceImpl implements K8sService {
 
     @Property(name='wave.build.k8s.node-selector')
     @Nullable
-    private Map<String, String> nodeSelector
+    private Map<String, String> nodeSelectorMap
 
     @Value('${wave.build.k8s.service-account}')
     @Nullable
@@ -84,6 +86,7 @@ class K8sServiceImpl implements K8sService {
      */
     @PostConstruct
     private void init() {
+        log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; node-selector=$nodeSelectorMap; buildTimeout=$buildTimeout; cpus=$requestsCpu; memory=$requestsMemory"
         if( storageClaimName && !storageMountPath )
             throw new IllegalArgumentException("Missing 'wave.build.k8s.storage.mountPath' configuration attribute")
         if( storageMountPath ) {
@@ -92,7 +95,12 @@ class K8sServiceImpl implements K8sService {
             if( !Path.of(buildWorkspace).startsWith(storageMountPath) )
                 throw new IllegalArgumentException("Build workspace should be a sub-directory of 'wave.build.k8s.storage.mountPath' - offending value: '$buildWorkspace' - expected value: '$storageMountPath'")
         }
-        log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; nodeSelector=$nodeSelector; buildTimeout=$buildTimeout; cpus=$requestsCpu; memory=$requestsMemory"
+        // validate node selectors
+        final platforms = nodeSelectorMap ?: Collections.<String,String>emptyMap()
+        for( Map.Entry<String,String> it : platforms ) {
+            log.debug "Checking container platform '$it.key'; selector '$it.value'"
+            ContainerPlatform.of(it.key) // <-- if invalid it will throw an exception
+        }
     }
 
     /**
@@ -261,15 +269,15 @@ class K8sServiceImpl implements K8sService {
      */
     @Override
     @CompileDynamic
-    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds) {
-        final spec = buildSpec(name, containerImage, args, workDir, creds)
+    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, Map<String,String> nodeSelector) {
+        final spec = buildSpec(name, containerImage, args, workDir, creds, nodeSelector)
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec, null, null, null)
     }
 
     @CompileDynamic
-    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path creds) {
+    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path creds, Map<String,String> nodeSelector) {
 
         // required volumes
         final mounts = new ArrayList<V1VolumeMount>(5)

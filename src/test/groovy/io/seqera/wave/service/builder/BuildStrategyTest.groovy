@@ -32,8 +32,10 @@ class BuildStrategyTest extends Specification {
                 '--destination',
                 'quay.io/wave:40e8a6dba50e9b3b609a19c12420d3eb',
                 '--cache=true',
+                '--custom-platform',
+                'linux/amd64',
                 '--cache-repo',
-                'reg.io/wave/build/cache'
+                'reg.io/wave/build/cache',
         ]
     }
 

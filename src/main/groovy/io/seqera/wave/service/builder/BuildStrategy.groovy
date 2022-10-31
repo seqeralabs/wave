@@ -33,6 +33,8 @@ abstract class BuildStrategy {
                 << "--destination"
                 << req.targetImage
                 << "--cache=true"
+                << "--custom-platform"
+                << req.platform.toString()
 
         if( req.cacheRepository ) {
             result << "--cache-repo" << req.cacheRepository

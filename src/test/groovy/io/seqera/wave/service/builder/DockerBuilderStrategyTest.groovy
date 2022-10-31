@@ -22,7 +22,7 @@ class DockerBuilderStrategyTest extends Specification {
         and:
         def work = Path.of('/work/foo')
         when:
-        def cmd = service.dockerWrapper(work, null)
+        def cmd = service.dockerWrapper(work, null, null)
         then:
         cmd == ['docker',
                 'run',
@@ -32,7 +32,7 @@ class DockerBuilderStrategyTest extends Specification {
                 'gcr.io/kaniko-project/executor:v1.9.1']
 
         when:
-        cmd = service.dockerWrapper(work, Path.of('/foo/creds.json'))
+        cmd = service.dockerWrapper(work, Path.of('/foo/creds.json'), ContainerPlatform.of('arm64'))
         then:
         cmd == ['docker',
                 'run',
@@ -40,6 +40,7 @@ class DockerBuilderStrategyTest extends Specification {
                 '-w', '/work/foo',
                 '-v', '/work/foo:/work/foo',
                 '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
+                '--platform', 'linux/arm64/v8',
                 'gcr.io/kaniko-project/executor:v1.9.1']
 
         cleanup:
@@ -64,13 +65,14 @@ class DockerBuilderStrategyTest extends Specification {
                 '-w', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f',
                 '-v', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f:/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f',
                 '-v', '/work/creds.json:/kaniko/.docker/config.json:ro',
+                '--platform', 'linux/amd64',
                 'gcr.io/kaniko-project/executor:v1.9.1',
                 '--dockerfile', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f/Dockerfile',
                 '--context', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f',
                 '--destination', 'repo:17e58f4434c26104c2cf9f0eb8fbc16f',
                 '--cache=true',
-                '--cache-repo', 'reg.io/wave/build/cache'
-        ]
+                '--custom-platform', 'linux/amd64',
+                '--cache-repo', 'reg.io/wave/build/cache' ]
 
         cleanup:
         ctx.close()
@@ -93,9 +95,9 @@ class DockerBuilderStrategyTest extends Specification {
                 '--context', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f',
                 '--destination', 'repo:17e58f4434c26104c2cf9f0eb8fbc16f',
                 '--cache=true',
+                '--custom-platform', 'linux/amd64',
                 '--cache-repo', 'reg.io/wave/build/cache',
-                '--compressed-caching', 'false'
-        ]
+                '--compressed-caching', 'false' ]
 
         cleanup:
         ctx.close()
