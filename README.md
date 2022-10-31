@@ -180,6 +180,48 @@ In `dev`, run this command:
 In `prod`, profiles are activated via MICRONAUT_ENVIRONMENTS (i.e. `MICRONAUT_ENVIRONMENTS=mysql,mail,ec2`)
 
 
+== Surrealdb
+
+Use statistics are stored in a SurrealDB database (if the Micronaut environment `surrealdb` is provided)
+
+```
+DATA="INFO FOR DB;"
+
+curl --request POST \
+    --header "Accept: application/json" \
+    --header "NS:seqera" \
+    --header "DB:wave" \
+    --user "root:root" --data "${DATA}" \
+    http://surrealdb:8000/sql 
+```
+
+`[{"time":"46.215µs","status":"OK","result":{"dl":{},"dt":{},"sc":{},"tb":{}}}]`
+
+After a build we can request statistics
+
+```
+curl --request GET \
+    --header "Accept: application/json" \
+    --header "NS:seqera" \
+    --header "DB:wave" \
+    --user "root:root" \
+    http://surrealdb:8000/key/build_wave 
+```
+
+```
+[
+   {
+      "time":"86.91µs",
+      "status":"OK",
+      "result":[
+         {
+            "dockerFile":"FROM docker.io/ubuntu\n\tRUN echo \"Look ma' building on the fly at Wed Oct 26 12:43:52 CEST 2022\" > /hello.txt\n   ",
+            "duration":"10.356435285",
+            "exitStatus":0,
+            "id":"build_wave:jkihg4lqpy4b42s3hpr8",
+            ....
+```
+
 == Debugging 
 
 * To debug http requests made proxy client add the following Jvm setting `'-Djdk.httpclient.HttpClient.log=requests,headers'` 

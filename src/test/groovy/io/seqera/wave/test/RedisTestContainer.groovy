@@ -1,30 +1,30 @@
 package io.seqera.wave.test
 
-import spock.lang.Shared
 
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.utility.DockerImageName
-import org.testcontainers.utility.MountableFile
-
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 trait RedisTestContainer {
 
-    @Shared
-    static GenericContainer redisContainer = new GenericContainer(DockerImageName.parse("redis:7.0.4-alpine"))
-            .withExposedPorts(6379)
-            .waitingFor(Wait.forLogMessage(".*Ready to accept connections.*\\n", 1));
+    private static final Logger log = LoggerFactory.getLogger(RedisTestContainer)
 
+    static GenericContainer redisContainer
 
-    void restartRedis(){
-        if( redisContainer.running)
-            redisContainer.stop()
+    static {
+        log.debug "Starting Redis test container"
+        redisContainer = new GenericContainer(DockerImageName.parse("redis:7.0.4-alpine"))
+                .withExposedPorts(6379)
+                .waitingFor(Wait.forLogMessage(".*Ready to accept connections.*\\n", 1))
         redisContainer.start()
+        log.debug "Started Redis test container"
     }
+
 
     String getRedisHostName(){
         redisContainer.getHost()
@@ -32,5 +32,9 @@ trait RedisTestContainer {
 
     String getRedisPort(){
         redisContainer.getMappedPort(6379)
+    }
+
+    def cleanupSpec(){
+        redisContainer.stop()
     }
 }

@@ -1,9 +1,7 @@
 package io.seqera.wave.service.mail
 
 import spock.lang.Specification
-import spock.lang.Unroll
 
-import java.time.Duration
 import java.time.Instant
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
@@ -34,19 +32,6 @@ class MailServiceImplTest extends Specification {
         def mail = service.buildCompletionMail(request, result, recipient)
         then:
         mail.to == recipient
-    }
-
-    @Unroll
-    def 'should format duration' () {
-        expect:
-        service.formatDuration(DURATION) == EXPECTED
-        where:
-        DURATION                    | EXPECTED
-        null                        | null
-        Duration.ofSeconds(10)      | '0:10'
-        Duration.ofSeconds(70)      | '1:10'
-        Duration.ofMinutes(5)       | '5:00'
-        Duration.ofMinutes(60)      | '60:00'
     }
 
 }
