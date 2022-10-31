@@ -42,6 +42,9 @@ class DockerBuilderStrategyTest extends Specification {
                 '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
                 '--platform', 'linux/arm64/v8',
                 'gcr.io/kaniko-project/executor:v1.9.1']
+
+        cleanup:
+        ctx.close()
     }
 
     def 'should get build command' () {
@@ -56,7 +59,7 @@ class DockerBuilderStrategyTest extends Specification {
         when:
         def cmd = service.buildCmd(req, creds)
         then:
-        cmd.sort() == ['docker',
+        cmd == ['docker',
                 'run',
                 '--rm',
                 '-w', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f',
@@ -69,8 +72,7 @@ class DockerBuilderStrategyTest extends Specification {
                 '--destination', 'repo:17e58f4434c26104c2cf9f0eb8fbc16f',
                 '--cache=true',
                 '--custom-platform', 'linux/amd64',
-                '--cache-repo', 'reg.io/wave/build/cache'
-        ].sort()
+                '--cache-repo', 'reg.io/wave/build/cache' ]
 
         cleanup:
         ctx.close()
@@ -88,15 +90,14 @@ class DockerBuilderStrategyTest extends Specification {
         when:
         def cmd = service.launchCmd(req)
         then:
-        cmd.sort() == [
+        cmd == [
                 '--dockerfile', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f/Dockerfile',
                 '--context', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f',
                 '--destination', 'repo:17e58f4434c26104c2cf9f0eb8fbc16f',
                 '--cache=true',
                 '--custom-platform', 'linux/amd64',
                 '--cache-repo', 'reg.io/wave/build/cache',
-                '--compressed-caching', 'false'
-        ].sort()
+                '--compressed-caching', 'false' ]
 
         cleanup:
         ctx.close()
