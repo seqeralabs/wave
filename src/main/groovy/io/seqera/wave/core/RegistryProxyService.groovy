@@ -3,9 +3,11 @@ package io.seqera.wave.core
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.context.annotation.Context
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.MediaType
+import io.micronaut.retry.annotation.Retryable
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryCredentialsFactory
@@ -107,6 +109,8 @@ class RegistryProxyService {
                 body: resp2.body() )
     }
 
+    @Cacheable('cache-1min')
+    @Retryable([SocketException, IOException])
     boolean isManifestPresent(String image){
         try {
             final coords = ContainerCoordinates.parse(image)

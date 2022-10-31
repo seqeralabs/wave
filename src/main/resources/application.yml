@@ -3,6 +3,8 @@ micronaut:
   application:
     name: wave-app
   caches :
+    cache-1min:
+      expire-after-access: 1m
     # Discovery client by default uses a cache for results. This is a transitive behaviour
     # introduced by prometheus and management dependencies and below line disables as
     # it is unused at the moment by the wave project. See https://micronaut-projects.github.io/micronaut-discovery-client/latest/guide/#introduction
