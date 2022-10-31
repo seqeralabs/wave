@@ -1,7 +1,9 @@
 package io.seqera.wave.util
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
+import java.time.Duration
 import java.time.Instant
 
 /**
@@ -28,5 +30,20 @@ class DateTimeUtilsTest extends Specification {
         DataTimeUtils.formatTimestamp(null,null) == null 
         DataTimeUtils.formatTimestamp(ts1, 'Z') == '2022-10-20 17:00 (GMT)'
         DataTimeUtils.formatTimestamp(ts1, '+02:00') == '2022-10-20 19:00 (GMT+2)'
+    }
+
+    @Unroll
+    def 'should format duration'  () {
+        expect:
+        DataTimeUtils.formatDuration(DURATION) == EXPECTED
+
+        where:
+        DURATION                   | EXPECTED
+        null                       | null
+        Duration.ofSeconds(10)     | '0:10'
+        Duration.ofSeconds(60)     | '1:00'
+        Duration.ofSeconds(90)     | '1:30'
+        Duration.ofSeconds(130)    | '2:10'
+        Duration.ofMinutes(60)     | '60:00'
     }
 }

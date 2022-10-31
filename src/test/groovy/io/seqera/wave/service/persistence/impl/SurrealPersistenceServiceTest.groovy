@@ -1,4 +1,4 @@
-package io.seqera.wave.service.persistence
+package io.seqera.wave.service.persistence.impl
 
 import spock.lang.Specification
 
@@ -13,13 +13,14 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.service.persistence.BuildRecord
 import io.seqera.wave.test.SurrealDBTestContainer
 import io.seqera.wave.tower.User
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
-class PersistenceServiceTest extends Specification implements SurrealDBTestContainer {
+class SurrealPersistenceServiceTest extends Specification implements SurrealDBTestContainer {
 
     ApplicationContext applicationContext
 
@@ -39,6 +40,10 @@ class PersistenceServiceTest extends Specification implements SurrealDBTestConta
                                 'init-db': false
                         ]]
         , 'test', 'surrealdb')
+    }
+
+    def cleanup() {
+        applicationContext.close()
     }
 
     void "can connect"() {
@@ -67,11 +72,11 @@ class PersistenceServiceTest extends Specification implements SurrealDBTestConta
             echo "Look ma' building 🐳🐳 on the fly!" > /hello.txt
         """
         HttpClient httpClient = HttpClient.create(new URL(surrealDbURL))
-        PersistenceServiceImpl storage = applicationContext.getBean(PersistenceServiceImpl)
+        SurrealPersistenceService storage = applicationContext.getBean(SurrealPersistenceService)
         BuildRequest request = new BuildRequest(dockerFile,
                 Path.of("."), "buildrepo", condaFile, null,
                 ContainerPlatform.of('amd64'),'{auth}', null, "127.0.0.1")
-        BuildResult result = new BuildResult("id", -1, "ok", Instant.now(), Duration.ofSeconds(3))
+        BuildResult result = new BuildResult(request.id, -1, "ok", Instant.now(), Duration.ofSeconds(3))
         BuildEvent event = new BuildEvent(request, result)
         BuildRecord build = BuildRecord.fromEvent(event)
 
@@ -92,12 +97,12 @@ class PersistenceServiceTest extends Specification implements SurrealDBTestConta
                                         'Accept': 'application/json'])
                                 .basicAuth('root', 'root'), Map<String, Object>)
         map.result.size()
-        map.result.first().ip == '127.0.0.1'
+        map.result.first().requestIp == '127.0.0.1'
     }
 
     void "can't insert a build but ends without error"() {
         given:
-        PersistenceServiceImpl storage = applicationContext.getBean(PersistenceServiceImpl)
+        SurrealPersistenceService storage = applicationContext.getBean(SurrealPersistenceService)
         BuildRecord build = new BuildRecord(
                 buildId: 'test',
                 dockerFile: 'test',
@@ -106,11 +111,10 @@ class PersistenceServiceTest extends Specification implements SurrealDBTestConta
                 userName: 'test',
                 userEmail: 'test',
                 userId: 1,
-                ip: '127.0.0.1',
+                requestIp: '127.0.0.1',
                 startTime: Instant.now(),
                 duration: Duration.ofSeconds(1),
-                exitStatus: 0,
-        )
+                exitStatus: 0 )
 
         when:
         surrealContainer.stop()
@@ -125,11 +129,11 @@ class PersistenceServiceTest extends Specification implements SurrealDBTestConta
     void "an event insert a build"() {
         given:
         HttpClient httpClient = HttpClient.create(new URL(surrealDbURL))
-        PersistenceServiceImpl storage = applicationContext.getBean(PersistenceServiceImpl)
+        def storage = applicationContext.getBean(SurrealPersistenceService)
         storage.initializeDb()
-        final service = applicationContext.getBean(PersistenceServiceImpl)
+        final service = applicationContext.getBean(SurrealPersistenceService)
         BuildRequest request = new BuildRequest("test", Path.of("."), "test", "test", Mock(User), ContainerPlatform.of('amd64'),'{auth}', "test", "127.0.0.1")
-        BuildResult result = new BuildResult("id", 0, "content", Instant.now(), Duration.ofSeconds(1))
+        BuildResult result = new BuildResult(request.id, 0, "content", Instant.now(), Duration.ofSeconds(1))
         BuildEvent event = new BuildEvent(request, result)
 
         when:
@@ -146,15 +150,15 @@ class PersistenceServiceTest extends Specification implements SurrealDBTestConta
                                         'Accept': 'application/json'])
                                 .basicAuth('root', 'root'), Map<String, Object>)
         map.result.size()
-        map.result.first().ip == '127.0.0.1'
+        map.result.first().requestIp == '127.0.0.1'
     }
 
     void "an event is not inserted if no database"() {
         given:
         surrealContainer.stop()
-        final service = applicationContext.getBean(PersistenceServiceImpl)
+        final service = applicationContext.getBean(SurrealPersistenceService)
         BuildRequest request = new BuildRequest("test", Path.of("."), "test", "test", Mock(User), ContainerPlatform.of('amd64'),'{auth}', "test", "127.0.0.1")
-        BuildResult result = new BuildResult("id", 0, "content", Instant.now(), Duration.ofSeconds(1))
+        BuildResult result = new BuildResult(request.id, 0, "content", Instant.now(), Duration.ofSeconds(1))
         BuildEvent event = new BuildEvent(request, result)
 
         when:
@@ -162,5 +166,39 @@ class PersistenceServiceTest extends Specification implements SurrealDBTestConta
         sleep 100 //as we are using async, let database a while to store the item
         then:
         true
+    }
+
+    def 'should load a build record' () {
+        given:
+        final persistence = applicationContext.getBean(SurrealPersistenceService)
+        final request = new BuildRequest(
+                'FROM foo:latest',
+                Path.of("/some/path"),
+                "buildrepo",
+                'conda::recipe',
+                null,
+                ContainerPlatform.of('amd64'),
+                '{auth}',
+                'docker.io/my/repo',
+                "1.2.3.4")
+        final result = new BuildResult(request.id, -1, "ok", Instant.now(), Duration.ofSeconds(3))
+        final event = new BuildEvent(request, result)
+        final record = BuildRecord.fromEvent(event)
+
+        and:
+        persistence.saveBuildBlocking(record)
+
+        when:
+        def loaded = persistence.loadBuild(record.buildId)
+        then:
+        loaded == record
+    }
+
+    def 'should patch duration field' () {
+        expect:
+        SurrealPersistenceService.patchDuration('foo') == 'foo'
+        SurrealPersistenceService.patchDuration('"duration":3.00') == '"duration":3.00'
+        SurrealPersistenceService.patchDuration('"duration":"3.00"') == '"duration":3.00'
+        SurrealPersistenceService.patchDuration('aaa,"duration":"300.1234",zzz') == 'aaa,"duration":300.1234,zzz'
     }
 }
