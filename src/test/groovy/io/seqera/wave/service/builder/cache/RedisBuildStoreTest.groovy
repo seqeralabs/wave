@@ -12,7 +12,7 @@ import io.seqera.wave.exception.BuildTimeoutException
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildStore
 import io.seqera.wave.test.RedisTestContainer
-import redis.clients.jedis.JedisPool
+import redis.clients.jedis.Jedis
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -21,7 +21,7 @@ class RedisBuildStoreTest extends Specification implements RedisTestContainer {
 
     ApplicationContext applicationContext
 
-    JedisPool jedisPool
+    Jedis jedis
 
     def setup() {
         applicationContext = ApplicationContext.run([
@@ -29,8 +29,12 @@ class RedisBuildStoreTest extends Specification implements RedisTestContainer {
                 REDIS_HOST: redisHostName,
                 REDIS_PORT: redisPort
         ], 'test', 'redis')
-        jedisPool = new JedisPool(redisHostName, redisPort as int)
-        jedisPool.resource.flushAll()
+        jedis = new Jedis(redisHostName, redisPort as int)
+        jedis.flushAll()
+    }
+
+    def cleanup(){
+        jedis.close()
     }
 
     def 'should get and put key values' () {
@@ -47,7 +51,7 @@ class RedisBuildStoreTest extends Specification implements RedisTestContainer {
         then:
         cacheStore.getBuild('foo') == req1
         and:
-        jedisPool.resource.get("wave-build:foo").toString()
+        jedis.get("wave-build:foo").toString()
 
     }
 

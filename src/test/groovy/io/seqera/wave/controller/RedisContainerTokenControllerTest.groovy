@@ -15,7 +15,7 @@ import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.core.RouteHandler
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.test.RedisTestContainer
-import redis.clients.jedis.JedisPool
+import redis.clients.jedis.Jedis
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  *
@@ -26,7 +26,7 @@ class RedisContainerTokenControllerTest extends Specification implements RedisTe
 
     int port
 
-    JedisPool jedisPool
+    Jedis jedis
 
     def setup() {
         port = SocketUtils.findAvailableTcpPort()
@@ -37,8 +37,12 @@ class RedisContainerTokenControllerTest extends Specification implements RedisTe
                 'micronaut.http.services.default.url' : "http://localhost:$port".toString(),
         ], 'test', 'h2', 'redis')
 
-        jedisPool = new JedisPool(redisHostName, redisPort as int)
-        jedisPool.resource.flushAll()
+        jedis = new Jedis(redisHostName, redisPort as int)
+        jedis.flushAll()
+    }
+
+    def cleanup(){
+        jedis.close()
     }
 
     ApplicationContext getApplicationContext() {
@@ -61,9 +65,9 @@ class RedisContainerTokenControllerTest extends Specification implements RedisTe
         noExceptionThrown()
 
         and:
-        new JsonSlurper().parseText(jedisPool.resource.get("wave-tokens/v1:"+body.containerToken)).platform.arch == 'arm64'
-        new JsonSlurper().parseText(jedisPool.resource.get("wave-tokens/v1:"+body.containerToken)).workspaceId == 10
-        new JsonSlurper().parseText(jedisPool.resource.get("wave-tokens/v1:"+body.containerToken)).containerImage == 'ubuntu:latest'
+        new JsonSlurper().parseText(jedis.get("wave-tokens/v1:"+body.containerToken)).platform.arch == 'arm64'
+        new JsonSlurper().parseText(jedis.get("wave-tokens/v1:"+body.containerToken)).workspaceId == 10
+        new JsonSlurper().parseText(jedis.get("wave-tokens/v1:"+body.containerToken)).containerImage == 'ubuntu:latest'
     }
 
     def 'should not retrieve an expired build request' () {
@@ -82,7 +86,7 @@ class RedisContainerTokenControllerTest extends Specification implements RedisTe
         noExceptionThrown()
 
         when:
-        jedisPool.resource.del("wave-tokens/v1:"+body.containerToken)
+        jedis.del("wave-tokens/v1:"+body.containerToken)
 
         and:
         RouteHandler routeHelper = applicationContext.getBean(RouteHandler)
