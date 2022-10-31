@@ -74,8 +74,8 @@ class DockerBuildStrategy extends BuildStrategy {
         final wrapper = ['docker',
                          'run',
                          '--rm',
-                         '-w', workDir.toString(),
-                         '-v', "$workDir:$workDir".toString()]
+                         '-w', '/tmp',
+                         '-v', "$workDir:/tmp".toString()]
 
         if( credsFile ) {
             wrapper.add('-v')

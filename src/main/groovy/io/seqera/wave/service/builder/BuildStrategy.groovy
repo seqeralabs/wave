@@ -27,9 +27,9 @@ abstract class BuildStrategy {
         final result = new ArrayList(10)
         result
                 << "--dockerfile"
-                << "$req.workDir/Dockerfile".toString()
+                << "/tmp/Dockerfile"
                 << '--context'
-                << req.workDir.toString()
+                << '/tmp'
                 << "--destination"
                 << req.targetImage
                 << "--cache=true"

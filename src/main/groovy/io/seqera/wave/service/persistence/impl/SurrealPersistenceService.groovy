@@ -11,6 +11,7 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.service.persistence.BuildRecord
+import io.seqera.wave.service.persistence.CondaRecord
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
@@ -90,5 +91,30 @@ class SurrealPersistenceService implements PersistenceService {
             return value
         // Yet another SurrealDB bug: it wraps number values with double quotes as a string
         value.replaceAll(/"duration":"(\d+\.\d+)"/,'"duration":$1')
+    }
+
+    @Override
+    CondaRecord loadConda(String condaId) {
+        if( !condaId )
+            throw new IllegalArgumentException('Missing conda id argument')
+        final query = "select * from wave_codna where id = '$condaId'"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<CondaRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result[0] : null
+        return result
+    }
+
+    @Override
+    void saveConda(CondaRecord record) {
+        surrealDb.insertCondaAsync(authorization, record).subscribe({ result->
+            log.info "Conda record saved ${result}"
+        }, {error->
+            def msg = error.message
+            if( error instanceof HttpClientResponseException ){
+                msg += ":\n $error.response.body"
+            }
+            log.error "Error saving conda record ${msg}\n${record}", error
+        })
     }
 }

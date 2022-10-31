@@ -35,5 +35,9 @@ interface PersistenceService {
      * @return The corresponding {@link BuildRecord} object object
      */
     BuildRecord loadBuild(String buildId)
+
+    CondaRecord loadConda(String condaId)
+
+    void saveConda(CondaRecord record)
     
 }

@@ -15,6 +15,8 @@ import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
+import io.seqera.wave.service.persistence.CondaRecord
+import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.util.ThreadPoolBuilder
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -73,6 +75,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     @Nullable
     private RateLimiterService rateLimiterService
 
+    @Inject
+    private PersistenceService persistenceService
+
     @PostConstruct
     void init() {
         executor = ThreadPoolBuilder.io(10, 10, 100, 'wave-builder')
@@ -114,16 +119,40 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             // create the workdir path
             Files.createDirectories(req.workDir)
             // save the dockerfile
+            boolean shouldStoreCondaLock
             final dockerfile = req.workDir.resolve('Dockerfile')
+            final condaFile = req.workDir.resolve('conda.yml')
+            final condaLock = req.workDir.resolve('conda.lock')
             Files.write(dockerfile, req.dockerFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             // save the conda file
             if( req.condaFile ) {
-                final condaFile = req.workDir.resolve('conda.yml')
                 Files.write(condaFile, req.condaFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+                // check if a conda lock file exists
+                final rec = persistenceService.loadConda(req.condaId)
+                if( rec && rec.lockFile ) {
+                    // save the lock file
+                    log.debug "Restoring Conda lock file for build id: ${req.id}"
+                    Files.write(condaLock, rec.lockFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+                }
+                else {
+                    shouldStoreCondaLock = true
+                }
             }
 
+            // run the build process
             resp = buildStrategy.build(req)
             log.info "== Build completed with status=$resp.exitStatus; stdout: (see below)\n${indent(resp.logs)}"
+
+            // save conda lock file
+            if( shouldStoreCondaLock ) {
+                if( Files.exists(condaLock) ) {
+                    log.debug "Storing Conda lock file for build id: ${req.id}"
+                    persistenceService.saveConda( new CondaRecord(id: req.condaId, lockFile: condaLock.text) )
+                }
+                else {
+                    log.warn "Missing Conda lock file for build id: ${req.id}"
+                }
+            }
             return resp
         }
         catch (Throwable e) {

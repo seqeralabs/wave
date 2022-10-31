@@ -2,6 +2,7 @@ package io.seqera.wave.service.persistence.impl
 
 
 import io.seqera.wave.service.persistence.BuildRecord
+import io.seqera.wave.service.persistence.CondaRecord
 import io.seqera.wave.service.persistence.PersistenceService
 import jakarta.inject.Singleton
 /**
@@ -12,16 +13,25 @@ import jakarta.inject.Singleton
 @Singleton
 class LocalPersistenceService implements PersistenceService {
 
-    private Map<String,BuildRecord> store = new HashMap<>()
+    private Map<String,BuildRecord> buildStore = new HashMap<>()
 
+    private Map<String, CondaRecord> condaStore = new HashMap<>()
 
     @Override
     void saveBuild(BuildRecord record) {
-        store[record.buildId] = record
+        buildStore[record.buildId] = record
     }
 
     @Override
     BuildRecord loadBuild(String buildId) {
-        return store.get(buildId)
+        return buildStore.get(buildId)
+    }
+
+    CondaRecord loadConda(String condaId) {
+        return condaStore.get(condaId)
+    }
+
+    void saveConda(CondaRecord record) {
+        condaStore[record.id] = record
     }
 }

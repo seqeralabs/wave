@@ -37,6 +37,11 @@ class BuildRequest {
     final String condaFile
 
     /**
+     * Conda file id created as consistent hash key
+     */
+    final String condaId
+
+    /**
      * The build context work directory
      */
     final Path workDir
@@ -87,9 +92,10 @@ class BuildRequest {
     final String offsetId
 
     BuildRequest(String containerFile, Path workspace, String repo, String condaFile, User user, ContainerPlatform platform, String configJson, String cacheRepo, String ip, String offsetId = null) {
-        this.id = computeDigest(containerFile, condaFile, platform, repo)
+        this.id = computeBuildDigest(containerFile, condaFile, platform, repo)
         this.dockerFile = containerFile
         this.condaFile = condaFile
+        this.condaId = computeCondaDigest(condaFile)
         this.targetImage = "${repo}:${id}"
         this.user = user
         this.platform = platform
@@ -102,12 +108,20 @@ class BuildRequest {
         this.ip = ip
     }
 
-    static private String computeDigest(String containerFile, String condaFile, ContainerPlatform platform, String repository) {
+    static private String computeBuildDigest(String containerFile, String condaFile, ContainerPlatform platform, String repository) {
         final attrs = new LinkedHashMap<String,Object>(10)
         attrs.containerFile = containerFile
         attrs.condaFile = condaFile
         attrs.platform =  platform
         attrs.repository = repository
+        return DigestFunctions.md5(attrs)
+    }
+
+    static private String computeCondaDigest(String condaFile) {
+        if( !condaFile )
+            return null
+        final attrs = new LinkedHashMap<String,Object>(10)
+        attrs.condaFile = condaFile.trim().stripIndent()
         return DigestFunctions.md5(attrs)
     }
 
