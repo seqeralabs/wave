@@ -19,7 +19,6 @@ import jakarta.inject.Singleton
  */
 @Slf4j
 @Singleton
-@Requires(missingProperty = 'redis.uri')
 @CompileStatic
 class MemoryStorage implements Storage {
 

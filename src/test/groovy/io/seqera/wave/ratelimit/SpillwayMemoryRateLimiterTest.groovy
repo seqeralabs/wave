@@ -1,29 +1,31 @@
 package io.seqera.wave.ratelimit
 
+import spock.lang.Shared
 import spock.lang.Specification
 
+import com.coveo.spillway.storage.LimitUsageStorage
 import io.micronaut.context.ApplicationContext
+import io.micronaut.context.annotation.Property
+import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.RateLimiterConfig
 import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.ratelimit.impl.SpillwayRateLimiter
+import jakarta.inject.Inject
 
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
+@MicronautTest(environments = ["test", "rate-limit"], rebuildContext = true)
 class SpillwayMemoryRateLimiterTest extends Specification {
 
+    @Inject
+    RateLimiterConfig config
 
-    ApplicationContext applicationContext
-
+    @Inject
     SpillwayRateLimiter rateLimiter
 
-
-    def setup() {
-        applicationContext = ApplicationContext.run('test', 'rate-limit')
-        rateLimiter = applicationContext.getBean(SpillwayRateLimiter)
-    }
-
+    @Property(name = "spec", value = "can acquire 1")
     void "can acquire 1 auth resource"() {
         when:
         rateLimiter.acquireBuild(new AcquireRequest("test", null))
@@ -31,6 +33,7 @@ class SpillwayMemoryRateLimiterTest extends Specification {
         noExceptionThrown()
     }
 
+    @Property(name = "spec", value = "can acquire 1 anon")
     void "can acquire 1 anon resource"() {
         when:
         rateLimiter.acquireBuild(new AcquireRequest(null, "test"))
@@ -38,10 +41,8 @@ class SpillwayMemoryRateLimiterTest extends Specification {
         noExceptionThrown()
     }
 
+    @Property(name = "spec", value = "can acquire more")
     void "can't acquire more resources"() {
-        given:
-        RateLimiterConfig config = applicationContext.getBean(RateLimiterConfig)
-
         when:
         (0..config.build.authenticated.max - 1).each {
             rateLimiter.acquireBuild(new AcquireRequest("test", null))

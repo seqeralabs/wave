@@ -6,6 +6,7 @@ import javax.annotation.PostConstruct
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.lettuce.core.api.StatefulRedisConnection
+import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.storage.reader.ContentReader
@@ -21,7 +22,8 @@ import static io.seqera.wave.storage.DigestStoreEncoder.decode
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
-@Requires(property = 'redis.uri')
+@Primary
+@Requires(env = 'redis')
 @Singleton
 @CompileStatic
 class RedisStorage implements Storage {

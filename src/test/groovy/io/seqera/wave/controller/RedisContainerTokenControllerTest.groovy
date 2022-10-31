@@ -5,39 +5,43 @@ import spock.lang.Specification
 
 import groovy.json.JsonSlurper
 import io.micronaut.context.ApplicationContext
-import io.micronaut.core.io.socket.SocketUtils
+import io.micronaut.context.annotation.Property
+import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.annotation.Client
 import io.micronaut.runtime.server.EmbeddedServer
+import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.core.RouteHandler
 import io.seqera.wave.exception.NotFoundException
-import io.seqera.wave.test.RedisTestContainer
+
+import jakarta.inject.Inject
 import redis.clients.jedis.Jedis
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
-class RedisContainerTokenControllerTest extends Specification implements RedisTestContainer {
+@MicronautTest(environments = ["test", "h2", "redis"])
+@Property(name='wave.build.timeout',value = '5s')
+class RedisContainerTokenControllerTest extends Specification {
 
-    EmbeddedServer embeddedServer
+    @Inject
+    ApplicationContext applicationContext
 
-    int port
+    @Inject
+    @Client("/")
+    HttpClient client;
+
+    @Value('${redis.uri}')
+    String redisUrl
 
     Jedis jedis
 
     def setup() {
-        port = SocketUtils.findAvailableTcpPort()
-        embeddedServer = ApplicationContext.run(EmbeddedServer, [
-                REDIS_HOST   : redisHostName,
-                REDIS_PORT   : redisPort,
-                'micronaut.server.port': port,
-                'micronaut.http.services.default.url' : "http://localhost:$port".toString(),
-        ], 'test', 'h2', 'redis')
-
-        jedis = new Jedis(redisHostName, redisPort as int)
+        jedis = new Jedis(redisUrl)
         jedis.flushAll()
     }
 
@@ -45,19 +49,12 @@ class RedisContainerTokenControllerTest extends Specification implements RedisTe
         jedis.close()
     }
 
-    ApplicationContext getApplicationContext() {
-        embeddedServer.applicationContext
-    }
-
     def 'should create build request' () {
-        given:
-        HttpClient client = applicationContext.createBean(HttpClient)
-
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
         SubmitContainerTokenRequest request =
                 new SubmitContainerTokenRequest(towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64')
-        def ret = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", request), SubmitContainerTokenResponse)
+        def ret = client.toBlocking().exchange(HttpRequest.POST("/container-token", request), SubmitContainerTokenResponse)
 
         def body = ret.body()
 
@@ -71,14 +68,12 @@ class RedisContainerTokenControllerTest extends Specification implements RedisTe
     }
 
     def 'should not retrieve an expired build request' () {
-        given:
-        HttpClient client = applicationContext.createBean(HttpClient)
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
         SubmitContainerTokenRequest request =
                 new SubmitContainerTokenRequest(towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64')
-        def ret = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", request), SubmitContainerTokenResponse)
+        def ret = client.toBlocking().exchange(HttpRequest.POST("/container-token", request), SubmitContainerTokenResponse)
 
         def body = ret.body()
 
@@ -97,14 +92,11 @@ class RedisContainerTokenControllerTest extends Specification implements RedisTe
     }
 
     def 'should retrieve a valid build request' () {
-        given:
-        HttpClient client = applicationContext.createBean(HttpClient)
-
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
         SubmitContainerTokenRequest request =
                 new SubmitContainerTokenRequest(towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64')
-        def ret = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", request), SubmitContainerTokenResponse)
+        def ret = client.toBlocking().exchange(HttpRequest.POST("/container-token", request), SubmitContainerTokenResponse)
 
         def body = ret.body()
 
@@ -120,14 +112,11 @@ class RedisContainerTokenControllerTest extends Specification implements RedisTe
     }
 
     def 'should validate same image' () {
-        given:
-        HttpClient client = applicationContext.createBean(HttpClient)
-
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
         SubmitContainerTokenRequest request =
                 new SubmitContainerTokenRequest(towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64')
-        def ret = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", request), SubmitContainerTokenResponse)
+        def ret = client.toBlocking().exchange(HttpRequest.POST("/container-token", request), SubmitContainerTokenResponse)
 
         def body = ret.body()
 

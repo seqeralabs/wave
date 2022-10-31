@@ -27,14 +27,14 @@ import redis.clients.jedis.JedisPool
 class SpillWayStorageFactory {
 
     @Singleton
-    @Requires(missingProperty =  'redis.uri')
+    @Requires(notEnv =  'redis')
     LimitUsageStorage inMemoryStorage(){
         log.info "Using in memory storage for rate limit"
         return new InMemoryStorage()
     }
 
     @Singleton
-    @Requires(property = 'redis.uri')
+    @Requires(env = 'redis')
     LimitUsageStorage redisStorage(@NotNull RedisConfig redisConfig){
         log.info "Using redis $redisConfig.uri as storage for rate limit"
         def jedisPool = new JedisPool(redisConfig.uri)

@@ -8,28 +8,33 @@ import java.time.Instant
 import java.util.concurrent.ExecutionException
 
 import io.micronaut.context.ApplicationContext
+import io.micronaut.context.annotation.Property
+import io.micronaut.context.annotation.Value
+import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.exception.BuildTimeoutException
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildStore
-import io.seqera.wave.test.RedisTestContainer
+
+import jakarta.inject.Inject
 import redis.clients.jedis.Jedis
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class RedisBuildStoreTest extends Specification implements RedisTestContainer {
+@MicronautTest(environments = ["test", "redis"])
+@Property(name='wave.build.timeout',value = '5s')
+class RedisBuildStoreTest extends Specification {
 
+    @Inject
     ApplicationContext applicationContext
+
+    @Value('${redis.uri}')
+    String redisUrl
 
     Jedis jedis
 
     def setup() {
-        applicationContext = ApplicationContext.run([
-                wave:[ build:[ timeout: '5s' ]],
-                REDIS_HOST: redisHostName,
-                REDIS_PORT: redisPort
-        ], 'test', 'redis')
-        jedis = new Jedis(redisHostName, redisPort as int)
+        jedis = new Jedis(redisUrl)
         jedis.flushAll()
     }
 

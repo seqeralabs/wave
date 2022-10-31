@@ -15,7 +15,7 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.test.SecureDockerRegistryContainer
 import jakarta.inject.Inject
 
-@MicronautTest
+@MicronautTest(environments = ["test"], rebuildContext = true)
 class ValidateCredsControllerTest extends Specification implements SecureDockerRegistryContainer {
 
     @Inject
