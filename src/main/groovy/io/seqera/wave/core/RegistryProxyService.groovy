@@ -7,6 +7,7 @@ import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.context.annotation.Context
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.MediaType
+import io.micronaut.http.exceptions.HttpException
 import io.micronaut.retry.annotation.Retryable
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
@@ -109,25 +110,29 @@ class RegistryProxyService {
                 body: resp2.body() )
     }
 
-    @Cacheable('cache-1min')
-    @Retryable([SocketException, IOException])
     boolean isManifestPresent(String image){
         try {
-            final coords = ContainerCoordinates.parse(image)
-            final route = RoutePath.v2manifestPath(coords)
-            final proxyClient = client(route)
-            final headers = Map.of(
-                    'Accept', List.of(
-                    ContentType.DOCKER_MANIFEST_V2_TYPE,
-                    ContentType.DOCKER_MANIFEST_V1_JWS_TYPE,
-                    MediaType.APPLICATION_JSON))
-            final resp = proxyClient.head(route.path, headers)
-            return resp.statusCode() == 200
+            return isManifestPresent0(image)
         }
         catch(Exception e) {
             log.warn "Unable to check status for container image '$image' -- cause: ${e.message}"
             return false
         }
+    }
+
+    @Cacheable('cache-1min')
+    @Retryable(includes=[IOException, HttpException])
+    protected boolean isManifestPresent0(String image) {
+        final coords = ContainerCoordinates.parse(image)
+        final route = RoutePath.v2manifestPath(coords)
+        final proxyClient = client(route)
+        final headers = Map.of(
+                'Accept', List.of(
+                ContentType.DOCKER_MANIFEST_V2_TYPE,
+                ContentType.DOCKER_MANIFEST_V1_JWS_TYPE,
+                MediaType.APPLICATION_JSON))
+        final resp = proxyClient.head(route.path, headers)
+        return resp.statusCode() == 200
     }
 
     static class DelegateResponse {
