@@ -32,10 +32,10 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
     String quayPassword
 
     @Shared
-    @Value('${wave.registries.azurecr.username}')
+    @Value('${wave.registries.seqeralabs.azurecr.io.username}')
     String azureUsername
     @Shared
-    @Value('${wave.registries.azurecr.password}')
+    @Value('${wave.registries.seqeralabs.azurecr.io.password}')
     String azurePassword
 
     @Inject
