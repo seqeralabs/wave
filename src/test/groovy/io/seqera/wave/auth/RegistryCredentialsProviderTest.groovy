@@ -22,22 +22,22 @@ class RegistryCredentialsProviderTest extends Specification {
 
     @Inject
     @Nullable
-    @Value('${wave.registries.docker.username}')
+    @Value('${wave.registries.docker.io.username}')
     private String dockerUsername
 
     @Inject
     @Nullable
-    @Value('${wave.registries.docker.password}')
+    @Value('${wave.registries.docker.io.password}')
     private String dockerPassword
 
     @Inject
     @Nullable
-    @Value('${wave.registries.quay.username}')
+    @Value('${wave.registries.quay.io.username}')
     private String quayUsername
 
     @Inject
     @Nullable
-    @Value('${wave.registries.quay.password}')
+    @Value('${wave.registries.quay.io.password}')
     private String quayPassword
     
     def 'should find docker creds' () {
