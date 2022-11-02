@@ -66,6 +66,8 @@ dependencies {
     runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
     implementation("io.micronaut.sql:micronaut-jdbc-hikari")
 
+    runtimeOnly 'net.logstash.logback:logstash-logback-encoder:7.2'
+
     runtimeOnly("io.netty:netty-tcnative-boringssl-static:2.0.0.Final")
     testImplementation "org.apache.commons:commons-compress:1.21"
     testImplementation("org.testcontainers:testcontainers")

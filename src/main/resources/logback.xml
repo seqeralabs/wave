@@ -5,9 +5,8 @@
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <!-- ansi escape mess-up with non-ansi terminal and loggers -->
         <withJansi>false</withJansi>
-        <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-        </encoder>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder" />
+
         <filter class="io.seqera.wave.util.LoggerLevelFilter">
             <level>${WAVE_LOG_LEVEL:-INFO}</level>
             <onMatch>ACCEPT</onMatch>
@@ -24,9 +23,7 @@
             <maxHistory>10</maxHistory>
             <totalSizeCap>200MB</totalSizeCap>
         </rollingPolicy>
-        <encoder>
-            <pattern>%d{MMM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</pattern>
-        </encoder>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder" />
         <filter class="io.seqera.wave.util.LoggerLevelFilter">
             <level>${WAVE_LOG_LEVEL:-DEBUG}</level>
             <onMatch>ACCEPT</onMatch>
