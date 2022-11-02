@@ -12,7 +12,7 @@ wave:
     195996028523.dkr.ecr.eu-west-1.amazonaws.com:
       username : "${AWS_ACCESS_KEY_ID:}"
       password : "${AWS_SECRET_ACCESS_KEY:}"
-    azurecr:
+    seqeralabs.azurecr.io:
       username : "${AZURECR_USER:}"
       password : "${AZURECR_PAT:}"
 ...
