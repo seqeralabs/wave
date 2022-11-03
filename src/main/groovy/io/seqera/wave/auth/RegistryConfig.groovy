@@ -40,8 +40,8 @@ class RegistryConfig {
         return ret
     }
 
-    private Map findMap(String repository){
-        def parts = repository.split('\\.') as List<String>
+    private Map findMap(String registryName){
+        def parts = registryName.split('\\.') as List<String>
         def map = registries
         while( parts ){
             if( !map.containsKey(parts.first())){
