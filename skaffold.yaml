@@ -1,0 +1,30 @@
+apiVersion: skaffold/v3
+kind: Config
+metadata:
+  name: wave-skaffold
+build:
+  artifacts:
+  - image: wave
+    custom:
+      buildCommand: ./gradlew jib -PjibRepo=$IMAGE
+      dependencies:
+        paths :
+          - src
+          - wave-api
+          - wave-mail
+          - wave-utils
+          - k8s
+          - build.gradle
+  local:
+    push : true
+
+manifests:
+  rawYaml:
+  - k8s/config-k3d.yml
+  - k8s/wave-k3d.yml
+
+portForward:
+  - resourceType: deployment
+    resourceName: wave
+    port: 9090
+    localPort: 9090
