@@ -54,7 +54,7 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
 
     protected RegistryCredentials getDefaultCredentials0(String registry) {
 
-        RegistryConfiguration config = registryConfigurationFactory.findConfiguration(registry)
+        def config = registryConfigurationFactory.findConfiguration(registry)
         if( !config ){
             log.debug "Unable to find credentials for registry '$registry'"
             return null

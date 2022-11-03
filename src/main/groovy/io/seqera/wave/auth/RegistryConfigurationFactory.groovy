@@ -65,4 +65,9 @@ class RegistryConfigurationFactory {
         map
     }
 
+    class RegistryConfiguration {
+        String name
+        String username
+        String password
+    }
 }
