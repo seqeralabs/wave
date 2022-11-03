@@ -40,7 +40,8 @@ class RegistryConfigurationFactory {
     private Map<String,Object> registries
 
     RegistryConfiguration findConfiguration(String repository) {
-        Map map = repository ? findMap(repository) : findMap(registries.get('default').toString())
+        final String defaultRegistry = registries.get('default')?.toString() ?: 'docker.io'
+        Map map = repository ? findMap(repository) : findMap(defaultRegistry)
         if( !map )
             return null
         RegistryConfiguration ret = new RegistryConfiguration()
