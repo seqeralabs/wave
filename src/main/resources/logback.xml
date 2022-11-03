@@ -23,7 +23,9 @@
             <maxHistory>10</maxHistory>
             <totalSizeCap>200MB</totalSizeCap>
         </rollingPolicy>
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder" />
+        <encoder>
+            <pattern>%d{MMM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
         <filter class="io.seqera.wave.util.LoggerLevelFilter">
             <level>${WAVE_LOG_LEVEL:-DEBUG}</level>
             <onMatch>ACCEPT</onMatch>
