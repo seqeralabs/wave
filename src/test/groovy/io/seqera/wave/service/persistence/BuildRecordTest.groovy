@@ -7,9 +7,9 @@ import java.time.Duration
 import java.time.Instant
 
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.builder.BuildEvent
-import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.model.BuildEvent
+import io.seqera.wave.model.BuildRequest
+import io.seqera.wave.model.BuildResult
 import io.seqera.wave.util.JacksonHelper
 
 /**

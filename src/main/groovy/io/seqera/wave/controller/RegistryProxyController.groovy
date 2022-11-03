@@ -7,6 +7,7 @@ import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.http.HttpMethod
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
@@ -26,12 +27,14 @@ import io.seqera.wave.core.RouteHandler
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.exchange.RegistryErrorResponse
+import io.seqera.wave.model.PullEvent
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
 import jakarta.inject.Inject
+import org.apache.commons.codec.digest.DigestUtils
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Mono
 /**
@@ -52,6 +55,7 @@ class RegistryProxyController {
     @Inject ContainerBuildService containerBuildService
     @Inject @Nullable RateLimiterService rateLimiterService
     @Inject ErrorHandler errorHandler
+    @Inject ApplicationEventPublisher<PullEvent> eventPublisher
 
     @Error
     HttpResponse<RegistryErrorResponse> handleError(HttpRequest request, Throwable t) {
@@ -164,7 +168,15 @@ class RegistryProxyController {
         if( !entry ) {
             throw new DockerRegistryException("Unable to find cache manifest for '$httpRequest.path'", 400, 'UNKNOWN')
         }
+
+        notifyPullRequest(route)
+
         return fromCache(entry)
+    }
+
+    protected void notifyPullRequest(RoutePath route){
+        def event = new PullEvent(userId: route.request?.userId, image: route.repository)
+        eventPublisher.publishEvent(event)
     }
 
     MutableHttpResponse<?> fromCache(DigestStore entry) {

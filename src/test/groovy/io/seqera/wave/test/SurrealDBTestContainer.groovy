@@ -37,4 +37,8 @@ trait SurrealDBTestContainer {
     String getSurrealPort(){
         surrealContainer.getMappedPort(8000)
     }
+
+    String getSurrealDbURL() {
+        "http://$surrealHostName:$surrealPort"
+    }
 }

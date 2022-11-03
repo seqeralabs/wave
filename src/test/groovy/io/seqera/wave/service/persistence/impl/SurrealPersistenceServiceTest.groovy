@@ -10,10 +10,12 @@ import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.builder.BuildEvent
-import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.model.BuildEvent
+import io.seqera.wave.model.BuildRequest
+import io.seqera.wave.model.BuildResult
+import io.seqera.wave.model.PullEvent
 import io.seqera.wave.service.persistence.BuildRecord
+import io.seqera.wave.service.persistence.PullRecord
 import io.seqera.wave.test.SurrealDBTestContainer
 import io.seqera.wave.tower.User
 /**
@@ -24,9 +26,6 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
     ApplicationContext applicationContext
 
-    String getSurrealDbURL() {
-        "http://$surrealHostName:$surrealPort"
-    }
 
     def setup() {
         restartDb()
@@ -200,5 +199,73 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         SurrealPersistenceService.patchDuration('"duration":3.00') == '"duration":3.00'
         SurrealPersistenceService.patchDuration('"duration":"3.00"') == '"duration":3.00'
         SurrealPersistenceService.patchDuration('aaa,"duration":"300.1234",zzz') == 'aaa,"duration":300.1234,zzz'
+    }
+
+    void "can insert an async pull"() {
+        given:
+        HttpClient httpClient = HttpClient.create(new URL(surrealDbURL))
+        SurrealPersistenceService storage = applicationContext.getBean(SurrealPersistenceService)
+        PullRecord record = new PullRecord(userId: "123", image: "docker.io/hello-world")
+
+        when:
+        storage.initializeDb()
+
+        storage.savePull(record)
+
+        sleep 100 //as we are using async, let database a while to store the item
+        then:
+        def map = httpClient.toBlocking()
+                .retrieve(
+                        HttpRequest.GET("/key/wave_stats")
+                                .headers([
+                                        'ns'          : 'test',
+                                        'db'          : 'test',
+                                        'User-Agent'  : 'micronaut/1.0',
+                                        'Accept': 'application/json'])
+                                .basicAuth('root', 'root'), Map<String, Object>)
+        map.result.size()
+        map.result.first().userId == '123'
+        map.result.first().image == 'docker.io/hello-world'
+    }
+
+    void "can't insert a pull but ends without error"() {
+        given:
+        SurrealPersistenceService storage = applicationContext.getBean(SurrealPersistenceService)
+        PullRecord record = new PullRecord(userId: "123", image: "docker.io/hello-world")
+
+        when:
+        surrealContainer.stop()
+
+        storage.savePull(record)
+
+        sleep 100 //as we are using async, let database a while to store the item
+        then:
+        true
+    }
+
+    void "an event insert a pull"() {
+        given:
+        HttpClient httpClient = HttpClient.create(new URL(surrealDbURL))
+        def storage = applicationContext.getBean(SurrealPersistenceService)
+        storage.initializeDb()
+        final service = applicationContext.getBean(SurrealPersistenceService)
+        PullEvent event = new PullEvent(userId: null, image:'docker.io/hello-world')
+
+        when:
+        service.onPullEvent(event)
+        sleep 100 //as we are using async, let database a while to store the item
+        then:
+        def map = httpClient.toBlocking()
+                .retrieve(
+                        HttpRequest.GET("/key/wave_stats")
+                                .headers([
+                                        'ns'          : 'test',
+                                        'db'          : 'test',
+                                        'User-Agent'  : 'micronaut/1.0',
+                                        'Accept': 'application/json'])
+                                .basicAuth('root', 'root'), Map<String, Object>)
+        map.result.size()
+        map.result.first().image == 'docker.io/hello-world'
+        map.result.first().userId == null
     }
 }

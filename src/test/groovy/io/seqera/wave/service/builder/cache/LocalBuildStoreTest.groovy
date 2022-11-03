@@ -5,7 +5,7 @@ import spock.lang.Specification
 import java.time.Duration
 import java.time.Instant
 
-import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.model.BuildResult
 import io.seqera.wave.service.builder.impl.LocalBuildStore
 /**
  *

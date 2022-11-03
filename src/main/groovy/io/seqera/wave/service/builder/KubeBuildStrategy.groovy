@@ -1,5 +1,8 @@
 package io.seqera.wave.service.builder
 
+import io.seqera.wave.model.BuildRequest
+import io.seqera.wave.model.BuildResult
+
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration

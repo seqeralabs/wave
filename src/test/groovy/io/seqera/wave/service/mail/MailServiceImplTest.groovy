@@ -6,8 +6,8 @@ import java.time.Instant
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.model.BuildRequest
+import io.seqera.wave.model.BuildResult
 import jakarta.inject.Inject
 /**
  *

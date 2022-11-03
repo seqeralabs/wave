@@ -12,6 +12,7 @@ import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.service.persistence.BuildRecord
 import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.persistence.PullRecord
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -48,9 +49,12 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     void initializeDb(){
-        final result = surrealDb.sqlAsMap(authorization, "define table wave_build SCHEMALESS")
-        if( result.status != "OK")
-            throw new IllegalStateException("Unable to initiliase SurrealDB - cause: $result")
+        final resultBuild = surrealDb.sqlAsMap(authorization, "define table wave_build SCHEMALESS")
+        if( resultBuild.status != "OK")
+            throw new IllegalStateException("Unable to initiliase SurrealDB - cause: $resultBuild")
+        final resultStats = surrealDb.sqlAsMap(authorization, "define table wave_stats SCHEMALESS")
+        if( resultStats.status != "OK")
+            throw new IllegalStateException("Unable to initiliase SurrealDB - cause: $resultStats")
     }
 
     private String getAuthorization() {
@@ -83,6 +87,19 @@ class SurrealPersistenceService implements PersistenceService {
         final data= json ? JacksonHelper.fromJson(patchDuration(json), type) : null
         final result = data && data[0].result ? data[0].result[0] : null
         return result
+    }
+
+    @Override
+    void savePull(PullRecord pull) {
+        surrealDb.insertStatsAsync(authorization, pull).subscribe({ result->
+            log.debug "Pull record saved ${result}"
+        }, {error->
+            def msg = error.message
+            if( error instanceof HttpClientResponseException ){
+                msg += ":\n $error.response.body"
+            }
+            log.error "Error saving pull record ${msg}\n${pull}", error
+        })
     }
 
     static protected String patchDuration(String value) {

@@ -1,7 +1,7 @@
 package io.seqera.wave.service.mail
 
-import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.model.BuildRequest
+import io.seqera.wave.model.BuildResult
 /**
  * Implements mail notification service
  *

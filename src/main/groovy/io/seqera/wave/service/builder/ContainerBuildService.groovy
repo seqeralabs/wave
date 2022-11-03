@@ -1,5 +1,8 @@
 package io.seqera.wave.service.builder
 
+import io.seqera.wave.model.BuildRequest
+import io.seqera.wave.model.BuildResult
+
 import java.util.concurrent.CompletableFuture
 
 import io.seqera.wave.core.RoutePath
@@ -11,10 +14,10 @@ import io.seqera.wave.core.RoutePath
 interface ContainerBuildService {
 
     /**
-     * Build a container image for the given {@link BuildRequest}
+     * Build a container image for the given {@link io.seqera.wave.model.BuildRequest}
      *
      * @param request
-     *      A {@link BuildRequest} modelling the build request
+     *      A {@link io.seqera.wave.model.BuildRequest} modelling the build request
      * @return
      *      The container image where the resulting image is going to be hosted
      */
@@ -27,7 +30,7 @@ interface ContainerBuildService {
      *      the container repository name where the target image is expected to be retrieved once the
      *      build it complete
      * @return
-     *      A completable future that holds the resulting {@link BuildResult} or
+     *      A completable future that holds the resulting {@link io.seqera.wave.model.BuildResult} or
      *      {@code null} if not request has been submitted for such image
      */
     CompletableFuture<BuildResult> buildResult(String targetImage)

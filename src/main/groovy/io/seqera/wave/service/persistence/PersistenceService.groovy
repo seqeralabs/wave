@@ -2,7 +2,8 @@ package io.seqera.wave.service.persistence
 
 import groovy.transform.CompileStatic
 import io.micronaut.runtime.event.annotation.EventListener
-import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.model.BuildEvent
+import io.seqera.wave.model.PullEvent
 
 /**
  * A storage for statistic data
@@ -16,6 +17,11 @@ interface PersistenceService {
     @EventListener
     default void onBuildEvent(BuildEvent event) {
         saveBuild(BuildRecord.fromEvent(event))
+    }
+
+    @EventListener
+    default void onPullEvent(PullEvent event) {
+        savePull(PullRecord.fromEvent(event))
     }
 
     /**
@@ -35,5 +41,11 @@ interface PersistenceService {
      * @return The corresponding {@link BuildRecord} object object
      */
     BuildRecord loadBuild(String buildId)
-    
+
+    /**
+     * Store a {@link PullRecord} object in the underlying persistence layer.
+     *
+     * @param build A {@link PullEvent} object
+     */
+    void savePull(PullRecord pull)
 }

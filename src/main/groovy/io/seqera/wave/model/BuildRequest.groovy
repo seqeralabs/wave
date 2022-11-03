@@ -1,4 +1,4 @@
-package io.seqera.wave.service.builder
+package io.seqera.wave.model
 
 import java.nio.file.Path
 import java.time.Instant

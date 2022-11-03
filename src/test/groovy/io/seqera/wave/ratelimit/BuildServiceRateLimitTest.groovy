@@ -10,7 +10,7 @@ import io.micronaut.context.annotation.Value
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.configuration.RateLimiterConfig
 import io.seqera.wave.exception.SlowDownException
-import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.model.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildServiceImpl
 import io.seqera.wave.tower.User
 

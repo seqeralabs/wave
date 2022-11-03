@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
-import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.model.BuildResult
 import io.seqera.wave.service.builder.BuildStore
 import jakarta.inject.Singleton
 /**

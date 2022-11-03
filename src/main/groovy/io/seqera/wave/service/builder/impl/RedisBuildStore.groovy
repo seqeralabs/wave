@@ -9,7 +9,7 @@ import io.lettuce.core.SetArgs
 import io.lettuce.core.api.StatefulRedisConnection
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
-import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.model.BuildResult
 import io.seqera.wave.service.builder.BuildStore
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Singleton

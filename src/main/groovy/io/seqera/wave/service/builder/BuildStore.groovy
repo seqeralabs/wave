@@ -1,5 +1,7 @@
 package io.seqera.wave.service.builder
 
+import io.seqera.wave.model.BuildResult
+
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
@@ -18,10 +20,10 @@ interface BuildStore {
     Duration getDelay()
 
     /**
-     * Retrieve a container image {@link BuildResult}
+     * Retrieve a container image {@link io.seqera.wave.model.BuildResult}
      *
      * @param imageName The container image name
-     * @return The corresponding {@link BuildResult} or {@code null} otherwise
+     * @return The corresponding {@link io.seqera.wave.model.BuildResult} or {@code null} otherwise
      */
     BuildResult getBuild(String imageName)
 

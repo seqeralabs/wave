@@ -7,6 +7,7 @@ import io.micronaut.http.annotation.Header
 import io.micronaut.http.annotation.Post
 import io.micronaut.http.client.annotation.Client
 import io.seqera.wave.service.persistence.BuildRecord
+import io.seqera.wave.service.persistence.PullRecord
 import reactor.core.publisher.Flux
 
 /**
@@ -37,5 +38,11 @@ interface SurrealClient {
 
     @Post('/key/wave_build')
     Map<String, Object> insertBuild(@Header String authorization, @Body BuildRecord body)
+
+    @Post('/key/wave_stats')
+    Flux<Map<String, Object>> insertStatsAsync(@Header String authorization, @Body PullRecord body)
+
+    @Post('/key/wave_stats')
+    Map<String, Object> insertStats(@Header String authorization, @Body PullRecord body)
 
 }

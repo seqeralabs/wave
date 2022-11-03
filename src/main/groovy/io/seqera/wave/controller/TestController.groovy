@@ -14,7 +14,7 @@ import io.seqera.wave.auth.DockerAuthService
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.UserService
-import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.model.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject

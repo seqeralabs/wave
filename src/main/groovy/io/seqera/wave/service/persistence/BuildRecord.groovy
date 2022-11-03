@@ -6,7 +6,7 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.model.BuildEvent
 
 /**
  * A collection of request and response properties to be stored

@@ -1,5 +1,6 @@
 package io.seqera.wave.service.builder
 
+import io.seqera.wave.model.BuildResult
 import spock.lang.Specification
 import spock.lang.Unroll
 

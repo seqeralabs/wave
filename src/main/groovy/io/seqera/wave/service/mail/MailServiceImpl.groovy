@@ -10,9 +10,9 @@ import io.seqera.wave.mail.Mail
 import io.seqera.wave.mail.MailAttachment
 import io.seqera.wave.mail.MailHelper
 import io.seqera.wave.mail.MailerConfig
-import io.seqera.wave.service.builder.BuildEvent
-import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.model.BuildEvent
+import io.seqera.wave.model.BuildRequest
+import io.seqera.wave.model.BuildResult
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.util.DataTimeUtils.formatDuration

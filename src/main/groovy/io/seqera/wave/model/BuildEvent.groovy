@@ -1,4 +1,4 @@
-package io.seqera.wave.service.builder
+package io.seqera.wave.model
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic

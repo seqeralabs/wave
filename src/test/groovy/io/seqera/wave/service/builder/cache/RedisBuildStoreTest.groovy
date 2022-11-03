@@ -9,7 +9,7 @@ import java.util.concurrent.ExecutionException
 
 import io.micronaut.context.ApplicationContext
 import io.seqera.wave.exception.BuildTimeoutException
-import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.model.BuildResult
 import io.seqera.wave.service.builder.BuildStore
 import io.seqera.wave.test.RedisTestContainer
 import redis.clients.jedis.Jedis

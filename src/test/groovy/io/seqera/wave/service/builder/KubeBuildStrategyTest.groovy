@@ -1,5 +1,6 @@
 package io.seqera.wave.service.builder
 
+import io.seqera.wave.model.BuildRequest
 import spock.lang.Specification
 
 import java.nio.file.Files
