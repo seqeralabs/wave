@@ -22,7 +22,7 @@ import jakarta.inject.Singleton
 class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
 
     @Inject
-    private RegistryConfigurationFactory registryConfigurationFactory
+    private RegistryConfig registryConfigurationFactory
 
     @Inject
     private RegistryCredentialsFactory credentialsFactory
@@ -54,12 +54,12 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
 
     protected RegistryCredentials getDefaultCredentials0(String registry) {
 
-        def config = registryConfigurationFactory.findConfiguration(registry)
+        final config = registryConfigurationFactory.getRegistryKeys(registry)
         if( !config ){
             log.debug "Unable to find credentials for registry '$registry'"
             return null
         }
-        return credentialsFactory.create(config.name, config.username, config.password)
+        return credentialsFactory.create(registry, config.username, config.password)
     }
 
     /**

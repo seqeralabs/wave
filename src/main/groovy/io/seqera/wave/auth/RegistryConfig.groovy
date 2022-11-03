@@ -3,19 +3,9 @@ package io.seqera.wave.auth
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.ConfigurationProperties
 import io.micronaut.context.annotation.Context
-import io.micronaut.context.annotation.EachProperty
-import io.micronaut.context.annotation.Factory
-import io.micronaut.context.annotation.Parameter
-import io.micronaut.context.annotation.Property
-import io.micronaut.context.annotation.Value
-import io.micronaut.core.convert.format.MapFormat
-import io.micronaut.core.naming.conventions.StringConvention
-import jakarta.annotation.PostConstruct
-import jakarta.inject.Singleton
-
 
 /**
- * A factory of configuration repositories
+ * Holds container registry static keys as define in the Wave config file
  *
  * @author : jorge <jorge.aguilera@seqera.io>
  *
@@ -23,7 +13,7 @@ import jakarta.inject.Singleton
 @ConfigurationProperties('wave')
 @Context
 @CompileStatic
-class RegistryConfigurationFactory {
+class RegistryConfig {
 
     /*
      * a Map of map of registries, i.e.
@@ -39,13 +29,12 @@ class RegistryConfigurationFactory {
      */
     private Map<String,Object> registries
 
-    RegistryConfiguration findConfiguration(String repository) {
+    RegistryKeys getRegistryKeys(String registryName) {
         final String defaultRegistry = registries.get('default')?.toString() ?: 'docker.io'
-        Map map = repository ? findMap(repository) : findMap(defaultRegistry)
+        Map map = registryName ? findMap(registryName) : findMap(defaultRegistry)
         if( !map )
             return null
-        RegistryConfiguration ret = new RegistryConfiguration()
-        ret.name = repository
+        RegistryKeys ret = new RegistryKeys()
         ret.username = map['username']?.toString() ?: ''
         ret.password = map['password']?.toString() ?: ''
         return ret
@@ -62,11 +51,13 @@ class RegistryConfigurationFactory {
             map = map[parts.first()] as Map<String,Object>
             parts = parts.drop(1)
         }
-        map
+        return map
     }
 
-    class RegistryConfiguration {
-        String name
+    /**
+     * Registry static key pair as defined in the Wave config file
+     */
+    static class RegistryKeys {
         String username
         String password
     }
