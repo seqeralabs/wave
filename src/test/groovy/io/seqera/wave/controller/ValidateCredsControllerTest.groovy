@@ -27,19 +27,19 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
     ApplicationContext applicationContext
 
     @Shared
-    @Value('${wave.registries.docker.username}')
+    @Value('${wave.registries.docker.io.username}')
     String dockerUsername
 
     @Shared
-    @Value('${wave.registries.docker.password}')
+    @Value('${wave.registries.docker.io.password}')
     String dockerPassword
 
     @Shared
-    @Value('${wave.registries.quay.username}')
+    @Value('${wave.registries.quay.io.username}')
     String quayUsername
 
     @Shared
-    @Value('${wave.registries.quay.password}')
+    @Value('${wave.registries.quay.io.password}')
     String quayPassword
 
 

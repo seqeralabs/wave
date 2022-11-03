@@ -1,7 +1,5 @@
 package io.seqera.wave.auth
 
-import java.nio.file.Files
-import java.nio.file.Path
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -9,7 +7,6 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.service.CredentialsService
-import io.seqera.wave.service.aws.AwsEcrService
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
@@ -25,54 +22,7 @@ import jakarta.inject.Singleton
 class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
 
     @Inject
-    @Nullable
-    @Value('${wave.registries.docker.username}')
-    private String dockerUsername
-
-    @Inject
-    @Nullable
-    @Value('${wave.registries.docker.password}')
-    private String dockerPassword
-
-    @Inject
-    @Nullable
-    @Value('${wave.registries.quay.username}')
-    private String quayUsername
-
-    @Inject
-    @Nullable
-    @Value('${wave.registries.quay.password}')
-    private String quayPassword
-
-    @Inject
-    @Nullable
-    @Value('${wave.registries.amazon.username}')
-    private String awsAccessKey
-
-    @Inject
-    @Nullable
-    @Value('${wave.registries.amazon.password}')
-    private String awsSecretKey
-
-    @Inject
-    @Nullable
-    @Value('${wave.registries.azurecr.username}')
-    private String azurecrUsername
-
-    @Inject
-    @Nullable
-    @Value('${wave.registries.azurecr.password}')
-    private String azurecrPassword
-
-    @Inject
-    @Nullable
-    @Value('${wave.registries.google.user:_json_key}')
-    private String googleUsername
-
-    @Inject
-    @Nullable
-    @Value('${wave.registries.google.credentials}')
-    private String googleCredentials
+    private RegistryConfig registryConfigurationFactory
 
     @Inject
     private RegistryCredentialsFactory credentialsFactory
@@ -104,33 +54,12 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
 
     protected RegistryCredentials getDefaultCredentials0(String registry) {
 
-        if( !registry || registry == 'docker.io' ) {
-            if( dockerUsername && dockerPassword ) {
-                return credentialsFactory.create('docker.io', dockerUsername, dockerPassword)
-            }
+        final config = registryConfigurationFactory.getRegistryKeys(registry)
+        if( !config ){
+            log.debug "Unable to find credentials for registry '$registry'"
+            return null
         }
-        else if( registry == 'quay.io' ) {
-            if( quayUsername && quayPassword ) {
-                return credentialsFactory.create(registry, quayUsername, quayPassword)
-            }
-        }
-        else if( AwsEcrService.isEcrHost(registry) ) {
-            if( awsAccessKey && awsSecretKey ) {
-                return credentialsFactory.create(registry, awsAccessKey, awsSecretKey)
-            }
-        }
-        else if( registry.endsWith('azurecr.io') ) {
-            if( azurecrUsername && azurecrPassword ) {
-                return credentialsFactory.create(registry, azurecrUsername, azurecrPassword)
-            }
-        }
-        else if( registry.endsWith('-docker.pkg.dev') || registry.endsWith('gcr.io')) {
-            if( googleUsername && googleCredentials  ) {
-                return credentialsFactory.create(registry, googleUsername, googleCredentials)
-            }
-        }
-        log.debug "Unable to find credentials for registry '$registry'"
-        return null
+        return credentialsFactory.create(registry, config.username, config.password)
     }
 
     /**

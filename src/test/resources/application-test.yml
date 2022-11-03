@@ -19,20 +19,20 @@ datasources:
 ---
 wave:
   registries:
-    docker:
+    default: docker.io
+    docker.io:
       username: ${DOCKER_USER:test}
       password: ${DOCKER_PAT:test}
-    quay:
+    quay.io:
       username: ${QUAY_USER:test}
       password: ${QUAY_PAT:test}
-    amazon:
+    195996028523.dkr.ecr.eu-west-1.amazonaws.com:
       username: ${AWS_ACCESS_KEY_ID:test}
       password: ${AWS_SECRET_ACCESS_KEY:test}
-    azurecr:
-      # seqeralabs.azurecr.io
+    seqeralabs.azurecr.io:
       username: ${AZURECR_USER:test}
       password: ${AZURECR_PAT:test}
-    google:
+    europe-southwest1-docker.pkg.dev:
       credentials : ${GOOGLECR_KEYS:test}
 ---
 tower:
