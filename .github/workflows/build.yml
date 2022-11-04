@@ -86,7 +86,7 @@ jobs:
 
       - name: Publish tests report
         if: failure()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: test-reports-jdk-${{ matrix.java_version }}
           path: |
