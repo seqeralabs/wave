@@ -12,6 +12,18 @@ micronaut:
       enabled : false
   server:
     port: 9090
+  views :
+    folder : io/seqera/wave
+  router:
+    static-resources:
+      css:
+        paths: 'classpath:io/seqera/wave/css'
+        mapping: '/css/**'
+        enabled: true
+      assets:
+        paths: 'classpath:io/seqera/wave/assets'
+        mapping: '/assets/**'
+        enabled: true
 ---
 netty:
   default:
