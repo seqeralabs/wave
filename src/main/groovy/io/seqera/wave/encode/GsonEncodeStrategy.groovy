@@ -19,9 +19,7 @@ abstract class GsonEncodeStrategy<V>implements EncodeStrategy<V> {
 
     {
         type = TypeHelper.getGenericType(this, 0)
-        gson = new GsonBuilder()
-                .registerTypeHierarchyAdapter()
-                .registerTypeAdapterFactory(  new RuntimeTypeAdapterFactory() ).create();
+        gson = new GsonBuilder().create();
     }
 
     @Override
