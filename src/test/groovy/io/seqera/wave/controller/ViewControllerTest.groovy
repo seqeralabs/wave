@@ -71,6 +71,7 @@ class ViewControllerTest extends Specification {
         and:
         def request = HttpRequest.GET("/view/builds/${record1.buildId}")
         def response = client.toBlocking().exchange(request, String)
+        new File("build/${record1.buildId}.html").text = response.body()
         then:
         response.body().contains(record1.buildId)
     }
