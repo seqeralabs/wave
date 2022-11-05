@@ -9,7 +9,7 @@ import io.seqera.wave.storage.reader.ContentReader;
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-public class LazyDigestStore implements DigestStore {
+public class LazyDigestStore implements DigestStore{
 
     final private String mediaType;
     final private String digest;
