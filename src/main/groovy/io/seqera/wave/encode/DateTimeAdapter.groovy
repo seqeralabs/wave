@@ -6,10 +6,14 @@ import java.time.format.DateTimeFormatter
 
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.ToJson
+import groovy.transform.CompileStatic
+
 /**
+ * Date time adapter for Moshi JSON serialisation
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@CompileStatic
 class DateTimeAdapter {
 
     @ToJson

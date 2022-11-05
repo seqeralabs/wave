@@ -4,8 +4,13 @@ import spock.lang.Specification
 
 import java.time.Instant
 
-import com.squareup.moshi.Moshi
+import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.storage.DigestStore
+import io.seqera.wave.storage.LazyDigestStore
+import io.seqera.wave.storage.reader.DataContentReader
 
 /**
  *
@@ -15,21 +20,59 @@ class MoshiEncodeStrategyTest extends Specification {
 
     def 'should encode and decode build result' () {
         given:
-        def moshi = new Moshi.Builder()
-                .add(new DateTimeAdapter())
-                .build()
-        def jsonAdapter = moshi.adapter(BuildResult.class);
+        def encoder = new MoshiEncodeStrategy<BuildResult>() { }
         and:
         def build = BuildResult.completed('1', 2, 'Oops', Instant.now())
 
         when:
-        def json = jsonAdapter.toJson(build)
+        def json = encoder.encode(build)
         and:
-        def copy = jsonAdapter.fromJson(json)
+        def copy = encoder.decode(json)
         then:
         copy.getClass() == build.getClass()
         and:
         copy == build
     }
 
+    def 'should encode and decode ContainerRequestData' () {
+        given:
+        def encoder = new MoshiEncodeStrategy<ContainerRequestData>() { }
+        and:
+        def data = new ContainerRequestData(1,
+                2,
+                'ubuntu',
+                'from foo',
+                new ContainerConfig(entrypoint: ['some', 'entry'], cmd:['the', 'cmd']),
+                'some/conda/file',
+                ContainerPlatform.of('amd64') )
+
+        when:
+        def json = encoder.encode(data)
+        and:
+        def copy = encoder.decode(json)
+        then:
+        copy.getClass() == data.getClass()
+        and:
+        copy == data
+    }
+
+    def 'should encode and decode lazy digest store' () {
+        given:
+        def encoder = new MoshiEncodeStrategy<DigestStore>() { }
+        and:
+        def data = new LazyDigestStore(new DataContentReader('FOO'.bytes.encodeBase64().toString()), 'media', '12345')
+
+        when:
+        def json = encoder.encode(data)
+        println json
+
+        and:
+        def copy = encoder.decode(json)
+        then:
+        copy.getClass() == data.getClass()
+        and:
+        copy.bytes == data.bytes
+        copy.digest == data.digest
+        copy.mediaType == data.mediaType
+    }
 }
