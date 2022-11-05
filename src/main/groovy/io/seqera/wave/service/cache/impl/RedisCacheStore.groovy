@@ -30,6 +30,10 @@ class RedisCacheStore implements CacheProvider<String,String> {
         redisConn.sync().psetex(key, duration.toMillis(), value)
     }
 
+    void put(String key, String value, Duration ttl) {
+        redisConn.sync().psetex(key, ttl.toMillis(), value)
+    }
+
     @Override
     boolean putIfAbsent(String key, String value) {
         final SetArgs args = SetArgs.Builder.ex(duration).nx()

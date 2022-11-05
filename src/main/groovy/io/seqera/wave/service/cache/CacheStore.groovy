@@ -1,4 +1,7 @@
 package io.seqera.wave.service.cache
+
+import java.time.Duration
+
 /**
  * Interface for cache store operations
  *
@@ -23,6 +26,15 @@ interface CacheStore<K,V> {
      * @param value The value to be store in the cache
      */
     void put(K key, V value)
+
+    /**
+     * Store a the specified key-value pair in the underlying cache
+     *
+     * @param key The key to retrieve the associated value
+     * @param value The value to be store in the cache
+     * @param ttl The max time-to-live of the stored entry
+     */
+    void put(K key, V value, Duration ttl)
 
     /**
      * Store a value in the cache only if does not exist yet
