@@ -11,12 +11,14 @@ import io.seqera.wave.storage.LazyDigestStore
 import io.seqera.wave.storage.ZippedDigestStore
 import io.seqera.wave.storage.reader.ContentReader
 import io.seqera.wave.storage.reader.DataContentReader
+import io.seqera.wave.storage.reader.GzipContentReader
 import io.seqera.wave.storage.reader.HttpContentReader
 import io.seqera.wave.util.TypeHelper
 /**
- * Implements a JSON {@link EncodeStrategy} based on Mosh JSON serialiser
+ * Implements a JSON {@link EncodeStrategy} based on Mosh JSON serializer
  *
  * See https://github.com/square/moshi
+ * https://www.baeldung.com/java-json-moshi
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -30,12 +32,14 @@ abstract class MoshiEncodeStrategy <V>implements EncodeStrategy<V> {
     {
         this.type = TypeHelper.getGenericType(this, 0)
         this.moshi = new Moshi.Builder()
+                .add(new ByteArrayAdapter())
                 .add(new DateTimeAdapter())
                 .add(PolymorphicJsonAdapterFactory.of(DigestStore.class, "@type")
                         .withSubtype(LazyDigestStore, LazyDigestStore.simpleName)
                         .withSubtype(ZippedDigestStore, ZippedDigestStore.simpleName) )
                 .add(PolymorphicJsonAdapterFactory.of(ContentReader.class, "@type")
                         .withSubtype(DataContentReader.class, DataContentReader.simpleName)
+                        .withSubtype(GzipContentReader.class, GzipContentReader.simpleName)
                         .withSubtype(HttpContentReader.class, HttpContentReader.simpleName))
                 .build()
         this.jsonAdapter = moshi.adapter(type)

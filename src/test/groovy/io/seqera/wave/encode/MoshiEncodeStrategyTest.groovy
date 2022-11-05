@@ -10,7 +10,9 @@ import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.LazyDigestStore
+import io.seqera.wave.storage.ZippedDigestStore
 import io.seqera.wave.storage.reader.DataContentReader
+import io.seqera.wave.storage.reader.GzipContentReader
 
 /**
  *
@@ -74,5 +76,51 @@ class MoshiEncodeStrategyTest extends Specification {
         copy.bytes == data.bytes
         copy.digest == data.digest
         copy.mediaType == data.mediaType
+    }
+
+    def 'should encode and decode gzip content reader' () {
+        given:
+        def encoder = new MoshiEncodeStrategy<DigestStore>() { }
+        and:
+        def data = new LazyDigestStore(
+                GzipContentReader.fromPlainString('Hello world'),
+                'text/json',
+                '12345')
+
+        when:
+        def json = encoder.encode(data)
+        println json
+
+        and:
+        def copy = encoder.decode(json)
+        then:
+        copy.getClass() == data.getClass()
+        and:
+        copy.bytes == data.bytes
+        copy.digest == data.digest
+        copy.mediaType == data.mediaType
+    }
+
+    def 'should encode and decode zipped digest store' () {
+        given:
+        def DATA = 'Hello wold!'
+        def encoder = new MoshiEncodeStrategy<DigestStore>() { }
+        and:
+        def data = new ZippedDigestStore(DATA.bytes, 'my/media', '12345')
+
+        when:
+        def json = encoder.encode(data)
+        println json
+
+        and:
+        def copy = encoder.decode(json)
+        then:
+        copy.getClass() == data.getClass()
+        and:
+        copy.bytes == data.bytes
+        copy.digest == data.digest
+        copy.mediaType == data.mediaType
+        and:
+        new String(copy.bytes) == DATA
     }
 }
