@@ -1,4 +1,4 @@
-package io.seqera.wave.encode
+package io.seqera.wave.encoder
 
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.ToJson

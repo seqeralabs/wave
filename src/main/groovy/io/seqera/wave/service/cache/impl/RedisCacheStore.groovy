@@ -5,13 +5,16 @@ import java.time.Duration
 import groovy.transform.CompileStatic
 import io.lettuce.core.SetArgs
 import io.lettuce.core.api.StatefulRedisConnection
-import io.seqera.wave.service.cache.CacheStore
+import jakarta.inject.Singleton
+
 /**
+ * Redis based implementation for a {@link CacheProvider}
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Singleton
 @CompileStatic
-class RedisCacheStore implements CacheStore<String,String> {
+class RedisCacheStore implements CacheProvider<String,String> {
 
     private StatefulRedisConnection<String,String> redisConn
 

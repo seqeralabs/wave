@@ -1,4 +1,4 @@
-package io.seqera.wave.encode
+package io.seqera.wave.encoder
 
 import spock.lang.Specification
 
@@ -18,7 +18,7 @@ import io.seqera.wave.storage.reader.GzipContentReader
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class MoshiEncodeStrategyTest extends Specification {
+class MoshiEncodingStrategyTest extends Specification {
 
     def 'should encode and decode build result' () {
         given:

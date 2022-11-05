@@ -3,14 +3,16 @@ package io.seqera.wave.service.cache.impl
 import java.util.concurrent.ConcurrentHashMap
 
 import groovy.transform.CompileStatic
-import io.seqera.wave.service.cache.CacheStore
+import jakarta.inject.Singleton
 
 /**
+ * Simple cache store implementation for development purpose
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Singleton
 @CompileStatic
-class LocalCacheStore implements CacheStore<String,String> {
+class LocalCacheStore implements CacheProvider<String,String> {
 
     private Map<String,String> store = new ConcurrentHashMap<>()
 

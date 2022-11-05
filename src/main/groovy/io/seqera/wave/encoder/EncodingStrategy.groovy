@@ -1,11 +1,11 @@
-package io.seqera.wave.encode
+package io.seqera.wave.encoder
 
 /**
  * Define JSON encode-decode core operations
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface EncodeStrategy<V> {
+interface EncodingStrategy<V> {
 
     String encode(V value)
 

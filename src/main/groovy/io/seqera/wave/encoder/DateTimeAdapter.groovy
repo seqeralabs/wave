@@ -1,4 +1,4 @@
-package io.seqera.wave.encode
+package io.seqera.wave.encoder
 
 import java.time.Duration
 import java.time.Instant

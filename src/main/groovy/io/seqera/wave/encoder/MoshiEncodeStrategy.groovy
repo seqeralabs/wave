@@ -1,4 +1,4 @@
-package io.seqera.wave.encode
+package io.seqera.wave.encoder
 
 import java.lang.reflect.Type
 
@@ -15,7 +15,7 @@ import io.seqera.wave.storage.reader.GzipContentReader
 import io.seqera.wave.storage.reader.HttpContentReader
 import io.seqera.wave.util.TypeHelper
 /**
- * Implements a JSON {@link EncodeStrategy} based on Mosh JSON serializer
+ * Implements a JSON {@link EncodingStrategy} based on Mosh JSON serializer
  *
  * See https://github.com/square/moshi
  * https://www.baeldung.com/java-json-moshi
@@ -23,7 +23,7 @@ import io.seqera.wave.util.TypeHelper
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-abstract class MoshiEncodeStrategy <V>implements EncodeStrategy<V> {
+abstract class MoshiEncodeStrategy <V>implements EncodingStrategy<V> {
 
     private Type type;
     private Moshi moshi
