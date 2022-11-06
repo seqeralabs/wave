@@ -3,19 +3,15 @@ package io.seqera.wave.controller
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpResponse
-import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
-import io.micronaut.http.annotation.Produces
 import io.micronaut.views.View
 import io.seqera.wave.exception.NotFoundException
-import io.seqera.wave.mail.MailHelper
 import io.seqera.wave.service.persistence.BuildRecord
 import io.seqera.wave.service.persistence.PersistenceService
 import jakarta.inject.Inject
 import static io.seqera.wave.util.DataTimeUtils.formatDuration
 import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
-
 /**
  * Implements View controller
  * 
@@ -53,6 +49,9 @@ class ViewController {
         binding.build_image = result.targetImage
         binding.build_platform = result.platform
         binding.build_dockerfile = result.dockerFile ?: '-'
+        binding.build_condafile = result.condaFile
+        binding.build_condalock = result.condaId ? persistenceService.loadConda(result.condaId)?.lockFile : null
+        binding.build_fromlock = result.builtFromLock
         binding.put('server_url', serverUrl)
         // result the main object
         return binding

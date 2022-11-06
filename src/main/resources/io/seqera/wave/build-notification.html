@@ -70,7 +70,14 @@
 
     <% if (build_condafile) { %>
     <h3>Conda environment</h3>
+    <div>Environment ID: ${build_condaid}</div>
     <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">${build_condafile}</pre>
+    <% } %>
+
+    <% if (build_condalock) { %>
+    <h3>Conda lock file</h3>
+    <div>The Conda environment was build using the following Conda lock file:</div>
+    <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">${build_condalock}</pre>
     <% } %>
 
     <h3>Build logs</h3>

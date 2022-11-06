@@ -97,7 +97,7 @@ class SurrealPersistenceService implements PersistenceService {
     CondaRecord loadConda(String condaId) {
         if( !condaId )
             throw new IllegalArgumentException('Missing conda id argument')
-        final query = "select * from wave_codna where id = '$condaId'"
+        final query = "select * from wave_conda where id = '$condaId'"
         final json = surrealDb.sqlAsString(getAuthorization(), query)
         final type = new TypeReference<ArrayList<SurrealResult<CondaRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null

@@ -1,5 +1,6 @@
 package io.seqera.wave.service.persistence.impl
 
+import spock.lang.Ignore
 import spock.lang.Specification
 
 import java.nio.file.Path
@@ -14,8 +15,8 @@ import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.persistence.BuildRecord
+import io.seqera.wave.service.persistence.CondaRecord
 import io.seqera.wave.test.SurrealDBTestContainer
-import io.seqera.wave.tower.User
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  *
@@ -73,9 +74,15 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         """
         HttpClient httpClient = HttpClient.create(new URL(surrealDbURL))
         SurrealPersistenceService storage = applicationContext.getBean(SurrealPersistenceService)
-        BuildRequest request = new BuildRequest(dockerFile,
-                Path.of("."), "buildrepo", condaFile, null,
-                ContainerPlatform.of('amd64'),'{auth}', null, "127.0.0.1")
+        BuildRequest request = BuildRequest
+                .builder()
+                .withId('100')
+                .withDockerFile(dockerFile)
+                .withWorkDir(Path.of('/some/dir'))
+                .withCondaFile(condaFile)
+                .withPlatform(ContainerPlatform.of('amd64'))
+                .withRequestIp("127.0.0.1")
+                .build()
         BuildResult result = new BuildResult(request.id, -1, "ok", Instant.now(), Duration.ofSeconds(3))
         BuildEvent event = new BuildEvent(request, result)
         BuildRecord build = BuildRecord.fromEvent(event)
@@ -132,7 +139,14 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def storage = applicationContext.getBean(SurrealPersistenceService)
         storage.initializeDb()
         final service = applicationContext.getBean(SurrealPersistenceService)
-        BuildRequest request = new BuildRequest("test", Path.of("."), "test", "test", Mock(User), ContainerPlatform.of('amd64'),'{auth}', "test", "127.0.0.1")
+        BuildRequest request = BuildRequest
+                .builder()
+                .withId('100')
+                .withWorkDir(Path.of('/some/dir'))
+                .withPlatform(ContainerPlatform.of('amd64'))
+                .withRequestIp("127.0.0.1")
+                .build()
+        and:
         BuildResult result = new BuildResult(request.id, 0, "content", Instant.now(), Duration.ofSeconds(1))
         BuildEvent event = new BuildEvent(request, result)
 
@@ -157,7 +171,14 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         given:
         surrealContainer.stop()
         final service = applicationContext.getBean(SurrealPersistenceService)
-        BuildRequest request = new BuildRequest("test", Path.of("."), "test", "test", Mock(User), ContainerPlatform.of('amd64'),'{auth}', "test", "127.0.0.1")
+        BuildRequest request = BuildRequest
+                .builder()
+                .withId('100')
+                .withWorkDir(Path.of('/some/dir'))
+                .withPlatform(ContainerPlatform.of('amd64'))
+                .withRequestIp("127.0.0.1")
+                .build()
+        and:
         BuildResult result = new BuildResult(request.id, 0, "content", Instant.now(), Duration.ofSeconds(1))
         BuildEvent event = new BuildEvent(request, result)
 
@@ -171,16 +192,16 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
     def 'should load a build record' () {
         given:
         final persistence = applicationContext.getBean(SurrealPersistenceService)
-        final request = new BuildRequest(
-                'FROM foo:latest',
-                Path.of("/some/path"),
-                "buildrepo",
-                'conda::recipe',
-                null,
-                ContainerPlatform.of('amd64'),
-                '{auth}',
-                'docker.io/my/repo',
-                "1.2.3.4")
+        final request = BuildRequest
+                .builder()
+                .withId('100')
+                .withDockerFile('FROM foo:latest')
+                .withWorkDir(Path.of('/some/dir'))
+                .withCondaFile('bioconda:foo')
+                .withPlatform(ContainerPlatform.of('amd64'))
+                .withRequestIp("127.0.0.1")
+                .build()
+        and:
         final result = new BuildResult(request.id, -1, "ok", Instant.now(), Duration.ofSeconds(3))
         final event = new BuildEvent(request, result)
         final record = BuildRecord.fromEvent(event)
@@ -200,5 +221,20 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         SurrealPersistenceService.patchDuration('"duration":3.00') == '"duration":3.00'
         SurrealPersistenceService.patchDuration('"duration":"3.00"') == '"duration":3.00'
         SurrealPersistenceService.patchDuration('aaa,"duration":"300.1234",zzz') == 'aaa,"duration":300.1234,zzz'
+    }
+
+    @Ignore
+    void "should insert conda record"() {
+        given:
+        def httpClient = HttpClient.create(new URL(surrealDbURL))
+        def storage = applicationContext.getBean(SurrealPersistenceService)
+        and:
+        storage.initializeDb()
+
+        when:
+        storage.saveConda(new CondaRecord(id:'100', lockFile: 'LOCK X'))
+        sleep 100 //as we are using async, let database a while to store the item
+        then:
+        storage.loadConda('100').lockFile == 'LOCK X'
     }
 }

@@ -118,40 +118,26 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         try {
             // create the workdir path
             Files.createDirectories(req.workDir)
-            // save the dockerfile
-            boolean shouldStoreCondaLock
             final dockerfile = req.workDir.resolve('Dockerfile')
             final condaFile = req.workDir.resolve('conda.yml')
             final condaLock = req.workDir.resolve('conda.lock')
+            // create the dockerfile
             Files.write(dockerfile, req.dockerFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
-            // save the conda file
-            if( req.condaFile ) {
+            // create the conda file
+            if( req.condaFile )
                 Files.write(condaFile, req.condaFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
-                // check if a conda lock file exists
-                final rec = persistenceService.loadConda(req.condaId)
-                if( rec && rec.lockFile ) {
-                    // save the lock file
-                    log.debug "Restoring Conda lock file for build id: ${req.id}"
-                    Files.write(condaLock, rec.lockFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
-                }
-                else {
-                    shouldStoreCondaLock = true
-                }
-            }
+            // create the conda lock
+            if( req.condaLock )
+                Files.write(condaLock, req.condaLock.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
 
             // run the build process
             resp = buildStrategy.build(req)
             log.info "== Build completed with status=$resp.exitStatus; stdout: (see below)\n${indent(resp.logs)}"
 
-            // save conda lock file
-            if( shouldStoreCondaLock ) {
-                if( Files.exists(condaLock) ) {
-                    log.debug "Storing Conda lock file for build id: ${req.id}"
-                    persistenceService.saveConda( new CondaRecord(id: req.condaId, lockFile: condaLock.text) )
-                }
-                else {
-                    log.warn "Missing Conda lock file for build id: ${req.id}"
-                }
+            // store the conda lock file in the wave db
+            if( req.condaId && !req.condaLock && Files.exists(condaLock) ) {
+                log.debug "Storing Conda lock file for build id: ${req.id}"
+                persistenceService.saveConda( new CondaRecord(id: req.condaId, lockFile: condaLock.text) )
             }
             return resp
         }
@@ -192,7 +178,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         // check the build rate limit
         try {
             if( rateLimiterService )
-                rateLimiterService.acquireBuild(new AcquireRequest(request.user?.id?.toString(), request.ip))
+                rateLimiterService.acquireBuild(new AcquireRequest(request.user?.id?.toString(), request.requestIp))
         }
         catch (Exception e) {
             buildStore.removeBuild(request.targetImage)

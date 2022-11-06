@@ -29,7 +29,7 @@ class BuildRequestTest extends Specification {
         req.dockerFile == CONTENT
         req.user == USER
         req.configJson == '{auth}'
-        req.job =~ /b89bf284c5e66424ec2829bf8945290e-[a-z0-9]+/
+        req.jobId =~ /b89bf284c5e66424ec2829bf8945290e-[a-z0-9]+/
         req.cacheRepository == cache
     }
 

@@ -47,7 +47,7 @@ class KubeBuildStrategy extends BuildStrategy {
     private Map<String, String> nodeSelectorMap
 
     private String podName(BuildRequest req) {
-        return "build-${req.job}"
+        return "build-${req.jobId}"
     }
 
     @Override

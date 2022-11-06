@@ -22,6 +22,8 @@ class BuildRecord {
     String buildId
     String dockerFile
     String condaFile
+    String condaId
+    Boolean builtFromLock
     String targetImage
     String userName
     String userEmail
@@ -42,11 +44,13 @@ class BuildRecord {
                 // see https://pullanswer.com/questions/bug-unicode-escaped-characters-with-surrogate-pairs-causes-surrealdb-to-panic
                 dockerFile: event.request.dockerFile?.replaceAll("[\ud83c\udf00-\ud83d\ude4f]|[\ud83d\ude80-\ud83d\udeff]", ""),
                 condaFile: event.request.condaFile?.replaceAll("[\ud83c\udf00-\ud83d\ude4f]|[\ud83d\ude80-\ud83d\udeff]", ""),
+                condaId: event.request.condaId,
+                builtFromLock: event.request.condaLock as Boolean,
                 targetImage: event.request.targetImage,
                 userName: event.request.user?.userName,
                 userEmail: event.request.user?.email,
                 userId: event.request.user?.id,
-                requestIp: event.request.ip,
+                requestIp: event.request.requestIp,
                 startTime: event.request.startTime,
                 duration: event.result.duration,
                 exitStatus: event.result.exitStatus,
