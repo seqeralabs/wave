@@ -60,15 +60,7 @@ class K8sServiceImplTest extends Specification {
         def result = k8sService.mountBuildStorage(Path.of('/foo'), '/foo')
         then:
         result.name == 'build-data'
-        result.mountPath == '/foo'
-        result.subPath == null
-        result.readOnly
-
-        when:
-        result = k8sService.mountBuildStorage(Path.of('/foo/'), '/foo')
-        then:
-        result.name == 'build-data'
-        result.mountPath == '/foo'
+        result.mountPath == '/wave/context'
         result.subPath == null
         result.readOnly
 
@@ -76,15 +68,8 @@ class K8sServiceImplTest extends Specification {
         result = k8sService.mountBuildStorage(Path.of('/foo/work/x1'), '/foo')
         then:
         result.name == 'build-data'
-        result.mountPath == '/foo/work/x1'
+        result.mountPath == '/wave/context'
         result.subPath == 'work/x1'
-        result.readOnly
-
-        when:
-        result = k8sService.mountBuildStorage(Path.of('/foo/work/x1'), null)
-        then:
-        result.name == 'build-data'
-        result.mountPath == '/foo/work/x1'
         result.readOnly
 
         cleanup:
@@ -176,7 +161,7 @@ class K8sServiceImplTest extends Specification {
         result.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz/config.json'
         and:
         result.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
-        result.spec.containers.get(0).volumeMounts.get(1).mountPath == '/build/work/xyz'
+        result.spec.containers.get(0).volumeMounts.get(1).mountPath == '/wave/context'
         result.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz'
 
         and:
@@ -218,13 +203,12 @@ class K8sServiceImplTest extends Specification {
         result.spec.containers.get(0).volumeMounts.size() == 1
         and:
         result.spec.containers.get(0).volumeMounts.get(0).name == 'build-data'
-        result.spec.containers.get(0).volumeMounts.get(0).mountPath == '/build/work/xyz'
+        result.spec.containers.get(0).volumeMounts.get(0).mountPath == '/wave/context'
         result.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz'
 
         and:
         result.spec.volumes.get(0).name == 'build-data'
         result.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
-
 
         cleanup:
         ctx.close()

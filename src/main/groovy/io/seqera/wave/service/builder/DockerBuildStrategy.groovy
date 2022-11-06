@@ -16,6 +16,9 @@ import static java.nio.file.StandardOpenOption.CREATE
 import static java.nio.file.StandardOpenOption.WRITE
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 
+import static io.seqera.wave.WaveDefault.BUILD_CONTEXT_PATH
+
+
 /**
  *  Build a container image using a Docker CLI tool
  *
@@ -74,8 +77,7 @@ class DockerBuildStrategy extends BuildStrategy {
         final wrapper = ['docker',
                          'run',
                          '--rm',
-                         '-w', '/tmp',
-                         '-v', "$workDir:/tmp".toString()]
+                         '-v', "${workDir}:${BUILD_CONTEXT_PATH}".toString()]
 
         if( credsFile ) {
             wrapper.add('-v')

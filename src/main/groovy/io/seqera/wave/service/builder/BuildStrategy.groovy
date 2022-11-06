@@ -3,6 +3,8 @@ package io.seqera.wave.service.builder
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
 
+import static io.seqera.wave.WaveDefault.BUILD_CONTEXT_PATH
+
 /**
  * Defines an abstract container build strategy.
  *
@@ -27,9 +29,9 @@ abstract class BuildStrategy {
         final result = new ArrayList(10)
         result
                 << "--dockerfile"
-                << "/tmp/Dockerfile"
+                << "${BUILD_CONTEXT_PATH}/Dockerfile".toString()
                 << '--context'
-                << '/tmp'
+                << BUILD_CONTEXT_PATH
                 << "--destination"
                 << req.targetImage
                 << "--cache=true"

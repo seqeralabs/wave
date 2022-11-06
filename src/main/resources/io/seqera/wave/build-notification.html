@@ -68,6 +68,11 @@
     <h3>Dockerfile</h3>
     <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">${build_dockerfile}</pre>
 
+    <% if (build_condafile) { %>
+    <h3>Conda environment</h3>
+    <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">${build_condafile}</pre>
+    <% } %>
+
     <h3>Build logs</h3>
     <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">${build_logs}</pre>
 

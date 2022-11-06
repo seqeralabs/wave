@@ -23,6 +23,7 @@ import io.kubernetes.client.openapi.models.V1VolumeMount
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.WaveDefault
 import io.seqera.wave.core.ContainerPlatform
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -202,7 +203,7 @@ class K8sServiceImpl implements K8sService {
 
         final vol = new V1VolumeMount()
                 .name('build-data')
-                .mountPath(workDir.toString())
+                .mountPath(WaveDefault.BUILD_CONTEXT_PATH)
                 .readOnly(true)
 
         if( storageMountPath ) {
