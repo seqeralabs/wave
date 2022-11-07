@@ -259,8 +259,10 @@ Replace in the above setting the `context` and `namespace` with the ones in the 
 ```
 kubectl apply -f k8s/dev/accounts-k3d.yml
 kubectl apply -f k8s/dev/volumes-k3d.yml
+kubectl apply -f k8s/dev/redis-k3d.yml
 kubectl apply -f k8s/dev/surrealdb-k3d.yml
 ```
 7. configure skaffold to trust in our local registry `skaffold config set --global insecure-registries localhost:5000`
-8. run skaffold `skaffold dev --default-repo localhost:5000`
-9. or debug skaffold `skaffold debug --default-repo localhost:5000`
+8. create a config `cp k8s/dev/config-k3d-example.yml k8s/dev/config-k3d.yml` and set your credentials
+9. run skaffold `skaffold dev --default-repo localhost:5000`
+10. or debug skaffold `skaffold debug --default-repo localhost:5000`

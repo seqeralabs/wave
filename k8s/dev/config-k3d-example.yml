@@ -19,9 +19,9 @@ data:
         docker.io:
           username: "${DOCKER_USER:}"
           password: "${DOCKER_PAT:}"
-        cr.seqera.io:  
-          username: 'robot$developers'
-          password: 'qAElA1YJ4J7ktb9qt3ChpgMRJ5Cy9BJ0'
+        cr.seqera.io:
+          username: "${SEQERA_CR_USERNAME:}"
+          password: "${SEQERA_CR_PASSWORD:}"
       build:
         timeout: "15m"
         workspace: "/efs/wave/build"
@@ -43,8 +43,6 @@ data:
         driverClassName: "org.h2.Driver"
         username: "sq"
         password: ""
-    #redis:
-    #  uri: "redis://redis:6379"
     rate-limit:
       build:
         max: 100
@@ -55,3 +53,5 @@ data:
     stats:
       surrealdb:        
         ur: http://surrealdb:8000
+    redis:
+      uri: redis://redis:6379

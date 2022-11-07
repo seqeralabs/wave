@@ -1,9 +1,0 @@
-# docker user/pwd for cr.seqera.io
-#  robot$developers
-apiVersion: v1
-type: kubernetes.io/dockerconfigjson
-kind: Secret
-metadata:
-  name: regcred
-data:
-  .dockerconfigjson: eyJhdXRocyI6eyJjci5zZXFlcmEuaW8iOnsidXNlcm5hbWUiOiJyb2JvdCRkZXZlbG9wZXJzIiwicGFzc3dvcmQiOiJxQUVsQTFZSjRKN2t0YjlxdDNDaHBnTVJKNUN5OUJKMCIsImVtYWlsIjoiZGV2ZWxvcGVyc0BzZXFlcmEuaW8iLCJhdXRoIjoiY205aWIzUWtaR1YyWld4dmNHVnljenB4UVVWc1FURlpTalJLTjJ0MFlqbHhkRE5EYUhCblRWSktOVU41T1VKS01BPT0ifX19
