@@ -1,0 +1,46 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: surrealdb
+  labels:
+    app: surrealdb
+spec:
+  selector:
+    matchLabels:
+      app: surrealdb
+  template:
+    metadata:
+      labels:
+        app: surrealdb
+    spec:
+      containers:
+        - image: surrealdb/surrealdb:latest
+          name: surrealdb
+          ports:
+            - containerPort: 8000
+          env:
+            - name: USER
+              value: "root"
+            - name: PASS
+              value: "root"              
+          resources:
+            requests:
+              memory: "2000Mi"
+            limits:
+              memory: "2000Mi"
+          command: ["/surreal","start"]
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: surrealdb
+spec:
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+  type: NodePort
+  selector:
+    app: "surrealdb"
