@@ -20,8 +20,8 @@ build:
 
 manifests:
   rawYaml:
-  - k8s/config-k3d.yml
-  - k8s/wave-k3d.yml
+  - k8s/dev/config-k3d.yml
+  - k8s/dev/wave-k3d.yml
 
 portForward:
   - resourceType: deployment
