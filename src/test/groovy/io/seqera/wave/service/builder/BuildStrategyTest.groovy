@@ -26,9 +26,9 @@ class BuildStrategyTest extends Specification {
         then:
         cmd == [
                 '--dockerfile',
-                '/work/foo/40e8a6dba50e9b3b609a19c12420d3eb/Dockerfile',
+                '/wave/context/Dockerfile',
                 '--context',
-                '/work/foo/40e8a6dba50e9b3b609a19c12420d3eb',
+                '/wave/context',
                 '--destination',
                 'quay.io/wave:40e8a6dba50e9b3b609a19c12420d3eb',
                 '--cache=true',

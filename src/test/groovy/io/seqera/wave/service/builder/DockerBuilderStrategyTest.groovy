@@ -27,8 +27,7 @@ class DockerBuilderStrategyTest extends Specification {
         cmd == ['docker',
                 'run',
                 '--rm',
-                '-w', '/work/foo',
-                '-v', '/work/foo:/work/foo',
+                '-v', '/work/foo:/wave/context',
                 'gcr.io/kaniko-project/executor:v1.9.1']
 
         when:
@@ -37,8 +36,7 @@ class DockerBuilderStrategyTest extends Specification {
         cmd == ['docker',
                 'run',
                 '--rm',
-                '-w', '/work/foo',
-                '-v', '/work/foo:/work/foo',
+                '-v', '/work/foo:/wave/context',
                 '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
                 '--platform', 'linux/arm64/v8',
                 'gcr.io/kaniko-project/executor:v1.9.1']
@@ -62,13 +60,12 @@ class DockerBuilderStrategyTest extends Specification {
         cmd == ['docker',
                 'run',
                 '--rm',
-                '-w', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f',
-                '-v', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f:/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f',
+                '-v', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f:/wave/context',
                 '-v', '/work/creds.json:/kaniko/.docker/config.json:ro',
                 '--platform', 'linux/amd64',
                 'gcr.io/kaniko-project/executor:v1.9.1',
-                '--dockerfile', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f/Dockerfile',
-                '--context', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f',
+                '--dockerfile', '/wave/context/Dockerfile',
+                '--context', '/wave/context',
                 '--destination', 'repo:17e58f4434c26104c2cf9f0eb8fbc16f',
                 '--cache=true',
                 '--custom-platform', 'linux/amd64',
@@ -91,8 +88,8 @@ class DockerBuilderStrategyTest extends Specification {
         def cmd = service.launchCmd(req)
         then:
         cmd == [
-                '--dockerfile', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f/Dockerfile',
-                '--context', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f',
+                '--dockerfile', '/wave/context/Dockerfile',
+                '--context', '/wave/context',
                 '--destination', 'repo:17e58f4434c26104c2cf9f0eb8fbc16f',
                 '--cache=true',
                 '--custom-platform', 'linux/amd64',

@@ -68,6 +68,22 @@
     <h3>Dockerfile</h3>
     <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{build_dockerfile}}</pre>
 
+    {{#if build_condafile}}
+    <h3>Conda environment</h3>
+    <div>Environment ID: {{build_condaid}}</div>
+    <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{build_condafile}}</pre>
+    {{/if}}
+
+    {{#if build_condalock}}
+    <h3>Conda lock file</h3>
+      {{#if build_fromlock}}
+      <div>The Conda environment was built using the following Conda lock file:</div>
+      {{else}}
+      <div>The Conda environment can be rebuilt using the following Conda lock file:</div>
+      {{/if}}
+    <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{build_condalock}}</pre>
+    {{/if}}
+
     <div class="footer" style="clear:both;width:100%;">
         <hr class="footer-hr" style="height:0;overflow:visible;margin-top:30px;border:0;border-top:1px solid #eee;color:#999999;font-size:12px;line-height:18px;margin-bottom:30px;">
         <img style="float:right" src="/assets/seqera-logo.png">
