@@ -144,6 +144,7 @@ jib {
         }
         permissions = ['/launch.sh': '755']
     }
+    allowInsecureRegistries= findProperty("jibRepo")?.toString()?.indexOf('localhost') != -1
 }
 
 run{

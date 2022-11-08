@@ -246,3 +246,23 @@ wave:
 ```
      
 Replace in the above setting the `context` and `namespace` with the ones in the local K8s cluster.
+
+
+== Skaffold, develop in kubernetes
+
+1. install k3d and skaffold
+2. create a registry `k3d registry create registry.localhost --port 5000`
+4. create a cluster `k3d cluster create  -p "8081:80@loadbalancer" --registry-use k3d-registry.localhost:5000 --registry-config k8s/dev/registries.yml`
+5. configure the cluster `kubectl label node k3d-k3s-default-server-0 service=wave-build`
+6. apply all required infra
+
+```
+kubectl apply -f k8s/dev/accounts-k3d.yml
+kubectl apply -f k8s/dev/volumes-k3d.yml
+kubectl apply -f k8s/dev/redis-k3d.yml
+kubectl apply -f k8s/dev/surrealdb-k3d.yml
+```
+7. configure skaffold to trust in our local registry `skaffold config set --global insecure-registries localhost:5000`
+8. create a config `cp k8s/dev/config-k3d-example.yml k8s/dev/config-k3d.yml` and set your credentials
+9. run skaffold `skaffold dev --default-repo localhost:5000`
+10. or debug skaffold `skaffold debug --default-repo localhost:5000`
