@@ -5,7 +5,9 @@ import java.time.Duration
 import groovy.transform.CompileStatic
 import io.lettuce.core.SetArgs
 import io.lettuce.core.api.StatefulRedisConnection
+import io.micronaut.context.annotation.Replaces
 import io.micronaut.context.annotation.Requires
+import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
 /**
@@ -15,9 +17,11 @@ import jakarta.inject.Singleton
  */
 @Singleton
 @Requires(env = 'redis')
+@Replaces(LocalCacheStore)
 @CompileStatic
 class RedisCacheStore implements CacheProvider<String,String> {
 
+    @Inject
     private StatefulRedisConnection<String,String> redisConn
 
     @Override
