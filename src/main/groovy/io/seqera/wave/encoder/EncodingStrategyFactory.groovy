@@ -4,6 +4,7 @@ import java.lang.reflect.Type
 
 import io.micronaut.context.annotation.Bean
 import io.micronaut.context.annotation.Factory
+import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.storage.DigestStore
 import jakarta.inject.Singleton
@@ -20,6 +21,8 @@ class EncodingStrategyFactory {
         switch (clazz){
             case BuildResult:
                 return new MoshiEncodeStrategy<BuildResult>(){}
+            case ContainerRequestData:
+                return new MoshiEncodeStrategy<ContainerRequestData>(){}
         }
         throw new RuntimeException("No encode strategey for $clazz")
     }

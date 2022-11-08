@@ -21,12 +21,12 @@ class ContainerTokenServiceImpl implements ContainerTokenService {
     @Override
     String computeToken(ContainerRequestData request) {
         final token = LongRndKey.rndHex()
-        containerTokenStorage.put(token, request)
+        containerTokenStorage.putRequest(token, request)
         return token
     }
 
     @Override
     ContainerRequestData getRequest(String token) {
-        return containerTokenStorage.get(token)
+        return containerTokenStorage.getRequest(token)
     }
 }
