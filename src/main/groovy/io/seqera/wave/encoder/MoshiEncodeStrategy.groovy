@@ -23,7 +23,7 @@ import io.seqera.wave.util.TypeHelper
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-abstract class MoshiEncodeStrategy <V>implements EncodingStrategy<V> {
+class MoshiEncodeStrategy <V>implements EncodingStrategy<V> {
 
     private Type type;
     private Moshi moshi

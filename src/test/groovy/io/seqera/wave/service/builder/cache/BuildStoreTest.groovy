@@ -5,23 +5,32 @@ import spock.lang.Specification
 import java.time.Duration
 import java.time.Instant
 
+import io.micronaut.context.annotation.Property
+import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.service.builder.BuildResult
-import io.seqera.wave.service.builder.impl.LocalBuildStore
+import io.seqera.wave.service.builder.BuildStoreCache
+import jakarta.inject.Inject
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class LocalBuildStoreTest extends Specification {
+@MicronautTest(rebuildContext = true)
+class BuildStoreTest extends Specification {
 
     BuildResult zero = BuildResult.create('0')
     BuildResult one = BuildResult.completed('1', 0, 'done', Instant.now())
     BuildResult two = BuildResult.completed('2', 0, 'done', Instant.now())
     BuildResult three = BuildResult.completed('3', 0, 'done', Instant.now())
 
+    @Inject
+    BuildStoreCache cache
+
+    @Property(name="specIndex",value="1")
+    @Property(name="wave.build.status.duration",value="60s")
+    @Property(name="wave.build.status.delay",value="5s")
+    @Property(name="wave.build.status.timeout",value="30s")
     def 'should get and put key values' () {
-        given:
-        def cache = new LocalBuildStore(delay: Duration.ofSeconds(5), timeout: Duration.ofSeconds(30), duration: Duration.ofSeconds(60))
-        
         expect:
         cache.getBuild('foo') == null
 
@@ -31,11 +40,11 @@ class LocalBuildStoreTest extends Specification {
         cache.getBuild('foo') == one
     }
 
+    @Property(name="specIndex",value="2")
+    @Property(name="wave.build.status.duration",value="2s")
+    @Property(name="wave.build.status.delay",value="5s")
+    @Property(name="wave.build.status.timeout",value="30s")
     def 'should retain value for max duration' () {
-        given:
-        def DURATION = Duration.ofSeconds(2)
-        def cache = new LocalBuildStore(delay: Duration.ofSeconds(5), timeout: Duration.ofSeconds(30), duration: DURATION)
-
         expect:
         cache.getBuild('foo') == null
 
@@ -44,10 +53,10 @@ class LocalBuildStoreTest extends Specification {
         then:
         cache.getBuild('foo') == one
         and:
-        sleep DURATION.toMillis().intdiv(2)
+        sleep Duration.ofSeconds(2).toMillis().intdiv(2)
         cache.getBuild('foo') == one
         and:
-        sleep DURATION.toMillis()
+        sleep Duration.ofSeconds(2).toMillis()
         cache.getBuild('foo') == null
 
         when:
@@ -60,10 +69,11 @@ class LocalBuildStoreTest extends Specification {
         cache.getBuild('foo') == null
     }
 
+    @Property(name="specIndex",value="3")
+    @Property(name="wave.build.status.duration",value="60s")
+    @Property(name="wave.build.status.delay",value="5s")
+    @Property(name="wave.build.status.timeout",value="30s")
     def 'should store if absent' () {
-        given:
-        def cache = new LocalBuildStore(delay: Duration.ofSeconds(5), timeout: Duration.ofSeconds(30), duration: Duration.ofSeconds(60))
-
         expect:
         cache.storeIfAbsent('foo', zero)
         and:
@@ -77,10 +87,11 @@ class LocalBuildStoreTest extends Specification {
 
     }
 
+    @Property(name="specIndex",value="4")
+    @Property(name="wave.build.status.duration",value="60s")
+    @Property(name="wave.build.status.delay",value="5s")
+    @Property(name="wave.build.status.timeout",value="30s")
     def 'should remove a build entry' () {
-        given:
-        def cache = new LocalBuildStore(delay: Duration.ofSeconds(5), timeout: Duration.ofSeconds(30), duration: Duration.ofSeconds(60))
-
         when:
         cache.storeBuild('foo', zero)
         then:
@@ -93,10 +104,11 @@ class LocalBuildStoreTest extends Specification {
 
     }
 
+    @Property(name="specIndex",value="5")
+    @Property(name="wave.build.status.duration",value="60s")
+    @Property(name="wave.build.status.delay",value="5s")
+    @Property(name="wave.build.status.timeout",value="30s")
     def 'should await for a value' () {
-        given:
-        def cache = new LocalBuildStore(delay: Duration.ofSeconds(5), timeout: Duration.ofSeconds(30), duration: Duration.ofSeconds(60))
-
         expect:
         cache.awaitBuild('foo') == null
 

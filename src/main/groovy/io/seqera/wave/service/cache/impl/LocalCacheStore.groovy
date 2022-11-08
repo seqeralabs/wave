@@ -47,21 +47,16 @@ class LocalCacheStore implements CacheProvider<String,String> {
         return entry.value
     }
 
-    @Override
-    void put(String key, String value) {
-        store.put(key, new Entry<>(value))
-    }
-
     void put(String key, String value, Duration ttl) {
         store.put(key, new Entry<>(value,ttl))
     }
 
     @Override
-    boolean putIfAbsent(String key, String value) {
+    boolean putIfAbsent(String key, String value, Duration ttl) {
         final entry = store.get(key)
         if( entry?.isExpired() )
             store.remove(key)
-        return store.putIfAbsent(key, new Entry<>(value))==null
+        return store.putIfAbsent(key, new Entry<>(value, ttl))==null
     }
 
     @Override

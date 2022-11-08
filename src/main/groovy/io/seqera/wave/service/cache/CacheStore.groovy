@@ -45,6 +45,15 @@ interface CacheStore<K,V> {
     boolean putIfAbsent(K key, V value)
 
     /**
+     * Store a value in the cache only if does not exist yet
+     * @param key The unique associated with this object
+     * @param value The object to store
+     * @param ttl The max time-to-live of the stored entry
+     * @return {@code true} if the value was stored, {@code false} otherwise
+     */
+    boolean putIfAbsent(K key, V value, Duration ttl)
+
+    /**
      * Remove the entry with the specified key from the cache
      *
      * @param key The key of the entry to be removed
