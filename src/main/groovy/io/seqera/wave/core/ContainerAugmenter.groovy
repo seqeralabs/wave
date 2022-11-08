@@ -14,7 +14,7 @@ import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.model.ContentType
 import io.seqera.wave.proxy.ProxyClient
-import io.seqera.wave.storage.Storage
+import io.seqera.wave.storage.DigestStorage
 import io.seqera.wave.storage.reader.ContentReaderFactory
 import io.seqera.wave.util.RegHelper
 /**
@@ -30,14 +30,14 @@ class ContainerAugmenter {
     private ProxyClient client
     private ContainerConfig containerConfig
     private ContainerPlatform platform = ContainerPlatform.DEFAULT
-    private Storage storage
+    private DigestStorage storage
 
 
     ContainerConfig getContainerConfig() {
         return containerConfig
     }
 
-    ContainerAugmenter withStorage(Storage cache) {
+    ContainerAugmenter withStorage(DigestStorage cache) {
         this.storage = cache
         return this
     }

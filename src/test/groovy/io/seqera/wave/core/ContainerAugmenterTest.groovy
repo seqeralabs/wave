@@ -19,7 +19,7 @@ import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.model.ContentType
 
 import io.seqera.wave.proxy.ProxyClient
-import io.seqera.wave.storage.Storage
+import io.seqera.wave.storage.DigestStorage
 import io.seqera.wave.test.ManifestConst
 import io.seqera.wave.util.ContainerConfigFactory
 import io.seqera.wave.util.RegHelper
@@ -32,7 +32,7 @@ import jakarta.inject.Inject
 class ContainerAugmenterTest extends Specification {
 
     @Inject
-    Storage storage
+    DigestStorage storage
 
     @Value('${wave.registries.docker.io.username}')
     String dockerUsername
@@ -143,6 +143,7 @@ class ContainerAugmenterTest extends Specification {
 
         when:
         def layer = scanner.getContainerConfig().layers.get(0)
+        layer.location = 'file://'+layer.location
         def blob = scanner.layerBlob(IMAGE, layer)
 
         then:
@@ -176,7 +177,8 @@ class ContainerAugmenterTest extends Specification {
         and:
 
         def scanner = new ContainerAugmenter().withStorage(storage).withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
-
+        def layer = scanner.getContainerConfig().layers.get(0)
+        layer.location = 'file://'+layer.location
         when:
         def digest = scanner.updateImageManifest(IMAGE, MANIFEST, NEW_CONFIG_DIGEST)
 
@@ -420,7 +422,8 @@ class ContainerAugmenterTest extends Specification {
         and:
 
         def scanner = new ContainerAugmenter().withStorage(storage).withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
-
+        def layer = scanner.getContainerConfig().layers.get(0)
+        layer.location = 'file://'+layer.location
         when:
         def digest = scanner.resolveV1Manifest(MANIFEST, IMAGE_NAME)
         then:
@@ -651,7 +654,8 @@ class ContainerAugmenterTest extends Specification {
         and:
 
         def scanner = new ContainerAugmenter().withStorage(storage).withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
-
+        def layer = scanner.getContainerConfig().layers.get(0)
+        layer.location = 'file://'+layer.location
         when:
         scanner.rewriteLayersV1(IMAGE_NAME, mutableManifest.fsLayers)
 

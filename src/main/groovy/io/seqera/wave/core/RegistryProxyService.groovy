@@ -19,7 +19,7 @@ import io.seqera.wave.model.ContentType
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.service.CredentialsService
 import io.seqera.wave.storage.DigestStore
-import io.seqera.wave.storage.Storage
+import io.seqera.wave.storage.DigestStorage
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
@@ -35,7 +35,7 @@ import static io.seqera.wave.proxy.ProxyClient.REDIRECT_CODES
 @CompileStatic
 class RegistryProxyService {
 
-    @Inject Storage storage
+    @Inject DigestStorage storage
 
     @Inject
     private RegistryLookupService registryLookup

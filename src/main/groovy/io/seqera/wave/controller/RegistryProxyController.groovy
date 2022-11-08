@@ -30,7 +30,7 @@ import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.storage.DigestStore
-import io.seqera.wave.storage.Storage
+import io.seqera.wave.storage.DigestStorage
 import jakarta.inject.Inject
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Mono
@@ -47,7 +47,7 @@ class RegistryProxyController {
 
     @Inject HttpClientAddressResolver addressResolver
     @Inject RegistryProxyService proxyService
-    @Inject Storage storage
+    @Inject DigestStorage storage
     @Inject RouteHandler routeHelper
     @Inject ContainerBuildService containerBuildService
     @Inject @Nullable RateLimiterService rateLimiterService

@@ -5,7 +5,7 @@ import java.time.Duration
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.configuration.TokenConfig
-import io.seqera.wave.encoder.EncodingStrategyFactory
+import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.cache.AbstractCacheStore
 import io.seqera.wave.service.cache.impl.CacheProvider
@@ -24,10 +24,9 @@ class ContainerTokenCache extends AbstractCacheStore<ContainerRequestData> imple
 
     TokenConfig tokenConfig
 
-    ContainerTokenCache(EncodingStrategyFactory encodingStrategyFactory,
-                        CacheProvider<String, String> delegate,
+    ContainerTokenCache(CacheProvider<String, String> delegate,
                         TokenConfig tokenConfig) {
-        super(encodingStrategyFactory, delegate)
+        super(delegate, new MoshiEncodeStrategy<ContainerRequestData>(){})
         this.tokenConfig = tokenConfig
         log.debug "Creating container tokens cache - maxSize=$tokenConfig.cache.maxSize; maxDuration=$tokenConfig.cache.duration"
     }

@@ -13,6 +13,7 @@ import io.seqera.wave.storage.reader.ContentReader
 import io.seqera.wave.storage.reader.DataContentReader
 import io.seqera.wave.storage.reader.GzipContentReader
 import io.seqera.wave.storage.reader.HttpContentReader
+import io.seqera.wave.storage.reader.PathContentReader
 import io.seqera.wave.util.TypeHelper
 /**
  * Implements a JSON {@link EncodingStrategy} based on Mosh JSON serializer

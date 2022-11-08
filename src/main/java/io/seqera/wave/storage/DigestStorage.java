@@ -6,9 +6,11 @@ import java.util.Optional;
 import io.seqera.wave.storage.reader.ContentReader;
 
 /**
+ * A storage of Manifests and Blobs
+ *
  * @author : jorge <jorge.aguilera@seqera.io>
  **/
-public interface Storage {
+public interface DigestStorage {
 
     Optional<DigestStore> getManifest(String path);
 

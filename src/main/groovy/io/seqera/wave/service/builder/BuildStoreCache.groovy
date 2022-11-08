@@ -4,9 +4,8 @@ import java.time.Duration
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
-import io.seqera.wave.encoder.EncodingStrategyFactory
+import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.cache.AbstractCacheStore
 import io.seqera.wave.service.cache.impl.CacheProvider
 import jakarta.inject.Singleton
@@ -28,9 +27,8 @@ class BuildStoreCache extends AbstractCacheStore<BuildResult> implements BuildSt
     BuildStoreCache(@Value('${wave.build.status.duration:`1d`}')Duration duration,
                     @Value('${wave.build.status.delay:5s}')Duration delay,
                     @Value('${wave.build.timeout:5m}')Duration timeout,
-                    EncodingStrategyFactory encodingStrategyFactory,
                     CacheProvider<String,String> delegate) {
-        super(encodingStrategyFactory, delegate)
+        super(delegate, new MoshiEncodeStrategy<BuildResult>(){})
         this.duration = duration
         this.delay = delay
         this.timeout = timeout

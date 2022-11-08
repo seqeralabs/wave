@@ -63,4 +63,8 @@ class LocalCacheStore implements CacheProvider<String,String> {
     void remove(String key) {
         store.remove(key)
     }
+
+    void clearCache(){
+        store.clear()
+    }
 }

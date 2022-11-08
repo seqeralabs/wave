@@ -12,7 +12,7 @@ import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.model.ContentType
-import io.seqera.wave.storage.MemoryStorage
+import io.seqera.wave.service.cache.impl.LocalCacheStore
 import io.seqera.wave.test.DockerRegistryContainer
 import jakarta.inject.Inject
 /**
@@ -31,7 +31,7 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
     ApplicationContext applicationContext
 
     @Inject
-    MemoryStorage storage
+    LocalCacheStore storage
 
     def setupSpec() {
         initRegistryContainer(applicationContext)

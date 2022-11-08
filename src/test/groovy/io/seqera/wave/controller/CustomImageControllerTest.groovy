@@ -25,9 +25,10 @@ import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.builder.ContainerBuildServiceImpl
+import io.seqera.wave.storage.CacheDigestStorage
 import io.seqera.wave.storage.DigestStore
-import io.seqera.wave.storage.MemoryStorage
-import io.seqera.wave.storage.Storage
+
+import io.seqera.wave.storage.DigestStorage
 import io.seqera.wave.test.DockerRegistryContainer
 import io.seqera.wave.util.Base32
 import jakarta.inject.Inject
@@ -78,9 +79,9 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
         }
     }
 
-    @MockBean(Storage)
-    Storage storageService(){
-        Mock(MemoryStorage){
+    @MockBean(DigestStorage)
+    DigestStorage storageService(){
+        Mock(CacheDigestStorage){
             getManifest(_) >> {
                 !expected ? Optional.empty() :
                 Optional.of(new DigestStore(){

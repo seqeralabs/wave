@@ -15,7 +15,7 @@ public class ContentReaderFactory {
             throw new IllegalArgumentException("Missing content location");
         if( location.startsWith("/") )
             return new PathContentReader(Paths.get(location));
-        if( location.startsWith("http://") || location.startsWith("https://"))
+        if( location.startsWith("http://") || location.startsWith("https://")|| location.startsWith("file://"))
             return new HttpContentReader(location);
         if( location.startsWith("data:") ) {
             return new DataContentReader(location.substring(5));

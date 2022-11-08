@@ -1,15 +1,11 @@
 package io.seqera.wave.service.cache
 
-import java.lang.reflect.Type
+
 import java.time.Duration
 
 import groovy.transform.CompileStatic
 import io.seqera.wave.encoder.EncodingStrategy
-import io.seqera.wave.encoder.EncodingStrategyFactory
-import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.cache.impl.CacheProvider
-import io.seqera.wave.util.TypeHelper
-import jakarta.inject.Inject
 
 /**
  * Implements a generic cache store
@@ -22,9 +18,9 @@ abstract class AbstractCacheStore<V> implements CacheStore<String,V> {
     private EncodingStrategy<V> encodingStrategy
     private CacheProvider<String,String> delegate
 
-    AbstractCacheStore(EncodingStrategyFactory encodingStrategyFactory, CacheProvider<String,String> delegate){
-        Type type = TypeHelper.getGenericType(this, 0)
-        encodingStrategy = encodingStrategyFactory.createEncoding(Class.forName(type.typeName)) as EncodingStrategy<V>
+    AbstractCacheStore(CacheProvider<String,String> delegate,
+                       EncodingStrategy<V> encodingStrategy){
+        this.encodingStrategy = encodingStrategy
         this.delegate = delegate
     }
 
