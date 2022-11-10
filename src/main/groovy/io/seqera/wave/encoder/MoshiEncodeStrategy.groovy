@@ -13,7 +13,6 @@ import io.seqera.wave.storage.reader.ContentReader
 import io.seqera.wave.storage.reader.DataContentReader
 import io.seqera.wave.storage.reader.GzipContentReader
 import io.seqera.wave.storage.reader.HttpContentReader
-import io.seqera.wave.storage.reader.PathContentReader
 import io.seqera.wave.util.TypeHelper
 /**
  * Implements a JSON {@link EncodingStrategy} based on Mosh JSON serializer
@@ -24,7 +23,7 @@ import io.seqera.wave.util.TypeHelper
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-class MoshiEncodeStrategy <V>implements EncodingStrategy<V> {
+abstract class MoshiEncodeStrategy <V>implements EncodingStrategy<V> {
 
     private Type type;
     private Moshi moshi
