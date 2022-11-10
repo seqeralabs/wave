@@ -13,8 +13,18 @@ repositories {
 }
 
 java {
-    sourceCompatibility = JavaVersion.toVersion("11")
-    targetCompatibility = JavaVersion.toVersion("11")
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+compileJava {
+    options.release = 11
+}
+
+tasks.withType(GroovyCompile) {
+    sourceCompatibility = '11'
+    targetCompatibility = '11'
 }
 
 group = 'io.seqera'

@@ -90,14 +90,8 @@ dependencies {
     implementation("io.micronaut.views:micronaut-views-handlebars")
 }
 
-
 application {
     mainClass.set("io.seqera.wave.Application")
-}
-
-java {
-    sourceCompatibility = JavaVersion.toVersion("11")
-    targetCompatibility = JavaVersion.toVersion("11")
 }
 
 graalvmNative.toolchainDetection = false
