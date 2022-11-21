@@ -175,6 +175,7 @@ class RegistryProxyController {
     }
 
     MutableHttpResponse<?> handleTagList(RoutePath route, HttpRequest httpRequest) {
+        log.debug "Handling tag list request '$route.path'"
         final headers = httpRequest.headers.asMap() as Map<String, List<String>>
         final resp = proxyService.handleRequest(route, headers)
         HttpResponse
