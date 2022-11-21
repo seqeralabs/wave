@@ -128,9 +128,6 @@ class RegistryProxyController {
         }
 
         if( route.tagList ){
-            if( route.reference != "list") {
-                return HttpResponse.badRequest()
-            }
             return handleTagList(route, httpRequest)
         }
 

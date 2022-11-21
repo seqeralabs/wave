@@ -29,8 +29,8 @@ class RoutePath implements ContainerPath {
 
     boolean isManifest() { type=='manifests' }
     boolean isBlob() { type=='blobs' }
-    boolean isTagList() { type=='tags' }
-    boolean isTag() { reference && !isDigest() }
+    boolean isTagList() { type=='tags' && reference=='list' }
+    boolean isTag() { type!='tags' && reference && !isDigest() }
     boolean isDigest() { reference && reference.startsWith('sha256:') }
 
     String getRepository() { "$registry/$image" }
