@@ -14,6 +14,7 @@ import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryCredentialsFactory
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.model.ContentType
 import io.seqera.wave.proxy.ProxyClient
@@ -22,9 +23,7 @@ import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 import static io.seqera.wave.proxy.ProxyClient.REDIRECT_CODES
-
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  *
@@ -56,6 +55,9 @@ class RegistryProxyService {
     @Inject
     private RegistryCredentialsFactory credentialsFactory
 
+    @Inject
+    private HttpClientConfig httpClientConfig
+
     private ContainerAugmenter scanner(ProxyClient proxyClient) {
         return new ContainerAugmenter()
                 .withStorage(storage)
@@ -65,7 +67,7 @@ class RegistryProxyService {
     private ProxyClient client(RoutePath route) {
         final registry = registryLookup.lookup(route.registry)
         final creds = getCredentials(route)
-        new ProxyClient()
+        new ProxyClient(httpClientConfig)
                 .withRoute(route)
                 .withImage(route.image)
                 .withRegistry(registry)

@@ -3,9 +3,9 @@ package io.seqera.wave.auth
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import java.time.Duration
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
+import javax.annotation.PostConstruct
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
@@ -15,6 +15,7 @@ import groovy.json.JsonSlurper
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -56,11 +57,15 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     @Inject
     private RegistryLookupService lookupService
 
-    RegistryAuthServiceImpl() {
+    @Inject
+    private HttpClientConfig httpClientConfig
+
+    @PostConstruct
+    private void init() {
         this.httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NORMAL)
-                .connectTimeout(Duration.ofSeconds(10))
+                .connectTimeout(httpClientConfig.connectTimeout)
                 .build()
     }
 

@@ -4,7 +4,6 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.net.http.HttpResponse.BodyHandler
-import java.time.Duration
 import java.time.temporal.ChronoUnit
 
 import dev.failsafe.Failsafe
@@ -14,9 +13,10 @@ import dev.failsafe.event.ExecutionAttemptedEvent
 import dev.failsafe.function.CheckedSupplier
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryInfo
-import io.seqera.wave.auth.RegistryAuthService
+import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.util.RegHelper
 /**
@@ -42,8 +42,8 @@ class ProxyClient {
     private RegistryAuthService loginService
     private RoutePath route
 
-    ProxyClient() {
-        init()
+    ProxyClient(HttpClientConfig config) {
+        init(config)
     }
 
     RoutePath getRoute() { route }
@@ -72,11 +72,11 @@ class ProxyClient {
         return this
     }
 
-    private void init() {
+    private void init(HttpClientConfig config) {
         this.httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NEVER)
-                .connectTimeout(Duration.ofSeconds(10))
+                .connectTimeout(config.connectTimeout)
                 .build()
     }
 

@@ -3,13 +3,13 @@ package io.seqera.wave.tower.client
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Singleton
@@ -29,10 +29,10 @@ class TowerClient {
 
     private URI userInfoEndpoint
 
-    TowerClient(@Value('${tower.api.endpoint}')String endpoint) {
+    TowerClient(@Value('${tower.api.endpoint}') String endpoint, HttpClientConfig httpClientConfig) {
         this.httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
-                .connectTimeout(Duration.ofSeconds(10))
+                .connectTimeout(httpClientConfig.connectTimeout)
                 .build()
         if( !endpoint )
             throw new IllegalArgumentException("Missing Tower endpoint")
