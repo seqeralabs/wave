@@ -1,4 +1,9 @@
 # Wave changelog
+v0.23.1 - 26 Nov 2022
+- Add HttpClient retry strategy [bd49d1ff]
+- Make http client timeout configurable [0535086f]
+- Improve container platform handling [225095f2]
+
 v0.23.0 - 22 Nov 2022
 - Add persistence service (#163) [993ad158]
 - Add view first iteration (#187) [2d5ca749]
