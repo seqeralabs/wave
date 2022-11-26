@@ -10,7 +10,7 @@ import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import groovy.transform.CompileStatic
-import io.seqera.wave.configuration.HttpClientConfig
+import io.seqera.wave.util.HttpRetryable
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
@@ -27,7 +27,7 @@ import static io.seqera.wave.WaveDefault.DOCKER_REGISTRY_1
 class RegistryLookupServiceImpl implements RegistryLookupService {
 
     @Inject
-    private HttpClientConfig httpClientConfig
+    private HttpRetryable httpRetryable
 
     private HttpClient httpClient
 
@@ -49,14 +49,15 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
         httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NORMAL)
-                .connectTimeout(httpClientConfig.connectTimeout)
+                .connectTimeout(httpRetryable.config().connectTimeout)
                 .build()
     }
+
 
     protected RegistryAuth lookup0(URI endpoint) {
         final request = HttpRequest.newBuilder() .uri(endpoint) .GET() .build()
         // make the request
-        final response = httpClient .send(request, HttpResponse.BodyHandlers.ofString())
+        final response = httpRetryable.send(request, HttpResponse.BodyHandlers.ofString())
         final code = response.statusCode()
         if( code == 401 ) {
             def authenticate = response.headers().firstValue('WWW-Authenticate').orElse(null)
