@@ -135,7 +135,7 @@ class RegistryProxyController {
         final headers = httpRequest.headers.asMap() as Map<String, List<String>>
         final resp = proxyService.handleRequest(route, headers)
         if( resp.isRedirect() ) {
-            log.debug "Redirecting $type request '$route.path' to '$resp.location'"
+            log.debug "Forwarding $type request '$route.path' to '$resp.location'"
             return fromRedirectResponse(resp)
         }
         else {
