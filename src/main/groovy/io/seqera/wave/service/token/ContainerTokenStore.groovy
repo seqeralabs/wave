@@ -10,7 +10,7 @@ import io.seqera.wave.service.ContainerRequestData
  */
 interface ContainerTokenStore {
 
-    ContainerRequestData put(String key, ContainerRequestData request)
+    void put(String key, ContainerRequestData request)
 
     ContainerRequestData get(String key)
 }

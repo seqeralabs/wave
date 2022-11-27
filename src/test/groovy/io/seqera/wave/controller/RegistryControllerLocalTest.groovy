@@ -12,7 +12,7 @@ import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.model.ContentType
-import io.seqera.wave.storage.MemoryStorage
+import io.seqera.wave.storage.ManifestCacheStore
 import io.seqera.wave.test.DockerRegistryContainer
 import jakarta.inject.Inject
 /**
@@ -20,7 +20,7 @@ import jakarta.inject.Inject
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-class RegistryControllerTest extends Specification implements DockerRegistryContainer{
+class RegistryControllerLocalTest extends Specification implements DockerRegistryContainer{
 
     @Inject
     @Client("/")
@@ -31,7 +31,7 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
     ApplicationContext applicationContext
 
     @Inject
-    MemoryStorage storage
+    ManifestCacheStore storage
 
     def setupSpec() {
         initRegistryContainer(applicationContext)
@@ -53,7 +53,7 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
         response.getContentLength() == 525
 
         when:
-        storage.clearCache()
+        storage.clear()
 
         and:
         response = client.toBlocking().exchange(request,String)
@@ -99,7 +99,7 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
         response.getContentLength() == 525
 
         when:
-        storage.clearCache()
+        storage.clear()
         and:
         response = client.toBlocking().exchange(request,String)
 
@@ -150,7 +150,7 @@ class RegistryControllerTest extends Specification implements DockerRegistryCont
         !fails
 
         when:
-        storage.clearCache()
+        storage.clear()
         and:
         response = client.toBlocking().exchange(request, String)
         then:

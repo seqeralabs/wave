@@ -5,6 +5,7 @@ import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 
 import groovy.transform.CompileStatic
+import io.micronaut.context.annotation.Requires
 import jakarta.inject.Singleton
 
 /**
@@ -12,9 +13,10 @@ import jakarta.inject.Singleton
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Requires(missingProperty = 'redis.uri')
 @Singleton
 @CompileStatic
-class LocalCacheStore implements CacheProvider<String,String> {
+class LocalCacheProvider implements CacheProvider<String,String> {
 
     private static class Entry<V> {
         final V value
@@ -47,17 +49,12 @@ class LocalCacheStore implements CacheProvider<String,String> {
         return entry.value
     }
 
-    @Override
-    void put(String key, String value) {
-        store.put(key, new Entry<>(value))
-    }
-
     void put(String key, String value, Duration ttl) {
         store.put(key, new Entry<>(value,ttl))
     }
 
     @Override
-    boolean putIfAbsent(String key, String value) {
+    boolean putIfAbsent(String key, String value, Duration ttl) {
         final entry = store.get(key)
         if( entry?.isExpired() )
             store.remove(key)
@@ -67,5 +64,10 @@ class LocalCacheStore implements CacheProvider<String,String> {
     @Override
     void remove(String key) {
         store.remove(key)
+    }
+
+    @Override
+    void clear() {
+        store.clear()
     }
 }

@@ -21,12 +21,11 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.model.ContentType
 import io.seqera.wave.service.ContainerRequestData
-import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.builder.ContainerBuildServiceImpl
+import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.storage.DigestStore
-import io.seqera.wave.storage.MemoryStorage
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.test.DockerRegistryContainer
 import io.seqera.wave.util.Base32
@@ -80,7 +79,7 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
 
     @MockBean(Storage)
     Storage storageService(){
-        Mock(MemoryStorage){
+        Mock(Storage){
             getManifest(_) >> {
                 !expected ? Optional.empty() :
                 Optional.of(new DigestStore(){

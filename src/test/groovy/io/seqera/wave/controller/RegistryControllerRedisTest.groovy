@@ -15,7 +15,7 @@ import io.micronaut.runtime.server.EmbeddedServer
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.exchange.RegistryErrorResponse
 import io.seqera.wave.model.ContentType
-import io.seqera.wave.storage.RedisStorage
+import io.seqera.wave.storage.ManifestCacheStore
 import io.seqera.wave.test.DockerRegistryContainer
 import io.seqera.wave.test.RedisTestContainer
 import redis.clients.jedis.Jedis
@@ -24,7 +24,7 @@ import redis.clients.jedis.Jedis
  * @author Jorge Aguilera <jorge.aguilera@seqera.io>
  */
 @MicronautTest
-class RedisRegistryControllerTest extends Specification implements DockerRegistryContainer, RedisTestContainer{
+class RegistryControllerRedisTest extends Specification implements DockerRegistryContainer, RedisTestContainer{
 
     EmbeddedServer embeddedServer
 
@@ -58,7 +58,7 @@ class RedisRegistryControllerTest extends Specification implements DockerRegistr
     void 'should get manifest'() {
         given:
         HttpClient client = applicationContext.createBean(HttpClient)
-        RedisStorage storage = applicationContext.getBean(RedisStorage)
+        ManifestCacheStore storage = applicationContext.getBean(ManifestCacheStore)
 
         when:
         HttpRequest request = HttpRequest.GET("http://localhost:$port/v2/library/hello-world/manifests/latest").headers({h->
@@ -75,7 +75,7 @@ class RedisRegistryControllerTest extends Specification implements DockerRegistr
         response.getContentLength() == 525
 
         when:
-        storage.clearCache()
+        storage.clear()
 
         and:
         response = client.toBlocking().exchange(request,String)

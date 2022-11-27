@@ -13,6 +13,7 @@ import io.seqera.wave.storage.reader.ContentReader
 import io.seqera.wave.storage.reader.DataContentReader
 import io.seqera.wave.storage.reader.GzipContentReader
 import io.seqera.wave.storage.reader.HttpContentReader
+import io.seqera.wave.storage.reader.PathContentReader
 import io.seqera.wave.util.TypeHelper
 /**
  * Implements a JSON {@link EncodingStrategy} based on Mosh JSON serializer
@@ -34,13 +35,15 @@ abstract class MoshiEncodeStrategy <V>implements EncodingStrategy<V> {
         this.moshi = new Moshi.Builder()
                 .add(new ByteArrayAdapter())
                 .add(new DateTimeAdapter())
+                .add(new PathAdapter())
                 .add(PolymorphicJsonAdapterFactory.of(DigestStore.class, "@type")
                         .withSubtype(LazyDigestStore, LazyDigestStore.simpleName)
                         .withSubtype(ZippedDigestStore, ZippedDigestStore.simpleName) )
                 .add(PolymorphicJsonAdapterFactory.of(ContentReader.class, "@type")
                         .withSubtype(DataContentReader.class, DataContentReader.simpleName)
                         .withSubtype(GzipContentReader.class, GzipContentReader.simpleName)
-                        .withSubtype(HttpContentReader.class, HttpContentReader.simpleName))
+                        .withSubtype(HttpContentReader.class, HttpContentReader.simpleName)
+                        .withSubtype(PathContentReader.class, PathContentReader.simpleName))
                 .build()
         this.jsonAdapter = moshi.adapter(type)
     }

@@ -5,6 +5,8 @@ import java.time.Duration
 import groovy.transform.CompileStatic
 import io.lettuce.core.SetArgs
 import io.lettuce.core.api.StatefulRedisConnection
+import io.micronaut.context.annotation.Requires
+import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
 /**
@@ -12,22 +14,17 @@ import jakarta.inject.Singleton
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Requires(property = 'redis.uri')
 @Singleton
 @CompileStatic
-class RedisCacheStore implements CacheProvider<String,String> {
+class RedisCacheProvider implements CacheProvider<String,String> {
 
+    @Inject
     private StatefulRedisConnection<String,String> redisConn
-
-    private Duration duration
 
     @Override
     String get(String key) {
         return redisConn.sync().get(key)
-    }
-
-    @Override
-    void put(String key, String value) {
-        redisConn.sync().psetex(key, duration.toMillis(), value)
     }
 
     void put(String key, String value, Duration ttl) {
@@ -35,7 +32,7 @@ class RedisCacheStore implements CacheProvider<String,String> {
     }
 
     @Override
-    boolean putIfAbsent(String key, String value) {
+    boolean putIfAbsent(String key, String value, Duration duration) {
         final SetArgs args = SetArgs.Builder.ex(duration).nx()
         final result = redisConn.sync().set(key, value, args)
         return result == 'OK'
@@ -46,4 +43,8 @@ class RedisCacheStore implements CacheProvider<String,String> {
         redisConn.sync().del(key)
     }
 
+    @Override
+    void clear() {
+        redisConn.sync().flushall()
+    }
 }

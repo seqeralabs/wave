@@ -9,6 +9,7 @@ import org.apache.commons.lang3.SerializationUtils
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
+@Deprecated
 class DigestStoreEncoder {
 
     static String encode(DigestStore store) {
