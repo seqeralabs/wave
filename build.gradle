@@ -92,14 +92,8 @@ dependencies {
     implementation("io.micronaut.views:micronaut-views-handlebars")
 }
 
-
 application {
     mainClass.set("io.seqera.wave.Application")
-}
-
-java {
-    sourceCompatibility = JavaVersion.toVersion("11")
-    targetCompatibility = JavaVersion.toVersion("11")
 }
 
 graalvmNative.toolchainDetection = false
@@ -144,6 +138,7 @@ jib {
         }
         permissions = ['/launch.sh': '755']
     }
+    allowInsecureRegistries= findProperty("jibRepo")?.toString()?.indexOf('localhost') != -1
 }
 
 run{

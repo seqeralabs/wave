@@ -40,7 +40,7 @@ class DockerBuilderStrategyTest extends Specification {
                 '-w', '/work/foo',
                 '-v', '/work/foo:/work/foo',
                 '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
-                '--platform', 'linux/arm64/v8',
+                '--platform', 'linux/arm64',
                 'gcr.io/kaniko-project/executor:v1.9.1']
 
         cleanup:

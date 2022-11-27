@@ -3,6 +3,7 @@ package io.seqera.wave.controller
 import spock.lang.Shared
 import spock.lang.Specification
 
+import groovy.json.JsonSlurper
 import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
@@ -174,4 +175,19 @@ class RegistryControllerLocalTest extends Specification implements DockerRegistr
         "library/hello-world" | _
     }
 
+    void 'should resolve a tag list'() {
+        when:
+        HttpRequest request = HttpRequest.GET("/v2/library/hello-world/tags/list").headers({h->
+            h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
+            h.add('Accept', ContentType.DOCKER_MANIFEST_V1_JWS_TYPE)
+            h.add('Accept', MediaType.APPLICATION_JSON)
+        })
+        HttpResponse<String> response = client.toBlocking().exchange(request,String)
+        then:
+        response.status() == HttpStatus.OK
+        response.headers.each {println "$it.key=$it.value"}
+        and:
+        new JsonSlurper().parseText(response.body()).name
+        new JsonSlurper().parseText(response.body()).tags.size()
+    }
 }

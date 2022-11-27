@@ -1,4 +1,24 @@
 # Wave changelog
+v0.23.1 - 26 Nov 2022
+- Add HttpClient retry strategy [bd49d1ff]
+- Make http client timeout configurable [0535086f]
+- Improve container platform handling [225095f2]
+
+v0.23.0 - 22 Nov 2022
+- Add persistence service (#163) [993ad158]
+- Add view first iteration (#187) [2d5ca749]
+- Add cacheable + retryable for isManifestPresent (#191) [672fb972]
+- Fix support for Singularity container engine (#202) [46a8d76d]
+- Fix stop redis in every test (#184) [473a2c74]
+- Improve visualization for builds (#197) [68a379d3]
+- Upgrade github actions to v3 (#196) [f30c75ff]
+- Remove fixed registry configurations (#192) [697aa5f7]
+- Multi platform build (#125) [1f0f8f86]
+- Use jedis instead jedispool in tests (#188) [22fb80cb]
+- Bump gradle 7.5.1 [a9be6272]
+- Bump Java 17 + groovy 3.0.13 + MN 3.7.3 [05810ac2]
+- Bump cr.seqera.io/public/nf-jdk:corretto-17.0.5 as base image [eeb9301a]
+
 v0.22.4 - 26 Oct 2022
 - Update readme [614c8143] <Paolo Di Tommaso>
 - Fix Docker config.json mount in K8s [5e5a67f7] <Paolo Di Tommaso>

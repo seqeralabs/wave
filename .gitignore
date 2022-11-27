@@ -22,3 +22,4 @@ tower-reg.yml
 /wave.*.log
 wave.log
 build-workspace/
+/k8s/dev/config-k3d.yml

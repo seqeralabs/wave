@@ -4,13 +4,8 @@ plugins {
 }
 
 dependencies {
-    implementation "org.codehaus.groovy:groovy:3.0.10"
-    implementation "org.codehaus.groovy:groovy-nio:3.0.10"
-}
-
-java {
-    sourceCompatibility = JavaVersion.toVersion("11")
-    targetCompatibility = JavaVersion.toVersion("11")
+    implementation "org.codehaus.groovy:groovy:3.0.13"
+    implementation "org.codehaus.groovy:groovy-nio:3.0.13"
 }
 
 group = 'io.seqera'

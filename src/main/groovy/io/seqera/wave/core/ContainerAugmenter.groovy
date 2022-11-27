@@ -346,22 +346,20 @@ class ContainerAugmenter {
         return digest
     }
 
-
     protected String findTargetDigest( String body ) {
         findTargetDigest((Map) new JsonSlurper().parseText(body))
     }
 
-    @CompileDynamic
     protected String findTargetDigest(Map json) {
-        final finder = { record ->
-            record.mediaType==ContentType.DOCKER_MANIFEST_V2_TYPE
-                    && record.platform.os==platform.os
-                    && record.platform.architecture==platform.arch
-                    && record.platform.variant==platform.variant }
-        final record = json.manifests.find(finder)
-        final result = record.digest
+        final record = (Map)json.manifests.find(this.&matches)
+        final result = record.get('digest')
         log.trace "Find target digest platform: $platform ==> digest: $result"
         return result
+    }
+
+    protected boolean matches(Map<String,String> record) {
+        return record.mediaType == ContentType.DOCKER_MANIFEST_V2_TYPE
+                && platform.matches(record.platform as Map)
     }
 
     protected void rewriteHistoryV1( List<Map> history ){

@@ -4,11 +4,6 @@ plugins {
     id "io.micronaut.application"
 }
 
-java {
-    sourceCompatibility = JavaVersion.toVersion("11")
-    targetCompatibility = JavaVersion.toVersion("11")
-}
-
 micronaut {
     runtime("netty")
     testRuntime("spock2")

@@ -18,7 +18,7 @@ import jakarta.inject.Singleton
 @CompileStatic
 class RouteHandler {
 
-    final public static Pattern ROUTE_PATHS = ~'/v2(?:/wt)?/([a-z0-9][a-z0-9_.-]+(?:/[a-z0-9][a-z0-9_.-]+)?(?:/[a-zA-Z0-9][a-zA-Z0-9_.-]+)*)/(manifests|blobs)/(.+)'
+    final public static Pattern ROUTE_PATHS = ~'/v2(?:/wt)?/([a-z0-9][a-z0-9_.-]+(?:/[a-z0-9][a-z0-9_.-]+)?(?:/[a-zA-Z0-9][a-zA-Z0-9_.-]+)*)/(manifests|blobs|tags)/(.+)'
 
     private ContainerTokenService tokenService
 

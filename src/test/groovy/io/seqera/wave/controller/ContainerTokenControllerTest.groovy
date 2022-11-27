@@ -86,9 +86,9 @@ class ContainerTokenControllerTest extends Specification {
         and:
         data.containerFile == 'FROM foo'
         data.userId == 100
-        data.containerImage ==  'wave/build:dad96f3a4b65ce5fc6e0fc49296d614b'
+        data.containerImage ==  'wave/build:7d6b54efe23408c0938290a9ae49cf21'
         data.containerConfig == cfg
-        data.platform.toString() == 'linux/arm64/v8'
+        data.platform.toString() == 'linux/arm64'
     }
 
     def 'should not run a build request if manifest is present' () {
@@ -114,9 +114,9 @@ class ContainerTokenControllerTest extends Specification {
         and:
         data.containerFile == 'FROM foo'
         data.userId == 100
-        data.containerImage ==  'wave/build:dad96f3a4b65ce5fc6e0fc49296d614b'
+        data.containerImage ==  'wave/build:7d6b54efe23408c0938290a9ae49cf21'
         data.containerConfig == cfg
-        data.platform.toString() == 'linux/arm64/v8'
+        data.platform.toString() == 'linux/arm64'
     }
 
     def 'should create build request' () {
@@ -149,9 +149,9 @@ class ContainerTokenControllerTest extends Specification {
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerPlatform: 'arm64')
         build = controller.makeBuildRequest(submit, null, "")
         then:
-        build.id == 'dad96f3a4b65ce5fc6e0fc49296d614b'
+        build.id == '7d6b54efe23408c0938290a9ae49cf21'
         build.dockerFile == 'FROM foo'
-        build.targetImage == 'wave/build:dad96f3a4b65ce5fc6e0fc49296d614b'
+        build.targetImage == 'wave/build:7d6b54efe23408c0938290a9ae49cf21'
         build.workDir == Path.of('/some/wsp').resolve(build.id)
         build.platform == ContainerPlatform.of('arm64')
 
@@ -159,10 +159,10 @@ class ContainerTokenControllerTest extends Specification {
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), condaFile: encode('some::conda-recipe'), containerPlatform: 'arm64')
         build = controller.makeBuildRequest(submit, null, "")
         then:
-        build.id == '35d6c9e2004569c9723dfc601b542b28'
+        build.id == '0c7eebc2fdbfd514ff4d80c28d08dff8'
         build.dockerFile == 'FROM foo'
         build.condaFile == 'some::conda-recipe'
-        build.targetImage == 'wave/build:35d6c9e2004569c9723dfc601b542b28'
+        build.targetImage == 'wave/build:0c7eebc2fdbfd514ff4d80c28d08dff8'
         build.workDir == Path.of('/some/wsp').resolve(build.id)
         build.platform == ContainerPlatform.of('arm64')
     }

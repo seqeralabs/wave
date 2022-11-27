@@ -3,7 +3,6 @@ package io.seqera.wave.tower.client
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
@@ -11,6 +10,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.exception.HttpResponseException
+import io.seqera.wave.util.HttpRetryable
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Singleton
 import org.apache.commons.lang.StringUtils
@@ -29,10 +29,12 @@ class TowerClient {
 
     private URI userInfoEndpoint
 
-    TowerClient(@Value('${tower.api.endpoint}')String endpoint) {
+    private HttpRetryable httpRetryable
+
+    TowerClient(@Value('${tower.api.endpoint}')String endpoint, HttpRetryable httpRetryable) {
         this.httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
-                .connectTimeout(Duration.ofSeconds(10))
+                .connectTimeout(httpRetryable.config().connectTimeout)
                 .build()
         if( !endpoint )
             throw new IllegalArgumentException("Missing Tower endpoint")
@@ -40,6 +42,7 @@ class TowerClient {
         endpoint = StringUtils.stripEnd(endpoint, '/')
         log.debug "Tower client endpoint=$endpoint"
         this.userInfoEndpoint = new URI("${endpoint}/user-info")
+        this.httpRetryable = httpRetryable
     }
 
     CompletableFuture<UserInfoResponse> userInfo(String authorization) {
@@ -49,7 +52,7 @@ class TowerClient {
                 .GET()
                 .build()
 
-            httpClient.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenApply((resp)-> {
+        httpRetryable.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenApply((resp)-> {
                 log.debug "Tower auth response: [${resp.statusCode()}] ${resp.body()}"
                 switch (resp.statusCode()) {
                     case 200:
@@ -62,5 +65,6 @@ class TowerClient {
                         throw new HttpResponseException(resp.statusCode(), resp.body())
                 }
             })
-        }
+    }
+
 }

@@ -10,6 +10,7 @@ import io.seqera.wave.auth.RegistryAuth
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.test.DockerRegistryContainer
 import jakarta.inject.Inject
@@ -27,6 +28,7 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
     @Inject RegistryLookupService lookupService
     @Inject RegistryAuthService loginService
     @Inject RegistryCredentialsProvider credentialsProvider
+    @Inject HttpClientConfig config
 
     def setupSpec() {
         initRegistryContainer(applicationContext)
@@ -36,7 +38,7 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
         given:
         def IMAGE = 'library/hello-world'
         and:
-        def proxy = new ProxyClient()
+        def proxy = new ProxyClient(config)
                 .withImage(IMAGE)
                 .withRegistry(getLocalTestRegistryInfo())
                 .withLoginService(loginService)
@@ -56,7 +58,7 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
         and:
-        def proxy = new ProxyClient()
+        def proxy = new ProxyClient(config)
                 .withImage(IMAGE)
                 .withRegistry(registry)
                 .withLoginService(loginService)
@@ -76,7 +78,7 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
         and:
-        def proxy = new ProxyClient()
+        def proxy = new ProxyClient(config)
                 .withImage(IMAGE)
                 .withRegistry(registry)
                 .withLoginService(loginService)
@@ -108,7 +110,7 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
         and:
-        def proxy = new ProxyClient()
+        def proxy = new ProxyClient(config)
                 .withImage(IMAGE)
                 .withRegistry(registry)
                 .withLoginService(loginService)
@@ -169,7 +171,7 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
         and:
-        def proxy = new ProxyClient()
+        def proxy = new ProxyClient(config)
                 .withImage(IMAGE)
                 .withRegistry(registry)
                 .withLoginService(loginService)

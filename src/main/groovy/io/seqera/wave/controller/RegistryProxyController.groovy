@@ -101,7 +101,7 @@ class RegistryProxyController {
         if( httpRequest.method == HttpMethod.HEAD )
             return handleHead(route, httpRequest)
 
-        if (!(route.manifest || route.blob)) {
+        if (!(route.manifest || route.blob || route.tagList)) {
             throw new DockerRegistryException("Invalid request GET '$httpRequest.path'", 400, 'UNKNOWN')
         }
 
@@ -127,11 +127,15 @@ class RegistryProxyController {
             }
         }
 
+        if( route.tagList ){
+            return handleTagList(route, httpRequest)
+        }
+
         final type = route.isManifest() ? 'manifest' : 'blob'
         final headers = httpRequest.headers.asMap() as Map<String, List<String>>
         final resp = proxyService.handleRequest(route, headers)
         if( resp.isRedirect() ) {
-            log.debug "Redirecting $type request '$route.path' to '$resp.location'"
+            log.debug "Forwarding $type request '$route.path' to '$resp.location'"
             return fromRedirectResponse(resp)
         }
         else {
@@ -165,6 +169,16 @@ class RegistryProxyController {
             throw new DockerRegistryException("Unable to find cache manifest for '$httpRequest.path'", 400, 'UNKNOWN')
         }
         return fromCache(entry)
+    }
+
+    MutableHttpResponse<?> handleTagList(RoutePath route, HttpRequest httpRequest) {
+        log.debug "Handling tag list request '$route.path'"
+        final headers = httpRequest.headers.asMap() as Map<String, List<String>>
+        final resp = proxyService.handleRequest(route, headers)
+        HttpResponse
+                .status(HttpStatus.valueOf(resp.statusCode))
+                .body(resp.body.bytes)
+                .headers(toMutableHeaders(resp.headers))
     }
 
     MutableHttpResponse<?> fromCache(DigestStore entry) {

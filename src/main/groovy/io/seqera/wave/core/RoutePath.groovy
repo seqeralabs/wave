@@ -18,7 +18,7 @@ import static io.seqera.wave.WaveDefault.DOCKER_IO
 @CompileStatic
 class RoutePath implements ContainerPath {
 
-    static final private List<String> ALLOWED_TYPES = ['manifests','blobs']
+    static final private List<String> ALLOWED_TYPES = ['manifests','blobs','tags']
 
     final String type
     final String registry
@@ -29,7 +29,8 @@ class RoutePath implements ContainerPath {
 
     boolean isManifest() { type=='manifests' }
     boolean isBlob() { type=='blobs' }
-    boolean isTag() { reference && !isDigest() }
+    boolean isTagList() { type=='tags' && reference=='list' }
+    boolean isTag() { type!='tags' && reference && !isDigest() }
     boolean isDigest() { reference && reference.startsWith('sha256:') }
 
     String getRepository() { "$registry/$image" }

@@ -3,9 +3,9 @@ package io.seqera.wave.auth
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import java.time.Duration
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
+import javax.annotation.PostConstruct
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
@@ -15,6 +15,7 @@ import groovy.json.JsonSlurper
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.wave.util.HttpRetryable
 import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -56,11 +57,15 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     @Inject
     private RegistryLookupService lookupService
 
-    RegistryAuthServiceImpl() {
+    @Inject
+    private HttpRetryable httpRetryable
+
+    @PostConstruct
+    private void init() {
         this.httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NORMAL)
-                .connectTimeout(Duration.ofSeconds(10))
+                .connectTimeout(httpRetryable.config().connectTimeout)
                 .build()
     }
 
@@ -93,8 +98,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
                 .header("Authorization", "Basic $basic")
                 .build()
         // make the request
-        final response = httpClient
-                .send(request, HttpResponse.BodyHandlers.ofString())
+        final response = httpRetryable.send(request, HttpResponse.BodyHandlers.ofString())
 
         if( response.statusCode() == 200 ) {
             log.debug "Container registry '$endpoint' login - response: ${response.body()}"
@@ -173,7 +177,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         final req = makeRequest(login, key.creds)
         log.trace "Token request=$req"
 
-        HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> resp = httpRetryable.send(req, HttpResponse.BodyHandlers.ofString())
         final body = resp.body()
         if( resp.statusCode()==200 ) {
             final result = (Map) new JsonSlurper().parseText(body)
