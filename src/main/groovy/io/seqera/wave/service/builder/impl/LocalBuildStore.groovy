@@ -15,6 +15,7 @@ import jakarta.inject.Singleton
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Deprecated
 @Requires(missingProperty = 'redis.uri')
 @Singleton
 @CompileStatic

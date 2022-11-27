@@ -17,6 +17,7 @@ import jakarta.inject.Singleton
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
+@Deprecated
 @Singleton
 @CompileStatic
 @Slf4j

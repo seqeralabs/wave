@@ -21,6 +21,7 @@ import jakarta.inject.Singleton
 @Singleton
 @Requires(missingProperty = 'redis.uri')
 @CompileStatic
+@Deprecated
 class MemoryStorage implements Storage {
 
     private Cache<String, DigestStore> cache

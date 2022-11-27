@@ -18,6 +18,7 @@ import jakarta.inject.Singleton
  *  
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Deprecated
 @Slf4j
 @Requires(property = 'redis.uri')
 @Singleton

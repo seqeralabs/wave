@@ -24,6 +24,7 @@ import static io.seqera.wave.storage.DigestStoreEncoder.decode
 @Requires(property = 'redis.uri')
 @Singleton
 @CompileStatic
+@Deprecated
 class RedisStorage implements Storage {
 
     @Inject

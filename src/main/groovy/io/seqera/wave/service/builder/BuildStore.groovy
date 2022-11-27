@@ -10,6 +10,7 @@ import io.seqera.wave.exception.BuildTimeoutException
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Deprecated
 @CompileStatic
 interface BuildStore {
 

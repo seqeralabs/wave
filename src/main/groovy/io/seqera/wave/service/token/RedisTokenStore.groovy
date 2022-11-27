@@ -16,6 +16,7 @@ import jakarta.inject.Singleton
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
+@Deprecated
 @Requires(property = 'redis.uri')
 @Replaces(LocalTokenStore)
 @Singleton
