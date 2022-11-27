@@ -11,6 +11,7 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
 /**
+ * Retry strategy for {@link java.net.http.HttpClient} using {@link HttpClientConfig}
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
