@@ -3,12 +3,12 @@ package io.seqera.wave.service.cache.impl
 import java.time.Duration
 
 import groovy.transform.CompileStatic
-import io.lettuce.core.SetArgs
-import io.lettuce.core.api.StatefulRedisConnection
 import io.micronaut.context.annotation.Requires
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
+import redis.clients.jedis.Jedis
+import redis.clients.jedis.JedisPool
+import redis.clients.jedis.params.SetParams
 /**
  * Redis based implementation for a {@link CacheProvider}
  *
@@ -20,31 +20,42 @@ import jakarta.inject.Singleton
 class RedisCacheProvider implements CacheProvider<String,String> {
 
     @Inject
-    private StatefulRedisConnection<String,String> redisConn
+    private JedisPool pool
 
     @Override
     String get(String key) {
-        return redisConn.sync().get(key)
+        try( Jedis conn=pool.getResource() ) {
+            return conn.get(key)
+        }
     }
 
     void put(String key, String value, Duration ttl) {
-        redisConn.sync().psetex(key, ttl.toMillis(), value)
+        try( Jedis conn=pool.getResource() ) {
+            final params = new SetParams().ex(ttl.toSeconds())
+            conn.set(key, value, params)
+        }
     }
 
     @Override
     boolean putIfAbsent(String key, String value, Duration duration) {
-        final SetArgs args = SetArgs.Builder.ex(duration).nx()
-        final result = redisConn.sync().set(key, value, args)
-        return result == 'OK'
+        try( Jedis conn=pool.getResource() ) {
+            final params = new SetParams().nx().ex(duration.toSeconds())
+            final result = conn.set(key, value, params)
+            return result == 'OK'
+        }
     }
 
     @Override
     void remove(String key) {
-        redisConn.sync().del(key)
+        try( Jedis conn=pool.getResource() ) {
+            conn.del(key)
+        }
     }
 
     @Override
     void clear() {
-        redisConn.sync().flushall()
+        try( Jedis conn=pool.getResource() ) {
+            conn.flushAll()
+        }
     }
 }
