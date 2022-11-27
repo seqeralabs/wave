@@ -7,6 +7,7 @@ import io.seqera.wave.storage.reader.DataContentReader
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Deprecated
 class DigestStoreEncoderTest extends Specification {
 
     def 'should encode and decode digest store classes' () {

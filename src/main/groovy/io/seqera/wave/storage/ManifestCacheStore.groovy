@@ -1,52 +1,64 @@
 package io.seqera.wave.storage
 
 import java.time.Duration
-import java.util.concurrent.TimeUnit
-import javax.annotation.PostConstruct
 
-import com.google.common.cache.Cache
-import com.google.common.cache.CacheBuilder
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.encoder.MoshiEncodeStrategy
+import io.seqera.wave.service.cache.AbstractCacheStore
+import io.seqera.wave.service.cache.impl.CacheProvider
 import io.seqera.wave.storage.reader.ContentReader
 import jakarta.inject.Singleton
+
 /**
- * Implements an in-memory store for container manifest and blobs request
+ * Implements manifest cache for {@link DigestStore}
  *
- * @author : jorge <jorge.aguilera@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @Singleton
-@Requires(missingProperty = 'redis.uri')
 @CompileStatic
-class MemoryStorage implements Storage {
+class ManifestCacheStore extends AbstractCacheStore<DigestStore> implements Storage {
 
-    private Cache<String, DigestStore> cache
+    final private Duration duration
 
-    @Value('${wave.storage.cache.duration:`1h`}')
-    private Duration maxDuration
-
-    @Value('${wave.storage.cache.maxSize:1000}')
-    private int maxSize
-
-    @PostConstruct
-    private void init() {
-        cache = CacheBuilder<String,DigestStore>
-            .newBuilder()
-            .maximumSize(maxSize)
-            .expireAfterAccess(maxDuration.toSeconds(), TimeUnit.SECONDS)
-            .build()
+    ManifestCacheStore(
+            CacheProvider<String, String> provider,
+            @Value('${wave.storage.cache.duration:`1h`}') Duration duration)
+    {
+        super(provider, new MoshiEncodeStrategy<DigestStore>() {})
+        this.duration = duration
     }
 
-    void clearCache(){
-        cache.invalidateAll()
+    @Override
+    protected String getPrefix() {
+        return "wave-blobs/v1:"
+    }
+
+    @Override
+    protected Duration getDuration() {
+        return duration
+    }
+
+    @Override
+    DigestStore get(String key) {
+        final result = super.get(key)
+        if( result!=null )
+            return (DigestStore)result
+        /*
+         * try fallback to previous implementation
+         */
+        final value = getRaw("wave-blobs/v0:$key")
+        if( value != null ) {
+            return DigestStoreEncoder.decode(value)
+        }
+        return null
     }
 
     @Override
     Optional<DigestStore> getManifest(String path) {
-        final result = cache.getIfPresent(path)
+        final result = this.get(path)
         result!=null ? Optional.of(result) : Optional.<DigestStore>empty()
     }
 
@@ -54,13 +66,13 @@ class MemoryStorage implements Storage {
     DigestStore saveManifest(String path, String manifest, String type, String digest) {
         log.debug "Save Manifest [size: ${manifest.size()}] ==> $path"
         final result = new ZippedDigestStore(manifest.getBytes(), type, digest);
-        cache.put(path, result)
+        this.put(path, result)
         return result;
     }
 
     @Override
     Optional<DigestStore> getBlob(String path) {
-        final result = cache.getIfPresent(path)
+        final result = this.get(path)
         result!=null ? Optional.of(result) : Optional.<DigestStore>empty()
     }
 
@@ -68,7 +80,7 @@ class MemoryStorage implements Storage {
     DigestStore saveBlob(String path, byte[] content, String type, String digest) {
         log.debug "Save Blob [size: ${content.size()}] ==> $path"
         final result = new ZippedDigestStore(content, type, digest);
-        cache.put(path, result)
+        this.put(path, result)
         return result
     }
 
@@ -76,7 +88,7 @@ class MemoryStorage implements Storage {
     DigestStore saveBlob(String path, ContentReader content, String type, String digest) {
         log.debug "Save Blob ==> $path"
         final result = new LazyDigestStore(content, type, digest);
-        cache.put(path, result)
+        this.put(path, result)
         return result
     }
 }

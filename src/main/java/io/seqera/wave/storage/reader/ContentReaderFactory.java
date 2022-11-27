@@ -20,6 +20,9 @@ public class ContentReaderFactory {
         if( location.startsWith("data:") ) {
             return new DataContentReader(location.substring(5));
         }
+        if( location.startsWith("gzip:") ) {
+            return GzipContentReader.fromBase64EncodedString(location.substring(5));
+        }
         throw new IllegalArgumentException("Unsupported content location: " + location);
     }
 

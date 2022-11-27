@@ -1,4 +1,4 @@
-package io.seqera.wave.service.builder.cache
+package io.seqera.wave.service.builder
 
 import spock.lang.Specification
 import spock.lang.Timeout
@@ -9,15 +9,13 @@ import java.util.concurrent.ExecutionException
 
 import io.micronaut.context.ApplicationContext
 import io.seqera.wave.exception.BuildTimeoutException
-import io.seqera.wave.service.builder.BuildResult
-import io.seqera.wave.service.builder.BuildStore
 import io.seqera.wave.test.RedisTestContainer
 import redis.clients.jedis.Jedis
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class RedisBuildStoreTest extends Specification implements RedisTestContainer {
+class BuildCacheStoreRedisTest extends Specification implements RedisTestContainer {
 
     ApplicationContext applicationContext
 
