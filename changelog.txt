@@ -1,4 +1,6 @@
 # Wave changelog
+v0.23.2 - 3 Dec 2022
+
 v0.23.1 - 26 Nov 2022
 - Add HttpClient retry strategy [bd49d1ff]
 - Make http client timeout configurable [0535086f]
