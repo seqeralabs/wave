@@ -2,6 +2,7 @@ package io.seqera.wave.encoder
 
 import spock.lang.Specification
 
+import java.time.Duration
 import java.time.Instant
 
 import io.seqera.wave.api.ContainerConfig
@@ -34,6 +35,22 @@ class MoshiEncodingStrategyTest extends Specification {
         copy.getClass() == build.getClass()
         and:
         copy == build
+    }
+
+    def 'should decode old format build result' () {
+        given:
+        def encoder = new MoshiEncodeStrategy<BuildResult>() { }
+        and:
+        def json = '{"id":"100","exitStatus":1,"logs":"logs","startTime":"2022-12-03T22:27:04.079724Z","duration":60.000000000}'
+
+        when:
+        def build = encoder.decode(json)
+        then:
+        build.id == '100'
+        build.exitStatus == 1
+        build.logs == 'logs'
+        build.startTime == Instant.parse('2022-12-03T22:27:04.079724Z')
+        build.duration == Duration.ofSeconds(60)
     }
 
     def 'should encode and decode ContainerRequestData' () {
