@@ -169,6 +169,7 @@ class ContainerAugmenterTest extends Specification {
         def IMAGE = 'hello-world'
         def MANIFEST = ManifestConst.MANIFEST_CONTENT
         def NEW_CONFIG_DIGEST = 'sha256:1234abcd'
+        def NEW_CONFIG_SIZE = 100
         def SOURCE_JSON = new JsonSlurper().parseText(MANIFEST)
 
         and:
@@ -180,7 +181,7 @@ class ContainerAugmenterTest extends Specification {
         def scanner = new ContainerAugmenter().withStorage(storage).withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
 
         when:
-        def digest = scanner.updateImageManifest(IMAGE, MANIFEST, NEW_CONFIG_DIGEST)
+        def digest = scanner.updateImageManifest(IMAGE, MANIFEST, NEW_CONFIG_DIGEST, NEW_CONFIG_SIZE)
 
         then:
         // the cache contains the update image manifest json
@@ -204,6 +205,7 @@ class ContainerAugmenterTest extends Specification {
         json.layers[1].get('mediaType') == ContentType.DOCKER_IMAGE_TAR_GZIP
         and:
         json.config.digest == NEW_CONFIG_DIGEST
+        json.config.size == NEW_CONFIG_SIZE
 
         cleanup:
         folder?.toFile()?.deleteDir()
@@ -356,7 +358,7 @@ class ContainerAugmenterTest extends Specification {
         def scanner = new ContainerAugmenter().withStorage(storage).withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
 
         when:
-        def digest = scanner.updateImageConfig(IMAGE_NAME, IMAGE_CONFIG)
+        def (digest, config) = scanner.updateImageConfig(IMAGE_NAME, IMAGE_CONFIG)
         then:
         def entry = storage.getBlob("/v2/$IMAGE_NAME/blobs/$digest").get()
         entry.mediaType == ContentType.DOCKER_IMAGE_V1
@@ -365,6 +367,8 @@ class ContainerAugmenterTest extends Specification {
         def manifest = new JsonSlurper().parseText(new String(entry.bytes))
         manifest.rootfs.diff_ids instanceof List
         manifest.rootfs.diff_ids.size() == 2
+        and:
+        config == new String(entry.bytes)
 
         cleanup:
         folder?.toFile()?.deleteDir()

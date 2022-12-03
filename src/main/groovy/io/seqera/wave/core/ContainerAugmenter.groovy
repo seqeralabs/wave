@@ -138,12 +138,14 @@ class ContainerAugmenter {
         log.trace "Resolve (5): image $imageName:$tag => image config=\n${JsonOutput.prettyPrint(imageConfig)}"
 
         // update the image config adding the new layer
-        final newConfigDigest = updateImageConfig(imageName, imageConfig)
-        log.trace "Resolve (6) ==> new config digest: $newConfigDigest"
+        final newConfigResult = updateImageConfig(imageName, imageConfig)
+        final newConfigDigest = newConfigResult[0]
+        final newConfigJson = newConfigResult[1]
+        log.trace "Resolve (6) ==> new config digest: $newConfigDigest => new config=\n${JsonOutput.prettyPrint(newConfigJson)} "
 
         // update the image manifest adding a new layer
         // returns the updated image manifest digest
-        final newManifestDigest = updateImageManifest(imageName, imageManifest, newConfigDigest)
+        final newManifestDigest = updateImageManifest(imageName, imageManifest, newConfigDigest, newConfigJson.size())
         log.trace "Resolve (7) ==> new image digest: $newManifestDigest"
 
         if( !targetDigest ) {
@@ -249,7 +251,7 @@ class ContainerAugmenter {
         return json.config.digest
     }
 
-    protected String updateImageManifest(String imageName, String imageManifest, String newImageConfigDigest) {
+    protected String updateImageManifest(String imageName, String imageManifest, String newImageConfigDigest, newImageConfigSize) {
 
         // turn the json string into a json map
         // and append the new layer
@@ -263,7 +265,9 @@ class ContainerAugmenter {
         }
 
         // update the config digest
-        (manifest.config as Map).digest = newImageConfigDigest
+        final config = (manifest.config as Map)
+        config.digest = newImageConfigDigest
+        config.size = newImageConfigSize
 
         // turn the updated manifest into a json
         final newManifest = JsonOutput.prettyPrint(JsonOutput.toJson(manifest))
@@ -319,7 +323,7 @@ class ContainerAugmenter {
         return config
     }
 
-    protected String updateImageConfig(String imageName, String imageConfig) {
+    protected List<String> updateImageConfig(String imageName, String imageConfig) {
 
         // turn the json string into a json map
         // and append the new layer
@@ -343,7 +347,7 @@ class ContainerAugmenter {
         storage.saveBlob(path, newConfig.bytes, ContentType.DOCKER_IMAGE_V1, digest)
 
         // return the updated image manifest digest
-        return digest
+        return List.of(digest, newConfig)
     }
 
     protected String findTargetDigest( String body ) {

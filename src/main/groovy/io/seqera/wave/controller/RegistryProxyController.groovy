@@ -221,7 +221,7 @@ class RegistryProxyController {
                 }
                 // override headers with specified value
                 for( Map.Entry<String,String> entry : override ) {
-                    mutableHttpHeaders.add(entry.key, entry.value)
+                    mutableHttpHeaders.putAt(entry.key, entry.value)
                 }
             }
         }
