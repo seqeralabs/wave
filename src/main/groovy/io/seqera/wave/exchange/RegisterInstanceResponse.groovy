@@ -11,4 +11,5 @@ import groovy.transform.CompileStatic
 @CompileStatic
 class RegisterInstanceResponse {
     String publicKey
+    String keyId
 }
