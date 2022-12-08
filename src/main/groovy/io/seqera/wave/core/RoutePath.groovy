@@ -35,7 +35,13 @@ class RoutePath implements ContainerPath {
 
     String getRepository() { "$registry/$image" }
 
-    String getTargetContainer() { "$registry/$image:$reference" }
+    String getTargetContainer() { registry + '/' + getImageAndTag() }
+
+    String getImageAndTag() {
+        if( !reference ) return image
+        final sep = isDigest() ? '@' : ':'
+        return image + sep + reference
+    }
 
     static RoutePath v2path(String type, String registry, String image, String ref, ContainerRequestData request=null) {
         assert type in ALLOWED_TYPES, "Unknown container path type: '$type'"

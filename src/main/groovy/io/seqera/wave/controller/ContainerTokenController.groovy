@@ -147,6 +147,8 @@ class ContainerTokenController {
     ContainerRequestData makeRequestData(SubmitContainerTokenRequest req, User user, String ip) {
         if( req.containerImage && req.containerFile )
             throw new BadRequestException("Attributes 'containerImage' and 'containerFile' cannot be used in the same request")
+        if( req.containerImage?.contains('@sha256:') && req.containerConfig )
+            throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
 
         String targetImage
         String targetContent
@@ -179,6 +181,6 @@ class ContainerTokenController {
 
     protected String targetImage(String token, String image) {
         final coords = ContainerCoordinates.parse(image)
-        return "${new URL(serverUrl).getAuthority()}/wt/$token/${coords.image}:${coords.reference}"
+        return "${new URL(serverUrl).getAuthority()}/wt/$token/${coords.getImageAndTag()}"
     }
 }

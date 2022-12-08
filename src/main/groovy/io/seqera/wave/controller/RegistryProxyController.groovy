@@ -128,6 +128,7 @@ class RegistryProxyController {
         }
 
         if( route.tagList ){
+            log.debug "Handling tag list request '$route.path'"
             return handleTagList(route, httpRequest)
         }
 
@@ -135,11 +136,15 @@ class RegistryProxyController {
         final headers = httpRequest.headers.asMap() as Map<String, List<String>>
         final resp = proxyService.handleRequest(route, headers)
         if( resp.isRedirect() ) {
-            log.debug "Forwarding $type request '$route.path' to '$resp.location'"
+            log.debug "Forwarding $type request '${route.getTargetContainer()}' to '${resp.location}'"
             return fromRedirectResponse(resp)
         }
+        else if( route.isManifest() ) {
+            log.debug "Pulling manifest from repository: '${route.getTargetContainer()}'"
+            return fromManifestResponse(resp)
+        }
         else {
-            log.debug "Pulling $type from remote host: '$route.path'"
+            log.debug "Pulling blob from repository: '${route.getTargetContainer()}'"
             return fromDelegateResponse(resp)
         }
     }
@@ -160,7 +165,7 @@ class RegistryProxyController {
 
     MutableHttpResponse<?> handleHead(RoutePath route, HttpRequest httpRequest) {
 
-        if (!(route.manifest && route.tag)) {
+        if ( !route.manifest ) {
             throw new DockerRegistryException("Invalid request HEAD '$httpRequest.path'", 400, 'UNKNOWN')
         }
 
@@ -172,7 +177,6 @@ class RegistryProxyController {
     }
 
     MutableHttpResponse<?> handleTagList(RoutePath route, HttpRequest httpRequest) {
-        log.debug "Handling tag list request '$route.path'"
         final headers = httpRequest.headers.asMap() as Map<String, List<String>>
         final resp = proxyService.handleRequest(route, headers)
         HttpResponse
@@ -188,7 +192,7 @@ class RegistryProxyController {
                         "docker-content-digest", entry.digest,
                         "etag", entry.digest,
                         "docker-distribution-api-version", "registry/2.0") as Map<CharSequence, CharSequence>
-        MutableHttpResponse
+        HttpResponse
                 .ok( entry.bytes )
                 .headers(headers)
     }
@@ -209,6 +213,13 @@ class RegistryProxyController {
                 .status(HttpStatus.valueOf(delegateResponse.statusCode))
                 .body(fluxInputStream)
                 .headers(toMutableHeaders(delegateResponse.headers))
+    }
+
+    MutableHttpResponse<?> fromManifestResponse(DelegateResponse resp) {
+        HttpResponse
+                .status(HttpStatus.valueOf(resp.statusCode))
+                .body(resp.body.bytes)
+                .headers(toMutableHeaders(resp.headers))
     }
 
     static protected Consumer<MutableHttpHeaders> toMutableHeaders(Map<String,List<String>> headers, Map<String,String> override=Collections.emptyMap()) {

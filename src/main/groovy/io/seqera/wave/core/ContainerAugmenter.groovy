@@ -119,6 +119,13 @@ class ContainerAugmenter {
             return digest
         }
 
+        if( tag.startsWith('sha256:')) {
+            // container using a digest as tag cannot be augmented because it would
+            // require to alter the digest itself
+            final msg = "Operation not allowed for container '$imageName@$tag'"
+            throw new DockerRegistryException(msg, 400, 'UNSUPPORTED')
+        }
+
         if( type == ContentType.DOCKER_MANIFEST_V1_JWS_TYPE ) {
             final v1Digest = resolveV1Manifest(manifestsList, imageName)
             final v1Manifest = storage.getManifest("/v2/$imageName/manifests/$v1Digest").orElse(null)
