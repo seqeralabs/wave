@@ -1,4 +1,7 @@
 # Wave changelog
+v0.23.4 - 8 Dec 
+- Allow the use of SHA256 container names [afd36305]
+
 v0.23.3 - 3 Dec 2022
 - Fix duration deserialisation [19d9af71]
 
