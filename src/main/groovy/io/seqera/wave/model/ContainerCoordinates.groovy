@@ -20,7 +20,15 @@ class ContainerCoordinates implements ContainerPath {
 
     String getRepository() { "$registry/$image" }
 
-    String getTargetContainer() { "$registry/$image:$reference" }
+    String getTargetContainer() {
+        return registry + '/' + getImageAndTag()
+    }
+
+    String getImageAndTag() {
+        if( !reference ) return image
+        final sep = reference.startsWith('sha256:') ? '@' : ':'
+        return image + sep + reference
+    }
 
     static ContainerCoordinates parse(String path) {
 

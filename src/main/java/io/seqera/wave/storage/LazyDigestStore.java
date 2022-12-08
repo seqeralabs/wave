@@ -5,7 +5,7 @@ import java.io.IOException;
 import io.seqera.wave.storage.reader.ContentReader;
 
 /**
- * Implements a digest store that laods the binary content on-demand
+ * Implements a digest store that loads the binary content on-demand
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

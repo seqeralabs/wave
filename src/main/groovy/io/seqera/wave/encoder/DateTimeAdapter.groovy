@@ -32,7 +32,12 @@ class DateTimeAdapter {
     }
 
     @FromJson
-    Duration deserializeDuration(Long value) {
-        return value != null ? Duration.ofNanos(value) : null
+    Duration deserializeDuration(String value) {
+        if( value==null )
+            return null
+        // for backward compatibility duration may be encoded as float value
+        // instead of long (number of nanoseconds) as expected
+        final val0 = value.contains('.') ? Math.round(value.toDouble() * 1_000_000_000) : value.toLong()
+        return value != null ? Duration.ofNanos(val0) : null
     }
 }

@@ -1,4 +1,13 @@
 # Wave changelog
+v0.23.4 - 8 Dec 
+- Allow the use of SHA256 container names [afd36305]
+
+v0.23.3 - 3 Dec 2022
+- Fix duration deserialisation [19d9af71]
+
+v0.23.2 - 3 Dec 2022
+- Fix Invalid config for augmented container [bb5b9673]
+
 v0.23.1 - 26 Nov 2022
 - Add HttpClient retry strategy [bd49d1ff]
 - Make http client timeout configurable [0535086f]
