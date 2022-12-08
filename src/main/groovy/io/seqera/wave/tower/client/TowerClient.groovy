@@ -19,7 +19,6 @@ import org.apache.commons.lang.StringUtils
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Requires(property = 'tower.api.endpoint')
 @Slf4j
 @Singleton
 @CompileStatic
@@ -27,27 +26,20 @@ class TowerClient {
 
     private HttpClient httpClient
 
-    private URI userInfoEndpoint
-
     private HttpRetryable httpRetryable
 
-    TowerClient(@Value('${tower.api.endpoint}')String endpoint, HttpRetryable httpRetryable) {
+    TowerClient(HttpRetryable httpRetryable) {
         this.httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(httpRetryable.config().connectTimeout)
                 .build()
-        if( !endpoint )
-            throw new IllegalArgumentException("Missing Tower endpoint")
-        // cleanup ending slashes
-        endpoint = StringUtils.stripEnd(endpoint, '/')
-        log.debug "Tower client endpoint=$endpoint"
-        this.userInfoEndpoint = new URI("${endpoint}/user-info")
         this.httpRetryable = httpRetryable
     }
 
-    CompletableFuture<UserInfoResponse> userInfo(String authorization) {
+
+    CompletableFuture<UserInfoResponse> userInfo(String hostName, String authorization) {
         final req = HttpRequest.newBuilder()
-                .uri(userInfoEndpoint)
+                .uri(userInfoEndpoint(hostName))
                 .headers('Content-Type', 'application/json', 'Authorization', "Bearer $authorization")
                 .GET()
                 .build()
@@ -66,5 +58,55 @@ class TowerClient {
                 }
             })
     }
+
+    CompletableFuture<ListCredentialsResponse> listCredentials(String hostName, String authorization, Long workspaceId) {
+        final uri = listCredentialsEndpoint(hostName,workspaceId)
+        final req = HttpRequest.newBuilder()
+                .uri(uri)
+                .header("Authorization", "Bearer ${authorization}")
+                .GET()
+                .build()
+        return httpRetryable.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+            .thenApply { resp ->
+                switch (resp.statusCode()) {
+                    case 200:
+                        return JacksonHelper.fromJson(resp.body(),ListCredentialsResponse)
+                    case 401:
+                        throw new HttpResponseException(401,"Unauthorized")
+                    default:
+                        throw new HttpResponseException(resp.statusCode(),resp.body())
+                }
+            }
+    }
+
+    CompletableFuture<EncryptedCredentialsResponse> fetchEncryptedCredentials(String hostName, String authorization, String credentialsId, String encryptionKey) {
+        final req = HttpRequest.newBuilder()
+                .uri(new URI(""))
+                .header("Authorization", "Bearer ${authorization}")
+                .GET()
+                .build()
+
+        return httpRetryable.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+            .thenApply { resp ->
+                switch (resp.statusCode()) {
+                    case 200:
+                        return JacksonHelper.fromJson(resp.body(),EncryptedCredentialsResponse)
+                    case 401:
+                        throw new HttpResponseException(401,"Unauthorized")
+                    default:
+                        throw new HttpResponseException(resp.statusCode(),resp.body())
+                }
+            }
+    }
+
+    private static URI listCredentialsEndpoint(String hostname, Long workspaceId) {
+        final query = workspaceId? "&workspaceId=${workspaceId}":""
+        return new URI("https://${hostname}/credentials${query}")
+    }
+
+    private static URI userInfoEndpoint(String hostname) {
+        return new URI("https://${hostname}/user-info")
+    }
+
 
 }

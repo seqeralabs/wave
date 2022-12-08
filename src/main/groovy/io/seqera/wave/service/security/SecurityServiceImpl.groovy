@@ -19,12 +19,11 @@ class SecurityServiceImpl implements SecurityService {
 
     @Override
     RegisterInstanceResponse getPublicKey(String service, String instanceId, String hostName) {
-        final attrs = [service:service, instanceId:instanceId, hostName: hostName]
-        final uid =  DigestFunctions.md5(attrs)
+        final uid =  makeKey(service,instanceId)
         // NOTE: we may want change this. ideally a new key-pair should be created only
         // if does not exist yet
         final keyPair = generate()
-        final entry = new KeyRecord(service, instanceId, hostName, keyPair.getPrivate().getEncoded())
+        final entry = new KeyRecord(service, instanceId, hostName,uid, keyPair.getPrivate().getEncoded())
         store.put(uid, entry)
         final result = new RegisterInstanceResponse(
                 keyId: uid,
@@ -33,6 +32,16 @@ class SecurityServiceImpl implements SecurityService {
         return result
     }
 
+    @Override
+    KeyRecord getServiceRegistration(String service, String instanceId) {
+        final uid =makeKey(service, instanceId)
+        return store.get(uid)
+    }
+
+    protected static String makeKey(String service, String instanceId) {
+        final attrs = [service: service, instanceId: instanceId]
+        return DigestFunctions.md5(attrs)
+    }
 
     protected KeyPair generate() {
         KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");

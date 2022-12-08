@@ -77,7 +77,7 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
      *      if not credentials can be found
      */
     @Override
-    RegistryCredentials getUserCredentials(ContainerPath container, @Nullable Long userId, @Nullable Long workspaceId) {
+    RegistryCredentials getUserCredentials(ContainerPath container, @Nullable Long userId, @Nullable Long workspaceId,String towerToken,String towerInstanceId) {
         // use default credentials for anonymous requests
         if( !userId )
             return getDefaultCredentials(container.registry)
@@ -85,15 +85,15 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
         if( container.repository==defaultBuildRepository || container.repository==defaultCacheRepository )
             return getDefaultCredentials(container.registry)
 
-        return getUserCredentials0(container.registry, userId, workspaceId)
+        return getUserCredentials0(container.registry, userId, workspaceId,towerToken,towerInstanceId)
     }
 
-    protected RegistryCredentials getUserCredentials0(String registry, @Nullable Long userId, @Nullable Long workspaceId) {
+    protected RegistryCredentials getUserCredentials0(String registry, @Nullable Long userId, @Nullable Long workspaceId, String towerToken,String towerInstanceId) {
         if( !credentialsService ) {
             throw new IllegalStateException("Missing Credentials service -- Make sure the 'tower' micronaut environment has been specified in the Wave configuration environment")
         }
 
-        final keys = credentialsService.findRegistryCreds(registry, userId, workspaceId)
+        final keys = credentialsService.findRegistryCreds(registry, userId, workspaceId,towerToken,towerInstanceId)
         final result = keys
                 ? credentialsFactory.create(registry, keys.userName, keys.password)
                 : null as RegistryCredentials

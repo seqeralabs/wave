@@ -16,6 +16,11 @@ class SubmitContainerTokenRequest {
     String towerAccessToken
 
     /**
+     * Tower instance id required to integrate with wave
+     */
+    String towerInstanceId
+
+    /**
      * Tower workspace id
      */
     Long towerWorkspaceId

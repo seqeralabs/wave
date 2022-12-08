@@ -9,6 +9,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Post
 import io.micronaut.http.server.util.HttpClientAddressResolver
@@ -23,6 +24,7 @@ import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
+import io.seqera.wave.service.security.SecurityService
 import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.tower.User
 import io.seqera.wave.util.DataTimeUtils
@@ -40,6 +42,7 @@ class ContainerTokenController {
     @Inject HttpClientAddressResolver addressResolver
     @Inject ContainerTokenService tokenService
     @Inject UserService userService
+    @Inject SecurityService securityService
 
     @Inject
     @Value('${wave.allowAnonymous}')
@@ -80,10 +83,19 @@ class ContainerTokenController {
 
     @Post
     CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
-        if( req.towerAccessToken ) {
-            return userService
-                    .getUserByAccessTokenAsync(req.towerAccessToken)
-                    .thenApply( user-> makeResponse(httpRequest, req, user))
+        if(req.towerAccessToken  && req.towerInstanceId) {
+            // we first check if the service is registered
+
+            // NOTE: as suggested by @jordeu we might remove towerInstanceId completely in favor of the tower endpoint
+            // this would prevent conflicting ids that are rare but impossible to detect.
+            final registration = securityService.getServiceRegistration(SecurityService.TOWER_SERVICE, req.towerInstanceId)
+            if (registration) {
+                return userService.getUserByAccessTokenAsync(registration.hostname, req.towerAccessToken)
+                        .thenApply { user -> makeResponse(httpRequest, req, user) }
+            } else {
+                // this should fail because tower is not registered but what kind of error??
+                return CompletableFuture.completedFuture(HttpResponse.status(HttpStatus.I_AM_A_TEAPOT))
+            }
         }
         else{
             return CompletableFuture.completedFuture(makeResponse(httpRequest, req, null))
@@ -172,7 +184,10 @@ class ContainerTokenController {
                 targetContent,
                 req.containerConfig,
                 condaContent,
-                ContainerPlatform.of(req.containerPlatform) )
+                ContainerPlatform.of(req.containerPlatform),
+                req.towerAccessToken,
+                req.towerInstanceId
+                )
 
         return data
     }

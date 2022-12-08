@@ -6,11 +6,12 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
-import io.seqera.wave.tower.Credentials
+import io.seqera.wave.service.security.SecurityService
 import io.seqera.wave.tower.CredentialsDao
 import io.seqera.wave.tower.SecretDao
 import io.seqera.tower.crypto.CryptoHelper
-import io.seqera.tower.crypto.Sealed
+import io.seqera.wave.tower.client.CredentialsDescription
+import io.seqera.wave.tower.client.TowerClient
 import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -32,6 +33,12 @@ class CredentialServiceImpl implements CredentialsService {
     private CredentialsDao credentialsDao
 
     @Inject
+    TowerClient towerClient
+
+    @Inject
+    SecurityService keyService
+
+    @Inject
     private SecretDao secretDao
 
     private CryptoHelper crypto
@@ -45,26 +52,34 @@ class CredentialServiceImpl implements CredentialsService {
         crypto = new CryptoHelper(secretKey)
     }
 
-    ContainerRegistryKeys findRegistryCreds(String registryName, Long userId, Long workspaceId) {
+    @Override
+    ContainerRegistryKeys findRegistryCreds(String registryName, Long userId, Long workspaceId,String towerToken, String towerInstanceId) {
+
         if (!userId)
             throw new IllegalArgumentException("Missing userId parameter")
-        
-        final all = workspaceId
-                ? credentialsDao.findRegistryCredentialsByWorkspaceId(workspaceId)
-                : credentialsDao.findRegistryCredentialsByUserId(userId)
+        if (!towerToken)
+            throw new IllegalArgumentException("Missing tower token")
+
+        final keyRecord = keyService.getServiceRegistration(SecurityService.TOWER_SERVICE, towerInstanceId)
+        final towerHostName = keyRecord.hostname
+
+
+
+
+        final all = towerClient.listCredentials(towerHostName,towerToken,workspaceId).get().credentials
 
         if (!all)
             return null
 
         // find a credentials with a matching registry
-        final matching = new ArrayList<Credentials>(10)
-        for (Credentials it : all) {
-            final keys = parsePayload(it.keys)
-            if (keys == null)
+        final matching = new ArrayList<CredentialsDescription>(10)
+        for (CredentialsDescription it : all) {
+            if (it.provider != 'container-reg') {
                 continue
+            }
 
             final r1 = registryName ?: DOCKER_IO
-            final r2 = keys.registry ?: DOCKER_IO
+            final r2 = it.registry ?: DOCKER_IO
             if (r1 == r2) {
                 matching.add(it)
                 break
@@ -74,24 +89,33 @@ class CredentialServiceImpl implements CredentialsService {
         if (!matching)
             return null
 
-        Credentials creds = matching.first()
-        if( matching.size()>1 && userId && workspaceId ) {
-            // try to resolve ambiguity finding a creds that matches the userId
-            creds = matching.find( it -> it.user.id == userId )
+        CredentialsDescription creds = matching.first()
+        if (matching.size() > 1 && userId && workspaceId) {
+            //TODO disambiguate? why should this be the case??
         }
 
-        // now find the matching secret
-        final secretKey = "/user/${creds.user.id}/creds/${creds.id}"
-        final hashedKey = CryptoHelper.encodeSecret(secretKey, creds.salt).getDataString()
-        final secret = secretDao.findById(hashedKey).orElse(null)
-        if (!secret) {
-            log.debug "Unable to find secret for credentials id: $creds.id"
-            return null
-        }
-        final sealedObj = Sealed.deserialize(secret.secure)
-        final json = new String(crypto.decrypt(sealedObj, creds.salt))
 
-        return parsePayload(json)
+
+        // now fetch the encrypted key
+        final encryptedCredentials = towerClient.fetchEncryptedCredentials(towerHostName,towerToken,creds.id,keyRecord.keyId).get()
+        final privateKey = keyRecord.privateKey
+
+
+        final credentials = decryptCredentials(privateKey, encryptedCredentials.credentials)
+
+        return parsePayload(credentials)
+
+    }
+
+
+    protected String decryptCredentials(byte[] encodedKey, String payload) {
+//        TODO: Import or inline asymmetric cipher library and do the actual flow
+//        final packet = EncryptedPacket.decode(payload)
+//        final cipher = AsymmetricCipher getInstance()
+//        final privateKey = cipher.decodePrivateKey(encodedKey)
+//        final data = cipher.decrypt(packet, privateKey)
+//        return new String(data)
+        return ""
     }
 
     protected ContainerRegistryKeys parsePayload(String json) {

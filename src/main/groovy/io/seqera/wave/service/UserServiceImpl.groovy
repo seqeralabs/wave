@@ -26,12 +26,28 @@ class UserServiceImpl implements UserService {
     @Nullable
     private TowerClient towerClient
 
+//    @Override
+//    CompletableFuture<User> getUserByAccessTokenAsync(String encodedToken) {
+//        if( !towerClient )
+//            throw new IllegalStateException("Missing Tower client - make sure the 'tower' micronaut environment has been provided")
+//
+//        towerClient.userInfo(null,encodedToken).handle( (UserInfoResponse resp, Throwable error) -> {
+//            if( error )
+//                throw error
+//            if (!resp || !resp.user)
+//                throw new UnauthorizedException("Unauthorized - Make sure you have provided a valid access token")
+//            log.debug("Authorized user=$resp.user")
+//            return resp.user
+//        })
+//
+//    }
+
     @Override
-    CompletableFuture<User> getUserByAccessTokenAsync(String encodedToken) {
+    CompletableFuture<User> getUserByAccessTokenAsync(String hostName, String encodedToken) {
         if( !towerClient )
             throw new IllegalStateException("Missing Tower client - make sure the 'tower' micronaut environment has been provided")
 
-        towerClient.userInfo(encodedToken).handle( (UserInfoResponse resp, Throwable error) -> {
+        towerClient.userInfo(hostName,encodedToken).handle( (UserInfoResponse resp, Throwable error) -> {
             if( error )
                 throw error
             if (!resp || !resp.user)
@@ -39,12 +55,11 @@ class UserServiceImpl implements UserService {
             log.debug("Authorized user=$resp.user")
             return resp.user
         })
-
     }
 
-    User getUserByAccessToken(String encodedToken) {
+    User getUserByAccessToken(String hostName, String encodedToken) {
         try {
-            getUserByAccessTokenAsync(encodedToken).get()
+            getUserByAccessTokenAsync(hostName, encodedToken).get()
         }
         catch(ExecutionException e){
             throw e.cause

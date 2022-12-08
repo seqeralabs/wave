@@ -13,5 +13,6 @@ class KeyRecord {
     String service
     String instanceId
     String hostname
+    String keyId
     byte[] privateKey
 }

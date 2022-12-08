@@ -24,6 +24,8 @@ class ContainerRequestData {
     final ContainerConfig containerConfig
     final String condaFile
     final ContainerPlatform platform
+    final String towerToken
+    final String towerInstanceId
 
     ContainerCoordinates coordinates() { ContainerCoordinates.parse(containerImage) }
 
