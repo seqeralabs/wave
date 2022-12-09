@@ -41,7 +41,7 @@ abstract class BuildStrategy {
         }
 
         if( !compressCaching )
-            result << "--compressed-caching" << 'false'
+            result << "--compressed-caching=false"
 
         return result
     }
