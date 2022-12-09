@@ -1,4 +1,7 @@
 # Wave changelog
+v0.23.5 - 9 Dec 
+- Fix Kaniko compressed-caching flag [1c04155c]
+
 v0.23.4 - 8 Dec 
 - Allow the use of SHA256 container names [afd36305]
 
