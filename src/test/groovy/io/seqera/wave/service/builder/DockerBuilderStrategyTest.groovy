@@ -97,7 +97,7 @@ class DockerBuilderStrategyTest extends Specification {
                 '--cache=true',
                 '--custom-platform', 'linux/amd64',
                 '--cache-repo', 'reg.io/wave/build/cache',
-                '--compressed-caching', 'false' ]
+                '--compressed-caching=false' ]
 
         cleanup:
         ctx.close()
