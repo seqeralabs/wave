@@ -23,17 +23,17 @@ class DockerAuthService {
     @Inject
     private RegistryCredentialsProvider credentialsProvider
 
-    String credentialsConfigJson(String dockerFile, String buildRepo, String cacheRepo, @Nullable Long userId, @Nullable Long workspaceId) {
+    String credentialsConfigJson(String dockerFile, String buildRepo, String cacheRepo, @Nullable Long userId, @Nullable Long workspaceId,String towerToken, String towerEndpoint) {
         final repos = new HashSet(10)
         repos.addAll(findRepositories(dockerFile))
         if( buildRepo )
             repos.add(buildRepo)
         if( cacheRepo )
             repos.add(cacheRepo)
-        return credsJson(repos, userId, workspaceId)
+        return credsJson(repos, userId, workspaceId,towerToken,towerEndpoint)
     }
 
-    protected String credsJson(Set<String> repositories, Long userId, Long workspaceId) {
+    protected String credsJson(Set<String> repositories, Long userId, Long workspaceId,String towerToken, String towerEndpoint) {
         final hosts = new HashSet()
         final result = new StringBuilder()
         for( String repo : repositories ) {
@@ -44,8 +44,7 @@ class DockerAuthService {
                 // skip this index host because it has already be added to the list
                 continue
             }
-            //FIXME pass valid tower-token and tower-endpoint
-            final creds = credentialsProvider.getUserCredentials(path, userId, workspaceId,"tower-token","tower-endpoint")
+            final creds = credentialsProvider.getUserCredentials(path, userId, workspaceId,towerToken,towerEndpoint)
             log.debug "Build credentials for repository: $repo => $creds"
             if( !creds ) {
                 // skip this host because there are no credentials

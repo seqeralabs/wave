@@ -41,7 +41,7 @@ class ContainerBuildServiceTest extends Specification {
         RUN echo Hello > hello.txt
         '''.stripIndent()
         and:
-        def cfg = dockerAuthService.credentialsConfigJson(dockerfile, buildRepo, cacheRepo, null, null)
+        def cfg = dockerAuthService.credentialsConfigJson(dockerfile, buildRepo, cacheRepo, null, null,null,null)
         def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'),cfg, cacheRepo, "")
 
         when:
@@ -70,7 +70,7 @@ class ContainerBuildServiceTest extends Specification {
         and:
         buildRepo = "docker.io/pditommaso/wave-tests"
         and:
-        def cfg = dockerAuthService.credentialsConfigJson(dockerfile, buildRepo, null, null, null)
+        def cfg = dockerAuthService.credentialsConfigJson(dockerfile, buildRepo, null, null, null,null,null)
         def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'),cfg, null, null)
 
         when:
@@ -98,7 +98,7 @@ class ContainerBuildServiceTest extends Specification {
         '''.stripIndent()
         and:
         buildRepo = "quay.io/pditommaso/wave-tests"
-        def cfg = dockerAuthService.credentialsConfigJson(dockerfile, buildRepo, null, null, null)
+        def cfg = dockerAuthService.credentialsConfigJson(dockerfile, buildRepo, null, null, null, null, null)
         def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'),cfg, null, "")
 
         when:
@@ -126,7 +126,7 @@ class ContainerBuildServiceTest extends Specification {
         '''.stripIndent()
         and:
         buildRepo = "seqeralabs.azurecr.io/wave-tests"
-        def cfg = dockerAuthService.credentialsConfigJson(dockerfile, buildRepo, null, null, null)
+        def cfg = dockerAuthService.credentialsConfigJson(dockerfile, buildRepo, null, null, null, null, null)
         def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'),cfg, null, "")
 
         when:

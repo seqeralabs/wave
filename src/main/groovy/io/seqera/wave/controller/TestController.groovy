@@ -77,7 +77,7 @@ class TestController {
         final ip = addressResolver.resolve(httpRequest)
         final buildRepo = repo ?: defaultBuildRepo
         final cacheRepo = cache ?: defaultCacheRepo
-        final configJson = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, cacheRepo, user?.id, workspaceId)
+        final configJson = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, cacheRepo, user?.id, workspaceId,accessToken,hostName)
 
         final req =  new BuildRequest( dockerFile,
                 Path.of(workspace),
