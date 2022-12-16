@@ -83,12 +83,9 @@ class ContainerTokenController {
 
     @Post
     CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
-        if(req.towerAccessToken  && req.towerInstanceId) {
-            // we first check if the service is registered
-
-            // NOTE: as suggested by @jordeu we might remove towerInstanceId completely in favor of the tower endpoint
-            // this would prevent conflicting ids that are rare but impossible to detect.
-            final registration = securityService.getServiceRegistration(SecurityService.TOWER_SERVICE, req.towerInstanceId)
+        if(req.towerAccessToken  && req.towerEndpoint) {
+            //  We first check if the service is registered
+            final registration = securityService.getServiceRegistration(SecurityService.TOWER_SERVICE, req.towerEndpoint)
             if (registration) {
                 return userService.getUserByAccessTokenAsync(registration.hostname, req.towerAccessToken)
                         .thenApply { user -> makeResponse(httpRequest, req, user) }
@@ -188,9 +185,8 @@ class ContainerTokenController {
                 condaContent,
                 ContainerPlatform.of(req.containerPlatform),
                 req.towerAccessToken,
-                req.towerInstanceId
-                )
-
+                req.towerEndpoint
+        )
         return data
     }
 

@@ -72,12 +72,16 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
      *      The tower user Id.
      * @param workspaceId
      *      The tower workspace Id.
+     * @param towerToken
+     *      The tower token
+     * @param towerEndpoint
+     *      The tower endpoint to connect to
      * @return
      *      A {@link RegistryCredentials} object holding the credentials for the specified container or {@code null}
      *      if not credentials can be found
      */
     @Override
-    RegistryCredentials getUserCredentials(ContainerPath container, @Nullable Long userId, @Nullable Long workspaceId,String towerToken,String towerInstanceId) {
+    RegistryCredentials getUserCredentials(ContainerPath container, @Nullable Long userId, @Nullable Long workspaceId,String towerToken,String towerEndpoint) {
         // use default credentials for anonymous requests
         if( !userId )
             return getDefaultCredentials(container.registry)
@@ -85,15 +89,15 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
         if( container.repository==defaultBuildRepository || container.repository==defaultCacheRepository )
             return getDefaultCredentials(container.registry)
 
-        return getUserCredentials0(container.registry, userId, workspaceId,towerToken,towerInstanceId)
+        return getUserCredentials0(container.registry, userId, workspaceId,towerToken,towerEndpoint)
     }
 
-    protected RegistryCredentials getUserCredentials0(String registry, @Nullable Long userId, @Nullable Long workspaceId, String towerToken,String towerInstanceId) {
+    protected RegistryCredentials getUserCredentials0(String registry, @Nullable Long userId, @Nullable Long workspaceId, String towerToken,String towerEndpoint) {
         if( !credentialsService ) {
             throw new IllegalStateException("Missing Credentials service -- Make sure the 'tower' micronaut environment has been specified in the Wave configuration environment")
         }
 
-        final keys = credentialsService.findRegistryCreds(registry, userId, workspaceId,towerToken,towerInstanceId)
+        final keys = credentialsService.findRegistryCreds(registry, userId, workspaceId,towerToken,towerEndpoint)
         final result = keys
                 ? credentialsFactory.create(registry, keys.userName, keys.password)
                 : null as RegistryCredentials

@@ -1,8 +1,8 @@
 package io.seqera.wave.service.security
 
 import java.security.KeyPair
-import java.security.KeyPairGenerator
 
+import io.seqera.tower.crypto.AsymmetricCipher
 import io.seqera.wave.exchange.RegisterInstanceResponse
 import io.seqera.wave.util.DigestFunctions
 import jakarta.inject.Inject
@@ -18,12 +18,12 @@ class SecurityServiceImpl implements SecurityService {
     private KeysCacheStore store
 
     @Override
-    RegisterInstanceResponse getPublicKey(String service, String instanceId, String hostName) {
-        final uid =  makeKey(service,instanceId)
+    RegisterInstanceResponse getPublicKey(String service, String hostName) {
+        final uid =  makeKey(service,hostName)
         // NOTE: we may want change this. ideally a new key-pair should be created only
         // if does not exist yet
         final keyPair = generate()
-        final entry = new KeyRecord(service, instanceId, hostName,uid, keyPair.getPrivate().getEncoded())
+        final entry = new KeyRecord(service, hostName,uid, keyPair.getPrivate().getEncoded())
         store.put(uid, entry)
         final result = new RegisterInstanceResponse(
                 keyId: uid,
@@ -33,19 +33,18 @@ class SecurityServiceImpl implements SecurityService {
     }
 
     @Override
-    KeyRecord getServiceRegistration(String service, String instanceId) {
-        final uid =makeKey(service, instanceId)
+    KeyRecord getServiceRegistration(String service, String towerEndpoint) {
+        final uid =makeKey(service, towerEndpoint)
         return store.get(uid)
     }
 
-    protected static String makeKey(String service, String instanceId) {
-        final attrs = [service: service, instanceId: instanceId]
+    protected static String makeKey(String service, String towerEndpoint) {
+        final attrs = [service: service, towerEndpoint: towerEndpoint]
         return DigestFunctions.md5(attrs)
     }
 
     protected KeyPair generate() {
-        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
-        generator.initialize(2048);
-        return generator.generateKeyPair()
+        final cipher = AsymmetricCipher.getInstance()
+        return cipher.generateKeyPair()
     }
 }

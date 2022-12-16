@@ -28,7 +28,12 @@ class TowerClient {
 
     private HttpRetryable httpRetryable
 
-    TowerClient(HttpRetryable httpRetryable) {
+    private String towerProtocol
+
+
+
+    TowerClient(@Value('${tower.api.useHttps}') boolean  useHttps, HttpRetryable httpRetryable) {
+        this.towerProtocol = useHttps? "https": "http"
         this.httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(httpRetryable.config().connectTimeout)
@@ -39,7 +44,7 @@ class TowerClient {
 
     CompletableFuture<UserInfoResponse> userInfo(String hostName, String authorization) {
         final req = HttpRequest.newBuilder()
-                .uri(userInfoEndpoint(hostName))
+                .uri(userInfoEndpoint(this.towerProtocol, hostName))
                 .headers('Content-Type', 'application/json', 'Authorization', "Bearer $authorization")
                 .GET()
                 .build()
@@ -60,7 +65,7 @@ class TowerClient {
     }
 
     CompletableFuture<ListCredentialsResponse> listCredentials(String hostName, String authorization, Long workspaceId) {
-        final uri = listCredentialsEndpoint(hostName,workspaceId)
+        final uri = listCredentialsEndpoint(this.towerProtocol,hostName,workspaceId)
         final req = HttpRequest.newBuilder()
                 .uri(uri)
                 .header("Authorization", "Bearer ${authorization}")
@@ -80,8 +85,9 @@ class TowerClient {
     }
 
     CompletableFuture<EncryptedCredentialsResponse> fetchEncryptedCredentials(String hostName, String authorization, String credentialsId, String encryptionKey) {
+        final uri = fetchCredentialsEndpoint(this.towerProtocol, hostName, credentialsId, encryptionKey)
         final req = HttpRequest.newBuilder()
-                .uri(new URI(""))
+                .uri(uri)
                 .header("Authorization", "Bearer ${authorization}")
                 .GET()
                 .build()
@@ -99,13 +105,17 @@ class TowerClient {
             }
     }
 
-    private static URI listCredentialsEndpoint(String hostname, Long workspaceId) {
-        final query = workspaceId? "&workspaceId=${workspaceId}":""
-        return new URI("https://${hostname}/credentials${query}")
+    private static URI fetchCredentialsEndpoint(String protocol,String hostName, String credentialsId, String encryptionKey) {
+        return new URI("${protocol}://${hostName}/credentials/${credentialsId}?keyId=${encryptionKey}")
     }
 
-    private static URI userInfoEndpoint(String hostname) {
-        return new URI("https://${hostname}/user-info")
+    private static URI listCredentialsEndpoint(String protocol,String hostname, Long workspaceId) {
+        final query = workspaceId? "&workspaceId=${workspaceId}":""
+        return new URI("${protocol}://${hostname}/credentials${query}")
+    }
+
+    private static URI userInfoEndpoint(String protocol, String hostname) {
+        return new URI("${protocol}://${hostname}/user-info")
     }
 
 

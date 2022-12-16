@@ -44,7 +44,8 @@ class DockerAuthService {
                 // skip this index host because it has already be added to the list
                 continue
             }
-            final creds = credentialsProvider.getUserCredentials(path, userId, workspaceId)
+            //FIXME pass valid tower-token and tower-endpoint
+            final creds = credentialsProvider.getUserCredentials(path, userId, workspaceId,"tower-token","tower-endpoint")
             log.debug "Build credentials for repository: $repo => $creds"
             if( !creds ) {
                 // skip this host because there are no credentials

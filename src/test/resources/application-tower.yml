@@ -1,6 +1,7 @@
 ---
 tower:
   api:
+    useHttps : false
     endpoint: changed_by_test
   crypto:
     secretKey: 123456

@@ -1,6 +1,7 @@
 ---
 tower:
   api:
+    useHttps: true
     endpoint: "${TOWER_API_ENDPOINT:`http://localhost:8000/api`}"
   crypto:
     secretKey: "${TOWER_CRYPTO_SECRETKEY}"

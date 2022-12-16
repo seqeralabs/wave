@@ -33,7 +33,7 @@ class RegisterControllerTest extends Specification{
         def request = HttpRequest.POST("/register",
             [
                     service: 'tower',
-                    instanceId: 'instance-id'
+                    towerEndpoint: 'localhost'
             ])
         def res = client.toBlocking().exchange(request, RegisterInstanceResponse)
 
@@ -55,12 +55,10 @@ class RegisterControllerTest extends Specification{
 
         where: 'body has invalid or missing properties'
 
-        body                            | _
-        [:]                             | _
-        [service: "tower"]              | _
-        [instanceId: 'instance-id']     | _
-        [service: '', instanceId: '']   | _
-        []                              | _
-        [service: 1]                    | _
+        body                               | _
+        [:]                                | _
+        [towerEndpoint: 'endpoint']        | _
+        [service: '', towerEndpoint: '']   | _
+        []                                 | _
     }
 }

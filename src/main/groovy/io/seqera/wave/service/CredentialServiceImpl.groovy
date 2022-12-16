@@ -6,6 +6,8 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.seqera.tower.crypto.AsymmetricCipher
+import io.seqera.tower.crypto.EncryptedPacket
 import io.seqera.wave.service.security.SecurityService
 import io.seqera.wave.tower.CredentialsDao
 import io.seqera.wave.tower.SecretDao
@@ -53,14 +55,14 @@ class CredentialServiceImpl implements CredentialsService {
     }
 
     @Override
-    ContainerRegistryKeys findRegistryCreds(String registryName, Long userId, Long workspaceId,String towerToken, String towerInstanceId) {
+    ContainerRegistryKeys findRegistryCreds(String registryName, Long userId, Long workspaceId,String towerToken, String towerEndpoint) {
 
         if (!userId)
             throw new IllegalArgumentException("Missing userId parameter")
         if (!towerToken)
             throw new IllegalArgumentException("Missing tower token")
 
-        final keyRecord = keyService.getServiceRegistration(SecurityService.TOWER_SERVICE, towerInstanceId)
+        final keyRecord = keyService.getServiceRegistration(SecurityService.TOWER_SERVICE, towerEndpoint)
         final towerHostName = keyRecord.hostname
 
 
@@ -109,13 +111,11 @@ class CredentialServiceImpl implements CredentialsService {
 
 
     protected String decryptCredentials(byte[] encodedKey, String payload) {
-//        TODO: Import or inline asymmetric cipher library and do the actual flow
-//        final packet = EncryptedPacket.decode(payload)
-//        final cipher = AsymmetricCipher getInstance()
-//        final privateKey = cipher.decodePrivateKey(encodedKey)
-//        final data = cipher.decrypt(packet, privateKey)
-//        return new String(data)
-        return ""
+        final packet = EncryptedPacket.decode(payload)
+        final cipher = AsymmetricCipher.getInstance()
+        final privateKey = cipher.decodePrivateKey(encodedKey)
+        final data = cipher.decrypt(packet, privateKey)
+        return new String(data)
     }
 
     protected ContainerRegistryKeys parsePayload(String json) {

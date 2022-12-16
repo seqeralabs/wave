@@ -38,10 +38,11 @@ class UserServiceTest extends Specification {
     def 'should auth user' () {
         given:
         int port = SocketUtils.findAvailableTcpPort()
+        final host = "localhost:${port}"
         EmbeddedServer server = ApplicationContext.run(EmbeddedServer, [
                 'spec.name': 'UserServiceTest',
                 'micronaut.server.port':port,
-                'tower.api.endpoint':"http://localhost:${port}"
+                'tower.api.endpoint':"http://${host}"
         ], 'test','tower','h2')
         ApplicationContext ctx = server.applicationContext
 
@@ -49,12 +50,12 @@ class UserServiceTest extends Specification {
         def service = ctx.getBean(UserService)
 
         when: // a valid token
-        def user = service.getUserByAccessToken("a valid token")
+        def user = service.getUserByAccessToken(host,"a valid token")
         then:
         user.id == 1
 
         when: // an invalid token
-        service.getUserByAccessToken("foo")
+        service.getUserByAccessToken(host,"foo")
         then:
         def exp = thrown(HttpResponseException)
         exp.statusCode().code == 401

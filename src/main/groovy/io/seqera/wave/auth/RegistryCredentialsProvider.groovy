@@ -32,13 +32,13 @@ interface RegistryCredentialsProvider {
      *      The tower workspace Id.
      * @param towerToken
      *      The token used to authenticate with tower
-     * @param towerInstanceId
-     *      The tower instance id used in the registration
+     * @param towerEndpoint
+     *      The tower endpoint used in the registration
      * @return
      *      A {@link RegistryCredentials} object holding the credentials for the specified container or {@code null}
      *      if not credentials can be found
      */
-    RegistryCredentials getUserCredentials(ContainerPath container, @Nullable Long userId, @Nullable Long workspaceId,String towerToken,String towerInstanceId)
+    RegistryCredentials getUserCredentials(ContainerPath container, @Nullable Long userId, @Nullable Long workspaceId,String towerToken,String towerEndpoint)
 
 
 }

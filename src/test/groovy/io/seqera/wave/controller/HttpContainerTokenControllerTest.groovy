@@ -3,6 +3,8 @@ package io.seqera.wave.controller
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
+import io.micronaut.context.annotation.Primary
+import io.micronaut.context.annotation.Replaces
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.io.socket.SocketUtils
 import io.micronaut.http.HttpRequest
@@ -17,8 +19,14 @@ import io.micronaut.runtime.server.EmbeddedServer
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
+import io.seqera.wave.exchange.RegisterInstanceResponse
+import io.seqera.wave.service.security.KeyRecord
+import io.seqera.wave.service.security.SecurityService
+import io.seqera.wave.service.security.SecurityServiceImpl
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.client.UserInfoResponse
+import jakarta.inject.Inject
+
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  *
@@ -42,7 +50,6 @@ class HttpContainerTokenControllerTest extends Specification {
 
     def setup() {
         port = SocketUtils.findAvailableTcpPort()
-
         embeddedServer = ApplicationContext.run(EmbeddedServer, [
                 'spec.name': 'HttpContainerTokenController',
                 'micronaut.server.port': port,
@@ -79,7 +86,8 @@ class HttpContainerTokenControllerTest extends Specification {
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
         SubmitContainerTokenRequest request =
-                new SubmitContainerTokenRequest(towerAccessToken: 1,
+                new SubmitContainerTokenRequest(towerAccessToken: "1",
+                        towerEndpoint: "localhost:${port}",
                         towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64',)
         def ret = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", request), SubmitContainerTokenResponse)
 
@@ -97,6 +105,7 @@ class HttpContainerTokenControllerTest extends Specification {
         def cfg = new ContainerConfig(workingDir: '/foo')
         SubmitContainerTokenRequest request =
                 new SubmitContainerTokenRequest(towerAccessToken: 'foo',
+                        towerEndpoint: "localhost:${port}",
                         towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64',)
         and:
         client

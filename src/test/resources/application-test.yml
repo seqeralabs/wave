@@ -36,6 +36,8 @@ wave:
       credentials : ${GOOGLECR_KEYS:test}
 ---
 tower:
+  api:
+    useHttps: false
   crypto :
     secretKey : "${TOWER_CRYPTO_SECRETKEY:`6Lc407kUAAAAAPCb10a_5czoIYbB1zjtMdnGYnF7`}"
 ---

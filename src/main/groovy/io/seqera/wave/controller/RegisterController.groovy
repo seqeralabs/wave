@@ -39,8 +39,8 @@ class RegisterController {
     @Post
     @Consumes()
     HttpResponse<RegisterInstanceResponse> register(@Body @Valid RegisterInstanceRequest req, HttpRequest httpRequest) {
-        final hostName = hostResolver.resolve(httpRequest)
-        final key = securityService.getPublicKey(req.service, req.instanceId, hostName)
+        final hostName = req.hostName?:hostResolver.resolve(httpRequest)
+        final key = securityService.getPublicKey(req.service, hostName)
         return HttpResponse.ok(key)
     }
 

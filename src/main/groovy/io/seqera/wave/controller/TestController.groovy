@@ -55,6 +55,7 @@ class TestController {
     HttpResponse<String> testBuild(@Nullable String platform,
                                    @Nullable String repo,
                                    @Nullable String cache,
+                                   @Nullable String hostName,
                                    @Nullable String accessToken,
                                    @Nullable Long workspaceId,
                                     HttpRequest httpRequest) {
@@ -62,7 +63,7 @@ class TestController {
             throw new BadRequestException("Missing user access token")
 
         final User user = accessToken
-                ? userService.getUserByAccessToken(accessToken)
+                ? userService.getUserByAccessToken(hostName,accessToken)
                 : null
         if( accessToken && !user )
             throw new BadRequestException("Cannot find user for given access token")

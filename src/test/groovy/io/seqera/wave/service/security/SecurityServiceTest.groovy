@@ -22,7 +22,7 @@ class SecurityServiceTest extends Specification{
         final service = new SecurityServiceImpl(store: store)
 
         when: 'we get a public key'
-        def key = service.getPublicKey("tower","instance-id","tower.io:9090")
+        def key = service.getPublicKey("tower","tower.io:9090")
 
         then: 'we generate a key'
         key.keyId
@@ -34,7 +34,6 @@ class SecurityServiceTest extends Specification{
         and: 'the key is associated with the instance the asked for it'
         storedKey.service == 'tower'
         storedKey.hostname == "tower.io:9090"
-        storedKey.instanceId == 'instance-id'
 
         and: 'the key contains the private part of the key pair'
         storedKey.privateKey

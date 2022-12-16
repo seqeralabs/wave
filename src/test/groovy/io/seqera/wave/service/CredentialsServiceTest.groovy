@@ -1,5 +1,6 @@
 package io.seqera.wave.service
 
+import spock.lang.Ignore
 import spock.lang.Specification
 
 import io.micronaut.context.annotation.Value

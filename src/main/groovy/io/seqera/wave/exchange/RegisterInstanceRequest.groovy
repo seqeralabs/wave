@@ -20,7 +20,5 @@ class RegisterInstanceRequest {
     @NotNull
     String service
 
-    @NotBlank
-    @NotNull
-    String instanceId
+    String hostName
 }
