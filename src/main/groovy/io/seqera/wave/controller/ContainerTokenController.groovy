@@ -9,7 +9,6 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
-import io.micronaut.http.HttpStatus
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Post
 import io.micronaut.http.server.util.HttpClientAddressResolver
@@ -90,8 +89,8 @@ class ContainerTokenController {
                 return userService.getUserByAccessTokenAsync(registration.hostname, req.towerAccessToken)
                         .thenApply { user -> makeResponse(httpRequest, req, user) }
             } else {
-                // this should fail because tower is not registered but what kind of error??
-                return CompletableFuture.completedFuture(HttpResponse.status(HttpStatus.I_AM_A_TEAPOT))
+                final HttpResponse response = HttpResponse.badRequest("No tower service registered for instance '${req.towerEndpoint}")
+                return CompletableFuture.completedFuture(response)
             }
         }
         else{

@@ -2,10 +2,8 @@ package io.seqera.wave.controller
 
 import spock.lang.Specification
 
-import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Primary
-import io.micronaut.context.annotation.Replaces
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.io.socket.SocketUtils
 import io.micronaut.http.HttpRequest
@@ -22,13 +20,10 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
-import io.seqera.wave.exchange.RegisterInstanceResponse
 import io.seqera.wave.service.security.KeyRecord
 import io.seqera.wave.service.security.SecurityService
-import io.seqera.wave.service.security.SecurityServiceImpl
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.client.UserInfoResponse
-import jakarta.inject.Inject
 
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
@@ -136,5 +131,28 @@ class HttpContainerTokenControllerTest extends Specification {
         def err = thrown(HttpClientResponseException)
         and:
         err.status == HttpStatus.UNAUTHORIZED
+    }
+
+    def 'should fail build request if the instance has not registered for key exchange' () {
+        given:
+        HttpClient client = applicationContext.createBean(HttpClient)
+        and:
+        applicationContext.getBean(SecurityService).getServiceRegistration("tower",_) >> null
+        when:
+        def cfg = new ContainerConfig(workingDir: '/foo')
+        def request = new SubmitContainerTokenRequest(
+                towerAccessToken: 'x',
+                towerEndpoint: "localhost:${port}",
+                towerWorkspaceId: 10,
+                containerImage: 'ubuntu:latest',
+                containerConfig: cfg,
+                containerPlatform: 'arm64'
+        )
+
+        client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token",request), SubmitContainerTokenResponse).body()
+        then:
+        def err = thrown(HttpClientResponseException)
+        and:
+        err.status == HttpStatus.BAD_REQUEST
     }
 }
