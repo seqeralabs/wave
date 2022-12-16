@@ -2,6 +2,7 @@ package io.seqera.wave.controller
 
 import spock.lang.Specification
 
+import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Replaces
@@ -16,6 +17,8 @@ import io.micronaut.http.annotation.Header
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.server.EmbeddedServer
+import io.micronaut.test.annotation.MockBean
+import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
@@ -31,7 +34,15 @@ import jakarta.inject.Inject
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
+@MicronautTest
 class HttpContainerTokenControllerTest extends Specification {
+
+
+    @MockBean
+    @Primary
+    SecurityService getSecurityService(){
+        return Stub(SecurityService.class)
+    }
 
     @Requires(property = 'spec.name', value = 'HttpContainerTokenController')
     @Controller("/")
@@ -56,6 +67,7 @@ class HttpContainerTokenControllerTest extends Specification {
                 'tower.api.endpoint':"http://localhost:${port}",
                 'micronaut.http.services.default.url' : "http://localhost:$port".toString(),
         ], 'test', 'h2','tower')
+        embeddedServer.applicationContext.registerSingleton(getSecurityService())
     }
 
     ApplicationContext getApplicationContext() {
@@ -65,6 +77,7 @@ class HttpContainerTokenControllerTest extends Specification {
     def 'should create build request for anonymous user' () {
         given:
         HttpClient client = applicationContext.createBean(HttpClient)
+
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
@@ -83,6 +96,9 @@ class HttpContainerTokenControllerTest extends Specification {
         given:
         HttpClient client = applicationContext.createBean(HttpClient)
 
+        and:
+        applicationContext.getBean(SecurityService).getServiceRegistration("tower", _) >> new KeyRecord(service: "tower", hostname: "localhost:${port}")
+
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
         SubmitContainerTokenRequest request =
@@ -100,6 +116,9 @@ class HttpContainerTokenControllerTest extends Specification {
     def 'should fails build request for user foo' () {
         given:
         HttpClient client = applicationContext.createBean(HttpClient)
+
+        and:
+        applicationContext.getBean(SecurityService).getServiceRegistration("tower", _) >> new KeyRecord(service: "tower", hostname: "localhost:${port}")
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
