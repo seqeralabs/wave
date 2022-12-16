@@ -1,20 +1,14 @@
 package io.seqera.wave.service
 
-import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.micronaut.context.annotation.Value
 import io.seqera.tower.crypto.AsymmetricCipher
 import io.seqera.tower.crypto.EncryptedPacket
 import io.seqera.wave.service.security.SecurityService
-import io.seqera.wave.tower.CredentialsDao
-import io.seqera.wave.tower.SecretDao
-import io.seqera.tower.crypto.CryptoHelper
 import io.seqera.wave.tower.client.CredentialsDescription
 import io.seqera.wave.tower.client.TowerClient
-import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
@@ -31,28 +25,12 @@ import static io.seqera.wave.WaveDefault.DOCKER_IO
 @Singleton
 class CredentialServiceImpl implements CredentialsService {
 
-    @Inject
-    private CredentialsDao credentialsDao
 
     @Inject
     TowerClient towerClient
 
     @Inject
     SecurityService keyService
-
-    @Inject
-    private SecretDao secretDao
-
-    private CryptoHelper crypto
-
-    @Value('${tower.crypto.secretKey}')
-    private String secretKey
-
-    @PostConstruct
-    private void init() {
-        log.debug "Tower crypto key: ${StringUtils.redact(secretKey)}"
-        crypto = new CryptoHelper(secretKey)
-    }
 
     @Override
     ContainerRegistryKeys findRegistryCreds(String registryName, Long userId, Long workspaceId,String towerToken, String towerEndpoint) {
@@ -63,6 +41,10 @@ class CredentialServiceImpl implements CredentialsService {
             throw new IllegalArgumentException("Missing tower token")
 
         final keyRecord = keyService.getServiceRegistration(SecurityService.TOWER_SERVICE, towerEndpoint)
+
+        if (!keyRecord)
+            throw new IllegalStateException("No exchange key registered for service ${SecurityService.TOWER_SERVICE} at endpoint: ${towerEndpoint}")
+
         final towerHostName = keyRecord.hostname
 
 

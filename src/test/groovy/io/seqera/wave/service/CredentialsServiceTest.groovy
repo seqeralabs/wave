@@ -1,65 +1,162 @@
 package io.seqera.wave.service
 
-import spock.lang.Ignore
 import spock.lang.Specification
 
-import io.micronaut.context.annotation.Value
+import java.security.PublicKey
+import java.util.concurrent.CompletableFuture
+
+import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.tower.crypto.CryptoHelper
-import io.seqera.wave.tower.Credentials
-import io.seqera.wave.tower.CredentialsDao
-import io.seqera.wave.tower.Secret
-import io.seqera.wave.tower.SecretDao
-import io.seqera.wave.tower.User
-import io.seqera.wave.tower.UserDao
-import io.seqera.wave.util.LongRndKey
+import io.seqera.tower.crypto.AsymmetricCipher
+import io.seqera.wave.service.security.KeyRecord
+import io.seqera.wave.service.security.SecurityService
+import io.seqera.wave.tower.client.CredentialsDescription
+import io.seqera.wave.tower.client.EncryptedCredentialsResponse
+import io.seqera.wave.tower.client.ListCredentialsResponse
+import io.seqera.wave.tower.client.TowerClient
 import jakarta.inject.Inject
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@MicronautTest(environments = ['tower','test', 'mysql'])
+@MicronautTest(environments = ['tower','test'])
 class CredentialsServiceTest extends Specification {
 
     @Inject CredentialsService credentialsService
 
-    @Inject UserDao userDao
-    @Inject CredentialsDao credentialsDao
-    @Inject SecretDao secretDao
-    @Value('${tower.crypto.secretKey}')
-    private String secretKey
+
+    @MockBean(TowerClient)
+    TowerClient towerClient = Mock(TowerClient)
 
 
-    def 'should registry creds' () {
-        given:
-        def crypto = new CryptoHelper(secretKey)
-        def USER_ID = 10
-        def CREDS_ID = LongRndKey.rndHex()
-        def SALT = CryptoHelper.rndSalt()
-        def DATA = '{"userName":"me", "password":"you", "registry":"quay.io"}'
-        def KEYS = '{"userName":"me", "registry":"quay.io"}'
+    @MockBean(SecurityService)
+    SecurityService securityService = Mock(SecurityService)
+
+    static AsymmetricCipher TEST_CIPHER = AsymmetricCipher.getInstance()
+
+    def 'should get registry creds'() {
+        given: 'a tower user in a workspace on a specific instance with a valid token'
+        def userId = 10
+        def workspaceId = 10
+        def token = "valid-token"
+        def towerEndpoint = "tower.io:9090"
+
+        and: 'a previously registered key'
+        def keypair = TEST_CIPHER.generateKeyPair()
+        def keyId = 'generated-key-id'
+        def keyRecord = new KeyRecord(
+                service: SecurityService.TOWER_SERVICE,
+                hostname: towerEndpoint,
+                keyId: keyId,
+                privateKey: keypair.private.getEncoded()
+        )
+
+
+        and: 'registry credentials to access a registry stored in tower'
+        def credentialsId = 'credentialsId'
+        def registryCredentials = '{"userName":"me", "password": "you", "registry": "quay.io"}'
+        def credentialsDescription = new CredentialsDescription(
+                id: credentialsId,
+                provider: 'container-reg',
+                registry: 'quay.io'
+        )
+        and: 'other credentials registered by the user'
+        def nonContainerRegistryCredentials = new CredentialsDescription(
+                id: 'alt-creds',
+                provider: 'azure',
+                registry: null
+        )
+        def otherRegistryCredentials = new CredentialsDescription(
+                id: 'docker-creds',
+                provider: 'container-reg',
+                registry: 'docker.io'
+        )
+
+
+        when: 'look those registry credentials from tower'
+        def credentials = credentialsService.findRegistryCreds("quay.io",userId, workspaceId,token,towerEndpoint)
+
+        then: 'the registered key is fetched correctly from the security service'
+        1 * securityService.getServiceRegistration(SecurityService.TOWER_SERVICE,towerEndpoint) >> keyRecord
+
+        and: 'credentials are listed once and return a potential match'
+        1 * towerClient.listCredentials(towerEndpoint,token,workspaceId) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
+                credentials: [nonContainerRegistryCredentials, credentialsDescription,otherRegistryCredentials]
+        ))
+
+        and: 'they match and the encrypted credentials are fetched'
+        1 * towerClient.fetchEncryptedCredentials(towerEndpoint,token,credentialsId,keyId) >> CompletableFuture.completedFuture(encryptedCredentialsFromTower(keypair.public,registryCredentials))
+
         and:
-        // create a user
-        def user = userDao.save(
-                new User(id: USER_ID, userName: 'foo', email: 'foo@gmail.com'))
-        // create the secret
-        def secretKey = "/user/${USER_ID}/creds/${CREDS_ID}"
-        def hashedKey = CryptoHelper.encodeSecret(secretKey, SALT).getDataString()
-        def secure = crypto.encrypt(DATA, SALT)
-        def secret = secretDao.save(
-                new Secret(id:hashedKey, secure: secure.serialize()))
-        // create the credentials
-        def creds = credentialsDao.save(
-                new Credentials( id: CREDS_ID, name: 'foo', provider: 'container-reg', salt: SALT, keys: KEYS, user: user ))
+        credentials.userName == 'me'
+        credentials.password == "you"
+        credentials.registry == "quay.io"
+        noExceptionThrown()
+    }
+
+
+    def 'should fail if keys where not registered for the tower endpoint'() {
+        when:
+        credentialsService.findRegistryCreds('quay.io',10,10,'token','endpoint')
+
+        then: 'the security service does not have the key for the hostname'
+        1 * securityService.getServiceRegistration(SecurityService.TOWER_SERVICE,'endpoint') >> null
+
+        and:
+        thrown(IllegalStateException)
+    }
+
+    def 'should return no registry credentials if the user has no credentials in tower' () {
 
         when:
-        def result = credentialsService.findRegistryCreds('quay.io', USER_ID, null)
-        then:
-        result instanceof ContainerRegistryKeys
-        result.userName == 'me'
-        result.password == 'you'
-        result.registry == 'quay.io'
+        def credentials = credentialsService.findRegistryCreds('quay.io', 10, 10, 'token','tower.io')
+        then: 'a key is found'
+        1 * securityService.getServiceRegistration(SecurityService.TOWER_SERVICE, 'tower.io') >> new KeyRecord(
+                keyId: 'a-key-id',
+                service: SecurityService.TOWER_SERVICE,
+                hostname: 'tower.io',
+                privateKey: new byte[0], // we don't care about the value of the key
+        )
+        and: 'credentials are listed but are empty'
+        1 * towerClient.listCredentials('tower.io','token',10) >> CompletableFuture.completedFuture(new ListCredentialsResponse(credentials: []))
+
+        and: 'no registry credentials are returned'
+        credentials == null
     }
+
+    def 'should return no registry credentials if none match'() {
+        given: 'some non matching credentials'
+        def nonContainerRegistryCredentials = new CredentialsDescription(
+                id: 'alt-creds',
+                provider: 'azure',
+                registry: null
+        )
+        def otherRegistryCredentials = new CredentialsDescription(
+                id: 'docker-creds',
+                provider: 'container-reg',
+                registry: 'docker.io'
+        )
+
+        when:
+        def credentials = credentialsService.findRegistryCreds('quay.io', 10, 10, 'token','tower.io')
+
+        then: 'a key is found'
+        1 * securityService.getServiceRegistration(SecurityService.TOWER_SERVICE, 'tower.io') >> new KeyRecord(
+                keyId: 'a-key-id',
+                service: SecurityService.TOWER_SERVICE,
+                hostname: 'tower.io',
+                privateKey: new byte[0], // we don't care about the value of the key
+        )
+
+        and: 'non matching credentials are listed'
+        1 * towerClient.listCredentials('tower.io','token',10) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
+                credentials: [nonContainerRegistryCredentials,otherRegistryCredentials]
+        ))
+
+        then:
+        credentials == null
+    }
+
 
     def 'should parse credentials payload' () {
         given:
@@ -72,4 +169,11 @@ class CredentialsServiceTest extends Specification {
         keys.userName == 'me'
         keys.password == 'you'
     }
+
+
+    private static EncryptedCredentialsResponse encryptedCredentialsFromTower(PublicKey key,String credentials) {
+        return new EncryptedCredentialsResponse(credentials:  TEST_CIPHER.encrypt(key,credentials.getBytes()).encode())
+    }
+
+
 }
