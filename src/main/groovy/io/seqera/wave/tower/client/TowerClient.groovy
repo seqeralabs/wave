@@ -106,7 +106,7 @@ class TowerClient {
     }
 
     private static URI fetchCredentialsEndpoint(String protocol,String hostName, String credentialsId, String encryptionKey) {
-        return new URI("${protocol}://${hostName}/credentials/${credentialsId}?keyId=${encryptionKey}")
+        return new URI("${protocol}://${hostName}/credentials/${credentialsId}/keys?keyId=${encryptionKey}")
     }
 
     private static URI listCredentialsEndpoint(String protocol,String hostname, Long workspaceId) {
