@@ -39,7 +39,6 @@ dependencies {
     implementation("io.micronaut:micronaut-http-client")
     implementation("io.micronaut:micronaut-jackson-databind")
     implementation("io.micronaut.groovy:micronaut-runtime-groovy")
-    implementation("io.micronaut.data:micronaut-data-jdbc")
     implementation("jakarta.annotation:jakarta.annotation-api")
     implementation("io.micronaut:micronaut-validation")
     implementation "org.codehaus.groovy:groovy-json"
@@ -66,11 +65,6 @@ dependencies {
     // this sts dependency is require by micronaut-aws-parameter-store,
     // not directly used by the app, for this reason keeping `runtimeOnly`
     runtimeOnly "software.amazon.awssdk:sts"
-
-    runtimeOnly("com.h2database:h2")
-    runtimeOnly 'mysql:mysql-connector-java:5.1.49'
-    runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
-    implementation("io.micronaut.sql:micronaut-jdbc-hikari")
 
     runtimeOnly("io.netty:netty-tcnative-boringssl-static:2.0.0.Final")
     testImplementation "org.apache.commons:commons-compress:1.21"

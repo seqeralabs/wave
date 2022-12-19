@@ -1,6 +1,5 @@
 package io.seqera.wave.service
 
-import spock.lang.Ignore
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
@@ -12,7 +11,6 @@ import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.Header
 import io.micronaut.runtime.server.EmbeddedServer
 import io.seqera.wave.exception.HttpResponseException
-import io.seqera.wave.exception.UnauthorizedException
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.client.UserInfoResponse
 
