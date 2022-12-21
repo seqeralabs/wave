@@ -1,8 +1,6 @@
 package io.seqera.wave.auth
 
-import io.seqera.wave.auth.RegistryAuth
 import spock.lang.Specification
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -17,6 +15,7 @@ class RegistryAuthTest extends Specification {
         auth1.service == 'bar'
         auth1.type == RegistryAuth.Type.Bearer
         auth1.isRefreshable()
+        auth1.endpoint == new URI('http://foo.com?service=bar')
 
         when:
         def auth2 = new RegistryAuth(new URI('http://this.com'), 'that', RegistryAuth.Type.Basic)
@@ -25,6 +24,7 @@ class RegistryAuthTest extends Specification {
         auth2.service == 'that'
         auth2.type == RegistryAuth.Type.Basic
         !auth2.isRefreshable()
+        auth2.endpoint == new URI('http://this.com?service=that')
     }
 
     def 'should implement equals and hashcode' () {

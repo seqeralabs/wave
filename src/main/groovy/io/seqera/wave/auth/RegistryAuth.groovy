@@ -3,6 +3,7 @@ package io.seqera.wave.auth
 import java.util.regex.Pattern
 
 import groovy.transform.Canonical
+import groovy.transform.CompileStatic
 
 /**
  * Model container registry authentication meta-info
@@ -10,6 +11,7 @@ import groovy.transform.Canonical
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Canonical
+@CompileStatic
 class RegistryAuth {
 
     private static final Pattern AUTH = ~/(?i)(?<type>.+) realm="(?<realm>.+)",service="(?<service>.+)"/
@@ -24,6 +26,15 @@ class RegistryAuth {
 
     boolean isRefreshable() {
         return type==Type.Bearer
+    }
+
+    URI getEndpoint() {
+        if( !realm )
+            return null
+        final uri = realm.toString()
+        if( uri?.endsWith('.amazonaws.com/') )
+            return new URI(uri + "v2/")
+        return new URI(service ? "$uri?service=${service}".toString() : uri)
     }
 
     static RegistryAuth parse(String auth) {

@@ -57,6 +57,8 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     @Inject
     private RegistryLookupService lookupService
 
+    @Inject RegistryCredentialsFactory credentialsFactory
+
     @Inject
     private HttpRetryable httpRetryable
 
@@ -86,12 +88,14 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         final registry = lookupService.lookup(registryName)
         log.debug "Registry '$registryName' => auth: $registry"
 
-        // 2. make a request against the authorization "realm" service using basic
+        // 2. get the registry credentials
+        //    this is needed because some services e.g. AWS ECR requires the use of temporary tokens
+        final creds = credentialsFactory.create(registryName, username, password)
+
+        // 3. make a request against the authorization "realm" service using basic
         //    credentials to get the login token
-        final basic =  "$username:$password".bytes.encodeBase64()
-        final endpoint = registry.auth.service
-                ? new URI("$registry.auth.realm?service=${registry.auth.service}")
-                : registry.auth.realm
+        final basic =  "${creds.username}:${creds.password}".bytes.encodeBase64()
+        final endpoint = registry.auth.endpoint
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(endpoint)
                 .GET()
