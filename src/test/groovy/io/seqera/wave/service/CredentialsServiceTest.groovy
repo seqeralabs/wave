@@ -85,7 +85,7 @@ class CredentialsServiceTest extends Specification {
         ))
 
         and: 'they match and the encrypted credentials are fetched'
-        1 * towerClient.fetchEncryptedCredentials(towerEndpoint,token,credentialsId,keyId) >> CompletableFuture.completedFuture(encryptedCredentialsFromTower(keypair.public,registryCredentials))
+        1 * towerClient.fetchEncryptedCredentials(towerEndpoint,token,credentialsId,keyId,workspaceId) >> CompletableFuture.completedFuture(encryptedCredentialsFromTower(keypair.public,registryCredentials))
 
         and:
         credentials.userName == 'me'

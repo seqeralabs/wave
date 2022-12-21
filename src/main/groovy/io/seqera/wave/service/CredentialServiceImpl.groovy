@@ -81,7 +81,7 @@ class CredentialServiceImpl implements CredentialsService {
 
 
         // now fetch the encrypted key
-        final encryptedCredentials = towerClient.fetchEncryptedCredentials(towerHostName,towerToken,creds.id,keyRecord.keyId).get()
+        final encryptedCredentials = towerClient.fetchEncryptedCredentials(towerHostName,towerToken,creds.id,keyRecord.keyId,workspaceId).get()
         final privateKey = keyRecord.privateKey
 
 

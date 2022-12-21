@@ -84,8 +84,8 @@ class TowerClient {
             }
     }
 
-    CompletableFuture<EncryptedCredentialsResponse> fetchEncryptedCredentials(String hostName, String authorization, String credentialsId, String encryptionKey) {
-        final uri = fetchCredentialsEndpoint(this.towerProtocol, hostName, credentialsId, encryptionKey)
+    CompletableFuture<EncryptedCredentialsResponse> fetchEncryptedCredentials(String hostName, String authorization, String credentialsId, String encryptionKey,Long workspaceId) {
+        final uri = fetchCredentialsEndpoint(this.towerProtocol, hostName, credentialsId, encryptionKey,workspaceId)
         final req = HttpRequest.newBuilder()
                 .uri(uri)
                 .header("Authorization", "Bearer ${authorization}")
@@ -105,8 +105,9 @@ class TowerClient {
             }
     }
 
-    private static URI fetchCredentialsEndpoint(String protocol,String hostName, String credentialsId, String encryptionKey) {
-        return new URI("${protocol}://${hostName}/credentials/${credentialsId}/keys?keyId=${encryptionKey}")
+    private static URI fetchCredentialsEndpoint(String protocol,String hostName, String credentialsId, String encryptionKey,Long workspaceId) {
+        def workspaceQueryParamm = workspaceId? "&workspaceId=${workspaceId}":""
+        return new URI("${protocol}://${hostName}/credentials/${credentialsId}/keys?keyId=${encryptionKey}${workspaceQueryParamm}")
     }
 
     private static URI listCredentialsEndpoint(String protocol,String hostname, Long workspaceId) {
