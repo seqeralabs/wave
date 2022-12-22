@@ -92,13 +92,13 @@ class HttpContainerTokenControllerTest extends Specification {
         HttpClient client = applicationContext.createBean(HttpClient)
 
         and:
-        applicationContext.getBean(SecurityService).getServiceRegistration("tower", _) >> new KeyRecord(service: "tower", hostname: "localhost:${port}")
+        applicationContext.getBean(SecurityService).getServiceRegistration("tower", _) >> new KeyRecord(service: "tower", hostname: "http://localhost:${port}")
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
         SubmitContainerTokenRequest request =
                 new SubmitContainerTokenRequest(towerAccessToken: "1",
-                        towerEndpoint: "localhost:${port}",
+                        towerEndpoint: "http://localhost:${port}",
                         towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64',)
         def ret = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", request), SubmitContainerTokenResponse)
 
@@ -113,13 +113,13 @@ class HttpContainerTokenControllerTest extends Specification {
         HttpClient client = applicationContext.createBean(HttpClient)
 
         and:
-        applicationContext.getBean(SecurityService).getServiceRegistration("tower", _) >> new KeyRecord(service: "tower", hostname: "localhost:${port}")
+        applicationContext.getBean(SecurityService).getServiceRegistration("tower", _) >> new KeyRecord(service: "tower", hostname: "http://localhost:${port}")
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
         SubmitContainerTokenRequest request =
                 new SubmitContainerTokenRequest(towerAccessToken: 'foo',
-                        towerEndpoint: "localhost:${port}",
+                        towerEndpoint: "http://localhost:${port}",
                         towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64',)
         and:
         client
