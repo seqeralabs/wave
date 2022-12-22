@@ -7,6 +7,7 @@ import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.cache.AbstractCacheStore
 import io.seqera.wave.service.cache.impl.CacheProvider
 /**
+ * Implements a cache store for {@link KeyRecord}
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
