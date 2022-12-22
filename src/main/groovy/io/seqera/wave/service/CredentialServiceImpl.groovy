@@ -55,28 +55,22 @@ class CredentialServiceImpl implements CredentialsService {
         if (!all)
             return null
 
-        // find a credentials with a matching registry
-        final matching = new ArrayList<CredentialsDescription>(10)
-        for (CredentialsDescription it : all) {
-            if (it.provider != 'container-reg') {
-                continue
-            }
-
-            final r1 = registryName ?: DOCKER_IO
-            final r2 = it.registry ?: DOCKER_IO
-            if (r1 == r2) {
-                matching.add(it)
-                break
-            }
+        // find credentials with a matching registry
+        // TODO @t0randr
+        //  for the time being we take the first matching credentials.
+        //  A better approach would be to match the credentials
+        //  based on user repository, but this is not supported by tower:
+        //  For instance if we try to pull from docker.io/seqera/tower:v22
+        //  then we should match credentials for docker.io/seqera instead of
+        //  the ones associated with docker.io.
+        //  This cannot be implemented at the moment since, in tower, container registry
+        //  credentials are associated to the whole registry
+        final matchingRegistryName = registryName ?: DOCKER_IO
+        final creds = all.find {
+            it.provider == 'container-reg'  && (it.registry ?: DOCKER_IO) == matchingRegistryName
         }
-
-        if (!matching)
+        if (!creds)
             return null
-
-        CredentialsDescription creds = matching.first()
-        if (matching.size() > 1 && userId && workspaceId) {
-            //TODO disambiguate? why should this be the case??
-        }
 
 
 
