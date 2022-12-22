@@ -39,7 +39,7 @@ class CredentialsServiceTest extends Specification {
         def userId = 10
         def workspaceId = 10
         def token = "valid-token"
-        def towerEndpoint = "tower.io:9090"
+        def towerEndpoint = "http://tower.io:9090"
 
         and: 'a previously registered key'
         def keypair = TEST_CIPHER.generateKeyPair()

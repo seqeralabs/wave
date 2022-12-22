@@ -7,8 +7,6 @@ import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Requires
-import io.micronaut.context.annotation.Value
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.util.HttpRetryable
 import io.seqera.wave.util.JacksonHelper
@@ -32,8 +30,7 @@ class TowerClient {
 
 
 
-    TowerClient(@Value('${tower.api.useHttps}') boolean  useHttps, HttpRetryable httpRetryable) {
-        this.towerProtocol = useHttps? "https": "http"
+    TowerClient(HttpRetryable httpRetryable) {
         this.httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(httpRetryable.config().connectTimeout)
@@ -42,9 +39,9 @@ class TowerClient {
     }
 
 
-    CompletableFuture<UserInfoResponse> userInfo(String hostName, String authorization) {
+    CompletableFuture<UserInfoResponse> userInfo(String towerEndpoint, String authorization) {
         final req = HttpRequest.newBuilder()
-                .uri(userInfoEndpoint(this.towerProtocol, hostName))
+                .uri(userInfoEndpoint(towerEndpoint))
                 .headers('Content-Type', 'application/json', 'Authorization', "Bearer $authorization")
                 .GET()
                 .build()
@@ -64,8 +61,8 @@ class TowerClient {
             })
     }
 
-    CompletableFuture<ListCredentialsResponse> listCredentials(String hostName, String authorization, Long workspaceId) {
-        final uri = listCredentialsEndpoint(this.towerProtocol,hostName,workspaceId)
+    CompletableFuture<ListCredentialsResponse> listCredentials(String towerEndpoint, String authorization, Long workspaceId) {
+        final uri = listCredentialsEndpoint(towerEndpoint,workspaceId)
         final req = HttpRequest.newBuilder()
                 .uri(uri)
                 .header("Authorization", "Bearer ${authorization}")
@@ -84,8 +81,8 @@ class TowerClient {
             }
     }
 
-    CompletableFuture<EncryptedCredentialsResponse> fetchEncryptedCredentials(String hostName, String authorization, String credentialsId, String encryptionKey,Long workspaceId) {
-        final uri = fetchCredentialsEndpoint(this.towerProtocol, hostName, credentialsId, encryptionKey,workspaceId)
+    CompletableFuture<EncryptedCredentialsResponse> fetchEncryptedCredentials(String towerEndpoint, String authorization, String credentialsId, String encryptionKey,Long workspaceId) {
+        final uri = fetchCredentialsEndpoint(towerEndpoint, credentialsId, encryptionKey,workspaceId)
         final req = HttpRequest.newBuilder()
                 .uri(uri)
                 .header("Authorization", "Bearer ${authorization}")
@@ -105,18 +102,21 @@ class TowerClient {
             }
     }
 
-    private static URI fetchCredentialsEndpoint(String protocol,String hostName, String credentialsId, String encryptionKey,Long workspaceId) {
+    private static URI fetchCredentialsEndpoint(String towerEndpoint, String credentialsId, String encryptionKey,Long workspaceId) {
         def workspaceQueryParamm = workspaceId? "&workspaceId=${workspaceId}":""
-        return new URI("${protocol}://${hostName}/credentials/${credentialsId}/keys?keyId=${encryptionKey}${workspaceQueryParamm}")
+        def baseUrl = StringUtils.stripEnd(towerEndpoint,'/')
+        return new URI("${baseUrl}/credentials/${credentialsId}/keys?keyId=${encryptionKey}${workspaceQueryParamm}")
     }
 
-    private static URI listCredentialsEndpoint(String protocol,String hostname, Long workspaceId) {
+    private static URI listCredentialsEndpoint(String towerEndpoint, Long workspaceId) {
         final query = workspaceId? "&workspaceId=${workspaceId}":""
-        return new URI("${protocol}://${hostname}/credentials${query}")
+        def baseUrl = StringUtils.stripEnd(towerEndpoint,'/')
+        return new URI("${baseUrl}/credentials${query}")
     }
 
-    private static URI userInfoEndpoint(String protocol, String hostname) {
-        return new URI("${protocol}://${hostname}/user-info")
+    private static URI userInfoEndpoint(String towerEndpoint) {
+        def baseUrl = StringUtils.stripEnd(towerEndpoint,'/')
+        return new URI("${baseUrl}/user-info")
     }
 
 
