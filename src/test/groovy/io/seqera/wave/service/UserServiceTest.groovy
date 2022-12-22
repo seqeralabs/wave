@@ -48,7 +48,7 @@ class UserServiceTest extends Specification {
         def service = ctx.getBean(UserService)
 
         when: // a valid token
-        def user = service.getUserByAccessTokenh(host,"a valid token")
+        def user = service.getUserByAccessToken(host,"a valid token")
         then:
         user.id == 1
 
