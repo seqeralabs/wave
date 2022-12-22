@@ -100,6 +100,7 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
         registry.auth.realm == new URI('https://195996028523.dkr.ecr.eu-west-1.amazonaws.com/')
         registry.auth.service == 'ecr.amazonaws.com'
         registry.auth.type == RegistryAuth.Type.Basic
+        registry.auth.endpoint == new URI('https://195996028523.dkr.ecr.eu-west-1.amazonaws.com/v2/')
     }
 
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
@@ -132,7 +133,7 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
         registry.auth.realm == new URI('https://europe-southwest1-docker.pkg.dev/v2/token')
         !registry.auth.service
         registry.auth.type == RegistryAuth.Type.Bearer
-
+        registry.auth.endpoint == new URI('https://europe-southwest1-docker.pkg.dev/v2/token')
     }
 
     /*

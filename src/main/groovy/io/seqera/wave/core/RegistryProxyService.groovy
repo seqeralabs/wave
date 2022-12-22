@@ -1,6 +1,5 @@
 package io.seqera.wave.core
 
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.cache.annotation.Cacheable
@@ -11,7 +10,6 @@ import io.micronaut.http.exceptions.HttpException
 import io.micronaut.retry.annotation.Retryable
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
-import io.seqera.wave.auth.RegistryCredentialsFactory
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.HttpClientConfig
@@ -51,9 +49,6 @@ class RegistryProxyService {
 
     @Inject
     private RegistryAuthService loginService
-
-    @Inject
-    private RegistryCredentialsFactory credentialsFactory
 
     @Inject
     private HttpClientConfig httpClientConfig

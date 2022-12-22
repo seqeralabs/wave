@@ -1,9 +1,6 @@
 package io.seqera.wave.auth
 
-import io.seqera.wave.auth.RegistryAuth
-import io.seqera.wave.auth.RegistryInfo
 import spock.lang.Specification
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -20,6 +17,7 @@ class RegistryInfoTest extends Specification {
         reg1.auth.realm == uri1
         reg1.auth.service == 'foo'
         reg1.auth.type == RegistryAuth.Type.Basic
+        reg1.auth.endpoint == new URI('http://my.docker.io/v2?service=foo')
     }
 
     def 'should implement equals and hashcode' () {

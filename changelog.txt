@@ -1,4 +1,7 @@
 # Wave changelog
+v0.23.6 - 21 Dec 
+- Fix AWS ECR auth service [fce102ab]
+
 v0.23.5 - 9 Dec 
 - Fix Kaniko compressed-caching flag [1c04155c]
 
