@@ -11,6 +11,7 @@ import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.exchange.RegisterInstanceRequest
 import io.seqera.wave.exchange.RegisterInstanceResponse
 import jakarta.inject.Inject
 
@@ -22,7 +23,6 @@ class RegisterControllerTest extends Specification{
     @Client("/")
     HttpClient client
 
-
     @Inject
     @Shared
     ApplicationContext applicationContext
@@ -30,11 +30,7 @@ class RegisterControllerTest extends Specification{
 
     def 'should register a service'() {
         when: 'doing a proper request'
-        def request = HttpRequest.POST("/register",
-            [
-                    service: 'tower',
-                    towerEndpoint: 'localhost'
-            ])
+        def request = HttpRequest.POST("/register",new RegisterInstanceRequest('tower','http://localhost'))
         def res = client.toBlocking().exchange(request, RegisterInstanceResponse)
 
         then: 'a public key and keyId is returned'
@@ -55,10 +51,10 @@ class RegisterControllerTest extends Specification{
 
         where: 'body has invalid or missing properties'
 
-        body                               | _
-        [:]                                | _
-        [towerEndpoint: 'endpoint']        | _
-        [service: '', towerEndpoint: '']   | _
-        []                                 | _
+        body                                | _
+        [:]                                 | _
+        [hostName: 'endpoint']              | _
+        [service: '', hostName: '']         | _
+        []                                  | _
     }
 }

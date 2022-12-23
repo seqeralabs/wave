@@ -34,7 +34,7 @@ class SecurityServiceImpl implements SecurityService {
 
     @Override
     KeyRecord getServiceRegistration(String service, String towerEndpoint) {
-        final uid =makeKey(service, towerEndpoint)
+        final uid = makeKey(service, towerEndpoint)
         return store.get(uid)
     }
 

@@ -9,11 +9,9 @@ import io.micronaut.core.convert.exceptions.ConversionErrorException
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Body
-import io.micronaut.http.annotation.Consumes
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Error
 import io.micronaut.http.annotation.Post
-import io.micronaut.http.server.util.HttpHostResolver
 import io.micronaut.validation.Validated
 import io.seqera.wave.exchange.RegisterInstanceRequest
 import io.seqera.wave.exchange.RegisterInstanceResponse
@@ -26,21 +24,17 @@ import jakarta.inject.Inject
  */
 @Slf4j
 @CompileStatic
-@Controller("/register")
+@Controller("/")
 @Validated
 class RegisterController {
 
     @Inject
     private SecurityService securityService
 
-    @Inject
-    private HttpHostResolver hostResolver
-
-    @Post
-    @Consumes()
-    HttpResponse<RegisterInstanceResponse> register(@Body @Valid RegisterInstanceRequest req, HttpRequest httpRequest) {
-        final hostName = req.hostName?:hostResolver.resolve(httpRequest)
-        final key = securityService.getPublicKey(req.service, hostName)
+    @Post('/register')
+    HttpResponse<RegisterInstanceResponse> register(@Valid @Body RegisterInstanceRequest req) {
+        log.debug "Registering service '${req.service}' at address $req.hostName"
+        final key = securityService.getPublicKey(req.service, req.hostName)
         return HttpResponse.ok(key)
     }
 

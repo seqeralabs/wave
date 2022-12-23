@@ -5,7 +5,6 @@ import javax.validation.constraints.NotNull
 
 import groovy.transform.CompileStatic
 import io.micronaut.core.annotation.Introspected
-
 /**
  * Model the request for a remote service instance to register
  * itself as Wave credentials provider
@@ -20,5 +19,12 @@ class RegisterInstanceRequest {
     @NotNull
     String service
 
+    @NotBlank
+    @NotNull
     String hostName
+
+    RegisterInstanceRequest(String service=null, String hostName=null) {
+        this.service = service
+        this.hostName = hostName
+    }
 }
