@@ -48,6 +48,8 @@ class ProxyClient {
 
     RoutePath getRoute() { route }
 
+    RegistryInfo getRegistry() { registry }
+
     ProxyClient withRoute(RoutePath path) {
         this.route = path
         return this
@@ -62,6 +64,7 @@ class ProxyClient {
         this.registry = registry
         return this
     }
+
     ProxyClient withLoginService(RegistryAuthService loginService) {
         this.loginService = loginService
         return this
@@ -81,10 +84,9 @@ class ProxyClient {
     }
 
     private URI makeUri(String path) {
-        assert path.startsWith('/'), "Request past should start with a slash character -- offending path: $path"
+        assert path.startsWith('/'), "Request past should start with a slash character — offending path: $path"
         URI.create(registry.host.toString() + path)
     }
-
 
     HttpResponse<String> getString(String path, Map<String,List<String>> headers=null, boolean followRedirect=true) {
         try {
