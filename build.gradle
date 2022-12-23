@@ -44,7 +44,7 @@ dependencies {
     implementation("io.micronaut:micronaut-validation")
     implementation "org.codehaus.groovy:groovy-json"
     implementation "org.codehaus.groovy:groovy-nio"
-    implementation 'com.google.guava:guava:24.1.1-jre'
+    implementation 'com.google.guava:guava:31.1-jre'
     implementation 'dev.failsafe:failsafe:3.1.0'
     implementation('io.projectreactor:reactor-core')
     implementation("io.seqera:tower-crypto:22.1.1") { transitive = false }
