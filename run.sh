@@ -1,2 +1,2 @@
 mv wave.log wave.log.bak
-./gradlew run
+./gradlew run --continuous --watch-fs

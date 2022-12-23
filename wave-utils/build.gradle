@@ -1,19 +1,9 @@
 plugins {
     id 'io.seqera.wave.groovy-library-conventions'
-    id 'groovy'
-    id "io.micronaut.application"
-}
-
-micronaut {
-    runtime("netty")
-    testRuntime("spock2")
-    processing {
-        incremental(true)
-    }
 }
 
 dependencies {
-    implementation 'com.google.guava:guava:24.1.1-jre'
+    implementation 'com.google.guava:guava:31.1-jre'
 }
 
 group = 'io.seqera'
