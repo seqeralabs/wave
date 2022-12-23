@@ -1,14 +1,5 @@
 plugins {
     id 'io.seqera.wave.groovy-library-conventions'
-    id "io.micronaut.application"
-}
-
-micronaut {
-    runtime("netty")
-    testRuntime("spock2")
-    processing {
-        incremental(true)
-    }
 }
 
 dependencies {

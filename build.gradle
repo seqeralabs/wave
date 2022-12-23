@@ -2,10 +2,10 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
 plugins {
-    id 'io.seqera.wave.groovy-library-conventions'
+    id 'java-library'
     id 'io.seqera.wave.groovy-application-conventions'
-    id("com.github.johnrengelman.shadow") version "7.1.1"
-    id("io.micronaut.application") version "3.4.1"
+    id "com.github.johnrengelman.shadow" version "7.1.1"
+    id "io.micronaut.application" version "3.4.1"
     id "com.google.cloud.tools.jib" version "3.2.1"
     id 'org.asciidoctor.jvm.convert' version '3.3.2'
 }
