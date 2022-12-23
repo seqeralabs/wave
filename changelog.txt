@@ -1,4 +1,8 @@
 # Wave changelog
+v0.23.7 - 23 Dec 
+- Fix download failed issue caused by relative redirect path [65d7d03d]
+- Refactor tests [2016664f]
+
 v0.23.6 - 21 Dec 
 - Fix AWS ECR auth service [fce102ab]
 
