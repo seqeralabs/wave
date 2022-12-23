@@ -197,13 +197,16 @@ class RegistryProxyController {
                 .headers(headers)
     }
 
-    MutableHttpResponse<?>fromRedirectResponse(final DelegateResponse delegateResponse) {
-        HttpResponse
-                .status(HttpStatus.valueOf(delegateResponse.statusCode))
-                .headers(toMutableHeaders(delegateResponse.headers, [Connection: 'close'])) // <-- make sure to return connection: close header otherwise docker hangs
+    MutableHttpResponse<?> fromRedirectResponse(final DelegateResponse resp) {
+        final override = Map.of(
+                    'Location', resp.location,  // <-- the location can be relative to the origin host, override it to always return a fully qualified URI
+                    'Connection', 'close' ) // <-- make sure to return connection: close header otherwise docker hangs
+        return HttpResponse
+                .status(HttpStatus.valueOf(resp.statusCode))
+                .headers(toMutableHeaders(resp.headers, override))
     }
 
-    MutableHttpResponse<?>fromDelegateResponse(final DelegateResponse delegateResponse){
+    MutableHttpResponse<?> fromDelegateResponse(final DelegateResponse delegateResponse){
 
         final Long contentLength = delegateResponse.headers
                 .find {it.key.toLowerCase()=='content-length'}?.value?.first() as long ?: null

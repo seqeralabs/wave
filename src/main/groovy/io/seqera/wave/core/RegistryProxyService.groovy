@@ -94,8 +94,11 @@ class RegistryProxyService {
         final resp1 = proxyClient.getString(route.path, headers, false)
         final redirect = resp1.headers().firstValue('Location').orElse(null)
         if( redirect && resp1.statusCode() in REDIRECT_CODES ) {
+            // the redirect location can be a relative path i.e. without hostname
+            // therefore resolve it against the target registry hostname
+            final target = proxyClient.registry.host.resolve(redirect).toString()
             return new DelegateResponse(
-                    location: redirect,
+                    location: target,
                     statusCode: resp1.statusCode(),
                     headers:resp1.headers().map())
         }
