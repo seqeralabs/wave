@@ -12,14 +12,13 @@ import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.proxy.ProxyClient
-import io.seqera.wave.test.DockerRegistryContainer
 import jakarta.inject.Inject
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-class ProxyClientTest extends Specification implements DockerRegistryContainer{
+class ProxyClientTest extends Specification {
 
     @Inject
     @Shared
@@ -29,27 +28,6 @@ class ProxyClientTest extends Specification implements DockerRegistryContainer{
     @Inject RegistryAuthService loginService
     @Inject RegistryCredentialsProvider credentialsProvider
     @Inject HttpClientConfig config
-
-    def setupSpec() {
-        initRegistryContainer(applicationContext)
-    }
-
-    def 'should call target blob' () {
-        given:
-        def IMAGE = 'library/hello-world'
-        and:
-        def proxy = new ProxyClient(config)
-                .withImage(IMAGE)
-                .withRegistry(getLocalTestRegistryInfo())
-                .withLoginService(loginService)
-
-        when:
-        def resp1 = proxy.getString('/v2/library/hello-world/manifests/latest')
-        and:
-        println resp1.body()
-        then:
-        resp1.statusCode() == 200
-    }
 
     def 'should call target blob on quay' () {
         given:
