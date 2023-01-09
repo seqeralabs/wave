@@ -8,6 +8,17 @@ plugins {
 
     // Apply the java-library plugin for API and implementation separation.
     id 'java-library'
+    // Micronaut minimal lib
+    // https://micronaut-projects.github.io/micronaut-gradle-plugin/latest/
+    id "io.micronaut.minimal.library"
+}
+
+micronaut {
+    runtime("netty")
+    testRuntime("spock2")
+    processing {
+        incremental(true)
+    }
 }
 
 group = 'io.seqera'

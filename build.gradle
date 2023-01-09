@@ -2,10 +2,10 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
 plugins {
-    id 'io.seqera.wave.groovy-library-conventions'
+    id 'java-library'
     id 'io.seqera.wave.groovy-application-conventions'
-    id("com.github.johnrengelman.shadow") version "7.1.1"
-    id("io.micronaut.application") version "3.4.1"
+    id "com.github.johnrengelman.shadow" version "7.1.1"
+    id "io.micronaut.application" version "3.4.1"
     id "com.google.cloud.tools.jib" version "3.2.1"
     id 'org.asciidoctor.jvm.convert' version '3.3.2'
 }
@@ -30,6 +30,7 @@ repositories {
 dependencies {
     annotationProcessor("io.micronaut:micronaut-http-validation")
     compileOnly("io.micronaut.data:micronaut-data-processor")
+    compileOnly("io.micronaut:micronaut-inject-groovy")
     compileOnly("io.micronaut:micronaut-http-validation")
     implementation("jakarta.persistence:jakarta.persistence-api:3.0.0")
     api project(':wave-api')
@@ -43,7 +44,7 @@ dependencies {
     implementation("io.micronaut:micronaut-validation")
     implementation "org.codehaus.groovy:groovy-json"
     implementation "org.codehaus.groovy:groovy-nio"
-    implementation 'com.google.guava:guava:24.1.1-jre'
+    implementation 'com.google.guava:guava:31.1-jre'
     implementation 'dev.failsafe:failsafe:3.1.0'
     implementation('io.projectreactor:reactor-core')
     implementation("io.seqera:tower-crypto:22.4.0-WAVE-SNAPSHOT") { transitive = false }
