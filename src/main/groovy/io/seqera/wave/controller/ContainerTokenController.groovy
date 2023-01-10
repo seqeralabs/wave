@@ -88,10 +88,8 @@ class ContainerTokenController {
             if (registration) {
                 return userService.getUserByAccessTokenAsync(registration.hostname, req.towerAccessToken)
                         .thenApply { user -> makeResponse(httpRequest, req, user) }
-            } else {
-                final HttpResponse response = HttpResponse.badRequest("No tower service registered for instance '${req.towerEndpoint}")
-                return CompletableFuture.completedFuture(response)
             }
+            throw new BadRequestException("No tower service registered for instance '${req.towerEndpoint}")
         }
         else{
             return CompletableFuture.completedFuture(makeResponse(httpRequest, req, null))

@@ -40,6 +40,7 @@ class TowerClient {
 
 
     CompletableFuture<UserInfoResponse> userInfo(String towerEndpoint, String authorization) {
+        log.debug "Getting UserInfo tower-endpoint=$towerEndpoint; auth=$authorization"
         final req = HttpRequest.newBuilder()
                 .uri(userInfoEndpoint(towerEndpoint))
                 .headers('Content-Type', 'application/json', 'Authorization', "Bearer $authorization")
