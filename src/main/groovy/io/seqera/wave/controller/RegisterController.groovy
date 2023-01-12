@@ -33,8 +33,8 @@ class RegisterController {
 
     @Post('/register')
     HttpResponse<RegisterInstanceResponse> register(@Valid @Body RegisterInstanceRequest req) {
-        log.debug "Registering service '${req.service}' at address $req.hostName"
-        final key = securityService.getPublicKey(req.service, req.hostName)
+        log.debug "Registering service '${req.service}' at address $req.endpoint"
+        final key = securityService.getPublicKey(req.service, req.endpoint)
         return HttpResponse.ok(key)
     }
 
