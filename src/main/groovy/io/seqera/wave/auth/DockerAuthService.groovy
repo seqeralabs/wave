@@ -23,14 +23,14 @@ class DockerAuthService {
     @Inject
     private RegistryCredentialsProvider credentialsProvider
 
-    String credentialsConfigJson(String dockerFile, String buildRepo, String cacheRepo, @Nullable Long userId, @Nullable Long workspaceId,String towerToken, String towerEndpoint) {
+    String credentialsConfigJson(String dockerFile, String buildRepo, String cacheRepo, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint) {
         final repos = new HashSet(10)
         repos.addAll(findRepositories(dockerFile))
         if( buildRepo )
             repos.add(buildRepo)
         if( cacheRepo )
             repos.add(cacheRepo)
-        return credsJson(repos, userId, workspaceId,towerToken,towerEndpoint)
+        return credsJson(repos, userId, workspaceId, towerToken, towerEndpoint)
     }
 
     protected String credsJson(Set<String> repositories, Long userId, Long workspaceId,String towerToken, String towerEndpoint) {
