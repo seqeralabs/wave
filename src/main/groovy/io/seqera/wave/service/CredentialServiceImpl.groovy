@@ -1,30 +1,23 @@
 package io.seqera.wave.service
 
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Requires
 import io.seqera.tower.crypto.AsymmetricCipher
 import io.seqera.tower.crypto.EncryptedPacket
 import io.seqera.wave.service.security.SecurityService
-import io.seqera.wave.tower.client.CredentialsDescription
 import io.seqera.wave.tower.client.TowerClient
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 import static io.seqera.wave.WaveDefault.DOCKER_IO
-
 /**
  * Define operations to access container registry credentials from Tower
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
-@Requires(env = 'tower')
 @CompileStatic
 @Singleton
 class CredentialServiceImpl implements CredentialsService {
-
 
     @Inject
     TowerClient towerClient
