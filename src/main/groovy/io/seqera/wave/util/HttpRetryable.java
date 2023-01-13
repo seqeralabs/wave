@@ -1,6 +1,7 @@
 package io.seqera.wave.util;
 
 import java.io.IOException;
+import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.concurrent.CompletableFuture;
@@ -23,9 +24,10 @@ public class HttpRetryable {
 
     public HttpClientConfig config() { return config; }
 
-    public <T> CompletableFuture<HttpResponse<T>> sendAsync(HttpRequest request, HttpResponse.BodyHandler<T> responseBodyHandler) throws IOException, InterruptedException {
+    public <T> CompletableFuture<HttpResponse<T>> sendAsync(HttpClient client, HttpRequest request, HttpResponse.BodyHandler<T> responseBodyHandler) throws IOException, InterruptedException {
         return HttpInvokation
                 .builder(request, responseBodyHandler)
+                .withHttpClient(client)
                 .withMaxAttempts( config.getRetryAttempts() )
                 .withRetryDelay( config.getRetryDelay() )
                 .withRetryMaxDelay( config.getRetryMaxDelay() )
@@ -35,9 +37,9 @@ public class HttpRetryable {
                 .invoke();
      }
 
-    public <T> HttpResponse<T> send(HttpRequest request, HttpResponse.BodyHandler<T> responseBodyHandler) throws IOException, InterruptedException {
+    public <T> HttpResponse<T> send(HttpClient client, HttpRequest request, HttpResponse.BodyHandler<T> responseBodyHandler) throws IOException, InterruptedException {
         try {
-            return sendAsync(request, responseBodyHandler) .get();
+            return sendAsync(client, request, responseBodyHandler) .get();
         }
         catch (ExecutionException e) {
             if( e.getCause() instanceof IOException )

@@ -65,7 +65,8 @@ public class HttpInvokation<T> {
 
     private HttpInvokation(Builder<T> builder) {
         this.client = builder.client != null
-                ? builder.client : HttpClient.newHttpClient();
+                ? builder.client
+                : HttpClient.newHttpClient();
         this.request = builder.request;
         this.handler = builder.bodyHandler;
         this.maxAttempts = builder.maxAttempts != null

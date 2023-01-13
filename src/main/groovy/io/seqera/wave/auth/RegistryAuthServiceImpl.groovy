@@ -102,7 +102,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
                 .header("Authorization", "Basic $basic")
                 .build()
         // make the request
-        final response = httpRetryable.send(request, HttpResponse.BodyHandlers.ofString())
+        final response = httpRetryable.send(httpClient, request, HttpResponse.BodyHandlers.ofString())
 
         if( response.statusCode() == 200 ) {
             log.debug "Container registry '$endpoint' login - response: ${response.body()}"
@@ -181,7 +181,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         final req = makeRequest(login, key.creds)
         log.trace "Token request=$req"
 
-        HttpResponse<String> resp = httpRetryable.send(req, HttpResponse.BodyHandlers.ofString())
+        HttpResponse<String> resp = httpRetryable.send(httpClient, req, HttpResponse.BodyHandlers.ofString())
         final body = resp.body()
         if( resp.statusCode()==200 ) {
             final result = (Map) new JsonSlurper().parseText(body)

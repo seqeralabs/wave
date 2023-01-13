@@ -47,7 +47,7 @@ class TowerClient {
                 .GET()
                 .build()
 
-        httpRetryable.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenApply((resp)-> {
+        httpRetryable.sendAsync(httpClient, req, HttpResponse.BodyHandlers.ofString()).thenApply((resp)-> {
                 log.debug "Tower auth response: [${resp.statusCode()}] ${resp.body()}"
                 switch (resp.statusCode()) {
                     case 200:
@@ -69,7 +69,7 @@ class TowerClient {
                 .header("Authorization", "Bearer ${authorization}")
                 .GET()
                 .build()
-        return httpRetryable.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+        return httpRetryable.sendAsync(httpClient, req, HttpResponse.BodyHandlers.ofString())
             .thenApply { resp ->
                 switch (resp.statusCode()) {
                     case 200:
@@ -90,7 +90,7 @@ class TowerClient {
                 .GET()
                 .build()
 
-        return httpRetryable.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+        return httpRetryable.sendAsync(httpClient, req, HttpResponse.BodyHandlers.ofString())
             .thenApply { resp ->
                 switch (resp.statusCode()) {
                     case 200:
