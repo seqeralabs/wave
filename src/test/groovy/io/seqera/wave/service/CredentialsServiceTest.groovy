@@ -11,7 +11,7 @@ import io.seqera.tower.crypto.AsymmetricCipher
 import io.seqera.wave.service.security.KeyRecord
 import io.seqera.wave.service.security.SecurityService
 import io.seqera.wave.tower.client.CredentialsDescription
-import io.seqera.wave.tower.client.EncryptedCredentialsResponse
+import io.seqera.wave.tower.client.GetCredentialsKeysResponse
 import io.seqera.wave.tower.client.ListCredentialsResponse
 import io.seqera.wave.tower.client.TowerClient
 import jakarta.inject.Inject
@@ -171,8 +171,8 @@ class CredentialsServiceTest extends Specification {
     }
 
 
-    private static EncryptedCredentialsResponse encryptedCredentialsFromTower(PublicKey key,String credentials) {
-        return new EncryptedCredentialsResponse(credentials:  TEST_CIPHER.encrypt(key,credentials.getBytes()).encode())
+    private static GetCredentialsKeysResponse encryptedCredentialsFromTower(PublicKey key, String credentials) {
+        return new GetCredentialsKeysResponse(keys:  TEST_CIPHER.encrypt(key,credentials.getBytes()).encode())
     }
 
 

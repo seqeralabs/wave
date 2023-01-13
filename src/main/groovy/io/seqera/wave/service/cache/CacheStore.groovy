@@ -37,6 +37,8 @@ interface CacheStore<K,V> {
      */
     boolean putIfAbsent(K key, V value, Duration ttl)
 
+    V putIfAbsentAndGetCurrent(K key, V value, Duration ttl)
+
     /**
      * Remove the entry with the specified key from the cache
      *

@@ -41,7 +41,23 @@ class SecurityServiceTest extends Specification{
         and: 'the keys match'
         keysMatch(key.publicKey, storedKey.privateKey)
 
+    }
 
+
+    def "generate keys only if not present"() {
+        given: 'a cache store'
+        final store = new KeysCacheStore(new LocalCacheProvider())
+
+        and: 'a security service using the cache store'
+        final service = new SecurityServiceImpl(store: store)
+
+        when: 'we get the key two times for the same service and endpoint'
+        def firstKey = service.getPublicKey("tower", "tower.io:9090")
+        def secondKey = service.getPublicKey("tower", "tower.io:9090")
+
+        then: 'we generate the key only once'
+        firstKey.keyId == secondKey.keyId
+        firstKey.publicKey == secondKey.publicKey
     }
 
 

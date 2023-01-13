@@ -11,12 +11,12 @@ import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.exchange.RegisterInstanceResponse
+import io.seqera.wave.exchange.PairServiceResponse
 import jakarta.inject.Inject
 
 
 @MicronautTest(environments = ['test'])
-class RegisterControllerTest extends Specification{
+class PairingServiceControllerTest extends Specification{
 
     @Inject
     @Client("/")
@@ -29,12 +29,12 @@ class RegisterControllerTest extends Specification{
 
     def 'should register a service'() {
         when: 'doing a proper request'
-        def request = HttpRequest.POST("/register",
+        def request = HttpRequest.POST("/pair-service",
             [
                     service: 'tower',
                     endpoint: 'localhost'
             ])
-        def res = client.toBlocking().exchange(request, RegisterInstanceResponse)
+        def res = client.toBlocking().exchange(request, PairServiceResponse)
 
         then: 'a public key and keyId is returned'
         res.status() == HttpStatus.OK
@@ -45,8 +45,8 @@ class RegisterControllerTest extends Specification{
     @Unroll
     def 'should fail to register with invalid body'() {
         when: 'doing a request with invalid body'
-        def request = HttpRequest.POST("/register", body)
-        client.toBlocking().exchange(request,RegisterInstanceResponse)
+        def request = HttpRequest.POST("/pair-service", body)
+        client.toBlocking().exchange(request,PairServiceResponse)
 
         then: 'a bad request is returned'
         def e = thrown(HttpClientResponseException)
@@ -56,7 +56,7 @@ class RegisterControllerTest extends Specification{
 
         body                               | _
         [:]                                | _
-        [endpoint: 'endpoint']        | _
+        [endpoint: 'endpoint']             | _
         [service: '', towerEndpoint: '']   | _
         []                                 | _
     }

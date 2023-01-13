@@ -36,66 +36,20 @@ class TowerClient {
 
     CompletableFuture<UserInfoResponse> userInfo(String towerEndpoint, String authorization) {
         log.debug "Getting UserInfo tower-endpoint=$towerEndpoint; auth=$authorization"
-        final req = HttpRequest.newBuilder()
-                .uri(userInfoEndpoint(towerEndpoint))
-                .headers('Content-Type', 'application/json', 'Authorization', "Bearer $authorization")
-                .GET()
-                .build()
-
-        httpRetryable.sendAsync(httpClient, req, HttpResponse.BodyHandlers.ofString()).thenApply((resp)-> {
-                log.debug "Tower auth response: [${resp.statusCode()}] ${resp.body()}"
-                switch (resp.statusCode()) {
-                    case 200:
-                        return JacksonHelper.fromJson(resp.body(), UserInfoResponse)
-                        break
-                    case 401:
-                        throw new HttpResponseException(401, "Unauthorized")
-                        break
-                    default:
-                        throw new HttpResponseException(resp.statusCode(), resp.body())
-                }
-            })
+        def uri = userInfoEndpoint(towerEndpoint)
+        return authorizedGetAsync("UserInfo", uri,authorization, UserInfoResponse)
     }
 
     CompletableFuture<ListCredentialsResponse> listCredentials(String towerEndpoint, String authorization, Long workspaceId) {
+        log.debug "Getting ListCredentials tower-endpoint=$towerEndpoint; auth=$authorization"
         final uri = listCredentialsEndpoint(towerEndpoint,workspaceId)
-        final req = HttpRequest.newBuilder()
-                .uri(uri)
-                .header("Authorization", "Bearer ${authorization}")
-                .GET()
-                .build()
-        return httpRetryable.sendAsync(httpClient, req, HttpResponse.BodyHandlers.ofString())
-            .thenApply { resp ->
-                switch (resp.statusCode()) {
-                    case 200:
-                        return JacksonHelper.fromJson(resp.body(),ListCredentialsResponse)
-                    case 401:
-                        throw new HttpResponseException(401,"Unauthorized")
-                    default:
-                        throw new HttpResponseException(resp.statusCode(),resp.body())
-                }
-            }
+        return authorizedGetAsync("ListCredentials",uri, authorization, ListCredentialsResponse)
     }
 
-    CompletableFuture<EncryptedCredentialsResponse> fetchEncryptedCredentials(String towerEndpoint, String authorization, String credentialsId, String encryptionKey,Long workspaceId) {
+    CompletableFuture<GetCredentialsKeysResponse> fetchEncryptedCredentials(String towerEndpoint, String authorization, String credentialsId, String encryptionKey, Long workspaceId) {
+        log.debug "Getting ListCredentials tower-endpoint=$towerEndpoint; auth=$authorization"
         final uri = fetchCredentialsEndpoint(towerEndpoint, credentialsId, encryptionKey,workspaceId)
-        final req = HttpRequest.newBuilder()
-                .uri(uri)
-                .header("Authorization", "Bearer ${authorization}")
-                .GET()
-                .build()
-
-        return httpRetryable.sendAsync(httpClient, req, HttpResponse.BodyHandlers.ofString())
-            .thenApply { resp ->
-                switch (resp.statusCode()) {
-                    case 200:
-                        return JacksonHelper.fromJson(resp.body(),EncryptedCredentialsResponse)
-                    case 401:
-                        throw new HttpResponseException(401,"Unauthorized")
-                    default:
-                        throw new HttpResponseException(resp.statusCode(),resp.body())
-                }
-            }
+        return authorizedGetAsync("GetCredentialsKeys",uri, authorization, GetCredentialsKeysResponse)
     }
 
     private static URI fetchCredentialsEndpoint(String towerEndpoint, String credentialsId, String encryptionKey,Long workspaceId) {
@@ -113,6 +67,40 @@ class TowerClient {
     private static URI userInfoEndpoint(String towerEndpoint) {
         def baseUrl = StringUtils.stripEnd(towerEndpoint,'/')
         return new URI("${baseUrl}/user-info")
+    }
+
+    /**
+     * Generic async get with authorization
+     * that converts to the provided json model T
+     *
+     * @param operation
+     *      an operation tag useful for logging
+     * @param uri
+     *      the uri to get
+     * @param authToken
+     *      the token usef of the authorization
+     * @param type
+     *      the type of the model to convert into
+     * @return a future of T
+     */
+    private <T> CompletableFuture<T> authorizedGetAsync(String operation, URI uri, String authToken, Class<T> type) {
+        def request = HttpRequest.newBuilder()
+                .uri(uri)
+                .header('Authorization', "Bearer ${authToken}")
+                .GET()
+                .build()
+       return httpRetryable.sendAsync(httpClient, request, HttpResponse.BodyHandlers.ofString())
+                .thenApply { resp ->
+                    log.debug "Tower response for operation '${operation}: ${resp.statusCode()}"
+                    switch (resp.statusCode()) {
+                        case 200:
+                            return JacksonHelper.fromJson(resp.body(), type)
+                        case 401:
+                            throw new HttpResponseException(401,"Unauthorized")
+                        default:
+                            throw new HttpResponseException(resp.statusCode(), resp.body())
+                    }
+                }
     }
 
 }

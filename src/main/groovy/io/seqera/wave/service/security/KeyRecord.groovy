@@ -15,4 +15,5 @@ class KeyRecord {
     String hostname
     String keyId
     byte[] privateKey
+    byte[] publicKey
 }

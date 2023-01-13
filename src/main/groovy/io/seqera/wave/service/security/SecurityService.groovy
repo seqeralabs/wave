@@ -1,6 +1,6 @@
 package io.seqera.wave.service.security
 
-import io.seqera.wave.exchange.RegisterInstanceResponse
+import io.seqera.wave.exchange.PairServiceResponse
 
 /**
  * Provides public key generation for tower credentials integration
@@ -11,7 +11,7 @@ interface SecurityService {
 
     public static String TOWER_SERVICE = "tower"
 
-    RegisterInstanceResponse getPublicKey(String service, String endpoint)
+    PairServiceResponse getPublicKey(String service, String endpoint)
 
     KeyRecord getServiceRegistration(String service, String endpoint)
     

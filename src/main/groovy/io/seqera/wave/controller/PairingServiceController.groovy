@@ -13,8 +13,8 @@ import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Error
 import io.micronaut.http.annotation.Post
 import io.micronaut.validation.Validated
-import io.seqera.wave.exchange.RegisterInstanceRequest
-import io.seqera.wave.exchange.RegisterInstanceResponse
+import io.seqera.wave.exchange.PairServiceRequest
+import io.seqera.wave.exchange.PairServiceResponse
 import io.seqera.wave.service.security.SecurityService
 import jakarta.inject.Inject
 /**
@@ -26,13 +26,13 @@ import jakarta.inject.Inject
 @CompileStatic
 @Controller("/")
 @Validated
-class RegisterController {
+class PairingServiceController {
 
     @Inject
     private SecurityService securityService
 
-    @Post('/register')
-    HttpResponse<RegisterInstanceResponse> register(@Valid @Body RegisterInstanceRequest req) {
+    @Post('/pair-service')
+    HttpResponse<PairServiceResponse> pairService(@Valid @Body PairServiceRequest req) {
         log.debug "Registering service '${req.service}' at address $req.endpoint"
         final key = securityService.getPublicKey(req.service, req.endpoint)
         return HttpResponse.ok(key)

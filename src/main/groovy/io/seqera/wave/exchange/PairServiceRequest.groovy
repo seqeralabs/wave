@@ -14,7 +14,7 @@ import io.micronaut.core.annotation.Introspected
  */
 @CompileStatic
 @Introspected
-class RegisterInstanceRequest {
+class PairServiceRequest {
 
     @NotBlank
     @NotNull
@@ -24,7 +24,7 @@ class RegisterInstanceRequest {
     @NotNull
     String endpoint
 
-    RegisterInstanceRequest(String service=null, String endpoint=null) {
+    PairServiceRequest(String service=null, String endpoint=null) {
         this.service = service
         this.endpoint = endpoint
     }

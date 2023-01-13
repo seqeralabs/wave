@@ -46,6 +46,18 @@ class RedisCacheProvider implements CacheProvider<String,String> {
     }
 
     @Override
+    String putIfAbsentAndGetCurrent(String key, String value, Duration ttl) {
+        try (Jedis conn = pool.getResource()){
+            final params = new SetParams().nx().ex(ttl.toSeconds())
+            final tx = conn.multi()
+            tx.set(key,value,params)
+            tx.get(key)
+            final result = tx.exec()
+            return result[1].toString()
+        }
+    }
+
+    @Override
     void remove(String key) {
         try( Jedis conn=pool.getResource() ) {
             conn.del(key)

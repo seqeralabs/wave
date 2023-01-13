@@ -3,7 +3,7 @@ package io.seqera.wave.service.security
 import java.security.KeyPair
 
 import io.seqera.tower.crypto.AsymmetricCipher
-import io.seqera.wave.exchange.RegisterInstanceResponse
+import io.seqera.wave.exchange.PairServiceResponse
 import io.seqera.wave.util.DigestFunctions
 import jakarta.inject.Inject
 
@@ -18,16 +18,25 @@ class SecurityServiceImpl implements SecurityService {
     private KeysCacheStore store
 
     @Override
-    RegisterInstanceResponse getPublicKey(String service, String endpoint) {
+    PairServiceResponse getPublicKey(String service, String endpoint) {
         final uid =  makeKey(service,endpoint)
-        // NOTE: we may want change this. ideally a new key-pair should be created only
-        // if does not exist yet
-        final keyPair = generate()
-        final entry = new KeyRecord(service, endpoint,uid, keyPair.getPrivate().getEncoded())
-        store.put(uid, entry)
-        final result = new RegisterInstanceResponse(
+
+        def entry = store.get(uid)
+        if (!entry) {
+            final keyPair = generate()
+            final newEntry = new KeyRecord(service, endpoint, uid, keyPair.getPrivate().getEncoded(),keyPair.getPublic().getEncoded())
+            // checking the presence of the entry before the if, only optimizes
+            // the hot path, when the key has already been created, but cannot
+            // guarantee the correctness in case of multiple concurrent invocations,
+            // leading to the unfortunate case where the returned key does not correspond
+            // to the stored one. Therefore we need an *atomic/transactional* putIfAbsent here
+            entry = store.putIfAbsentAndGetCurrent(uid,newEntry)
+
+        }
+
+        final result = new PairServiceResponse(
                 keyId: uid,
-                publicKey: keyPair.getPublic().getEncoded().encodeBase64(),
+                publicKey: entry.publicKey.encodeBase64(),
         )
         return result
     }
