@@ -3,7 +3,6 @@ package io.seqera.wave.auth
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
-import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.service.CredentialsService
 import jakarta.inject.Inject
@@ -85,7 +84,7 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
         if( container.repository==defaultBuildRepository || container.repository==defaultCacheRepository )
             return getDefaultCredentials(container.registry)
 
-        return getUserCredentials0(container.registry, userId, workspaceId,towerToken,towerEndpoint)
+        return getUserCredentials0(container.registry, userId, workspaceId, towerToken, towerEndpoint)
     }
 
     protected RegistryCredentials getUserCredentials0(String registry, Long userId, Long workspaceId, String towerToken, String towerEndpoint) {

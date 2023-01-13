@@ -40,9 +40,6 @@ class CredentialServiceImpl implements CredentialsService {
 
         final towerHostName = keyRecord.hostname
 
-
-
-
         final all = towerClient.listCredentials(towerHostName,towerToken,workspaceId).get().credentials
 
         if (!all)
@@ -65,17 +62,12 @@ class CredentialServiceImpl implements CredentialsService {
         if (!creds)
             return null
 
-
-
         // now fetch the encrypted key
         final encryptedCredentials = towerClient.fetchEncryptedCredentials(towerHostName,towerToken,creds.id,keyRecord.keyId,workspaceId).get()
         final privateKey = keyRecord.privateKey
-
-
         final credentials = decryptCredentials(privateKey, encryptedCredentials.credentials)
 
         return parsePayload(credentials)
-
     }
 
 
