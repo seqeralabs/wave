@@ -28,7 +28,6 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
     private RegistryCredentialsFactory credentialsFactory
 
     @Inject
-    @Nullable
     private CredentialsService credentialsService
 
     @Value('${wave.build.repo}')
@@ -93,10 +92,6 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
     }
 
     protected RegistryCredentials getUserCredentials0(String registry, @Nullable Long userId, @Nullable Long workspaceId, String towerToken,String towerEndpoint) {
-        if( !credentialsService ) {
-            throw new IllegalStateException("Missing Credentials service -- Make sure the 'tower' micronaut environment has been specified in the Wave configuration environment")
-        }
-
         final keys = credentialsService.findRegistryCreds(registry, userId, workspaceId,towerToken,towerEndpoint)
         final result = keys
                 ? credentialsFactory.create(registry, keys.userName, keys.password)

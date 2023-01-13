@@ -4,7 +4,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.context.annotation.Context
-import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.MediaType
 import io.micronaut.http.exceptions.HttpException
 import io.micronaut.retry.annotation.Retryable
@@ -44,7 +43,6 @@ class RegistryProxyService {
      * Service to query credentials stored into tower
      */
     @Inject
-    @Nullable
     private CredentialsService credentialsService
 
     @Inject
