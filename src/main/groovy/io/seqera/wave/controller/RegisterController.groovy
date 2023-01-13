@@ -43,7 +43,7 @@ class RegisterController {
         return HttpResponse.badRequest(e.message)
     }
 
-    // Used if the body is invalid json
+    // Used if the body provides an invalid JSON
     @Error(exception = ConversionErrorException)
     HttpResponse onConversionFailure(HttpRequest _req,ConversionErrorException e) {
         return HttpResponse.badRequest(e.message)

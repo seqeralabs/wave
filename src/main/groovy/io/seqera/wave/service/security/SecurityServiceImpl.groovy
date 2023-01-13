@@ -18,12 +18,12 @@ class SecurityServiceImpl implements SecurityService {
     private KeysCacheStore store
 
     @Override
-    RegisterInstanceResponse getPublicKey(String service, String hostName) {
-        final uid =  makeKey(service,hostName)
+    RegisterInstanceResponse getPublicKey(String service, String endpoint) {
+        final uid =  makeKey(service,endpoint)
         // NOTE: we may want change this. ideally a new key-pair should be created only
         // if does not exist yet
         final keyPair = generate()
-        final entry = new KeyRecord(service, hostName,uid, keyPair.getPrivate().getEncoded())
+        final entry = new KeyRecord(service, endpoint,uid, keyPair.getPrivate().getEncoded())
         store.put(uid, entry)
         final result = new RegisterInstanceResponse(
                 keyId: uid,
@@ -33,8 +33,8 @@ class SecurityServiceImpl implements SecurityService {
     }
 
     @Override
-    KeyRecord getServiceRegistration(String service, String towerEndpoint) {
-        final uid = makeKey(service, towerEndpoint)
+    KeyRecord getServiceRegistration(String service, String endpoint) {
+        final uid = makeKey(service, endpoint)
         return store.get(uid)
     }
 

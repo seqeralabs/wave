@@ -82,18 +82,19 @@ class ContainerTokenController {
 
     @Post
     CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
-        if(req.towerAccessToken  && req.towerEndpoint) {
-            //  We first check if the service is registered
-            final registration = securityService.getServiceRegistration(SecurityService.TOWER_SERVICE, req.towerEndpoint)
-            if (registration) {
-                return userService.getUserByAccessTokenAsync(registration.hostname, req.towerAccessToken)
-                        .thenApply { user -> makeResponse(httpRequest, req, user) }
-            }
-            throw new BadRequestException("No tower service registered for instance '${req.towerEndpoint}")
-        }
-        else{
+        // anonymous access
+        if( !req.towerAccessToken || !req.towerEndpoint ) {
             return CompletableFuture.completedFuture(makeResponse(httpRequest, req, null))
         }
+
+        //  We first check if the service is registered
+        final registration = securityService.getServiceRegistration(SecurityService.TOWER_SERVICE, req.towerEndpoint)
+        if( !registration )
+            throw new BadRequestException("No Tower service registered for instance '${req.towerEndpoint}")
+
+        return  userService
+                .getUserByAccessTokenAsync(registration.hostname, req.towerAccessToken)
+                .thenApply { User user -> makeResponse(httpRequest, req, user) }
     }
 
     protected HttpResponse<SubmitContainerTokenResponse> makeResponse(HttpRequest httpRequest, SubmitContainerTokenRequest req, User user) {
@@ -119,7 +120,7 @@ class ContainerTokenController {
         final platform = ContainerPlatform.of(req.containerPlatform)
         final build = req.buildRepository ?: defaultBuildRepo
         final cache = req.cacheRepository ?: defaultCacheRepo
-        final configJson = dockerAuthService.credentialsConfigJson(dockerContent, build, cache, user?.id, req.towerWorkspaceId,req.towerAccessToken,req.towerEndpoint)
+        final configJson = dockerAuthService.credentialsConfigJson(dockerContent, build, cache, user?.id, req.towerWorkspaceId, req.towerAccessToken, req.towerEndpoint)
         final offset = DataTimeUtils.offsetId(req.timestamp)
         // create a unique digest to identify the request
         return new BuildRequest(
@@ -182,8 +183,7 @@ class ContainerTokenController {
                 condaContent,
                 ContainerPlatform.of(req.containerPlatform),
                 req.towerAccessToken,
-                req.towerEndpoint
-        )
+                req.towerEndpoint )
         return data
     }
 

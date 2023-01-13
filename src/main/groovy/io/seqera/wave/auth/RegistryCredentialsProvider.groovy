@@ -1,6 +1,6 @@
 package io.seqera.wave.auth
 
-import io.micronaut.core.annotation.Nullable
+
 import io.seqera.wave.core.ContainerPath
 /**
  * Model an abstract provider for container registry credentials
@@ -20,6 +20,10 @@ interface RegistryCredentialsProvider {
      */
     RegistryCredentials getDefaultCredentials(String registry)
 
+    default RegistryCredentials getDefaultCredentials(ContainerPath container) {
+        return getDefaultCredentials(container.registry)
+    }
+
     /**
      * Provides the credentials for the specified container associated with the user and tower
      * workspace specified.
@@ -38,7 +42,6 @@ interface RegistryCredentialsProvider {
      *      A {@link RegistryCredentials} object holding the credentials for the specified container or {@code null}
      *      if not credentials can be found
      */
-    RegistryCredentials getUserCredentials(ContainerPath container, @Nullable Long userId, @Nullable Long workspaceId,String towerToken,String towerEndpoint)
-
+    RegistryCredentials getUserCredentials(ContainerPath container, Long userId, Long workspaceId, String towerToken, String towerEndpoint)
 
 }

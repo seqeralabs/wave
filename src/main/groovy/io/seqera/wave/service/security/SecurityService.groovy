@@ -11,7 +11,8 @@ interface SecurityService {
 
     public static String TOWER_SERVICE = "tower"
 
-    RegisterInstanceResponse getPublicKey(String service, String hostName)
+    RegisterInstanceResponse getPublicKey(String service, String endpoint)
 
-    KeyRecord getServiceRegistration(String service, String hostname)
+    KeyRecord getServiceRegistration(String service, String endpoint)
+    
 }

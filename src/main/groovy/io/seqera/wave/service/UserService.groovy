@@ -11,7 +11,8 @@ import io.seqera.wave.tower.User
  */
 interface UserService {
 
-    User getUserByAccessToken(String hostName,String accessToken)
+    User getUserByAccessToken(String endpoint, String accessToken)
 
-    CompletableFuture<User> getUserByAccessTokenAsync(String hostName, String accessToken)
+    CompletableFuture<User> getUserByAccessTokenAsync(String endpoint, String accessToken)
+
 }

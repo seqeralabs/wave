@@ -13,7 +13,7 @@ import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Singleton
 import org.apache.commons.lang.StringUtils
 /**
- * Tower API client
+ * Tower service client
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -26,10 +26,6 @@ class TowerClient {
 
     private HttpRetryable httpRetryable
 
-    private String towerProtocol
-
-
-
     TowerClient(HttpRetryable httpRetryable) {
         this.httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
@@ -37,7 +33,6 @@ class TowerClient {
                 .build()
         this.httpRetryable = httpRetryable
     }
-
 
     CompletableFuture<UserInfoResponse> userInfo(String towerEndpoint, String authorization) {
         log.debug "Getting UserInfo tower-endpoint=$towerEndpoint; auth=$authorization"
@@ -119,6 +114,5 @@ class TowerClient {
         def baseUrl = StringUtils.stripEnd(towerEndpoint,'/')
         return new URI("${baseUrl}/user-info")
     }
-
 
 }
