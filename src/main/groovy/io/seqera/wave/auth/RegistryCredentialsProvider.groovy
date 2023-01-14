@@ -21,7 +21,7 @@ interface RegistryCredentialsProvider {
     RegistryCredentials getDefaultCredentials(String registry)
 
     default RegistryCredentials getDefaultCredentials(ContainerPath container) {
-        return getDefaultCredentials(container.registry)
+        return getDefaultCredentials((String)(container?.registry))
     }
 
     /**
