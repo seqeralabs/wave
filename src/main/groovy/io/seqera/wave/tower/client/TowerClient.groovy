@@ -91,7 +91,7 @@ class TowerClient {
                 .build()
        return httpRetryable.sendAsync(httpClient, request, HttpResponse.BodyHandlers.ofString())
                 .thenApply { resp ->
-                    log.debug "Tower response for operation '${operation}: ${resp.statusCode()}"
+                    log.trace "Tower response for request GET '${uri}' => ${resp.statusCode()}"
                     switch (resp.statusCode()) {
                         case 200:
                             return JacksonHelper.fromJson(resp.body(), type)

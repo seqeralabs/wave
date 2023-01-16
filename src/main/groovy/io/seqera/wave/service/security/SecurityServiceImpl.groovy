@@ -24,21 +24,16 @@ class SecurityServiceImpl implements SecurityService {
         def entry = store.get(uid)
         if (!entry) {
             final keyPair = generate()
-            final newEntry = new KeyRecord(service, endpoint, uid, keyPair.getPrivate().getEncoded(),keyPair.getPublic().getEncoded())
+            final newEntry = new KeyRecord(service, endpoint, uid, keyPair.getPrivate().getEncoded(), keyPair.getPublic().getEncoded())
             // checking the presence of the entry before the if, only optimizes
             // the hot path, when the key has already been created, but cannot
             // guarantee the correctness in case of multiple concurrent invocations,
             // leading to the unfortunate case where the returned key does not correspond
             // to the stored one. Therefore we need an *atomic/transactional* putIfAbsent here
             entry = store.putIfAbsentAndGetCurrent(uid,newEntry)
-
         }
 
-        final result = new PairServiceResponse(
-                keyId: uid,
-                publicKey: entry.publicKey.encodeBase64(),
-        )
-        return result
+        return new PairServiceResponse( keyId: uid, publicKey: entry.publicKey.encodeBase64() )
     }
 
     @Override
