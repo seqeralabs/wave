@@ -24,6 +24,12 @@ class LocalCacheProviderTest extends Specification {
 
         and: 'the value is set in the store'
         localCacheProvider.get('key') == 'new-value'
+        
+        when:
+        def other = localCacheProvider.putIfAbsentAndGetCurrent('key', 'hola', Duration.ofMillis(Long.MAX_VALUE))
+        then:
+        // should not be set because it already exists
+        other == 'new-value'
     }
 
     def 'conditional put with current value when key is already set'() {

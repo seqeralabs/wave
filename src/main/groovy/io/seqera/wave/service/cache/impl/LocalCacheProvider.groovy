@@ -60,8 +60,8 @@ class LocalCacheProvider implements CacheProvider<String,String> {
 
     @Override
     String putIfAbsentAndGetCurrent(String key, String value, Duration ttl) {
-        final previous = putIfAbsent0(key, value, ttl)
-        return previous?:value
+        final ret = putIfAbsent0(key, value, ttl)
+        return ret!=null ? ret : value
     }
 
     private String putIfAbsent0(String key, String value, Duration ttl) {
