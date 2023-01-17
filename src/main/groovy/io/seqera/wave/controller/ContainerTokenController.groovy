@@ -51,6 +51,10 @@ class ContainerTokenController {
     @Value('${wave.server.url}')
     String serverUrl
 
+    @Inject
+    @Value('${tower.endpoint.url:`https://api.tower.nf`}')
+    String towerEndpointUrl
+
     /**
      * The registry repository where the build image will be stored
      */
@@ -77,14 +81,19 @@ class ContainerTokenController {
 
     @PostConstruct
     private void init() {
-        log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous"
+        log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl"
     }
 
     @Post
     CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
         // anonymous access
-        if( !req.towerAccessToken || !req.towerEndpoint ) {
+        if( !req.towerAccessToken ) {
             return CompletableFuture.completedFuture(makeResponse(httpRequest, req, null))
+        }
+
+        // this is needed for backward compatibility with old clients
+        if( !req.towerEndpoint ) {
+            req.towerEndpoint = towerEndpointUrl
         }
 
         //  We first check if the service is registered
