@@ -23,6 +23,7 @@ import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
+import io.seqera.wave.service.security.SecurityService
 import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.tower.User
 import io.seqera.wave.util.DataTimeUtils
@@ -40,6 +41,7 @@ class ContainerTokenController {
     @Inject HttpClientAddressResolver addressResolver
     @Inject ContainerTokenService tokenService
     @Inject UserService userService
+    @Inject SecurityService securityService
 
     @Inject
     @Value('${wave.allowAnonymous}')
@@ -80,14 +82,19 @@ class ContainerTokenController {
 
     @Post
     CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
-        if( req.towerAccessToken ) {
-            return userService
-                    .getUserByAccessTokenAsync(req.towerAccessToken)
-                    .thenApply( user-> makeResponse(httpRequest, req, user))
-        }
-        else{
+        // anonymous access
+        if( !req.towerAccessToken || !req.towerEndpoint ) {
             return CompletableFuture.completedFuture(makeResponse(httpRequest, req, null))
         }
+
+        //  We first check if the service is registered
+        final registration = securityService.getServiceRegistration(SecurityService.TOWER_SERVICE, req.towerEndpoint)
+        if( !registration )
+            throw new BadRequestException("No Tower service registered for instance '${req.towerEndpoint}")
+
+        return  userService
+                .getUserByAccessTokenAsync(registration.hostname, req.towerAccessToken)
+                .thenApply { User user -> makeResponse(httpRequest, req, user) }
     }
 
     protected HttpResponse<SubmitContainerTokenResponse> makeResponse(HttpRequest httpRequest, SubmitContainerTokenRequest req, User user) {
@@ -113,7 +120,7 @@ class ContainerTokenController {
         final platform = ContainerPlatform.of(req.containerPlatform)
         final build = req.buildRepository ?: defaultBuildRepo
         final cache = req.cacheRepository ?: defaultCacheRepo
-        final configJson = dockerAuthService.credentialsConfigJson(dockerContent, build, cache, user?.id, req.towerWorkspaceId)
+        final configJson = dockerAuthService.credentialsConfigJson(dockerContent, build, cache, user?.id, req.towerWorkspaceId, req.towerAccessToken, req.towerEndpoint)
         final offset = DataTimeUtils.offsetId(req.timestamp)
         // create a unique digest to identify the request
         return new BuildRequest(
@@ -174,8 +181,9 @@ class ContainerTokenController {
                 targetContent,
                 req.containerConfig,
                 condaContent,
-                ContainerPlatform.of(req.containerPlatform) )
-
+                ContainerPlatform.of(req.containerPlatform),
+                req.towerAccessToken,
+                req.towerEndpoint )
         return data
     }
 

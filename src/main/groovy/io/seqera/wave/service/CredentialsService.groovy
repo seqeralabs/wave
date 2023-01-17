@@ -6,6 +6,6 @@ package io.seqera.wave.service
  */
 interface CredentialsService {
 
-    ContainerRegistryKeys findRegistryCreds(String registryName, Long userId, Long workspaceId)
+    ContainerRegistryKeys findRegistryCreds(String registryName, Long userId, Long workspaceId, String towerToken, String towerEndpoint)
 
 }

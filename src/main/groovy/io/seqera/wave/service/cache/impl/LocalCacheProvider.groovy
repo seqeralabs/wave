@@ -55,10 +55,20 @@ class LocalCacheProvider implements CacheProvider<String,String> {
 
     @Override
     boolean putIfAbsent(String key, String value, Duration ttl) {
+        return putIfAbsent0(key, value, ttl) == null
+    }
+
+    @Override
+    String putIfAbsentAndGetCurrent(String key, String value, Duration ttl) {
+        final ret = putIfAbsent0(key, value, ttl)
+        return ret!=null ? ret : value
+    }
+
+    private String putIfAbsent0(String key, String value, Duration ttl) {
         final entry = store.get(key)
         if( entry?.isExpired() )
             store.remove(key)
-        return store.putIfAbsent(key, new Entry<>(value))==null
+        return store.putIfAbsent(key, new Entry<>(value,ttl))?.value
     }
 
     @Override

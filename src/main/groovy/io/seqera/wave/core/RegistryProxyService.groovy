@@ -4,7 +4,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.context.annotation.Context
-import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.MediaType
 import io.micronaut.http.exceptions.HttpException
 import io.micronaut.retry.annotation.Retryable
@@ -44,7 +43,6 @@ class RegistryProxyService {
      * Service to query credentials stored into tower
      */
     @Inject
-    @Nullable
     private CredentialsService credentialsService
 
     @Inject
@@ -72,7 +70,9 @@ class RegistryProxyService {
 
     protected RegistryCredentials getCredentials(RoutePath route) {
         final req = route.request
-        final result = credentialsProvider.getUserCredentials(route, req?.userId, req?.workspaceId)
+        final result = !req || !req.userId
+                ? credentialsProvider.getDefaultCredentials(route)
+                : credentialsProvider.getUserCredentials(route, req.userId, req.workspaceId, req.towerToken, req.towerEndpoint)
         log.debug "Credentials for route path=${route.targetContainer} => ${result}"
         return result
     }

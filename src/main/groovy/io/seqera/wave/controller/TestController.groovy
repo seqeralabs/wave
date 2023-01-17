@@ -55,6 +55,7 @@ class TestController {
     HttpResponse<String> testBuild(@Nullable String platform,
                                    @Nullable String repo,
                                    @Nullable String cache,
+                                   @Nullable String endpoint,
                                    @Nullable String accessToken,
                                    @Nullable Long workspaceId,
                                     HttpRequest httpRequest) {
@@ -62,7 +63,7 @@ class TestController {
             throw new BadRequestException("Missing user access token")
 
         final User user = accessToken
-                ? userService.getUserByAccessToken(accessToken)
+                ? userService.getUserByAccessToken(endpoint,accessToken)
                 : null
         if( accessToken && !user )
             throw new BadRequestException("Cannot find user for given access token")
@@ -76,7 +77,7 @@ class TestController {
         final ip = addressResolver.resolve(httpRequest)
         final buildRepo = repo ?: defaultBuildRepo
         final cacheRepo = cache ?: defaultCacheRepo
-        final configJson = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, cacheRepo, user?.id, workspaceId)
+        final configJson = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, cacheRepo, user?.id, workspaceId, accessToken, endpoint)
 
         final req =  new BuildRequest( dockerFile,
                 Path.of(workspace),

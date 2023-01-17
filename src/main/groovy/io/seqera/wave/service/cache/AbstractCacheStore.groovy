@@ -64,6 +64,16 @@ abstract class AbstractCacheStore<V> implements CacheStore<String,V> {
     }
 
     @Override
+    V putIfAbsentAndGetCurrent(String key, V value, Duration ttl) {
+        final result = delegate.putIfAbsentAndGetCurrent(key0(key) ,serialize(value),ttl)
+        return result? deserialize(result) : null
+    }
+
+    V putIfAbsentAndGetCurrent(String key, V value) {
+        return putIfAbsentAndGetCurrent(key, value, getDuration())
+    }
+
+    @Override
     void remove(String key) {
         delegate.remove(key0(key))
     }

@@ -1,97 +1,82 @@
 package io.seqera.wave.service
 
-import javax.annotation.PostConstruct
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Requires
-import io.micronaut.context.annotation.Value
-import io.seqera.wave.tower.Credentials
-import io.seqera.wave.tower.CredentialsDao
-import io.seqera.wave.tower.SecretDao
-import io.seqera.tower.crypto.CryptoHelper
-import io.seqera.tower.crypto.Sealed
-import io.seqera.wave.util.StringUtils
+import io.seqera.tower.crypto.AsymmetricCipher
+import io.seqera.tower.crypto.EncryptedPacket
+import io.seqera.wave.service.security.SecurityService
+import io.seqera.wave.tower.client.TowerClient
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 import static io.seqera.wave.WaveDefault.DOCKER_IO
-
 /**
  * Define operations to access container registry credentials from Tower
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
-@Requires(env = 'tower')
 @CompileStatic
 @Singleton
 class CredentialServiceImpl implements CredentialsService {
 
     @Inject
-    private CredentialsDao credentialsDao
+    TowerClient towerClient
 
     @Inject
-    private SecretDao secretDao
+    SecurityService keyService
 
-    private CryptoHelper crypto
+    @Override
+    ContainerRegistryKeys findRegistryCreds(String registryName, Long userId, Long workspaceId,String towerToken, String towerEndpoint) {
 
-    @Value('${tower.crypto.secretKey}')
-    private String secretKey
-
-    @PostConstruct
-    private void init() {
-        log.debug "Tower crypto key: ${StringUtils.redact(secretKey)}"
-        crypto = new CryptoHelper(secretKey)
-    }
-
-    ContainerRegistryKeys findRegistryCreds(String registryName, Long userId, Long workspaceId) {
         if (!userId)
             throw new IllegalArgumentException("Missing userId parameter")
-        
-        final all = workspaceId
-                ? credentialsDao.findRegistryCredentialsByWorkspaceId(workspaceId)
-                : credentialsDao.findRegistryCredentialsByUserId(userId)
+        if (!towerToken)
+            throw new IllegalArgumentException("Missing tower token")
+
+        final keyRecord = keyService.getServiceRegistration(SecurityService.TOWER_SERVICE, towerEndpoint)
+
+        if (!keyRecord)
+            throw new IllegalStateException("No exchange key registered for service ${SecurityService.TOWER_SERVICE} at endpoint: ${towerEndpoint}")
+
+        final towerHostName = keyRecord.hostname
+
+        final all = towerClient.listCredentials(towerHostName,towerToken,workspaceId).get().credentials
 
         if (!all)
             return null
 
-        // find a credentials with a matching registry
-        final matching = new ArrayList<Credentials>(10)
-        for (Credentials it : all) {
-            final keys = parsePayload(it.keys)
-            if (keys == null)
-                continue
-
-            final r1 = registryName ?: DOCKER_IO
-            final r2 = keys.registry ?: DOCKER_IO
-            if (r1 == r2) {
-                matching.add(it)
-                break
-            }
+        // find credentials with a matching registry
+        // TODO @t0randr
+        //  for the time being we take the first matching credentials.
+        //  A better approach would be to match the credentials
+        //  based on user repository, but this is not supported by tower:
+        //  For instance if we try to pull from docker.io/seqera/tower:v22
+        //  then we should match credentials for docker.io/seqera instead of
+        //  the ones associated with docker.io.
+        //  This cannot be implemented at the moment since, in tower, container registry
+        //  credentials are associated to the whole registry
+        final matchingRegistryName = registryName ?: DOCKER_IO
+        final creds = all.find {
+            it.provider == 'container-reg'  && (it.registry ?: DOCKER_IO) == matchingRegistryName
         }
-
-        if (!matching)
+        if (!creds)
             return null
 
-        Credentials creds = matching.first()
-        if( matching.size()>1 && userId && workspaceId ) {
-            // try to resolve ambiguity finding a creds that matches the userId
-            creds = matching.find( it -> it.user.id == userId )
-        }
+        // now fetch the encrypted key
+        final encryptedCredentials = towerClient.fetchEncryptedCredentials(towerHostName,towerToken,creds.id,keyRecord.keyId,workspaceId).get()
+        final privateKey = keyRecord.privateKey
+        final credentials = decryptCredentials(privateKey, encryptedCredentials.keys)
 
-        // now find the matching secret
-        final secretKey = "/user/${creds.user.id}/creds/${creds.id}"
-        final hashedKey = CryptoHelper.encodeSecret(secretKey, creds.salt).getDataString()
-        final secret = secretDao.findById(hashedKey).orElse(null)
-        if (!secret) {
-            log.debug "Unable to find secret for credentials id: $creds.id"
-            return null
-        }
-        final sealedObj = Sealed.deserialize(secret.secure)
-        final json = new String(crypto.decrypt(sealedObj, creds.salt))
+        return parsePayload(credentials)
+    }
 
-        return parsePayload(json)
+
+    protected String decryptCredentials(byte[] encodedKey, String payload) {
+        final packet = EncryptedPacket.decode(payload)
+        final cipher = AsymmetricCipher.getInstance()
+        final privateKey = cipher.decodePrivateKey(encodedKey)
+        final data = cipher.decrypt(packet, privateKey)
+        return new String(data)
     }
 
     protected ContainerRegistryKeys parsePayload(String json) {

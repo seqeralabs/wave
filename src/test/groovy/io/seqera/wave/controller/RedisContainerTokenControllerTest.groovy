@@ -35,7 +35,7 @@ class RedisContainerTokenControllerTest extends Specification implements RedisTe
                 REDIS_PORT   : redisPort,
                 'micronaut.server.port': port,
                 'micronaut.http.services.default.url' : "http://localhost:$port".toString(),
-        ], 'test', 'h2', 'redis')
+        ], 'test', 'redis')
 
         jedis = new Jedis(redisHostName, redisPort as int)
         jedis.flushAll()

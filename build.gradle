@@ -40,7 +40,6 @@ dependencies {
     implementation("io.micronaut:micronaut-http-client")
     implementation("io.micronaut:micronaut-jackson-databind")
     implementation("io.micronaut.groovy:micronaut-runtime-groovy")
-    implementation("io.micronaut.data:micronaut-data-jdbc")
     implementation("jakarta.annotation:jakarta.annotation-api")
     implementation("io.micronaut:micronaut-validation")
     implementation "org.codehaus.groovy:groovy-json"
@@ -48,7 +47,7 @@ dependencies {
     implementation 'com.google.guava:guava:31.1-jre'
     implementation 'dev.failsafe:failsafe:3.1.0'
     implementation('io.projectreactor:reactor-core')
-    implementation("io.seqera:tower-crypto:22.1.1") { transitive = false }
+    implementation("io.seqera:tower-crypto:22.4.0-watson") { transitive = false }  // to be replaced with 22.4.0 once released
     implementation 'org.apache.commons:commons-compress:1.21'
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'io.kubernetes:client-java:10.0.1'
@@ -67,11 +66,6 @@ dependencies {
     // this sts dependency is require by micronaut-aws-parameter-store,
     // not directly used by the app, for this reason keeping `runtimeOnly`
     runtimeOnly "software.amazon.awssdk:sts"
-
-    runtimeOnly("com.h2database:h2")
-    runtimeOnly 'mysql:mysql-connector-java:5.1.49'
-    runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
-    implementation("io.micronaut.sql:micronaut-jdbc-hikari")
 
     runtimeOnly("io.netty:netty-tcnative-boringssl-static:2.0.0.Final")
     testImplementation "org.apache.commons:commons-compress:1.21"

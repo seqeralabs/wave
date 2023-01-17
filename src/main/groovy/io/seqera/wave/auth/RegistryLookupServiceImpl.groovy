@@ -57,7 +57,7 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
     protected RegistryAuth lookup0(URI endpoint) {
         final request = HttpRequest.newBuilder() .uri(endpoint) .GET() .build()
         // make the request
-        final response = httpRetryable.send(request, HttpResponse.BodyHandlers.ofString())
+        final response = httpRetryable.send(httpClient, request, HttpResponse.BodyHandlers.ofString())
         final code = response.statusCode()
         if( code == 401 ) {
             def authenticate = response.headers().firstValue('WWW-Authenticate').orElse(null)

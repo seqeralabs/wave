@@ -1,15 +1,12 @@
 package io.seqera.wave.auth
 
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
-import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.service.CredentialsService
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 /**
  * Implements a basic credentials provider fetching the registry creds
  * from the application config file
@@ -28,7 +25,6 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
     private RegistryCredentialsFactory credentialsFactory
 
     @Inject
-    @Nullable
     private CredentialsService credentialsService
 
     @Value('${wave.build.repo}')
@@ -36,7 +32,6 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
 
     @Value('${wave.build.cache}')
     private String defaultCacheRepository
-
 
     /**
      * Find the corresponding credentials for the specified registry
@@ -72,28 +67,28 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
      *      The tower user Id.
      * @param workspaceId
      *      The tower workspace Id.
+     * @param towerToken
+     *      The user personal access token to access the Tower services
+     * @param towerEndpoint
+     *      The Tower service endpoint to be used to retrieve container repositories credentials
      * @return
      *      A {@link RegistryCredentials} object holding the credentials for the specified container or {@code null}
      *      if not credentials can be found
      */
     @Override
-    RegistryCredentials getUserCredentials(ContainerPath container, @Nullable Long userId, @Nullable Long workspaceId) {
-        // use default credentials for anonymous requests
+    RegistryCredentials getUserCredentials(ContainerPath container, Long userId, Long workspaceId, String towerToken, String towerEndpoint) {
         if( !userId )
-            return getDefaultCredentials(container.registry)
+            throw new IllegalArgumentException("Missing required parameter userId -- Unable to retrieve credentials for container repository '$container'")
+
         // use default credentials for default repositories
         if( container.repository==defaultBuildRepository || container.repository==defaultCacheRepository )
             return getDefaultCredentials(container.registry)
 
-        return getUserCredentials0(container.registry, userId, workspaceId)
+        return getUserCredentials0(container.registry, userId, workspaceId, towerToken, towerEndpoint)
     }
 
-    protected RegistryCredentials getUserCredentials0(String registry, @Nullable Long userId, @Nullable Long workspaceId) {
-        if( !credentialsService ) {
-            throw new IllegalStateException("Missing Credentials service -- Make sure the 'tower' micronaut environment has been specified in the Wave configuration environment")
-        }
-
-        final keys = credentialsService.findRegistryCreds(registry, userId, workspaceId)
+    protected RegistryCredentials getUserCredentials0(String registry, Long userId, Long workspaceId, String towerToken, String towerEndpoint) {
+        final keys = credentialsService.findRegistryCreds(registry, userId, workspaceId, towerToken, towerEndpoint)
         final result = keys
                 ? credentialsFactory.create(registry, keys.userName, keys.password)
                 : null as RegistryCredentials
