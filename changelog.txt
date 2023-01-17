@@ -1,4 +1,7 @@
 # Wave changelog
+v0.24.0 - 17 Jan
+- Add support for Tower credentials API in place of DB connection
+
 v0.23.7 - 23 Dec 
 - Fix download failed issue caused by relative redirect path [65d7d03d]
 - Refactor tests [2016664f]
