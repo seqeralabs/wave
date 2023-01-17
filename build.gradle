@@ -47,7 +47,7 @@ dependencies {
     implementation 'com.google.guava:guava:31.1-jre'
     implementation 'dev.failsafe:failsafe:3.1.0'
     implementation('io.projectreactor:reactor-core')
-    implementation("io.seqera:tower-crypto:22.4.0-WAVE-SNAPSHOT") { transitive = false }
+    implementation("io.seqera:tower-crypto:22.4.0-watson") { transitive = false }  // to be replaced with 22.4.0 once released
     implementation 'org.apache.commons:commons-compress:1.21'
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'io.kubernetes:client-java:10.0.1'
