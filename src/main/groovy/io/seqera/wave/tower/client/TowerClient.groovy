@@ -35,21 +35,20 @@ class TowerClient {
     }
 
     CompletableFuture<UserInfoResponse> userInfo(String towerEndpoint, String authorization) {
-        log.debug "Getting UserInfo tower-endpoint=$towerEndpoint; auth=$authorization"
-        def uri = userInfoEndpoint(towerEndpoint)
-        return authorizedGetAsync("UserInfo", uri,authorization, UserInfoResponse)
+        final uri = userInfoEndpoint(towerEndpoint)
+        log.debug "Getting Tower user-info: $uri"
+        return authorizedGetAsync(uri, authorization, UserInfoResponse)
     }
 
     CompletableFuture<ListCredentialsResponse> listCredentials(String towerEndpoint, String authorization, Long workspaceId) {
-        log.debug "Getting ListCredentials tower-endpoint=$towerEndpoint; auth=$authorization"
-        final uri = listCredentialsEndpoint(towerEndpoint,workspaceId)
-        return authorizedGetAsync("ListCredentials",uri, authorization, ListCredentialsResponse)
+        final uri = listCredentialsEndpoint(towerEndpoint, workspaceId)
+        return authorizedGetAsync(uri, authorization, ListCredentialsResponse)
     }
 
     CompletableFuture<GetCredentialsKeysResponse> fetchEncryptedCredentials(String towerEndpoint, String authorization, String credentialsId, String encryptionKey, Long workspaceId) {
         log.debug "Getting ListCredentials tower-endpoint=$towerEndpoint; auth=$authorization"
         final uri = fetchCredentialsEndpoint(towerEndpoint, credentialsId, encryptionKey,workspaceId)
-        return authorizedGetAsync("GetCredentialsKeys",uri, authorization, GetCredentialsKeysResponse)
+        return authorizedGetAsync(uri, authorization, GetCredentialsKeysResponse)
     }
 
     private static URI fetchCredentialsEndpoint(String towerEndpoint, String credentialsId, String encryptionKey,Long workspaceId) {
@@ -83,7 +82,7 @@ class TowerClient {
      *      the type of the model to convert into
      * @return a future of T
      */
-    private <T> CompletableFuture<T> authorizedGetAsync(String operation, URI uri, String authToken, Class<T> type) {
+    private <T> CompletableFuture<T> authorizedGetAsync(URI uri, String authToken, Class<T> type) {
         def request = HttpRequest.newBuilder()
                 .uri(uri)
                 .header('Authorization', "Bearer ${authToken}")
