@@ -59,7 +59,7 @@ class TowerClient {
     }
 
     private static URI listCredentialsEndpoint(String towerEndpoint, Long workspaceId) {
-        final query = workspaceId? "&workspaceId=${workspaceId}":""
+        final query = workspaceId? "?workspaceId=${workspaceId}":""
         def baseUrl = StringUtils.stripEnd(towerEndpoint,'/')
         return new URI("${baseUrl}/credentials${query}")
     }
