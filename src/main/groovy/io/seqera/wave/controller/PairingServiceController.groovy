@@ -33,7 +33,6 @@ class PairingServiceController {
 
     @Post('/pair-service')
     HttpResponse<PairServiceResponse> pairService(@Valid @Body PairServiceRequest req) {
-        log.debug "Pairing with service '${req.service}' at address $req.endpoint"
         final key = securityService.getPublicKey(req.service, req.endpoint)
         return HttpResponse.ok(key)
     }
