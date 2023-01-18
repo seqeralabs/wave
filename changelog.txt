@@ -1,4 +1,8 @@
 # Wave changelog
+v0.24.2 - 18 Jan 
+- Patching invalid workspaceId concatenation [87bb7602]
+- Improve logging [9b22960c]
+
 v0.24.1 - 17 Jan 
 - Fix missing tower endpoint URL for old client [7c408d7e]
 - Remove unused tower environment file [981154bf]
