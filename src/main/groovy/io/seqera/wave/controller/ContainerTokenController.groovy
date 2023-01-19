@@ -1,5 +1,7 @@
 package io.seqera.wave.controller
 
+import io.seqera.wave.model.TowerTokens
+
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 import javax.annotation.PostConstruct
@@ -91,6 +93,10 @@ class ContainerTokenController {
             return CompletableFuture.completedFuture(makeResponse(httpRequest, req, null))
         }
 
+        if (req.towerAccessToken && !req.towerRefreshToken) {
+            throw new BadRequestException("towerRefreshToken should be provided if towerAccessToken is defined")
+        }
+
         // this is needed for backward compatibility with old clients
         if( !req.towerEndpoint ) {
             req.towerEndpoint = towerEndpointUrl
@@ -100,9 +106,9 @@ class ContainerTokenController {
         final registration = securityService.getServiceRegistration(SecurityService.TOWER_SERVICE, req.towerEndpoint)
         if( !registration )
             throw new BadRequestException("No Tower service registered for instance '${req.towerEndpoint}")
-
+        final tokens = new TowerTokens(authToken: req.towerAccessToken, refreshToken: req.towerRefreshToken)
         return  userService
-                .getUserByAccessTokenAsync(registration.hostname, req.towerAccessToken)
+                .getUserByAccessTokenAsync(registration.hostname, tokens)
                 .thenApply { User user -> makeResponse(httpRequest, req, user) }
     }
 
@@ -129,7 +135,8 @@ class ContainerTokenController {
         final platform = ContainerPlatform.of(req.containerPlatform)
         final build = req.buildRepository ?: defaultBuildRepo
         final cache = req.cacheRepository ?: defaultCacheRepo
-        final configJson = dockerAuthService.credentialsConfigJson(dockerContent, build, cache, user?.id, req.towerWorkspaceId, req.towerAccessToken, req.towerEndpoint)
+        final tokens = new TowerTokens(authToken: req.towerAccessToken, refreshToken: req.towerRefreshToken)
+        final configJson = dockerAuthService.credentialsConfigJson(dockerContent, build, cache, user?.id, req.towerWorkspaceId, tokens, req.towerEndpoint)
         final offset = DataTimeUtils.offsetId(req.timestamp)
         // create a unique digest to identify the request
         return new BuildRequest(
@@ -192,6 +199,7 @@ class ContainerTokenController {
                 condaContent,
                 ContainerPlatform.of(req.containerPlatform),
                 req.towerAccessToken,
+                req.towerRefreshToken,
                 req.towerEndpoint )
         return data
     }

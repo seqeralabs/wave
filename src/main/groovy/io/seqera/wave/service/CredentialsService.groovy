@@ -1,4 +1,7 @@
 package io.seqera.wave.service
+
+import io.seqera.wave.model.TowerTokens
+
 /**
  * Declare operations to access container registry credentials from Tower
  *
@@ -6,6 +9,6 @@ package io.seqera.wave.service
  */
 interface CredentialsService {
 
-    ContainerRegistryKeys findRegistryCreds(String registryName, Long userId, Long workspaceId, String towerToken, String towerEndpoint)
+    ContainerRegistryKeys findRegistryCreds(String registryName, Long userId, Long workspaceId, TowerTokens towerToken, String towerEndpoint)
 
 }

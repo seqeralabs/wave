@@ -4,6 +4,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.tower.crypto.AsymmetricCipher
 import io.seqera.tower.crypto.EncryptedPacket
+import io.seqera.wave.model.TowerTokens
 import io.seqera.wave.service.security.SecurityService
 import io.seqera.wave.tower.client.TowerClient
 import jakarta.inject.Inject
@@ -26,7 +27,7 @@ class CredentialServiceImpl implements CredentialsService {
     SecurityService keyService
 
     @Override
-    ContainerRegistryKeys findRegistryCreds(String registryName, Long userId, Long workspaceId,String towerToken, String towerEndpoint) {
+    ContainerRegistryKeys findRegistryCreds(String registryName, Long userId, Long workspaceId, TowerTokens towerToken, String towerEndpoint) {
 
         if (!userId)
             throw new IllegalArgumentException("Missing userId parameter")

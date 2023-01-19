@@ -2,6 +2,8 @@ package io.seqera.wave.auth
 
 
 import io.seqera.wave.core.ContainerPath
+import io.seqera.wave.model.TowerTokens
+
 /**
  * Model an abstract provider for container registry credentials
  *
@@ -35,13 +37,13 @@ interface RegistryCredentialsProvider {
      * @param workspaceId
      *      The tower workspace Id.
      * @param towerToken
-     *      The token used to authenticate with tower
+     *      The auth and refresh tokens used to access tower
      * @param towerEndpoint
      *      The tower endpoint used in the registration
      * @return
      *      A {@link RegistryCredentials} object holding the credentials for the specified container or {@code null}
      *      if not credentials can be found
      */
-    RegistryCredentials getUserCredentials(ContainerPath container, Long userId, Long workspaceId, String towerToken, String towerEndpoint)
+    RegistryCredentials getUserCredentials(ContainerPath container, Long userId, Long workspaceId, TowerTokens towerToken, String towerEndpoint)
 
 }

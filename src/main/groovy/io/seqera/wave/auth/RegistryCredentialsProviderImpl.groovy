@@ -4,6 +4,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.core.ContainerPath
+import io.seqera.wave.model.TowerTokens
 import io.seqera.wave.service.CredentialsService
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -76,7 +77,7 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
      *      if not credentials can be found
      */
     @Override
-    RegistryCredentials getUserCredentials(ContainerPath container, Long userId, Long workspaceId, String towerToken, String towerEndpoint) {
+    RegistryCredentials getUserCredentials(ContainerPath container, Long userId, Long workspaceId, TowerTokens towerToken, String towerEndpoint) {
         if( !userId )
             throw new IllegalArgumentException("Missing required parameter userId -- Unable to retrieve credentials for container repository '$container'")
 
@@ -87,8 +88,8 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
         return getUserCredentials0(container.registry, userId, workspaceId, towerToken, towerEndpoint)
     }
 
-    protected RegistryCredentials getUserCredentials0(String registry, Long userId, Long workspaceId, String towerToken, String towerEndpoint) {
-        final keys = credentialsService.findRegistryCreds(registry, userId, workspaceId, towerToken, towerEndpoint)
+    protected RegistryCredentials getUserCredentials0(String registry, Long userId, Long workspaceId, TowerTokens towerTokens, String towerEndpoint) {
+        final keys = credentialsService.findRegistryCreds(registry, userId, workspaceId, towerTokens, towerEndpoint)
         final result = keys
                 ? credentialsFactory.create(registry, keys.userName, keys.password)
                 : null as RegistryCredentials

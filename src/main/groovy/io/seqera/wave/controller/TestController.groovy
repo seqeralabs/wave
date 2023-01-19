@@ -1,5 +1,7 @@
 package io.seqera.wave.controller
 
+import io.seqera.wave.model.TowerTokens
+
 import java.nio.file.Path
 import javax.annotation.Nullable
 
@@ -57,13 +59,17 @@ class TestController {
                                    @Nullable String cache,
                                    @Nullable String endpoint,
                                    @Nullable String accessToken,
+                                   @Nullable String refreshToken,
                                    @Nullable Long workspaceId,
                                     HttpRequest httpRequest) {
         if( !accessToken && !allowAnonymous )
             throw new BadRequestException("Missing user access token")
+        if (accessToken && !refreshToken) {
+            throw new BadRequestException("Refresh token should be provided when accessToken is provided")
+        }
 
         final User user = accessToken
-                ? userService.getUserByAccessToken(endpoint,accessToken)
+                ? userService.getUserByAccessToken(endpoint,new TowerTokens(authToken: accessToken, refreshToken: refreshToken))
                 : null
         if( accessToken && !user )
             throw new BadRequestException("Cannot find user for given access token")
@@ -77,7 +83,7 @@ class TestController {
         final ip = addressResolver.resolve(httpRequest)
         final buildRepo = repo ?: defaultBuildRepo
         final cacheRepo = cache ?: defaultCacheRepo
-        final configJson = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, cacheRepo, user?.id, workspaceId, accessToken, endpoint)
+        final configJson = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, cacheRepo, user?.id, workspaceId, new TowerTokens(authToken: accessToken, refreshToken:  refreshToken), endpoint)
 
         final req =  new BuildRequest( dockerFile,
                 Path.of(workspace),

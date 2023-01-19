@@ -1,5 +1,7 @@
 package io.seqera.wave.service
 
+import io.seqera.wave.model.TowerTokens
+
 import java.util.concurrent.CompletableFuture
 
 import io.seqera.wave.tower.User
@@ -11,8 +13,8 @@ import io.seqera.wave.tower.User
  */
 interface UserService {
 
-    User getUserByAccessToken(String endpoint, String accessToken)
+    User getUserByAccessToken(String endpoint, TowerTokens tokens)
 
-    CompletableFuture<User> getUserByAccessTokenAsync(String endpoint, String accessToken)
+    CompletableFuture<User> getUserByAccessTokenAsync(String endpoint, TowerTokens tokens)
 
 }

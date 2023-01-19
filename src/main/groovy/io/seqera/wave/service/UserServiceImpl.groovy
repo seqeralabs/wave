@@ -1,5 +1,7 @@
 package io.seqera.wave.service
 
+import io.seqera.wave.model.TowerTokens
+
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 import javax.annotation.Nullable
@@ -27,11 +29,11 @@ class UserServiceImpl implements UserService {
     private TowerClient towerClient
 
     @Override
-    CompletableFuture<User> getUserByAccessTokenAsync(String endpoint, String encodedToken) {
+    CompletableFuture<User> getUserByAccessTokenAsync(String endpoint, TowerTokens tokens) {
         if( !towerClient )
             throw new IllegalStateException("Missing Tower client - make sure the 'tower' micronaut environment has been provided")
 
-        towerClient.userInfo(endpoint,encodedToken).handle( (UserInfoResponse resp, Throwable error) -> {
+        towerClient.userInfo(endpoint,tokens).handle( (UserInfoResponse resp, Throwable error) -> {
             if( error )
                 throw error
             if (!resp || !resp.user)
@@ -41,7 +43,8 @@ class UserServiceImpl implements UserService {
         })
     }
 
-    User getUserByAccessToken(String endpoint, String encodedToken) {
+    @Override
+    User getUserByAccessToken(String endpoint, TowerTokens encodedToken) {
         try {
             return getUserByAccessTokenAsync(endpoint, encodedToken).get()
         }

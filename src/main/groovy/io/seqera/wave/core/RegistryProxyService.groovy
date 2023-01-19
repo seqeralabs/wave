@@ -14,6 +14,7 @@ import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.model.ContentType
+import io.seqera.wave.model.TowerTokens
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.service.CredentialsService
 import io.seqera.wave.storage.DigestStore
@@ -70,9 +71,10 @@ class RegistryProxyService {
 
     protected RegistryCredentials getCredentials(RoutePath route) {
         final req = route.request
+        final tokens = new TowerTokens(authToken: req.towerToken, refreshToken: req.towerRefreshToken)
         final result = !req || !req.userId
                 ? credentialsProvider.getDefaultCredentials(route)
-                : credentialsProvider.getUserCredentials(route, req.userId, req.workspaceId, req.towerToken, req.towerEndpoint)
+                : credentialsProvider.getUserCredentials(route, req.userId, req.workspaceId, tokens, req.towerEndpoint)
         log.debug "Credentials for route path=${route.targetContainer} => ${result}"
         return result
     }
