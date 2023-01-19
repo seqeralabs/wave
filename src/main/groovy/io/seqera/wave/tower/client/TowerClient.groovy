@@ -1,17 +1,22 @@
 package io.seqera.wave.tower.client
 
+import groovy.transform.stc.SimpleType
+
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
+import groovy.transform.stc.ClosureParams
 import groovy.util.logging.Slf4j
+import io.micronaut.http.exceptions.UriSyntaxException
+import io.micronaut.http.uri.UriBuilder
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.util.HttpRetryable
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Singleton
-import org.apache.commons.lang.StringUtils
+
 /**
  * Tower service client
  *
@@ -51,21 +56,57 @@ class TowerClient {
         return authorizedGetAsync(uri, authorization, GetCredentialsKeysResponse)
     }
 
-    private static URI fetchCredentialsEndpoint(String towerEndpoint, String credentialsId, String encryptionKey,Long workspaceId) {
-        def workspaceQueryParamm = workspaceId? "&workspaceId=${workspaceId}":""
-        def baseUrl = StringUtils.stripEnd(towerEndpoint,'/')
-        return new URI("${baseUrl}/credentials/${credentialsId}/keys?keyId=${encryptionKey}${workspaceQueryParamm}")
+    protected static URI fetchCredentialsEndpoint(String towerEndpoint, String credentialsId, String encryptionKey,Long workspaceId) {
+        if (!credentialsId) {
+            throw new IllegalArgumentException("credentialsId should not be null or empty")
+        }
+        if (!encryptionKey) {
+            throw new IllegalArgumentException("encryptionKey should not be null or empty")
+        }
+        return buildValidUri(towerEndpoint) {
+            it.path("/credentials")
+                    .path(credentialsId)
+                    .path('/keys')
+                    .queryParam("keyId", encryptionKey)
+            if (workspaceId != null) {
+                it.queryParam("workspaceId", workspaceId)
+            } else {
+                it
+            }
+
+        }
     }
 
-    private static URI listCredentialsEndpoint(String towerEndpoint, Long workspaceId) {
-        final query = workspaceId? "?workspaceId=${workspaceId}":""
-        def baseUrl = StringUtils.stripEnd(towerEndpoint,'/')
-        return new URI("${baseUrl}/credentials${query}")
+    protected static URI listCredentialsEndpoint(String towerEndpoint, Long workspaceId) {
+        return buildValidUri(towerEndpoint) {
+            it.path("/credentials")
+            if (workspaceId != null) {
+                it.queryParam("workspaceId", workspaceId)
+            } else {
+                it
+            }
+        }
     }
 
-    private static URI userInfoEndpoint(String towerEndpoint) {
-        def baseUrl = StringUtils.stripEnd(towerEndpoint,'/')
-        return new URI("${baseUrl}/user-info")
+
+    protected static URI userInfoEndpoint(String towerEndpoint) {
+        return buildValidUri(towerEndpoint) {it.path("/user-info")}
+    }
+
+    private static URI buildValidUri(String towerEndpoint,
+                                     @ClosureParams(value = SimpleType,
+                                             options = "io.micronaut.http.uri.UriBuilder") Closure<UriBuilder> f) {
+        if (!towerEndpoint) throw new IllegalArgumentException("towerEndpoint should not be null or empty")
+        try {
+            def builder = UriBuilder.of(towerEndpoint)
+            def uri = f(builder).build()
+            if (!(uri.getScheme() ==~ /https?/)) {
+                throw new IllegalArgumentException("towerEndpoint should be a valid http or https url, got [${towerEndpoint}]")
+            }
+            return uri
+        } catch (UriSyntaxException e) {
+            throw new IllegalArgumentException("invalid url", e)
+        }
     }
 
     /**
