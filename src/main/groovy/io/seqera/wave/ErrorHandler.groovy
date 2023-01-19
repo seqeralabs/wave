@@ -34,7 +34,13 @@ class ErrorHandler {
         final errId = LongRndKey.rndHex()
         def msg = t.message
         if( t instanceof WaveException && msg ) {
-            log.warn (t.cause ? "$msg -- Cause: ${t.cause.message ?: t.cause}".toString() : msg )
+            msg = (t.cause ? "$msg -- Cause: ${t.cause.message ?: t.cause}".toString() : msg )
+            if( !debug ) {
+                log.warn(msg)
+            }
+            else {
+                log.warn(msg,t)
+            }
         }
         else {
             if( debug && !msg )
