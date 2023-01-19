@@ -1,4 +1,7 @@
 # Wave changelog
+v0.24.3 - 19 Jan 
+- Improve error reporting [56ccbc12]
+
 v0.24.2 - 18 Jan 
 - Patching invalid workspaceId concatenation [87bb7602]
 - Improve logging [9b22960c]
