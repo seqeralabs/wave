@@ -24,7 +24,7 @@ class DockerAuthService {
     @Inject
     private RegistryCredentialsProvider credentialsProvider
 
-    String credentialsConfigJson(String dockerFile, String buildRepo, String cacheRepo, @Nullable Long userId, @Nullable Long workspaceId, @Nullable TowerTokens towerToken, @Nullable String towerEndpoint) {
+    String credentialsConfigJson(String dockerFile, String buildRepo, String cacheRepo, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint) {
         final repos = new HashSet(10)
         repos.addAll(findRepositories(dockerFile))
         if( buildRepo )
@@ -34,7 +34,7 @@ class DockerAuthService {
         return credsJson(repos, userId, workspaceId, towerToken, towerEndpoint)
     }
 
-    protected String credsJson(Set<String> repositories, Long userId, Long workspaceId, TowerTokens towerTokens, String towerEndpoint) {
+    protected String credsJson(Set<String> repositories, Long userId, Long workspaceId, String towerToken, String towerEndpoint) {
         final hosts = new HashSet()
         final result = new StringBuilder()
         for( String repo : repositories ) {
@@ -47,7 +47,7 @@ class DockerAuthService {
             }
             final creds = !userId
                     ? credentialsProvider.getDefaultCredentials(path)
-                    : credentialsProvider.getUserCredentials(path, userId, workspaceId, towerTokens, towerEndpoint)
+                    : credentialsProvider.getUserCredentials(path, userId, workspaceId, towerToken, towerEndpoint)
             log.debug "Build credentials for repository: $repo => $creds"
             if( !creds ) {
                 // skip this host because there are no credentials

@@ -11,15 +11,10 @@ class TowerAuthTokensServiceImpl implements TowerAuthTokensService {
     TowerTokensStore tokensStore
 
     @Override
-    TowerTokens updateTowerAuthTokens(String endpoint, String providedRefreshToken, String providedAuthToken) {
+    void updateAuthTokens(String endpoint, String providedRefreshToken, String providedAuthToken) {
         if (providedRefreshToken) {
-            final tokens = new TowerTokens(authToken: providedAuthToken, refreshToken: providedRefreshToken, tokenKey: providedRefreshToken)
-            // updates the stored tokens
-            // for new requests
-            tokensStore.put(tokensKey(endpoint, providedRefreshToken), tokens)
-            return tokens
-        } else {
-            return new TowerTokens(authToken: properties, refreshToken: null, tokenKey: null)
+            final tokens = new TowerTokens(authToken: providedAuthToken, refreshToken: providedRefreshToken, tokenKey: providedAuthToken)
+            tokensStore.put(tokensKey(endpoint,providedAuthToken), tokens)
         }
     }
 
@@ -30,13 +25,10 @@ class TowerAuthTokensServiceImpl implements TowerAuthTokensService {
     }
 
     @Override
-    TowerTokens getTokens(String endpoint, TowerTokens tokens) {
-        if (tokens.tokenKey) {
-            return tokensStore.get(tokensKey(endpoint, tokens.tokenKey))
-        } else {
-            return tokens
-        }
+    TowerTokens getTokens(String endpoint, String accessToken) {
+        return tokensStore.get(tokensKey(endpoint, accessToken))?: new TowerTokens(authToken: accessToken)
     }
+
 
     private static String tokensKey(String endpoint, String initialRefreshToken) {
         return "${endpoint}:${initialRefreshToken}"

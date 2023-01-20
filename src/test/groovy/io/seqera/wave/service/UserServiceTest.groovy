@@ -49,13 +49,13 @@ class UserServiceTest extends Specification {
         def service = ctx.getBean(UserService)
 
         when: // a valid token
-        def token = new TowerTokens(authToken: 'a valid token', refreshToken: 'a refresh token')
+        def token = "a valid token"
         def user = service.getUserByAccessToken(host,token)
         then:
         user.id == 1
 
         when: // an invalid token
-        token = new TowerTokens(authToken: 'foo', refreshToken: 'refresh')
+        token = "foo"
         service.getUserByAccessToken(host,token)
         then:
         def exp = thrown(HttpResponseException)

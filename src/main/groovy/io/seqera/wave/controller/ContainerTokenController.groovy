@@ -104,9 +104,9 @@ class ContainerTokenController {
         final registration = securityService.getServiceRegistration(SecurityService.TOWER_SERVICE, req.towerEndpoint)
         if( !registration )
             throw new BadRequestException("No Tower service registered for instance '${req.towerEndpoint}")
-        final tokens = authorizationTokensService.updateTowerAuthTokens(req.towerEndpoint,req.towerRefreshToken, req.towerAccessToken)
+        authorizationTokensService.updateAuthTokens(req.towerEndpoint, req.towerRefreshToken, req.towerAccessToken)
         return  userService
-                .getUserByAccessTokenAsync(registration.hostname, tokens)
+                .getUserByAccessTokenAsync(registration.hostname, req.towerAccessToken)
                 .thenApply { User user -> makeResponse(httpRequest, req, user) }
     }
 
@@ -133,8 +133,7 @@ class ContainerTokenController {
         final platform = ContainerPlatform.of(req.containerPlatform)
         final build = req.buildRepository ?: defaultBuildRepo
         final cache = req.cacheRepository ?: defaultCacheRepo
-        final tokens = new TowerTokens(authToken: req.towerAccessToken, refreshToken: req.towerRefreshToken, tokenKey: req.towerRefreshToken)
-        final configJson = dockerAuthService.credentialsConfigJson(dockerContent, build, cache, user?.id, req.towerWorkspaceId, tokens, req.towerEndpoint)
+        final configJson = dockerAuthService.credentialsConfigJson(dockerContent, build, cache, user?.id, req.towerWorkspaceId, req.towerAccessToken, req.towerEndpoint)
         final offset = DataTimeUtils.offsetId(req.timestamp)
         // create a unique digest to identify the request
         return new BuildRequest(

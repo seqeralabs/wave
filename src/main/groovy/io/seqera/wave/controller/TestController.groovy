@@ -69,7 +69,7 @@ class TestController {
         }
 
         final User user = accessToken
-                ? userService.getUserByAccessToken(endpoint,new TowerTokens(authToken: accessToken, refreshToken: refreshToken))
+                ? userService.getUserByAccessToken(endpoint,accessToken)
                 : null
         if( accessToken && !user )
             throw new BadRequestException("Cannot find user for given access token")
@@ -83,7 +83,7 @@ class TestController {
         final ip = addressResolver.resolve(httpRequest)
         final buildRepo = repo ?: defaultBuildRepo
         final cacheRepo = cache ?: defaultCacheRepo
-        final configJson = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, cacheRepo, user?.id, workspaceId, new TowerTokens(authToken: accessToken, refreshToken:  refreshToken), endpoint)
+        final configJson = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, cacheRepo, user?.id, workspaceId, accessToken, endpoint)
 
         final req =  new BuildRequest( dockerFile,
                 Path.of(workspace),

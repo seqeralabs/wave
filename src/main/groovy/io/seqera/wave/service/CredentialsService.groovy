@@ -9,6 +9,6 @@ import io.seqera.wave.model.TowerTokens
  */
 interface CredentialsService {
 
-    ContainerRegistryKeys findRegistryCreds(String registryName, Long userId, Long workspaceId, TowerTokens towerToken, String towerEndpoint)
+    ContainerRegistryKeys findRegistryCreds(String registryName, Long userId, Long workspaceId, String towerToken, String towerEndpoint)
 
 }

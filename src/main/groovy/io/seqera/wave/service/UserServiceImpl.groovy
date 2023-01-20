@@ -29,7 +29,7 @@ class UserServiceImpl implements UserService {
     private TowerClient towerClient
 
     @Override
-    CompletableFuture<User> getUserByAccessTokenAsync(String endpoint, TowerTokens tokens) {
+    CompletableFuture<User> getUserByAccessTokenAsync(String endpoint, String tokens) {
         if( !towerClient )
             throw new IllegalStateException("Missing Tower client - make sure the 'tower' micronaut environment has been provided")
 
@@ -44,7 +44,7 @@ class UserServiceImpl implements UserService {
     }
 
     @Override
-    User getUserByAccessToken(String endpoint, TowerTokens encodedToken) {
+    User getUserByAccessToken(String endpoint, String encodedToken) {
         try {
             return getUserByAccessTokenAsync(endpoint, encodedToken).get()
         }

@@ -46,24 +46,24 @@ class TowerClient {
         this.executor = createHttpExecutor()
     }
 
-    CompletableFuture<UserInfoResponse> userInfo(String towerEndpoint, TowerTokens authorization) {
+    CompletableFuture<UserInfoResponse> userInfo(String towerEndpoint, String authorization) {
         final uri = userInfoEndpoint(towerEndpoint)
         log.debug "Getting Tower user-info: $uri"
-        authorization = authTokensService.getTokens(towerEndpoint, authorization)
-        return authorizedGetAsync(buildClient(), uri,towerEndpoint, authorization, UserInfoResponse)
+        final tokens = authTokensService.getTokens(towerEndpoint, authorization)
+        return authorizedGetAsync(buildClient(), uri, towerEndpoint, tokens, UserInfoResponse)
     }
 
-    CompletableFuture<ListCredentialsResponse> listCredentials(String towerEndpoint, TowerTokens authorization, Long workspaceId) {
+    CompletableFuture<ListCredentialsResponse> listCredentials(String towerEndpoint, String authorization, Long workspaceId) {
         final uri = listCredentialsEndpoint(towerEndpoint, workspaceId)
-        authorization = authTokensService.getTokens(towerEndpoint, authorization)
-        return authorizedGetAsync(buildClient(), uri,towerEndpoint, authorization, ListCredentialsResponse)
+        final tokens = authTokensService.getTokens(towerEndpoint, authorization)
+        return authorizedGetAsync(buildClient(), uri,towerEndpoint, tokens, ListCredentialsResponse)
     }
 
-    CompletableFuture<GetCredentialsKeysResponse> fetchEncryptedCredentials(String towerEndpoint, TowerTokens authorization, String credentialsId, String encryptionKey, Long workspaceId) {
+    CompletableFuture<GetCredentialsKeysResponse> fetchEncryptedCredentials(String towerEndpoint, String authorization, String credentialsId, String encryptionKey, Long workspaceId) {
         log.debug "Getting ListCredentials tower-endpoint=$towerEndpoint; auth=$authorization"
         final uri = fetchCredentialsEndpoint(towerEndpoint, credentialsId, encryptionKey,workspaceId)
-        authorization = authTokensService.getTokens(towerEndpoint, authorization)
-        return authorizedGetAsync(buildClient(), uri, towerEndpoint, authorization, GetCredentialsKeysResponse)
+        final tokens = authTokensService.getTokens(towerEndpoint, authorization)
+        return authorizedGetAsync(buildClient(), uri, towerEndpoint, tokens, GetCredentialsKeysResponse)
     }
 
     protected static URI fetchCredentialsEndpoint(String towerEndpoint, String credentialsId, String encryptionKey,Long workspaceId) {

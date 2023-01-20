@@ -39,7 +39,7 @@ class CredentialsServiceTest extends Specification {
         given: 'a tower user in a workspace on a specific instance with a valid token'
         def userId = 10
         def workspaceId = 10
-        def token = new TowerTokens(authToken: 'valid-token', refreshToken: 'valid-refresh-token')
+        def token = "valid-token"
         def towerEndpoint = "http://tower.io:9090"
 
         and: 'a previously registered key'
@@ -98,7 +98,7 @@ class CredentialsServiceTest extends Specification {
 
     def 'should fail if keys where not registered for the tower endpoint'() {
         when:
-        credentialsService.findRegistryCreds('quay.io',10,10,new TowerTokens(authToken: 'token', refreshToken: 'refresh'),'endpoint')
+        credentialsService.findRegistryCreds('quay.io',10,10,"token",'endpoint')
 
         then: 'the security service does not have the key for the hostname'
         1 * securityService.getServiceRegistration(SecurityService.TOWER_SERVICE,'endpoint') >> null
@@ -108,10 +108,8 @@ class CredentialsServiceTest extends Specification {
     }
 
     def 'should return no registry credentials if the user has no credentials in tower' () {
-        given: 'access tokens'
-        def tokens = new TowerTokens(authToken: 'token', refreshToken: 'refresh')
         when:
-        def credentials = credentialsService.findRegistryCreds('quay.io', 10, 10, tokens,'tower.io')
+        def credentials = credentialsService.findRegistryCreds('quay.io', 10, 10, "token",'tower.io')
         then: 'a key is found'
         1 * securityService.getServiceRegistration(SecurityService.TOWER_SERVICE, 'tower.io') >> new KeyRecord(
                 keyId: 'a-key-id',
@@ -120,7 +118,7 @@ class CredentialsServiceTest extends Specification {
                 privateKey: new byte[0], // we don't care about the value of the key
         )
         and: 'credentials are listed but are empty'
-        1 * towerClient.listCredentials('tower.io',tokens,10) >> CompletableFuture.completedFuture(new ListCredentialsResponse(credentials: []))
+        1 * towerClient.listCredentials('tower.io',"token",10) >> CompletableFuture.completedFuture(new ListCredentialsResponse(credentials: []))
 
         and: 'no registry credentials are returned'
         credentials == null
@@ -139,10 +137,8 @@ class CredentialsServiceTest extends Specification {
                 registry: 'docker.io'
         )
 
-        and: 'access and refresh tokens'
-        def tokens = new TowerTokens(authToken: 'token', refreshToken: 'refresh')
         when:
-        def credentials = credentialsService.findRegistryCreds('quay.io', 10, 10, tokens,'tower.io')
+        def credentials = credentialsService.findRegistryCreds('quay.io', 10, 10, "token",'tower.io')
 
         then: 'a key is found'
         1 * securityService.getServiceRegistration(SecurityService.TOWER_SERVICE, 'tower.io') >> new KeyRecord(
@@ -153,7 +149,7 @@ class CredentialsServiceTest extends Specification {
         )
 
         and: 'non matching credentials are listed'
-        1 * towerClient.listCredentials('tower.io',tokens,10) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
+        1 * towerClient.listCredentials('tower.io',"token",10) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
                 credentials: [nonContainerRegistryCredentials,otherRegistryCredentials]
         ))
 

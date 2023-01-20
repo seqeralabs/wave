@@ -27,7 +27,7 @@ class CredentialServiceImpl implements CredentialsService {
     SecurityService keyService
 
     @Override
-    ContainerRegistryKeys findRegistryCreds(String registryName, Long userId, Long workspaceId, TowerTokens towerToken, String towerEndpoint) {
+    ContainerRegistryKeys findRegistryCreds(String registryName, Long userId, Long workspaceId, String towerToken, String towerEndpoint) {
 
         if (!userId)
             throw new IllegalArgumentException("Missing userId parameter")
