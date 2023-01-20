@@ -19,6 +19,10 @@ import io.seqera.wave.util.HttpRetryable
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Singleton
 
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicInteger
+
 /**
  * Tower service client
  *
@@ -31,9 +35,12 @@ class TowerClient {
 
     private HttpRetryable httpRetryable
 
+    private Executor executor
+
 
     TowerClient(HttpRetryable httpRetryable) {
         this.httpRetryable = httpRetryable
+        this.executor = createHttpExecutor()
     }
 
     CompletableFuture<UserInfoResponse> userInfo(String towerEndpoint, TowerTokens authorization) {
@@ -183,7 +190,7 @@ class TowerClient {
      * @return {@link Client}
      */
     private Client buildClient() {
-        return Client.build(httpRetryable.config().connectTimeout)
+        return Client.build(executor,httpRetryable.config().connectTimeout)
     }
 
 
@@ -218,6 +225,21 @@ class TowerClient {
         return new HttpResponseException(status,"error.....")
     }
 
+
+    /**
+     * Creates a cached thread pool similar to the default http client executor
+     * @return
+     */
+    private static Executor createHttpExecutor() {
+        final ids = new AtomicInteger()
+        return Executors.newCachedThreadPool {
+            final name = "tower-client-worker-${ids.getAndIncrement()}"
+            final thread = new Thread(null, it, name,0, false)
+            thread.setDaemon(true)
+            return thread
+        }
+    }
+
     /**
      * Wrapper of HttpClient and CookieManager
      * built for each request to isolate them
@@ -228,9 +250,10 @@ class TowerClient {
         CookieManager cookieManager
 
 
-        private static Client build(Duration connectTimeout) {
+        private static Client build(Executor executor, Duration connectTimeout) {
             final cookieManager = new CookieManager()
             final httpClient = HttpClient.newBuilder()
+                    .executor(executor)
                     .version(HttpClient.Version.HTTP_1_1)
                     .cookieHandler(new CookieManager())
                     .connectTimeout(connectTimeout)
