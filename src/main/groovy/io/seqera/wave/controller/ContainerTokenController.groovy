@@ -1,6 +1,7 @@
 package io.seqera.wave.controller
 
 import io.seqera.wave.model.TowerTokens
+import io.seqera.wave.tower.client.TowerAuthTokensService
 
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
@@ -44,6 +45,7 @@ class ContainerTokenController {
     @Inject ContainerTokenService tokenService
     @Inject UserService userService
     @Inject SecurityService securityService
+    @Inject TowerAuthTokensService authorizationTokensService
 
     @Inject
     @Value('${wave.allowAnonymous}')
@@ -102,7 +104,7 @@ class ContainerTokenController {
         final registration = securityService.getServiceRegistration(SecurityService.TOWER_SERVICE, req.towerEndpoint)
         if( !registration )
             throw new BadRequestException("No Tower service registered for instance '${req.towerEndpoint}")
-        final tokens = new TowerTokens(authToken: req.towerAccessToken, refreshToken: req.towerRefreshToken)
+        final tokens = authorizationTokensService.updateTowerAuthTokens(req.towerEndpoint,req.towerRefreshToken, req.towerAccessToken)
         return  userService
                 .getUserByAccessTokenAsync(registration.hostname, tokens)
                 .thenApply { User user -> makeResponse(httpRequest, req, user) }
@@ -131,7 +133,7 @@ class ContainerTokenController {
         final platform = ContainerPlatform.of(req.containerPlatform)
         final build = req.buildRepository ?: defaultBuildRepo
         final cache = req.cacheRepository ?: defaultCacheRepo
-        final tokens = new TowerTokens(authToken: req.towerAccessToken, refreshToken: req.towerRefreshToken)
+        final tokens = new TowerTokens(authToken: req.towerAccessToken, refreshToken: req.towerRefreshToken, tokenKey: req.towerRefreshToken)
         final configJson = dockerAuthService.credentialsConfigJson(dockerContent, build, cache, user?.id, req.towerWorkspaceId, tokens, req.towerEndpoint)
         final offset = DataTimeUtils.offsetId(req.timestamp)
         // create a unique digest to identify the request
@@ -194,6 +196,10 @@ class ContainerTokenController {
                 req.containerConfig,
                 condaContent,
                 ContainerPlatform.of(req.containerPlatform),
+                // these tokens are the original tokens provided by the user request
+                // they might differ from the actual tokens used by the tower client
+                // if the tokens have been refreshed, this can only happen if the refresh token
+                // is provided.
                 req.towerAccessToken,
                 req.towerRefreshToken,
                 req.towerEndpoint )

@@ -12,4 +12,6 @@ class TowerTokens {
     String authToken
 
     String refreshToken
+
+    String tokenKey
 }
