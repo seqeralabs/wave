@@ -93,10 +93,6 @@ class ContainerTokenController {
             return CompletableFuture.completedFuture(makeResponse(httpRequest, req, null))
         }
 
-        if (req.towerAccessToken && !req.towerRefreshToken) {
-            throw new BadRequestException("towerRefreshToken should be provided if towerAccessToken is defined")
-        }
-
         // this is needed for backward compatibility with old clients
         if( !req.towerEndpoint ) {
             req.towerEndpoint = towerEndpointUrl
