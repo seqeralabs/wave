@@ -13,14 +13,14 @@ class TowerAuthTokensServiceImpl implements TowerAuthTokensService {
     @Override
     void updateAuthTokens(String endpoint, String providedRefreshToken, String providedAuthToken) {
         if (providedRefreshToken) {
-            final tokens = new TowerTokens(authToken: providedAuthToken, refreshToken: providedRefreshToken, tokenKey: providedAuthToken)
+            final tokens = new TowerTokens(authToken: providedAuthToken, refreshToken: providedRefreshToken)
             tokensStore.put(tokensKey(endpoint,providedAuthToken), tokens)
         }
     }
 
     @Override
-    TowerTokens refreshTokens(String endpoint, TowerTokens tokens) {
-        tokensStore.put(tokensKey(endpoint,tokens.tokenKey), tokens)
+    TowerTokens refreshTokens(String endpoint,String originalAuthToken, TowerTokens tokens) {
+        tokensStore.put(tokensKey(endpoint,originalAuthToken), tokens)
         return tokens
     }
 

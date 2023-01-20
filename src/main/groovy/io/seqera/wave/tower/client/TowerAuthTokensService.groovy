@@ -7,7 +7,7 @@ interface TowerAuthTokensService {
 
     void updateAuthTokens(String endpoint, String providedRefreshToken, String providedAuthToken)
 
-    TowerTokens refreshTokens(String endpoint, TowerTokens tokens)
+    TowerTokens refreshTokens(String endpoint,String originalAuthToken, TowerTokens tokens)
 
     TowerTokens getTokens(String endpoint, String accessToken)
 }
