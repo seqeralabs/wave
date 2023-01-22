@@ -1,5 +1,6 @@
 package io.seqera.wave.tower.client
 
+import groovy.transform.CompileStatic
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.model.TowerTokens
 import io.seqera.wave.service.cache.AbstractCacheStore
@@ -7,6 +8,10 @@ import io.seqera.wave.service.cache.impl.CacheProvider
 
 import java.time.Duration
 
+import jakarta.inject.Singleton
+
+@Singleton
+@CompileStatic
 class TowerTokensStore extends AbstractCacheStore<TowerTokens> {
 
 
