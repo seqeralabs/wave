@@ -1,8 +1,5 @@
 package io.seqera.wave.controller
 
-import io.seqera.wave.model.TowerTokens
-import io.seqera.wave.tower.client.TowerAuthTokensService
-
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 import javax.annotation.PostConstruct
@@ -29,6 +26,7 @@ import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.security.SecurityService
 import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.tower.User
+import io.seqera.wave.tower.client.TowerAuthTokensService
 import io.seqera.wave.util.DataTimeUtils
 import jakarta.inject.Inject
 /**
@@ -103,7 +101,7 @@ class ContainerTokenController {
         //  We first check if the service is registered
         final registration = securityService.getServiceRegistration(SecurityService.TOWER_SERVICE, req.towerEndpoint)
         if( !registration )
-            throw new BadRequestException("No Tower service registered for instance '${req.towerEndpoint}")
+            throw new BadRequestException("Tower instance '${req.towerEndpoint}' has not enabled to connect Wave service '$serverUrl'")
         authorizationTokensService.updateAuthTokens(req.towerEndpoint, req.towerRefreshToken, req.towerAccessToken)
         return  userService
                 .getUserByAccessTokenAsync(registration.hostname, req.towerAccessToken)

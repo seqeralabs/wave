@@ -167,6 +167,7 @@ class TowerClient {
      * @return a future of the unparsed response
      */
     private CompletableFuture<HttpResponse<String>> authorizedGetAsyncWithRefresh(Client httpClient,URI uri, String endpoint, String authorization, boolean refresh) {
+        log.debug "Tower GET '$uri';  (can refresh token=$refresh)"
         final tokens = authTokensService.getTokens(endpoint, authorization)
         def request = HttpRequest.newBuilder()
                 .uri(uri)
@@ -175,6 +176,7 @@ class TowerClient {
                 .build()
         return httpRetryable.sendAsync(httpClient.httpClient, request, HttpResponse.BodyHandlers.ofString())
                     .thenCompose { resp ->
+                        log.debug "Tower GET '$uri' response: [${resp.statusCode()}] ${resp.body()}"
                         if (resp.statusCode() == 401 && tokens.refreshToken && refresh) {
                             return refreshJwtToken(httpClient, endpoint,authorization, tokens.refreshToken)
                                         .thenCompose {
@@ -205,6 +207,7 @@ class TowerClient {
      * @return
      */
     private CompletableFuture<TowerTokens> refreshJwtToken(Client httpClient, String towerEndpoint, String originalAuthToken, String refreshToken) {
+        log.debug "Tower refreshing access token '$towerEndpoint'"
         final body = "grant_type=refresh_token&refresh_token=${URLEncoder.encode(refreshToken,'UTF-8')}"
         final request = HttpRequest.newBuilder()
                                         .uri(refreshTokenEndpoint(towerEndpoint))
@@ -214,6 +217,7 @@ class TowerClient {
 
         return httpRetryable.sendAsync(httpClient.httpClient,request, HttpResponse.BodyHandlers.ofString())
                             .thenApply { resp ->
+                                log.debug "Tower refresh response: [${resp.statusCode()}] ${resp.body()}"
                                 if (resp.statusCode() != 200) {
                                     throw new HttpResponseException(401, "Unauthorized")
                                 }
