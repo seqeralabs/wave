@@ -240,7 +240,7 @@ class TowerClient {
 
         return httpRetryable.sendAsync(httpClient.httpClient,request, HttpResponse.BodyHandlers.ofString())
                             .thenApply { resp ->
-                                log.debug "Tower refresh response: [${resp.statusCode()}] ${resp.body()}"
+                                log.debug "Tower refresh response: [${resp.statusCode()}] ${resp.body()} - headers: ${RegHelper.dumpHeaders(resp.headers())}"
                                 if (resp.statusCode() != 200) {
                                     throw new HttpResponseException(401, "Unauthorized")
                                 }
