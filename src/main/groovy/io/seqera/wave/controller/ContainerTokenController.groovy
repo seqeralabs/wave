@@ -26,6 +26,7 @@ import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.security.SecurityService
 import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.tower.User
+import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
 import jakarta.inject.Inject
 /**
@@ -42,6 +43,7 @@ class ContainerTokenController {
     @Inject ContainerTokenService tokenService
     @Inject UserService userService
     @Inject SecurityService securityService
+    @Inject JwtAuthStore jwtAuthStore
 
     @Inject
     @Value('${wave.allowAnonymous}')
@@ -86,22 +88,24 @@ class ContainerTokenController {
 
     @Post
     CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
-        // anonymous access
-        if( !req.towerAccessToken ) {
-            return CompletableFuture.completedFuture(makeResponse(httpRequest, req, null))
-        }
-
         // this is needed for backward compatibility with old clients
         if( !req.towerEndpoint ) {
             req.towerEndpoint = towerEndpointUrl
         }
 
-        //  We first check if the service is registered
+        // anonymous access
+        if( !req.towerAccessToken ) {
+            return CompletableFuture.completedFuture(makeResponse(httpRequest, req, null))
+        }
+
+        // We first check if the service is registered
         final registration = securityService.getServiceRegistration(SecurityService.TOWER_SERVICE, req.towerEndpoint)
         if( !registration )
-            throw new BadRequestException("No Tower service registered for instance '${req.towerEndpoint}")
-
-        return  userService
+            throw new BadRequestException("Tower instance '${req.towerEndpoint}' has not enabled to connect Wave service '$serverUrl'")
+        // store the tower JWT tokens
+        jwtAuthStore.putJwtAuth(req.towerEndpoint, req.towerRefreshToken, req.towerAccessToken)
+        // find out the user associated with the specified tower access token
+        return userService
                 .getUserByAccessTokenAsync(registration.hostname, req.towerAccessToken)
                 .thenApply { User user -> makeResponse(httpRequest, req, user) }
     }
@@ -191,6 +195,9 @@ class ContainerTokenController {
                 req.containerConfig,
                 condaContent,
                 ContainerPlatform.of(req.containerPlatform),
+                // this token is the original one used in the submit container request
+                // in the presence of a refresh token this is used just as a key to retrieve
+                // the actual authorization tokens from the store
                 req.towerAccessToken,
                 req.towerEndpoint )
         return data

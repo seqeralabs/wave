@@ -33,7 +33,7 @@ class DockerAuthService {
         return credsJson(repos, userId, workspaceId, towerToken, towerEndpoint)
     }
 
-    protected String credsJson(Set<String> repositories, Long userId, Long workspaceId,String towerToken, String towerEndpoint) {
+    protected String credsJson(Set<String> repositories, Long userId, Long workspaceId, String towerToken, String towerEndpoint) {
         final hosts = new HashSet()
         final result = new StringBuilder()
         for( String repo : repositories ) {

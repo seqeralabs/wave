@@ -1,5 +1,6 @@
 package io.seqera.wave.auth
 
+
 import spock.lang.Requires
 import spock.lang.Specification
 

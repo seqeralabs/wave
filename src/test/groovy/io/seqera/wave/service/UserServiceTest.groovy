@@ -1,5 +1,6 @@
 package io.seqera.wave.service
 
+
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
@@ -48,12 +49,14 @@ class UserServiceTest extends Specification {
         def service = ctx.getBean(UserService)
 
         when: // a valid token
-        def user = service.getUserByAccessToken(host,"a valid token")
+        def token = "a valid token"
+        def user = service.getUserByAccessToken(host,token)
         then:
         user.id == 1
 
         when: // an invalid token
-        service.getUserByAccessToken(host,"foo")
+        token = "foo"
+        service.getUserByAccessToken(host,token)
         then:
         def exp = thrown(HttpResponseException)
         exp.statusCode().code == 401

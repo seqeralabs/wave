@@ -41,6 +41,7 @@ class UserServiceImpl implements UserService {
         })
     }
 
+    @Override
     User getUserByAccessToken(String endpoint, String encodedToken) {
         try {
             return getUserByAccessTokenAsync(endpoint, encodedToken).get()

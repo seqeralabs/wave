@@ -97,7 +97,9 @@ class HttpContainerTokenControllerTest extends Specification {
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
         SubmitContainerTokenRequest request =
-                new SubmitContainerTokenRequest(towerAccessToken: "1",
+                new SubmitContainerTokenRequest(
+                        towerAccessToken: "1",
+                        towerRefreshToken: "2",
                         towerEndpoint: "http://localhost:${port}",
                         towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64',)
         def ret = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", request), SubmitContainerTokenResponse)
@@ -118,7 +120,9 @@ class HttpContainerTokenControllerTest extends Specification {
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
         SubmitContainerTokenRequest request =
-                new SubmitContainerTokenRequest(towerAccessToken: 'foo',
+                new SubmitContainerTokenRequest(
+                        towerAccessToken: 'foo',
+                        towerRefreshToken: 'foo2',
                         towerEndpoint: "http://localhost:${port}",
                         towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64',)
         and:
@@ -130,7 +134,7 @@ class HttpContainerTokenControllerTest extends Specification {
         then:
         def err = thrown(HttpClientResponseException)
         and:
-        err.status == HttpStatus.UNAUTHORIZED
+        err.status == HttpStatus.NOT_FOUND
     }
 
     def 'should fail build request if the instance has not registered for key exchange' () {

@@ -1,5 +1,6 @@
 package io.seqera.wave.service
 
+
 import spock.lang.Specification
 
 import java.security.PublicKey
@@ -97,7 +98,7 @@ class CredentialsServiceTest extends Specification {
 
     def 'should fail if keys where not registered for the tower endpoint'() {
         when:
-        credentialsService.findRegistryCreds('quay.io',10,10,'token','endpoint')
+        credentialsService.findRegistryCreds('quay.io',10,10,"token",'endpoint')
 
         then: 'the security service does not have the key for the hostname'
         1 * securityService.getServiceRegistration(SecurityService.TOWER_SERVICE,'endpoint') >> null
@@ -107,9 +108,8 @@ class CredentialsServiceTest extends Specification {
     }
 
     def 'should return no registry credentials if the user has no credentials in tower' () {
-
         when:
-        def credentials = credentialsService.findRegistryCreds('quay.io', 10, 10, 'token','tower.io')
+        def credentials = credentialsService.findRegistryCreds('quay.io', 10, 10, "token",'tower.io')
         then: 'a key is found'
         1 * securityService.getServiceRegistration(SecurityService.TOWER_SERVICE, 'tower.io') >> new KeyRecord(
                 keyId: 'a-key-id',
@@ -118,7 +118,7 @@ class CredentialsServiceTest extends Specification {
                 privateKey: new byte[0], // we don't care about the value of the key
         )
         and: 'credentials are listed but are empty'
-        1 * towerClient.listCredentials('tower.io','token',10) >> CompletableFuture.completedFuture(new ListCredentialsResponse(credentials: []))
+        1 * towerClient.listCredentials('tower.io',"token",10) >> CompletableFuture.completedFuture(new ListCredentialsResponse(credentials: []))
 
         and: 'no registry credentials are returned'
         credentials == null
@@ -138,7 +138,7 @@ class CredentialsServiceTest extends Specification {
         )
 
         when:
-        def credentials = credentialsService.findRegistryCreds('quay.io', 10, 10, 'token','tower.io')
+        def credentials = credentialsService.findRegistryCreds('quay.io', 10, 10, "token",'tower.io')
 
         then: 'a key is found'
         1 * securityService.getServiceRegistration(SecurityService.TOWER_SERVICE, 'tower.io') >> new KeyRecord(
@@ -149,7 +149,7 @@ class CredentialsServiceTest extends Specification {
         )
 
         and: 'non matching credentials are listed'
-        1 * towerClient.listCredentials('tower.io','token',10) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
+        1 * towerClient.listCredentials('tower.io',"token",10) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
                 credentials: [nonContainerRegistryCredentials,otherRegistryCredentials]
         ))
 

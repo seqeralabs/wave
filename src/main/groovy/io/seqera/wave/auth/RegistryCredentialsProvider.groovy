@@ -2,6 +2,7 @@ package io.seqera.wave.auth
 
 
 import io.seqera.wave.core.ContainerPath
+
 /**
  * Model an abstract provider for container registry credentials
  *
@@ -35,7 +36,7 @@ interface RegistryCredentialsProvider {
      * @param workspaceId
      *      The tower workspace Id.
      * @param towerToken
-     *      The token used to authenticate with tower
+     *      The auth token used to access tower
      * @param towerEndpoint
      *      The tower endpoint used in the registration
      * @return

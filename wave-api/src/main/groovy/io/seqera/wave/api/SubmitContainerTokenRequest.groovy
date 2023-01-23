@@ -16,6 +16,11 @@ class SubmitContainerTokenRequest {
     String towerAccessToken
 
     /**
+     * Tower refresh token used to refresh the authorization
+     */
+    String towerRefreshToken
+
+    /**
      * Tower endpoint: the public address
      * of the tower instance to integrate with wave
      */
