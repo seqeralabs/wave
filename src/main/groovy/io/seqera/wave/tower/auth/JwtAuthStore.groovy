@@ -7,6 +7,7 @@ import io.seqera.wave.service.cache.impl.CacheProvider
 
 import java.time.Duration
 
+import io.seqera.wave.util.DigestFunctions
 import jakarta.inject.Singleton
 
 /**
@@ -26,9 +27,14 @@ class JwtAuthStore extends AbstractCacheStore<JwtAuth> {
         return "tower-jwt-store/v1:"
     }
 
+    /**
+     * Token should survive in the cache for all the lifespan of tower pipeline execution
+     * 
+     * @return The duration the token should service in the cache
+     */
     @Override
     protected Duration getDuration() {
-        return Duration.ofDays(7)
+        return Duration.ofDays(30)
     }
 
     void putJwtAuth(String endpoint, String providedRefreshToken, String providedAccessToken) {
@@ -47,8 +53,7 @@ class JwtAuthStore extends AbstractCacheStore<JwtAuth> {
         return this.get(tokensKey(endpoint, accessToken))?: new JwtAuth(accessToken)
     }
 
-
     private static String tokensKey(String endpoint, String initialRefreshToken) {
-        return "${endpoint}:${initialRefreshToken}"
+        return DigestFunctions.md5("${endpoint}:${initialRefreshToken}")
     }
 }
