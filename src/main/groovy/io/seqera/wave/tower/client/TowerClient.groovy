@@ -6,7 +6,6 @@ import io.seqera.wave.model.TowerTokens
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
@@ -19,9 +18,6 @@ import io.seqera.wave.util.HttpRetryable
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Singleton
 
-import java.util.concurrent.Executor
-import java.util.concurrent.Executors
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Tower service client
@@ -35,32 +31,35 @@ class TowerClient {
 
     private HttpRetryable httpRetryable
 
-    private Executor executor
-
     private TowerAuthTokensService authTokensService
 
+    private HttpClient client
 
     TowerClient(HttpRetryable httpRetryable, TowerAuthTokensService authTokensService) {
         this.httpRetryable = httpRetryable
         this.authTokensService = authTokensService
-        this.executor = createHttpExecutor()
+        this.client = HttpClient.newBuilder()
+                                .version(HttpClient.Version.HTTP_1_1)
+                                .connectTimeout(httpRetryable.config().connectTimeout)
+                                .build()
+
     }
 
     CompletableFuture<UserInfoResponse> userInfo(String towerEndpoint, String authorization) {
         final uri = userInfoEndpoint(towerEndpoint)
         log.debug "Getting Tower user-info: $uri"
-        return authorizedGetAsync(buildClient(), uri, towerEndpoint, authorization, UserInfoResponse)
+        return authorizedGetAsync(uri, towerEndpoint, authorization, UserInfoResponse)
     }
 
     CompletableFuture<ListCredentialsResponse> listCredentials(String towerEndpoint, String authorization, Long workspaceId) {
         final uri = listCredentialsEndpoint(towerEndpoint, workspaceId)
-        return authorizedGetAsync(buildClient(), uri,towerEndpoint, authorization, ListCredentialsResponse)
+        return authorizedGetAsync(uri,towerEndpoint, authorization, ListCredentialsResponse)
     }
 
     CompletableFuture<GetCredentialsKeysResponse> fetchEncryptedCredentials(String towerEndpoint, String authorization, String credentialsId, String encryptionKey, Long workspaceId) {
         log.debug "Getting ListCredentials tower-endpoint=$towerEndpoint; auth=$authorization"
         final uri = fetchCredentialsEndpoint(towerEndpoint, credentialsId, encryptionKey,workspaceId)
-        return authorizedGetAsync(buildClient(), uri, towerEndpoint, authorization, GetCredentialsKeysResponse)
+        return authorizedGetAsync(uri, towerEndpoint, authorization, GetCredentialsKeysResponse)
     }
 
     protected static URI fetchCredentialsEndpoint(String towerEndpoint, String credentialsId, String encryptionKey,Long workspaceId) {
@@ -136,19 +135,19 @@ class TowerClient {
      *      the type of the model to convert into
      * @return a future of T
      */
-    private <T> CompletableFuture<T> authorizedGetAsync(Client httpClient,URI uri, String towerEndpoint, String authorization, Class<T> type) {
-        return authorizedGetAsyncWithRefresh(httpClient, uri, towerEndpoint, authorization, true)
+    private <T> CompletableFuture<T> authorizedGetAsync(URI uri, String towerEndpoint, String authorization, Class<T> type) {
+        return authorizedGetAsyncWithRefresh(uri, towerEndpoint, authorization, true)
                     .thenCompose { resp ->
                         log.trace "Tower response for request GET '${uri}' => ${resp.statusCode()}"
                         switch (resp.statusCode()) {
                             case 200:
                                 return CompletableFuture.completedFuture(JacksonHelper.fromJson(resp.body(), type))
                             case 401:
-                                return CompletableFuture.failedFuture(new HttpResponseException(401, "Unauthorized"))
+                                throw new HttpResponseException(401, 'Unauthorized')
                             case 404:
-                                return CompletableFuture.failedFuture(makeNotFoundError(towerEndpoint,uri))
+                                throw makeNotFoundError(towerEndpoint,uri)
                             default:
-                                return CompletableFuture.failedFuture( makeGenericError(resp.statusCode(), towerEndpoint,uri, resp.body()))
+                                throw makeGenericError(resp.statusCode(), towerEndpoint,uri, resp.body())
                         }
                     }
     }
@@ -189,7 +188,8 @@ class TowerClient {
      *      the refresh token
      * @return a future of the unparsed response
      */
-    private CompletableFuture<HttpResponse<String>> authorizedGetAsyncWithRefresh(Client httpClient,URI uri, String endpoint, String authorization, boolean refresh) {
+    private CompletableFuture<HttpResponse<String>> authorizedGetAsyncWithRefresh(URI uri, String endpoint, String authorization, boolean refresh) {
+        log.debug "Tower GET '$uri';  (can refresh token=$refresh)"
         final tokens = authTokensService.getTokens(endpoint, authorization)
         log.debug "Tower GET '$uri';  (can refresh token=$refresh; tokens=$tokens)"
         def request = HttpRequest.newBuilder()
@@ -197,27 +197,17 @@ class TowerClient {
                 .header('Authorization', "Bearer ${tokens.authToken}")
                 .GET()
                 .build()
-        return httpRetryable.sendAsync(httpClient.httpClient, request, HttpResponse.BodyHandlers.ofString())
+        return httpRetryable.sendAsync(client, request, HttpResponse.BodyHandlers.ofString())
                     .thenCompose { resp ->
                         log.debug "Tower GET '$uri' response: [${resp.statusCode()}] ${resp.body()}"
                         if (resp.statusCode() == 401 && tokens.refreshToken && refresh) {
-                            return refreshJwtToken(httpClient, endpoint,authorization, tokens.refreshToken)
+                            return refreshJwtToken(endpoint,authorization, tokens.refreshToken)
                                         .thenCompose {
-                                            authorizedGetAsyncWithRefresh(httpClient,uri, endpoint, authorization,false)}
+                                            authorizedGetAsyncWithRefresh(uri, endpoint, authorization,false)}
                         } else {
                             return CompletableFuture.completedFuture(resp)
                         }
                     }
-    }
-
-    /**
-     * Provides a new
-     * client for each request
-     *
-     * @return {@link Client}
-     */
-    private Client buildClient() {
-        return Client.build(executor,httpRetryable.config().connectTimeout)
     }
 
 
@@ -229,7 +219,7 @@ class TowerClient {
      * @param refreshToken
      * @return
      */
-    private CompletableFuture<TowerTokens> refreshJwtToken(Client httpClient, String towerEndpoint, String originalAuthToken, String refreshToken) {
+    private CompletableFuture<TowerTokens> refreshJwtToken(String towerEndpoint, String originalAuthToken, String refreshToken) {
         log.debug "Tower refreshing access token '$towerEndpoint'"
         final body = "grant_type=refresh_token&refresh_token=${URLEncoder.encode(refreshToken,'UTF-8')}"
         final request = HttpRequest.newBuilder()
@@ -238,58 +228,39 @@ class TowerClient {
                                         .POST(HttpRequest.BodyPublishers.ofString(body))
                                         .build()
 
-        return httpRetryable.sendAsync(httpClient.httpClient,request, HttpResponse.BodyHandlers.ofString())
+        return httpRetryable.sendAsync(client,request, HttpResponse.BodyHandlers.ofString())
                             .thenApply { resp ->
                                 log.debug "Tower refresh response: [${resp.statusCode()}] ${resp.body()} - headers: ${RegHelper.dumpHeaders(resp.headers())}"
                                 if (resp.statusCode() != 200) {
                                     throw new HttpResponseException(401, "Unauthorized")
                                 }
-                                final authToken = httpClient.getCookieValue("JWT")
-                                final updatedRefreshToken = httpClient.getCookieValue("JWT_REFRESH_TOKEN")
-                                final freshTokens = new TowerTokens(authToken: authToken, refreshToken: updatedRefreshToken)
+                                def cookies = resp.headers().allValues('Set-Cookie')
+                                def freshTokens = parseTokens(cookies)
                                 return authTokensService.refreshTokens(towerEndpoint,originalAuthToken,freshTokens)
                             }
 
     }
 
-    /**
-     * Creates a cached thread pool similar to the default http client executor
-     * @return
-     */
-    private static Executor createHttpExecutor() {
-        final ids = new AtomicInteger()
-        return Executors.newCachedThreadPool {
-            final name = "tower-client-worker-${ids.getAndIncrement()}"
-            final thread = new Thread(null, it, name,0, false)
-            thread.setDaemon(true)
-            return thread
+    private static TowerTokens parseTokens(List<String> cookies) {
+        HttpCookie jwt = null
+        HttpCookie jwtRefresh = null
+        for (String cookie: cookies) {
+            def cookieList = HttpCookie.parse(cookie)
+            // pick the jwt if not done already
+            jwt = jwt?:cookieList.find {it.name == 'JWT'}
+            // pick the jwt_refresh if not done already
+            jwtRefresh = jwtRefresh?:cookieList.find {it.name == 'JWT_REFRESH_TOKEN'}
+            // if we have both short-circuit
+            if (jwt && jwtRefresh) {
+                return new TowerTokens(authToken: jwt.value, refreshToken: jwtRefresh.value)
+            }
         }
-    }
-
-    /**
-     * Wrapper of HttpClient and CookieManager
-     * built for each request to isolate them
-     * so that nothing is persisted between them
-     */
-    private static class Client {
-        HttpClient httpClient
-        CookieManager cookieManager
-
-
-        private static Client build(Executor executor, Duration connectTimeout) {
-            final cookieManager = new CookieManager()
-            final httpClient = HttpClient.newBuilder()
-                    .executor(executor)
-                    .version(HttpClient.Version.HTTP_1_1)
-                    .cookieHandler(cookieManager)
-                    .connectTimeout(connectTimeout)
-                    .build()
-            return new Client(httpClient: httpClient, cookieManager: cookieManager)
+        if (!jwt) {
+            log.warn('No tokens received from tower')
+            throw new HttpResponseException(401,'Unauthorized')
         }
-
-        private String getCookieValue(String name) {
-            return cookieManager.cookieStore.cookies.find { it.name == name}?.value
-        }
+        // this is the case where the server returned only the jwt
+        return new TowerTokens(authToken: jwt.value, refreshToken: jwtRefresh?.value)
     }
 
 }
