@@ -54,7 +54,7 @@ class TowerClient {
 
     CompletableFuture<ListCredentialsResponse> listCredentials(String towerEndpoint, String authorization, Long workspaceId) {
         final uri = listCredentialsEndpoint(towerEndpoint, workspaceId)
-        return authorizedGetAsync(uri,towerEndpoint, authorization, ListCredentialsResponse)
+        return authorizedGetAsync(uri, towerEndpoint, authorization, ListCredentialsResponse)
     }
 
     CompletableFuture<GetCredentialsKeysResponse> fetchEncryptedCredentials(String towerEndpoint, String authorization, String credentialsId, String encryptionKey, Long workspaceId) {

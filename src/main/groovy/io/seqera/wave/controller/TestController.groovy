@@ -58,14 +58,10 @@ class TestController {
                                    @Nullable String cache,
                                    @Nullable String endpoint,
                                    @Nullable String accessToken,
-                                   @Nullable String refreshToken,
                                    @Nullable Long workspaceId,
                                     HttpRequest httpRequest) {
         if( !accessToken && !allowAnonymous )
             throw new BadRequestException("Missing user access token")
-        if (accessToken && !refreshToken) {
-            throw new BadRequestException("Refresh token should be provided when accessToken is provided")
-        }
 
         final User user = accessToken
                 ? userService.getUserByAccessToken(endpoint,accessToken)
