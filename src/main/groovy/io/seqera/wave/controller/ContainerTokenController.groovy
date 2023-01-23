@@ -26,7 +26,7 @@ import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.security.SecurityService
 import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.tower.User
-import io.seqera.wave.tower.client.JwtAuthStore
+import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
 import jakarta.inject.Inject
 /**

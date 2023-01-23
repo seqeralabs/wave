@@ -1,4 +1,4 @@
-package io.seqera.wave.tower.client
+package io.seqera.wave.tower.auth
 
 import groovy.transform.Canonical
 

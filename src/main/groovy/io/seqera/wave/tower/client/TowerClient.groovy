@@ -13,6 +13,8 @@ import groovy.util.logging.Slf4j
 import io.micronaut.http.exceptions.UriSyntaxException
 import io.micronaut.http.uri.UriBuilder
 import io.seqera.wave.exception.HttpResponseException
+import io.seqera.wave.tower.auth.JwtAuth
+import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.HttpRetryable
 import io.seqera.wave.util.JacksonHelper
 import io.seqera.wave.util.RegHelper

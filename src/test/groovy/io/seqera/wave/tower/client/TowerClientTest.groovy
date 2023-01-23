@@ -19,6 +19,7 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.tower.User
+import io.seqera.wave.tower.auth.JwtAuthStore
 import jakarta.inject.Inject
 import spock.lang.Specification
 
