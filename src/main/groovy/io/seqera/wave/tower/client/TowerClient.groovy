@@ -281,7 +281,7 @@ class TowerClient {
             final httpClient = HttpClient.newBuilder()
                     .executor(executor)
                     .version(HttpClient.Version.HTTP_1_1)
-                    .cookieHandler(new CookieManager())
+                    .cookieHandler(cookieManager)
                     .connectTimeout(connectTimeout)
                     .build()
             return new Client(httpClient: httpClient, cookieManager: cookieManager)

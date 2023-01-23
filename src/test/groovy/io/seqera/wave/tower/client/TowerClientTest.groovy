@@ -106,6 +106,7 @@ class TowerClientTest extends Specification{
         return embeddedServer.getURL().toString()
     }
 
+
     def "test user-info"() {
         when: 'requesting user info with a valid token'
         def resp = towerClient.userInfo(hostName,"token").get()
