@@ -6,30 +6,31 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.tower.crypto.AsymmetricCipher
 import io.seqera.wave.exchange.PairServiceResponse
+import io.seqera.wave.exchange.PairingResponse
 import io.seqera.wave.util.DigestFunctions
 import jakarta.inject.Inject
 
 /**
- * https://www.baeldung.com/java-rsa
+ * Implements the pairing service for Tower and Wave credentials federation
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @CompileStatic
-class SecurityServiceImpl implements SecurityService {
+class PairingServiceImpl implements PairingService {
 
     @Inject
-    private KeysCacheStore store
+    private PairingCacheStore store
 
     @Override
-    PairServiceResponse getPublicKey(String service, String endpoint) {
+    PairingResponse getPairingKey(String service, String endpoint) {
         final uid =  makeKey(service,endpoint)
 
         def entry = store.get(uid)
         if (!entry) {
-            log.debug "Pairing with service '${service}' at address $endpoint - key id: $uid"
+            log.debug "Pairing with service '${service}' at address $endpoint - pairing id: $uid"
             final keyPair = generate()
-            final newEntry = new KeyRecord(service, endpoint, uid, keyPair.getPrivate().getEncoded(), keyPair.getPublic().getEncoded())
+            final newEntry = new PairingRecord(service, endpoint, uid, keyPair.getPrivate().getEncoded(), keyPair.getPublic().getEncoded())
             // checking the presence of the entry before the if, only optimizes
             // the hot path, when the key has already been created, but cannot
             // guarantee the correctness in case of multiple concurrent invocations,
@@ -38,14 +39,19 @@ class SecurityServiceImpl implements SecurityService {
             entry = store.putIfAbsentAndGetCurrent(uid,newEntry)
         }
         else {
-            log.trace "Paired already with service '${service}' at address $endpoint - using existing key id: $uid"
+            log.trace "Paired already with service '${service}' at address $endpoint - pairing id: $uid"
         }
 
-        return new PairServiceResponse( keyId: uid, publicKey: entry.publicKey.encodeBase64() )
+        return new PairingResponse( pairingId: uid, publicKey: entry.publicKey.encodeBase64() )
+    }
+
+    PairServiceResponse getPublicKey(String service, String endpoint) {
+        final resp = getPairingKey(service, endpoint)
+        return new PairServiceResponse(publicKey: resp.publicKey, keyId: resp.pairingId)
     }
 
     @Override
-    KeyRecord getServiceRegistration(String service, String endpoint) {
+    PairingRecord getPairingRecord(String service, String endpoint) {
         final uid = makeKey(service, endpoint)
         return store.get(uid)
     }

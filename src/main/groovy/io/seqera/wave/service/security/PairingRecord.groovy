@@ -10,10 +10,10 @@ import groovy.transform.ToString
  */
 @Canonical
 @ToString(excludes = 'privateKey')
-class KeyRecord {
+class PairingRecord {
     String service
-    String hostname
-    String keyId
+    String endpoint
+    String pairingId
     byte[] privateKey
     byte[] publicKey
 }

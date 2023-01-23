@@ -9,8 +9,8 @@ import java.util.concurrent.CompletableFuture
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.tower.crypto.AsymmetricCipher
-import io.seqera.wave.service.security.KeyRecord
-import io.seqera.wave.service.security.SecurityService
+import io.seqera.wave.service.security.PairingRecord
+import io.seqera.wave.service.security.PairingService
 import io.seqera.wave.tower.client.CredentialsDescription
 import io.seqera.wave.tower.client.GetCredentialsKeysResponse
 import io.seqera.wave.tower.client.ListCredentialsResponse
@@ -30,8 +30,8 @@ class CredentialsServiceTest extends Specification {
     TowerClient towerClient = Mock(TowerClient)
 
 
-    @MockBean(SecurityService)
-    SecurityService securityService = Mock(SecurityService)
+    @MockBean(PairingService)
+    PairingService securityService = Mock(PairingService)
 
     static AsymmetricCipher TEST_CIPHER = AsymmetricCipher.getInstance()
 
@@ -45,10 +45,10 @@ class CredentialsServiceTest extends Specification {
         and: 'a previously registered key'
         def keypair = TEST_CIPHER.generateKeyPair()
         def keyId = 'generated-key-id'
-        def keyRecord = new KeyRecord(
-                service: SecurityService.TOWER_SERVICE,
-                hostname: towerEndpoint,
-                keyId: keyId,
+        def keyRecord = new PairingRecord(
+                service: PairingService.TOWER_SERVICE,
+                endpoint: towerEndpoint,
+                pairingId: keyId,
                 privateKey: keypair.private.getEncoded()
         )
 
@@ -78,7 +78,7 @@ class CredentialsServiceTest extends Specification {
         def credentials = credentialsService.findRegistryCreds("quay.io",userId, workspaceId,token,towerEndpoint)
 
         then: 'the registered key is fetched correctly from the security service'
-        1 * securityService.getServiceRegistration(SecurityService.TOWER_SERVICE,towerEndpoint) >> keyRecord
+        1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE,towerEndpoint) >> keyRecord
 
         and: 'credentials are listed once and return a potential match'
         1 * towerClient.listCredentials(towerEndpoint,token,workspaceId) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
@@ -101,7 +101,7 @@ class CredentialsServiceTest extends Specification {
         credentialsService.findRegistryCreds('quay.io',10,10,"token",'endpoint')
 
         then: 'the security service does not have the key for the hostname'
-        1 * securityService.getServiceRegistration(SecurityService.TOWER_SERVICE,'endpoint') >> null
+        1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE,'endpoint') >> null
 
         and:
         thrown(IllegalStateException)
@@ -111,10 +111,10 @@ class CredentialsServiceTest extends Specification {
         when:
         def credentials = credentialsService.findRegistryCreds('quay.io', 10, 10, "token",'tower.io')
         then: 'a key is found'
-        1 * securityService.getServiceRegistration(SecurityService.TOWER_SERVICE, 'tower.io') >> new KeyRecord(
-                keyId: 'a-key-id',
-                service: SecurityService.TOWER_SERVICE,
-                hostname: 'tower.io',
+        1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE, 'tower.io') >> new PairingRecord(
+                pairingId: 'a-key-id',
+                service: PairingService.TOWER_SERVICE,
+                endpoint: 'tower.io',
                 privateKey: new byte[0], // we don't care about the value of the key
         )
         and: 'credentials are listed but are empty'
@@ -141,10 +141,10 @@ class CredentialsServiceTest extends Specification {
         def credentials = credentialsService.findRegistryCreds('quay.io', 10, 10, "token",'tower.io')
 
         then: 'a key is found'
-        1 * securityService.getServiceRegistration(SecurityService.TOWER_SERVICE, 'tower.io') >> new KeyRecord(
-                keyId: 'a-key-id',
-                service: SecurityService.TOWER_SERVICE,
-                hostname: 'tower.io',
+        1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE, 'tower.io') >> new PairingRecord(
+                pairingId: 'a-key-id',
+                service: PairingService.TOWER_SERVICE,
+                endpoint: 'tower.io',
                 privateKey: new byte[0], // we don't care about the value of the key
         )
 

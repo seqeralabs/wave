@@ -15,7 +15,9 @@ import io.micronaut.http.annotation.Post
 import io.micronaut.validation.Validated
 import io.seqera.wave.exchange.PairServiceRequest
 import io.seqera.wave.exchange.PairServiceResponse
-import io.seqera.wave.service.security.SecurityService
+import io.seqera.wave.exchange.PairingRequest
+import io.seqera.wave.exchange.PairingResponse
+import io.seqera.wave.service.security.PairingService
 import jakarta.inject.Inject
 /**
  * Allow a remote Tower instance to register itself
@@ -26,11 +28,18 @@ import jakarta.inject.Inject
 @CompileStatic
 @Controller("/")
 @Validated
-class PairingServiceController {
+class PairingController {
 
     @Inject
-    private SecurityService securityService
+    private PairingService securityService
 
+    @Post('/pairing')
+    HttpResponse<PairingResponse> pairService(@Valid @Body PairingRequest req) {
+        final key = securityService.getPairingKey(req.service, req.endpoint)
+        return HttpResponse.ok(key)
+    }
+
+    @Deprecated
     @Post('/pair-service')
     HttpResponse<PairServiceResponse> pairService(@Valid @Body PairServiceRequest req) {
         final key = securityService.getPublicKey(req.service, req.endpoint)

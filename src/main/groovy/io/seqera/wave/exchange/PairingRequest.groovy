@@ -12,10 +12,9 @@ import io.micronaut.core.annotation.Introspected
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Deprecated
 @CompileStatic
 @Introspected
-class PairServiceRequest {
+class PairingRequest {
 
     @NotBlank
     @NotNull
@@ -25,7 +24,7 @@ class PairServiceRequest {
     @NotNull
     String endpoint
 
-    PairServiceRequest(String service=null, String endpoint=null) {
+    PairingRequest(String service=null, String endpoint=null) {
         this.service = service
         this.endpoint = endpoint
     }

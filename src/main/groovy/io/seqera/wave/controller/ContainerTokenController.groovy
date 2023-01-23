@@ -23,7 +23,7 @@ import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
-import io.seqera.wave.service.security.SecurityService
+import io.seqera.wave.service.security.PairingService
 import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
@@ -42,7 +42,7 @@ class ContainerTokenController {
     @Inject HttpClientAddressResolver addressResolver
     @Inject ContainerTokenService tokenService
     @Inject UserService userService
-    @Inject SecurityService securityService
+    @Inject PairingService securityService
     @Inject JwtAuthStore jwtAuthStore
 
     @Inject
@@ -99,14 +99,14 @@ class ContainerTokenController {
         }
 
         // We first check if the service is registered
-        final registration = securityService.getServiceRegistration(SecurityService.TOWER_SERVICE, req.towerEndpoint)
+        final registration = securityService.getPairingRecord(PairingService.TOWER_SERVICE, req.towerEndpoint)
         if( !registration )
             throw new BadRequestException("Tower instance '${req.towerEndpoint}' has not enabled to connect Wave service '$serverUrl'")
         // store the tower JWT tokens
         jwtAuthStore.putJwtAuth(req.towerEndpoint, req.towerRefreshToken, req.towerAccessToken)
         // find out the user associated with the specified tower access token
         return userService
-                .getUserByAccessTokenAsync(registration.hostname, req.towerAccessToken)
+                .getUserByAccessTokenAsync(registration.endpoint, req.towerAccessToken)
                 .thenApply { User user -> makeResponse(httpRequest, req, user) }
     }
 

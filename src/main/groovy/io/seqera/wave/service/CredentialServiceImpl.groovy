@@ -4,7 +4,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.tower.crypto.AsymmetricCipher
 import io.seqera.tower.crypto.EncryptedPacket
-import io.seqera.wave.service.security.SecurityService
+import io.seqera.wave.service.security.PairingService
 import io.seqera.wave.tower.client.TowerClient
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -20,27 +20,23 @@ import static io.seqera.wave.WaveDefault.DOCKER_IO
 class CredentialServiceImpl implements CredentialsService {
 
     @Inject
-    TowerClient towerClient
+    private TowerClient towerClient
 
     @Inject
-    SecurityService keyService
+    private PairingService keyService
 
     @Override
     ContainerRegistryKeys findRegistryCreds(String registryName, Long userId, Long workspaceId, String towerToken, String towerEndpoint) {
-
         if (!userId)
             throw new IllegalArgumentException("Missing userId parameter")
         if (!towerToken)
             throw new IllegalArgumentException("Missing Tower access token")
 
-        final keyRecord = keyService.getServiceRegistration(SecurityService.TOWER_SERVICE, towerEndpoint)
+        final pairing = keyService.getPairingRecord(PairingService.TOWER_SERVICE, towerEndpoint)
+        if (!pairing)
+            throw new IllegalStateException("No exchange key registered for service ${PairingService.TOWER_SERVICE} at endpoint: ${towerEndpoint}")
 
-        if (!keyRecord)
-            throw new IllegalStateException("No exchange key registered for service ${SecurityService.TOWER_SERVICE} at endpoint: ${towerEndpoint}")
-
-        final towerHostName = keyRecord.hostname
-
-        final all = towerClient.listCredentials(towerHostName, towerToken, workspaceId).get().credentials
+        final all = towerClient.listCredentials(towerEndpoint, towerToken, workspaceId).get().credentials
 
         if (!all)
             return null
@@ -63,8 +59,8 @@ class CredentialServiceImpl implements CredentialsService {
             return null
 
         // now fetch the encrypted key
-        final encryptedCredentials = towerClient.fetchEncryptedCredentials(towerHostName,towerToken,creds.id,keyRecord.keyId,workspaceId).get()
-        final privateKey = keyRecord.privateKey
+        final encryptedCredentials = towerClient.fetchEncryptedCredentials(towerEndpoint, towerToken, creds.id, pairing.pairingId, workspaceId).get()
+        final privateKey = pairing.privateKey
         final credentials = decryptCredentials(privateKey, encryptedCredentials.keys)
 
         return parsePayload(credentials)

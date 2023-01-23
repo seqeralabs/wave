@@ -9,8 +9,7 @@ import groovy.transform.CompileStatic
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-@Deprecated
-class PairServiceResponse {
+class PairingResponse {
+    String pairingId
     String publicKey
-    String keyId
 }

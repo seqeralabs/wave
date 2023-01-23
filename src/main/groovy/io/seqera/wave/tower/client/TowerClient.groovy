@@ -52,20 +52,22 @@ class TowerClient {
         return authorizedGetAsync(uri, towerEndpoint, authorization, ListCredentialsResponse)
     }
 
-    CompletableFuture<GetCredentialsKeysResponse> fetchEncryptedCredentials(String towerEndpoint, String authorization, String credentialsId, String encryptionKey, Long workspaceId) {
-        final uri = fetchCredentialsEndpoint(towerEndpoint, credentialsId, encryptionKey,workspaceId)
+    CompletableFuture<GetCredentialsKeysResponse> fetchEncryptedCredentials(String towerEndpoint, String authorization, String credentialsId, String pairingId, Long workspaceId) {
+        final uri = fetchCredentialsEndpoint(towerEndpoint, credentialsId, pairingId, workspaceId)
         return authorizedGetAsync(uri, towerEndpoint, authorization, GetCredentialsKeysResponse)
     }
 
-    protected static URI fetchCredentialsEndpoint(String towerEndpoint, String credentialsId, String encryptionKey, Long workspaceId) {
+    protected static URI fetchCredentialsEndpoint(String towerEndpoint, String credentialsId, String pairingId, Long workspaceId) {
         if( !towerEndpoint )
             throw new IllegalArgumentException("Missing towerEndpoint argument")
         if (!credentialsId)
             throw new IllegalArgumentException("Missing credentialsId argument")
-        if (!encryptionKey)
+        if (!pairingId)
             throw new IllegalArgumentException("Missing encryptionKey argument")
 
-        def uri = "${checkEndpoint(towerEndpoint)}/credentials/$credentialsId/keys?keyId=$encryptionKey"
+        // keep `keyId` only for backward compatibility
+        // it should be removed in a following version in favour of `pairingId`
+        def uri = "${checkEndpoint(towerEndpoint)}/credentials/$credentialsId/keys?pairingId=$pairingId&keyId=$pairingId"
         if( workspaceId!=null )
             uri += "&workspaceId=$workspaceId"
 

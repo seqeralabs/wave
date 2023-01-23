@@ -7,22 +7,22 @@ import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.cache.AbstractCacheStore
 import io.seqera.wave.service.cache.impl.CacheProvider
 /**
- * Implements a cache store for {@link KeyRecord}
+ * Implements a cache store for {@link PairingRecord}
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class KeysCacheStore extends AbstractCacheStore<KeyRecord> {
+class PairingCacheStore extends AbstractCacheStore<PairingRecord> {
 
-    @Value('${wave.security-keys.duration:`30d`}')
+    @Value('${wave.pairing-keys.duration:`30d`}')
     private Duration duration
 
-    KeysCacheStore(CacheProvider<String, String> provider) {
-        super(provider, new MoshiEncodeStrategy<KeyRecord>() {})
+    PairingCacheStore(CacheProvider<String, String> provider) {
+        super(provider, new MoshiEncodeStrategy<PairingRecord>() {})
     }
 
     @Override
     protected String getPrefix() {
-        return 'security-keys/v1:'
+        return 'pairing-keys/v1:'
     }
 
     /**

@@ -12,14 +12,14 @@ import groovy.util.logging.Slf4j
 import io.seqera.wave.service.cache.impl.LocalCacheProvider
 
 @Slf4j
-class SecurityServiceTest extends Specification{
+class PairingServiceTest extends Specification{
 
     def 'check security service generates credentials'() {
         given: 'a cache store'
-        final store = new KeysCacheStore(new LocalCacheProvider())
+        final store = new PairingCacheStore(new LocalCacheProvider())
 
         and: 'a security service using it'
-        final service = new SecurityServiceImpl(store: store)
+        final service = new PairingServiceImpl(store: store)
 
         when: 'we get a public key'
         def key = service.getPublicKey("tower","tower.io:9090")
@@ -33,7 +33,7 @@ class SecurityServiceTest extends Specification{
 
         and: 'the key is associated with the instance the asked for it'
         storedKey.service == 'tower'
-        storedKey.hostname == "tower.io:9090"
+        storedKey.endpoint == "tower.io:9090"
 
         and: 'the key contains the private part of the key pair'
         storedKey.privateKey
@@ -46,10 +46,10 @@ class SecurityServiceTest extends Specification{
 
     def "generate keys only if not present"() {
         given: 'a cache store'
-        final store = new KeysCacheStore(new LocalCacheProvider())
+        final store = new PairingCacheStore(new LocalCacheProvider())
 
         and: 'a security service using the cache store'
-        final service = new SecurityServiceImpl(store: store)
+        final service = new PairingServiceImpl(store: store)
 
         when: 'we get the key two times for the same service and endpoint'
         def firstKey = service.getPublicKey("tower", "tower.io:9090")

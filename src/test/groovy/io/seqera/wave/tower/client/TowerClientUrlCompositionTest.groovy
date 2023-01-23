@@ -84,14 +84,14 @@ class TowerClientUrlCompositionTest extends Specification{
         where:
 
         endpoint                  | credsId | keyId | workspaceId || expected
-        'http://tower:8080'       | '0'     | '0'   |  null      || 'http://tower:8080/credentials/0/keys?keyId=0'
-        'http://tower:8080'       | '1'     | '1'   |  100       || 'http://tower:8080/credentials/1/keys?keyId=1&workspaceId=100'
-        'http://tower:8080/'      | '1'     | '2'   |  null      || 'http://tower:8080/credentials/1/keys?keyId=2'
-        'http://tower:8080/'      | '1'     | '3'   |  100       || 'http://tower:8080/credentials/1/keys?keyId=3&workspaceId=100'
-        'http://tower:8080/api'   | '1'     | '4'   |  null      || 'http://tower:8080/api/credentials/1/keys?keyId=4'
-        'http://tower:8080/api'   | '1'     | '5'   |  100       || 'http://tower:8080/api/credentials/1/keys?keyId=5&workspaceId=100'
-        'http://tower:8080/api/'  | '1'     | '6'   |  null      || 'http://tower:8080/api/credentials/1/keys?keyId=6'
-        'http://tower:8080/api/'  | '1'     | '7'   |  0         || 'http://tower:8080/api/credentials/1/keys?keyId=7&workspaceId=0'
+        'http://tower:8080'       | '0'     | '0'   |  null      || 'http://tower:8080/credentials/0/keys?pairingId=0&keyId=0'
+        'http://tower:8080'       | '1'     | '1'   |  100       || 'http://tower:8080/credentials/1/keys?pairingId=1&keyId=1&workspaceId=100'
+        'http://tower:8080/'      | '1'     | '2'   |  null      || 'http://tower:8080/credentials/1/keys?pairingId=2&keyId=2'
+        'http://tower:8080/'      | '1'     | '3'   |  100       || 'http://tower:8080/credentials/1/keys?pairingId=3&keyId=3&workspaceId=100'
+        'http://tower:8080/api'   | '1'     | '4'   |  null      || 'http://tower:8080/api/credentials/1/keys?pairingId=4&keyId=4'
+        'http://tower:8080/api'   | '1'     | '5'   |  100       || 'http://tower:8080/api/credentials/1/keys?pairingId=5&keyId=5&workspaceId=100'
+        'http://tower:8080/api/'  | '1'     | '6'   |  null      || 'http://tower:8080/api/credentials/1/keys?pairingId=6&keyId=6'
+        'http://tower:8080/api/'  | '1'     | '7'   |  0         || 'http://tower:8080/api/credentials/1/keys?pairingId=7&keyId=7&workspaceId=0'
     }
 
     def 'fail compose fetch credentials endpoint with invalid towerEndpoint or missing data'() {

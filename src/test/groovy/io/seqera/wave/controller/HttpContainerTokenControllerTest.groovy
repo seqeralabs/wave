@@ -20,8 +20,8 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
-import io.seqera.wave.service.security.KeyRecord
-import io.seqera.wave.service.security.SecurityService
+import io.seqera.wave.service.security.PairingRecord
+import io.seqera.wave.service.security.PairingService
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.client.UserInfoResponse
 
@@ -35,8 +35,8 @@ class HttpContainerTokenControllerTest extends Specification {
 
     @MockBean
     @Primary
-    SecurityService getSecurityService(){
-        return Stub(SecurityService.class)
+    PairingService getSecurityService(){
+        return Stub(PairingService.class)
     }
 
     @Requires(property = 'spec.name', value = 'HttpContainerTokenController')
@@ -92,7 +92,7 @@ class HttpContainerTokenControllerTest extends Specification {
         HttpClient client = applicationContext.createBean(HttpClient)
 
         and:
-        applicationContext.getBean(SecurityService).getServiceRegistration("tower", _) >> new KeyRecord(service: "tower", hostname: "http://localhost:${port}")
+        applicationContext.getBean(PairingService).getPairingRecord("tower", _) >> new PairingRecord(service: "tower", endpoint: "http://localhost:${port}")
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
@@ -115,7 +115,7 @@ class HttpContainerTokenControllerTest extends Specification {
         HttpClient client = applicationContext.createBean(HttpClient)
 
         and:
-        applicationContext.getBean(SecurityService).getServiceRegistration("tower", _) >> new KeyRecord(service: "tower", hostname: "http://localhost:${port}")
+        applicationContext.getBean(PairingService).getPairingRecord("tower", _) >> new PairingRecord(service: "tower", endpoint: "http://localhost:${port}")
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
@@ -141,7 +141,7 @@ class HttpContainerTokenControllerTest extends Specification {
         given:
         HttpClient client = applicationContext.createBean(HttpClient)
         and:
-        applicationContext.getBean(SecurityService).getServiceRegistration("tower",_) >> null
+        applicationContext.getBean(PairingService).getPairingRecord("tower",_) >> null
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
         def request = new SubmitContainerTokenRequest(
