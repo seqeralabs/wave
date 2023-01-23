@@ -163,13 +163,13 @@ class TowerClient {
 
     private static <T> HttpResponseException makeGenericError(int status, String endpoint,URI uri,  T body) {
         final message = """
-            Failed to get credentials keys from '${endpoint}', while contactint tower at '${uri}'.
+            Failed to get credentials keys from '${endpoint}', while contacting tower at '${uri}'.
             Status: [${status}]
             Response from server:
             `
             ${JacksonHelper.toJson(body)}
             `
-        """.trim()
+            """.stripIndent().trim()
         return new HttpResponseException(status, message)
     }
 
