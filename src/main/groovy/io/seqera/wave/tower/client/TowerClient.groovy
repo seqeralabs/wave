@@ -16,6 +16,7 @@ import io.micronaut.http.uri.UriBuilder
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.util.HttpRetryable
 import io.seqera.wave.util.JacksonHelper
+import io.seqera.wave.util.RegHelper
 import jakarta.inject.Singleton
 
 
