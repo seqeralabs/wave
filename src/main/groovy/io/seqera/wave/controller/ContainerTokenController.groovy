@@ -98,12 +98,14 @@ class ContainerTokenController {
             return CompletableFuture.completedFuture(makeResponse(httpRequest, req, null))
         }
 
-        //  We first check if the service is registered
+        // We first check if the service is registered
         final registration = securityService.getServiceRegistration(SecurityService.TOWER_SERVICE, req.towerEndpoint)
         if( !registration )
             throw new BadRequestException("Tower instance '${req.towerEndpoint}' has not enabled to connect Wave service '$serverUrl'")
+        // store the tower JWT tokens
         jwtAuthStore.putJwtAuth(req.towerEndpoint, req.towerRefreshToken, req.towerAccessToken)
-        return  userService
+        // find out the user associated with the specified tower access token
+        return userService
                 .getUserByAccessTokenAsync(registration.hostname, req.towerAccessToken)
                 .thenApply { User user -> makeResponse(httpRequest, req, user) }
     }

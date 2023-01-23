@@ -15,7 +15,6 @@ class SubmitContainerTokenRequest {
      */
     String towerAccessToken
 
-
     /**
      * Tower refresh token used to refresh the authorization
      */
