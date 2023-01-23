@@ -246,7 +246,7 @@ class TowerClientTest extends Specification{
         TowerClient.parseTokens(cookies,'current-refresh')
         then:
         def e = thrown(HttpResponseException)
-        e.statusCode() == HttpStatus.UNAUTHORIZED
+        e.statusCode() == HttpStatus.PRECONDITION_FAILED
 
         where:
         cookies                                             || _
