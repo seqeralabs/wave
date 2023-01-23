@@ -223,6 +223,44 @@ class TowerClientTest extends Specification{
         (e.cause as HttpResponseException).statusCode() == HttpStatus.UNAUTHORIZED
     }
 
+    def 'parse tokens'() {
+        when:
+        def tokens = TowerClient.parseTokens(cookies,'current-refresh')
+
+        then:
+        tokens.refreshToken == expectedRefresh
+        tokens.authToken == expectedAuth
+
+        where:
+
+        cookies                                                                                           || expectedAuth | expectedRefresh
+        List.of(cookie('JWT','jwt'))                                                                      || 'jwt'         | 'current-refresh'
+        List.of(cookie('JWT','jwt1'), cookie('JWT_REFRESH_TOKEN','jwt-refresh1'))                         || 'jwt1'        | 'jwt-refresh1'
+        List.of(cookie('JWT_REFRESH_TOKEN','jwt-refresh2'),cookie('JWT','jwt2'))                          || 'jwt2'        | 'jwt-refresh2'
+        List.of(cookie('OTHER','other'),cookie('JWT','jwt3'))                                             || 'jwt3'        | 'current-refresh'
+        List.of(cookie('JWT','jwt'),cookie('JWT_REFRESH_TOKEN','jwt-refresh'),cookie('OTHER','other'))    || 'jwt'        | 'jwt-refresh'
+
+    }
+
+    def 'parse tokens when there is no jwt'() {
+        when:
+        TowerClient.parseTokens(cookies,'current-refresh')
+        then:
+        def e = thrown(HttpResponseException)
+        e.statusCode() == HttpStatus.UNAUTHORIZED
+
+        where:
+
+        cookies                                             || _
+        List.of()                                           || _
+        List.of(cookie('JWT_REFRESH_TOKEN','jwt-refresh'))  || _
+        List.of(cookie('OTHER','other'))                    || _
+    }
+
+    private static String cookie(String name, String value) {
+        return new HttpCookie(name, value).toString()
+    }
+
 
 
 }

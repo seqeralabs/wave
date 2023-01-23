@@ -242,7 +242,7 @@ class TowerClient {
 
     }
 
-    private static TowerTokens parseTokens(List<String> cookies, String refreshToken) {
+    protected static TowerTokens parseTokens(List<String> cookies, String refreshToken) {
         HttpCookie jwt = null
         HttpCookie jwtRefresh = null
         for (String cookie: cookies) {
