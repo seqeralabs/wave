@@ -2,7 +2,6 @@ package io.seqera.wave.auth
 
 
 import io.seqera.wave.core.ContainerPath
-import io.seqera.wave.model.TowerTokens
 
 /**
  * Model an abstract provider for container registry credentials

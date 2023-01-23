@@ -228,8 +228,8 @@ class TowerClientTest extends Specification{
         def tokens = TowerClient.parseTokens(cookies,'current-refresh')
 
         then:
-        tokens.refreshToken == expectedRefresh
-        tokens.authToken == expectedAuth
+        tokens.refresh == expectedRefresh
+        tokens.bearer == expectedAuth
 
         where:
         cookies                                                                                           || expectedAuth | expectedRefresh

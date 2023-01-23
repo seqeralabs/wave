@@ -4,7 +4,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.core.ContainerPath
-import io.seqera.wave.model.TowerTokens
 import io.seqera.wave.service.CredentialsService
 import jakarta.inject.Inject
 import jakarta.inject.Singleton

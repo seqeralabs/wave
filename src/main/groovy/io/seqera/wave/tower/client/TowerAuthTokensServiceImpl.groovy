@@ -1,6 +1,6 @@
 package io.seqera.wave.tower.client
 
-import io.seqera.wave.model.TowerTokens
+
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
@@ -13,20 +13,20 @@ class TowerAuthTokensServiceImpl implements TowerAuthTokensService {
     @Override
     void updateAuthTokens(String endpoint, String providedRefreshToken, String providedAuthToken) {
         if (providedRefreshToken) {
-            final tokens = new TowerTokens(authToken: providedAuthToken, refreshToken: providedRefreshToken)
+            final tokens = new JwtAuth(providedAuthToken, providedRefreshToken)
             tokensStore.put(tokensKey(endpoint,providedAuthToken), tokens)
         }
     }
 
     @Override
-    TowerTokens refreshTokens(String endpoint,String originalAuthToken, TowerTokens tokens) {
+    JwtAuth refreshTokens(String endpoint, String originalAuthToken, JwtAuth tokens) {
         tokensStore.put(tokensKey(endpoint,originalAuthToken), tokens)
         return tokens
     }
 
     @Override
-    TowerTokens getTokens(String endpoint, String accessToken) {
-        return tokensStore.get(tokensKey(endpoint, accessToken))?: new TowerTokens(authToken: accessToken)
+    JwtAuth getJwtAuth(String endpoint, String accessToken) {
+        return tokensStore.get(tokensKey(endpoint, accessToken))?: new JwtAuth(accessToken)
     }
 
 

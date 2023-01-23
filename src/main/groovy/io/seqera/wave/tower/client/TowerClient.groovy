@@ -1,7 +1,6 @@
 package io.seqera.wave.tower.client
 
 import groovy.transform.stc.SimpleType
-import io.seqera.wave.model.TowerTokens
 
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -191,18 +190,18 @@ class TowerClient {
      */
     private CompletableFuture<HttpResponse<String>> authorizedGetAsyncWithRefresh(URI uri, String endpoint, String authorization, boolean refresh) {
         log.debug "Tower GET '$uri';  (can refresh token=$refresh)"
-        final tokens = authTokensService.getTokens(endpoint, authorization)
+        final tokens = authTokensService.getJwtAuth(endpoint, authorization)
         log.debug "Tower GET '$uri';  (can refresh token=$refresh; tokens=$tokens)"
         def request = HttpRequest.newBuilder()
                 .uri(uri)
-                .header('Authorization', "Bearer ${tokens.authToken}")
+                .header('Authorization', "Bearer ${tokens.bearer}")
                 .GET()
                 .build()
         return httpRetryable.sendAsync(client, request, HttpResponse.BodyHandlers.ofString())
                     .thenCompose { resp ->
                         log.debug "Tower GET '$uri' response: [${resp.statusCode()}] ${resp.body()}"
-                        if (resp.statusCode() == 401 && tokens.refreshToken && refresh) {
-                            return refreshJwtToken(endpoint,authorization, tokens.refreshToken)
+                        if (resp.statusCode() == 401 && tokens.refresh && refresh) {
+                            return refreshJwtToken(endpoint,authorization, tokens.refresh)
                                         .thenCompose {
                                             authorizedGetAsyncWithRefresh(uri, endpoint, authorization,false)}
                         } else {
@@ -220,7 +219,7 @@ class TowerClient {
      * @param refreshToken
      * @return
      */
-    private CompletableFuture<TowerTokens> refreshJwtToken(String towerEndpoint, String originalAuthToken, String refreshToken) {
+    private CompletableFuture<JwtAuth> refreshJwtToken(String towerEndpoint, String originalAuthToken, String refreshToken) {
         log.debug "Tower refreshing access token '$towerEndpoint'"
         final body = "grant_type=refresh_token&refresh_token=${URLEncoder.encode(refreshToken,'UTF-8')}"
         final request = HttpRequest.newBuilder()
@@ -235,14 +234,14 @@ class TowerClient {
                                 if (resp.statusCode() != 200) {
                                     throw new HttpResponseException(401, "Unauthorized")
                                 }
-                                def cookies = resp.headers().allValues('Set-Cookie')
-                                def freshTokens = parseTokens(cookies,refreshToken)
+                                final cookies = resp.headers().allValues('Set-Cookie')
+                                final freshTokens = parseTokens(cookies,refreshToken)
                                 return authTokensService.refreshTokens(towerEndpoint,originalAuthToken,freshTokens)
                             }
 
     }
 
-    protected static TowerTokens parseTokens(List<String> cookies, String refreshToken) {
+    protected static JwtAuth parseTokens(List<String> cookies, String refreshToken) {
         HttpCookie jwtToken = null
         HttpCookie jwtRefresh = null
         for (String cookie: cookies) {
@@ -253,7 +252,7 @@ class TowerClient {
             jwtRefresh ?= cookieList.find { HttpCookie it -> it.name == 'JWT_REFRESH_TOKEN'}
             // if we have both short-circuit
             if (jwtToken && jwtRefresh) {
-                return new TowerTokens(jwtToken.value, jwtRefresh.value)
+                return new JwtAuth(jwtToken.value, jwtRefresh.value)
             }
         }
         if (!jwtToken) {
@@ -261,7 +260,7 @@ class TowerClient {
         }
         // this is the case where the server returned only the jwt
         // we go with the original refresh token
-        return new TowerTokens(jwtToken.value, jwtRefresh ? jwtRefresh.value: refreshToken)
+        return new JwtAuth(jwtToken.value, jwtRefresh ? jwtRefresh.value: refreshToken)
     }
 
 }

@@ -1,7 +1,4 @@
 package io.seqera.wave.service
-
-import io.seqera.wave.model.TowerTokens
-
 /**
  * Declare operations to access container registry credentials from Tower
  *

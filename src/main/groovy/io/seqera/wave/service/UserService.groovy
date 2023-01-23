@@ -1,6 +1,5 @@
 package io.seqera.wave.service
 
-import io.seqera.wave.model.TowerTokens
 
 import java.util.concurrent.CompletableFuture
 

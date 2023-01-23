@@ -14,7 +14,6 @@ import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.model.ContentType
-import io.seqera.wave.model.TowerTokens
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.service.CredentialsService
 import io.seqera.wave.storage.DigestStore

@@ -1,6 +1,6 @@
 package io.seqera.wave.auth
 
-import io.seqera.wave.model.TowerTokens
+
 import spock.lang.Requires
 import spock.lang.Specification
 

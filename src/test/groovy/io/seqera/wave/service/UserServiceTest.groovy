@@ -1,6 +1,6 @@
 package io.seqera.wave.service
 
-import io.seqera.wave.model.TowerTokens
+
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext

@@ -1,6 +1,5 @@
 package io.seqera.wave.controller
 
-import io.seqera.wave.model.TowerTokens
 
 import java.nio.file.Path
 import javax.annotation.Nullable
