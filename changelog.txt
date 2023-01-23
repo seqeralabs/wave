@@ -1,4 +1,8 @@
 # Wave changelog
+v0.24.4 - 23 Jan 
+- Refactor Pairing service name [8c616e53]
+- Task 212 213/improve tower client (#215) [d0d37d27]
+
 v0.24.3 - 19 Jan 
 - Improve error reporting [56ccbc12]
 
