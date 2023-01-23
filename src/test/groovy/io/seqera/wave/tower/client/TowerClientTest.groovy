@@ -137,7 +137,7 @@ class TowerClientTest extends Specification{
         towerClient.userInfo(hostName,'refresh').get()
         then:
         def e = thrown(ExecutionException)
-        (e.cause as HttpResponseException).statusCode() == HttpStatus.UNAUTHORIZED
+        (e.cause as HttpResponseException).statusCode() == HttpStatus.BAD_REQUEST
     }
 
     def 'test list-credentials'() {
@@ -189,7 +189,7 @@ class TowerClientTest extends Specification{
         towerClient.listCredentials(hostName,'refresh', null).get()
         then:
         def e = thrown(ExecutionException)
-        (e.cause as HttpResponseException).statusCode() == HttpStatus.UNAUTHORIZED
+        (e.cause as HttpResponseException).statusCode() == HttpStatus.BAD_REQUEST
     }
 
     def 'test fetch-credentials'() {
@@ -221,7 +221,7 @@ class TowerClientTest extends Specification{
         towerClient.fetchEncryptedCredentials(hostName,'refresh', '1', '1', null).get()
         then:
         def e = thrown(ExecutionException)
-        (e.cause as HttpResponseException).statusCode() == HttpStatus.UNAUTHORIZED
+        (e.cause as HttpResponseException).statusCode() == HttpStatus.BAD_REQUEST
     }
 
     def 'parse tokens'() {

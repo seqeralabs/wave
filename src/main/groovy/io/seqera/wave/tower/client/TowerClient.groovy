@@ -1,17 +1,12 @@
 package io.seqera.wave.tower.client
 
-import groovy.transform.stc.SimpleType
-
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
-import groovy.transform.stc.ClosureParams
 import groovy.util.logging.Slf4j
-import io.micronaut.http.exceptions.UriSyntaxException
-import io.micronaut.http.uri.UriBuilder
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.auth.JwtAuthStore
@@ -19,7 +14,7 @@ import io.seqera.wave.util.HttpRetryable
 import io.seqera.wave.util.JacksonHelper
 import io.seqera.wave.util.RegHelper
 import jakarta.inject.Singleton
-
+import org.apache.commons.lang.StringUtils
 
 /**
  * Tower service client
@@ -70,56 +65,35 @@ class TowerClient {
         if (!encryptionKey)
             throw new IllegalArgumentException("Missing encryptionKey argument")
 
-        return buildValidUri(towerEndpoint) {
-            it.path("/credentials")
-                    .path(credentialsId)
-                    .path('/keys')
-                    .queryParam("keyId", encryptionKey)
-            if (workspaceId != null) {
-                it.queryParam("workspaceId", workspaceId)
-            } else {
-                it
-            }
+        def uri = "${checkEndpoint(towerEndpoint)}/credentials/$credentialsId/keys?keyId=$encryptionKey"
+        if( workspaceId!=null )
+            uri += "&workspaceId=$workspaceId"
 
-        }
+        return URI.create(uri)
     }
 
     protected static URI listCredentialsEndpoint(String towerEndpoint, Long workspaceId) {
-        return buildValidUri(towerEndpoint) {
-            it.path("/credentials")
-            if (workspaceId != null) {
-                it.queryParam("workspaceId", workspaceId)
-            } else {
-                it
-            }
-        }
+        def uri = "${checkEndpoint(towerEndpoint)}/credentials"
+        if( workspaceId!=null )
+            uri += "?workspaceId=$workspaceId"
+        return URI.create(uri)
     }
 
     protected static URI refreshTokenEndpoint(String towerEndpoint) {
-        return buildValidUri(towerEndpoint) {
-            it.path("/oauth/access_token")
-        }
+        return URI.create("${checkEndpoint(towerEndpoint)}/oauth/access_token")
     }
 
     protected static URI userInfoEndpoint(String towerEndpoint) {
-        return buildValidUri(towerEndpoint) {it.path("/user-info")}
+        return URI.create("${checkEndpoint(towerEndpoint)}/user-info")
     }
 
+    private static String checkEndpoint(String endpoint) {
+        if( !endpoint )
+            throw new IllegalArgumentException("Missing endpoint argument")
+        if( !endpoint.startsWith('http://') && !endpoint.startsWith('https://') )
+            throw new IllegalArgumentException("Endpoint should start with HTTP or HTTPS protocol — offending value: '$endpoint'")
 
-    private static URI buildValidUri(String towerEndpoint,
-                                     @ClosureParams(value = SimpleType,
-                                             options = "io.micronaut.http.uri.UriBuilder") Closure<UriBuilder> f) {
-        if (!towerEndpoint) throw new IllegalArgumentException("towerEndpoint should not be null or empty")
-        try {
-            def builder = UriBuilder.of(towerEndpoint)
-            def uri = f(builder).build()
-            if (!(uri.getScheme() ==~ /https?/)) {
-                throw new IllegalArgumentException("towerEndpoint should be a valid http or https url, got [${towerEndpoint}]")
-            }
-            return uri
-        } catch (UriSyntaxException e) {
-            throw new IllegalArgumentException("invalid url", e)
-        }
+        StringUtils.removeEnd(endpoint, "/")
     }
 
     /**

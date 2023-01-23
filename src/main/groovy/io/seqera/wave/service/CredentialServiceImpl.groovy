@@ -31,7 +31,7 @@ class CredentialServiceImpl implements CredentialsService {
         if (!userId)
             throw new IllegalArgumentException("Missing userId parameter")
         if (!towerToken)
-            throw new IllegalArgumentException("Missing tower token")
+            throw new IllegalArgumentException("Missing Tower access token")
 
         final keyRecord = keyService.getServiceRegistration(SecurityService.TOWER_SERVICE, towerEndpoint)
 
@@ -40,7 +40,7 @@ class CredentialServiceImpl implements CredentialsService {
 
         final towerHostName = keyRecord.hostname
 
-        final all = towerClient.listCredentials(towerHostName,towerToken,workspaceId).get().credentials
+        final all = towerClient.listCredentials(towerHostName, towerToken, workspaceId).get().credentials
 
         if (!all)
             return null

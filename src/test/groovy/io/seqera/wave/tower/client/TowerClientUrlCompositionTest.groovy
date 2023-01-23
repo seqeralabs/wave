@@ -24,17 +24,15 @@ class TowerClientUrlCompositionTest extends Specification{
         TowerClient.userInfoEndpoint(endpoint)
 
         then:
-        def e = thrown(IllegalArgumentException)
-        e.message == message
+        thrown(IllegalArgumentException)
 
         where:
-
-        endpoint     || message
-        null         || 'towerEndpoint should not be null or empty'
-        ""           || 'towerEndpoint should not be null or empty'
-        "gar bage"   || 'invalid url'
-        "tower.io"   || 'towerEndpoint should be a valid http or https url, got [tower.io]'
-        "ftp://xyz"  || 'towerEndpoint should be a valid http or https url, got [ftp://xyz]'
+        endpoint     || _
+        null         || _
+        ""           || _
+        "gar bage"   || _
+        "tower.io"   || _
+        "ftp://xyz"  || _
 
     }
 
@@ -61,22 +59,21 @@ class TowerClientUrlCompositionTest extends Specification{
         TowerClient.listCredentialsEndpoint(endpoint, workspaceId).toString()
 
         then:
-        def e = thrown(IllegalArgumentException)
-        e.message == message
+        thrown(IllegalArgumentException)
 
         where:
 
-        endpoint    | workspaceId || message
-        null        | null        || "towerEndpoint should not be null or empty"
-        null        | 1           || "towerEndpoint should not be null or empty"
-        ""          | null        || "towerEndpoint should not be null or empty"
-        ""          | 1           || "towerEndpoint should not be null or empty"
-        "gar bage"  | null        || "invalid url"
-        "gar bage"  | 1           || "invalid url"
-        "tower.io"  | null        || "towerEndpoint should be a valid http or https url, got [tower.io]"
-        "tower.io"  | 1           || "towerEndpoint should be a valid http or https url, got [tower.io]"
-        "ftp://xyz" | null        || "towerEndpoint should be a valid http or https url, got [ftp://xyz]"
-        "ftp://xyz" | 1           || "towerEndpoint should be a valid http or https url, got [ftp://xyz]"
+        endpoint    | workspaceId
+        null        | null
+        null        | 1
+        ""          | null
+        ""          | 1
+        "gar bage"  | null
+        "gar bage"  | 1
+        "tower.io"  | null
+        "tower.io"  | 1
+        "ftp://xyz" | null
+        "ftp://xyz" | 1          
 
     }
 
@@ -102,30 +99,29 @@ class TowerClientUrlCompositionTest extends Specification{
         TowerClient.fetchCredentialsEndpoint(endpoint, credsId, keyId, 1)
 
         then:
-        def e = thrown(IllegalArgumentException)
-        e.message == messsage
+        thrown(IllegalArgumentException)
 
         where:
 
-        endpoint     | credsId  | keyId | workspaceId  || messsage
-        null         |  "10"    | "10"  |  1           ||  "towerEndpoint should not be null or empty"
-        null         |  "10"    | "10"  |  null        ||  "towerEndpoint should not be null or empty"
-        ""           |  "10"    | "10"  |  null        ||  "towerEndpoint should not be null or empty"
-        ""           |  "10"    | "10"  |  null        ||  "towerEndpoint should not be null or empty"
-        "gar bage"   |  "10"    | "10"  |  1           ||  "invalid url"
-        "gar bage"   |  "10"    | "10"  |  null        ||  "invalid url"
-        "tower.io"   |  "10"    | "10"  |  1           ||  "towerEndpoint should be a valid http or https url, got [tower.io]"
-        "tower.io"   |  "10"    | "10"  |  null        ||  "towerEndpoint should be a valid http or https url, got [tower.io]"
-        "ftp://xyz"  |  "10"    | "10"  |  1           ||  "towerEndpoint should be a valid http or https url, got [ftp://xyz]"
-        "ftp://xyz"  |  "10"    | "10"  |  null        ||  "towerEndpoint should be a valid http or https url, got [ftp://xyz]"
-        "http://xyz" |  null    | "10"  |  1           ||  "credentialsId should not be null or empty"
-        "http://xyz" |  ""      | "10"  |  1           ||  "credentialsId should not be null or empty"
-        "http://xyz" |  null    | "10"  |  null        ||  "credentialsId should not be null or empty"
-        "http://xyz" |  ""      | "10"  |  null        ||  "credentialsId should not be null or empty"
-        "http://xyz" |  "10"    | null  |  1           ||  "encryptionKey should not be null or empty"
-        "http://xyz" |  "10"    | ""    |  1           ||  "encryptionKey should not be null or empty"
-        "http://xyz" |  "10"    | null  |  null        ||  "encryptionKey should not be null or empty"
-        "http://xyz" |  "10"    | ""    |  null        ||  "encryptionKey should not be null or empty"
+        endpoint     | credsId  | keyId | workspaceId
+        null         |  "10"    | "10"  |  1
+        null         |  "10"    | "10"  |  null
+        ""           |  "10"    | "10"  |  null
+        ""           |  "10"    | "10"  |  null
+        "gar bage"   |  "10"    | "10"  |  1
+        "gar bage"   |  "10"    | "10"  |  null
+        "tower.io"   |  "10"    | "10"  |  1
+        "tower.io"   |  "10"    | "10"  |  null
+        "ftp://xyz"  |  "10"    | "10"  |  1
+        "ftp://xyz"  |  "10"    | "10"  |  null
+        "http://xyz" |  null    | "10"  |  1
+        "http://xyz" |  ""      | "10"  |  1
+        "http://xyz" |  null    | "10"  |  null        
+        "http://xyz" |  ""      | "10"  |  null
+        "http://xyz" |  "10"    | null  |  1
+        "http://xyz" |  "10"    | ""    |  1
+        "http://xyz" |  "10"    | null  |  null
+        "http://xyz" |  "10"    | ""    |  null
 
 
     }

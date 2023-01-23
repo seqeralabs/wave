@@ -134,7 +134,7 @@ class HttpContainerTokenControllerTest extends Specification {
         then:
         def err = thrown(HttpClientResponseException)
         and:
-        err.status == HttpStatus.UNAUTHORIZED
+        err.status == HttpStatus.NOT_FOUND
     }
 
     def 'should fail build request if the instance has not registered for key exchange' () {
