@@ -203,7 +203,7 @@ class TowerClient {
 
         return httpRetryable.sendAsync(client, request, HttpResponse.BodyHandlers.ofString())
                     .thenCompose { resp ->
-                        log.trace "Tower GET '$uri' response\n- status : ${resp.statusCode()}\n- headers: ${RegHelper.dumpHeaders(resp.headers())}\n- content: ${resp.body()}"
+                        log.trace "Tower GET '$uri' response\n- status : ${resp.statusCode()}\n- content: ${resp.body()}"
                         if (resp.statusCode() == 401 && tokens.refresh && canRefresh ) {
                             return refreshJwtToken(endpoint, accessToken, tokens.refresh)
                                         .thenCompose( (JwtAuth it)->authorizedGetAsyncWithRefresh(uri, endpoint, accessToken,false) )
@@ -234,7 +234,7 @@ class TowerClient {
 
         return httpRetryable.sendAsync(client,request, HttpResponse.BodyHandlers.ofString())
                             .thenApply { resp ->
-                                log.trace "Tower GET '$uri' response\n- status : ${resp.statusCode()}\n- headers: ${RegHelper.dumpHeaders(resp.headers())}\n- content: ${resp.body()}"
+                                log.trace "Tower Refresh '$uri' response\n- status : ${resp.statusCode()}\n- headers: ${RegHelper.dumpHeaders(resp.headers())}\n- content: ${resp.body()}"
                                 final status = resp.statusCode()
                                 if ( status >= 400 ) {
                                     throw new HttpResponseException(status, "Unexpected Tower response refreshing JWT token")
