@@ -145,11 +145,34 @@ class TowerClient {
                                 return CompletableFuture.completedFuture(JacksonHelper.fromJson(resp.body(), type))
                             case 401:
                                 return CompletableFuture.failedFuture(new HttpResponseException(401, "Unauthorized"))
+                            case 404:
+                                return CompletableFuture.failedFuture(makeNotFoundError(towerEndpoint,uri))
                             default:
-                                return CompletableFuture.failedFuture( new HttpResponseException(resp.statusCode(),resp.body()))
+                                return CompletableFuture.failedFuture( makeGenericError(resp.statusCode(), towerEndpoint,uri, resp.body()))
                         }
                     }
     }
+
+    private static HttpResponseException makeNotFoundError(String endpoint, URI uri) {
+        final message = """
+            Failed to get credentials keys from '${endpoint}', while contacting tower at: '${uri}'
+            Check that you are using the correct endpoint and workspace configuration for tower and nextflow, and that the credentials are available in the tower instance.
+        """.trim()
+        return new HttpResponseException(404,message)
+    }
+
+    private static <T> HttpResponseException makeGenericError(int status, String endpoint,URI uri,  T body) {
+        final message = """
+            Failed to get credentials keys from '${endpoint}', while contactint tower at '${uri}'.
+            Status: [${status}]
+            Response from server:
+            `
+            ${JacksonHelper.toJson(body)}
+            `
+        """.trim()
+        return new HttpResponseException(status, message)
+    }
+
 
     /**
      * Generic async get with authorization
@@ -228,11 +251,6 @@ class TowerClient {
                             }
 
     }
-
-    private static <T> HttpResponseException makeHttpError(int status,T body ) {
-        return new HttpResponseException(status,"error.....")
-    }
-
 
     /**
      * Creates a cached thread pool similar to the default http client executor
