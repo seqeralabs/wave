@@ -49,7 +49,6 @@ class TowerClient {
 
     CompletableFuture<UserInfoResponse> userInfo(String towerEndpoint, String authorization) {
         final uri = userInfoEndpoint(towerEndpoint)
-        log.debug "Getting Tower user-info: $uri"
         return authorizedGetAsync(uri, towerEndpoint, authorization, UserInfoResponse)
     }
 
@@ -59,18 +58,18 @@ class TowerClient {
     }
 
     CompletableFuture<GetCredentialsKeysResponse> fetchEncryptedCredentials(String towerEndpoint, String authorization, String credentialsId, String encryptionKey, Long workspaceId) {
-        log.debug "Getting ListCredentials tower-endpoint=$towerEndpoint; auth=$authorization"
         final uri = fetchCredentialsEndpoint(towerEndpoint, credentialsId, encryptionKey,workspaceId)
         return authorizedGetAsync(uri, towerEndpoint, authorization, GetCredentialsKeysResponse)
     }
 
-    protected static URI fetchCredentialsEndpoint(String towerEndpoint, String credentialsId, String encryptionKey,Long workspaceId) {
-        if (!credentialsId) {
-            throw new IllegalArgumentException("credentialsId should not be null or empty")
-        }
-        if (!encryptionKey) {
-            throw new IllegalArgumentException("encryptionKey should not be null or empty")
-        }
+    protected static URI fetchCredentialsEndpoint(String towerEndpoint, String credentialsId, String encryptionKey, Long workspaceId) {
+        if( !towerEndpoint )
+            throw new IllegalArgumentException("Missing towerEndpoint argument")
+        if (!credentialsId)
+            throw new IllegalArgumentException("Missing credentialsId argument")
+        if (!encryptionKey)
+            throw new IllegalArgumentException("Missing encryptionKey argument")
+
         return buildValidUri(towerEndpoint) {
             it.path("/credentials")
                     .path(credentialsId)
@@ -181,31 +180,33 @@ class TowerClient {
      * using the refresh token
      *
      * @param uri
-     *      the uri to get
+     *      The uri to get
      * @param endpoint
-     *      the tower endpoint
-     * @param authToken
-     *      the authorization token
-     * @param refreshToken
-     *      the refresh token
-     * @return a future of the unparsed response
+     *      The tower endpoint
+     * @param accessToken
+     *      The authorization token provided in the original request. This can be updated overtime
+     * @param canRefresh
+     *      Whenever the access token can be refreshed if the authorization fails
+     * @return
+     *      A future of the unparsed response
      */
-    private CompletableFuture<HttpResponse<String>> authorizedGetAsyncWithRefresh(URI uri, String endpoint, String authorization, boolean refresh) {
-        log.debug "Tower GET '$uri';  (can refresh token=$refresh)"
-        final tokens = jwtAuthStore.getJwtAuth(endpoint, authorization)
-        log.debug "Tower GET '$uri';  (can refresh token=$refresh; tokens=$tokens)"
-        def request = HttpRequest.newBuilder()
+    private CompletableFuture<HttpResponse<String>> authorizedGetAsyncWithRefresh(final URI uri, final String endpoint, final String accessToken, final boolean canRefresh) {
+        // check the most updated JWT tokens
+        final tokens = jwtAuthStore.getJwtAuth(endpoint, accessToken)
+        log.trace "Tower GET '$uri' — can refresh=$canRefresh; tokens=$tokens"
+        // submit the request
+        final request = HttpRequest.newBuilder()
                 .uri(uri)
                 .header('Authorization', "Bearer ${tokens.bearer}")
                 .GET()
                 .build()
+
         return httpRetryable.sendAsync(client, request, HttpResponse.BodyHandlers.ofString())
                     .thenCompose { resp ->
-                        log.debug "Tower GET '$uri' response: [${resp.statusCode()}] ${resp.body()}"
-                        if (resp.statusCode() == 401 && tokens.refresh && refresh) {
-                            return refreshJwtToken(endpoint,authorization, tokens.refresh)
-                                        .thenCompose {
-                                            authorizedGetAsyncWithRefresh(uri, endpoint, authorization,false)}
+                        log.trace "Tower GET '$uri' response\n- status : ${resp.statusCode()}\n- headers: ${RegHelper.dumpHeaders(resp.headers())}\n- content: ${resp.body()}"
+                        if (resp.statusCode() == 401 && tokens.refresh && canRefresh ) {
+                            return refreshJwtToken(endpoint, accessToken, tokens.refresh)
+                                        .thenCompose( (JwtAuth it)->authorizedGetAsyncWithRefresh(uri, endpoint, accessToken,false) )
                         } else {
                             return CompletableFuture.completedFuture(resp)
                         }
@@ -222,23 +223,25 @@ class TowerClient {
      * @return
      */
     private CompletableFuture<JwtAuth> refreshJwtToken(String towerEndpoint, String originalAuthToken, String refreshToken) {
-        log.debug "Tower refreshing access token '$towerEndpoint'"
         final body = "grant_type=refresh_token&refresh_token=${URLEncoder.encode(refreshToken,'UTF-8')}"
+        final uri = refreshTokenEndpoint(towerEndpoint)
+        log.trace "Tower Refresh '$uri'"
         final request = HttpRequest.newBuilder()
-                                        .uri(refreshTokenEndpoint(towerEndpoint))
+                                        .uri(uri)
                                         .header('Content-Type', 'application/x-www-form-urlencoded')
                                         .POST(HttpRequest.BodyPublishers.ofString(body))
                                         .build()
 
         return httpRetryable.sendAsync(client,request, HttpResponse.BodyHandlers.ofString())
                             .thenApply { resp ->
-                                log.debug "Tower refresh response: [${resp.statusCode()}] ${resp.body()} - headers: ${RegHelper.dumpHeaders(resp.headers())}"
-                                if (resp.statusCode() != 200) {
-                                    throw new HttpResponseException(401, "Unauthorized")
+                                log.trace "Tower GET '$uri' response\n- status : ${resp.statusCode()}\n- headers: ${RegHelper.dumpHeaders(resp.headers())}\n- content: ${resp.body()}"
+                                final status = resp.statusCode()
+                                if ( status >= 400 ) {
+                                    throw new HttpResponseException(status, "Unexpected Tower response refreshing JWT token")
                                 }
                                 final cookies = resp.headers().allValues('Set-Cookie')
-                                final freshTokens = parseTokens(cookies,refreshToken)
-                                return jwtAuthStore.putJwtAuth(towerEndpoint,originalAuthToken,freshTokens)
+                                final jwtAuth = parseTokens(cookies, refreshToken)
+                                return jwtAuthStore.putJwtAuth(towerEndpoint, originalAuthToken, jwtAuth)
                             }
 
     }
