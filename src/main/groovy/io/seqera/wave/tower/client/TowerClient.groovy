@@ -236,13 +236,13 @@ class TowerClient {
                                     throw new HttpResponseException(401, "Unauthorized")
                                 }
                                 def cookies = resp.headers().allValues('Set-Cookie')
-                                def freshTokens = parseTokens(cookies)
+                                def freshTokens = parseTokens(cookies,refreshToken)
                                 return authTokensService.refreshTokens(towerEndpoint,originalAuthToken,freshTokens)
                             }
 
     }
 
-    private static TowerTokens parseTokens(List<String> cookies) {
+    private static TowerTokens parseTokens(List<String> cookies, String refreshToken) {
         HttpCookie jwt = null
         HttpCookie jwtRefresh = null
         for (String cookie: cookies) {
@@ -261,7 +261,8 @@ class TowerClient {
             throw new HttpResponseException(401,'Unauthorized')
         }
         // this is the case where the server returned only the jwt
-        return new TowerTokens(authToken: jwt.value, refreshToken: jwtRefresh?.value)
+        // we go with the original refresh token
+        return new TowerTokens(authToken: jwt.value, refreshToken: jwtRefresh? jwtRefresh.value: refreshToken)
     }
 
 }
