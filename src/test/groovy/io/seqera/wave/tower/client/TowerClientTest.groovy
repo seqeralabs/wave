@@ -198,7 +198,7 @@ class TowerClientTest extends Specification{
         resp.keys == 'keys'
     }
 
-    def 'test user-info with refreshable token'() {
+    def 'test fetch-credentials with refreshable token'() {
         when:
         tokensService.updateAuthTokens(hostName,'refresh','refresh')
         def resp = towerClient.fetchEncryptedCredentials(hostName, 'refresh', '1', '1', null).get()
@@ -206,7 +206,7 @@ class TowerClientTest extends Specification{
         resp.keys == 'keys'
     }
 
-    def 'test list-credentials with invalid token'() {
+    def 'test fetch-credentials with invalid token'() {
         when:
         towerClient.fetchEncryptedCredentials(hostName,'foo', '1', '1',null).get()
         then:
@@ -214,7 +214,7 @@ class TowerClientTest extends Specification{
         (e.cause as HttpResponseException).statusCode() == HttpStatus.UNAUTHORIZED
     }
 
-    def 'test user-info with token that cannot be refreshed'() {
+    def 'test fetch-credentials with token that cannot be refreshed'() {
         when:
         tokensService.updateAuthTokens(hostName, 'unrefreshable', 'refresh')
         towerClient.fetchEncryptedCredentials(hostName,'refresh', '1', '1', null).get()
