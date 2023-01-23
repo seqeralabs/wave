@@ -157,7 +157,7 @@ class TowerClient {
         final message = """
             Failed to get credentials keys from '${endpoint}', while contacting tower at: '${uri}'
             Check that you are using the correct endpoint and workspace configuration for tower and nextflow, and that the credentials are available in the tower instance.
-        """.trim()
+            """.stripIndent().trim()
         return new HttpResponseException(404,message)
     }
 
