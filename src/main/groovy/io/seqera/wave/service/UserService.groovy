@@ -1,6 +1,5 @@
 package io.seqera.wave.service
 
-
 import java.util.concurrent.CompletableFuture
 
 import io.seqera.wave.tower.User

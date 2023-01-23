@@ -1,6 +1,5 @@
 package io.seqera.wave.controller
 
-
 import java.nio.file.Path
 import javax.annotation.Nullable
 
