@@ -190,8 +190,8 @@ class TowerClient {
      * @return a future of the unparsed response
      */
     private CompletableFuture<HttpResponse<String>> authorizedGetAsyncWithRefresh(Client httpClient,URI uri, String endpoint, String authorization, boolean refresh) {
-        log.debug "Tower GET '$uri';  (can refresh token=$refresh)"
         final tokens = authTokensService.getTokens(endpoint, authorization)
+        log.debug "Tower GET '$uri';  (can refresh token=$refresh; tokens=$tokens)"
         def request = HttpRequest.newBuilder()
                 .uri(uri)
                 .header('Authorization', "Bearer ${tokens.authToken}")
