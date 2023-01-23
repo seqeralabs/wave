@@ -243,26 +243,25 @@ class TowerClient {
     }
 
     protected static TowerTokens parseTokens(List<String> cookies, String refreshToken) {
-        HttpCookie jwt = null
+        HttpCookie jwtToken = null
         HttpCookie jwtRefresh = null
         for (String cookie: cookies) {
-            def cookieList = HttpCookie.parse(cookie)
+            final cookieList = HttpCookie.parse(cookie)
             // pick the jwt if not done already
-            jwt = jwt?:cookieList.find {it.name == 'JWT'}
+            jwtToken ?= cookieList.find { HttpCookie it -> it.name == 'JWT'}
             // pick the jwt_refresh if not done already
-            jwtRefresh = jwtRefresh?:cookieList.find {it.name == 'JWT_REFRESH_TOKEN'}
+            jwtRefresh ?= cookieList.find { HttpCookie it -> it.name == 'JWT_REFRESH_TOKEN'}
             // if we have both short-circuit
-            if (jwt && jwtRefresh) {
-                return new TowerTokens(authToken: jwt.value, refreshToken: jwtRefresh.value)
+            if (jwtToken && jwtRefresh) {
+                return new TowerTokens(jwtToken.value, jwtRefresh.value)
             }
         }
-        if (!jwt) {
-            log.warn('No tokens received from tower')
-            throw new HttpResponseException(401,'Unauthorized')
+        if (!jwtToken) {
+            throw new HttpResponseException(412,'Missing JWT token in Tower client response')
         }
         // this is the case where the server returned only the jwt
         // we go with the original refresh token
-        return new TowerTokens(authToken: jwt.value, refreshToken: jwtRefresh? jwtRefresh.value: refreshToken)
+        return new TowerTokens(jwtToken.value, jwtRefresh ? jwtRefresh.value: refreshToken)
     }
 
 }

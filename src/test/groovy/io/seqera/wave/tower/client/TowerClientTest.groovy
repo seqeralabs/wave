@@ -232,7 +232,6 @@ class TowerClientTest extends Specification{
         tokens.authToken == expectedAuth
 
         where:
-
         cookies                                                                                           || expectedAuth | expectedRefresh
         List.of(cookie('JWT','jwt'))                                                                      || 'jwt'         | 'current-refresh'
         List.of(cookie('JWT','jwt1'), cookie('JWT_REFRESH_TOKEN','jwt-refresh1'))                         || 'jwt1'        | 'jwt-refresh1'
@@ -250,7 +249,6 @@ class TowerClientTest extends Specification{
         e.statusCode() == HttpStatus.UNAUTHORIZED
 
         where:
-
         cookies                                             || _
         List.of()                                           || _
         List.of(cookie('JWT_REFRESH_TOKEN','jwt-refresh'))  || _
