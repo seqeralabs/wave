@@ -99,7 +99,7 @@ class TowerClientTest extends Specification{
     TowerClient towerClient
 
     @Inject
-    TowerAuthTokensService tokensService
+    JwtAuthStore jwtAuthStore
 
 
     private String getHostName() {
@@ -115,7 +115,7 @@ class TowerClientTest extends Specification{
 
     def 'test user-info with refreshable token'() {
         when:
-        tokensService.updateAuthTokens(hostName,'refresh','refresh')
+        jwtAuthStore.putJwtAuth(hostName,'refresh','refresh')
         def resp = towerClient.userInfo(hostName, 'refresh').get()
         then:
         resp.user.id == 1
@@ -132,7 +132,7 @@ class TowerClientTest extends Specification{
 
     def 'test user-info with token that cannot be refreshed'() {
         when:
-        tokensService.updateAuthTokens(hostName, 'unrefreshable', 'refresh')
+        jwtAuthStore.putJwtAuth(hostName, 'unrefreshable', 'refresh')
         towerClient.userInfo(hostName,'refresh').get()
         then:
         def e = thrown(ExecutionException)
@@ -162,7 +162,7 @@ class TowerClientTest extends Specification{
 
     def 'test list-credentials with refreshable token'() {
         when:
-        tokensService.updateAuthTokens(hostName,'refresh','refresh')
+        jwtAuthStore.putJwtAuth(hostName,'refresh','refresh')
         def resp = towerClient.listCredentials(hostName, 'refresh',null).get()
         then:
         resp.credentials.size() == 2
@@ -184,7 +184,7 @@ class TowerClientTest extends Specification{
 
     def 'test list-credentials with token that cannot be refreshed'() {
         when:
-        tokensService.updateAuthTokens(hostName, 'unrefreshable', 'refresh')
+        jwtAuthStore.putJwtAuth(hostName, 'unrefreshable', 'refresh')
         towerClient.listCredentials(hostName,'refresh', null).get()
         then:
         def e = thrown(ExecutionException)
@@ -200,7 +200,7 @@ class TowerClientTest extends Specification{
 
     def 'test fetch-credentials with refreshable token'() {
         when:
-        tokensService.updateAuthTokens(hostName,'refresh','refresh')
+        jwtAuthStore.putJwtAuth(hostName,'refresh','refresh')
         def resp = towerClient.fetchEncryptedCredentials(hostName, 'refresh', '1', '1', null).get()
         then:
         resp.keys == 'keys'
@@ -216,7 +216,7 @@ class TowerClientTest extends Specification{
 
     def 'test fetch-credentials with token that cannot be refreshed'() {
         when:
-        tokensService.updateAuthTokens(hostName, 'unrefreshable', 'refresh')
+        jwtAuthStore.putJwtAuth(hostName, 'unrefreshable', 'refresh')
         towerClient.fetchEncryptedCredentials(hostName,'refresh', '1', '1', null).get()
         then:
         def e = thrown(ExecutionException)

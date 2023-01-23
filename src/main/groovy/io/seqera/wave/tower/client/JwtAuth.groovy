@@ -9,7 +9,14 @@ import groovy.transform.Canonical
 @Canonical
 class JwtAuth {
 
+    /**
+     * The bearer authorization token
+     */
     String bearer
+
+    /**
+     * The refresh token to request an updated authorization token
+     */
     String refresh
     
 }

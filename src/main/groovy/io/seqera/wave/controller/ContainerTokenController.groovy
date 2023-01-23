@@ -26,7 +26,7 @@ import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.security.SecurityService
 import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.tower.User
-import io.seqera.wave.tower.client.TowerAuthTokensService
+import io.seqera.wave.tower.client.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
 import jakarta.inject.Inject
 /**
@@ -43,7 +43,7 @@ class ContainerTokenController {
     @Inject ContainerTokenService tokenService
     @Inject UserService userService
     @Inject SecurityService securityService
-    @Inject TowerAuthTokensService authorizationTokensService
+    @Inject JwtAuthStore jwtAuthStore
 
     @Inject
     @Value('${wave.allowAnonymous}')
@@ -88,21 +88,21 @@ class ContainerTokenController {
 
     @Post
     CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
-        // anonymous access
-        if( !req.towerAccessToken ) {
-            return CompletableFuture.completedFuture(makeResponse(httpRequest, req, null))
-        }
-
         // this is needed for backward compatibility with old clients
         if( !req.towerEndpoint ) {
             req.towerEndpoint = towerEndpointUrl
+        }
+
+        // anonymous access
+        if( !req.towerAccessToken ) {
+            return CompletableFuture.completedFuture(makeResponse(httpRequest, req, null))
         }
 
         //  We first check if the service is registered
         final registration = securityService.getServiceRegistration(SecurityService.TOWER_SERVICE, req.towerEndpoint)
         if( !registration )
             throw new BadRequestException("Tower instance '${req.towerEndpoint}' has not enabled to connect Wave service '$serverUrl'")
-        authorizationTokensService.updateAuthTokens(req.towerEndpoint, req.towerRefreshToken, req.towerAccessToken)
+        jwtAuthStore.putJwtAuth(req.towerEndpoint, req.towerRefreshToken, req.towerAccessToken)
         return  userService
                 .getUserByAccessTokenAsync(registration.hostname, req.towerAccessToken)
                 .thenApply { User user -> makeResponse(httpRequest, req, user) }

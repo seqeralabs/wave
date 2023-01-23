@@ -31,13 +31,13 @@ class TowerClient {
 
     private HttpRetryable httpRetryable
 
-    private TowerAuthTokensService authTokensService
+    private JwtAuthStore jwtAuthStore
 
     private HttpClient client
 
-    TowerClient(HttpRetryable httpRetryable, TowerAuthTokensService authTokensService) {
+    TowerClient(HttpRetryable httpRetryable, JwtAuthStore jwtAuthStore) {
         this.httpRetryable = httpRetryable
-        this.authTokensService = authTokensService
+        this.jwtAuthStore = jwtAuthStore
         this.client = HttpClient.newBuilder()
                                 .version(HttpClient.Version.HTTP_1_1)
                                 .connectTimeout(httpRetryable.config().connectTimeout)
@@ -190,7 +190,7 @@ class TowerClient {
      */
     private CompletableFuture<HttpResponse<String>> authorizedGetAsyncWithRefresh(URI uri, String endpoint, String authorization, boolean refresh) {
         log.debug "Tower GET '$uri';  (can refresh token=$refresh)"
-        final tokens = authTokensService.getJwtAuth(endpoint, authorization)
+        final tokens = jwtAuthStore.getJwtAuth(endpoint, authorization)
         log.debug "Tower GET '$uri';  (can refresh token=$refresh; tokens=$tokens)"
         def request = HttpRequest.newBuilder()
                 .uri(uri)
@@ -236,7 +236,7 @@ class TowerClient {
                                 }
                                 final cookies = resp.headers().allValues('Set-Cookie')
                                 final freshTokens = parseTokens(cookies,refreshToken)
-                                return authTokensService.refreshTokens(towerEndpoint,originalAuthToken,freshTokens)
+                                return jwtAuthStore.putJwtAuth(towerEndpoint,originalAuthToken,freshTokens)
                             }
 
     }
