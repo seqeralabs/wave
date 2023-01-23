@@ -193,12 +193,10 @@ class ContainerTokenController {
                 req.containerConfig,
                 condaContent,
                 ContainerPlatform.of(req.containerPlatform),
-                // these tokens are the original tokens provided by the user request
-                // they might differ from the actual tokens used by the tower client
-                // if the tokens have been refreshed, this can only happen if the refresh token
-                // is provided.
+                // this token is the original one used in the submit container request
+                // in the presence of a refresh token this is used just as a key to retrieve
+                // the actual authorization tokens from the store
                 req.towerAccessToken,
-                req.towerRefreshToken,
                 req.towerEndpoint )
         return data
     }

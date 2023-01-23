@@ -138,15 +138,15 @@ class TowerClient {
      */
     private <T> CompletableFuture<T> authorizedGetAsync(Client httpClient,URI uri, String towerEndpoint, String authorization, Class<T> type) {
         return authorizedGetAsyncWithRefresh(httpClient, uri, towerEndpoint, authorization, true)
-                    .thenApply { resp ->
+                    .thenCompose { resp ->
                         log.trace "Tower response for request GET '${uri}' => ${resp.statusCode()}"
                         switch (resp.statusCode()) {
                             case 200:
-                                return JacksonHelper.fromJson(resp.body(), type)
+                                return CompletableFuture.completedFuture(JacksonHelper.fromJson(resp.body(), type))
                             case 401:
-                                throw new HttpResponseException(401, "Unauthorized")
+                                return CompletableFuture.failedFuture(new HttpResponseException(401, "Unauthorized"))
                             default:
-                                throw new HttpResponseException(resp.statusCode(),resp.body())
+                                return CompletableFuture.failedFuture( new HttpResponseException(resp.statusCode(),resp.body()))
                         }
                     }
     }
