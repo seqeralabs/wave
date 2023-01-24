@@ -38,8 +38,10 @@ class CredentialServiceImpl implements CredentialsService {
 
         final all = towerClient.listCredentials(towerEndpoint, towerToken, workspaceId).get().credentials
 
-        if (!all)
+        if (!all) {
+            log.debug "No credentials found for userId=$userId; workspaceId=$workspaceId; endoint=$towerEndpoint"
             return null
+        }
 
         // find credentials with a matching registry
         // TODO @t0randr
@@ -55,17 +57,19 @@ class CredentialServiceImpl implements CredentialsService {
         final creds = all.find {
             it.provider == 'container-reg'  && (it.registry ?: DOCKER_IO) == matchingRegistryName
         }
-        if (!creds)
+        if (!creds) {
+            log.debug "No credentials matching criteria registryName=$registryName; userId=$userId; workspaceId=$workspaceId; endoint=$towerEndpoint"
             return null
+        }
 
+        // log for debugging purposes
+        log.debug "Credentials matching criteria registryName=$registryName; userId=$userId; workspaceId=$workspaceId; endoint=$towerEndpoint => $creds"
         // now fetch the encrypted key
         final encryptedCredentials = towerClient.fetchEncryptedCredentials(towerEndpoint, towerToken, creds.id, pairing.pairingId, workspaceId).get()
         final privateKey = pairing.privateKey
         final credentials = decryptCredentials(privateKey, encryptedCredentials.keys)
-
         return parsePayload(credentials)
     }
-
 
     protected String decryptCredentials(byte[] encodedKey, String payload) {
         final packet = EncryptedPacket.decode(payload)
