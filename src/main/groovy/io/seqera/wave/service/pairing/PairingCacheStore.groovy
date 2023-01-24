@@ -1,4 +1,4 @@
-package io.seqera.wave.service.security
+package io.seqera.wave.service.pairing
 
 import java.time.Duration
 

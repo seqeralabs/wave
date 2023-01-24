@@ -9,8 +9,8 @@ import java.util.concurrent.CompletableFuture
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.tower.crypto.AsymmetricCipher
-import io.seqera.wave.service.security.PairingRecord
-import io.seqera.wave.service.security.PairingService
+import io.seqera.wave.service.pairing.PairingRecord
+import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.tower.client.CredentialsDescription
 import io.seqera.wave.tower.client.GetCredentialsKeysResponse
 import io.seqera.wave.tower.client.ListCredentialsResponse

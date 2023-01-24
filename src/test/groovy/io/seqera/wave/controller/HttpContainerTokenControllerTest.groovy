@@ -20,8 +20,8 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
-import io.seqera.wave.service.security.PairingRecord
-import io.seqera.wave.service.security.PairingService
+import io.seqera.wave.service.pairing.PairingRecord
+import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.client.UserInfoResponse
 

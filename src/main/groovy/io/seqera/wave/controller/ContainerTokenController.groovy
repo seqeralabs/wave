@@ -23,7 +23,7 @@ import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
-import io.seqera.wave.service.security.PairingService
+import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore

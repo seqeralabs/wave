@@ -1,15 +1,13 @@
-package io.seqera.wave.service.security
+package io.seqera.wave.service.pairing
 
 import java.security.KeyPair
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.tower.crypto.AsymmetricCipher
-import io.seqera.wave.exchange.PairServiceResponse
 import io.seqera.wave.exchange.PairingResponse
 import io.seqera.wave.util.DigestFunctions
 import jakarta.inject.Inject
-
 /**
  * Implements the pairing service for Tower and Wave credentials federation
  *
@@ -43,11 +41,6 @@ class PairingServiceImpl implements PairingService {
         }
 
         return new PairingResponse( pairingId: uid, publicKey: entry.publicKey.encodeBase64() )
-    }
-
-    PairServiceResponse getPublicKey(String service, String endpoint) {
-        final resp = getPairingKey(service, endpoint)
-        return new PairServiceResponse(publicKey: resp.publicKey, keyId: resp.pairingId)
     }
 
     @Override

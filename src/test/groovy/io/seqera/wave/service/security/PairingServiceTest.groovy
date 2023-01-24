@@ -1,5 +1,7 @@
 package io.seqera.wave.service.security
 
+import io.seqera.wave.service.pairing.PairingCacheStore
+import io.seqera.wave.service.pairing.PairingServiceImpl
 import spock.lang.Specification
 
 import java.security.KeyFactory
@@ -22,14 +24,14 @@ class PairingServiceTest extends Specification{
         final service = new PairingServiceImpl(store: store)
 
         when: 'we get a public key'
-        def key = service.getPublicKey("tower","tower.io:9090")
+        def key = service.getPairingKey("tower","tower.io:9090")
 
         then: 'we generate a key'
-        key.keyId
+        key.pairingId
         key.publicKey
 
         and: 'the store contains the key'
-        def storedKey = store.get(key.keyId)
+        def storedKey = store.get(key.pairingId)
 
         and: 'the key is associated with the instance the asked for it'
         storedKey.service == 'tower'
@@ -52,11 +54,11 @@ class PairingServiceTest extends Specification{
         final service = new PairingServiceImpl(store: store)
 
         when: 'we get the key two times for the same service and endpoint'
-        def firstKey = service.getPublicKey("tower", "tower.io:9090")
-        def secondKey = service.getPublicKey("tower", "tower.io:9090")
+        def firstKey = service.getPairingKey("tower", "tower.io:9090")
+        def secondKey = service.getPairingKey("tower", "tower.io:9090")
 
         then: 'we generate the key only once'
-        firstKey.keyId == secondKey.keyId
+        firstKey.pairingId == secondKey.pairingId
         firstKey.publicKey == secondKey.publicKey
     }
 

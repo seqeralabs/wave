@@ -1,15 +1,14 @@
-package io.seqera.wave.service.security
+package io.seqera.wave.service.pairing
 
-import io.seqera.wave.exchange.PairServiceResponse
+
 import io.seqera.wave.exchange.PairingResponse
-
 /**
  * Provides public key generation for tower credentials integration.
  *
- * Once {@link PairingService#getPublicKey(java.lang.String, java.lang.String)} is
+ * Once {@link PairingService#getPairingKey(java.lang.String, java.lang.String)} is
  * called a new {@link PairingRecord} for the requested service is generated and cached until it expires.
  *
- * Further invocation of {@link PairingService#getPublicKey(java.lang.String, java.lang.String)}
+ * Further invocation of {@link PairingService#getPairingKey(java.lang.String, java.lang.String)}
  * will not generate a new {@code KeyRecord} and return instead the public side of the already
  * generated one.
  *
@@ -21,9 +20,6 @@ import io.seqera.wave.exchange.PairingResponse
 interface PairingService {
 
     public static String TOWER_SERVICE = "tower"
-
-    @Deprecated
-    PairServiceResponse getPublicKey(String service, String endpoint)
 
     /**
      * Generates an return a key pair for the provided {@code service} available
@@ -40,7 +36,7 @@ interface PairingService {
 
     /**
      * Get the {@link PairingRecord} associated with {@code service} and {@code endpoint}
-     * generated with {@link #getPublicKey(java.lang.String, java.lang.String)}
+     * generated with {@link #getPairingRecord(java.lang.String, java.lang.String)}
      *
      * @param service The service name
      * @param endpoint The endpoint of the service
