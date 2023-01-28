@@ -1,34 +1,34 @@
 # Wave changelog
-v0.24.5 - 25 Jan 
+v0.24.5 - 25 Jan 2023
 - Remove deprecated class & rename package [7145c1f9]
 - Improve logging & debugging [95431b72]
 
-v0.24.4 - 23 Jan 
+v0.24.4 - 23 Jan 2023
 - Refactor Pairing service name [8c616e53]
 - Task 212 213/improve tower client (#215) [d0d37d27]
 
-v0.24.3 - 19 Jan 
+v0.24.3 - 19 Jan 2023
 - Improve error reporting [56ccbc12]
 
-v0.24.2 - 18 Jan 
+v0.24.2 - 18 Jan 2023
 - Patching invalid workspaceId concatenation [87bb7602]
 - Improve logging [9b22960c]
 
-v0.24.1 - 17 Jan 
+v0.24.1 - 17 Jan 2023
 - Fix missing tower endpoint URL for old client [7c408d7e]
 - Remove unused tower environment file [981154bf]
 
-v0.24.0 - 17 Jan
+v0.24.0 - 17 Jan 2023
 - Add support for Tower credentials API in place of DB connection
 
-v0.23.7 - 23 Dec 
+v0.23.7 - 23 Dec 2022
 - Fix download failed issue caused by relative redirect path [65d7d03d]
 - Refactor tests [2016664f]
 
-v0.23.6 - 21 Dec 
+v0.23.6 - 21 Dec 2022
 - Fix AWS ECR auth service [fce102ab]
 
-v0.23.5 - 9 Dec 
+v0.23.5 - 9 Dec 2022
 - Fix Kaniko compressed-caching flag [1c04155c]
 
 v0.23.4 - 8 Dec 
