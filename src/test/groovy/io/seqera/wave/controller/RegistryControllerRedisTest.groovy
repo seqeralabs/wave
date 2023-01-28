@@ -93,10 +93,10 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         given:
         HttpClient client = applicationContext.createBean(HttpClient)
         and:
-        jedis.set("wave-tokens/v1:1234", '{"containerImage":"hello-world"}')
-        jedis.set("wave-build/v1:hello-world", '{"containerImage":"hello-world"}')
+        jedis.set("wave-tokens/v1:1234", '{"containerImage":"library/hello-world"}')
+        jedis.set("wave-build/v1:library/hello-world", '{"containerImage":"library/hello-world"}')
         when:
-        HttpRequest request = HttpRequest.GET("http://localhost:$port/v2/wt/1234/hello-world/manifests/latest").headers({h->
+        HttpRequest request = HttpRequest.GET("http://localhost:$port/v2/wt/1234/library/hello-world/manifests/latest").headers({h->
             h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
             h.add('Accept', ContentType.DOCKER_MANIFEST_V1_JWS_TYPE)
             h.add('Accept', MediaType.APPLICATION_JSON)
@@ -105,6 +105,6 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         then:
         final exception = thrown(HttpClientResponseException)
         RegistryErrorResponse error = exception.response.getBody(RegistryErrorResponse).get()
-        error.errors.get(0).message.contains('Build of container \'hello-world\' timed out')
+        error.errors.get(0).message.contains('Build of container \'library/hello-world\' timed out')
     }
 }

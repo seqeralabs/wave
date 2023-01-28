@@ -38,7 +38,7 @@ class RouteHandler {
         if( path.startsWith('/v2/wt/') ) {
             // take the token that must be as first component after `/wt` prefix
             final token = parts.pop()
-            final image = normImage(parts.join('/'))
+            final image = parts.join('/')
             // find out the container request that must have been submitted for the token
             final request = tokenService.getRequest(token)
             if( !request ) {
@@ -61,10 +61,6 @@ class RouteHandler {
         image = parts.join('/')
 
         return RoutePath.v2path(type, registry, image, reference)
-    }
-
-    private String normImage(String image) {
-        image.contains('/') ? image : 'library/' + image
     }
 
 }

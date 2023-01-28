@@ -55,9 +55,8 @@ class RedisContainerTokenControllerTest extends Specification implements RedisTe
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
-        SubmitContainerTokenRequest request =
-                new SubmitContainerTokenRequest(towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64')
-        def ret = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", request), SubmitContainerTokenResponse)
+        def req = new SubmitContainerTokenRequest(towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64')
+        def ret = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", req), SubmitContainerTokenResponse)
 
         def body = ret.body()
 
@@ -67,7 +66,7 @@ class RedisContainerTokenControllerTest extends Specification implements RedisTe
         and:
         new JsonSlurper().parseText(jedis.get("wave-tokens/v1:"+body.containerToken)).platform.arch == 'arm64'
         new JsonSlurper().parseText(jedis.get("wave-tokens/v1:"+body.containerToken)).workspaceId == 10
-        new JsonSlurper().parseText(jedis.get("wave-tokens/v1:"+body.containerToken)).containerImage == 'ubuntu:latest'
+        new JsonSlurper().parseText(jedis.get("wave-tokens/v1:"+body.containerToken)).containerImage == 'docker.io/library/ubuntu:latest'
     }
 
     def 'should not retrieve an expired build request' () {
@@ -76,9 +75,8 @@ class RedisContainerTokenControllerTest extends Specification implements RedisTe
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
-        SubmitContainerTokenRequest request =
-                new SubmitContainerTokenRequest(towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64')
-        def ret = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", request), SubmitContainerTokenResponse)
+        def req = new SubmitContainerTokenRequest(towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64')
+        def ret = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", req), SubmitContainerTokenResponse)
 
         def body = ret.body()
 
@@ -102,9 +100,8 @@ class RedisContainerTokenControllerTest extends Specification implements RedisTe
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
-        SubmitContainerTokenRequest request =
-                new SubmitContainerTokenRequest(towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64')
-        def ret = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", request), SubmitContainerTokenResponse)
+        def req = new SubmitContainerTokenRequest(towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64')
+        def ret = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", req), SubmitContainerTokenResponse)
 
         def body = ret.body()
 

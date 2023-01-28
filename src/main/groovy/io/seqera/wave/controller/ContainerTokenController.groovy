@@ -102,6 +102,7 @@ class ContainerTokenController {
         final registration = securityService.getPairingRecord(PairingService.TOWER_SERVICE, req.towerEndpoint)
         if( !registration )
             throw new BadRequestException("Tower instance '${req.towerEndpoint}' has not enabled to connect Wave service '$serverUrl'")
+
         // store the tower JWT tokens
         jwtAuthStore.putJwtAuth(req.towerEndpoint, req.towerRefreshToken, req.towerAccessToken)
         // find out the user associated with the specified tower access token
@@ -112,11 +113,11 @@ class ContainerTokenController {
 
     protected HttpResponse<SubmitContainerTokenResponse> makeResponse(HttpRequest httpRequest, SubmitContainerTokenRequest req, User user) {
         if( !user && !allowAnonymous )
-            throw new BadRequestException("Missing access token")
+            throw new BadRequestException("Missing user access token")
         final ip = addressResolver.resolve(httpRequest)
         final data = makeRequestData(req, user, ip)
         final token = tokenService.computeToken(data)
-        final target = targetImage(token, data.containerImage)
+        final target = targetImage(token, data.coordinates())
         final resp = new SubmitContainerTokenResponse(containerToken: token, targetImage: target)
         return HttpResponse.ok(resp)
     }
@@ -180,7 +181,9 @@ class ContainerTokenController {
             condaContent = build.condaFile
         }
         else if( req.containerImage ) {
-            targetImage = req.containerImage
+            // normalize container image
+            final coords = ContainerCoordinates.parse(req.containerImage)
+            targetImage = coords.getTargetContainer()
             targetContent = null
             condaContent = null
         }
@@ -203,8 +206,7 @@ class ContainerTokenController {
         return data
     }
 
-    protected String targetImage(String token, String image) {
-        final coords = ContainerCoordinates.parse(image)
-        return "${new URL(serverUrl).getAuthority()}/wt/$token/${coords.getImageAndTag()}"
+    protected String targetImage(String token, ContainerCoordinates container) {
+        return "${new URL(serverUrl).getAuthority()}/wt/$token/${container.getImageAndTag()}"
     }
 }

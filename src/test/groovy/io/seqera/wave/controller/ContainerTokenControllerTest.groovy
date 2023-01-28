@@ -27,14 +27,14 @@ class ContainerTokenControllerTest extends Specification {
         def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest')
         def data = controller.makeRequestData(req, null, "")
         then:
-        data.containerImage == 'ubuntu:latest'
+        data.containerImage == 'docker.io/library/ubuntu:latest'
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
         req = new SubmitContainerTokenRequest(towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64')
         data = controller.makeRequestData(req, new User(id: 100), "127.0.0.1")
         then:
-        data.containerImage == 'ubuntu:latest'
+        data.containerImage == 'docker.io/library/ubuntu:latest'
         data.userId == 100
         data.workspaceId == 10 
         data.containerConfig == cfg
