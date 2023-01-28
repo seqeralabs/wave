@@ -29,6 +29,26 @@ class ProxyClientTest extends Specification {
     @Inject RegistryCredentialsProvider credentialsProvider
     @Inject HttpClientConfig config
 
+    def 'should call target manifests on docker.io' () {
+        given:
+        def REG = 'docker.io'
+        def IMAGE = 'library/hello-world'
+        def registry = lookupService.lookup(REG)
+        def creds = credentialsProvider.getDefaultCredentials(REG)
+        and:
+        def proxy = new ProxyClient(config)
+                .withImage(IMAGE)
+                .withRegistry(registry)
+                .withLoginService(loginService)
+                .withCredentials(creds)
+
+        when:
+        def resp1 = proxy.getString('/v2/library/hello-world/manifests/sha256:aa0cc8055b82dc2509bed2e19b275c8f463506616377219d9642221ab53cf9fe')
+        and:
+        then:
+        resp1.statusCode() == 200
+    }
+
     def 'should call target blob on quay' () {
         given:
         def REG = 'quay.io'

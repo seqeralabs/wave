@@ -70,7 +70,7 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
             getRequest(_) >> new ContainerRequestData(
                     null,
                     null,
-                    "${Base32.encode('library/hello-world'.bytes)}",
+                    "library/hello-world",
                     "FROM busybox",
                     null,
                     null)
@@ -126,7 +126,7 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
         expected = BuildResult.completed('xyz', 0, 'OK', Instant.now())
 
         when:
-        HttpRequest request = HttpRequest.HEAD("/v2/wt/1234/${Base32.encode('library/hello-world'.bytes)}/manifests/latest").headers({h->
+        HttpRequest request = HttpRequest.HEAD("/v2/wt/1234/library/hello-world/manifests/latest").headers({h->
             h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
             h.add('Accept', ContentType.DOCKER_MANIFEST_V1_JWS_TYPE)
             h.add('Accept', MediaType.APPLICATION_JSON)
@@ -142,7 +142,7 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
         resolveImageAsync = true
 
         when:
-        HttpRequest request = HttpRequest.HEAD("/v2/wt/1234/${Base32.encode('library/hello-world'.bytes)}/manifests/latest").headers({h->
+        HttpRequest request = HttpRequest.HEAD("/v2/wt/1234/library/hello-world/manifests/latest").headers({h->
             h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
             h.add('Accept', ContentType.DOCKER_MANIFEST_V1_JWS_TYPE)
             h.add('Accept', MediaType.APPLICATION_JSON)

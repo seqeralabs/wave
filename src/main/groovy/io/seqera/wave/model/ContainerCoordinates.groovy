@@ -33,9 +33,6 @@ class ContainerCoordinates implements ContainerPath {
     static ContainerCoordinates parse(String path) {
 
         final coordinates = path.tokenize('/')
-        if( coordinates.size()==1 ) {
-            coordinates.add(0,'library')
-        }
 
         String ref
         def last = coordinates.size()-1
@@ -54,11 +51,18 @@ class ContainerCoordinates implements ContainerPath {
         if( coordinates[0].contains('.') || coordinates[0].contains(':') ) {
             reg = coordinates[0]; coordinates.remove(0)
         }
+        // default to docker registry
+        reg ?= DOCKER_IO
 
         if( !ref )
             throw new IllegalArgumentException("Invalid container image name: $path")
 
+        // add default library prefix to docker images
+        if( coordinates.size()==1 && reg==DOCKER_IO ) {
+            coordinates.add(0,'library')
+        }
+
         final image = coordinates.join('/')
-        return new ContainerCoordinates(reg ?: DOCKER_IO, image, ref)
+        return new ContainerCoordinates(reg, image, ref)
     }
 }
