@@ -7,12 +7,11 @@ import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.views.View
 import io.seqera.wave.exception.NotFoundException
-import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.persistence.WaveBuildRecord
 import jakarta.inject.Inject
 import static io.seqera.wave.util.DataTimeUtils.formatDuration
 import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
-
 /**
  * Implements View controller
  * 
@@ -31,7 +30,7 @@ class ViewController {
 
     @View("build-view")
     @Get('/builds/{buildId}')
-    HttpResponse<Map<String,String>> builds(String buildId) {
+    HttpResponse<Map<String,String>> viewBuild(String buildId) {
         final record = persistenceService.loadBuild(buildId)
         if( !record )
             throw new NotFoundException("Unknown build id '$buildId'")
@@ -54,4 +53,41 @@ class ViewController {
         // result the main object
         return binding
       }
+
+    @View("container-view")
+    @Get('/containers/{token}')
+    HttpResponse<Map<String,Object>> viewContainer(String token) {
+        final data = persistenceService.loadContainerRequest(token)
+        if( !data )
+            throw new NotFoundException("Unknown container token: $token")
+        // return the response
+        final binding = new HashMap(20)
+        binding.request_token = token
+        binding.request_container_image = data.containerImage
+        binding.request_contaiener_platform = data.platform ?: '-'
+        binding.request_fingerprint = data.fingerprint ?: '-'
+        binding.request_timestamp = formatTimestamp(data.timestamp) ?: '-'
+        binding.request_container_config = data.containerConfig
+
+        binding.source_container_image = data.sourceImage ?: '-'
+        binding.source_container_digest = data.sourceDigest ?: '-'
+
+        binding.wave_container_image = data.waveImage ?: '-'
+        binding.wave_container_digest = data.waveDigest ?: '-'
+
+        // user & tower data
+        binding.tower_user_id = data.user?.id
+        binding.tower_user_email = data.user?.email
+        binding.tower_user_name = data.user?.userName
+        binding.tower_workspace_id = data.workspaceId ?: '-'
+        binding.tower_endpoint = data.towerEndpoint
+
+        binding.build_container_file = data.containerFile
+        binding.build_conda_file = data.condaFile ?: '-'
+        binding.build_repository = data.buildRepository ?: '-'
+        binding.build_cache_repository = data.cacheRepository  ?: '-'
+
+
+        return HttpResponse.<Map<String,Object>>ok(binding)
+    }
 }

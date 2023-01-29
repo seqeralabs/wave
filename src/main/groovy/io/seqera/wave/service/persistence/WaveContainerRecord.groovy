@@ -1,17 +1,23 @@
 package io.seqera.wave.service.persistence
 
+import java.time.OffsetDateTime
+
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
+import groovy.util.logging.Slf4j
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.tower.User
+import static io.seqera.wave.util.DataTimeUtils.parseOffsetDateTime
+
 /**
  * Model a Wave container request record 
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @ToString(includeNames = true, includePackage = false)
 @Canonical
 @CompileStatic
@@ -75,7 +81,7 @@ class WaveContainerRecord {
     /**
      * The request timestamp
      */
-    final String timestamp
+    final OffsetDateTime timestamp
 
     /**
      * The IP address originating the request
@@ -104,7 +110,7 @@ class WaveContainerRecord {
         this.buildRepository = request.buildRepository
         this.cacheRepository = request.cacheRepository
         this.fingerprint = request.fingerprint
-        this.timestamp = request.timestamp
+        this.timestamp = parseOffsetDateTime(request.timestamp)
         this.ipAddress = addr
         this.condaFile = data.condaFile
         this.containerFile = data.containerFile
@@ -137,4 +143,5 @@ class WaveContainerRecord {
      * Required by jackson ser/de-ser
      */
     protected WaveContainerRecord() { }
+
 }

@@ -3,6 +3,7 @@ package io.seqera.wave.service.persistence
 import spock.lang.Specification
 
 import java.time.Instant
+import java.time.OffsetDateTime
 
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
@@ -46,11 +47,11 @@ class WaveContainerRecordTest extends Specification {
         container.buildRepository == req.buildRepository
         container.cacheRepository == req.cacheRepository
         container.fingerprint == req.fingerprint
-        container.timestamp == req.timestamp
         container.ipAddress == addr
         container.condaFile == data.condaFile
         container.containerFile == data.containerFile
         container.sourceImage == data.containerImage
         container.waveImage == wave
+        container.timestamp == OffsetDateTime.parse(req.timestamp)
     }
 }
