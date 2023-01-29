@@ -36,11 +36,32 @@
         </tr>
     </table>
 
+    <!-- container info -->
+    <h3>Container info</h3>
+    <table cellpadding="4" >
+        <tr>
+            <td>Source image</td>
+            <td>{{source_container_image}}</td>
+        </tr>
+        <tr>
+            <td>Source digest</td>
+            <td>{{source_container_digest}}</td>
+        </tr>
+        <tr>
+            <td>Wave image</td>
+            <td>{{wave_container_image}}</td>
+        </tr>
+        <tr>
+            <td>Wave digest</td>
+            <td>{{wave_container_digest}}</td>
+        </tr>
+    </table>
+
     {{#if request_container_config}}
-    <h3>Container config</h3>
-    <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">
-        {{request_container_config}}
-    </pre>
+        <h3>Container config</h3>
+        <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">
+            {{request_container_config}}
+        </pre>
     {{/if}}
 
     <!-- build info -->
@@ -67,26 +88,6 @@
         </table>
     {{/if}}
 
-    <!-- container info -->
-    <h3>Container info</h3>
-    <table cellpadding="4" >
-        <tr>
-            <td>Source image</td>
-            <td>{{source_container_image}}</td>
-        </tr>
-        <tr>
-            <td>Source digest</td>
-            <td>{{source_container_digest}}</td>
-        </tr>
-        <tr>
-            <td>Wave image</td>
-            <td>{{wave_container_image}}</td>
-        </tr>
-        <tr>
-            <td>Wave digest</td>
-            <td>{{wave_container_digest}}</td>
-        </tr>
-    </table>
 
     <!-- Tower & user info -->
     {{#if tower_user_id}}
