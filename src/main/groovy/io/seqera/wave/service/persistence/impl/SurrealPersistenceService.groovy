@@ -116,7 +116,7 @@ class SurrealPersistenceService implements PersistenceService {
         final query = """\
                                 UPDATE wave_request:$token SET 
                                     sourceDigest = '$digest.source',
-                                    waveDigest = '${digest.resolved}'
+                                    waveDigest = '${digest.target}'
                                 """.stripIndent()
         surrealDb
                 .sqlAsync(getAuthorization(), query)

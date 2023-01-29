@@ -16,7 +16,7 @@ import io.seqera.wave.auth.DockerAuthService
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
-import io.seqera.wave.exchange.DescribeContainerTokenResponse
+import io.seqera.wave.exchange.DescribeWaveContainerResponse
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
@@ -222,14 +222,15 @@ class ContainerTokenControllerTest extends Specification {
 
         when:
         def req2 = HttpRequest.GET("/container-token/${token}")
-        def resp2 = client.toBlocking().exchange(req2, DescribeContainerTokenResponse)
+        def resp2 = client.toBlocking().exchange(req2, DescribeWaveContainerResponse)
         then:
         resp2.status() == HttpStatus.OK
         and:
-        def result = resp2.body().request
+        def result = resp2.body()
         and:
-        result.containerImage == 'hello-world'
-        result.sourceImage == 'docker.io/library/hello-world:latest'
-        result.waveImage == resp1.body().targetImage
+        result.token == token
+        result.request.containerImage == 'hello-world'
+        result.source.image == 'docker.io/library/hello-world:latest'
+        result.wave.image == resp1.body().targetImage
     }
 }

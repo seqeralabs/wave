@@ -17,20 +17,6 @@ import io.seqera.wave.tower.User
 @CompileStatic
 class WaveContainerRecord {
 
-    @Canonical
-    static class ContainerInfo {
-        String image
-        String digest
-
-        ContainerInfo withImage(String image) {
-            return new ContainerInfo(image, this.digest)
-        }
-
-        ContainerInfo withDigest(String digest) {
-            return new ContainerInfo(this.image, digest)
-        }
-    }
-
     /**
      * The Tower user associated with the request
      */
@@ -47,7 +33,7 @@ class WaveContainerRecord {
     final String containerImage
 
     /**
-     * The container file (aka Dockefile) content associated with the request
+     * The container file (aka Dockerfile) content associated with the request
      */
     final String containerFile
 
@@ -108,7 +94,7 @@ class WaveContainerRecord {
     final String waveDigest
 
 
-    WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequestData data, String waveContainerImage, User user, String addr) {
+    WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequestData data, String waveImage, User user, String addr) {
         this.user = user
         this.workspaceId = request.towerWorkspaceId
         this.containerImage = request.containerImage
@@ -123,7 +109,7 @@ class WaveContainerRecord {
         this.condaFile = data.condaFile
         this.containerFile = data.containerFile
         this.sourceImage = data.containerImage
-        this.waveImage = waveContainerImage
+        this.waveImage = waveImage
     }
 
     WaveContainerRecord(WaveContainerRecord that, String sourceDigest, String waveDigest) {
@@ -140,6 +126,9 @@ class WaveContainerRecord {
         this.ipAddress = that.ipAddress
         this.condaFile = that.condaFile
         this.containerFile = that.containerFile
+        this.sourceImage = that.sourceImage
+        this.waveImage = that.waveImage
+        // -- digest part 
         this.sourceDigest = sourceDigest
         this.waveDigest = waveDigest
     }

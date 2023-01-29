@@ -38,7 +38,7 @@ class LocalPersistenceService implements PersistenceService {
     void updateContainerRequest(String token, ContainerDigestPair digest) {
         final data = requestStore.get(token)
         if( data ) {
-            requestStore.put(token, new WaveContainerRecord(data, digest.source, digest.resolved))
+            requestStore.put(token, new WaveContainerRecord(data, digest.source, digest.target))
         }
     }
 

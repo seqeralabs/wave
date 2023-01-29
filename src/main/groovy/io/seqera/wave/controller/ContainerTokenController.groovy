@@ -20,7 +20,7 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.exception.NotFoundException
-import io.seqera.wave.exchange.DescribeContainerTokenResponse
+import io.seqera.wave.exchange.DescribeWaveContainerResponse
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.UserService
@@ -223,11 +223,11 @@ class ContainerTokenController {
     }
 
     @Get('/container-token/{token}')
-    HttpResponse<DescribeContainerTokenResponse> describeContainerRequest(String token) {
-        final request = persistenceService.loadContainerRequest(token)
-        if( !request )
-            throw new NotFoundException("Unknown request token: $token")
+    HttpResponse<DescribeWaveContainerResponse> describeContainerRequest(String token) {
+        final data = persistenceService.loadContainerRequest(token)
+        if( !data )
+            throw new NotFoundException("Unknown container token: $token")
         // return the response 
-        return HttpResponse.ok( new DescribeContainerTokenResponse(token, request) )
+        return HttpResponse.ok( DescribeWaveContainerResponse.create(token, data) )
     }
 }

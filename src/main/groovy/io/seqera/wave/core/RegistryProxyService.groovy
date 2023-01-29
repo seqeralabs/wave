@@ -92,7 +92,7 @@ class RegistryProxyService {
             persistenceService.updateContainerRequest(route.token, digest)
         }
 
-        final req = "/v2/${route.image}/manifests/${digest.resolved}"
+        final req = "/v2/${route.image}/manifests/${digest.target}"
         final entry = storage.getManifest(req).orElse(null)
         return entry
     }

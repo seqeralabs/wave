@@ -18,5 +18,5 @@ class ContainerDigestPair {
     /**
      * Digest of the augmented container image
      */
-    final String resolved
+    final String target
 }

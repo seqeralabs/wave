@@ -42,7 +42,7 @@ class RouteHandler {
             // find out the container request that must have been submitted for the token
             final request = tokenService.getRequest(token)
             if( !request ) {
-                throw new NotFoundException("Invalid request token '$token'")
+                throw new NotFoundException("Unknown Wave container for token '$token'")
             }
             // the image name (without tag) must match
             final coords = request.coordinates()
