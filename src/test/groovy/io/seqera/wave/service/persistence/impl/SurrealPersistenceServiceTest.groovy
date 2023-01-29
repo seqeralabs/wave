@@ -9,11 +9,16 @@ import java.time.Instant
 import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
+import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.core.ContainerDigestPair
+import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
-import io.seqera.wave.service.persistence.BuildRecord
+import io.seqera.wave.service.persistence.WaveBuildRecord
+import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.test.SurrealDBTestContainer
 import io.seqera.wave.tower.User
 /**
@@ -78,7 +83,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 ContainerPlatform.of('amd64'),'{auth}', null, "127.0.0.1")
         BuildResult result = new BuildResult(request.id, -1, "ok", Instant.now(), Duration.ofSeconds(3))
         BuildEvent event = new BuildEvent(request, result)
-        BuildRecord build = BuildRecord.fromEvent(event)
+        WaveBuildRecord build = WaveBuildRecord.fromEvent(event)
 
         when:
         storage.initializeDb()
@@ -103,7 +108,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
     void "can't insert a build but ends without error"() {
         given:
         SurrealPersistenceService storage = applicationContext.getBean(SurrealPersistenceService)
-        BuildRecord build = new BuildRecord(
+        WaveBuildRecord build = new WaveBuildRecord(
                 buildId: 'test',
                 dockerFile: 'test',
                 condaFile: 'test',
@@ -183,7 +188,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 "1.2.3.4")
         final result = new BuildResult(request.id, -1, "ok", Instant.now(), Duration.ofSeconds(3))
         final event = new BuildEvent(request, result)
-        final record = BuildRecord.fromEvent(event)
+        final record = WaveBuildRecord.fromEvent(event)
 
         and:
         persistence.saveBuildBlocking(record)
@@ -201,4 +206,56 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         SurrealPersistenceService.patchDuration('"duration":"3.00"') == '"duration":3.00'
         SurrealPersistenceService.patchDuration('aaa,"duration":"300.1234",zzz') == 'aaa,"duration":300.1234,zzz'
     }
+
+
+    def 'should load a request record' () {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        and:
+        def TOKEN = '123abc'
+        def cfg = new ContainerConfig(entrypoint: ['/opt/fusion'])
+        def req = new SubmitContainerTokenRequest(
+                towerEndpoint: 'https://tower.nf',
+                towerWorkspaceId: 100,
+                containerConfig: cfg,
+                containerPlatform: ContainerPlatform.of('amd64'),
+                buildRepository: 'build.docker.io',
+                cacheRepository: 'cache.docker.io',
+                fingerprint: 'xyz',
+                timestamp: Instant.now().toString()
+        )
+        def data = new ContainerRequestData( 1, 100, 'hello-world' )
+        def wave = "wave.io/wt/$TOKEN/hello-world"
+        def user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
+        def addr = "100.200.300.400"
+        and:
+        def request = new WaveContainerRecord(req, data, wave, user, addr)
+
+        and:
+        persistence.saveContainerRequest(TOKEN, request)
+        and:
+        sleep 200  // <-- the above request is async, give time to save it
+        
+        when:
+        def loaded = persistence.loadContainerRequest(TOKEN)
+        then:
+        loaded == request
+
+
+        // should update the record
+        when:
+        persistence.updateContainerRequest(TOKEN, new ContainerDigestPair('111', '222'))
+        and:
+        sleep 200
+        then:
+        def updated = persistence.loadContainerRequest(TOKEN)
+        and:
+        updated.sourceDigest == '111'
+        updated.sourceImage == request.sourceImage
+        and:
+        updated.waveDigest == '222'
+        updated.waveImage == request.waveImage
+
+    }
+
 }

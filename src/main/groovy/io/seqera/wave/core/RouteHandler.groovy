@@ -51,7 +51,7 @@ class RouteHandler {
             // compose the target request path in such a way that
             // - the 'registry' name is taken from the request associated to the token
             // - the 'reference' from the current request
-            return RoutePath.v2path(type, coords.registry, coords.image, reference, request)
+            return RoutePath.v2path(type, coords.registry, coords.image, reference, request, token)
         }
 
         final String image

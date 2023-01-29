@@ -16,7 +16,7 @@ import io.seqera.wave.util.JacksonHelper
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class BuildRecordTest extends Specification {
+class WaveBuildRecordTest extends Specification {
 
     def 'should serialise-deserialize build record' () {
         given:
@@ -32,12 +32,12 @@ class BuildRecordTest extends Specification {
                 "1.2.3.4")
         final result = new BuildResult(request.id, -1, "ok", Instant.now(), Duration.ofSeconds(3))
         final event = new BuildEvent(request, result)
-        final record = BuildRecord.fromEvent(event)
+        final record = WaveBuildRecord.fromEvent(event)
 
         when:
         def json = JacksonHelper.toJson(record)
         then:
-        JacksonHelper.fromJson(json, BuildRecord) == record
+        JacksonHelper.fromJson(json, WaveBuildRecord) == record
 
     }
 

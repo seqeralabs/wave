@@ -702,7 +702,7 @@ class ContainerAugmenterTest extends Specification {
         then:
         digest
         and:
-        storage.getManifest("/v2/$IMAGE/manifests/$digest")
+        storage.getManifest("/v2/$IMAGE/manifests/${digest.resolved}")
     }
 
 }

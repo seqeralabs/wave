@@ -10,6 +10,7 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
+import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.Post
 import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.seqera.wave.api.SubmitContainerTokenRequest
@@ -18,12 +19,16 @@ import io.seqera.wave.auth.DockerAuthService
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
+import io.seqera.wave.exception.NotFoundException
+import io.seqera.wave.exchange.DescribeContainerTokenResponse
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.pairing.PairingService
+import io.seqera.wave.service.persistence.WaveContainerRecord
+import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
@@ -36,7 +41,7 @@ import jakarta.inject.Inject
  */
 @Slf4j
 @CompileStatic
-@Controller("/container-token")
+@Controller("/")
 class ContainerTokenController {
 
     @Inject HttpClientAddressResolver addressResolver
@@ -81,12 +86,15 @@ class ContainerTokenController {
     @Inject
     RegistryProxyService registryProxyService
 
+    @Inject
+    PersistenceService persistenceService
+
     @PostConstruct
     private void init() {
         log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl"
     }
 
-    @Post
+    @Post('/container-token')
     CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
         // this is needed for backward compatibility with old clients
         if( !req.towerEndpoint ) {
@@ -119,6 +127,10 @@ class ContainerTokenController {
         final token = tokenService.computeToken(data)
         final target = targetImage(token, data.coordinates())
         final resp = new SubmitContainerTokenResponse(containerToken: token, targetImage: target)
+        // persist request
+        final recrd = new WaveContainerRecord(req, data, target, user, ip)
+        persistenceService.saveContainerRequest(token, recrd)
+        // return response
         return HttpResponse.ok(resp)
     }
 
@@ -208,5 +220,14 @@ class ContainerTokenController {
 
     protected String targetImage(String token, ContainerCoordinates container) {
         return "${new URL(serverUrl).getAuthority()}/wt/$token/${container.getImageAndTag()}"
+    }
+
+    @Get('/container-token/{token}')
+    HttpResponse<DescribeContainerTokenResponse> describeContainerRequest(String token) {
+        final request = persistenceService.loadContainerRequest(token)
+        if( !request )
+            throw new NotFoundException("Unknown request token: $token")
+        // return the response 
+        return HttpResponse.ok( new DescribeContainerTokenResponse(token, request) )
     }
 }

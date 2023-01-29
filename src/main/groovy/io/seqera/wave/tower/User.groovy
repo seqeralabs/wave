@@ -4,6 +4,7 @@ import javax.validation.constraints.NotNull
 import javax.validation.constraints.Size
 
 import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 /**
  * Model a tower user
@@ -11,6 +12,7 @@ import groovy.transform.ToString
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @ToString(includeNames = true, includePackage = false, includes = 'id,userName,email')
+@EqualsAndHashCode
 @CompileStatic
 class User {
 

@@ -3,14 +3,11 @@ package io.seqera.wave.controller
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpResponse
-import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
-import io.micronaut.http.annotation.Produces
 import io.micronaut.views.View
 import io.seqera.wave.exception.NotFoundException
-import io.seqera.wave.mail.MailHelper
-import io.seqera.wave.service.persistence.BuildRecord
+import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.PersistenceService
 import jakarta.inject.Inject
 import static io.seqera.wave.util.DataTimeUtils.formatDuration
@@ -41,7 +38,7 @@ class ViewController {
         return HttpResponse.ok(renderBuildView(record))
     }
 
-    Map<String,String> renderBuildView(BuildRecord result) {
+    Map<String,String> renderBuildView(WaveBuildRecord result) {
         // create template binding
         final binding = new HashMap(20)
         binding.build_id = result.buildId

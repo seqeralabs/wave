@@ -17,7 +17,7 @@ import io.seqera.wave.service.builder.BuildEvent
 @ToString
 @CompileStatic
 @EqualsAndHashCode
-class BuildRecord {
+class WaveBuildRecord {
 
     String buildId
     String dockerFile
@@ -33,10 +33,10 @@ class BuildRecord {
     int exitStatus
     String platform
 
-    static BuildRecord fromEvent(BuildEvent event) {
+    static WaveBuildRecord fromEvent(BuildEvent event) {
         if( event.request.id != event.result.id )
             throw new IllegalStateException("Build request Id must match result id")
-        return new BuildRecord(
+        return new WaveBuildRecord(
                 buildId: event.request.id,
                 // note: the string replacement is needed to a bug in the SurrealDb version 1.0.0-beta.8
                 // see https://pullanswer.com/questions/bug-unicode-escaped-characters-with-surrogate-pairs-causes-surrealdb-to-panic

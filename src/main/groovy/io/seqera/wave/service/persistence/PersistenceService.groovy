@@ -2,8 +2,8 @@ package io.seqera.wave.service.persistence
 
 import groovy.transform.CompileStatic
 import io.micronaut.runtime.event.annotation.EventListener
+import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.builder.BuildEvent
-
 /**
  * A storage for statistic data
  *
@@ -15,25 +15,49 @@ interface PersistenceService {
 
     @EventListener
     default void onBuildEvent(BuildEvent event) {
-        saveBuild(BuildRecord.fromEvent(event))
+        saveBuild(WaveBuildRecord.fromEvent(event))
     }
 
     /**
-     * Store a {@link BuildRecord} object in the underlying persistence layer.
+     * Store a {@link WaveBuildRecord} object in the underlying persistence layer.
      *
      * It maye be implemented in non-blocking manner therefore there's no guarantee
      * the record is accessible via #loadBuild immediately after this operation
      *
-     * @param build A {@link BuildRecord} object
+     * @param build A {@link WaveBuildRecord} object
      */
-    void saveBuild(BuildRecord build)
+    void saveBuild(WaveBuildRecord build)
 
     /**
-     * Retrieve a {@link BuildRecord} object for the given build id
+     * Retrieve a {@link WaveBuildRecord} object for the given build id
      *
      * @param buildId The build id i.e. the checksum of dockerfile + condafile + repo
-     * @return The corresponding {@link BuildRecord} object object
+     * @return The corresponding {@link WaveBuildRecord} object object
      */
-    BuildRecord loadBuild(String buildId)
-    
+    WaveBuildRecord loadBuild(String buildId)
+
+    /**
+     * Store a {@link WaveContainerRecord} object in the Surreal wave_request table.
+     *
+     * @param token The request token associated with this request
+     * @param data A {@link WaveContainerRecord} object representing a Wave request record
+     */
+    void saveContainerRequest(String token, WaveContainerRecord data)
+
+    /**
+     * Update a container request with the digest of the resolved request
+     *
+     * @param token The request unique token
+     * @param digest The resolved digest
+     */
+    void updateContainerRequest(String token, ContainerDigestPair digest)
+
+    /**
+     * Retrieve a {@link WaveContainerRecord} object corresponding to the a specified request token
+     *
+     * @param token The token for which recover the corresponding {@link WaveContainerRecord} object
+     * @return The {@link WaveContainerRecord} object associated with the corresponding token or {@code null} otherwise
+     */
+    WaveContainerRecord loadContainerRequest(String token)
+
 }

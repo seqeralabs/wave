@@ -9,7 +9,7 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.service.persistence.BuildRecord
+import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.PersistenceService
 import jakarta.inject.Inject
 
@@ -31,7 +31,7 @@ class ViewControllerTest extends Specification {
         given:
         def controller = new ViewController(serverUrl: 'http://foo.com')
         and:
-        def record = new BuildRecord(
+        def record = new WaveBuildRecord(
                 buildId: '12345',
                 dockerFile: 'FROM foo',
                 condaFile: 'conda::foo',
@@ -53,7 +53,7 @@ class ViewControllerTest extends Specification {
 
     def 'should render a build page' () {
         given:
-        def record1 = new BuildRecord(
+        def record1 = new WaveBuildRecord(
                 buildId: 'test',
                 dockerFile: 'test',
                 condaFile: 'test',
