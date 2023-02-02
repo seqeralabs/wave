@@ -9,9 +9,9 @@ package io.seqera.wave.model;
  */
 public class ContentType {
 
-    public static String DOCKER_MANIFEST_LIST_V2 = "application/vnd.docker.distribution.manifest.list.v2+json";
+    public static String DOCKER_IMAGE_INDEX_V2 = "application/vnd.docker.distribution.manifest.list.v2+json";
     public static String DOCKER_IMAGE_TAR_GZIP = "application/vnd.docker.image.rootfs.diff.tar.gzip";
-    public static String DOCKER_IMAGE_V1 = "application/vnd.docker.container.image.v1+json";
+    public static String DOCKER_IMAGE_CONFIG_V1 = "application/vnd.docker.container.image.v1+json";
 
     /**
      * https://github.com/distribution/distribution/blob/main/docs/spec/manifest-v2-1.md
@@ -28,5 +28,10 @@ public class ContentType {
      * https://github.com/opencontainers/image-spec/blob/master/manifest.md
      */
     public static String OCI_IMAGE_MANIFEST_V1 = "application/vnd.oci.image.manifest.v1+json";
+
     public static String OCI_IMAGE_CONFIG_V1 = "application/vnd.oci.image.config.v1+json";
+
+    public static String OCI_IMAGE_INDEX_V1 = "application/vnd.oci.image.index.v1+json";
+
+    public static String OCI_IMAGE_TAR_GZIP = "application/vnd.oci.image.layer.v1.tar+gzip";
 }
