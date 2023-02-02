@@ -1,5 +1,7 @@
 package io.seqera.wave.service.security
 
+import java.time.Duration
+
 import io.seqera.wave.service.pairing.PairingCacheStore
 import io.seqera.wave.service.pairing.PairingServiceImpl
 import spock.lang.Specification
@@ -21,7 +23,7 @@ class PairingServiceTest extends Specification{
         final store = new PairingCacheStore(new LocalCacheProvider())
 
         and: 'a security service using it'
-        final service = new PairingServiceImpl(store: store)
+        final service = new PairingServiceImpl(store: store,pairingKeyTtl: Duration.ofSeconds(100))
 
         when: 'we get a public key'
         def key = service.getPairingKey("tower","tower.io:9090")
@@ -46,12 +48,12 @@ class PairingServiceTest extends Specification{
     }
 
 
-    def "generate keys only if not present"() {
+    def "skip generate keys if present"() {
         given: 'a cache store'
         final store = new PairingCacheStore(new LocalCacheProvider())
 
         and: 'a security service using the cache store'
-        final service = new PairingServiceImpl(store: store)
+        final service = new PairingServiceImpl(store: store, pairingKeyTtl:  Duration.ofSeconds(1000))
 
         when: 'we get the key two times for the same service and endpoint'
         def firstKey = service.getPairingKey("tower", "tower.io:9090")
@@ -61,6 +63,25 @@ class PairingServiceTest extends Specification{
         firstKey.pairingId == secondKey.pairingId
         firstKey.publicKey == secondKey.publicKey
     }
+
+    def "regenerate keys when expired"() {
+        given: 'a cache store'
+        final store = new PairingCacheStore(new LocalCacheProvider())
+
+        and: 'a security service using the cache store'
+        final service = new PairingServiceImpl(store: store, pairingKeyTtl: Duration.ofMillis(100))
+
+        when: 'we get the key two times for the same service and endpoint waiting over the ttl interval'
+        def firstKey = service.getPairingKey("tower", "tower.io:9090")
+        sleep 200
+        def secondKey = service.getPairingKey("tower", "tower.io:9090")
+
+        then: 'we regenerate the key'
+        firstKey.pairingId == secondKey.pairingId
+        firstKey.publicKey != secondKey.publicKey
+    }
+
+
 
 
     private static boolean keysMatch(String encodedPublicKey, byte[] encodedPrivateKey) {

@@ -4,6 +4,9 @@ package io.seqera.wave.auth
 import spock.lang.Requires
 import spock.lang.Specification
 
+import java.time.Duration
+import javax.validation.constraints.Null
+
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
@@ -40,6 +43,7 @@ class RegistryCredentialsProviderTest extends Specification {
     @Nullable
     @Value('${wave.registries.quay.io.password}')
     private String quayPassword
+
     
     def 'should find docker creds' () {
         when:

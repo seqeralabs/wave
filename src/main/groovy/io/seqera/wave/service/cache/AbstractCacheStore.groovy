@@ -78,6 +78,7 @@ abstract class AbstractCacheStore<V> implements CacheStore<String,V> {
         delegate.remove(key0(key))
     }
 
+    @Override
     void clear() {
         delegate.clear()
     }

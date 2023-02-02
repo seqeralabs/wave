@@ -1,5 +1,7 @@
 package io.seqera.wave.service
 
+import java.time.Instant
+
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.tower.crypto.AsymmetricCipher
@@ -35,6 +37,8 @@ class CredentialServiceImpl implements CredentialsService {
         final pairing = keyService.getPairingRecord(PairingService.TOWER_SERVICE, towerEndpoint)
         if (!pairing)
             throw new IllegalStateException("No exchange key registered for service ${PairingService.TOWER_SERVICE} at endpoint: ${towerEndpoint}")
+        if (pairing.isExpired())
+            log.debug("Exchange key registered for service ${PairingService.TOWER_SERVICE} at endpoint: ${towerEndpoint} used after expiration, should be renewed soon")
 
         final all = towerClient.listCredentials(towerEndpoint, towerToken, workspaceId).get().credentials
 

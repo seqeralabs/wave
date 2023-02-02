@@ -1,9 +1,12 @@
 package io.seqera.wave.service.pairing
 
 import java.security.KeyPair
+import java.time.Duration
+import java.time.Instant
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Value
 import io.seqera.tower.crypto.AsymmetricCipher
 import io.seqera.wave.exchange.PairingResponse
 import io.seqera.wave.util.DigestFunctions
@@ -20,23 +23,23 @@ class PairingServiceImpl implements PairingService {
     @Inject
     private PairingCacheStore store
 
+    @Value('${wave.pairing-key.ttl:`1d`}')
+    private Duration pairingKeyTtl
+
+
     @Override
     PairingResponse getPairingKey(String service, String endpoint) {
         final uid =  makeKey(service,endpoint)
 
         def entry = store.get(uid)
-        if (!entry) {
+        if (!entry || entry.isExpired()) {
             log.debug "Pairing with service '${service}' at address $endpoint - pairing id: $uid"
             final keyPair = generate()
-            final newEntry = new PairingRecord(service, endpoint, uid, keyPair.getPrivate().getEncoded(), keyPair.getPublic().getEncoded())
-            // checking the presence of the entry before the if, only optimizes
-            // the hot path, when the key has already been created, but cannot
-            // guarantee the correctness in case of multiple concurrent invocations,
-            // leading to the unfortunate case where the returned key does not correspond
-            // to the stored one. Therefore we need an *atomic/transactional* putIfAbsent here
-            entry = store.putIfAbsentAndGetCurrent(uid,newEntry)
-        }
-        else {
+            final issuedAt = Instant.now() + pairingKeyTtl
+            final newEntry = new PairingRecord(service, endpoint, uid, keyPair.getPrivate().getEncoded(), keyPair.getPublic().getEncoded(),issuedAt.toEpochMilli())
+            store.put(uid,newEntry)
+            entry = newEntry
+        } else {
             log.trace "Paired already with service '${service}' at address $endpoint - pairing id: $uid"
         }
 
