@@ -48,7 +48,7 @@ class PairingServiceTest extends Specification{
     }
 
 
-    def "skip generate keys if present"() {
+    def "skip generate keys if present and not expired"() {
         given: 'a cache store'
         final store = new PairingCacheStore(new LocalCacheProvider())
 
