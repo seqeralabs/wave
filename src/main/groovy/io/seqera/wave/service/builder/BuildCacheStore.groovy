@@ -3,6 +3,7 @@ package io.seqera.wave.service.builder
 import java.time.Duration
 
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.cache.AbstractCacheStore
@@ -13,6 +14,7 @@ import jakarta.inject.Singleton
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @Singleton
 @CompileStatic
 class BuildCacheStore extends AbstractCacheStore<BuildResult> implements BuildStore {
@@ -31,6 +33,7 @@ class BuildCacheStore extends AbstractCacheStore<BuildResult> implements BuildSt
         this.duration = duration
         this.delay = delay
         this.timeout = timeout
+        log.info "Creating Build cache store ― duration=$duration; delay=$delay; timeout=$timeout"
     }
 
     @Override
