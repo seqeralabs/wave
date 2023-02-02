@@ -35,8 +35,8 @@ class PairingServiceImpl implements PairingService {
         if (!entry || entry.isExpired()) {
             log.debug "Pairing with service '${service}' at address $endpoint - pairing id: $uid"
             final keyPair = generate()
-            final issuedAt = Instant.now() + pairingKeyTtl
-            final newEntry = new PairingRecord(service, endpoint, uid, keyPair.getPrivate().getEncoded(), keyPair.getPublic().getEncoded(),issuedAt.toEpochMilli())
+            final validUntil = Instant.now() + pairingKeyTtl
+            final newEntry = new PairingRecord(service, endpoint, uid, keyPair.getPrivate().getEncoded(), keyPair.getPublic().getEncoded(),validUntil.toEpochMilli())
             store.put(uid,newEntry)
             entry = newEntry
         } else {
