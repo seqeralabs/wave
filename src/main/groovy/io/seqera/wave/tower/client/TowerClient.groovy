@@ -129,7 +129,7 @@ class TowerClient {
                         }
                     }
                     .exceptionally {err ->
-                        throw handleError(err, towerEndpoint, uri)
+                        throw handleIoError(err, towerEndpoint, uri)
                     }
     }
 
@@ -193,7 +193,7 @@ class TowerClient {
                     }
     }
 
-    private Throwable handleError(Throwable t, String endpoint, URI uri) {
+    private Throwable handleIoError(Throwable t, String endpoint, URI uri) {
         if (t instanceof CompletionException) {
             t = t.cause
         }
