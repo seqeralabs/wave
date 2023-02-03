@@ -4,6 +4,7 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionException
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -127,6 +128,9 @@ class TowerClient {
                                 throw makeGenericError(resp.statusCode(), towerEndpoint,uri, resp.body())
                         }
                     }
+                    .exceptionally {err ->
+                        throw handleError(err, towerEndpoint, uri)
+                    }
     }
 
     private static HttpResponseException makeNotFoundError(String endpoint, URI uri) {
@@ -187,6 +191,23 @@ class TowerClient {
                             return CompletableFuture.completedFuture(resp)
                         }
                     }
+    }
+
+    private Throwable handleError(Throwable t, String endpoint, URI uri) {
+        if (t instanceof CompletionException) {
+            t = t.cause
+        }
+        if (t instanceof IOException) {
+            final message = """
+                Failed to contact `${endpoint}` at url `${uri}` after ${httpRetryable.config().retryAttempts} attempts.
+                Cause: [${t.message}]
+               
+                This might be a temporary network issue, retry later. 
+                If the problem persists verify that the service is running properly and it is reachable from wave.
+            """.stripIndent().trim()
+            t = new HttpResponseException(503, message)
+        }
+        return t
     }
 
 
