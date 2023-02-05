@@ -29,12 +29,15 @@ public class DataTimeUtils {
         if( ts==null )
             return null;
         if( zoneId==null )
-            zoneId = OffsetDateTime.now().getOffset().getId();
+            zoneId = ZoneId.of("GMT").getId();
         return  DateTimeFormatter
                 .ofPattern("yyyy-MM-dd HH:mm (O)")
                 .withZone(ZoneId.of(zoneId))
                 .format(ts);
+    }
 
+    static public String formatTimestamp(Instant ts) {
+        return formatTimestamp(ts,null);
     }
 
     static public String formatTimestamp(OffsetDateTime ts) {
