@@ -40,7 +40,6 @@ class TowerClient {
                                 .version(HttpClient.Version.HTTP_1_1)
                                 .connectTimeout(httpRetryable.config().connectTimeout)
                                 .build()
-
     }
 
     CompletableFuture<UserInfoResponse> userInfo(String towerEndpoint, String authorization) {
@@ -121,38 +120,22 @@ class TowerClient {
                             case 200:
                                 return CompletableFuture.completedFuture(JacksonHelper.fromJson(resp.body(), type))
                             case 401:
-                                throw new HttpResponseException(401, 'Unauthorized')
+                                throw new HttpResponseException(401, "Unauthorized access to Tower resource: $uri")
                             case 404:
-                                throw makeNotFoundError(towerEndpoint,uri)
+                                final msg = "Tower resource not found: $uri"
+                                throw new HttpResponseException(404, msg)
                             default:
-                                throw makeGenericError(resp.statusCode(), towerEndpoint,uri, resp.body())
+                                def body = resp.body()
+                                def msg = "Unexpected status code ${resp.statusCode()} while accessing Tower resource: $uri"
+                                if( body )
+                                    msg += " - response: ${body}"
+                                throw new HttpResponseException(resp.statusCode(), msg)
                         }
                     }
                     .exceptionally {err ->
-                        throw handleIoError(err, towerEndpoint, uri)
+                        throw handleIoError(err, uri)
                     }
     }
-
-    private static HttpResponseException makeNotFoundError(String endpoint, URI uri) {
-        final message = """
-            Failed to get credentials keys from '${endpoint}', while contacting tower at: '${uri}'
-            Check that you are using the correct endpoint and workspace configuration for tower and nextflow, and that the credentials are available in the tower instance.
-            """.stripIndent().trim()
-        return new HttpResponseException(404,message)
-    }
-
-    private static <T> HttpResponseException makeGenericError(int status, String endpoint,URI uri,  T body) {
-        final message = """
-            Failed to get credentials keys from '${endpoint}', while contacting tower at '${uri}'.
-            Status: [${status}]
-            Response from server:
-            `
-            ${JacksonHelper.toJson(body)}
-            `
-            """.stripIndent().trim()
-        return new HttpResponseException(status, message)
-    }
-
 
     /**
      * Generic async get with authorization
@@ -193,23 +176,14 @@ class TowerClient {
                     }
     }
 
-    private Throwable handleIoError(Throwable t, String endpoint, URI uri) {
-        if (t instanceof CompletionException) {
-            t = t.cause
+    private Throwable handleIoError(Throwable err, URI uri) {
+        if (err instanceof CompletionException) {
+            err = err.cause
         }
-        if (t instanceof IOException) {
-            final message = """
-                Failed to contact `${endpoint}` at url `${uri}` after ${httpRetryable.config().retryAttempts} attempts.
-                Cause: [${t.message}]
-               
-                This might be a temporary network issue, retry later. 
-                If the problem persists verify that the service is running properly and it is reachable from wave.
-            """.stripIndent().trim()
-            t = new HttpResponseException(503, message)
-        }
-        return t
+        final message = "Unexpected error while accessing Tower resource: $uri - cause: [${err.getClass().getName()}] ${err.message}"
+        err = new HttpResponseException(503, message)
+        return err
     }
-
 
     /**
      * POST request to refresh the authToken
