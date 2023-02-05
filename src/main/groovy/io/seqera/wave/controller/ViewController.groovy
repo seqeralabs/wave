@@ -66,7 +66,7 @@ class ViewController {
         binding.request_container_image = data.containerImage
         binding.request_contaiener_platform = data.platform ?: '-'
         binding.request_fingerprint = data.fingerprint ?: '-'
-        binding.request_timestamp = formatTimestamp(data.timestamp) ?: '-'
+        binding.request_timestamp = formatTimestamp(data.timestamp, data.zoneId) ?: '-'
         binding.request_container_config = data.containerConfig
 
         binding.source_container_image = data.sourceImage ?: '-'

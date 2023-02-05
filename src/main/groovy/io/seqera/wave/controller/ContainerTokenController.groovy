@@ -27,8 +27,8 @@ import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.pairing.PairingService
-import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
@@ -125,11 +125,11 @@ class ContainerTokenController {
         final ip = addressResolver.resolve(httpRequest)
         final data = makeRequestData(req, user, ip)
         final token = tokenService.computeToken(data)
-        final target = targetImage(token, data.coordinates())
-        final resp = new SubmitContainerTokenResponse(containerToken: token, targetImage: target)
+        final target = targetImage(token.value, data.coordinates())
+        final resp = new SubmitContainerTokenResponse(containerToken: token.value, targetImage: target, expiration: token.expiration)
         // persist request
-        final recrd = new WaveContainerRecord(req, data, target, user, ip)
-        persistenceService.saveContainerRequest(token, recrd)
+        final recrd = new WaveContainerRecord(req, data, target, user, ip, token.expiration)
+        persistenceService.saveContainerRequest(token.value, recrd)
         // return response
         return HttpResponse.ok(resp)
     }

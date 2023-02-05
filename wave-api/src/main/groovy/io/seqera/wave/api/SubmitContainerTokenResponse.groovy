@@ -1,5 +1,7 @@
 package io.seqera.wave.api
 
+import java.time.Instant
+
 import groovy.transform.CompileStatic
 
 /**
@@ -11,4 +13,5 @@ import groovy.transform.CompileStatic
 class SubmitContainerTokenResponse {
     String containerToken
     String targetImage
+    Instant expiration
 }

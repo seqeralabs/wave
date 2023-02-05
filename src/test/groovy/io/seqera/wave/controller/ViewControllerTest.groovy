@@ -101,7 +101,8 @@ class ViewControllerTest extends Specification {
         def addr = '100.200.300.400'
 
         and:
-        def container = new WaveContainerRecord(req, data, wave, user, addr)
+        def exp = Instant.now().plusSeconds(3600)
+        def container = new WaveContainerRecord(req, data, wave, user, addr, exp)
         def token = '12345'
 
         when:

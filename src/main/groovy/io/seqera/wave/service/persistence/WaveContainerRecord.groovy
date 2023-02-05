@@ -1,6 +1,6 @@
 package io.seqera.wave.service.persistence
 
-import java.time.OffsetDateTime
+import java.time.Instant
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
@@ -11,7 +11,6 @@ import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.tower.User
 import static io.seqera.wave.util.DataTimeUtils.parseOffsetDateTime
-
 /**
  * Model a Wave container request record 
  *
@@ -81,7 +80,12 @@ class WaveContainerRecord {
     /**
      * The request timestamp
      */
-    final OffsetDateTime timestamp
+    final Instant timestamp
+
+    /**
+     * The time zone id where the request was originated
+     */
+    final String zoneId
 
     /**
      * The IP address originating the request
@@ -99,8 +103,9 @@ class WaveContainerRecord {
 
     final String waveDigest
 
+    final Instant expiration
 
-    WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequestData data, String waveImage, User user, String addr) {
+    WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequestData data, String waveImage, User user, String addr, Instant expiration) {
         this.user = user
         this.workspaceId = request.towerWorkspaceId
         this.containerImage = request.containerImage
@@ -110,12 +115,15 @@ class WaveContainerRecord {
         this.buildRepository = request.buildRepository
         this.cacheRepository = request.cacheRepository
         this.fingerprint = request.fingerprint
-        this.timestamp = parseOffsetDateTime(request.timestamp)
-        this.ipAddress = addr
         this.condaFile = data.condaFile
         this.containerFile = data.containerFile
         this.sourceImage = data.containerImage
         this.waveImage = waveImage
+        this.expiration = expiration
+        this.ipAddress = addr
+        final ts = parseOffsetDateTime(request.timestamp)
+        this.timestamp = ts?.toInstant()
+        this.zoneId = ts?.getOffset()?.getId()
     }
 
     WaveContainerRecord(WaveContainerRecord that, String sourceDigest, String waveDigest) {
@@ -134,6 +142,7 @@ class WaveContainerRecord {
         this.containerFile = that.containerFile
         this.sourceImage = that.sourceImage
         this.waveImage = that.waveImage
+        this.expiration = that.expiration
         // -- digest part 
         this.sourceDigest = sourceDigest
         this.waveDigest = waveDigest

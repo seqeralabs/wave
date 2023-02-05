@@ -1,5 +1,7 @@
 package io.seqera.wave.exchange
 
+import java.time.Instant
+
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import io.seqera.wave.api.ContainerConfig
@@ -24,7 +26,8 @@ class DescribeWaveContainerResponse {
         final String platform
         final String towerEndpoint
         final String fingerprint
-        final String timestamp
+        final Instant timestamp
+        final String zoneId
         final String ipAddress
 
         RequestInfo() {}
@@ -38,6 +41,7 @@ class DescribeWaveContainerResponse {
             this.towerEndpoint = data.towerEndpoint
             this.fingerprint = data.fingerprint
             this.timestamp = data.timestamp
+            this.zoneId = data.zoneId
             this.ipAddress = data.ipAddress
         }
     }
@@ -67,6 +71,8 @@ class DescribeWaveContainerResponse {
 
     final String token
 
+    final Instant expiration
+
     final RequestInfo request
 
     final BuildInfo build
@@ -80,6 +86,6 @@ class DescribeWaveContainerResponse {
         final build = new BuildInfo(data)
         final source = new ContainerInfo(data.sourceImage, data.sourceDigest)
         final wave = new ContainerInfo(data.waveImage, data.waveDigest)
-        return new DescribeWaveContainerResponse(token, request, build, source, wave)
+        return new DescribeWaveContainerResponse(token, data.expiration, request, build, source, wave)
     }
 }

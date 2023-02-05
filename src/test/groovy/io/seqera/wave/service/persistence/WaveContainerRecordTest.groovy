@@ -36,7 +36,8 @@ class WaveContainerRecordTest extends Specification {
         def addr = '100.200.300.400'
         
         when:
-        def container = new WaveContainerRecord(req, data, wave, user, addr)
+        def exp = Instant.now().plusSeconds(3600)
+        def container = new WaveContainerRecord(req, data, wave, user, addr, exp)
         then:
         container.user == user
         container.workspaceId == req.towerWorkspaceId
@@ -52,6 +53,8 @@ class WaveContainerRecordTest extends Specification {
         container.containerFile == data.containerFile
         container.sourceImage == data.containerImage
         container.waveImage == wave
-        container.timestamp == OffsetDateTime.parse(req.timestamp)
+        container.timestamp == OffsetDateTime.parse(req.timestamp).toInstant()
+        container.zoneId == OffsetDateTime.parse(req.timestamp).offset.id
+        container.expiration == exp
     }
 }

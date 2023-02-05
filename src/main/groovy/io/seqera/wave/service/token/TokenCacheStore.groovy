@@ -26,7 +26,7 @@ class TokenCacheStore extends AbstractCacheStore<ContainerRequestData> implement
     TokenCacheStore(CacheProvider<String, String> delegate, TokenConfig tokenConfig) {
         super(delegate, new MoshiEncodeStrategy<ContainerRequestData>(){})
         this.tokenConfig = tokenConfig
-        log.debug "Creating container tokens cache - maxSize=${tokenConfig.cache.maxSize}; maxDuration=${tokenConfig.cache.duration}"
+        log.debug "Creating container tokens cache - duration=${tokenConfig.cache.duration}; maxSize=${tokenConfig.cache.maxSize}"
     }
 
     @Override

@@ -228,8 +228,9 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def wave = "wave.io/wt/$TOKEN/hello-world"
         def user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
         def addr = "100.200.300.400"
+        def exp = Instant.now().plusSeconds(3600)
         and:
-        def request = new WaveContainerRecord(req, data, wave, user, addr)
+        def request = new WaveContainerRecord(req, data, wave, user, addr, exp)
 
         and:
         persistence.saveContainerRequest(TOKEN, request)
