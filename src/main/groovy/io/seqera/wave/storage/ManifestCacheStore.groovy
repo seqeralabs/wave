@@ -29,6 +29,7 @@ class ManifestCacheStore extends AbstractCacheStore<DigestStore> implements Stor
     {
         super(provider, new MoshiEncodeStrategy<DigestStore>() {})
         this.duration = duration
+        log.info "Creating Manifests cache store ― duration=$duration"
     }
 
     @Override

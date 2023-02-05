@@ -94,21 +94,21 @@ class ContainerAugmenterTest extends Specification {
         when:
         def result = new ContainerAugmenter()
                 .withPlatform('amd64')
-                .findTargetDigest(body)
+                .findTargetDigest(body, false)
         then:
         result == 'sha256:f54a58bc1aac5ea1a25d796ae155dc228b3f0e11d046ae276b39c4bf2f13d8c4'
 
         when:
         result = new ContainerAugmenter()
                 .withPlatform('arm64')
-                .findTargetDigest(body)
+                .findTargetDigest(body, false)
         then:
         result == 'sha256:01433e86a06b752f228e3c17394169a5e21a0995f153268a9b36a16d4f2b2184'
 
         when:
         result = new ContainerAugmenter()
                 .withPlatform('linux/arm/v7')
-                .findTargetDigest(body)
+                .findTargetDigest(body, false)
         then:
         result == 'sha256:f130bd2d67e6e9280ac6d0a6c83857bfaf70234e8ef4236876eccfbd30973b1c'
     }
@@ -181,7 +181,7 @@ class ContainerAugmenterTest extends Specification {
         def scanner = new ContainerAugmenter().withStorage(storage).withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
 
         when:
-        def digest = scanner.updateImageManifest(IMAGE, MANIFEST, NEW_CONFIG_DIGEST, NEW_CONFIG_SIZE)
+        def digest = scanner.updateImageManifest(IMAGE, MANIFEST, NEW_CONFIG_DIGEST, NEW_CONFIG_SIZE, false)
 
         then:
         // the cache contains the update image manifest json
@@ -226,13 +226,13 @@ class ContainerAugmenterTest extends Specification {
         def scanner = new ContainerAugmenter().withStorage(storage).withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
 
         when:
-        def digest = scanner.updateManifestsList(IMAGE, MANIFEST, DIGEST, NEW_DIGEST)
+        def digest = scanner.updateImageIndex(IMAGE, MANIFEST, DIGEST, NEW_DIGEST, false)
 
         then:
         def entry = storage.getManifest("/v2/$IMAGE/manifests/$digest").get()
         def manifest = new String(entry.bytes)
         and:
-        entry.mediaType == ContentType.DOCKER_MANIFEST_LIST_V2
+        entry.mediaType == ContentType.DOCKER_IMAGE_INDEX_V2
         entry.digest == digest
         and:
         manifest == MANIFEST.replace(DIGEST, NEW_DIGEST)
@@ -358,10 +358,10 @@ class ContainerAugmenterTest extends Specification {
         def scanner = new ContainerAugmenter().withStorage(storage).withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
 
         when:
-        def (digest, config) = scanner.updateImageConfig(IMAGE_NAME, IMAGE_CONFIG)
+        def (digest, config) = scanner.updateImageConfig(IMAGE_NAME, IMAGE_CONFIG, false)
         then:
         def entry = storage.getBlob("/v2/$IMAGE_NAME/blobs/$digest").get()
-        entry.mediaType == ContentType.DOCKER_IMAGE_V1
+        entry.mediaType == ContentType.DOCKER_IMAGE_CONFIG_V1
         entry.digest == digest
         and:
         def manifest = new JsonSlurper().parseText(new String(entry.bytes))

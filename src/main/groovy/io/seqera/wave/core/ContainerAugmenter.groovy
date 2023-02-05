@@ -17,6 +17,9 @@ import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.storage.reader.ContentReaderFactory
 import io.seqera.wave.util.RegHelper
+
+import static io.seqera.wave.model.ContentType.*
+
 /**
  * Implement the logic of container manifest manipulation and
  * layers injections
@@ -138,6 +141,7 @@ class ContainerAugmenter {
         final imageManifest = manifestResult.first
         final configDigest = manifestResult.second
         final targetDigest = manifestResult.third
+        final oci = manifestResult.fourth
 
         // fetch the image config
         final resp5 = client.getString("/v2/$imageName/blobs/$configDigest", headers)
@@ -146,14 +150,14 @@ class ContainerAugmenter {
         log.trace "Resolve (5): image $imageName:$tag => image config=\n${JsonOutput.prettyPrint(imageConfig)}"
 
         // update the image config adding the new layer
-        final newConfigResult = updateImageConfig(imageName, imageConfig)
+        final newConfigResult = updateImageConfig(imageName, imageConfig, oci)
         final newConfigDigest = newConfigResult[0]
         final newConfigJson = newConfigResult[1]
         log.trace "Resolve (6) ==> new config digest: $newConfigDigest => new config=\n${JsonOutput.prettyPrint(newConfigJson)} "
 
         // update the image manifest adding a new layer
         // returns the updated image manifest digest
-        final newManifestDigest = updateImageManifest(imageName, imageManifest, newConfigDigest, newConfigJson.size())
+        final newManifestDigest = updateImageManifest(imageName, imageManifest, newConfigDigest, newConfigJson.size(), oci)
         log.trace "Resolve (7) ==> new image digest: $newManifestDigest"
 
         if( !targetDigest ) {
@@ -162,14 +166,14 @@ class ContainerAugmenter {
         else {
             // update the manifests list with the new digest
             // returns the manifests list digest
-            final newListDigest = updateManifestsList(imageName, manifestsList, targetDigest, newManifestDigest)
+            final newListDigest = updateImageIndex(imageName, manifestsList, targetDigest, newManifestDigest, oci)
             log.trace "Resolve (8) ==> new list digest: $newListDigest"
             return new ContainerDigestPair(digest, newListDigest)
         }
 
     }
 
-    protected Tuple3<String,String,String> findImageManifestAndDigest(String manifest, String imageName, String tag, Map<String,List<String>> headers) {
+    protected Tuple4<String,String,String,Boolean> findImageManifestAndDigest(String manifest, String imageName, String tag, Map<String,List<String>> headers) {
 
         def json = new JsonSlurper().parseText(manifest) as Map
         // check the response mime, can be either
@@ -178,9 +182,10 @@ class ContainerAugmenter {
 
         def targetDigest = null
         def media = json.mediaType
-        if( media == ContentType.DOCKER_MANIFEST_LIST_V2 ) {
+        if( media==DOCKER_IMAGE_INDEX_V2 || media==OCI_IMAGE_INDEX_V1 ) {
             // get target manifest
-            targetDigest = findTargetDigest(json)
+            final oci = media == OCI_IMAGE_INDEX_V1
+            targetDigest = findTargetDigest(json, oci)
             final resp3 = client.getString("/v2/$imageName/manifests/$targetDigest", headers)
             manifest = resp3.body()
             log.trace("Image $imageName:$tag => image manifest=\n${JsonOutput.prettyPrint(manifest)}")
@@ -189,10 +194,10 @@ class ContainerAugmenter {
             media = json.mediaType
         }
 
-        if( media == ContentType.DOCKER_MANIFEST_V2_TYPE ) {
+        if( media==DOCKER_MANIFEST_V2_TYPE || media==OCI_IMAGE_MANIFEST_V1 ) {
             // find the image config digest
             final configDigest = findImageConfigDigest(manifest)
-            return new Tuple3(manifest, configDigest, targetDigest)
+            return new Tuple4(manifest, configDigest, targetDigest, media==OCI_IMAGE_MANIFEST_V1)
         }
         else {
             throw new IllegalArgumentException("Unexpected media type for request '$imageName:$tag' - offending value: $media")
@@ -200,13 +205,13 @@ class ContainerAugmenter {
 
     }
 
-    protected String updateManifestsList(String imageName, String manifestsList, String targetDigest, String newDigest) {
+    protected String updateImageIndex(String imageName, String manifestsList, String targetDigest, String newDigest, boolean oci) {
         final updated = manifestsList.replace(targetDigest, newDigest)
         final result = RegHelper.digest(updated)
-        final type = ContentType.DOCKER_MANIFEST_LIST_V2
+        final type = oci ? OCI_IMAGE_INDEX_V1 : DOCKER_IMAGE_INDEX_V2
         // make sure the manifest was updated
         if( manifestsList==updated )
-            throw new IllegalArgumentException("Unable to find target digest '$targetDigest' into image list manifest")
+            throw new IllegalArgumentException("Unable to find target digest '$targetDigest' into image index")
         // store in the cache
         storage.saveManifest("/v2/$imageName/manifests/$result", updated, type, result)
         // return the updated manifests list digest
@@ -259,7 +264,7 @@ class ContainerAugmenter {
         return json.config.digest
     }
 
-    protected String updateImageManifest(String imageName, String imageManifest, String newImageConfigDigest, newImageConfigSize) {
+    protected String updateImageManifest(String imageName, String imageManifest, String newImageConfigDigest, newImageConfigSize, boolean oci) {
 
         // turn the json string into a json map
         // and append the new layer
@@ -283,7 +288,8 @@ class ContainerAugmenter {
         // add to the cache
         final digest = RegHelper.digest(newManifest)
         final path = "/v2/$imageName/manifests/$digest"
-        storage.saveManifest(path, newManifest, ContentType.DOCKER_MANIFEST_V2_TYPE, digest)
+        final type = oci ? OCI_IMAGE_MANIFEST_V1 : DOCKER_MANIFEST_V2_TYPE
+        storage.saveManifest(path, newManifest, type, digest)
 
         // return the updated image manifest digest
         return digest
@@ -331,7 +337,7 @@ class ContainerAugmenter {
         return config
     }
 
-    protected List<String> updateImageConfig(String imageName, String imageConfig) {
+    protected List<String> updateImageConfig(String imageName, String imageConfig, boolean oci) {
 
         // turn the json string into a json map
         // and append the new layer
@@ -352,26 +358,30 @@ class ContainerAugmenter {
         // add to the cache
         final digest = RegHelper.digest(newConfig)
         final path = "/v2/$imageName/blobs/$digest"
-        storage.saveBlob(path, newConfig.bytes, ContentType.DOCKER_IMAGE_V1, digest)
+        final type = oci ? OCI_IMAGE_CONFIG_V1 : DOCKER_IMAGE_CONFIG_V1
+        storage.saveBlob(path, newConfig.bytes, type, digest)
 
         // return the updated image manifest digest
         return List.of(digest, newConfig)
     }
 
-    protected String findTargetDigest( String body ) {
-        findTargetDigest((Map) new JsonSlurper().parseText(body))
+    protected String findTargetDigest( String body, boolean oci ) {
+        findTargetDigest((Map) new JsonSlurper().parseText(body), oci)
     }
 
-    protected String findTargetDigest(Map json) {
-        final record = (Map)json.manifests.find(this.&matches)
+    protected String findTargetDigest(Map json, boolean oci) {
+        final record = (Map)json.manifests.find(oci ? this.&matchesOciManifest : this.&matchesDockerManifest)
         final result = record.get('digest')
         log.trace "Find target digest platform: $platform ==> digest: $result"
         return result
     }
 
-    protected boolean matches(Map<String,String> record) {
-        return record.mediaType == ContentType.DOCKER_MANIFEST_V2_TYPE
-                && platform.matches(record.platform as Map)
+    protected boolean matchesDockerManifest(Map<String,String> record) {
+        return record.mediaType == DOCKER_MANIFEST_V2_TYPE && platform.matches(record.platform as Map)
+    }
+
+    protected boolean matchesOciManifest(Map<String,String> record) {
+        return record.mediaType == OCI_IMAGE_MANIFEST_V1 && platform.matches(record.platform as Map)
     }
 
     protected void rewriteHistoryV1( List<Map> history ){
