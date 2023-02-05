@@ -180,8 +180,10 @@ class TowerClient {
         if (err instanceof CompletionException) {
             err = err.cause
         }
-        final message = "Unexpected error while accessing Tower resource: $uri - cause: [${err.getClass().getName()}] ${err.message}"
-        err = new HttpResponseException(503, message)
+        if( err instanceof IOException ) {
+            final message = "Unexpected I/O error while accessing Tower resource: $uri - cause: ${err.message ?: err}"
+            err = new HttpResponseException(503, message)
+        }
         return err
     }
 
