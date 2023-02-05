@@ -107,6 +107,18 @@ class TowerClientTest extends Specification{
         return embeddedServer.getURL().toString()
     }
 
+    def 'handle connection failure'() {
+        when: 'contacting tower'
+        def endpoint = "https://10.255.255.1" // this is  a non routable address to simulate connection errors
+        towerClient.userInfo(endpoint,'token').get()
+
+        then:
+        def e = thrown(ExecutionException)
+        (e.cause  as HttpResponseException).statusCode() == HttpStatus.SERVICE_UNAVAILABLE
+    }
+
+
+
     def "test user-info"() {
         when: 'requesting user info with a valid token'
         def resp = towerClient.userInfo(hostName,"token").get()
