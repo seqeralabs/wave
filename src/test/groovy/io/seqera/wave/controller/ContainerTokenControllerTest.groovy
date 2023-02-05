@@ -4,20 +4,32 @@ import spock.lang.Specification
 
 import java.nio.file.Path
 
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.annotation.Client
+import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.auth.DockerAuthService
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
+import io.seqera.wave.exchange.DescribeWaveContainerResponse
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.tower.User
-
+import jakarta.inject.Inject
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@MicronautTest
 class ContainerTokenControllerTest extends Specification {
+
+    @Inject
+    @Client("/")
+    HttpClient client
 
     def 'should create request data' () {
         given:
@@ -165,5 +177,60 @@ class ContainerTokenControllerTest extends Specification {
         build.targetImage == 'wave/build:0c7eebc2fdbfd514ff4d80c28d08dff8'
         build.workDir == Path.of('/some/wsp').resolve(build.id)
         build.platform == ContainerPlatform.of('arm64')
+    }
+
+    def 'should add library prefix' () {
+        when:
+        def body = new SubmitContainerTokenRequest(containerImage: 'docker.io/hello-world')
+        def req1 = HttpRequest.POST("/container-token", body)
+        def resp1 = client.toBlocking().exchange(req1, SubmitContainerTokenResponse)
+        then:
+        resp1.status() == HttpStatus.OK
+        and:
+        def token = resp1.body().containerToken
+        and:
+        token != null
+        resp1.body().targetImage.contains("/wt/${token}/library/hello-world")
+    }
+
+    def 'should not add library prefix' () {
+        when:
+        def body = new SubmitContainerTokenRequest(containerImage: 'quay.io/hello-world')
+        def req1 = HttpRequest.POST("/container-token", body)
+        def resp1 = client.toBlocking().exchange(req1, SubmitContainerTokenResponse)
+        then:
+        resp1.status() == HttpStatus.OK
+        and:
+        def token = resp1.body().containerToken
+        and:
+        token != null
+        resp1.body().targetImage.contains("/wt/${token}/hello-world")
+    }
+
+    def 'should record a container request' () {
+        when:
+        def body = new SubmitContainerTokenRequest(containerImage: 'hello-world')
+        def req1 = HttpRequest.POST("/container-token", body)
+        def resp1 = client.toBlocking().exchange(req1, SubmitContainerTokenResponse)
+        then:
+        resp1.status() == HttpStatus.OK
+        and:
+        def token = resp1.body().containerToken
+        and:
+        token != null
+        resp1.body().targetImage.contains("/wt/${token}/library/hello-world")
+
+        when:
+        def req2 = HttpRequest.GET("/container-token/${token}")
+        def resp2 = client.toBlocking().exchange(req2, DescribeWaveContainerResponse)
+        then:
+        resp2.status() == HttpStatus.OK
+        and:
+        def result = resp2.body()
+        and:
+        result.token == token
+        result.request.containerImage == 'hello-world'
+        result.source.image == 'docker.io/library/hello-world:latest'
+        result.wave.image == resp1.body().targetImage
     }
 }

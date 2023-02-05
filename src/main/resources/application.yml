@@ -46,6 +46,10 @@ wave:
       attempts: 5
       multiplier: '1.75'
 ---
+jackson:
+  serialization:
+    writeDatesAsTimestamps: false
+---
 logger:
   levels:
     io.seqera: "DEBUG"

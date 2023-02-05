@@ -1,5 +1,7 @@
 package io.seqera.wave.core
 
+import javax.annotation.Nullable
+
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
@@ -20,12 +22,42 @@ class RoutePath implements ContainerPath {
 
     static final private List<String> ALLOWED_TYPES = ['manifests','blobs','tags']
 
+    /**
+     * Route type, either {@code manifests} or {@code blobs}
+     */
     final String type
+
+    /**
+     * The container registry name e.g. {@code docker.io}
+     */
     final String registry
+
+    /**
+     * The container image name without the tag or reference component e.g. {@code library/ubuntu}
+     */
     final String image
+
+    /**
+     * The tag or sha256 checksum of the requested container
+     */
     final String reference
+
+    /**
+     * The URI path of the corresponding container image e.g. {@code /v2/library/ubuntu/manifests/latest}
+     */
     final String path
+
+    /**
+     * The {@link ContainerRequestData} metadata associated with the wave request
+     */
     final ContainerRequestData request
+
+    /**
+     * The unique token associated with the wave container request. it may be null when mapping
+     * a non-wave container request. 
+     */
+    @Nullable
+    final String token
 
     boolean isManifest() { type=='manifests' }
     boolean isBlob() { type=='blobs' }
@@ -43,9 +75,13 @@ class RoutePath implements ContainerPath {
         return image + sep + reference
     }
 
-    static RoutePath v2path(String type, String registry, String image, String ref, ContainerRequestData request=null) {
+    String getToken() {
+        return token
+    }
+
+    static RoutePath v2path(String type, String registry, String image, String ref, ContainerRequestData request=null, String token=null) {
         assert type in ALLOWED_TYPES, "Unknown container path type: '$type'"
-        new RoutePath(type, registry ?: DOCKER_IO, image, ref, "/v2/$image/$type/$ref", request)
+        new RoutePath(type, registry ?: DOCKER_IO, image, ref, "/v2/$image/$type/$ref", request, token)
     }
 
     static RoutePath v2manifestPath(ContainerCoordinates container) {
@@ -53,6 +89,6 @@ class RoutePath implements ContainerPath {
     }
 
     static RoutePath empty() {
-        new RoutePath(null, null, null, null, null, null)
+        new RoutePath(null, null, null, null, null)
     }
 }

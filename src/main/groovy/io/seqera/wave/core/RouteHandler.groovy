@@ -42,7 +42,7 @@ class RouteHandler {
             // find out the container request that must have been submitted for the token
             final request = tokenService.getRequest(token)
             if( !request ) {
-                throw new NotFoundException("Invalid request token '$token'")
+                throw new NotFoundException("Unknown Wave container for token '$token'")
             }
             // the image name (without tag) must match
             final coords = request.coordinates()
@@ -51,7 +51,7 @@ class RouteHandler {
             // compose the target request path in such a way that
             // - the 'registry' name is taken from the request associated to the token
             // - the 'reference' from the current request
-            return RoutePath.v2path(type, coords.registry, coords.image, reference, request)
+            return RoutePath.v2path(type, coords.registry, coords.image, reference, request, token)
         }
 
         final String image
