@@ -1,9 +1,7 @@
-package io.seqera.wave.service.security
+package io.seqera.wave.service.pairing
 
 import java.time.Duration
 
-import io.seqera.wave.service.pairing.PairingCacheStore
-import io.seqera.wave.service.pairing.PairingServiceImpl
 import spock.lang.Specification
 
 import java.security.KeyFactory
@@ -62,6 +60,26 @@ class PairingServiceTest extends Specification{
         then: 'we generate the key only once'
         firstKey.pairingId == secondKey.pairingId
         firstKey.publicKey == secondKey.publicKey
+    }
+
+    def "regenerates keys when they have no validUntil defined"() {
+        given: 'a cache store'
+        final store = new PairingCacheStore(new LocalCacheProvider())
+
+        and: 'an old non timestamped pairing record coming from previous versions'
+        final key = PairingServiceImpl.makeKey('tower','tower.io:9090')
+        final pKey = PairingServiceImpl.generate().public.getEncoded()
+        store.put(key,new PairingRecord('tower', 'tower.io:9090', key, new byte[0], pKey, null))
+
+        and: 'and a service using the store'
+        final service = new PairingServiceImpl(store: store, pairingKeyTtl: Duration.ofSeconds(10))
+
+        when: 'we try to generate the same pairing key'
+        final pairingKey = service.getPairingKey('tower','tower.io:9090')
+
+        then: 'the record is considered as expired and is generated again'
+        pairingKey.pairingId == key
+        pairingKey.publicKey.decodeBase64() != pKey
     }
 
     def "regenerate keys when expired"() {

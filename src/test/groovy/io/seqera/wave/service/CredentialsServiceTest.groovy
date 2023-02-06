@@ -4,6 +4,8 @@ package io.seqera.wave.service
 import spock.lang.Specification
 
 import java.security.PublicKey
+import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
 import io.micronaut.test.annotation.MockBean
@@ -16,6 +18,7 @@ import io.seqera.wave.tower.client.GetCredentialsKeysResponse
 import io.seqera.wave.tower.client.ListCredentialsResponse
 import io.seqera.wave.tower.client.TowerClient
 import jakarta.inject.Inject
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -49,7 +52,9 @@ class CredentialsServiceTest extends Specification {
                 service: PairingService.TOWER_SERVICE,
                 endpoint: towerEndpoint,
                 pairingId: keyId,
-                privateKey: keypair.private.getEncoded()
+                privateKey: keypair.private.getEncoded(),
+                validUntil: (Instant.now() + Duration.ofSeconds(10))
+
         )
 
 
@@ -78,7 +83,7 @@ class CredentialsServiceTest extends Specification {
         def credentials = credentialsService.findRegistryCreds("quay.io",userId, workspaceId,token,towerEndpoint)
 
         then: 'the registered key is fetched correctly from the security service'
-        1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE,towerEndpoint) >> keyRecord
+        1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE,towerEndpoint, Instant.now()+ Duration.ofSeconds(5)) >> keyRecord
 
         and: 'credentials are listed once and return a potential match'
         1 * towerClient.listCredentials(towerEndpoint,token,workspaceId) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
@@ -116,6 +121,7 @@ class CredentialsServiceTest extends Specification {
                 service: PairingService.TOWER_SERVICE,
                 endpoint: 'tower.io',
                 privateKey: new byte[0], // we don't care about the value of the key
+                validUntil: Instant.now() + Duration.ofSeconds(5)
         )
         and: 'credentials are listed but are empty'
         1 * towerClient.listCredentials('tower.io',"token",10) >> CompletableFuture.completedFuture(new ListCredentialsResponse(credentials: []))
@@ -146,6 +152,7 @@ class CredentialsServiceTest extends Specification {
                 service: PairingService.TOWER_SERVICE,
                 endpoint: 'tower.io',
                 privateKey: new byte[0], // we don't care about the value of the key
+                validUntil: Instant.now() + Duration.ofSeconds(5)
         )
 
         and: 'non matching credentials are listed'

@@ -36,7 +36,7 @@ class PairingServiceImpl implements PairingService {
             log.debug "Pairing with service '${service}' at address $endpoint - pairing id: $uid"
             final keyPair = generate()
             final validUntil = Instant.now() + pairingKeyTtl
-            final newEntry = new PairingRecord(service, endpoint, uid, keyPair.getPrivate().getEncoded(), keyPair.getPublic().getEncoded(),validUntil.toEpochMilli())
+            final newEntry = new PairingRecord(service, endpoint, uid, keyPair.getPrivate().getEncoded(), keyPair.getPublic().getEncoded(),validUntil)
             store.put(uid,newEntry)
             entry = newEntry
         } else {
@@ -57,7 +57,7 @@ class PairingServiceImpl implements PairingService {
         return DigestFunctions.md5(attrs)
     }
 
-    protected KeyPair generate() {
+    protected static KeyPair generate() {
         final cipher = AsymmetricCipher.getInstance()
         return cipher.generateKeyPair()
     }
