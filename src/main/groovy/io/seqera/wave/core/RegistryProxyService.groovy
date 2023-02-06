@@ -16,6 +16,7 @@ import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.model.ContentType
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.service.CredentialsService
+import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
 import jakarta.inject.Inject
@@ -51,6 +52,9 @@ class RegistryProxyService {
     @Inject
     private HttpClientConfig httpClientConfig
 
+    @Inject
+    private PersistenceService persistenceService
+
     private ContainerAugmenter scanner(ProxyClient proxyClient) {
         return new ContainerAugmenter()
                 .withStorage(storage)
@@ -84,7 +88,11 @@ class RegistryProxyService {
         if( digest == null )
             throw new IllegalStateException("Missing digest for request: $route")
 
-        final req = "/v2/$route.image/manifests/$digest"
+        if( route.token ) {
+            persistenceService.updateContainerRequest(route.token, digest)
+        }
+
+        final req = "/v2/${route.image}/manifests/${digest.target}"
         final entry = storage.getManifest(req).orElse(null)
         return entry
     }

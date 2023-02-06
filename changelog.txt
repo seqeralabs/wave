@@ -1,4 +1,11 @@
 # Wave changelog
+v0.25.0 - 5 Feb 2023
+- Add support for OCI image format [ec5d3792]
+- Add Wave container requests store and introspection (#217) [77728a0f]
+- Improve error handling and messages (#219) [eae43983] [b427989e]
+- Fix pull of container with no name prefix [09122f73]
+- Improve logging [33a99692]
+
 v0.24.5 - 25 Jan 2023
 - Remove deprecated class & rename package [7145c1f9]
 - Improve logging & debugging [95431b72]

@@ -1,0 +1,138 @@
+<html>
+<head>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="Wave container">
+        <title>Wave container</title>
+    </head>
+<body>
+<div style="font-family:'-apple-system', BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; padding: 30px; max-width: 800px; margin: 0 auto;">
+
+    <h1>Wave container</h1>
+    <!-- Request info -->
+    <h3>Request</h3>
+    <table cellpadding="4" >
+        <tr>
+            <td>Token</td>
+            <td>{{request_token}}</td>
+        </tr>
+        <tr>
+            <td>Container image</td>
+            <td>{{request_container_image}}</td>
+        </tr>
+        <tr>
+            <td>Platform</td>
+            <td>{{request_contaiener_platform}}</td>
+        </tr>
+        <tr>
+            <td>Fingerprint</td>
+            <td>{{request_fingerprint}}</td>
+        </tr>
+        <tr>
+            <td>Timestamp</td>
+            <td>{{request_timestamp}}</td>
+        </tr>
+
+        <tr>
+            <td>Expiration</td>
+            <td>{{request_expiration}}</td>
+        </tr>
+    </table>
+
+    <!-- container info -->
+    <h3>Container info</h3>
+    <table cellpadding="4" >
+        <tr>
+            <td>Source image</td>
+            <td>{{source_container_image}}</td>
+        </tr>
+        <tr>
+            <td>Source digest</td>
+            <td>{{source_container_digest}}</td>
+        </tr>
+        <tr>
+            <td>Wave image</td>
+            <td>{{wave_container_image}}</td>
+        </tr>
+        <tr>
+            <td>Wave digest</td>
+            <td>{{wave_container_digest}}</td>
+        </tr>
+    </table>
+
+    {{#if request_container_config}}
+        <h3>Container config</h3>
+        <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">
+            {{request_container_config}}
+        </pre>
+    {{/if}}
+
+    <!-- build info -->
+    {{#if build_container_file}}
+        <h3>Docker file</h3>
+        <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">
+            {{build_container_file}}
+        </pre>
+
+        <h3>Conda file</h3>
+        <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">
+            {{build_conda_file}}
+        </pre>
+
+        <table cellpadding="4" >
+            <tr>
+                <td>Build repository</td>
+                <td>{{build_repository}}</td>
+            </tr>
+            <tr>
+                <td>Cache repository</td>
+                <td>{{build_cache_repository}}</td>
+            </tr>
+        </table>
+    {{/if}}
+
+
+    <!-- Tower & user info -->
+    {{#if tower_user_id}}
+    <h3>Tower &amp; User info</h3>
+    <table cellpadding="4" >
+        <tr>
+            <td>User Id</td>
+            <td>{{tower_user_id}}</td>
+        </tr>
+        <tr>
+            <td>User name</td>
+            <td>{{tower_user_name}}</td>
+        </tr>
+        <tr>
+            <td>User email</td>
+            <td>{{tower_user_email}}</td>
+        </tr>
+        <tr>
+            <td>Workspace Id</td>
+            <td>{{tower_workspace_id}}</td>
+        </tr>
+        <tr>
+            <td>Endpoint</td>
+            <td>{{tower_endpoint}}</td>
+        </tr>
+    </table>
+    {{/if}}
+
+    <div class="footer" style="clear:both;width:100%;">
+        <hr class="footer-hr" style="height:0;overflow:visible;margin-top:30px;border:0;border-top:1px solid #eee;color:#999999;font-size:12px;line-height:18px;margin-bottom:30px;">
+        <img style="float:right" src="/assets/seqera-logo.png">
+        <p class="footer-text" style="font-family:'-apple-system', BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';font-weight:normal;margin:0;margin-bottom:15px;color:#999999;font-size:12px;line-height:18px;">
+            <a href="{{server_url}}">{{server_url}}</a><br>
+            Seqera Labs<br>
+            Carrer de Marià Aguiló, 28<br>
+            08005 Barcelona<br>
+        </p>
+    </div>
+
+</div>
+
+</body>
+</html>

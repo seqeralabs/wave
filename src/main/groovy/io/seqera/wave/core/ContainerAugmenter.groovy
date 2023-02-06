@@ -63,8 +63,7 @@ class ContainerAugmenter {
         return this
     }
 
-
-    String resolve(RoutePath route, Map<String,List<String>> headers) {
+    ContainerDigestPair resolve(RoutePath route, Map<String,List<String>> headers) {
         assert route, "Missing route"
         if( route.request?.platform )
             this.platform = route.request.platform
@@ -96,7 +95,7 @@ class ContainerAugmenter {
         }
     }
 
-    String resolve(String imageName, String tag, Map<String,List<String>> headers) {
+    ContainerDigestPair resolve(String imageName, String tag, Map<String,List<String>> headers) {
         assert client, "Missing client"
         assert storage, "Missing storage"
         assert platform, "Missing 'platform' parameter"
@@ -119,7 +118,7 @@ class ContainerAugmenter {
         if( !containerConfig ) {
             log.trace "Resolve (3): container config provided for image=$imageName:$tag"
             storage.saveManifest("/v2/$imageName/manifests/$digest", manifestsList, type, digest)
-            return digest
+            return new ContainerDigestPair(digest,digest)
         }
 
         if( tag.startsWith('sha256:')) {
@@ -131,9 +130,11 @@ class ContainerAugmenter {
 
         if( type == ContentType.DOCKER_MANIFEST_V1_JWS_TYPE ) {
             final v1Digest = resolveV1Manifest(manifestsList, imageName)
-            final v1Manifest = storage.getManifest("/v2/$imageName/manifests/$v1Digest").orElse(null)
-            log.trace "Resolve (4) ==> new manifest v1 digest: $v1Digest\n${JsonOutput.prettyPrint(new String(v1Manifest.bytes))}"
-            return v1Digest
+            if( log.isTraceEnabled() ) {
+                final v1Manifest = storage.getManifest("/v2/$imageName/manifests/$v1Digest").orElse(null)
+                log.trace "Resolve (4) ==> new manifest v1 digest: $v1Digest\n${JsonOutput.prettyPrint(new String(v1Manifest.bytes))}"
+            }
+            return new ContainerDigestPair(digest, v1Digest)
         }
 
         final manifestResult = findImageManifestAndDigest(manifestsList, imageName, tag, headers)
@@ -160,14 +161,14 @@ class ContainerAugmenter {
         log.trace "Resolve (7) ==> new image digest: $newManifestDigest"
 
         if( !targetDigest ) {
-            return newManifestDigest
+            return new ContainerDigestPair(digest, newManifestDigest)
         }
         else {
             // update the manifests list with the new digest
             // returns the manifests list digest
             final newListDigest = updateImageIndex(imageName, manifestsList, targetDigest, newManifestDigest, oci)
             log.trace "Resolve (8) ==> new list digest: $newListDigest"
-            return newListDigest
+            return new ContainerDigestPair(digest, newListDigest)
         }
 
     }

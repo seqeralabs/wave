@@ -3,10 +3,13 @@ package io.seqera.wave.service.persistence.impl
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
 import io.micronaut.http.annotation.Body
+import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.Header
 import io.micronaut.http.annotation.Post
+import io.micronaut.http.annotation.Put
 import io.micronaut.http.client.annotation.Client
-import io.seqera.wave.service.persistence.BuildRecord
+import io.seqera.wave.service.persistence.WaveBuildRecord
+import io.seqera.wave.service.persistence.WaveContainerRecord
 import reactor.core.publisher.Flux
 
 /**
@@ -33,9 +36,18 @@ interface SurrealClient {
     String sqlAsString(@Header String authorization, @Body String body)
 
     @Post('/key/wave_build')
-    Flux<Map<String, Object>> insertBuildAsync(@Header String authorization, @Body BuildRecord body)
+    Flux<Map<String, Object>> insertBuildAsync(@Header String authorization, @Body WaveBuildRecord body)
 
     @Post('/key/wave_build')
-    Map<String, Object> insertBuild(@Header String authorization, @Body BuildRecord body)
+    Map<String, Object> insertBuild(@Header String authorization, @Body WaveBuildRecord body)
+
+    @Get('/key/wave_request/{token}')
+    String getContainerRequest(@Header String authorization, String token)
+
+    @Post('/key/wave_request/{token}')
+    Flux<Map<String, Object>> insertContainerRequestAsync(@Header String authorization, String token, @Body WaveContainerRecord body)
+
+    @Put('/key/wave_request/{token}')
+    Flux<Map<String, Object>> updateContainerRequestAsync(@Header String authorization, String token, @Body WaveContainerRecord body)
 
 }

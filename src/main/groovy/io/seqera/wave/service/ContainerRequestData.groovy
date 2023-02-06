@@ -5,9 +5,7 @@ import groovy.transform.CompileStatic
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.model.ContainerCoordinates
-
 import static io.seqera.wave.util.StringUtils.trunc
-
 /**
  * Model a container request
  *
