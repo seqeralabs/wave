@@ -1,4 +1,9 @@
 # Wave changelog
+v0.25.1 - 8 Feb 2023
+- Add expiration to container view [54bc8d99]
+- Improve pairing keys lease (#218) [2b90612c]
+- Strip container config data [28b84910]
+
 v0.25.0 - 5 Feb 2023
 - Add support for OCI image format [ec5d3792]
 - Add Wave container requests store and introspection (#217) [77728a0f]
