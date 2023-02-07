@@ -6,6 +6,7 @@ import java.time.Instant
 import java.time.OffsetDateTime
 
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.ContainerRequestData
@@ -19,7 +20,8 @@ class WaveContainerRecordTest extends Specification {
     
     def 'should create wave record' () {
         given:
-        def cfg = new ContainerConfig(entrypoint: ['/opt/fusion'])
+        def lyr = new ContainerLayer(location: 'data:12346')
+        def cfg = new ContainerConfig(entrypoint: ['/opt/fusion'], layers: [lyr])
         def req = new SubmitContainerTokenRequest(
                 towerEndpoint: 'https://tower.nf',
                 towerWorkspaceId: 100,
@@ -42,7 +44,7 @@ class WaveContainerRecordTest extends Specification {
         container.user == user
         container.workspaceId == req.towerWorkspaceId
         container.containerImage == req.containerImage
-        container.containerConfig == req.containerConfig
+        container.containerConfig == ContainerConfig.copy(req.containerConfig, true)
         container.platform == req.containerPlatform
         container.towerEndpoint == req.towerEndpoint
         container.buildRepository == req.buildRepository

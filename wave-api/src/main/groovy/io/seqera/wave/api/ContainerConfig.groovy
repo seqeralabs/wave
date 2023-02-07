@@ -34,4 +34,21 @@ class ContainerConfig {
             it.validate()
         }
     }
+
+    /**
+     * Copy method
+     *
+     * @param that The {@link ContainerConfig} to be copied from
+     */
+    static ContainerConfig copy(ContainerConfig that, boolean stripData=false) {
+        if( that==null )
+            return null
+        new ContainerConfig(
+                that.entrypoint!=null ? new ArrayList<>(that.entrypoint) : null,
+                that.cmd!=null ? new ArrayList<>(that.cmd) : null,
+                that.env!=null ? new ArrayList<>(that.env) : null,
+                that.workingDir,
+                that.layers!=null ? that.layers.collect((it) -> ContainerLayer.copy(it, stripData)) : null
+        )
+    }
 }

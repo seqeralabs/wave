@@ -109,7 +109,7 @@ class WaveContainerRecord {
         this.user = user
         this.workspaceId = request.towerWorkspaceId
         this.containerImage = request.containerImage
-        this.containerConfig = request.containerConfig
+        this.containerConfig = ContainerConfig.copy(request.containerConfig, true)
         this.platform = request.containerPlatform
         this.towerEndpoint = request.towerEndpoint
         this.buildRepository = request.buildRepository
