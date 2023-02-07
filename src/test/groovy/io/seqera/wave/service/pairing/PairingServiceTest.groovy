@@ -1,7 +1,7 @@
-package io.seqera.wave.service.security
+package io.seqera.wave.service.pairing
 
-import io.seqera.wave.service.pairing.PairingCacheStore
-import io.seqera.wave.service.pairing.PairingServiceImpl
+import java.time.Duration
+
 import spock.lang.Specification
 
 import java.security.KeyFactory
@@ -21,7 +21,7 @@ class PairingServiceTest extends Specification{
         final store = new PairingCacheStore(new LocalCacheProvider())
 
         and: 'a security service using it'
-        final service = new PairingServiceImpl(store: store)
+        final service = new PairingServiceImpl(store: store, lease: Duration.ofSeconds(100))
 
         when: 'we get a public key'
         def key = service.getPairingKey("tower","tower.io:9090")
@@ -46,12 +46,12 @@ class PairingServiceTest extends Specification{
     }
 
 
-    def "generate keys only if not present"() {
+    def "skip generate keys if present and not expired"() {
         given: 'a cache store'
         final store = new PairingCacheStore(new LocalCacheProvider())
 
         and: 'a security service using the cache store'
-        final service = new PairingServiceImpl(store: store)
+        final service = new PairingServiceImpl(store: store, lease:  Duration.ofSeconds(1000))
 
         when: 'we get the key two times for the same service and endpoint'
         def firstKey = service.getPairingKey("tower", "tower.io:9090")
@@ -61,6 +61,45 @@ class PairingServiceTest extends Specification{
         firstKey.pairingId == secondKey.pairingId
         firstKey.publicKey == secondKey.publicKey
     }
+
+    def "regenerates keys when they have no validUntil defined"() {
+        given: 'a cache store'
+        final store = new PairingCacheStore(new LocalCacheProvider())
+
+        and: 'an old non timestamped pairing record coming from previous versions'
+        final key = PairingServiceImpl.makeKey('tower','tower.io:9090')
+        final pKey = PairingServiceImpl.generate().public.getEncoded()
+        store.put(key,new PairingRecord('tower', 'tower.io:9090', key, new byte[0], pKey, null))
+
+        and: 'and a service using the store'
+        final service = new PairingServiceImpl(store: store, lease: Duration.ofSeconds(10))
+
+        when: 'we try to generate the same pairing key'
+        final pairingKey = service.getPairingKey('tower','tower.io:9090')
+
+        then: 'the record is considered as expired and is generated again'
+        pairingKey.pairingId == key
+        pairingKey.publicKey.decodeBase64() != pKey
+    }
+
+    def "regenerate keys when expired"() {
+        given: 'a cache store'
+        final store = new PairingCacheStore(new LocalCacheProvider())
+
+        and: 'a security service using the cache store'
+        final service = new PairingServiceImpl(store: store, lease: Duration.ofMillis(100))
+
+        when: 'we get the key two times for the same service and endpoint waiting over the ttl interval'
+        def firstKey = service.getPairingKey("tower", "tower.io:9090")
+        sleep 200
+        def secondKey = service.getPairingKey("tower", "tower.io:9090")
+
+        then: 'we regenerate the key'
+        firstKey.pairingId == secondKey.pairingId
+        firstKey.publicKey != secondKey.publicKey
+    }
+
+
 
 
     private static boolean keysMatch(String encodedPublicKey, byte[] encodedPrivateKey) {

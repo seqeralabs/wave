@@ -21,8 +21,17 @@ import jakarta.inject.Singleton
 @CompileStatic
 class PairingCacheStore extends AbstractCacheStore<PairingRecord> {
 
-    @Value('${wave.pairing-keys.duration:`30d`}')
+    /**
+     * How long the pairing key can stay in the cache store before is evicted
+     */
+    @Value('${wave.pairing-key.duration:`30d`}')
     private Duration duration
+
+    /**
+     * The period of time after which the token should be renewed
+     */
+    @Value('${wave.pairing-key.lease:`1d`}')
+    private Duration lease
 
     PairingCacheStore(CacheProvider<String, String> provider) {
         super(provider, new MoshiEncodeStrategy<PairingRecord>() {})
@@ -30,7 +39,7 @@ class PairingCacheStore extends AbstractCacheStore<PairingRecord> {
 
     @PostConstruct
     private void init() {
-        log.info "Creating Pairing cache store ― duration=$duration"
+        log.info "Creating Pairing cache store ― duration=${duration}; lease=${lease}"
     }
 
     @Override

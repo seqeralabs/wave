@@ -2,6 +2,9 @@ package io.seqera.wave.controller
 
 import spock.lang.Specification
 
+import java.time.Duration
+import java.time.Instant
+
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
@@ -92,7 +95,7 @@ class HttpContainerTokenControllerTest extends Specification {
         HttpClient client = applicationContext.createBean(HttpClient)
 
         and:
-        applicationContext.getBean(PairingService).getPairingRecord("tower", _) >> new PairingRecord(service: "tower", endpoint: "http://localhost:${port}")
+        applicationContext.getBean(PairingService).getPairingRecord("tower", _) >> new PairingRecord(service: "tower", endpoint: "http://localhost:${port}", expiration: Instant.now() + Duration.ofSeconds(5))
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
