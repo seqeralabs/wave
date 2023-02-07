@@ -83,7 +83,7 @@ class CredentialsServiceTest extends Specification {
         def credentials = credentialsService.findRegistryCreds("quay.io",userId, workspaceId,token,towerEndpoint)
 
         then: 'the registered key is fetched correctly from the security service'
-        1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE,towerEndpoint, Instant.now()+ Duration.ofSeconds(5)) >> keyRecord
+        1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE, towerEndpoint) >> keyRecord
 
         and: 'credentials are listed once and return a potential match'
         1 * towerClient.listCredentials(towerEndpoint,token,workspaceId) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
