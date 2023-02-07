@@ -52,10 +52,8 @@ class CredentialsServiceTest extends Specification {
                 service: PairingService.TOWER_SERVICE,
                 endpoint: towerEndpoint,
                 pairingId: keyId,
-                privateKey: keypair.private.getEncoded(),
-                validUntil: (Instant.now() + Duration.ofSeconds(10))
-
-        )
+                privateKey: keypair.getPrivate().getEncoded(),
+                expiration: (Instant.now() + Duration.ofSeconds(10)) )
 
 
         and: 'registry credentials to access a registry stored in tower'
@@ -64,19 +62,17 @@ class CredentialsServiceTest extends Specification {
         def credentialsDescription = new CredentialsDescription(
                 id: credentialsId,
                 provider: 'container-reg',
-                registry: 'quay.io'
-        )
+                registry: 'quay.io' )
         and: 'other credentials registered by the user'
         def nonContainerRegistryCredentials = new CredentialsDescription(
                 id: 'alt-creds',
                 provider: 'azure',
-                registry: null
-        )
+                registry: null )
+        and:
         def otherRegistryCredentials = new CredentialsDescription(
                 id: 'docker-creds',
                 provider: 'container-reg',
-                registry: 'docker.io'
-        )
+                registry: 'docker.io' )
 
 
         when: 'look those registry credentials from tower'
@@ -91,7 +87,7 @@ class CredentialsServiceTest extends Specification {
         ))
 
         and: 'they match and the encrypted credentials are fetched'
-        1 * towerClient.fetchEncryptedCredentials(towerEndpoint,token,credentialsId,keyId,workspaceId) >> CompletableFuture.completedFuture(encryptedCredentialsFromTower(keypair.public,registryCredentials))
+        1 * towerClient.fetchEncryptedCredentials(towerEndpoint, token, credentialsId, keyId, workspaceId) >> CompletableFuture.completedFuture(encryptedCredentialsFromTower(keypair.getPublic(), registryCredentials))
 
         and:
         credentials.userName == 'me'
@@ -121,7 +117,7 @@ class CredentialsServiceTest extends Specification {
                 service: PairingService.TOWER_SERVICE,
                 endpoint: 'tower.io',
                 privateKey: new byte[0], // we don't care about the value of the key
-                validUntil: Instant.now() + Duration.ofSeconds(5)
+                expiration: Instant.now() + Duration.ofSeconds(5)
         )
         and: 'credentials are listed but are empty'
         1 * towerClient.listCredentials('tower.io',"token",10) >> CompletableFuture.completedFuture(new ListCredentialsResponse(credentials: []))
@@ -152,7 +148,7 @@ class CredentialsServiceTest extends Specification {
                 service: PairingService.TOWER_SERVICE,
                 endpoint: 'tower.io',
                 privateKey: new byte[0], // we don't care about the value of the key
-                validUntil: Instant.now() + Duration.ofSeconds(5)
+                expiration: Instant.now() + Duration.ofSeconds(5)
         )
 
         and: 'non matching credentials are listed'
@@ -179,8 +175,7 @@ class CredentialsServiceTest extends Specification {
 
 
     private static GetCredentialsKeysResponse encryptedCredentialsFromTower(PublicKey key, String credentials) {
-        return new GetCredentialsKeysResponse(keys:  TEST_CIPHER.encrypt(key,credentials.getBytes()).encode())
+        return new GetCredentialsKeysResponse(keys: TEST_CIPHER.encrypt(key,credentials.getBytes()).encode())
     }
-
 
 }

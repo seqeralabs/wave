@@ -21,7 +21,7 @@ class PairingServiceTest extends Specification{
         final store = new PairingCacheStore(new LocalCacheProvider())
 
         and: 'a security service using it'
-        final service = new PairingServiceImpl(store: store,pairingKeyTtl: Duration.ofSeconds(100))
+        final service = new PairingServiceImpl(store: store, lease: Duration.ofSeconds(100))
 
         when: 'we get a public key'
         def key = service.getPairingKey("tower","tower.io:9090")
@@ -51,7 +51,7 @@ class PairingServiceTest extends Specification{
         final store = new PairingCacheStore(new LocalCacheProvider())
 
         and: 'a security service using the cache store'
-        final service = new PairingServiceImpl(store: store, pairingKeyTtl:  Duration.ofSeconds(1000))
+        final service = new PairingServiceImpl(store: store, lease:  Duration.ofSeconds(1000))
 
         when: 'we get the key two times for the same service and endpoint'
         def firstKey = service.getPairingKey("tower", "tower.io:9090")
@@ -72,7 +72,7 @@ class PairingServiceTest extends Specification{
         store.put(key,new PairingRecord('tower', 'tower.io:9090', key, new byte[0], pKey, null))
 
         and: 'and a service using the store'
-        final service = new PairingServiceImpl(store: store, pairingKeyTtl: Duration.ofSeconds(10))
+        final service = new PairingServiceImpl(store: store, lease: Duration.ofSeconds(10))
 
         when: 'we try to generate the same pairing key'
         final pairingKey = service.getPairingKey('tower','tower.io:9090')
@@ -87,7 +87,7 @@ class PairingServiceTest extends Specification{
         final store = new PairingCacheStore(new LocalCacheProvider())
 
         and: 'a security service using the cache store'
-        final service = new PairingServiceImpl(store: store, pairingKeyTtl: Duration.ofMillis(100))
+        final service = new PairingServiceImpl(store: store, lease: Duration.ofMillis(100))
 
         when: 'we get the key two times for the same service and endpoint waiting over the ttl interval'
         def firstKey = service.getPairingKey("tower", "tower.io:9090")

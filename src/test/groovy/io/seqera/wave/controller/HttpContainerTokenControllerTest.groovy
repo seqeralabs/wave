@@ -95,7 +95,7 @@ class HttpContainerTokenControllerTest extends Specification {
         HttpClient client = applicationContext.createBean(HttpClient)
 
         and:
-        applicationContext.getBean(PairingService).getPairingRecord("tower", _) >> new PairingRecord(service: "tower", endpoint: "http://localhost:${port}", Instant.now() + Duration.ofSeconds(5))
+        applicationContext.getBean(PairingService).getPairingRecord("tower", _) >> new PairingRecord(service: "tower", endpoint: "http://localhost:${port}", expiration: Instant.now() + Duration.ofSeconds(5))
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')

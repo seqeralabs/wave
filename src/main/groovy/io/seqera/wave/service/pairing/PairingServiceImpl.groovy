@@ -23,8 +23,11 @@ class PairingServiceImpl implements PairingService {
     @Inject
     private PairingCacheStore store
 
-    @Value('${wave.pairing-key.ttl:`1d`}')
-    private Duration pairingKeyTtl
+    /**
+     * The period of time after which the token should be renewed
+     */
+    @Value('${wave.pairing-key.lease:`1d`}')
+    private Duration lease
 
 
     @Override
@@ -35,8 +38,8 @@ class PairingServiceImpl implements PairingService {
         if (!entry || entry.isExpired()) {
             log.debug "Pairing with service '${service}' at address $endpoint - pairing id: $uid"
             final keyPair = generate()
-            final validUntil = Instant.now() + pairingKeyTtl
-            final newEntry = new PairingRecord(service, endpoint, uid, keyPair.getPrivate().getEncoded(), keyPair.getPublic().getEncoded(),validUntil)
+            final expiration = Instant.now() + lease
+            final newEntry = new PairingRecord(service, endpoint, uid, keyPair.getPrivate().getEncoded(), keyPair.getPublic().getEncoded(), expiration)
             store.put(uid,newEntry)
             entry = newEntry
         } else {

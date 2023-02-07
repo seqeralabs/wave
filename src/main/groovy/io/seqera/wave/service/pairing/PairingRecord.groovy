@@ -18,10 +18,10 @@ class PairingRecord {
     String pairingId
     byte[] privateKey
     byte[] publicKey
-    Instant validUntil
+    Instant expiration
 
     boolean isExpiredAt(Instant time) {
-        return validUntil == null || validUntil.isBefore(time)
+        return expiration == null || expiration.isBefore(time)
     }
 
     boolean isExpired() {

@@ -22,6 +22,6 @@ class PairingCacheStoreTest extends Specification{
         record.pairingId == 'pairingId'
         record.publicKey.length == 0
         record.privateKey.length == 0
-        record.validUntil == now
+        record.expiration == now
     }
 }
