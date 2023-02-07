@@ -34,4 +34,18 @@ class ContainerLayer {
         final loc = location?.startsWith('data:') ? location.substring(0,25) + '...' : location
         return "ContainerLayer[location=${loc}; tarDigest=$tarDigest; gzipDigest=$gzipDigest; gzipSize=$gzipSize]"
     }
+
+    /**
+     * Copy method
+     *
+     * @param that The {@link ContainerLayer} to be copied from
+     */
+    static ContainerLayer copy(ContainerLayer that, boolean stripData=false) {
+        if( that==null )
+            return null
+        def location = that.location
+        if( stripData && location && location.startsWith('data:') )
+            location = 'data:DATA+OMITTED'
+        return new ContainerLayer(location, that.gzipDigest, that.gzipSize, that.tarDigest)
+    }
 }
