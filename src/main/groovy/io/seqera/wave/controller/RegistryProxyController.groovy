@@ -152,6 +152,7 @@ class RegistryProxyController {
     protected DigestStore manifestForPath(RoutePath route, HttpRequest httpRequest) {
         def manifest = storage.getManifest(route.path)
         if (manifest.present) {
+            log.debug "Manifest cache hit ==> $route.path"
             return manifest.get()
         }
 

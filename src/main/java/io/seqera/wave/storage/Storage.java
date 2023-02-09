@@ -14,6 +14,8 @@ public interface Storage {
 
     DigestStore saveManifest(String path, String manifest, String type, String digest);
 
+    DigestStore saveManifest(String path, DigestStore store);
+
     Optional<DigestStore> getBlob(String path);
 
     DigestStore saveBlob(String path, byte[] content, String type, String digest);

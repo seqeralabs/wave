@@ -71,6 +71,12 @@ class ManifestCacheStore extends AbstractCacheStore<DigestStore> implements Stor
         return result;
     }
 
+    DigestStore saveManifest(String path, DigestStore store) {
+        log.debug "Save Manifest [store] ==> $path"
+        this.put(path, store)
+        return store;
+    }
+
     @Override
     Optional<DigestStore> getBlob(String path) {
         final result = this.get(path)

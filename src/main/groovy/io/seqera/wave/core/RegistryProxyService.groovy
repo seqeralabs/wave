@@ -94,6 +94,12 @@ class RegistryProxyService {
 
         final req = "/v2/${route.image}/manifests/${digest.target}"
         final entry = storage.getManifest(req).orElse(null)
+
+        // cache the digest with the original route path to avoid to resolve one more time
+        if( entry && route.isManifest() && route.isTag() && route.token ) {
+            storage.saveManifest(route.path, entry)
+        }
+
         return entry
     }
 
