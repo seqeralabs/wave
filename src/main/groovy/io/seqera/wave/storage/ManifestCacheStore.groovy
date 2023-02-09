@@ -43,21 +43,6 @@ class ManifestCacheStore extends AbstractCacheStore<DigestStore> implements Stor
     }
 
     @Override
-    DigestStore get(String key) {
-        final result = super.get(key)
-        if( result!=null )
-            return (DigestStore)result
-        /*
-         * try fallback to previous implementation
-         */
-        final value = getRaw("wave-blobs/v0:$key")
-        if( value != null ) {
-            return DigestStoreEncoder.decode(value)
-        }
-        return null
-    }
-
-    @Override
     Optional<DigestStore> getManifest(String path) {
         final result = this.get(path)
         result!=null ? Optional.of(result) : Optional.<DigestStore>empty()
