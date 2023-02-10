@@ -13,12 +13,13 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
+import io.seqera.wave.auth.RegistryAuth
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentialsProvider
+import io.seqera.wave.auth.RegistryInfo
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.model.ContentType
-
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.test.ManifestConst
@@ -133,13 +134,17 @@ class ContainerAugmenterTest extends Specification {
     def 'create the layer' () {
         given:
         def IMAGE = 'hello-world'
+        def REGISTRY = 'docker.io'
         and:
         unpackLayer()
 
+        def info = new RegistryInfo(REGISTRY, new URI('http://docker.io'), Mock(RegistryAuth))
+        def client = Mock(ProxyClient) { getRegistry()>>info }
         def config = ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath))
         def scanner = new ContainerAugmenter()
                             .withStorage(storage)
                             .withContainerConfig(config)
+                            .withClient(client)
         and:
         def digest = RegHelper.digest(layerPath.bytes)
 
@@ -155,7 +160,7 @@ class ContainerAugmenterTest extends Specification {
         blob.get('size') == 2
 
         and:
-        def entry = storage.getBlob("/v2/$IMAGE/blobs/$digest").get()
+        def entry = storage.getBlob("$REGISTRY/v2/$IMAGE/blobs/$digest").get()
         entry.bytes == layerPath.bytes
         entry.mediaType == ContentType.DOCKER_IMAGE_TAR_GZIP
         entry.digest == RegHelper.digest(layerPath.bytes)
@@ -171,21 +176,26 @@ class ContainerAugmenterTest extends Specification {
         def NEW_CONFIG_DIGEST = 'sha256:1234abcd'
         def NEW_CONFIG_SIZE = 100
         def SOURCE_JSON = new JsonSlurper().parseText(MANIFEST)
+        def REGISTRY = 'docker.io'
 
         and:
         unpackLayer()
         def layerDigest = RegHelper.digest(layerPath.bytes)
 
         and:
-
-        def scanner = new ContainerAugmenter().withStorage(storage).withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
+        def info = new RegistryInfo(REGISTRY, new URI('http://docker.io'), Mock(RegistryAuth))
+        def client = Mock(ProxyClient) { getRegistry()>>info }
+        def scanner = new ContainerAugmenter()
+                .withStorage(storage)
+                .withClient(client)
+                .withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
 
         when:
         def digest = scanner.updateImageManifest(IMAGE, MANIFEST, NEW_CONFIG_DIGEST, NEW_CONFIG_SIZE, false)
 
         then:
         // the cache contains the update image manifest json
-        def entry = storage.getManifest("/v2/$IMAGE/manifests/$digest").get()
+        def entry = storage.getManifest("$REGISTRY/v2/$IMAGE/manifests/$digest").get()
         def manifest = new String(entry.bytes)
         def json = new JsonSlurper().parseText(manifest)
         and:
@@ -217,19 +227,23 @@ class ContainerAugmenterTest extends Specification {
         def MANIFEST = ManifestConst.MANIFEST_LIST_CONTENT
         def DIGEST = 'sha256:f54a58bc1aac5ea1a25d796ae155dc228b3f0e11d046ae276b39c4bf2f13d8c4'
         def NEW_DIGEST = RegHelper.digest('foo')
-
+        def REGISTRY = 'docker.io'
         and:
         unpackLayer()
 
         and:
-
-        def scanner = new ContainerAugmenter().withStorage(storage).withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
+        def info = new RegistryInfo(REGISTRY, new URI('http://docker.io'), Mock(RegistryAuth))
+        def client = Mock(ProxyClient) { getRegistry()>>info }
+        def scanner = new ContainerAugmenter()
+                .withStorage(storage)
+                .withClient(client)
+                .withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
 
         when:
         def digest = scanner.updateImageIndex(IMAGE, MANIFEST, DIGEST, NEW_DIGEST, false)
 
         then:
-        def entry = storage.getManifest("/v2/$IMAGE/manifests/$digest").get()
+        def entry = storage.getManifest("$REGISTRY/v2/$IMAGE/manifests/$digest").get()
         def manifest = new String(entry.bytes)
         and:
         entry.mediaType == ContentType.DOCKER_IMAGE_INDEX_V2
@@ -349,18 +363,22 @@ class ContainerAugmenterTest extends Specification {
        '''
         and:
         def IMAGE_NAME = 'hello-world'
-
+        def REGISTRY = 'docker.io'
         and:
         unpackLayer()
 
         and:
-
-        def scanner = new ContainerAugmenter().withStorage(storage).withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
+        def info = new RegistryInfo(REGISTRY, new URI('http://docker.io'), Mock(RegistryAuth))
+        def client = Mock(ProxyClient) { getRegistry()>>info }
+        def scanner = new ContainerAugmenter()
+                .withStorage(storage)
+                .withClient(client)
+                .withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
 
         when:
         def (digest, config) = scanner.updateImageConfig(IMAGE_NAME, IMAGE_CONFIG, false)
         then:
-        def entry = storage.getBlob("/v2/$IMAGE_NAME/blobs/$digest").get()
+        def entry = storage.getBlob("$REGISTRY/v2/$IMAGE_NAME/blobs/$digest").get()
         entry.mediaType == ContentType.DOCKER_IMAGE_CONFIG_V1
         entry.digest == digest
         and:
@@ -419,18 +437,22 @@ class ContainerAugmenterTest extends Specification {
         def originalManifest = new JsonSlurper().parseText(MANIFEST)
         and:
         def IMAGE_NAME = 'hello-world'
-
+        def REGISTRY = 'docker.io'
         and:
         unpackLayer()
 
         and:
-
-        def scanner = new ContainerAugmenter().withStorage(storage).withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
+        def info = new RegistryInfo(REGISTRY, new URI('http://docker.io'), Mock(RegistryAuth))
+        def client = Mock(ProxyClient) { getRegistry()>>info }
+        def scanner = new ContainerAugmenter()
+                .withStorage(storage)
+                .withClient(client)
+                .withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
 
         when:
         def digest = scanner.resolveV1Manifest(MANIFEST, IMAGE_NAME)
         then:
-        def entry = storage.getManifest("/v2/$IMAGE_NAME/manifests/$digest").get()
+        def entry = storage.getManifest("$REGISTRY/v2/$IMAGE_NAME/manifests/$digest").get()
         entry.mediaType == ContentType.DOCKER_MANIFEST_V1_JWS_TYPE
         entry.digest == digest
         and:
@@ -653,10 +675,15 @@ class ContainerAugmenterTest extends Specification {
         unpackLayer()
         and:
         def IMAGE_NAME = 'hello-world'
-
+        def REGISTRY = 'docker.io'
         and:
 
-        def scanner = new ContainerAugmenter().withStorage(storage).withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
+        def info = new RegistryInfo(REGISTRY, new URI('http://docker.io'), Mock(RegistryAuth))
+        def client = Mock(ProxyClient) { getRegistry()>>info }
+        def scanner = new ContainerAugmenter()
+                .withStorage(storage)
+                .withClient(client)
+                .withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
 
         when:
         scanner.rewriteLayersV1(IMAGE_NAME, mutableManifest.fsLayers)
@@ -672,10 +699,10 @@ class ContainerAugmenterTest extends Specification {
 
     def 'should resolve busybox' () {
         given:
-        def REG = 'docker.io'
+        def REGISTRY = 'docker.io'
         def IMAGE = 'library/busybox'
-        def registry = lookupService.lookup(REG)
-        def creds = credentialsProvider.getDefaultCredentials(REG)
+        def registry = lookupService.lookup(REGISTRY)
+        def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
         and:
 
         def client = new ProxyClient(httpClientConfig)
@@ -702,7 +729,7 @@ class ContainerAugmenterTest extends Specification {
         then:
         digest
         and:
-        storage.getManifest("/v2/$IMAGE/manifests/${digest.target}")
+        storage.getManifest("$REGISTRY/v2/$IMAGE/manifests/${digest.target}")
     }
 
 }

@@ -112,7 +112,7 @@ class RegistryProxyController {
                     return fromCache(entry)
                 }
             } else {
-                def entry = storage.getManifest(route.path)
+                def entry = storage.getManifest(route.getTargetPath())
                 if (entry.present) {
                     return fromCache(entry.get())
                 }
@@ -120,7 +120,7 @@ class RegistryProxyController {
         }
 
         if( route.blob ) {
-            def entry = storage.getBlob(route.path)
+            def entry = storage.getBlob(route.getTargetPath())
             if (entry.present) {
                 log.info "Blob found in the cache: $route.path"
                 return fromCache(entry.get())
@@ -150,7 +150,7 @@ class RegistryProxyController {
     }
 
     protected DigestStore manifestForPath(RoutePath route, HttpRequest httpRequest) {
-        def manifest = storage.getManifest(route.path)
+        def manifest = storage.getManifest(route.targetPath)
         if (manifest.present) {
             log.debug "Manifest cache hit ==> $route.path"
             return manifest.get()

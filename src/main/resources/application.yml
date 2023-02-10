@@ -53,5 +53,5 @@ jackson:
 logger:
   levels:
     io.seqera: "DEBUG"
-#    io.seqera.wave.core: 'TRACE'
+    io.seqera.wave.core: 'TRACE'
 ...

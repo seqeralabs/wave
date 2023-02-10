@@ -40,12 +40,14 @@ class RoutePathTest extends Specification {
         route.repository == REPO
         route.targetContainer == TARGET
         route.imageAndTag == IMAGE_AND_TAG
+        route.targetPath == PATH
 
         where:
-        TYPE    | REG         | IMAGE     | REF             | REPO                | TARGET                         | IMAGE_AND_TAG
-        'blobs' | 'docker.io' | 'busybox' | 'latest'        | 'docker.io/busybox' | 'docker.io/busybox:latest'     | 'busybox:latest'
-        'blobs' | 'quay.io'   | 'busybox' | 'v1'            | 'quay.io/busybox'   | 'quay.io/busybox:v1'           | 'busybox:v1'
-        'blobs' | 'quay.io'   | 'busybox' | 'sha256:123abc' | 'quay.io/busybox'   | 'quay.io/busybox@sha256:123abc'| 'busybox@sha256:123abc'
+        TYPE    | REG         | IMAGE     | REF             | REPO                | TARGET                         | IMAGE_AND_TAG              | PATH
+        'blobs' | null        | 'busybox' | 'latest'        | 'docker.io/busybox' | 'docker.io/busybox:latest'     | 'busybox:latest'           | 'docker.io/v2/busybox/blobs/latest'
+        'blobs' | 'docker.io' | 'busybox' | 'latest'        | 'docker.io/busybox' | 'docker.io/busybox:latest'     | 'busybox:latest'           | 'docker.io/v2/busybox/blobs/latest'
+        'blobs' | 'quay.io'   | 'busybox' | 'v1'            | 'quay.io/busybox'   | 'quay.io/busybox:v1'           | 'busybox:v1'               | 'quay.io/v2/busybox/blobs/v1'
+        'blobs' | 'quay.io'   | 'busybox' | 'sha256:123abc' | 'quay.io/busybox'   | 'quay.io/busybox@sha256:123abc'| 'busybox@sha256:123abc'    | 'quay.io/v2/busybox/blobs/sha256:123abc'
 
     }
 

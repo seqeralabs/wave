@@ -12,13 +12,17 @@ import io.micronaut.http.HttpStatus
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.exception.DockerRegistryException
-import io.seqera.wave.model.ContentType
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.storage.reader.ContentReaderFactory
 import io.seqera.wave.util.RegHelper
-
-import static io.seqera.wave.model.ContentType.*
+import static io.seqera.wave.model.ContentType.DOCKER_IMAGE_CONFIG_V1
+import static io.seqera.wave.model.ContentType.DOCKER_IMAGE_INDEX_V2
+import static io.seqera.wave.model.ContentType.DOCKER_MANIFEST_V1_JWS_TYPE
+import static io.seqera.wave.model.ContentType.DOCKER_MANIFEST_V2_TYPE
+import static io.seqera.wave.model.ContentType.OCI_IMAGE_CONFIG_V1
+import static io.seqera.wave.model.ContentType.OCI_IMAGE_INDEX_V1
+import static io.seqera.wave.model.ContentType.OCI_IMAGE_MANIFEST_V1
 
 /**
  * Implement the logic of container manifest manipulation and
@@ -117,7 +121,8 @@ class ContainerAugmenter {
         // just cache the manifest content and return the digest
         if( !containerConfig ) {
             log.trace "Resolve (3): container config provided for image=$imageName:$tag"
-            storage.saveManifest("/v2/$imageName/manifests/$digest", manifestsList, type, digest)
+            final target = "$client.registry.name/v2/$imageName/manifests/$digest"
+            storage.saveManifest(target, manifestsList, type, digest)
             return new ContainerDigestPair(digest,digest)
         }
 
@@ -128,10 +133,11 @@ class ContainerAugmenter {
             throw new DockerRegistryException(msg, 400, 'UNSUPPORTED')
         }
 
-        if( type == ContentType.DOCKER_MANIFEST_V1_JWS_TYPE ) {
+        if( type == DOCKER_MANIFEST_V1_JWS_TYPE ) {
             final v1Digest = resolveV1Manifest(manifestsList, imageName)
             if( log.isTraceEnabled() ) {
-                final v1Manifest = storage.getManifest("/v2/$imageName/manifests/$v1Digest").orElse(null)
+                final target = "$client.registry.name/v2/$imageName/manifests/$v1Digest"
+                final v1Manifest = storage.getManifest(target).orElse(null)
                 log.trace "Resolve (4) ==> new manifest v1 digest: $v1Digest\n${JsonOutput.prettyPrint(new String(v1Manifest.bytes))}"
             }
             return new ContainerDigestPair(digest, v1Digest)
@@ -213,7 +219,8 @@ class ContainerAugmenter {
         if( manifestsList==updated )
             throw new IllegalArgumentException("Unable to find target digest '$targetDigest' into image index")
         // store in the cache
-        storage.saveManifest("/v2/$imageName/manifests/$result", updated, type, result)
+        final target = "$client.registry.name/v2/$imageName/manifests/$result"
+        storage.saveManifest(target, updated, type, result)
         // return the updated manifests list digest
         return result
     }
@@ -225,7 +232,7 @@ class ContainerAugmenter {
         final location = layer.location
         final digest = layer.gzipDigest
         final size = layer.gzipSize
-        final String path = "/v2/$image/blobs/$digest"
+        final String path = "$client.registry.name/v2/$image/blobs/$digest"
         final content = ContentReaderFactory.of(location)
         storage.saveBlob(path, content, type, digest)
 
@@ -287,7 +294,7 @@ class ContainerAugmenter {
 
         // add to the cache
         final digest = RegHelper.digest(newManifest)
-        final path = "/v2/$imageName/manifests/$digest"
+        final path = "$client.registry.name/v2/$imageName/manifests/$digest"
         final type = oci ? OCI_IMAGE_MANIFEST_V1 : DOCKER_MANIFEST_V2_TYPE
         storage.saveManifest(path, newManifest, type, digest)
 
@@ -357,7 +364,7 @@ class ContainerAugmenter {
 
         // add to the cache
         final digest = RegHelper.digest(newConfig)
-        final path = "/v2/$imageName/blobs/$digest"
+        final path = "$client.registry.name/v2/$imageName/blobs/$digest"
         final type = oci ? OCI_IMAGE_CONFIG_V1 : DOCKER_IMAGE_CONFIG_V1
         storage.saveBlob(path, newConfig.bytes, type, digest)
 
@@ -459,10 +466,10 @@ class ContainerAugmenter {
         rewriteLayersV1(imageName, fsLayers)
         rewriteSignatureV1(manifest)
 
-        def newManifestJson = JsonOutput.toJson(manifest)
-        def newManifestDigest = RegHelper.digest(newManifestJson)
-
-        storage.saveManifest("/v2/$imageName/manifests/$newManifestDigest", newManifestJson, ContentType.DOCKER_MANIFEST_V1_JWS_TYPE, newManifestDigest)
+        final newManifestJson = JsonOutput.toJson(manifest)
+        final newManifestDigest = RegHelper.digest(newManifestJson)
+        final targetPath = "$client.registry.name/v2/$imageName/manifests/$newManifestDigest"
+        storage.saveManifest(targetPath, newManifestJson, DOCKER_MANIFEST_V1_JWS_TYPE, newManifestDigest)
         return newManifestDigest
     }
 }
