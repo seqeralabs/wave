@@ -89,7 +89,11 @@ class RegistryProxyService {
             throw new IllegalStateException("Missing digest for request: $route")
 
         if( route.token ) {
-            persistenceService.updateContainerRequest(route.token, digest)
+            try {
+                persistenceService.updateContainerRequest(route.token, digest)
+            } catch (Throwable t) {
+                log.error("Unable store container request for token: $route.token", t)
+            }
         }
 
         final target = "$route.registry/v2/${route.image}/manifests/${digest.target}"

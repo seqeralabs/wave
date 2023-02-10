@@ -44,7 +44,7 @@ class ManifestCacheStore extends AbstractCacheStore<DigestStore> implements Stor
 
     @Override
     Optional<DigestStore> getManifest(String path) {
-        log.debug "Get manifest ==> $path"
+        log.trace "Get manifest ==> $path"
         def result = this.get(path)
         // fallback on path without registry for backward compatibility
         if( result==null && (path=stripRegistry(path))) {
@@ -55,21 +55,21 @@ class ManifestCacheStore extends AbstractCacheStore<DigestStore> implements Stor
 
     @Override
     DigestStore saveManifest(String path, String manifest, String type, String digest) {
-        log.debug "Save Manifest [size: ${manifest.size()}] ==> $path"
+        log.trace "Save Manifest [size: ${manifest.size()}] ==> $path"
         final result = new ZippedDigestStore(manifest.getBytes(), type, digest);
         this.put(path, result)
         return result;
     }
 
     DigestStore saveManifest(String path, DigestStore store) {
-        log.debug "Save Manifest [store] ==> $path"
+        log.trace "Save Manifest [store] ==> $path"
         this.put(path, store)
         return store;
     }
 
     @Override
     Optional<DigestStore> getBlob(String path) {
-        log.debug "Get Blob ==> $path"
+        log.trace "Get Blob ==> $path"
         def result = this.get(path)
         // fallback on path without registry for backward compatibility
         if( result==null && (path=stripRegistry(path))) {
@@ -80,7 +80,7 @@ class ManifestCacheStore extends AbstractCacheStore<DigestStore> implements Stor
 
     @Override
     DigestStore saveBlob(String path, byte[] content, String type, String digest) {
-        log.debug "Save Blob [size: ${content.size()}] ==> $path"
+        log.trace "Save Blob [size: ${content.size()}] ==> $path"
         final result = new ZippedDigestStore(content, type, digest);
         this.put(path, result)
         return result
@@ -88,7 +88,7 @@ class ManifestCacheStore extends AbstractCacheStore<DigestStore> implements Stor
 
     @Override
     DigestStore saveBlob(String path, ContentReader content, String type, String digest) {
-        log.debug "Save Blob ==> $path"
+        log.trace "Save Blob ==> $path"
         final result = new LazyDigestStore(content, type, digest);
         this.put(path, result)
         return result

@@ -132,11 +132,11 @@ class RegistryProxyController {
             return handleTagList(route, httpRequest)
         }
 
-        final type = route.isManifest() ? 'manifest' : 'blob'
         final headers = httpRequest.headers.asMap() as Map<String, List<String>>
         final resp = proxyService.handleRequest(route, headers)
         if( resp.isRedirect() ) {
-            log.debug "Forwarding $type request '${route.getTargetContainer()}' to '${resp.location}'"
+            final loc = log.isTraceEnabled() ? resp.location : stripUriParams(resp.location)
+            log.debug "Forwarding ${route.type} request '${route.getTargetContainer()}' to '${loc}'"
             return fromRedirectResponse(resp)
         }
         else if( route.isManifest() ) {
@@ -249,4 +249,9 @@ class RegistryProxyController {
             new StreamedFile(inputStream, MediaType.APPLICATION_OCTET_STREAM_TYPE)
     }
 
+
+    static String stripUriParams(String uri) {
+        final p = uri.indexOf('?')
+        return p==-1 ? uri : uri.substring(0,p) + '?PARAMS+OMITTED'
+    }
 }
