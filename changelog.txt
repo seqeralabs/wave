@@ -1,4 +1,10 @@
 # Wave changelog
+v0.25.2 - 10 Feb 
+- Use fully qualified path for digest store [6bf0761a]
+- Remove deprecated method [efdd4ffe]
+- Add container tag path caching [a400e77a]
+- Improve logging [e3f09ca8]
+
 v0.25.1 - 8 Feb 2023
 - Add expiration to container view [54bc8d99]
 - Improve pairing keys lease (#218) [2b90612c]
