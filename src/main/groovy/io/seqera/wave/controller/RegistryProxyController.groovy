@@ -150,14 +150,26 @@ class RegistryProxyController {
     }
 
     protected DigestStore manifestForPath(RoutePath route, HttpRequest httpRequest) {
-        def manifest = storage.getManifest(route.targetPath)
+        // when the request contains a wave token and the manifest is specified
+        // using a container 'tag' instead of a 'digest' the request path is used as storage key
+        // because the target container path could be not unique (multiple wave containers request
+        // could shared the same target container with a different configuration request)
+        final unsolvedContainer = route.token && route.isTag()
+        final key = unsolvedContainer ? httpRequest.path : route.targetPath
+        // check if there's cached manifest
+        final manifest = storage.getManifest(key)
         if (manifest.present) {
-            log.debug "Manifest cache hit ==> $route.path"
+            log.debug "Manifest cache hit ==> $key"
             return manifest.get()
         }
-
+        // resolve the manifest using the proxy service
         Map<String, List<String>> headers = httpRequest.headers.asMap() as Map<String, List<String>>
-        return proxyService.handleManifest(route, headers)
+        final result = proxyService.handleManifest(route, headers)
+        // cache the digest with the original route path to avoid to resolve one more time
+        if( result && unsolvedContainer ) {
+            storage.saveManifest(key, result)
+        }
+        return result
     }
 
     static protected MutableHttpResponse<?> badRequest(String message) {

@@ -98,13 +98,7 @@ class RegistryProxyService {
 
         // find out the target digest for the request
         final target = "$route.registry/v2/${route.image}/manifests/${digest.target}"
-        final entry = storage.getManifest(target).orElse(null)
-
-        // cache the digest with the original route path to avoid to resolve one more time
-        if( entry && route.isManifest() && route.isTag() && route.token ) {
-            storage.saveManifest(route.targetPath, entry)
-        }
-        return entry
+        return storage.getManifest(target).orElse(null)
     }
 
     protected void updateContainerRequest(RoutePath route, ContainerDigestPair digest) {
