@@ -1,4 +1,7 @@
 # Wave changelog
+v0.25.5 - 11 Feb 2023
+- Fix unresolved container cache [f26dbbad]
+
 v0.25.4 - 11 Feb 2023
 - Fix issue when rendering layer config [4c10db9f]
 
