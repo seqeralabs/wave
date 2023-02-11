@@ -236,7 +236,7 @@ class ContainerTokenController {
     HttpResponse<DescribeWaveContainerResponse> describeContainerRequest(String token) {
         final data = persistenceService.loadContainerRequest(token)
         if( !data )
-            throw new NotFoundException("Unknown container token: $token")
+            throw new NotFoundException("Missing container record for token: $token")
         // return the response 
         return HttpResponse.ok( DescribeWaveContainerResponse.create(token, data) )
     }

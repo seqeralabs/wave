@@ -67,7 +67,7 @@ class SurrealPersistenceService implements PersistenceService {
     @Override
     void saveBuild(WaveBuildRecord build) {
         surrealDb.insertBuildAsync(authorization, build).subscribe({ result->
-            log.debug "Build record saved ${result}"
+            log.trace "Build record saved ${result}"
         }, {error->
             def msg = error.message
             if( error instanceof HttpClientResponseException ){
@@ -102,7 +102,7 @@ class SurrealPersistenceService implements PersistenceService {
     @Override
     void saveContainerRequest(String token, WaveContainerRecord data) {
         surrealDb.insertContainerRequestAsync(authorization, token, data).subscribe({ result->
-            log.debug "Container request record saved ${result}"
+            log.trace "Container request with token '$token' saved record: ${result}"
         }, {error->
             def msg = error.message
             if( error instanceof HttpClientResponseException ){
@@ -121,7 +121,7 @@ class SurrealPersistenceService implements PersistenceService {
         surrealDb
                 .sqlAsync(getAuthorization(), query)
                 .subscribe({result ->
-                    log.debug "Update container record=$token result=$result"
+                    log.trace "Container request with token '$token' updated record: ${result}"
                 },
                 {error->
                     def msg = error.message
@@ -137,6 +137,7 @@ class SurrealPersistenceService implements PersistenceService {
         if( !token )
             throw new IllegalArgumentException("Missing 'token' argument")
         final json = surrealDb.getContainerRequest(getAuthorization(), token)
+        log.trace "Container request with token '$token' loaded: ${json}"
         final type = new TypeReference<ArrayList<SurrealResult<WaveContainerRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null
