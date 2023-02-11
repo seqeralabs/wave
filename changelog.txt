@@ -1,4 +1,7 @@
 # Wave changelog
+v0.25.3 - 11 Feb 
+- Minor change [31e66fa]
+
 v0.25.2 - 10 Feb 
 - Use fully qualified path for digest store [6bf0761a]
 - Remove deprecated method [efdd4ffe]
