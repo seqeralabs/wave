@@ -1,8 +1,11 @@
 # Wave changelog
-v0.25.3 - 11 Feb 
+v0.25.4 - 11 Feb 2023
+- Fix issue when rendering layer config [4c10db9f]
+
+v0.25.3 - 11 Feb 2023
 - Minor change [31e66fa]
 
-v0.25.2 - 10 Feb 
+v0.25.2 - 10 Feb 2023
 - Use fully qualified path for digest store [6bf0761a]
 - Remove deprecated method [efdd4ffe]
 - Add container tag path caching [a400e77a]
