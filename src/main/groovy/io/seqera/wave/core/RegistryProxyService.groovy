@@ -23,6 +23,10 @@ import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.proxy.ProxyClient.REDIRECT_CODES
 /**
+ * Proxy service that forwards incoming container request
+ * to the target repository, resolving credentials and augmentation
+ * dependencies
+ *
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
@@ -32,7 +36,8 @@ import static io.seqera.wave.proxy.ProxyClient.REDIRECT_CODES
 @CompileStatic
 class RegistryProxyService {
 
-    @Inject Storage storage
+    @Inject
+    private Storage storage
 
     @Inject
     private RegistryLookupService registryLookup
@@ -88,14 +93,10 @@ class RegistryProxyService {
         if( digest == null )
             throw new IllegalStateException("Missing digest for request: $route")
 
-        if( route.token ) {
-            try {
-                persistenceService.updateContainerRequest(route.token, digest)
-            } catch (Throwable t) {
-                log.error("Unable store container request for token: $route.token", t)
-            }
-        }
+        // update the container metadata for this request
+        updateContainerRequest(route, digest)
 
+        // find out the target digest for the request
         final target = "$route.registry/v2/${route.image}/manifests/${digest.target}"
         final entry = storage.getManifest(target).orElse(null)
 
@@ -103,8 +104,18 @@ class RegistryProxyService {
         if( entry && route.isManifest() && route.isTag() && route.token ) {
             storage.saveManifest(route.targetPath, entry)
         }
-
         return entry
+    }
+
+    protected void updateContainerRequest(RoutePath route, ContainerDigestPair digest) {
+        if( !route.token )
+            return
+
+        try {
+            persistenceService.updateContainerRequest(route.token, digest)
+        } catch (Throwable t) {
+            log.error("Unable store container request for token: $route.token", t)
+        }
     }
 
     DelegateResponse handleRequest(RoutePath route, Map<String,List<String>> headers){

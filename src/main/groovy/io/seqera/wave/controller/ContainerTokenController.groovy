@@ -30,6 +30,7 @@ import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.token.ContainerTokenService
+import io.seqera.wave.service.token.TokenData
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
@@ -128,10 +129,19 @@ class ContainerTokenController {
         final target = targetImage(token.value, data.coordinates())
         final resp = new SubmitContainerTokenResponse(containerToken: token.value, targetImage: target, expiration: token.expiration)
         // persist request
-        final recrd = new WaveContainerRecord(req, data, target, user, ip, token.expiration)
-        persistenceService.saveContainerRequest(token.value, recrd)
+        storeContainerRequest0(req, data, user, token, target, ip)
         // return response
         return HttpResponse.ok(resp)
+    }
+
+    protected void storeContainerRequest0(SubmitContainerTokenRequest req, ContainerRequestData data, User user, TokenData token, String target, String ip) {
+        try {
+            final recrd = new WaveContainerRecord(req, data, target, user, ip, token.expiration)
+            persistenceService.saveContainerRequest(token.value, recrd)
+        }
+        catch (Throwable e) {
+            log.error("Unable to store container request with token: ${token}", e)
+        }
     }
 
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, User user, String ip) {
