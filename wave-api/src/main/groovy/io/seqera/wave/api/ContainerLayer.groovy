@@ -31,8 +31,16 @@ class ContainerLayer {
 
     @Override
     String toString() {
-        final loc = location?.startsWith('data:') ? location.substring(0,25) + '...' : location
+        final loc = toStringLocation0(location)
         return "ContainerLayer[location=${loc}; tarDigest=$tarDigest; gzipDigest=$gzipDigest; gzipSize=$gzipSize]"
+    }
+
+    private String toStringLocation0(String location){
+        if( !location || !location.startsWith('data:') )
+            return location
+        return location.length()>25
+                ? location.substring(0,25) + '...'
+                : location
     }
 
     /**

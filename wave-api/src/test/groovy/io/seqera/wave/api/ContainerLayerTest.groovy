@@ -49,4 +49,22 @@ class ContainerLayerTest extends Specification {
         l2.gzipDigest == l1.gzipDigest
         l2.gzipSize == l1.gzipSize
     }
+
+    def 'should convert to string' () {
+        when:
+        def l1 = new ContainerLayer( 'data:ABC1234567890', 'sha256:12345', 100, 'sha256:67890' )
+        then:
+        l1.toString() == 'ContainerLayer[location=data:ABC1234567890; tarDigest=sha256:67890; gzipDigest=sha256:12345; gzipSize=100]'
+
+        when:
+        def l2 = new ContainerLayer( 'data:12345678901234567890', 'sha256:12345', 100, 'sha256:67890' )
+        then:
+        l2.toString() == 'ContainerLayer[location=data:12345678901234567890; tarDigest=sha256:67890; gzipDigest=sha256:12345; gzipSize=100]'
+
+        when:
+        def l3= new ContainerLayer( 'data:12345678901234567890x', 'sha256:12345', 100, 'sha256:67890' )
+        then:
+        l3.toString() == 'ContainerLayer[location=data:12345678901234567890...; tarDigest=sha256:67890; gzipDigest=sha256:12345; gzipSize=100]'
+
+    }
 }
