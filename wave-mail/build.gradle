@@ -6,9 +6,9 @@ dependencies {
     compileOnly("io.micronaut:micronaut-inject-groovy")
     implementation(project(':wave-utils'))
     implementation("ch.qos.logback:logback-classic:1.2.11")
-    implementation "org.codehaus.groovy:groovy:3.0.13"
-    implementation "org.codehaus.groovy:groovy-nio:3.0.13"
-    implementation "org.codehaus.groovy:groovy-templates:3.0.13"
+    implementation "org.codehaus.groovy:groovy:3.0.15"
+    implementation "org.codehaus.groovy:groovy-nio:3.0.15"
+    implementation "org.codehaus.groovy:groovy-templates:3.0.15"
     api "com.sun.mail:javax.mail:1.6.2"
     api "org.jsoup:jsoup:1.15.3"
     implementation("io.micronaut:micronaut-runtime:3.3.4")
