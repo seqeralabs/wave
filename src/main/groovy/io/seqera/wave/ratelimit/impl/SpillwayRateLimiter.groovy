@@ -55,7 +55,7 @@ class SpillwayRateLimiter implements RateLimiterService {
         String key = request.userId ?: request.ip
         if (!resource.tryCall(key)) {
             final prefix = request.userId ? 'user' : 'IP'
-            throw new SlowDownException("Request exceeded pull rate limit for $prefix $key")
+            throw new SlowDownException("Request exceeded build rate limit for $prefix $key")
         }
     }
 
