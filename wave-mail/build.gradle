@@ -10,7 +10,7 @@ dependencies {
     implementation "org.codehaus.groovy:groovy-nio:3.0.13"
     implementation "org.codehaus.groovy:groovy-templates:3.0.13"
     api "com.sun.mail:javax.mail:1.6.2"
-    api "org.jsoup:jsoup:1.11.2"
+    api "org.jsoup:jsoup:1.15.3"
     implementation("io.micronaut:micronaut-runtime:3.3.4")
 
     testImplementation "org.subethamail:subethasmtp:3.1.7"

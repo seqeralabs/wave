@@ -5,7 +5,7 @@ plugins {
     id 'java-library'
     id 'io.seqera.wave.groovy-application-conventions'
     id "com.github.johnrengelman.shadow" version "7.1.1"
-    id "io.micronaut.application" version "3.4.1"
+    id "io.micronaut.minimal.application" version "3.7.0"
     id "com.google.cloud.tools.jib" version "3.2.1"
     id 'org.asciidoctor.jvm.convert' version '3.3.2'
 }
@@ -90,7 +90,6 @@ application {
     mainClass.set("io.seqera.wave.Application")
 }
 
-graalvmNative.toolchainDetection = false
 micronaut {
     runtime("netty")
     testRuntime("spock2")
