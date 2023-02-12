@@ -226,7 +226,7 @@ class ContainerAugmenter {
     }
 
     synchronized protected Map layerBlob(String image, ContainerLayer layer) {
-        log.debug "Adding layer: $layer to image: $image"
+        log.debug "Adding layer: $layer to image: $client.registry.name/$image"
         // store the layer blob in the cache
         final type = "application/vnd.docker.image.rootfs.diff.tar.gzip"
         final location = layer.location
