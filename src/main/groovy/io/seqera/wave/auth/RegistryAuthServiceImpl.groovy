@@ -189,7 +189,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
             return result.get('token')
         }
 
-        throw new RegistryUnauthorizedAccessException("Unable to authorize request: $login", body)
+        throw new RegistryUnauthorizedAccessException("Unable to authorize request: $login", resp.statusCode(), body)
     }
 
     String buildLoginUrl(URI realm, String image, String service){
