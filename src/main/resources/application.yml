@@ -12,6 +12,8 @@ micronaut:
       enabled : false
   server:
     port: 9090
+    # https://docs.micronaut.io/latest/guide/#atBlocking
+    thread-selection: AUTO
   views :
     folder : io/seqera/wave
   router:
