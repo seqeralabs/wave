@@ -105,11 +105,11 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         final response = httpRetryable.send(httpClient, request, HttpResponse.BodyHandlers.ofString())
 
         if( response.statusCode() == 200 ) {
-            log.debug "Container registry '$endpoint' login - response: ${response.body()}"
+            log.debug "Container registry '$endpoint' login - response: ${StringUtils.trunc(response.body())}"
             return true
         }
         else {
-            log.warn "Container registry '$endpoint' login FAILED: ${response.statusCode()} - response: ${response.body()}"
+            log.warn "Container registry '$endpoint' login FAILED: ${response.statusCode()} - response: ${StringUtils.trunc(response.body())}"
             return false
         }
     }
