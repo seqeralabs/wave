@@ -1,6 +1,5 @@
 package io.seqera.wave.service
 
-import java.time.Instant
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -43,7 +42,7 @@ class CredentialServiceImpl implements CredentialsService {
         final all = towerClient.listCredentials(towerEndpoint, towerToken, workspaceId).get().credentials
 
         if (!all) {
-            log.debug "No credentials found for userId=$userId; workspaceId=$workspaceId; endoint=$towerEndpoint"
+            log.debug "No credentials found for userId=$userId; workspaceId=$workspaceId; endpoint=$towerEndpoint"
             return null
         }
 
