@@ -1,4 +1,13 @@
 # Wave changelog
+v0.25.6 - 15 Feb 2023
+- Add landing redirection [ede9a242]
+- Fix Build rate limit message [c9aa73e6]
+- Improve Registry auth error reporting [f327c3c9]
+- Improve long response body [4c9fef41]
+- Bump MN thread pool selection [c52393f6]
+- Bump Groovy 3.0.15 [da793751]
+- Bump to MN 3.8.4 [a98cc198]
+
 v0.25.5 - 11 Feb 2023
 - Fix unresolved container cache [f26dbbad]
 
