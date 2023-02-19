@@ -61,12 +61,12 @@ class CredentialServiceImpl implements CredentialsService {
             it.provider == 'container-reg'  && (it.registry ?: DOCKER_IO) == matchingRegistryName
         }
         if (!creds) {
-            log.debug "No credentials matching criteria registryName=$registryName; userId=$userId; workspaceId=$workspaceId; endoint=$towerEndpoint"
+            log.debug "No credentials matching criteria registryName=$registryName; userId=$userId; workspaceId=$workspaceId; endpoint=$towerEndpoint"
             return null
         }
 
         // log for debugging purposes
-        log.debug "Credentials matching criteria registryName=$registryName; userId=$userId; workspaceId=$workspaceId; endoint=$towerEndpoint => $creds"
+        log.debug "Credentials matching criteria registryName=$registryName; userId=$userId; workspaceId=$workspaceId; endpoint=$towerEndpoint => $creds"
         // now fetch the encrypted key
         final encryptedCredentials = towerClient.fetchEncryptedCredentials(towerEndpoint, towerToken, creds.id, pairing.pairingId, workspaceId).get()
         final privateKey = pairing.privateKey
