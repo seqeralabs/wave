@@ -187,7 +187,9 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         final body = resp.body()
         if( resp.statusCode()==200 ) {
             final result = (Map) new JsonSlurper().parseText(body)
-            final token = result.get('token')
+            // note: azure registry returns 'access_token'
+            // see also specs https://docs.docker.com/registry/spec/auth/token/#requesting-a-token
+            final token = result.get('token') ?: result.get('access_token')
             if( token ) {
                 log.trace "Registry auth '$login' => token: ${StringUtils.redact(token)}"
                 return token
