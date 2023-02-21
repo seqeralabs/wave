@@ -1,4 +1,7 @@
 # Wave changelog
+v0.25.8 - 22 Feb 2023
+- Fix Azure registry auth [5fc3115e]
+
 v0.25.7 - 21 Feb 2023
 - Improve docker auth error reporting [eceffe85]
 - Fix log typo [ci skip] [030dbc67]
