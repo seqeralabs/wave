@@ -14,6 +14,7 @@ import com.google.common.util.concurrent.UncheckedExecutionException
 import groovy.json.JsonSlurper
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.wave.util.HttpRetryable
 import io.seqera.wave.util.StringUtils
@@ -33,6 +34,7 @@ import static io.seqera.wave.WaveDefault.DOCKER_IO
 class RegistryAuthServiceImpl implements RegistryAuthService {
 
     @Canonical
+    @ToString(includePackage = false, includeNames = true)
     static private class CacheKey {
         final String image
         final RegistryAuth auth
@@ -185,8 +187,11 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         final body = resp.body()
         if( resp.statusCode()==200 ) {
             final result = (Map) new JsonSlurper().parseText(body)
-            log.debug "Registry '$login' => token: ${StringUtils.redact(result.token)}"
-            return result.get('token')
+            final token = result.get('token')
+            if( token ) {
+                log.trace "Registry auth '$login' => token: ${StringUtils.redact(token)}"
+                return token
+            }
         }
 
         throw new RegistryUnauthorizedAccessException("Unable to authorize request: $login", resp.statusCode(), body)
