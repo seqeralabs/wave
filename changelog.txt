@@ -1,4 +1,8 @@
 # Wave changelog
+v0.25.7 - 21 Feb 2023
+- Improve docker auth error reporting [eceffe85]
+- Fix log typo [ci skip] [030dbc67]
+
 v0.25.6 - 15 Feb 2023
 - Add landing redirection [ede9a242]
 - Fix Build rate limit message [c9aa73e6]
