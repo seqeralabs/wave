@@ -12,6 +12,7 @@ import java.util.concurrent.ThreadLocalRandom
 
 import groovy.util.logging.Slf4j
 import io.seqera.wave.service.cache.impl.LocalCacheProvider
+import io.seqera.wave.util.LongRndKey
 
 @Slf4j
 class PairingServiceTest extends Specification{
@@ -24,24 +25,26 @@ class PairingServiceTest extends Specification{
         final service = new PairingServiceImpl(store: store, lease: Duration.ofSeconds(100))
 
         when: 'we get a public key'
-        def key = service.getPairingKey("tower","tower.io:9090")
+        def key = PairingServiceImpl.makeKey("tower","tower.io:9090")
+        def response = service.getPairingKey("tower","tower.io:9090")
 
         then: 'we generate a key'
-        key.pairingId
-        key.publicKey
+        response.pairingId
+        response.publicKey
 
         and: 'the store contains the key'
-        def storedKey = store.get(key.pairingId)
+        def storedKey = store.get(key)
 
         and: 'the key is associated with the instance the asked for it'
         storedKey.service == 'tower'
         storedKey.endpoint == "tower.io:9090"
-
+        storedKey.pairingId == response.pairingId
+        
         and: 'the key contains the private part of the key pair'
         storedKey.privateKey
 
         and: 'the keys match'
-        keysMatch(key.publicKey, storedKey.privateKey)
+        keysMatch(response.publicKey, storedKey.privateKey)
 
     }
 
@@ -68,8 +71,9 @@ class PairingServiceTest extends Specification{
 
         and: 'an old non timestamped pairing record coming from previous versions'
         final key = PairingServiceImpl.makeKey('tower','tower.io:9090')
+        final pairingId = LongRndKey.rndLong().toString()
         final pKey = PairingServiceImpl.generate().public.getEncoded()
-        store.put(key,new PairingRecord('tower', 'tower.io:9090', key, new byte[0], pKey, null))
+        store.put(key,new PairingRecord('tower', 'tower.io:9090', pairingId, new byte[0], pKey, null))
 
         and: 'and a service using the store'
         final service = new PairingServiceImpl(store: store, lease: Duration.ofSeconds(10))
@@ -78,7 +82,7 @@ class PairingServiceTest extends Specification{
         final pairingKey = service.getPairingKey('tower','tower.io:9090')
 
         then: 'the record is considered as expired and is generated again'
-        pairingKey.pairingId == key
+        pairingKey.pairingId != pairingId
         pairingKey.publicKey.decodeBase64() != pKey
     }
 
@@ -95,7 +99,7 @@ class PairingServiceTest extends Specification{
         def secondKey = service.getPairingKey("tower", "tower.io:9090")
 
         then: 'we regenerate the key'
-        firstKey.pairingId == secondKey.pairingId
+        firstKey.pairingId != secondKey.pairingId
         firstKey.publicKey != secondKey.publicKey
     }
 

@@ -36,7 +36,7 @@ class PairingServiceImpl implements PairingService {
         final key = makeKey(service,endpoint)
 
         def entry = store.get(key)
-        if (!entry ) {
+        if (!entry || entry.isExpired()) {
             final pairingId = LongRndKey.rndLong().toString()
             log.debug "Pairing with service '${service}' at address $endpoint - pairing id: $pairingId (key: $key)"
             final keyPair = generate()
