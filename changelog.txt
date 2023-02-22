@@ -1,4 +1,8 @@
 # Wave changelog
+v0.25.9 - 22 Feb 2023
+- Fix pairing record lease (#222) [34332a4a]
+- Improve error reporting [ac5e937a]
+
 v0.25.8 - 22 Feb 2023
 - Fix Azure registry auth [5fc3115e]
 
