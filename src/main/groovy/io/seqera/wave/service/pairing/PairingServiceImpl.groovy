@@ -10,6 +10,7 @@ import io.micronaut.context.annotation.Value
 import io.seqera.tower.crypto.AsymmetricCipher
 import io.seqera.wave.exchange.PairingResponse
 import io.seqera.wave.util.DigestFunctions
+import io.seqera.wave.util.LongRndKey
 import jakarta.inject.Inject
 /**
  * Implements the pairing service for Tower and Wave credentials federation
@@ -32,21 +33,22 @@ class PairingServiceImpl implements PairingService {
 
     @Override
     PairingResponse getPairingKey(String service, String endpoint) {
-        final uid =  makeKey(service,endpoint)
+        final key = makeKey(service,endpoint)
 
-        def entry = store.get(uid)
+        def entry = store.get(key)
         if (!entry || entry.isExpired()) {
-            log.debug "Pairing with service '${service}' at address $endpoint - pairing id: $uid"
+            final pairingId = LongRndKey.rndLong().toString()
+            log.debug "Pairing with service '${service}' at address $endpoint - pairing id: $pairingId (key: $key)"
             final keyPair = generate()
             final expiration = Instant.now() + lease
-            final newEntry = new PairingRecord(service, endpoint, uid, keyPair.getPrivate().getEncoded(), keyPair.getPublic().getEncoded(), expiration)
-            store.put(uid,newEntry)
+            final newEntry = new PairingRecord(service, endpoint, pairingId, keyPair.getPrivate().getEncoded(), keyPair.getPublic().getEncoded(), expiration)
+            store.put(key,newEntry)
             entry = newEntry
         } else {
-            log.trace "Paired already with service '${service}' at address $endpoint - pairing id: $uid"
+            log.trace "Paired already with service '${service}' at address $endpoint - pairing id: $entry.pairingId (key: $key)"
         }
 
-        return new PairingResponse( pairingId: uid, publicKey: entry.publicKey.encodeBase64() )
+        return new PairingResponse( pairingId: entry.pairingId, publicKey: entry.publicKey.encodeBase64() )
     }
 
     @Override
@@ -56,7 +58,7 @@ class PairingServiceImpl implements PairingService {
     }
 
     protected static String makeKey(String service, String towerEndpoint) {
-        final attrs = Map.<String,Object>of('service', service, 'towerEndpoint', towerEndpoint)
+        final attrs = [service: service, towerEndpoint: towerEndpoint] as Map<String,Object>
         return DigestFunctions.md5(attrs)
     }
 
