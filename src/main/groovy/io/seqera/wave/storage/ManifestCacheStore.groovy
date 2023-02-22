@@ -45,11 +45,7 @@ class ManifestCacheStore extends AbstractCacheStore<DigestStore> implements Stor
     @Override
     Optional<DigestStore> getManifest(String path) {
         log.trace "Get manifest ==> $path"
-        def result = this.get(path)
-        // fallback on path without registry for backward compatibility
-        if( result==null && (path=stripRegistry(path))) {
-            result = this.get(path)
-        }
+        final result = this.get(path)
         result!=null ? Optional.of(result) : Optional.<DigestStore>empty()
     }
 
@@ -70,11 +66,7 @@ class ManifestCacheStore extends AbstractCacheStore<DigestStore> implements Stor
     @Override
     Optional<DigestStore> getBlob(String path) {
         log.trace "Get Blob ==> $path"
-        def result = this.get(path)
-        // fallback on path without registry for backward compatibility
-        if( result==null && (path=stripRegistry(path))) {
-            result = this.get(path)
-        }
+        final result = this.get(path)
         result!=null ? Optional.of(result) : Optional.<DigestStore>empty()
     }
 
@@ -94,13 +86,4 @@ class ManifestCacheStore extends AbstractCacheStore<DigestStore> implements Stor
         return result
     }
 
-    static protected String stripRegistry(String target) {
-        if( !target )
-            return null
-        final p = target.indexOf('/')
-        if( p==-1 )
-            return null
-        final registry = target.substring(0,p)
-        return registry.contains('.') ? target.substring(p) : null
-    }
 }
