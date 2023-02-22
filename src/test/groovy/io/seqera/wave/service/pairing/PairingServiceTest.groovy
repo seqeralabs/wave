@@ -99,7 +99,14 @@ class PairingServiceTest extends Specification{
         firstKey.publicKey != secondKey.publicKey
     }
 
+    def 'should generate the same hash key' () {
 
+        expect:
+        100.times {
+        assert PairingServiceImpl.makeKey('tower', 'https://api.tower.nf') == '7a0ebf8c7ef4b89227a0f6700d4322cb'
+        }
+
+    }
 
 
     private static boolean keysMatch(String encodedPublicKey, byte[] encodedPrivateKey) {
