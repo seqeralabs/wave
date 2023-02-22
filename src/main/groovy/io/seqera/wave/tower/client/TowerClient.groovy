@@ -120,10 +120,10 @@ class TowerClient {
                             case 200:
                                 return CompletableFuture.completedFuture(JacksonHelper.fromJson(resp.body(), type))
                             case 401:
-                                throw new HttpResponseException(401, "Unauthorized access to Tower resource: $uri")
+                                throw new HttpResponseException(401, "Unauthorized access to Tower resource: $uri", resp.body())
                             case 404:
                                 final msg = "Tower resource not found: $uri"
-                                throw new HttpResponseException(404, msg)
+                                throw new HttpResponseException(404, msg, resp.body())
                             default:
                                 def body = resp.body()
                                 def msg = "Unexpected status code ${resp.statusCode()} while accessing Tower resource: $uri"
@@ -210,7 +210,7 @@ class TowerClient {
                                 log.trace "Tower Refresh '$uri' response\n- status : ${resp.statusCode()}\n- headers: ${RegHelper.dumpHeaders(resp.headers())}\n- content: ${resp.body()}"
                                 final status = resp.statusCode()
                                 if ( status >= 400 ) {
-                                    throw new HttpResponseException(status, "Unexpected Tower response refreshing JWT token")
+                                    throw new HttpResponseException(status, "Unexpected Tower response refreshing JWT token", resp.body())
                                 }
                                 final cookies = resp.headers().allValues('Set-Cookie')
                                 final jwtAuth = parseTokens(cookies, refreshToken)
