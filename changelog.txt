@@ -1,4 +1,8 @@
 # Wave changelog
+v0.25.10 - 25 Feb 2023
+- Improve request validation [696bdd48]
+- Remove deprecated code [c59434cf]
+
 v0.25.9 - 22 Feb 2023
 - Fix pairing record lease (#222) [34332a4a]
 - Improve error reporting [ac5e937a]
