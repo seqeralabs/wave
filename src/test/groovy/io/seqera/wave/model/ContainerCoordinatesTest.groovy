@@ -33,4 +33,25 @@ class ContainerCoordinatesTest extends Specification {
         'fedora/httpd:version1.0'                       | 'docker.io'           | 'fedora/httpd'    | 'version1.0'      | 'docker.io/fedora/httpd'              | 'fedora/httpd:version1.0' | 'docker.io/fedora/httpd:version1.0'
         'myregistryhost:5000/fedora/httpd:version1.0'   | 'myregistryhost:5000' | 'fedora/httpd'    | 'version1.0'      | 'myregistryhost:5000/fedora/httpd'    | 'fedora/httpd:version1.0' | 'myregistryhost:5000/fedora/httpd:version1.0'
     }
+
+    @Unroll
+    def 'should check is valid registry name' () {
+        expect:
+        ContainerCoordinates.isValidRegistry(NAME) == EXPECTED
+
+        where:
+        NAME                    | EXPECTED
+        null                    | false
+        and:
+        'localhost'             | true
+        'foo.com'               | true
+        'foo.com:8000'          | true
+        and:
+        'foo.com:xywz'          | false
+        'foo.com:800o'          | false
+        'http://foo.com'        | false
+        'http:foo.com'          | false
+        'http:foo.com:80'       | false
+
+    }
 }

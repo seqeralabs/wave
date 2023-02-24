@@ -233,4 +233,53 @@ class ContainerTokenControllerTest extends Specification {
         result.source.image == 'docker.io/library/hello-world:latest'
         result.wave.image == resp1.body().targetImage
     }
+
+    def 'should validate request' () {
+        given:
+        def msg
+
+        when:
+        ContainerTokenController.validateContainerRequest(new SubmitContainerTokenRequest())
+        then:
+        noExceptionThrown()
+
+        when:
+        ContainerTokenController.validateContainerRequest(new SubmitContainerTokenRequest(towerEndpoint: 'http://foo.com'))
+        then:
+        noExceptionThrown()
+
+        when:
+        ContainerTokenController.validateContainerRequest(new SubmitContainerTokenRequest(towerEndpoint: 'https://foo.com'))
+        then:
+        noExceptionThrown()
+
+        when:
+        ContainerTokenController.validateContainerRequest(new SubmitContainerTokenRequest(towerEndpoint: 'ftp://foo.com'))
+        then:
+        msg = thrown(BadRequestException)
+        msg.message == 'Invalid Tower endpoint protocol — offending value: ftp://foo.com'
+
+        when:
+        ContainerTokenController.validateContainerRequest(new SubmitContainerTokenRequest(containerImage: 'foo:latest'))
+        then:
+        noExceptionThrown()
+
+        when:
+        ContainerTokenController.validateContainerRequest(new SubmitContainerTokenRequest(containerImage: 'docker.io/foo:latest'))
+        then:
+        noExceptionThrown()
+
+        when:
+        ContainerTokenController.validateContainerRequest(new SubmitContainerTokenRequest(containerImage: 'http://docker.io/foo:latest'))
+        then:
+        msg = thrown(BadRequestException)
+        msg.message == 'Invalid container repository name — offending value: http://docker.io/foo:latest'
+
+        when:
+        ContainerTokenController.validateContainerRequest(new SubmitContainerTokenRequest(containerImage: 'http:docker.io/foo:latest'))
+        then:
+        msg = thrown(BadRequestException)
+        msg.message == 'Invalid container image name — offending value: http:docker.io/foo:latest'
+
+    }
 }

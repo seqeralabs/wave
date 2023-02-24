@@ -1,5 +1,7 @@
 package io.seqera.wave.util
 
+import java.util.regex.Pattern
+
 import groovy.transform.CompileStatic
 
 /**
@@ -32,6 +34,13 @@ class StringUtils {
             result.append(' ').append(line).append('\n')
         }
         return result.toString()
+    }
+
+    static final public Pattern URL_PROTOCOL = ~/^([a-zA-Z0-9]*):\\/\\/(.+)/
+
+    static String getUrlProtocol(String str) {
+        final m = URL_PROTOCOL.matcher(str)
+        return m.matches() ? m.group(1) : null
     }
 
 }

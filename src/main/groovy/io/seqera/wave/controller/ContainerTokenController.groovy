@@ -34,6 +34,7 @@ import io.seqera.wave.service.token.TokenData
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
+import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
 /**
  * Implement a controller to receive container token requests
@@ -97,6 +98,8 @@ class ContainerTokenController {
 
     @Post('/container-token')
     CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
+        validateContainerRequest(req)
+
         // this is needed for backward compatibility with old clients
         if( !req.towerEndpoint ) {
             req.towerEndpoint = towerEndpointUrl
@@ -239,5 +242,34 @@ class ContainerTokenController {
             throw new NotFoundException("Missing container record for token: $token")
         // return the response 
         return HttpResponse.ok( DescribeWaveContainerResponse.create(token, data) )
+    }
+
+    static final List<String> VALID_PROTOCOLS = ['http','https']
+
+    static void validateContainerRequest(SubmitContainerTokenRequest req) {
+        if( req.towerEndpoint ) {
+            final prot = StringUtils.getUrlProtocol(req.towerEndpoint)
+            if( !prot ) {
+                throw new BadRequestException("Invalid Tower endpoint — offending value: $req.towerEndpoint")
+            }
+            if( prot.toString() !in VALID_PROTOCOLS ) {
+                throw new BadRequestException("Invalid Tower endpoint protocol — offending value: $req.towerEndpoint")
+            }
+        }
+
+        if( req.containerImage ) {
+            // check does not start with a protocol prefix
+            final prot = StringUtils.getUrlProtocol(req.containerImage)
+            if( prot ) {
+                throw new BadRequestException("Invalid container repository name — offending value: $req.containerImage")
+            }
+
+            try {
+                ContainerCoordinates.parse(req.containerImage)
+            }
+            catch (IllegalArgumentException e) {
+                throw new BadRequestException("Invalid container image name — offending value: $req.containerImage")
+            }
+        }
     }
 }
