@@ -22,6 +22,7 @@ import io.micronaut.test.annotation.MockBean
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
+import io.seqera.wave.core.RouteHandler
 import io.seqera.wave.service.pairing.PairingRecord
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.tower.User
@@ -152,5 +153,76 @@ class ContainerTokenControllerHttpTest extends Specification {
         def err = thrown(HttpClientResponseException)
         and:
         err.status == HttpStatus.BAD_REQUEST
+    }
+
+    def 'should create build request' () {
+        given:
+        HttpClient client = applicationContext.createBean(HttpClient)
+
+        when:
+        def cfg = new ContainerConfig(workingDir: '/foo')
+        def req = new SubmitContainerTokenRequest(towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64')
+        def resp = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", req), SubmitContainerTokenResponse)
+
+        then:
+        resp.status() == HttpStatus.OK
+        resp.body().containerToken
+    }
+
+    def 'should not retrieve an expired build request' () {
+        given:
+        HttpClient client = applicationContext.createBean(HttpClient)
+
+        when:
+        def cfg = new ContainerConfig(workingDir: '/foo')
+        def req = new SubmitContainerTokenRequest(towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64')
+        def resp = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", req), SubmitContainerTokenResponse)
+
+        then:
+        resp.status() == HttpStatus.OK
+        resp.body().containerToken
+    }
+
+    def 'should retrieve a valid build request' () {
+        given:
+        HttpClient client = applicationContext.createBean(HttpClient)
+
+        when:
+        def cfg = new ContainerConfig(workingDir: '/foo')
+        def req = new SubmitContainerTokenRequest(towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64')
+        def resp = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", req), SubmitContainerTokenResponse)
+
+        then:
+        resp.status() == HttpStatus.OK
+        resp.body().containerToken
+
+        when:
+        RouteHandler routeHelper = applicationContext.getBean(RouteHandler)
+        routeHelper.parse("/v2/wt/${resp.body().containerToken}/library/ubuntu/blobs/latest")
+
+        then:
+        noExceptionThrown()
+    }
+
+    def 'should validate same image' () {
+        given:
+        HttpClient client = applicationContext.createBean(HttpClient)
+
+        when:
+        def cfg = new ContainerConfig(workingDir: '/foo')
+        SubmitContainerTokenRequest request =
+                new SubmitContainerTokenRequest(towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64')
+        def resp = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", request), SubmitContainerTokenResponse)
+
+        then:
+        resp.status() == HttpStatus.OK
+        resp.body().containerToken
+
+        when:
+        RouteHandler routeHelper = applicationContext.getBean(RouteHandler)
+        routeHelper.parse("/v2/wt/${resp.body().containerToken}/library/hello/blobs/latest")
+
+        then:
+        thrown(IllegalArgumentException)
     }
 }
