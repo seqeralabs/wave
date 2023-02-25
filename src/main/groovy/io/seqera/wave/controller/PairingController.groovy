@@ -12,11 +12,16 @@ import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Error
 import io.micronaut.http.annotation.Post
+import io.micronaut.http.server.util.HttpHostResolver
 import io.micronaut.validation.Validated
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.exchange.PairingRequest
 import io.seqera.wave.exchange.PairingResponse
 import io.seqera.wave.service.pairing.PairingService
+import io.seqera.wave.service.validation.ValidationService
+import io.seqera.wave.tower.client.TowerClient
 import jakarta.inject.Inject
+import static io.seqera.wave.WaveDefault.TOWER
 /**
  * Allow a remote Tower instance to register itself
  *
@@ -31,10 +36,37 @@ class PairingController {
     @Inject
     private PairingService securityService
 
+    @Inject
+    private TowerClient tower
+
+    @Inject
+    private ValidationService validationService
+
+    @Inject
+    private HttpHostResolver hostResolver
+
     @Post('/pairing')
     HttpResponse<PairingResponse> pairService(@Valid @Body PairingRequest req) {
-        final key = securityService.getPairingKey(req.service, req.endpoint)
+        validateRequest(req)
+        final key = securityService.acquirePairingKey(req.service, req.endpoint)
         return HttpResponse.ok(key)
+    }
+
+    protected void validateRequest(PairingRequest req) {
+        if( req.service != TOWER )
+            throw new BadRequestException("Unknown pairing service: $req.service")
+        // validate endpoint
+        final err = validationService.checkEndpoint(req.endpoint)
+        if( err )
+            throw new BadRequestException(err)
+        // connect back to check connectivity
+        try {
+            final info = tower.serviceInfo(req.endpoint).get()
+            log.trace "Connected to Tower '${req.endpoint}'; version: ${info.serviceInfo.version}; commitId: ${info.serviceInfo.commitId}"
+        }
+        catch (Exception e) {
+            throw new BadRequestException("Pairing requested rejected - Unable to connect '$req.endpoint'")
+        }
     }
 
     @Error(exception = ConstraintViolationException)

@@ -26,7 +26,7 @@ class PairingServiceTest extends Specification{
 
         when: 'we get a public key'
         def key = PairingServiceImpl.makeKey("tower","tower.io:9090")
-        def response = service.getPairingKey("tower","tower.io:9090")
+        def response = service.acquirePairingKey("tower","tower.io:9090")
 
         then: 'we generate a key'
         response.pairingId
@@ -57,8 +57,8 @@ class PairingServiceTest extends Specification{
         final service = new PairingServiceImpl(store: store, lease:  Duration.ofSeconds(1000))
 
         when: 'we get the key two times for the same service and endpoint'
-        def firstKey = service.getPairingKey("tower", "tower.io:9090")
-        def secondKey = service.getPairingKey("tower", "tower.io:9090")
+        def firstKey = service.acquirePairingKey("tower", "tower.io:9090")
+        def secondKey = service.acquirePairingKey("tower", "tower.io:9090")
 
         then: 'we generate the key only once'
         firstKey.pairingId == secondKey.pairingId
@@ -79,7 +79,7 @@ class PairingServiceTest extends Specification{
         final service = new PairingServiceImpl(store: store, lease: Duration.ofSeconds(10))
 
         when: 'we try to generate the same pairing key'
-        final pairingKey = service.getPairingKey('tower','tower.io:9090')
+        final pairingKey = service.acquirePairingKey('tower','tower.io:9090')
 
         then: 'the record is considered as expired and is generated again'
         pairingKey.pairingId != pairingId
@@ -94,9 +94,9 @@ class PairingServiceTest extends Specification{
         final service = new PairingServiceImpl(store: store, lease: Duration.ofMillis(100))
 
         when: 'we get the key two times for the same service and endpoint waiting over the ttl interval'
-        def firstKey = service.getPairingKey("tower", "tower.io:9090")
+        def firstKey = service.acquirePairingKey("tower", "tower.io:9090")
         sleep 200
-        def secondKey = service.getPairingKey("tower", "tower.io:9090")
+        def secondKey = service.acquirePairingKey("tower", "tower.io:9090")
 
         then: 'we regenerate the key'
         firstKey.pairingId != secondKey.pairingId

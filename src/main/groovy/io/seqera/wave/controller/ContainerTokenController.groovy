@@ -31,11 +31,14 @@ import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.service.token.TokenData
+import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
-import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
+
+import static io.seqera.wave.WaveDefault.TOWER
+
 /**
  * Implement a controller to receive container token requests
  * 
@@ -90,6 +93,12 @@ class ContainerTokenController {
 
     @Inject
     PersistenceService persistenceService
+
+    @Inject
+    ValidationService validationService
+
+    @Inject
+    PairingService pairingService
 
     @PostConstruct
     private void init() {
@@ -244,32 +253,21 @@ class ContainerTokenController {
         return HttpResponse.ok( DescribeWaveContainerResponse.create(token, data) )
     }
 
-    static final List<String> VALID_PROTOCOLS = ['http','https']
-
-    static void validateContainerRequest(SubmitContainerTokenRequest req) {
-        if( req.towerEndpoint ) {
-            final prot = StringUtils.getUrlProtocol(req.towerEndpoint)
-            if( !prot ) {
-                throw new BadRequestException("Invalid Tower endpoint — offending value: $req.towerEndpoint")
-            }
-            if( prot.toString() !in VALID_PROTOCOLS ) {
-                throw new BadRequestException("Invalid Tower endpoint protocol — offending value: $req.towerEndpoint")
-            }
+    void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException{
+        if( req.towerEndpoint && req.towerAccessToken ) {
+            // check the endpoint is valid
+            final msg=validationService.checkEndpoint(req.towerEndpoint)
+            if( msg )
+                throw new BadRequestException(msg.replaceAll(/(?i)endpoint/,'Tower endpoint'))
+            // check the endpoint has been registered via the pairing process
+            if( !pairingService.getPairingRecord(TOWER, req.towerEndpoint) )
+                throw new BadRequestException("Missing pairing record for Tower endpoint '$req.towerEndpoint'")
         }
 
         if( req.containerImage ) {
-            // check does not start with a protocol prefix
-            final prot = StringUtils.getUrlProtocol(req.containerImage)
-            if( prot ) {
-                throw new BadRequestException("Invalid container repository name — offending value: $req.containerImage")
-            }
-
-            try {
-                ContainerCoordinates.parse(req.containerImage)
-            }
-            catch (IllegalArgumentException e) {
-                throw new BadRequestException("Invalid container image name — offending value: $req.containerImage")
-            }
+            final msg = validationService.checkContainerName(req.containerImage)
+            if( msg )
+                throw new BadRequestException(msg)
         }
     }
 }

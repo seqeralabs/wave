@@ -5,10 +5,10 @@ import io.seqera.wave.exchange.PairingResponse
 /**
  * Provides public key generation for tower credentials integration.
  *
- * Once {@link PairingService#getPairingKey(java.lang.String, java.lang.String)} is
+ * Once {@link PairingService#acquirePairingKey(java.lang.String, java.lang.String)} is
  * called a new {@link PairingRecord} for the requested service is generated and cached until it expires.
  *
- * Further invocation of {@link PairingService#getPairingKey(java.lang.String, java.lang.String)}
+ * Further invocation of {@link PairingService#acquirePairingKey(java.lang.String, java.lang.String)}
  * will not generate a new {@code KeyRecord} and return instead the public side of the already
  * generated one.
  *
@@ -32,7 +32,7 @@ interface PairingService {
      * @param endpoint The endpoint of the service
      * @return {@link PairingResponse} with the generated encoded public key
      */
-    PairingResponse getPairingKey(String service, String endpoint)
+    PairingResponse acquirePairingKey(String service, String endpoint)
 
     /**
      * Get the {@link PairingRecord} associated with {@code service} and {@code endpoint}

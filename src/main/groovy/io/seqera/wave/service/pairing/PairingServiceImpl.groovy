@@ -32,7 +32,7 @@ class PairingServiceImpl implements PairingService {
 
 
     @Override
-    PairingResponse getPairingKey(String service, String endpoint) {
+    PairingResponse acquirePairingKey(String service, String endpoint) {
         final key = makeKey(service,endpoint)
 
         def entry = store.get(key)

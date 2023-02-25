@@ -18,6 +18,9 @@ import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.exchange.DescribeWaveContainerResponse
 import io.seqera.wave.service.builder.ContainerBuildService
+import io.seqera.wave.service.pairing.PairingRecord
+import io.seqera.wave.service.pairing.PairingService
+import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
 /**
@@ -236,47 +239,71 @@ class ContainerTokenControllerTest extends Specification {
 
     def 'should validate request' () {
         given:
+        def validation = new ValidationServiceImpl()
+        def pairing = Mock(PairingService)
+        def controller = new ContainerTokenController(validationService: validation, pairingService: pairing)
         def msg
 
         when:
-        ContainerTokenController.validateContainerRequest(new SubmitContainerTokenRequest())
+        controller.validateContainerRequest(new SubmitContainerTokenRequest())
         then:
         noExceptionThrown()
 
         when:
-        ContainerTokenController.validateContainerRequest(new SubmitContainerTokenRequest(towerEndpoint: 'http://foo.com'))
+        controller.validateContainerRequest(new SubmitContainerTokenRequest(towerEndpoint: 'http://foo.com', towerAccessToken: '123'))
         then:
+        1 * pairing.getPairingRecord('tower','http://foo.com') >> Mock(PairingRecord)
+        and:
         noExceptionThrown()
 
         when:
-        ContainerTokenController.validateContainerRequest(new SubmitContainerTokenRequest(towerEndpoint: 'https://foo.com'))
+        controller.validateContainerRequest(new SubmitContainerTokenRequest(towerEndpoint: 'https://foo.com', towerAccessToken: '123'))
         then:
+        1 * pairing.getPairingRecord('tower','https://foo.com') >> Mock(PairingRecord)
+        and:
         noExceptionThrown()
 
         when:
-        ContainerTokenController.validateContainerRequest(new SubmitContainerTokenRequest(towerEndpoint: 'ftp://foo.com'))
+        controller.validateContainerRequest(new SubmitContainerTokenRequest(towerEndpoint: 'https://tower.something.com/api', towerAccessToken: '123'))
         then:
+        1 * pairing.getPairingRecord('tower','https://tower.something.com/api') >> Mock(PairingRecord)
+        and:
+        noExceptionThrown()
+
+        when:
+        controller.validateContainerRequest(new SubmitContainerTokenRequest(towerEndpoint: 'https://tower.something.com/api', towerAccessToken: '123'))
+        then:
+        1 * pairing.getPairingRecord('tower','https://tower.something.com/api') >> null
+        and:
+        msg = thrown(BadRequestException)
+        msg.message == "Missing pairing record for Tower endpoint 'https://tower.something.com/api'"
+
+        when:
+        controller.validateContainerRequest(new SubmitContainerTokenRequest(towerEndpoint: 'ftp://foo.com', towerAccessToken: '123'))
+        then:
+        0 * pairing.getPairingRecord('tower','https://tower.something.com/api') >> null
+        and:
         msg = thrown(BadRequestException)
         msg.message == 'Invalid Tower endpoint protocol — offending value: ftp://foo.com'
 
         when:
-        ContainerTokenController.validateContainerRequest(new SubmitContainerTokenRequest(containerImage: 'foo:latest'))
+        controller.validateContainerRequest(new SubmitContainerTokenRequest(containerImage: 'foo:latest', towerAccessToken: '123'))
         then:
         noExceptionThrown()
 
         when:
-        ContainerTokenController.validateContainerRequest(new SubmitContainerTokenRequest(containerImage: 'docker.io/foo:latest'))
+        controller.validateContainerRequest(new SubmitContainerTokenRequest(containerImage: 'docker.io/foo:latest'))
         then:
         noExceptionThrown()
 
         when:
-        ContainerTokenController.validateContainerRequest(new SubmitContainerTokenRequest(containerImage: 'http://docker.io/foo:latest'))
+        controller.validateContainerRequest(new SubmitContainerTokenRequest(containerImage: 'http://docker.io/foo:latest'))
         then:
         msg = thrown(BadRequestException)
         msg.message == 'Invalid container repository name — offending value: http://docker.io/foo:latest'
 
         when:
-        ContainerTokenController.validateContainerRequest(new SubmitContainerTokenRequest(containerImage: 'http:docker.io/foo:latest'))
+        controller.validateContainerRequest(new SubmitContainerTokenRequest(containerImage: 'http:docker.io/foo:latest'))
         then:
         msg = thrown(BadRequestException)
         msg.message == 'Invalid container image name — offending value: http:docker.io/foo:latest'

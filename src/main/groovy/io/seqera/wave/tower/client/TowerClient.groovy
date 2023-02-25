@@ -42,19 +42,24 @@ class TowerClient {
                                 .build()
     }
 
+    CompletableFuture<ServiceInfoResponse> serviceInfo(String towerEndpoint) {
+        final uri = serviceInfoEndpoint(towerEndpoint)
+        return getAsync(uri, null, null, ServiceInfoResponse)
+    }
+
     CompletableFuture<UserInfoResponse> userInfo(String towerEndpoint, String authorization) {
         final uri = userInfoEndpoint(towerEndpoint)
-        return authorizedGetAsync(uri, towerEndpoint, authorization, UserInfoResponse)
+        return getAsync(uri, towerEndpoint, authorization, UserInfoResponse)
     }
 
     CompletableFuture<ListCredentialsResponse> listCredentials(String towerEndpoint, String authorization, Long workspaceId) {
         final uri = listCredentialsEndpoint(towerEndpoint, workspaceId)
-        return authorizedGetAsync(uri, towerEndpoint, authorization, ListCredentialsResponse)
+        return getAsync(uri, towerEndpoint, authorization, ListCredentialsResponse)
     }
 
     CompletableFuture<GetCredentialsKeysResponse> fetchEncryptedCredentials(String towerEndpoint, String authorization, String credentialsId, String pairingId, Long workspaceId) {
         final uri = fetchCredentialsEndpoint(towerEndpoint, credentialsId, pairingId, workspaceId)
-        return authorizedGetAsync(uri, towerEndpoint, authorization, GetCredentialsKeysResponse)
+        return getAsync(uri, towerEndpoint, authorization, GetCredentialsKeysResponse)
     }
 
     protected static URI fetchCredentialsEndpoint(String towerEndpoint, String credentialsId, String pairingId, Long workspaceId) {
@@ -89,6 +94,10 @@ class TowerClient {
         return URI.create("${checkEndpoint(towerEndpoint)}/user-info")
     }
 
+    protected static URI serviceInfoEndpoint(String towerEndpoint) {
+        return URI.create("${checkEndpoint(towerEndpoint)}/service-info")
+    }
+
     private static String checkEndpoint(String endpoint) {
         if( !endpoint )
             throw new IllegalArgumentException("Missing endpoint argument")
@@ -112,8 +121,11 @@ class TowerClient {
      *      the type of the model to convert into
      * @return a future of T
      */
-    private <T> CompletableFuture<T> authorizedGetAsync(URI uri, String towerEndpoint, String authorization, Class<T> type) {
-        return authorizedGetAsyncWithRefresh(uri, towerEndpoint, authorization, true)
+    private <T> CompletableFuture<T> getAsync(URI uri, String towerEndpoint, String authorization, Class<T> type) {
+        final result = authorization
+                ? getAsync1(uri, towerEndpoint, authorization, true)
+                : getAsync0(uri)
+        return result
                     .thenCompose { resp ->
                         log.trace "Tower response for request GET '${uri}' => ${resp.statusCode()}"
                         switch (resp.statusCode()) {
@@ -153,7 +165,7 @@ class TowerClient {
      * @return
      *      A future of the unparsed response
      */
-    private CompletableFuture<HttpResponse<String>> authorizedGetAsyncWithRefresh(final URI uri, final String endpoint, final String accessToken, final boolean canRefresh) {
+    private CompletableFuture<HttpResponse<String>> getAsync1(final URI uri, final String endpoint, final String accessToken, final boolean canRefresh) {
         // check the most updated JWT tokens
         final tokens = jwtAuthStore.getJwtAuth(endpoint, accessToken)
         log.trace "Tower GET '$uri' — can refresh=$canRefresh; tokens=$tokens"
@@ -169,11 +181,22 @@ class TowerClient {
                         log.trace "Tower GET '$uri' response\n- status : ${resp.statusCode()}\n- content: ${resp.body()}"
                         if (resp.statusCode() == 401 && tokens.refresh && canRefresh ) {
                             return refreshJwtToken(endpoint, accessToken, tokens.refresh)
-                                        .thenCompose( (JwtAuth it)->authorizedGetAsyncWithRefresh(uri, endpoint, accessToken,false) )
+                                        .thenCompose( (JwtAuth it)->getAsync1(uri, endpoint, accessToken,false) )
                         } else {
                             return CompletableFuture.completedFuture(resp)
                         }
                     }
+    }
+
+    private CompletableFuture<HttpResponse<String>> getAsync0(final URI uri) {
+        log.trace "Tower GET '$uri'"
+        // submit the request
+        final request = HttpRequest.newBuilder()
+                .uri(uri)
+                .GET()
+                .build()
+
+        return httpRetryable.sendAsync(client, request, HttpResponse.BodyHandlers.ofString())
     }
 
     private Throwable handleIoError(Throwable err, URI uri) {
