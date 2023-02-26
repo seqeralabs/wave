@@ -190,7 +190,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         final ret1 = BuildResult.create(request)
         if( buildStore.storeIfAbsent(request.targetImage, ret1) ) {
             // go ahead
-            log.info "== Submit build request request: $request"
+            log.info "== Submit build request: $request"
             launchAsync(request)
             return
         }
