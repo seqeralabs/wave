@@ -165,6 +165,7 @@ class ContainerTokenController {
             throw new BadRequestException("Missing build cache repository attribute")
         final dockerContent = new String(req.containerFile.decodeBase64())
         final condaContent = req.condaFile ? new String(req.condaFile.decodeBase64()) : null as String
+        final spackContent = req.spackFile ? new String(req.spackFile.decodeBase64()) : null as String
         final platform = ContainerPlatform.of(req.containerPlatform)
         final build = req.buildRepository ?: defaultBuildRepo
         final cache = req.cacheRepository ?: defaultCacheRepo
@@ -176,6 +177,7 @@ class ContainerTokenController {
                 Path.of(workspace),
                 build,
                 condaContent,
+                spackContent,
                 user,
                 platform,
                 configJson,

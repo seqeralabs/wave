@@ -37,6 +37,11 @@ class BuildRequest {
     final String condaFile
 
     /**
+     * The spock file recipe associated with this request
+     */
+    final String spackFile
+
+    /**
      * The build context work directory
      */
     final Path workDir
@@ -86,10 +91,11 @@ class BuildRequest {
      */
     final String offsetId
 
-    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, User user, ContainerPlatform platform, String configJson, String cacheRepo, String ip, String offsetId = null) {
-        this.id = computeDigest(containerFile, condaFile, platform, repo)
+    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, User user, ContainerPlatform platform, String configJson, String cacheRepo, String ip, String offsetId = null) {
+        this.id = computeDigest(containerFile, condaFile, spackFile, platform, repo)
         this.dockerFile = containerFile
         this.condaFile = condaFile
+        this.spackFile = spackFile
         this.targetImage = "${repo}:${id}"
         this.user = user
         this.platform = platform
@@ -102,18 +108,19 @@ class BuildRequest {
         this.ip = ip
     }
 
-    static private String computeDigest(String containerFile, String condaFile, ContainerPlatform platform, String repository) {
+    static private String computeDigest(String containerFile, String condaFile, String spackFile, ContainerPlatform platform, String repository) {
         final attrs = new LinkedHashMap<String,Object>(10)
         attrs.containerFile = containerFile
         attrs.condaFile = condaFile
         attrs.platform = platform
         attrs.repository = repository
+        if( spackFile ) attrs.spackFile = spackFile
         return DigestFunctions.md5(attrs)
     }
 
     @Override
     String toString() {
-        return "BuildRequest[id=$id; targetImage=$targetImage; user=$user; dockerFile=${trunc(dockerFile)}; condaFile=${trunc(condaFile)}]"
+        return "BuildRequest[id=$id; targetImage=$targetImage; user=$user; dockerFile=${trunc(dockerFile)}; condaFile=${trunc(condaFile)}; spackFile=${trunc(spackFile)}]"
     }
 
 }

@@ -180,6 +180,18 @@ class ContainerTokenControllerTest extends Specification {
         build.targetImage == 'wave/build:0c7eebc2fdbfd514ff4d80c28d08dff8'
         build.workDir == Path.of('/some/wsp').resolve(build.id)
         build.platform == ContainerPlatform.of('arm64')
+
+        when:
+        submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), spackFile: encode('some::spack-recipe'), containerPlatform: 'arm64')
+        build = controller.makeBuildRequest(submit, null, "")
+        then:
+        build.id == '8a24dd0ea739ad970f2653ebc18618db'
+        build.dockerFile == 'FROM foo'
+        build.condaFile == null
+        build.spackFile == 'some::spack-recipe'
+        build.targetImage == 'wave/build:8a24dd0ea739ad970f2653ebc18618db'
+        build.workDir == Path.of('/some/wsp').resolve(build.id)
+        build.platform == ContainerPlatform.of('arm64')
     }
 
     def 'should add library prefix' () {
