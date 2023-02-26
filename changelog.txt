@@ -1,4 +1,9 @@
 # Wave changelog
+v0.26.0 - 26 Feb 2023
+- Add Container request validation [20b63669]
+- Add support for Spack file [81b5e282]
+- Improve tests [e82fee2f] [850e8533]
+
 v0.25.10 - 25 Feb 2023
 - Improve request validation [696bdd48]
 - Remove deprecated code [c59434cf]
