@@ -12,7 +12,6 @@ import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Error
 import io.micronaut.http.annotation.Post
-import io.micronaut.http.server.util.HttpHostResolver
 import io.micronaut.validation.Validated
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.exchange.PairingRequest
@@ -41,9 +40,6 @@ class PairingController {
 
     @Inject
     private ValidationService validationService
-
-    @Inject
-    private HttpHostResolver hostResolver
 
     @Post('/pairing')
     HttpResponse<PairingResponse> pairService(@Valid @Body PairingRequest req) {

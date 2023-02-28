@@ -195,8 +195,11 @@ class TowerClient {
                 .uri(uri)
                 .GET()
                 .build()
-
-        return httpRetryable.sendAsync(client, request, HttpResponse.BodyHandlers.ofString())
+        // when accessing unauthorised resources, use the http client directly
+        // retryable logic is not needed, because those requests are not expected to have a high volume
+        // (ultimately this only used by the wave pairing controller, if it fails,
+        // tower itself will retry the request)
+        return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
     }
 
     private Throwable handleIoError(Throwable err, URI uri) {
