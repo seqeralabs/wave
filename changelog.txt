@@ -1,4 +1,7 @@
 # Wave changelog
+v0.26.1 - 1 Mar 2023
+- Relax retry on pairing connectivity check [ee4b133b]
+
 v0.26.0 - 26 Feb 2023
 - Add Container request validation [20b63669]
 - Add support for Spack file [81b5e282]
