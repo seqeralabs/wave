@@ -16,9 +16,9 @@ import groovy.transform.ToString
 @ToString(includePackage = false, includeNames = true)
 class RegistryAuth {
 
-    private static final Pattern AUTH = ~/(?i)(?<type>.+) realm="(?<realm>.+)",service="(?<service>.+)"/
+    private static final Pattern AUTH = ~/(?i)(?<type>.+) realm="(?<realm>[^"]+)",service="(?<service>[^"]+)"/
     // some registries doesnt send the service
-    private static final Pattern AUTH2 = ~/(?i)(?<type>.+) realm="(?<realm>.+)"/
+    private static final Pattern AUTH2 = ~/(?i)(?<type>.+) realm="(?<realm>[^"]+)"/
 
     enum Type { Basic, Bearer }
 
@@ -43,14 +43,14 @@ class RegistryAuth {
         if(!auth)
             return null
         final m1 = AUTH.matcher(auth)
-        if( m1.matches() ) {
+        if( m1.find() ) {
             final type = Type.valueOf(m1.group('type'))
             if( m1.group("realm").startsWith("http://") || m1.group("realm").startsWith("https://") ) {
                 return new RegistryAuth(new URI(m1.group('realm')), m1.group('service'), type)
             }
         }
         final m2 = AUTH2.matcher(auth)
-        if( m2.matches() ) {
+        if( m2.find() ) {
             final type = Type.valueOf(m2.group('type'))
             if( m2.group("realm").startsWith("http://") || m2.group("realm").startsWith("https://") ) {
                 return new RegistryAuth(new URI(m2.group('realm')), null, type)
