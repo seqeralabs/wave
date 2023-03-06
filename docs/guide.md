@@ -2,7 +2,7 @@
 
 ## Getting started
 
-!!! note 
+!!! note
 
     This feature requires Nextflow ``22.10.0`` or later.
 
@@ -10,23 +10,29 @@
 
 If you have already installed Nextflow, update to the latest version using this command::
 
-    nextflow -self-update
+```bash
+nextflow -self-update
+```
 
 If you don't have Nextflow already installed, install it with the command below::
 
-    curl get.nextflow.io | bash
+```bash
+curl get.nextflow.io | bash
+```
 
 ### Wave configuration
 
 Wave can be used in any Nextflow pipeline by adding the following snippet to your ``nextflow.config`` file::
 
-    wave {
+```groovy
+wave {
     enabled = true
-    }
-    
-    tower {
+}
+
+tower {
     accessToken = '<your access token>'
-    }
+}
+```
 
 !!! tip
 
@@ -44,10 +50,12 @@ Once the credentials have been created, you only need to specify your [Tower acc
 in your pipeline configuration file. If the credentials were created in a Tower organization workspace, specify the workspace ID
 as well in the config file as shown below:
 
-    tower {
-      accessToken = '<your access token>'
-      workspaceId = '<your workspace id>'
-    }
+```groovy
+tower {
+    accessToken = '<your access token>'
+    workspaceId = '<your workspace id>'
+}
+```
 
 ####  Build module containers
 
@@ -65,7 +73,9 @@ upload to the registry, and uses the container to carry out the tasks defined in
 If a process uses a `container` directive and you still want to build the container using the Dockerfile provided in
 the module directory, add the following setting to the pipeline config file:
 
-    wave.strategy = ['dockerfile','container']
+```groovy
+wave.strategy = ['dockerfile','container']
+```
 
 The above line instructs Wave to give the module Dockerfile priority over process ``container`` directives.
 
@@ -86,7 +96,9 @@ the pipeline processes provided the same process does not also specify a ``conta
 
 In the latter case, add the following setting to your pipeline configuration:
 
-    wave.strategy = ['conda']
+```groovy
+wave.strategy = ['conda']
+```
 
 The above setting instructs Wave to only use the ``conda`` directive to provision the pipeline containers, ignoring the use of
 the `container` directive and any Dockerfile(s).
@@ -100,10 +112,12 @@ after 1 week from the date of their push.
 If you want to store Wave containers in your own container repository use the following settings in
 the Nextflow configuration file:
 
-    wave.build.repository = 'example.com/your/build-repo'
-    wave.build.cacheRepository = 'example.com/your/cache-repo'
+```groovy
+wave.build.repository = 'example.com/your/build-repo'
+wave.build.cacheRepository = 'example.com/your/cache-repo'
+```
 
-The first repository is used to store the built container images. The second one is used to store the individual 
+The first repository is used to store the built container images. The second one is used to store the individual
 image layers for caching purposes.
 
 The repository access keys need to be specified using the Tower credentials manager as specified in the
@@ -123,9 +137,9 @@ The following configuration options are available:
  | `wave.conda.mambaImage` | The Mamba container image is used to build Conda based container. This is expected to be [micromamba-docker](https://github.com/mamba-org/micromamba-docker) image.                                                   |
 | `wave.conda.commands `  | One or more commands to be added to the Dockerfile used by build a Conda based image.                                                                                   |
 | `wave.strategy`   | The strategy to be used when resolving ambiguous Wave container requirement (default: `'container,dockerfile,conda'`)                                                   |
-                                   
-                           
-                    
+
+
+
 ## More examples
 
 Check out the [Wave showcase repository](https://github.com/seqeralabs/wave-showcase) for more examples how to use Wave containers.
