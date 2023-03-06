@@ -6,6 +6,10 @@ import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import groovy.transform.CompileStatic
+import io.seqera.wave.exchange.PairingResponse
+import io.seqera.wave.service.pairing.socket.msg.PairingPayload
+import io.seqera.wave.service.pairing.socket.msg.UserRequest
+import io.seqera.wave.service.pairing.socket.msg.UserResponse
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.LazyDigestStore
 import io.seqera.wave.storage.ZippedDigestStore
@@ -24,14 +28,23 @@ import io.seqera.wave.util.TypeHelper
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-abstract class MoshiEncodeStrategy <V>implements EncodingStrategy<V> {
+abstract class MoshiEncodeStrategy<V> implements EncodingStrategy<V> {
 
     private Type type;
     private Moshi moshi
     private JsonAdapter<V> jsonAdapter
 
-    {
+    MoshiEncodeStrategy() {
         this.type = TypeHelper.getGenericType(this, 0)
+        init()
+    }
+
+    MoshiEncodeStrategy(Type type) {
+        this.type = type
+        init()
+    }
+
+    private void init() {
         this.moshi = new Moshi.Builder()
                 .add(new ByteArrayAdapter())
                 .add(new DateTimeAdapter())
@@ -44,10 +57,14 @@ abstract class MoshiEncodeStrategy <V>implements EncodingStrategy<V> {
                         .withSubtype(GzipContentReader.class, GzipContentReader.simpleName)
                         .withSubtype(HttpContentReader.class, HttpContentReader.simpleName)
                         .withSubtype(PathContentReader.class, PathContentReader.simpleName))
+                .add(PolymorphicJsonAdapterFactory.of(PairingPayload.class, "@type")
+                        .withSubtype(PairingResponse.class, PairingResponse.simpleName)
+                        .withSubtype(UserRequest.class, UserRequest.simpleName)
+                        .withSubtype(UserResponse.class, UserResponse.simpleName))
                 .build()
         this.jsonAdapter = moshi.adapter(type)
-    }
 
+    }
     @Override
     String encode(V value) {
         if( value == null ) return null

@@ -23,7 +23,7 @@ class RedisFactory {
     @Singleton
     JedisPool createRedisPool(@Value('${redis.uri}') String uri) {
         log.info "Using redis $uri as storage for rate limit"
-        return new JedisPool(uri)
+        return new JedisPool(URI.create(uri))
     }
 
 }

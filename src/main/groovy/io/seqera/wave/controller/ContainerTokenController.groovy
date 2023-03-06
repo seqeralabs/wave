@@ -36,7 +36,7 @@ import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
 import jakarta.inject.Inject
-
+import jakarta.inject.Named
 import static io.seqera.wave.WaveDefault.TOWER
 
 /**
@@ -51,7 +51,7 @@ class ContainerTokenController {
 
     @Inject HttpClientAddressResolver addressResolver
     @Inject ContainerTokenService tokenService
-    @Inject UserService userService
+    @Inject @Named('socket') UserService userService
     @Inject PairingService securityService
     @Inject JwtAuthStore jwtAuthStore
 
@@ -107,7 +107,7 @@ class ContainerTokenController {
 
     @Post('/container-token')
     CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
-        validateContainerRequest(req)
+        //validateContainerRequest(req)
 
         // this is needed for backward compatibility with old clients
         if( !req.towerEndpoint ) {
