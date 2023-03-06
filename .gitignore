@@ -2,6 +2,7 @@ Thumbs.db
 .DS_Store
 .gradle
 .cache
+.nextflow*
 build/
 packtar/
 target/
