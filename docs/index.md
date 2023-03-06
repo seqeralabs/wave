@@ -6,3 +6,4 @@ execution in a fully automated manner.
 
 * [User guide](guide.md)
 * [API documentation](api.md)
+* [Frequently Asked questions](faq.md)
