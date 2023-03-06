@@ -8,20 +8,5 @@ import spock.lang.Specification
  */
 class ManifestCacheStoreTest extends Specification {
 
-    def 'should strip registry' () {
-        expect:
-        ManifestCacheStore.stripRegistry(PATH) == EXPECTED
-
-        where:
-        PATH                | EXPECTED
-        null                | null
-        'foo'               | null
-        '/'                 | null
-        '/foo/bar'          | null
-        'docker.io'         | null
-        and:
-        'docker.io/'        | '/'
-        'docker.io/foo/bar' | '/foo/bar'
-    }
 
 }

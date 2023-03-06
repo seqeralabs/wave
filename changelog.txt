@@ -1,4 +1,28 @@
 # Wave changelog
+v0.26.1 - 1 Mar 2023
+- Relax retry on pairing connectivity check [ee4b133b]
+- Block permanent failing pairing endpoints [afbaa449]
+
+v0.26.0 - 26 Feb 2023
+- Add Container request validation [20b63669]
+- Add support for Spack file [81b5e282]
+- Improve tests [e82fee2f] [850e8533]
+
+v0.25.10 - 25 Feb 2023
+- Improve request validation [696bdd48]
+- Remove deprecated code [c59434cf]
+
+v0.25.9 - 22 Feb 2023
+- Fix pairing record lease (#222) [34332a4a]
+- Improve error reporting [ac5e937a]
+
+v0.25.8 - 22 Feb 2023
+- Fix Azure registry auth [5fc3115e]
+
+v0.25.7 - 21 Feb 2023
+- Improve docker auth error reporting [eceffe85]
+- Fix log typo [ci skip] [030dbc67]
+
 v0.25.6 - 15 Feb 2023
 - Add landing redirection [ede9a242]
 - Fix Build rate limit message [c9aa73e6]

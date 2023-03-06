@@ -59,6 +59,10 @@ class RegistryAuthTest extends Specification {
                 == new RegistryAuth(new URI('http://foo'), null, RegistryAuth.Type.Basic)
 
         and:
+        RegistryAuth.parse('Bearer realm="https://gitea.dev-tower.net/v2/token",service="container_registry",scope="*"')
+            == new RegistryAuth(new URI('https://gitea.dev-tower.net/v2/token'), 'container_registry', RegistryAuth.Type.Bearer)
+
+        and:
         RegistryAuth.parse('foo') == null
         RegistryAuth.parse(null) == null
     }

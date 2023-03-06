@@ -1,9 +1,7 @@
 package io.seqera.wave.util
 
-import io.seqera.wave.util.StringUtils
 import spock.lang.Specification
 import spock.lang.Unroll
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -26,5 +24,15 @@ class StringUtilsTest extends Specification {
         ''              | '(empty)'
     }
 
-
+    @Unroll
+    def 'should get url protocol' () {
+        expect:
+        StringUtils.getUrlProtocol(STR)  == EXPECTED
+        where:
+        EXPECTED    | STR
+        'ftp'       | 'ftp://abc.com'
+        's3'        | 's3://bucket/abc'
+        null        | 'gitzabc:xyz'
+        null        | '/a/bc/'
+    }
 }

@@ -52,6 +52,11 @@ class SubmitContainerTokenRequest {
     String condaFile
 
     /**
+     * Spack recipe file used to build the container
+     */
+    String spackFile
+
+    /**
      * The container platform to be used
      */
     String containerPlatform

@@ -19,30 +19,26 @@ import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.server.EmbeddedServer
 import io.micronaut.test.annotation.MockBean
-import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
+import io.seqera.wave.core.RouteHandler
 import io.seqera.wave.service.pairing.PairingRecord
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.client.UserInfoResponse
-
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
- *
  */
-@MicronautTest
-class HttpContainerTokenControllerTest extends Specification {
-
+class ContainerTokenControllerHttpTest extends Specification {
 
     @MockBean
     @Primary
-    PairingService getSecurityService(){
+    PairingService getPairingService(){
         return Stub(PairingService.class)
     }
 
-    @Requires(property = 'spec.name', value = 'HttpContainerTokenController')
+    @Requires(property = 'spec.name', value = 'TowerController')
     @Controller("/")
     static class TowerController {
         @Get('/user-info')
@@ -55,47 +51,43 @@ class HttpContainerTokenControllerTest extends Specification {
 
     EmbeddedServer embeddedServer
 
+    ApplicationContext applicationContext
+
     int port
 
     def setup() {
         port = SocketUtils.findAvailableTcpPort()
-        embeddedServer = ApplicationContext.run(EmbeddedServer, [
-                'spec.name': 'HttpContainerTokenController',
+        def props = [
+                'spec.name': 'TowerController',
                 'micronaut.server.port': port,
                 'tower.api.endpoint':"http://localhost:${port}",
-                'micronaut.http.services.default.url' : "http://localhost:$port".toString(),
-        ], 'test', 'h2','tower')
-        embeddedServer.applicationContext.registerSingleton(getSecurityService())
-    }
-
-    ApplicationContext getApplicationContext() {
-        embeddedServer.applicationContext
+                'micronaut.http.services.default.url' : "http://localhost:$port".toString() ]
+        embeddedServer = ApplicationContext.run(EmbeddedServer, props, 'test')
+        embeddedServer.applicationContext.registerSingleton(getPairingService())
+        applicationContext = embeddedServer.applicationContext
     }
 
     def 'should create build request for anonymous user' () {
         given:
         HttpClient client = applicationContext.createBean(HttpClient)
 
-
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
         SubmitContainerTokenRequest request =
                 new SubmitContainerTokenRequest(
                         towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64',)
-        def ret = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", request), SubmitContainerTokenResponse)
-
-        def body = ret.body()
-
+        def resp = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", request), SubmitContainerTokenResponse)
         then:
-        noExceptionThrown()
+        resp.status() == HttpStatus.OK
     }
 
     def 'should create build request for user 1' () {
         given:
         HttpClient client = applicationContext.createBean(HttpClient)
-
+        def pairingService = applicationContext.getBean(PairingService)
+        def pairingRecord = [service: "tower", endpoint: "http://localhost:${port}", expiration: Instant.now() + Duration.ofSeconds(5)]
         and:
-        applicationContext.getBean(PairingService).getPairingRecord("tower", _) >> new PairingRecord(service: "tower", endpoint: "http://localhost:${port}", expiration: Instant.now() + Duration.ofSeconds(5))
+        pairingService.getPairingRecord("tower", _) >> new PairingRecord(pairingRecord)
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
@@ -105,20 +97,18 @@ class HttpContainerTokenControllerTest extends Specification {
                         towerRefreshToken: "2",
                         towerEndpoint: "http://localhost:${port}",
                         towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64',)
-        def ret = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", request), SubmitContainerTokenResponse)
-
-        def body = ret.body()
-
+        def resp = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", request), SubmitContainerTokenResponse)
         then:
-        noExceptionThrown()
+        resp.status() == HttpStatus.OK
     }
 
     def 'should fails build request for user foo' () {
         given:
         HttpClient client = applicationContext.createBean(HttpClient)
-
+        def pairingService = applicationContext.getBean(PairingService)
+        def pairingRecord = [service: "tower", endpoint: "http://localhost:${port}"]
         and:
-        applicationContext.getBean(PairingService).getPairingRecord("tower", _) >> new PairingRecord(service: "tower", endpoint: "http://localhost:${port}")
+        pairingService.getPairingRecord("tower", _) >> new PairingRecord(pairingRecord)
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
@@ -143,8 +133,10 @@ class HttpContainerTokenControllerTest extends Specification {
     def 'should fail build request if the instance has not registered for key exchange' () {
         given:
         HttpClient client = applicationContext.createBean(HttpClient)
+        def pairingService = applicationContext.getBean(PairingService)
         and:
-        applicationContext.getBean(PairingService).getPairingRecord("tower",_) >> null
+        pairingService.getPairingRecord("tower",_) >> null
+
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
         def request = new SubmitContainerTokenRequest(
@@ -161,5 +153,76 @@ class HttpContainerTokenControllerTest extends Specification {
         def err = thrown(HttpClientResponseException)
         and:
         err.status == HttpStatus.BAD_REQUEST
+    }
+
+    def 'should create build request' () {
+        given:
+        HttpClient client = applicationContext.createBean(HttpClient)
+
+        when:
+        def cfg = new ContainerConfig(workingDir: '/foo')
+        def req = new SubmitContainerTokenRequest(towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64')
+        def resp = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", req), SubmitContainerTokenResponse)
+
+        then:
+        resp.status() == HttpStatus.OK
+        resp.body().containerToken
+    }
+
+    def 'should not retrieve an expired build request' () {
+        given:
+        HttpClient client = applicationContext.createBean(HttpClient)
+
+        when:
+        def cfg = new ContainerConfig(workingDir: '/foo')
+        def req = new SubmitContainerTokenRequest(towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64')
+        def resp = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", req), SubmitContainerTokenResponse)
+
+        then:
+        resp.status() == HttpStatus.OK
+        resp.body().containerToken
+    }
+
+    def 'should retrieve a valid build request' () {
+        given:
+        HttpClient client = applicationContext.createBean(HttpClient)
+
+        when:
+        def cfg = new ContainerConfig(workingDir: '/foo')
+        def req = new SubmitContainerTokenRequest(towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64')
+        def resp = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", req), SubmitContainerTokenResponse)
+
+        then:
+        resp.status() == HttpStatus.OK
+        resp.body().containerToken
+
+        when:
+        RouteHandler routeHelper = applicationContext.getBean(RouteHandler)
+        routeHelper.parse("/v2/wt/${resp.body().containerToken}/library/ubuntu/blobs/latest")
+
+        then:
+        noExceptionThrown()
+    }
+
+    def 'should validate same image' () {
+        given:
+        HttpClient client = applicationContext.createBean(HttpClient)
+
+        when:
+        def cfg = new ContainerConfig(workingDir: '/foo')
+        SubmitContainerTokenRequest request =
+                new SubmitContainerTokenRequest(towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64')
+        def resp = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", request), SubmitContainerTokenResponse)
+
+        then:
+        resp.status() == HttpStatus.OK
+        resp.body().containerToken
+
+        when:
+        RouteHandler routeHelper = applicationContext.getBean(RouteHandler)
+        routeHelper.parse("/v2/wt/${resp.body().containerToken}/library/hello/blobs/latest")
+
+        then:
+        thrown(IllegalArgumentException)
     }
 }

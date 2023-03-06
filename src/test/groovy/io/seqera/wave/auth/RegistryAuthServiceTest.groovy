@@ -1,5 +1,6 @@
 package io.seqera.wave.auth
 
+import spock.lang.Ignore
 import spock.lang.IgnoreIf
 import spock.lang.Shared
 import spock.lang.Specification
@@ -108,6 +109,17 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
         'nope'         | 'yepes'        | "https://registry-1.docker.io" | false
         quayUsername   | quayPassword   | "https://quay.io"              | true
         'nope'         | 'yepes'        | "https://quay.io"              | false
+    }
+
+    @Ignore
+    void 'should test gitea login' () {
+        given:
+        def uri = 'gitea.dev-tower.net'
+        def USER = 'bn_user'
+        def PWD = 'xyz'
+
+        expect:
+        loginService.validateUser(uri, USER, PWD)
     }
 
     void 'test buildLoginUrl'() {

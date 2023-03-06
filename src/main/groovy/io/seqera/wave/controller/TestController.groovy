@@ -83,6 +83,7 @@ class TestController {
                 Path.of(workspace),
                 buildRepo,
                 null,
+                null,
                 user,
                 ContainerPlatform.of(platform),
                 configJson,

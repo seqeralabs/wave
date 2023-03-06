@@ -4,7 +4,6 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import io.seqera.wave.core.ContainerPath
 import static io.seqera.wave.WaveDefault.DOCKER_IO
-
 /**
  * Model a container image coordinates
  *
@@ -53,8 +52,7 @@ class ContainerCoordinates implements ContainerPath {
         }
         // default to docker registry
         reg ?= DOCKER_IO
-
-        if( !ref )
+        if( !isValidRegistry(reg) || !ref )
             throw new IllegalArgumentException("Invalid container image name: $path")
 
         // add default library prefix to docker images
@@ -64,5 +62,12 @@ class ContainerCoordinates implements ContainerPath {
 
         final image = coordinates.join('/')
         return new ContainerCoordinates(reg, image, ref)
+    }
+
+    static boolean isValidRegistry(String name) {
+        if( !name )
+            return false
+        final p = name.indexOf(':')
+        return p==-1 || name.substring(p+1).isInteger()
     }
 }

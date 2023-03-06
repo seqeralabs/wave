@@ -4,6 +4,7 @@ import spock.lang.Requires
 import spock.lang.Specification
 
 import java.nio.file.Files
+import java.time.Duration
 
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
@@ -36,13 +37,13 @@ class ContainerBuildServiceTest extends Specification {
         given:
         def folder = Files.createTempDirectory('test')
         and:
-        def dockerfile = '''
+        def dockerFile = '''
         FROM busybox
         RUN echo Hello > hello.txt
         '''.stripIndent()
         and:
-        def cfg = dockerAuthService.credentialsConfigJson(dockerfile, buildRepo, cacheRepo, null, null,null,null)
-        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'),cfg, cacheRepo, "")
+        def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, cacheRepo, null, null,null,null)
+        def REQ = new BuildRequest(dockerFile, folder, buildRepo, null, null, Mock(User), ContainerPlatform.of('amd64'),cfg, cacheRepo, "")
 
         when:
         def result = service.launch(REQ)
@@ -63,15 +64,15 @@ class ContainerBuildServiceTest extends Specification {
         given:
         def folder = Files.createTempDirectory('test')
         and:
-        def dockerfile = '''
+        def dockerFile = '''
         FROM busybox
         RUN echo Hello > hello.txt
         '''.stripIndent()
         and:
         buildRepo = "docker.io/pditommaso/wave-tests"
         and:
-        def cfg = dockerAuthService.credentialsConfigJson(dockerfile, buildRepo, null, null, null,null,null)
-        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'),cfg, null, null)
+        def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, null, null,null,null)
+        def REQ = new BuildRequest(dockerFile, folder, buildRepo, null, null, Mock(User), ContainerPlatform.of('amd64'),cfg, null, null)
 
         when:
         def result = service.launch(REQ)
@@ -92,14 +93,14 @@ class ContainerBuildServiceTest extends Specification {
         given:
         def folder = Files.createTempDirectory('test')
         and:
-        def dockerfile = '''
+        def dockerFile = '''
         FROM busybox
         RUN echo Hello > hello.txt
         '''.stripIndent()
         and:
         buildRepo = "quay.io/pditommaso/wave-tests"
-        def cfg = dockerAuthService.credentialsConfigJson(dockerfile, buildRepo, null, null, null, null, null)
-        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'),cfg, null, "")
+        def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, null, null, null, null)
+        def REQ = new BuildRequest(dockerFile, folder, buildRepo, null, null, Mock(User), ContainerPlatform.of('amd64'),cfg, null, "")
 
         when:
         def result = service.launch(REQ)
@@ -120,14 +121,14 @@ class ContainerBuildServiceTest extends Specification {
         given:
         def folder = Files.createTempDirectory('test')
         and:
-        def dockerfile = '''
+        def dockerFile = '''
         FROM busybox
         RUN echo Hello > hello.txt
         '''.stripIndent()
         and:
         buildRepo = "seqeralabs.azurecr.io/wave-tests"
-        def cfg = dockerAuthService.credentialsConfigJson(dockerfile, buildRepo, null, null, null, null, null)
-        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, Mock(User), ContainerPlatform.of('amd64'),cfg, null, "")
+        def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, null, null, null, null)
+        def REQ = new BuildRequest(dockerFile, folder, buildRepo, null, null, Mock(User), ContainerPlatform.of('amd64'),cfg, null, "")
 
         when:
         def result = service.launch(REQ)
@@ -138,6 +139,52 @@ class ContainerBuildServiceTest extends Specification {
         result.startTime
         result.duration
         result.exitStatus == 0
+
+        cleanup:
+        folder?.deleteDir()
+    }
+
+    def 'should save build docker build file' () {
+        given:
+        def folder = Files.createTempDirectory('test')
+        def DURATION = Duration.ofDays(1)
+        and:
+        def cfg = 'some credentials'
+        def dockerFile = '''
+                FROM busybox
+                RUN echo Hello > hello.txt
+                '''.stripIndent()
+        and:
+        def condaFile = '''
+                this is
+                the conda
+                recipe
+                '''
+        and:
+        def spackFile = '''
+                this is
+                the spack
+                build file
+                '''
+        and:
+        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', condaFile, spackFile, Mock(User), ContainerPlatform.of('amd64'), cfg, null, "")
+        and:
+        def store = Mock(BuildStore)
+        def strategy = Mock(BuildStrategy)
+        def builder = new ContainerBuildServiceImpl(buildStrategy: strategy, buildStore: store, statusDuration: DURATION)
+        def RESPONSE = Mock(BuildResult)
+
+        when:
+        def result = builder.launch(REQ)
+        then:
+        1 * strategy.build(REQ) >> RESPONSE
+        1 * store.storeBuild(REQ.targetImage, RESPONSE, DURATION) >> null
+        and:
+        REQ.workDir.resolve('Dockerfile').text == dockerFile
+        REQ.workDir.resolve('conda.yml').text == condaFile
+        REQ.workDir.resolve('spack.yml').text == spackFile
+        and:
+        result == RESPONSE
 
         cleanup:
         folder?.deleteDir()

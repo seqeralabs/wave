@@ -121,6 +121,11 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 final condaFile = req.workDir.resolve('conda.yml')
                 Files.write(condaFile, req.condaFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             }
+            // save the spack file
+            if( req.spackFile ) {
+                final spackFile = req.workDir.resolve('spack.yml')
+                Files.write(spackFile, req.spackFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            }
 
             resp = buildStrategy.build(req)
             log.info "== Build completed with status=$resp.exitStatus; stdout: (see below)\n${indent(resp.logs)}"
@@ -185,7 +190,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         final ret1 = BuildResult.create(request)
         if( buildStore.storeIfAbsent(request.targetImage, ret1) ) {
             // go ahead
-            log.info "== Submit build request request: $request"
+            log.info "== Submit build request: $request"
             launchAsync(request)
             return
         }

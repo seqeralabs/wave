@@ -31,10 +31,14 @@ import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.service.token.TokenData
+import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
 import jakarta.inject.Inject
+
+import static io.seqera.wave.WaveDefault.TOWER
+
 /**
  * Implement a controller to receive container token requests
  * 
@@ -90,6 +94,12 @@ class ContainerTokenController {
     @Inject
     PersistenceService persistenceService
 
+    @Inject
+    ValidationService validationService
+
+    @Inject
+    PairingService pairingService
+
     @PostConstruct
     private void init() {
         log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl"
@@ -97,6 +107,8 @@ class ContainerTokenController {
 
     @Post('/container-token')
     CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
+        validateContainerRequest(req)
+
         // this is needed for backward compatibility with old clients
         if( !req.towerEndpoint ) {
             req.towerEndpoint = towerEndpointUrl
@@ -153,6 +165,7 @@ class ContainerTokenController {
             throw new BadRequestException("Missing build cache repository attribute")
         final dockerContent = new String(req.containerFile.decodeBase64())
         final condaContent = req.condaFile ? new String(req.condaFile.decodeBase64()) : null as String
+        final spackContent = req.spackFile ? new String(req.spackFile.decodeBase64()) : null as String
         final platform = ContainerPlatform.of(req.containerPlatform)
         final build = req.buildRepository ?: defaultBuildRepo
         final cache = req.cacheRepository ?: defaultCacheRepo
@@ -164,6 +177,7 @@ class ContainerTokenController {
                 Path.of(workspace),
                 build,
                 condaContent,
+                spackContent,
                 user,
                 platform,
                 configJson,
@@ -239,5 +253,23 @@ class ContainerTokenController {
             throw new NotFoundException("Missing container record for token: $token")
         // return the response 
         return HttpResponse.ok( DescribeWaveContainerResponse.create(token, data) )
+    }
+
+    void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException{
+        if( req.towerEndpoint && req.towerAccessToken ) {
+            // check the endpoint is valid
+            final msg=validationService.checkEndpoint(req.towerEndpoint)
+            if( msg )
+                throw new BadRequestException(msg.replaceAll(/(?i)endpoint/,'Tower endpoint'))
+            // check the endpoint has been registered via the pairing process
+            if( !pairingService.getPairingRecord(TOWER, req.towerEndpoint) )
+                throw new BadRequestException("Missing pairing record for Tower endpoint '$req.towerEndpoint'")
+        }
+
+        if( req.containerImage ) {
+            final msg = validationService.checkContainerName(req.containerImage)
+            if( msg )
+                throw new BadRequestException(msg)
+        }
     }
 }

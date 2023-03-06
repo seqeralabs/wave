@@ -13,10 +13,17 @@ import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Error
 import io.micronaut.http.annotation.Post
 import io.micronaut.validation.Validated
+import io.seqera.wave.exception.BadRequestException
+import io.seqera.wave.exception.ForbiddenException
 import io.seqera.wave.exchange.PairingRequest
 import io.seqera.wave.exchange.PairingResponse
+import io.seqera.wave.service.pairing.DisallowCacheStore
 import io.seqera.wave.service.pairing.PairingService
+import io.seqera.wave.service.validation.ValidationService
+import io.seqera.wave.tower.client.TowerClient
 import jakarta.inject.Inject
+import static io.seqera.wave.WaveDefault.TOWER
+
 /**
  * Allow a remote Tower instance to register itself
  *
@@ -31,10 +38,53 @@ class PairingController {
     @Inject
     private PairingService securityService
 
+    @Inject
+    private TowerClient tower
+
+    @Inject
+    private ValidationService validationService
+
+    @Inject
+    private DisallowCacheStore disallowCacheStore
+
     @Post('/pairing')
     HttpResponse<PairingResponse> pairService(@Valid @Body PairingRequest req) {
-        final key = securityService.getPairingKey(req.service, req.endpoint)
+        validateRequest(req)
+        final key = securityService.acquirePairingKey(req.service, req.endpoint)
         return HttpResponse.ok(key)
+    }
+
+    protected void validateRequest(PairingRequest req) {
+        // check if this endpoint is blocked
+        if( disallowCacheStore.isBlocked(req.endpoint) ) {
+            throw new ForbiddenException("Endpoint '${req.endpoint}' is not allowed to connect to Wave service - Contact support@seqera.io for details")
+        }
+        try {
+            validate0(req)
+        }
+        catch (Throwable err) {
+            disallowCacheStore.trackFailure(req.endpoint, err)
+            throw err
+        }
+    }
+
+    protected void validate0(PairingRequest req) {
+        if( req.service != TOWER ) {
+            throw new BadRequestException("Unknown pairing service: $req.service")
+        }
+        // validate endpoint
+        final err = validationService.checkEndpoint(req.endpoint)
+        if( err ) {
+            throw new BadRequestException(err)
+        }
+        // connect back to check connectivity
+        try {
+            final info = tower.serviceInfo(req.endpoint).get()
+            log.trace "Connected to Tower '${req.endpoint}'; version: ${info.serviceInfo.version}; commitId: ${info.serviceInfo.commitId}"
+        }
+        catch (Exception e) {
+            throw new BadRequestException("Pairing requested rejected - Unable to connect '$req.endpoint'")
+        }
     }
 
     @Error(exception = ConstraintViolationException)

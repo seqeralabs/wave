@@ -26,6 +26,7 @@ class WaveBuildRecordTest extends Specification {
                 "buildrepo",
                 'conda::recipe',
                 null,
+                null,
                 ContainerPlatform.of('amd64'),
                 '{auth}',
                 'docker.io/my/repo',

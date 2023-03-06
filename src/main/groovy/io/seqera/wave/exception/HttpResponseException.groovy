@@ -13,9 +13,12 @@ class HttpResponseException extends WaveException implements HttpError {
 
     final private HttpStatus statusCode
 
-    HttpResponseException(int statusCode, String message) {
+    private String response
+
+    HttpResponseException(int statusCode, String message, String response=null) {
         super(message)
         this.statusCode = HttpStatus.valueOf(statusCode)
+        this.response = response
     }
 
     HttpResponseException(HttpStatus statusCode, String message) {
@@ -29,4 +32,14 @@ class HttpResponseException extends WaveException implements HttpError {
     }
 
     HttpStatus statusCode() { statusCode }
+
+    @Override
+    String getMessage() {
+        def result = super.getMessage()
+        if( statusCode!=null )
+            result += " - HTTP status=${statusCode.code}"
+        if( response )
+            result += " - response=$response"
+        return result
+    }
 }
