@@ -1,6 +1,7 @@
 Thumbs.db
 .DS_Store
 .gradle
+.cache
 build/
 packtar/
 target/
