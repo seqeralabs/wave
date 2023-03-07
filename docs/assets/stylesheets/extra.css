@@ -155,3 +155,38 @@ body[data-md-color-scheme="slate"] .excalidraw svg {
 .md-typeset table:not([class]) {
     font-size: 0.8rem;
 }
+
+.flex {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+.flex.justify-center {
+    justify-content: center;
+}
+.grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2rem;
+}
+.grid div {
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+    border-radius: 0.5rem;
+    border: 1px solid rgb(0, 0, 0, 0.3);
+    padding: 1rem;
+}
+.grid div h2,
+.grid div h3,
+.grid div h4 {
+    margin-top: 0;
+}
+.grid div p:last-child {
+    margin-bottom: 0;
+}
+@media (max-width: 1024px) {
+    .grid {
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+}
