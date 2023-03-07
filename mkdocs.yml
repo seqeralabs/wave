@@ -92,6 +92,3 @@ plugins:
   - search
   - social:
       cards: !ENV [CARDS, true]
-      cards_color:
-        fill: "#27AE60"
-        text: "#FFFFFF"

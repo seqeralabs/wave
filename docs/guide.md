@@ -1,3 +1,8 @@
+---
+title: User guide
+description: Getting started with Wave
+---
+
 # User guide
 
 ## Getting started
@@ -22,7 +27,7 @@ curl get.nextflow.io | bash
 
 ### Wave configuration
 
-Wave can be used in any Nextflow pipeline by adding the following snippet to your ``nextflow.config`` file::
+Wave can be used in any Nextflow pipeline by adding the following snippet to your `nextflow.config` file::
 
 ```groovy
 wave {
@@ -57,7 +62,7 @@ tower {
 }
 ```
 
-####  Build module containers
+#### Build module containers
 
 Wave can build and provision container images on-demand for your Nextflow pipelines.
 
@@ -77,7 +82,7 @@ the module directory, add the following setting to the pipeline config file:
 wave.strategy = ['dockerfile','container']
 ```
 
-The above line instructs Wave to give the module Dockerfile priority over process ``container`` directives.
+The above line instructs Wave to give the module Dockerfile priority over process `container` directives.
 
 !!! warning
 
@@ -91,8 +96,8 @@ pipeline. This is a quick alternative to building Conda packages in the local co
 Conda packages in your pipeline when deploying it in cloud-native platforms such as AWS Batch and Kubernetes,
 which do not allow the (easy) use of the Conda package manager.
 
-Having Wave enabled in your pipeline, there's nothing else to do other than define the ``conda`` requirements in
-the pipeline processes provided the same process does not also specify a ``container`` directive or a Dockerfile.
+Having Wave enabled in your pipeline, there's nothing else to do other than define the `conda` requirements in
+the pipeline processes provided the same process does not also specify a `container` directive or a Dockerfile.
 
 In the latter case, add the following setting to your pipeline configuration:
 
@@ -100,7 +105,7 @@ In the latter case, add the following setting to your pipeline configuration:
 wave.strategy = ['conda']
 ```
 
-The above setting instructs Wave to only use the ``conda`` directive to provision the pipeline containers, ignoring the use of
+The above setting instructs Wave to only use the `conda` directive to provision the pipeline containers, ignoring the use of
 the `container` directive and any Dockerfile(s).
 
 ## Push to a private repository
@@ -121,26 +126,22 @@ The first repository is used to store the built container images. The second one
 image layers for caching purposes.
 
 The repository access keys need to be specified using the Tower credentials manager as specified in the
-`Authenticate private repositories`_ section.
-
+`Authenticate private repositories`\_ section.
 
 ## Advanced settings
 
 The following configuration options are available:
 
-| Method      | Description                                                                                                                                                             |
-| ----------- |-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `wave.enabled`       | Enable/disable the execution of Wave containers                                                                                                                         |
-| `wave.endpoint`       | The Wave service endpoint (default: `https://wave.seqera.io`)                                                                                                           |
-| `wave.build.repository`    | The container repository where image built by Wave needs to be uploaded (note: the corresponding credentials need to be provided in your Nextflow Tower account).       |
+| Method                       | Description                                                                                                                                                             |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `wave.enabled`               | Enable/disable the execution of Wave containers                                                                                                                         |
+| `wave.endpoint`              | The Wave service endpoint (default: `https://wave.seqera.io`)                                                                                                           |
+| `wave.build.repository`      | The container repository where image built by Wave needs to be uploaded (note: the corresponding credentials need to be provided in your Nextflow Tower account).       |
 | `wave.build.cacheRepository` | The container repository used to cache image layers build by the Wave service (note: the corresponding credentials need to be provided in your Nextflow Tower account). |
- | `wave.conda.mambaImage` | The Mamba container image is used to build Conda based container. This is expected to be [micromamba-docker](https://github.com/mamba-org/micromamba-docker) image.                                                   |
-| `wave.conda.commands `  | One or more commands to be added to the Dockerfile used by build a Conda based image.                                                                                   |
-| `wave.strategy`   | The strategy to be used when resolving ambiguous Wave container requirement (default: `'container,dockerfile,conda'`)                                                   |
-
-
+| `wave.conda.mambaImage`      | The Mamba container image is used to build Conda based container. This is expected to be [micromamba-docker](https://github.com/mamba-org/micromamba-docker) image.     |
+| `wave.conda.commands`        | One or more commands to be added to the Dockerfile used by build a Conda based image.                                                                                   |
+| `wave.strategy`              | The strategy to be used when resolving ambiguous Wave container requirement (default: `'container,dockerfile,conda'`)                                                   |
 
 ## More examples
 
 Check out the [Wave showcase repository](https://github.com/seqeralabs/wave-showcase) for more examples how to use Wave containers.
-
