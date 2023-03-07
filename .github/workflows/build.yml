@@ -6,9 +6,12 @@ on:
       - '!refs/tags/.*'
     tags-ignore:
       - '*'
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
   pull_request:
     types: [opened, reopened, synchronize]
-    
+
 jobs:
   build:
     name: Build Wave
@@ -44,7 +47,7 @@ jobs:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
 
       - name: Tests
-        run: |          
+        run: |
           make check
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
