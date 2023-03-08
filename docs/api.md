@@ -1,5 +1,5 @@
 ---
-title: Wave API documentation
+title: API documentation
 description: Endpoints for the Wave API
 hide:
     - navigation

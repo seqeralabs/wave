@@ -1,5 +1,5 @@
 ---
-title: Wave features
+title: Features
 description: Describe the main features of Wave container service.
 ---
 
