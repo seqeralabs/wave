@@ -1,3 +1,8 @@
+---
+title: FAQ
+description: Frequently asked questions about Wave containers
+---
+
 # Frequently Asked questions
 
 ### Can I use private container repositories

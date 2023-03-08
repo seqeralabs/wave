@@ -1,6 +1,6 @@
 ---
 title: User guide
-description: Getting started with Wave
+description: Getting started with Wave containers
 ---
 
 # User guide
