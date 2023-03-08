@@ -1,6 +1,8 @@
 ---
 title: FAQ
 description: Frequently asked questions about Wave containers
+hide:
+  - toc
 ---
 
 # Frequently Asked questions
