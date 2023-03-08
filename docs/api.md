@@ -1,3 +1,11 @@
+---
+title: API documentation
+description: Endpoints for the Wave API
+hide:
+    - navigation
+    - toc
+---
+
 # API documentation
 
 To be done
