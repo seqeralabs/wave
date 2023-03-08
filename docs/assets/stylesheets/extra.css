@@ -4,6 +4,10 @@
     --md-primary-fg-color--light: #c5c8de;
     --md-primary-fg-color--dark: #08125e;
     */
+    --md-admonition-icon--api-get: url("/assets/img/api_get.svg");
+    --md-admonition-icon--api-put: url("/assets/img/api_put.svg");
+    --md-admonition-icon--api-post: url("/assets/img/api_post.svg");
+    --md-admonition-icon--api-delete: url("/assets/img/api_delete.svg");
 }
 :root > * {
     --md-code-hl-comment-color: var(--md-default-fg-color--lighter);
@@ -189,4 +193,85 @@ body[data-md-color-scheme="slate"] .excalidraw svg {
     .grid {
         grid-template-columns: repeat(1, minmax(0, 1fr));
     }
+}
+
+/* API docs with admonitions */
+.admonition h3:first-of-type {
+    margin-top: 1rem;
+}
+
+.md-typeset .admonition.api-get,
+.md-typeset details.api-get {
+    border-color: #00b0ff;
+}
+.md-typeset .api-get > .admonition-title,
+.md-typeset .api-get > summary {
+    background-color: #00b0ff1a;
+    padding-left: 55px;
+    font-family: var(--md-code-font-family);
+}
+.md-typeset .api-get > .admonition-title::before,
+.md-typeset .api-get > summary::before {
+    background-color: #00b0ff;
+    content: var(--md-admonition-icon--api-get);
+    -webkit-mask-image: var(--md-admonition-icon--api-get);
+    mask-image: var(--md-admonition-icon--api-get);
+    width: 34px;
+}
+
+.md-typeset .admonition.api-put,
+.md-typeset details.api-put {
+    border-color: #ff9100;
+}
+.md-typeset .api-put > .admonition-title,
+.md-typeset .api-put > summary {
+    background-color: #ff91001a;
+    padding-left: 52px;
+    font-family: var(--md-code-font-family);
+}
+.md-typeset .api-put > .admonition-title::before,
+.md-typeset .api-put > summary::before {
+    background-color: #ff9100;
+    content: var(--md-admonition-icon--api-put);
+    -webkit-mask-image: var(--md-admonition-icon--api-put);
+    mask-image: var(--md-admonition-icon--api-put);
+    width: 31px;
+}
+
+.md-typeset .admonition.api-post,
+.md-typeset details.api-post {
+    border-color: rgb(43, 155, 70);
+}
+.md-typeset .api-post > .admonition-title,
+.md-typeset .api-post > summary {
+    background-color: rgba(43, 155, 70, 0.1);
+    padding-left: 60px;
+    font-family: var(--md-code-font-family);
+}
+.md-typeset .api-post > .admonition-title::before,
+.md-typeset .api-post > summary::before {
+    background-color: rgb(43, 155, 70);
+    content: var(--md-admonition-icon--api-post);
+    -webkit-mask-image: var(--md-admonition-icon--api-post);
+    mask-image: var(--md-admonition-icon--api-post);
+    width: 39px;
+}
+
+.md-typeset .admonition.api-delete,
+.md-typeset details.api-delete {
+    border-color: #ff5252;
+}
+.md-typeset .api-delete > .admonition-title,
+.md-typeset .api-delete > summary {
+    background-color: #ff52521a;
+    padding-left: 74px;
+    font-family: var(--md-code-font-family);
+}
+.md-typeset .api-delete > .admonition-title::before,
+.md-typeset .api-delete > summary::before {
+    background-color: #ff5252;
+    content: var(--md-admonition-icon--api-delete);
+    -webkit-mask-image: var(--md-admonition-icon--api-delete);
+    mask-image: var(--md-admonition-icon--api-delete);
+    width: 53px;
 }
