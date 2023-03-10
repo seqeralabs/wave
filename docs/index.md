@@ -19,12 +19,12 @@ Wave is a container provisioning service designed for use with data analysis app
 It allows for the on-demand assembly, augmentation, and deployment of containerized images based on task requirements.
 
 <div markdown class="flex justify-center">
-<div markdown>
+<div markdown style="max-width: 500px;">
 - Simplify pipeline development and deployment
 - Improve pipeline performance with platform-optimized containers
 - Authenticate against container registries with centralized credential management
 </div>
-<div markdown>
+<div markdown style="max-width: 500px;">
 - Improve productivity by focusing on pipeline logic
 - Augment containers in secure or regulated environments
 - Maximize portability using Conda packages across environments
