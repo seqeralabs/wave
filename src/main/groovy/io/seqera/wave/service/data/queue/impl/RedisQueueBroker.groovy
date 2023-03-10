@@ -4,13 +4,16 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Prototype
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.service.data.queue.ConsumerStore
+import io.seqera.wave.service.data.queue.ConsumerGroup
 import io.seqera.wave.service.data.queue.QueueBroker
 import jakarta.inject.Inject
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.JedisPubSub
 
+/**
+ * @author Jordi Deu-Pons <jordi@seqera.io>
+ */
 @Slf4j
 @Requires(env='redis')
 @Prototype
@@ -22,10 +25,10 @@ class RedisQueueBroker implements QueueBroker<String> {
 
     private JedisPubSub subscriber
 
-    private ConsumerStore<String> localConsumers
+    private ConsumerGroup<String> localConsumers
 
     @Override
-    init(ConsumerStore<String> localConsumers) {
+    init(ConsumerGroup<String> localConsumers) {
         this.localConsumers = localConsumers
 
         if( subscriber )

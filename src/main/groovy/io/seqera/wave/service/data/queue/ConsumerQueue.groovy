@@ -2,11 +2,37 @@ package io.seqera.wave.service.data.queue
 
 import java.util.function.Consumer
 
+/**
+ * Defines an interface that allows to send messages to a queue
+ * and to attach consumers to a specific queue
+ *
+ * @author Jordi Deu-Pons <jordi@seqera.io>
+ * @param <V>
+ */
 interface ConsumerQueue<V> {
 
-    send(String queueKey, V request)
+    /**
+     * Send message to a queue
+     *
+     * @param queueKey Queue identifier
+     * @param message Message to send
+     */
+    void send(String queueKey, V message)
 
+    /**
+     * Add a consumer listening to a given queue
+     *
+     * @param queueKey Queue identifier
+     * @param consumer Message consumer
+     * @return Consumer identifier, useful to remove it
+     */
     String addConsumer(String queueKey, Consumer<V> consumer)
 
-    removeConsumer(String queueKey, String consumerId)
+    /**
+     * Remove a consumer listener
+     *
+     * @param queueKey Queue identifier
+     * @param consumerId Consumer identifier
+     */
+    void removeConsumer(String queueKey, String consumerId)
 }

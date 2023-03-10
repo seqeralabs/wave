@@ -10,9 +10,15 @@ import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.util.TypeHelper
 
+/**
+ * Abstract consumer queue implementation that can use any available queue broker.
+ *
+ * @author Jordi Deu-Pons <jordi@seqera.io>
+ * @param <V> Type of queue messages
+ */
 @Slf4j
 @CompileStatic
-abstract class AbstractConsumerQueue<V> implements ConsumerQueue<V>, ConsumerStore<String> {
+abstract class AbstractConsumerQueue<V> implements ConsumerQueue<V>, ConsumerGroup<String> {
 
     private static final Random RANDOM = new Random()
     private Map<String, Map<String, Consumer<V>>> consumersMap = new ConcurrentHashMap<>()
@@ -43,7 +49,7 @@ abstract class AbstractConsumerQueue<V> implements ConsumerQueue<V>, ConsumerSto
             log.warn "No available consumer listening at '$queueKey'"
             return
         }
-        
+
         final consumer = consumers[RANDOM.nextInt(consumers.size())]
         final value = encodingStrategy.decode(message)
         consumer.accept(value)
