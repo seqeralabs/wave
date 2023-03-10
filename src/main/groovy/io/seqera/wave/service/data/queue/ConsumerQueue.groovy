@@ -7,7 +7,7 @@ import java.util.function.Consumer
  * and to attach consumers to a specific queue
  *
  * @author Jordi Deu-Pons <jordi@seqera.io>
- * @param <V>
+ * @param <V> Type of objects that the queue can manage
  */
 interface ConsumerQueue<V> {
 

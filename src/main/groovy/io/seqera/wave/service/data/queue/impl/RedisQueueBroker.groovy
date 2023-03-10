@@ -12,6 +12,9 @@ import redis.clients.jedis.JedisPool
 import redis.clients.jedis.JedisPubSub
 
 /**
+ * Distributed message broker that forwards all incoming messages to a
+ * single consumer that is listening on any instance.
+ *
  * @author Jordi Deu-Pons <jordi@seqera.io>
  */
 @Slf4j
@@ -36,8 +39,13 @@ class RedisQueueBroker implements QueueBroker<String> {
 
         final groupName = localConsumers.group()
         this.subscriber = new JedisPubSub() {
+
             @Override
             void onMessage(String channel, String queueKey) {
+
+                // When there is new request available for this group of
+                // consumers a message is send to the group topic with the
+                // value of the queue that holds the new request
                 if( channel != groupName )
                     return
 
@@ -47,12 +55,15 @@ class RedisQueueBroker implements QueueBroker<String> {
                     return
                 }
 
-                // Get the request
+                // Pop right value from the queue list
                 try(Jedis conn=pool.getResource()) {
-                    final element = conn.brpop(1.0 as double, queueKey)
+
+                    // Use a timeout because only one instance can consume this value
+                    final element = conn.brpop(10.0 as double, queueKey)
                     if( !element )
                         return
 
+                    // Pass request to one local consumer
                     localConsumers.consume(queueKey, element.element)
                 }
 
@@ -75,7 +86,8 @@ class RedisQueueBroker implements QueueBroker<String> {
             // Add new request to the left of the queue
             conn.lpush(queueKey, message)
 
-            // Notify that there is a new request on that queue
+            // Notify local consumers topic that there is a
+            // new request at the given queue key
             conn.publish(localConsumers.group(), queueKey)
         }
     }

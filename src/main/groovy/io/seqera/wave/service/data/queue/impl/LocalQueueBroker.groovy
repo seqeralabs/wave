@@ -8,6 +8,12 @@ import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.data.queue.ConsumerGroup
 import io.seqera.wave.service.data.queue.QueueBroker
 
+/**
+ * Local queue broker that just forwards all incoming messages to
+ * a single local consumer
+ *
+ * @author Jordi Deu-Pons <jordi@seqera.io>
+ */
 @Slf4j
 @Requires(notEnv='redis')
 @Prototype
