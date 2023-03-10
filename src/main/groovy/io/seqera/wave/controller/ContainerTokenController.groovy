@@ -36,7 +36,7 @@ import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
 import jakarta.inject.Inject
-import jakarta.inject.Named
+
 import static io.seqera.wave.WaveDefault.TOWER
 
 /**
@@ -107,7 +107,7 @@ class ContainerTokenController {
 
     @Post('/container-token')
     CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
-        //validateContainerRequest(req)
+        validateContainerRequest(req)
 
         // this is needed for backward compatibility with old clients
         if( !req.towerEndpoint ) {
@@ -257,10 +257,6 @@ class ContainerTokenController {
 
     void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException{
         if( req.towerEndpoint && req.towerAccessToken ) {
-            // check the endpoint is valid
-            final msg=validationService.checkEndpoint(req.towerEndpoint)
-            if( msg )
-                throw new BadRequestException(msg.replaceAll(/(?i)endpoint/,'Tower endpoint'))
             // check the endpoint has been registered via the pairing process
             if( !pairingService.getPairingRecord(TOWER, req.towerEndpoint) )
                 throw new BadRequestException("Missing pairing record for Tower endpoint '$req.towerEndpoint'")
