@@ -1,5 +1,6 @@
 package io.seqera.wave.service
 
+
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.tower.crypto.AsymmetricCipher
@@ -9,7 +10,6 @@ import io.seqera.wave.tower.client.TowerClient
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
-
 /**
  * Define operations to access container registry credentials from Tower
  *
@@ -58,7 +58,7 @@ class CredentialServiceImpl implements CredentialsService {
         //  credentials are associated to the whole registry
         final matchingRegistryName = registryName ?: DOCKER_IO
         final creds = all.find {
-            it.provider == 'container-reg' && (it.registry ?: DOCKER_IO) == matchingRegistryName
+            it.provider == 'container-reg'  && (it.registry ?: DOCKER_IO) == matchingRegistryName
         }
         if (!creds) {
             log.debug "No credentials matching criteria registryName=$registryName; userId=$userId; workspaceId=$workspaceId; endpoint=$towerEndpoint"
