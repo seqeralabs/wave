@@ -290,7 +290,7 @@ class ContainerAugmenter {
         config.size = newImageConfigSize
 
         // turn the updated manifest into a json
-        final newManifest = JsonOutput.prettyPrint(JsonOutput.toJson(manifest))
+        final newManifest = JsonOutput.toJson(manifest)
 
         // add to the cache
         final digest = RegHelper.digest(newManifest)

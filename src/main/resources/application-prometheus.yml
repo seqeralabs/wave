@@ -6,6 +6,12 @@ micronaut:
         enabled : true
         step : PT1M
         descriptions : true
+    binders:
+      web:
+        server:
+          percentiles: "0.95,0.99"
+        client:
+          percentiles: "0.95,0.99"
 endpoints:
   prometheus:
     sensitive: false
