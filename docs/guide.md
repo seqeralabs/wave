@@ -2,7 +2,7 @@
 title: User guide
 description: Getting started with Wave containers
 hide:
-  - toc
+    - toc
 ---
 
 # User guide

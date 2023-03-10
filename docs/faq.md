@@ -2,7 +2,7 @@
 title: FAQ
 description: Frequently asked questions about Wave containers
 hide:
-  - toc
+    - toc
 ---
 
 # Frequently Asked questions

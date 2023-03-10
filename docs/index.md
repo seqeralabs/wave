@@ -9,12 +9,12 @@ hide:
 
 # Wave container provisioning service
 
-*Rethink containers for cloud-native data pipelines*
+_Rethink containers for cloud-native data pipelines_
 
-Containers are an essential part of data analysis in the cloud. Building and delivering optimized, context-aware 
-container images slows down development. 
+Containers are an essential part of data analysis in the cloud. Building and delivering optimized, context-aware
+container images slows down development.
 
-Wave is a container provisioning service designed for use with data analysis applications such as Nextflow. 
+Wave is a container provisioning service designed for use with data analysis applications such as Nextflow.
 
 It allows for the on-demand assembly, augmentation, and deployment of containerized images based on task requirements.
 
@@ -30,5 +30,3 @@ It allows for the on-demand assembly, augmentation, and deployment of containeri
 - Maximize portability using Conda packages across environments
 </div>
 </div>
-
-
