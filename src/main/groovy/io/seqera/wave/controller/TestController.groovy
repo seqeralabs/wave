@@ -18,8 +18,6 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
-import jakarta.inject.Named
-
 /**
  * Just for testing
  * 
