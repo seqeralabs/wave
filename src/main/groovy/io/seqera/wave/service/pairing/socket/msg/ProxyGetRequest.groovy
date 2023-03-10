@@ -9,7 +9,8 @@ import groovy.transform.ToString
  */
 @Canonical
 @ToString(includePackage = false, includeNames = true)
-class UserRequest implements PairingPayload {
-    String accessToken
-    String refreshToken
+class ProxyGetRequest implements PairingMessage {
+    String msgId
+    String uri
+    String bearerAuth
 }

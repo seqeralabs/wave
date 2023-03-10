@@ -1,4 +1,4 @@
-package io.seqera.wave.service.data
+package io.seqera.wave.service.data.future
 /**
  * Define the interface for publishing {@link java.util.concurrent.CompletableFuture} values.
  *

@@ -8,10 +8,9 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.exception.UnauthorizedException
 import io.seqera.wave.tower.User
-import io.seqera.wave.tower.client.TowerClient
+import io.seqera.wave.tower.client.TowerClientDelegate
 import io.seqera.wave.tower.client.UserInfoResponse
 import jakarta.inject.Inject
-import jakarta.inject.Named
 import jakarta.inject.Singleton
 /**
  * Define a service to access a Tower user
@@ -20,13 +19,12 @@ import jakarta.inject.Singleton
  */
 @CompileStatic
 @Slf4j
-@Named('legacy')
 @Singleton
 class UserServiceImpl implements UserService {
 
     @Inject
     @Nullable
-    private TowerClient towerClient
+    private TowerClientDelegate towerClient
 
     @Override
     CompletableFuture<User> getUserByAccessTokenAsync(String endpoint, String encodedToken) {

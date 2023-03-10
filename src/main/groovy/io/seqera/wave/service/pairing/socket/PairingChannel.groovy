@@ -1,52 +1,79 @@
 package io.seqera.wave.service.pairing.socket
 
 import java.util.concurrent.CompletableFuture
+import java.util.function.Consumer
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.websocket.WebSocketBroadcaster
-import io.micronaut.websocket.WebSocketSession
-import io.seqera.wave.service.pairing.socket.msg.PairingPayload
-import io.seqera.wave.service.pairing.socket.msg.PairingReply
-import io.seqera.wave.service.pairing.socket.msg.PairingSend
+import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+
 /**
  * Handle sending and replies for pairing messages
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * @author Jordi Deu-Pons <jordi@seqera.io>
  */
 @Slf4j
 @Singleton
 @CompileStatic
-class PairingChannel implements PairingListener {
+class PairingChannel {
 
     @Inject
-    private WebSocketBroadcaster broadcaster
+    private PairingFutureStore futuresStore
 
     @Inject
-    private PairingStore futuresStore
+    private PairingSendQueue sendQueue
 
-    void onReply(String service, String pairingId, PairingReply reply)  {
-        futuresStore.complete(reply.msgId, reply.payload)
+    @Inject
+    private PairingEndpointsStore endpoints
+
+    boolean registerEndpoint(String service, String endpoint, String token) {
+        final key = buildKey(service, endpoint)
+        if( endpoints.get(key) == null ) {
+            log.debug "New $service endpoint '$endpoint' registered"
+            endpoints.put(key, token)
+        }
+        return endpoints.get(key) == token
     }
 
-    <M extends PairingPayload, R extends PairingPayload> CompletableFuture<R> send(String endpoint, M message) {
-        log.debug "Brodcast message=$message to endpoint='$endpoint'"
+    boolean isEndpointRegistered(String service, String endpoint) {
+        final key = buildKey(service, endpoint)
+        return endpoints.get(key) != null
+    }
+
+    public <M extends PairingMessage, R extends PairingMessage> CompletableFuture<R> sendServiceRequest(String service, String endpoint, M message) {
+        log.debug "Request message=${message.class.simpleName} to endpoint='$endpoint'"
+
         // create a unique Id to identify this command
-        final msgId = UUID.randomUUID().toString()
-        final request = new PairingSend(msgId, message)
-        // create a future to hold the response when it will to be sent
-        final result = futuresStore.create(msgId)
-        // broadcast the message to the target pairing id
-        broadcaster.broadcastAsync(request, (WebSocketSession sess) -> {
-            log.debug "Checking session=$sess; matches=${endpoint==sess.requestParameters.get('endpoint',String,null)}"
-            endpoint==sess.requestParameters.get('endpoint',String,null) } )
+        final result = futuresStore.create(message.msgId)
+
+        // publish
+        final queue = buildKey(service, endpoint)
+        sendQueue.send(queue, message)
+
         // return the future to the caller
-        return (CompletableFuture<R>)result
+        return (CompletableFuture<R>) result
     }
 
-    void close(String service, String pairingId) {
-        futuresStore.close()
+
+    void receiveServiceResponse(String service, String endpoint, PairingMessage message) {
+        futuresStore.complete(message.msgId, message)
+    }
+
+    String onServiceRequestListener(String service, String endpoint, Consumer<PairingMessage> consumer) {
+        log.debug "Register consumer on send service='$service' endpoint='$endpoint'"
+        final queue = buildKey(service, endpoint)
+        return sendQueue.addConsumer(queue, consumer)
+    }
+
+    void removeListener(String service, String endpoint, String consumerId) {
+        final queue = buildKey(service, endpoint)
+        sendQueue.removeConsumer(queue, consumerId)
+    }
+
+    private String buildKey(String service, String endpoint) {
+        return "${service}#${endpoint}"
     }
 }

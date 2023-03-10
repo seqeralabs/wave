@@ -1,5 +1,7 @@
 package io.seqera.wave.service.data
 
+import io.seqera.wave.service.data.future.AbstractFutureStore
+import io.seqera.wave.service.data.future.FuturePublisher
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -7,7 +9,7 @@ import java.util.concurrent.TimeUnit
 
 import groovy.transform.Canonical
 import io.micronaut.context.ApplicationContext
-import io.seqera.wave.service.data.impl.RedisFuturePublisher
+import io.seqera.wave.service.data.future.impl.RedisFuturePublisher
 import io.seqera.wave.test.RedisTestContainer
 /**
  *

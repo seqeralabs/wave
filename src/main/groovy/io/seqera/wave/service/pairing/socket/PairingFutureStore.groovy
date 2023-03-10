@@ -1,21 +1,21 @@
 package io.seqera.wave.service.pairing.socket
 
 import io.micronaut.context.annotation.Value
-import io.seqera.wave.service.data.AbstractFutureStore
-import io.seqera.wave.service.data.FuturePublisher
-import io.seqera.wave.service.pairing.socket.msg.PairingPayload
+import io.seqera.wave.service.data.future.AbstractFutureStore
+import io.seqera.wave.service.data.future.FuturePublisher
+import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import jakarta.inject.Singleton
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Singleton
-class PairingStore extends AbstractFutureStore<PairingPayload> {
+class PairingFutureStore extends AbstractFutureStore<PairingMessage> {
 
     @Value('${wave.pairing.store-group:`pairing-store`}')
     private String groupName
 
-    PairingStore(FuturePublisher<String> publisher) {
+    PairingFutureStore(FuturePublisher<String> publisher) {
         super(publisher)
     }
 

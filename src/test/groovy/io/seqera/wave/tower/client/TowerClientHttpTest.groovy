@@ -26,11 +26,11 @@ import spock.lang.Specification
 import java.util.concurrent.ExecutionException
 
 @MicronautTest(environments = ['test','tower'])
-@Property(name = 'spec.name', value = 'TowerClientTest')
-class TowerClientTest extends Specification{
+@Property(name = 'spec.name', value = 'TowerClientHttpTest')
+class TowerClientHttpTest extends Specification{
 
     @Controller('/')
-    @Requires(property = 'spec.name', value = 'TowerClientTest')
+    @Requires(property = 'spec.name', value = 'TowerClientHttpTest')
     static class TowerFakeController {
 
         @Get('/user-info')
@@ -97,7 +97,7 @@ class TowerClientTest extends Specification{
     EmbeddedServer embeddedServer
 
     @Inject
-    TowerClient towerClient
+    TowerClientHttp towerClient
 
     @Inject
     JwtAuthStore jwtAuthStore
@@ -238,7 +238,7 @@ class TowerClientTest extends Specification{
 
     def 'parse tokens'() {
         when:
-        def tokens = TowerClient.parseTokens(cookies,'current-refresh')
+        def tokens = TowerClientHttp.parseTokens(cookies,'current-refresh')
 
         then:
         tokens.refresh == expectedRefresh
@@ -256,7 +256,7 @@ class TowerClientTest extends Specification{
 
     def 'parse tokens when there is no jwt'() {
         when:
-        TowerClient.parseTokens(cookies,'current-refresh')
+        TowerClientHttp.parseTokens(cookies,'current-refresh')
         then:
         def e = thrown(HttpResponseException)
         e.statusCode() == HttpStatus.PRECONDITION_FAILED

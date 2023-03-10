@@ -1,4 +1,4 @@
-package io.seqera.wave.service.data.impl
+package io.seqera.wave.service.data.future.impl
 
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -6,8 +6,8 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Prototype
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.service.data.FutureListener
-import io.seqera.wave.service.data.FuturePublisher
+import io.seqera.wave.service.data.future.FutureListener
+import io.seqera.wave.service.data.future.FuturePublisher
 import jakarta.inject.Inject
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool

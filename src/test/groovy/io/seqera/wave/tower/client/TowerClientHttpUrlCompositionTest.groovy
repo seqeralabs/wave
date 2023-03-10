@@ -2,11 +2,11 @@ package io.seqera.wave.tower.client
 
 import spock.lang.Specification
 
-class TowerClientUrlCompositionTest extends Specification{
+class TowerClientHttpUrlCompositionTest extends Specification{
 
     def 'compose user info endpoint'() {
         expect:
-        TowerClient.userInfoEndpoint(endpoint).toString() == expected
+        TowerClientHttp.userInfoEndpoint(endpoint).toString() == expected
 
         where:
 
@@ -21,7 +21,7 @@ class TowerClientUrlCompositionTest extends Specification{
 
     def 'fail compose userInfo with invalid towerEndpoint'() {
         when:
-        TowerClient.userInfoEndpoint(endpoint)
+        TowerClientHttp.userInfoEndpoint(endpoint)
 
         then:
         thrown(IllegalArgumentException)
@@ -39,7 +39,7 @@ class TowerClientUrlCompositionTest extends Specification{
 
     def 'compose list credentials endpoint'() {
         expect:
-        TowerClient.listCredentialsEndpoint(endpoint, workspaceId).toString() == expected
+        TowerClientHttp.listCredentialsEndpoint(endpoint, workspaceId).toString() == expected
 
         where:
 
@@ -56,7 +56,7 @@ class TowerClientUrlCompositionTest extends Specification{
 
     def 'fail compose list credentials with invalid towerEndpoint'() {
         when:
-        TowerClient.listCredentialsEndpoint(endpoint, workspaceId).toString()
+        TowerClientHttp.listCredentialsEndpoint(endpoint, workspaceId).toString()
 
         then:
         thrown(IllegalArgumentException)
@@ -79,7 +79,7 @@ class TowerClientUrlCompositionTest extends Specification{
 
     def 'compose fetch credentials endpoint'() {
         expect:
-        TowerClient.fetchCredentialsEndpoint(endpoint,credsId,keyId,workspaceId).toString() == expected
+        TowerClientHttp.fetchCredentialsEndpoint(endpoint,credsId,keyId,workspaceId).toString() == expected
 
         where:
 
@@ -96,7 +96,7 @@ class TowerClientUrlCompositionTest extends Specification{
 
     def 'fail compose fetch credentials endpoint with invalid towerEndpoint or missing data'() {
         when:
-        TowerClient.fetchCredentialsEndpoint(endpoint, credsId, keyId, 1)
+        TowerClientHttp.fetchCredentialsEndpoint(endpoint, credsId, keyId, 1)
 
         then:
         thrown(IllegalArgumentException)

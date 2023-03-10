@@ -1,5 +1,7 @@
 package io.seqera.wave.service.data
 
+import io.seqera.wave.service.data.future.AbstractFutureStore
+import io.seqera.wave.service.data.future.FuturePublisher
 import spock.lang.Specification
 
 import groovy.transform.Canonical

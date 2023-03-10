@@ -6,10 +6,11 @@ import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import groovy.transform.CompileStatic
-import io.seqera.wave.exchange.PairingResponse
-import io.seqera.wave.service.pairing.socket.msg.PairingPayload
-import io.seqera.wave.service.pairing.socket.msg.UserRequest
-import io.seqera.wave.service.pairing.socket.msg.UserResponse
+import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
+import io.seqera.wave.service.pairing.socket.msg.PairingMessage
+import io.seqera.wave.service.pairing.socket.msg.PairingResponse
+import io.seqera.wave.service.pairing.socket.msg.ProxyGetRequest
+import io.seqera.wave.service.pairing.socket.msg.ProxyGetResponse
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.LazyDigestStore
 import io.seqera.wave.storage.ZippedDigestStore
@@ -19,6 +20,7 @@ import io.seqera.wave.storage.reader.GzipContentReader
 import io.seqera.wave.storage.reader.HttpContentReader
 import io.seqera.wave.storage.reader.PathContentReader
 import io.seqera.wave.util.TypeHelper
+
 /**
  * Implements a JSON {@link EncodingStrategy} based on Mosh JSON serializer
  *
@@ -57,10 +59,12 @@ abstract class MoshiEncodeStrategy<V> implements EncodingStrategy<V> {
                         .withSubtype(GzipContentReader.class, GzipContentReader.simpleName)
                         .withSubtype(HttpContentReader.class, HttpContentReader.simpleName)
                         .withSubtype(PathContentReader.class, PathContentReader.simpleName))
-                .add(PolymorphicJsonAdapterFactory.of(PairingPayload.class, "@type")
+                .add(PolymorphicJsonAdapterFactory.of(PairingMessage.class, "@type")
+                        .withSubtype(ProxyGetRequest.class, ProxyGetRequest.simpleName)
+                        .withSubtype(ProxyGetResponse.class, ProxyGetResponse.simpleName)
+                        .withSubtype(PairingHeartbeat.class, PairingHeartbeat.simpleName)
                         .withSubtype(PairingResponse.class, PairingResponse.simpleName)
-                        .withSubtype(UserRequest.class, UserRequest.simpleName)
-                        .withSubtype(UserResponse.class, UserResponse.simpleName))
+                )
                 .build()
         this.jsonAdapter = moshi.adapter(type)
 

@@ -2,7 +2,7 @@ package io.seqera.wave.service.pairing.socket.msg
 
 import groovy.transform.Canonical
 import groovy.transform.ToString
-import io.seqera.wave.tower.User
+import io.micronaut.http.HttpStatus
 
 /**
  *
@@ -10,7 +10,8 @@ import io.seqera.wave.tower.User
  */
 @Canonical
 @ToString(includePackage = false, includeNames = true)
-class UserResponse implements PairingPayload {
-    User user
-    String refreshToken
+class ProxyGetResponse implements PairingMessage {
+    String msgId
+    HttpStatus status
+    String body
 }

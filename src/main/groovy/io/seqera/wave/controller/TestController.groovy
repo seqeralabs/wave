@@ -46,7 +46,6 @@ class TestController {
     Boolean allowAnonymous
 
     @Inject
-    @Named('legacy')
     UserService userService
 
     @Inject

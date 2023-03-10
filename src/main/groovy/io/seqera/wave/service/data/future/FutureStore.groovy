@@ -1,4 +1,4 @@
-package io.seqera.wave.service.data
+package io.seqera.wave.service.data.future
 
 import java.util.concurrent.CompletableFuture
 

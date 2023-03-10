@@ -1,4 +1,4 @@
-package io.seqera.wave.exchange
+package io.seqera.wave.service.pairing.socket.msg
 
 import groovy.transform.CompileStatic
 
@@ -9,7 +9,8 @@ import groovy.transform.CompileStatic
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-class PairingResponse {
+class PairingResponse implements PairingMessage {
+    String msgId
     String pairingId
     String publicKey
 }

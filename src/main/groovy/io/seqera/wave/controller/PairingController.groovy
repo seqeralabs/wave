@@ -20,7 +20,7 @@ import io.seqera.wave.exchange.PairingResponse
 import io.seqera.wave.service.pairing.DisallowCacheStore
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.validation.ValidationService
-import io.seqera.wave.tower.client.TowerClient
+import io.seqera.wave.tower.client.TowerClientDelegate
 import jakarta.inject.Inject
 import static io.seqera.wave.WaveDefault.TOWER
 
@@ -39,7 +39,7 @@ class PairingController {
     private PairingService securityService
 
     @Inject
-    private TowerClient tower
+    private TowerClientDelegate tower
 
     @Inject
     private ValidationService validationService

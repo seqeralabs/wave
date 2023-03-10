@@ -51,7 +51,7 @@ class ContainerTokenController {
 
     @Inject HttpClientAddressResolver addressResolver
     @Inject ContainerTokenService tokenService
-    @Inject @Named('socket') UserService userService
+    @Inject UserService userService
     @Inject PairingService securityService
     @Inject JwtAuthStore jwtAuthStore
 
