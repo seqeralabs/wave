@@ -5,7 +5,7 @@ import groovy.util.logging.Slf4j
 import io.seqera.tower.crypto.AsymmetricCipher
 import io.seqera.tower.crypto.EncryptedPacket
 import io.seqera.wave.service.pairing.PairingService
-import io.seqera.wave.tower.client.TowerClientDelegate
+import io.seqera.wave.tower.client.TowerClient
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
@@ -21,7 +21,7 @@ import static io.seqera.wave.WaveDefault.DOCKER_IO
 class CredentialServiceImpl implements CredentialsService {
 
     @Inject
-    private TowerClientDelegate towerClient
+    private TowerClient towerClient
 
     @Inject
     private PairingService keyService

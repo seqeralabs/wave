@@ -25,7 +25,7 @@ import org.apache.commons.lang.StringUtils
 @Slf4j
 @Singleton
 @CompileStatic
-class TowerClientHttp extends TowerClient {
+class TowerClientHttp implements ServiceClient {
 
     private HttpRetryable httpRetryable
 
@@ -56,7 +56,7 @@ class TowerClientHttp extends TowerClient {
      *      the type of the model to convert into
      * @return a future of T
      */
-    protected  <T> CompletableFuture<T> getAsync(URI uri, String towerEndpoint, String authorization, Class<T> type) {
+    public <T> CompletableFuture<T> sendAsync(URI uri, String towerEndpoint, String authorization, Class<T> type) {
         final result = authorization
                 ? getAsync1(uri, towerEndpoint, authorization, true)
                 : getAsync0(uri)
@@ -80,7 +80,7 @@ class TowerClientHttp extends TowerClient {
                         }
                     }
                     .exceptionally {err ->
-                        throw handleIoError(err, uri)
+                        throw TowerClient.handleIoError(err, uri)
                     }
     }
 
@@ -189,6 +189,10 @@ class TowerClientHttp extends TowerClient {
         // this is the case where the server returned only the jwt
         // we go with the original refresh token
         return new JwtAuth(jwtToken.value, jwtRefresh ? jwtRefresh.value: refreshToken)
+    }
+
+    protected static URI refreshTokenEndpoint(String towerEndpoint) {
+        return URI.create("${TowerClient.checkEndpoint(towerEndpoint)}/oauth/access_token")
     }
 
 }

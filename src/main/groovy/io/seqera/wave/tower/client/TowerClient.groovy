@@ -4,13 +4,26 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
 
 import io.seqera.wave.exception.HttpResponseException
+import jakarta.inject.Inject
 import org.apache.commons.lang.StringUtils
 
-abstract class TowerClient {
+class TowerClient {
 
+    @Inject
+    private TowerClientHttp httpClient
 
+    @Inject
+    private TowerClientSocket socketClient
 
-    abstract protected <T> CompletableFuture<T> getAsync(URI uri, String towerEndpoint, String authorization, Class<T> type)
+    protected <T> CompletableFuture<T> getAsync(URI uri, String towerEndpoint, String authorization, Class<T> type) {
+
+        // Connect using websocket connection
+        if( socketClient.isEndpointRegistered(towerEndpoint) )
+            return socketClient.sendAsync(uri, towerEndpoint, authorization, type)
+
+        // Fallback to public HTTP connection
+        return httpClient.sendAsync(uri, towerEndpoint, authorization, type)
+    }
 
     CompletableFuture<ServiceInfoResponse> serviceInfo(String towerEndpoint) {
         final uri = serviceInfoEndpoint(towerEndpoint)
@@ -56,10 +69,6 @@ abstract class TowerClient {
         return URI.create(uri)
     }
 
-    protected static URI refreshTokenEndpoint(String towerEndpoint) {
-        return URI.create("${checkEndpoint(towerEndpoint)}/oauth/access_token")
-    }
-
     protected static URI userInfoEndpoint(String towerEndpoint) {
         return URI.create("${checkEndpoint(towerEndpoint)}/user-info")
     }
@@ -68,7 +77,7 @@ abstract class TowerClient {
         return URI.create("${checkEndpoint(towerEndpoint)}/service-info")
     }
 
-    protected static Throwable handleIoError(Throwable err, URI uri) {
+    public static Throwable handleIoError(Throwable err, URI uri) {
         if (err instanceof CompletionException) {
             err = err.cause
         }
@@ -79,7 +88,7 @@ abstract class TowerClient {
         return err
     }
 
-    private static String checkEndpoint(String endpoint) {
+    public static String checkEndpoint(String endpoint) {
         if( !endpoint )
             throw new IllegalArgumentException("Missing endpoint argument")
         if( !endpoint.startsWith('http://') && !endpoint.startsWith('https://') )

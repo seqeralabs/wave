@@ -5,6 +5,7 @@ import java.util.concurrent.CompletableFuture
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.exception.HttpResponseException
+import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.pairing.socket.msg.ProxyGetRequest
 import io.seqera.wave.service.pairing.socket.msg.ProxyGetResponse
@@ -13,19 +14,18 @@ import jakarta.inject.Inject
 
 @Slf4j
 @CompileStatic
-class TowerClientSocket extends TowerClient {
-    private static final String SERVICE = "tower"
+class TowerClientSocket implements ServiceClient {
 
     @Inject
     private PairingChannel channel
 
     boolean isEndpointRegistered(String endpoint) {
-        return channel.isEndpointRegistered(SERVICE, endpoint)
+        return channel.isEndpointRegistered(PairingService.TOWER_SERVICE, endpoint)
     }
 
-    protected <T> CompletableFuture<T> getAsync(URI uri, String towerEndpoint, String authorization, Class<T> type) {
+    public <T> CompletableFuture<T> sendAsync(URI uri, String towerEndpoint, String authorization, Class<T> type) {
         final CompletableFuture<ProxyGetResponse> result = channel.sendServiceRequest(
-                SERVICE,
+                PairingService.TOWER_SERVICE,
                 towerEndpoint,
                 new ProxyGetRequest(msgId: UUID.randomUUID(), uri: uri, bearerAuth: authorization))
         return result
@@ -48,7 +48,7 @@ class TowerClientSocket extends TowerClient {
                     }
                 }
                 .exceptionally { err ->
-                    throw handleIoError(err, uri)
+                    throw TowerClient.handleIoError(err, uri)
                 }
     }
 
