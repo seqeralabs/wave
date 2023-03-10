@@ -106,12 +106,6 @@ println "This has syntax highlighting!"
 ```
 ````
 
-#### Formatting / linting
-
-Please make sure that you have Prettier installed and working locally: <https://prettier.io/> (ideally via the VSCode plugin or similar, formatting on save).
-
-There is a GitHub action that checks pull-requests for valid formatting.
-
 #### Admonitions
 
 We use admonitions extensively to make certain pieces of content stand out.
@@ -119,3 +113,51 @@ Please see the [official docs](https://squidfunk.github.io/mkdocs-material/refer
 
 -   `!!!` does a regular admonition, `???` makes it collapsed (click to expand).
 -   Intendation is important! Make sure you check the rendered site, as it's easy to make a mistake.
+
+### Formatting / linting
+
+The docs use Prettier (<https://prettier.io/>) to ensure consistent markdown formatting.
+There are a couple of ways that you can use this.
+
+#### Pre-commit
+
+Pre-commit (<https://pre-commit.com>) is a tool to run fast tests locally, as part of `git commit`.
+If anything fails, it will be automatically fixed (if possible) and the commit aborted.
+You can then stage the updates (or fix manually if needed) and try again.
+
+To install for this repo:
+
+```bash
+pip install pre-commit # install pre-commit tool globally
+pre-commit install     # in root of wave repo, activate pre-commit
+```
+
+Then a typical workflow for a commit:
+
+```bash
+git commit -a          # Normal git workflow, will run tests before allowing commit to proceed.
+# If pre-commit found something, it fixes it and >> aborts the commit <<
+git add .              # Stage the new changes made by prettier / pre-commit
+git commit             # Try the commit command again, should now run as normal
+```
+
+GitHub actions CI runs the same thing, so will fail if edits are made where pre-commit didn't run locally
+
+> **Warning**
+> If pre-commit finds something it will typically fix it for you, but it will abort the commit. So you'll then need to stage the new files and repeat the commit
+
+#### VSCode plugin / CLI
+
+You can also install Prettier locally and run it as a command line too:
+
+```
+prettier -w .
+```
+
+There's also a [VSCode plugin](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) to auto-format on save, which is by far the easiest.
+
+This fixes formatting as you go along, and pre-commit never has to do anything
+
+> **Warning**
+> May need a little config tweaking in VSCode to make it only run when you want it to run. For example I recommend at least this setting so that it doesn't start running on all code everywhere, but only when it's been configured as done in this PR:
+> <img width="707" alt="image" src="https://user-images.githubusercontent.com/465550/223406793-5b952b27-8292-4249-9d66-f157177df417.png">
