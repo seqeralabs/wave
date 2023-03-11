@@ -275,3 +275,9 @@ body[data-md-color-scheme="slate"] .excalidraw svg {
     mask-image: var(--md-admonition-icon--api-delete);
     width: 53px;
 }
+.md-typeset .admonition table {
+    font-size: 0.64rem;
+}
+.md-typeset .admonition table:not([class]) td {
+    padding: 0.5em 1.25em;
+}
