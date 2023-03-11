@@ -37,7 +37,7 @@ abstract class AbstractConsumerQueue<V> implements ConsumerQueue<V>, ConsumerGro
     abstract String group()
 
     @Override
-    synchronized send(String queueKey, V request) {
+    synchronized void send(String queueKey, V request) {
         final message = encodingStrategy.encode(request)
         broker.send(queueKey, message)
     }
@@ -73,7 +73,7 @@ abstract class AbstractConsumerQueue<V> implements ConsumerQueue<V>, ConsumerGro
     }
 
     @Override
-    synchronized removeConsumer(String queueKey, String consumerId) {
+    synchronized void removeConsumer(String queueKey, String consumerId) {
 
         if( !consumersMap.containsKey(queueKey) )
             throw new BadRequestException("No consumers at '${queueKey}'")

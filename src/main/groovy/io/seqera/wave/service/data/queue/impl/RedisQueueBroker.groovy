@@ -31,7 +31,7 @@ class RedisQueueBroker implements QueueBroker<String> {
     private ConsumerGroup<String> localConsumers
 
     @Override
-    init(ConsumerGroup<String> localConsumers) {
+    void init(ConsumerGroup<String> localConsumers) {
         this.localConsumers = localConsumers
 
         if( subscriber )
@@ -80,7 +80,7 @@ class RedisQueueBroker implements QueueBroker<String> {
     }
 
     @Override
-    def send(String queueKey, String message) {
+    void send(String queueKey, String message) {
         try(Jedis conn=pool.getResource()) {
 
             // Add new request to the left of the queue

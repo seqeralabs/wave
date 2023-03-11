@@ -16,15 +16,12 @@ import jakarta.inject.Singleton
 @Singleton
 class PairingSendQueue extends AbstractConsumerQueue<PairingMessage> {
 
-    @Value('${wave.pairing.queue-group:`pairing-queue`}')
-    private String groupName
-
     PairingSendQueue(QueueBroker<String> broker) {
         super(broker)
     }
 
     @Override
     String group() {
-        return groupName
+        return "pairing-queue"
     }
 }

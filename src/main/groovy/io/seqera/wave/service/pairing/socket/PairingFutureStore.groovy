@@ -12,15 +12,12 @@ import jakarta.inject.Singleton
 @Singleton
 class PairingFutureStore extends AbstractFutureStore<PairingMessage> {
 
-    @Value('${wave.pairing.store-group:`pairing-store`}')
-    private String groupName
-
     PairingFutureStore(FuturePublisher<String> publisher) {
         super(publisher)
     }
 
     @Override
     String group() {
-        return groupName
+        return "pairing-store"
     }
 }

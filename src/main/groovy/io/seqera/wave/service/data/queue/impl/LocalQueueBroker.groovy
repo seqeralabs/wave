@@ -23,12 +23,12 @@ class LocalQueueBroker implements QueueBroker<String> {
     private ConsumerGroup<String> localConsumers
 
     @Override
-    init(ConsumerGroup<String> localConsumers) {
+    void init(ConsumerGroup<String> localConsumers) {
         this.localConsumers = localConsumers
     }
 
     @Override
-    send(String queueKey, String message) {
+    void send(String queueKey, String message) {
         if (!localConsumers.canConsume(queueKey))
             throw new BadRequestException("No consumers at '${queueKey}'")
 
