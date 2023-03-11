@@ -2,6 +2,7 @@
 title: Features
 description: Describe the main features of Wave container service.
 hide:
+    - navigation
     - toc
 ---
 

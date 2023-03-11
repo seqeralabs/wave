@@ -2,6 +2,7 @@
 title: API documentation
 description: Endpoints for the Wave API
 hide:
+    - navigation
     - toc
 ---
 
