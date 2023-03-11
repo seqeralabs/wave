@@ -7,9 +7,7 @@ hide:
     - footer
 ---
 
-# Wave container provisioning service
-
-_Rethink containers for cloud-native data pipelines_
+# Wave container
 
 Containers are an essential part of data analysis in the cloud. Building and delivering optimized, context-aware
 container images slows down development.
