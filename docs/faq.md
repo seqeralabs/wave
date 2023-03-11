@@ -4,6 +4,7 @@ description: Frequently asked questions about Wave containers
 hide:
     - navigation
     - toc
+    - footer
 ---
 
 # Frequently Asked questions

@@ -4,6 +4,7 @@ description: Endpoints for the Wave API
 hide:
     - navigation
     - toc
+    - footer
 ---
 
 # API documentation

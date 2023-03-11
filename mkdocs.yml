@@ -5,7 +5,6 @@ repo_name: seqeralabs/wave
 
 nav:
   - Home: index.md
-  - features.md
   - guide.md
   - api.md
   - faq.md
