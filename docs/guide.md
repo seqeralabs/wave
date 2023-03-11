@@ -3,7 +3,6 @@ title: User guide
 description: Getting started with Wave containers
 hide:
     - navigation
-    - toc
     - footer
 ---
 
