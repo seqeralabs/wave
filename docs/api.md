@@ -17,7 +17,7 @@ This page summarizes the API provided by the Wave service.
 
     The endpoint returns the name of the container request made available by Wave.
 
-    ### Request
+    #### Request
 
     ```json
     {
@@ -75,7 +75,7 @@ This page summarizes the API provided by the Wave service.
     | `towerAccessToken`            | Access token of the user account granting the access to the Tower service specified via `towerEndpoint` (optional). |
     | `towerWorkspaceId`        | ID of the Tower workspace from where the container repositories credentials are retrieved (optional). When omitted the personal workspace is used. |
 
-    ### Response
+    #### Response
 
     ```json
     {
@@ -95,7 +95,7 @@ This page summarizes the API provided by the Wave service.
 
     It allows validating the access credentials of a container registry service.
 
-    ### Request
+    #### Request
 
     ```json
     {
@@ -122,7 +122,7 @@ This page summarizes the API provided by the Wave service.
 
     Provides basic information about the service status.
 
-    ### Response
+    #### Response
 
     ```json
     {
