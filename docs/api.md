@@ -111,7 +111,7 @@ This page summarizes the API provided by the Wave service.
     | `password`        | The registry serviec password (mandatory).    |
     | `registry`        | The registry host name e.g. `docker.io`, `quay.io`, etc. Note: protocol prefix should be provided. When omitted it defaults to `docker.io`. |
 
-    ### Response
+    #### Response
 
     | HTTP status code  | Description                           |
     | ----------------- | ------------------------------------- |
