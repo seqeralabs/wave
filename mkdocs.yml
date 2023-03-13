@@ -1,7 +1,5 @@
 site_name: Wave containers
 site_url: https://wavecontainers.io/
-repo_url: https://github.com/seqeralabs/wave
-repo_name: seqeralabs/wave
 
 nav:
   - Home: index.md
