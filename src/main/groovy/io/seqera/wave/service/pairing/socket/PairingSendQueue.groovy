@@ -1,6 +1,5 @@
 package io.seqera.wave.service.pairing.socket
 
-import io.micronaut.context.annotation.Value
 import io.seqera.wave.service.data.queue.AbstractConsumerQueue
 import io.seqera.wave.service.data.queue.QueueBroker
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage

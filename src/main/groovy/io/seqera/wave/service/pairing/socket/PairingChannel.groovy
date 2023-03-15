@@ -31,11 +31,12 @@ class PairingChannel {
 
     boolean registerEndpoint(String service, String endpoint, String token) {
         final key = buildKey(service, endpoint)
-        if( endpoints.get(key) == null ) {
+        final value = endpoints.get(key)
+        if( value == null ) {
             log.debug "New $service endpoint '$endpoint' registered"
             endpoints.put(key, token)
         }
-        return endpoints.get(key) == token
+        return value == token
     }
 
     boolean isEndpointRegistered(String service, String endpoint) {

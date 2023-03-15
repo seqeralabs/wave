@@ -7,8 +7,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
 @JsonSubTypes([
-        @JsonSubTypes.Type(value = ProxyGetRequest.class, name = "proxy-get-request"),
-        @JsonSubTypes.Type(value = ProxyGetResponse.class, name = "proxy-get-response"),
+        @JsonSubTypes.Type(value = ProxyHttpRequest.class, name = "proxy-http-request"),
+        @JsonSubTypes.Type(value = ProxyHttpResponse.class, name = "proxy-http-response"),
         @JsonSubTypes.Type(value = PairingResponse.class, name = "pairing-response"),
         @JsonSubTypes.Type(value = PairingHeartbeat.class, name = "pairing-heartbeat")
 ])

@@ -16,7 +16,7 @@ import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.tower.client.CredentialsDescription
 import io.seqera.wave.tower.client.GetCredentialsKeysResponse
 import io.seqera.wave.tower.client.ListCredentialsResponse
-import io.seqera.wave.tower.client.TowerClientHttp
+import io.seqera.wave.tower.client.service.HttpServiceClient
 import jakarta.inject.Inject
 
 /**
@@ -29,8 +29,8 @@ class CredentialsServiceTest extends Specification {
     @Inject CredentialsService credentialsService
 
 
-    @MockBean(TowerClientHttp)
-    TowerClientHttp towerClient = Mock(TowerClientHttp)
+    @MockBean(HttpServiceClient)
+    HttpServiceClient towerClient = Mock(HttpServiceClient)
 
 
     @MockBean(PairingService)

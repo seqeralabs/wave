@@ -1,5 +1,6 @@
 package io.seqera.wave.encoder
 
+
 import java.lang.reflect.Type
 
 import com.squareup.moshi.JsonAdapter
@@ -9,8 +10,8 @@ import groovy.transform.CompileStatic
 import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import io.seqera.wave.service.pairing.socket.msg.PairingResponse
-import io.seqera.wave.service.pairing.socket.msg.ProxyGetRequest
-import io.seqera.wave.service.pairing.socket.msg.ProxyGetResponse
+import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
+import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.LazyDigestStore
 import io.seqera.wave.storage.ZippedDigestStore
@@ -60,8 +61,8 @@ abstract class MoshiEncodeStrategy<V> implements EncodingStrategy<V> {
                         .withSubtype(HttpContentReader.class, HttpContentReader.simpleName)
                         .withSubtype(PathContentReader.class, PathContentReader.simpleName))
                 .add(PolymorphicJsonAdapterFactory.of(PairingMessage.class, "@type")
-                        .withSubtype(ProxyGetRequest.class, ProxyGetRequest.simpleName)
-                        .withSubtype(ProxyGetResponse.class, ProxyGetResponse.simpleName)
+                        .withSubtype(ProxyHttpRequest.class, ProxyHttpRequest.simpleName)
+                        .withSubtype(ProxyHttpResponse.class, ProxyHttpResponse.simpleName)
                         .withSubtype(PairingHeartbeat.class, PairingHeartbeat.simpleName)
                         .withSubtype(PairingResponse.class, PairingResponse.simpleName)
                 )

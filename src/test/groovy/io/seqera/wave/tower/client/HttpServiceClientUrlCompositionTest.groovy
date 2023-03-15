@@ -2,11 +2,13 @@ package io.seqera.wave.tower.client
 
 import spock.lang.Specification
 
-class TowerClientHttpUrlCompositionTest extends Specification{
+import io.seqera.wave.tower.client.service.HttpServiceClient
+
+class HttpServiceClientUrlCompositionTest extends Specification{
 
     def 'compose user info endpoint'() {
         expect:
-        TowerClientHttp.userInfoEndpoint(endpoint).toString() == expected
+        HttpServiceClient.userInfoEndpoint(endpoint).toString() == expected
 
         where:
 
@@ -21,7 +23,7 @@ class TowerClientHttpUrlCompositionTest extends Specification{
 
     def 'fail compose userInfo with invalid towerEndpoint'() {
         when:
-        TowerClientHttp.userInfoEndpoint(endpoint)
+        HttpServiceClient.userInfoEndpoint(endpoint)
 
         then:
         thrown(IllegalArgumentException)
@@ -39,7 +41,7 @@ class TowerClientHttpUrlCompositionTest extends Specification{
 
     def 'compose list credentials endpoint'() {
         expect:
-        TowerClientHttp.listCredentialsEndpoint(endpoint, workspaceId).toString() == expected
+        HttpServiceClient.listCredentialsEndpoint(endpoint, workspaceId).toString() == expected
 
         where:
 
@@ -56,7 +58,7 @@ class TowerClientHttpUrlCompositionTest extends Specification{
 
     def 'fail compose list credentials with invalid towerEndpoint'() {
         when:
-        TowerClientHttp.listCredentialsEndpoint(endpoint, workspaceId).toString()
+        HttpServiceClient.listCredentialsEndpoint(endpoint, workspaceId).toString()
 
         then:
         thrown(IllegalArgumentException)
@@ -79,7 +81,7 @@ class TowerClientHttpUrlCompositionTest extends Specification{
 
     def 'compose fetch credentials endpoint'() {
         expect:
-        TowerClientHttp.fetchCredentialsEndpoint(endpoint,credsId,keyId,workspaceId).toString() == expected
+        HttpServiceClient.fetchCredentialsEndpoint(endpoint,credsId,keyId,workspaceId).toString() == expected
 
         where:
 
@@ -96,7 +98,7 @@ class TowerClientHttpUrlCompositionTest extends Specification{
 
     def 'fail compose fetch credentials endpoint with invalid towerEndpoint or missing data'() {
         when:
-        TowerClientHttp.fetchCredentialsEndpoint(endpoint, credsId, keyId, 1)
+        HttpServiceClient.fetchCredentialsEndpoint(endpoint, credsId, keyId, 1)
 
         then:
         thrown(IllegalArgumentException)
