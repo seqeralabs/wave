@@ -1,4 +1,14 @@
 # Wave changelog
+v0.26.3 - 15 Mar 2023 
+- Revert "Block permanent failing pairing endpoints" [c55cd361]
+- Add Mkdocs documentation  (#221) [1f777e76]
+- Add Prometheus metrics percentiles [5d019a56]
+- Remove JSON prettyPrint [ecaf4d8f]
+
+v0.26.2 - 3 Mar 2023 
+- Block permanent failing pairing endpoints [afbaa449]
+- Fix Gitea Container registry auth [e732ba90]
+
 v0.26.1 - 1 Mar 2023
 - Relax retry on pairing connectivity check [ee4b133b]
 - Block permanent failing pairing endpoints [afbaa449]
