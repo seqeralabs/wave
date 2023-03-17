@@ -4,7 +4,7 @@
    "config": {
       "mediaType": "application/vnd.docker.container.image.v1+json",
       "size": 1469,
-      "digest": "sha256:<>"
+      "digest": "sha256:feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412"
    },
    "layers": [
       {
