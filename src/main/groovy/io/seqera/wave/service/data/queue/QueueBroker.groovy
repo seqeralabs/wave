@@ -1,5 +1,7 @@
 package io.seqera.wave.service.data.queue
 
+import java.util.function.Consumer
+
 /**
  * Define the interface to send and receive objects to a queue
  * using a broker
@@ -24,5 +26,13 @@ interface QueueBroker<V> {
      * @param message Value of type V to send
      */
     void send(String queueKey, V message)
+
+    /**
+     * Non-blocking consume from a queue
+     *
+     * @param queueKey Queue identifier
+     * @param consumer Consumer that will consume a message if available
+     */
+    void consume(String queueKey, Consumer<V> consumer)
 
 }

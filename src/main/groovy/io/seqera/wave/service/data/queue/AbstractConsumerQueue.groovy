@@ -57,7 +57,7 @@ abstract class AbstractConsumerQueue<V> implements ConsumerQueue<V>, ConsumerGro
 
     @Override
     boolean canConsume(String queueKey) {
-        return consumersMap.containsKey(queueKey)
+        return consumersMap.containsKey(queueKey) && consumersMap.get(queueKey).size() > 0
     }
 
     @Override
@@ -68,6 +68,11 @@ abstract class AbstractConsumerQueue<V> implements ConsumerQueue<V>, ConsumerGro
 
         String consumerId = UUID.randomUUID().toString()
         consumersMap.get(queueKey).put(consumerId, consumer)
+
+        // Try to consume all pending queue messages
+        broker.consume(queueKey, message -> {
+            consumer.accept(encodingStrategy.decode(message))
+        })
 
         return consumerId
     }

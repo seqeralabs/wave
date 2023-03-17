@@ -1,5 +1,7 @@
 package io.seqera.wave.service.data.queue.impl
 
+import java.util.function.Consumer
+
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Prototype
@@ -89,6 +91,19 @@ class RedisQueueBroker implements QueueBroker<String> {
             // Notify local consumers topic that there is a
             // new request at the given queue key
             conn.publish(localConsumers.group(), queueKey)
+        }
+    }
+
+    @Override
+    void consume(String queueKey, Consumer<String> consumer) {
+        try(Jedis conn=pool.getResource()) {
+            // Consume all pending messages
+            while (true) {
+                final element = conn.brpop(1.0 as double, queueKey)
+                if (!element)
+                    return
+                consumer.accept(element.element)
+            }
         }
     }
 }

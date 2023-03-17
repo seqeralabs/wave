@@ -1,5 +1,7 @@
 package io.seqera.wave.service.data.queue.impl
 
+import java.util.function.Consumer
+
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Prototype
@@ -33,5 +35,9 @@ class LocalQueueBroker implements QueueBroker<String> {
             throw new BadRequestException("No consumers at '${queueKey}'")
 
         localConsumers.consume(queueKey, message)
+    }
+
+    @Override
+    void consume(String queueKey, Consumer<String> consumer) {
     }
 }
