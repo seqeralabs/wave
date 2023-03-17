@@ -171,7 +171,9 @@ class ProxyClient {
                     final msg = "Missing `Location` header for request URI '$target' ― origin request '$origin'"
                     throw new ClientResponseException(msg, result.request())
                 }
-                target = new URI(redirect)
+                // the redirect location can be a relative path i.e. without hostname
+                // therefore resolve it against the target registry hostname
+                target = registry.host.resolve(redirect)
                 if( target in visited ) {
                     final msg = "Redirect location already visited: $redirect ― origin request '$origin'"
                     throw new ClientResponseException(msg, result.request())
