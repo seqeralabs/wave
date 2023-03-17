@@ -1,4 +1,8 @@
 # Wave changelog
+v0.26.5 - 17 Mar 2023
+- Resolve host for relative redirects [b09d4d7b]
+- Minor log change [f36a2339]
+
 v0.26.4 - 17 Mar 2023 
 - Improve debugging [c0ee6e6]
 - Fix docs [e148b307]
