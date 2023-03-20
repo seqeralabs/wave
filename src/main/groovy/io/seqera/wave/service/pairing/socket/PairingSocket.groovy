@@ -24,7 +24,7 @@ import io.seqera.wave.service.pairing.socket.msg.PairingResponse
 @Slf4j
 @CompileStatic
 @Prototype  // note use prototype to have an instance for each session
-@ServerWebSocket("/pairing/{service}/{token}{?endpoint}")
+@ServerWebSocket("/pairing/{service}/token/{token}{?endpoint}")
 class PairingSocket {
     public static final CloseReason INVALID_ENDPOINT_REGISTER = new CloseReason(4000, "Invalid endpoint register")
 
