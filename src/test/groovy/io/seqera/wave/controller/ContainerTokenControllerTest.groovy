@@ -20,6 +20,7 @@ import io.seqera.wave.exchange.DescribeWaveContainerResponse
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.pairing.PairingRecord
 import io.seqera.wave.service.pairing.PairingService
+import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
@@ -253,7 +254,10 @@ class ContainerTokenControllerTest extends Specification {
         given:
         def validation = new ValidationServiceImpl()
         def pairing = Mock(PairingService)
-        def controller = new ContainerTokenController(validationService: validation, pairingService: pairing)
+        def channel = Mock(PairingChannel) {
+            isEndpointRegistered(_, _) >> false
+        }
+        def controller = new ContainerTokenController(validationService: validation, pairingService: pairing, pairingChannel: channel)
         def msg
 
         when:

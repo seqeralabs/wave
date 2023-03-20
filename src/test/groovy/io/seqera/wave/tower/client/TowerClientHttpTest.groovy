@@ -20,18 +20,18 @@ import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
-import io.seqera.wave.tower.client.service.HttpServiceClient
+import io.seqera.wave.tower.client.service.AbstractServiceClient
 import jakarta.inject.Inject
 import spock.lang.Specification
 
 import java.util.concurrent.ExecutionException
 
 @MicronautTest(environments = ['test','tower'])
-@Property(name = 'spec.name', value = 'HttpServiceClientTest')
-class HttpServiceClientTest extends Specification{
+@Property(name = 'spec.name', value = 'TowerClientHttpTest')
+class TowerClientHttpTest extends Specification{
 
     @Controller('/')
-    @Requires(property = 'spec.name', value = 'HttpServiceClientTest')
+    @Requires(property = 'spec.name', value = 'TowerClientHttpTest')
     static class TowerFakeController {
 
         @Get('/user-info')
@@ -98,7 +98,7 @@ class HttpServiceClientTest extends Specification{
     EmbeddedServer embeddedServer
 
     @Inject
-    HttpServiceClient towerClient
+    TowerClient towerClient
 
     @Inject
     JwtAuthStore jwtAuthStore
@@ -239,7 +239,7 @@ class HttpServiceClientTest extends Specification{
 
     def 'parse tokens'() {
         when:
-        def tokens = HttpServiceClient.parseTokens(cookies,'current-refresh')
+        def tokens = AbstractServiceClient.parseTokens(cookies,'current-refresh')
 
         then:
         tokens.refresh == expectedRefresh
@@ -257,7 +257,7 @@ class HttpServiceClientTest extends Specification{
 
     def 'parse tokens when there is no jwt'() {
         when:
-        HttpServiceClient.parseTokens(cookies,'current-refresh')
+        AbstractServiceClient.parseTokens(cookies,'current-refresh')
         then:
         def e = thrown(HttpResponseException)
         e.statusCode() == HttpStatus.PRECONDITION_FAILED

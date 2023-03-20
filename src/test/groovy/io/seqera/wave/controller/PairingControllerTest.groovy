@@ -17,6 +17,7 @@ import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.exchange.PairingResponse
 import io.seqera.wave.tower.client.ServiceInfoResponse
+import io.seqera.wave.tower.client.TowerClient
 import io.seqera.wave.tower.client.service.HttpServiceClient
 import jakarta.inject.Inject
 
@@ -32,11 +33,11 @@ class PairingControllerTest extends Specification{
     ApplicationContext applicationContext
 
     @Inject
-    HttpServiceClient towerClient
+    TowerClient towerClient
 
-    @MockBean(HttpServiceClient)
-    HttpServiceClient tower() {
-        Mock(HttpServiceClient) {
+    @MockBean(TowerClient)
+    TowerClient tower() {
+        Mock(TowerClient) {
             serviceInfo(_) >> {
                 def info = new ServiceInfoResponse(serviceInfo: new ServiceInfoResponse.ServiceInfo(version: '1.0'))
                 CompletableFuture.completedFuture(info)

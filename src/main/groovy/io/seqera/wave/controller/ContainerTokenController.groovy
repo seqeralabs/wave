@@ -27,6 +27,7 @@ import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.pairing.PairingService
+import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.token.ContainerTokenService
@@ -99,6 +100,9 @@ class ContainerTokenController {
 
     @Inject
     PairingService pairingService
+
+    @Inject
+    PairingChannel pairingChannel
 
     @PostConstruct
     private void init() {
@@ -257,6 +261,14 @@ class ContainerTokenController {
 
     void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException{
         if( req.towerEndpoint && req.towerAccessToken ) {
+
+            // check the endpoint is valid public URL if not registered
+            if( !pairingChannel.isEndpointRegistered(PairingService.TOWER_SERVICE, req.towerEndpoint) ) {
+                final msg = validationService.checkEndpoint(req.towerEndpoint)
+                if (msg)
+                    throw new BadRequestException(msg.replaceAll(/(?i)endpoint/, 'Tower endpoint'))
+            }
+
             // check the endpoint has been registered via the pairing process
             if( !pairingService.getPairingRecord(TOWER, req.towerEndpoint) )
                 throw new BadRequestException("Missing pairing record for Tower endpoint '$req.towerEndpoint'")

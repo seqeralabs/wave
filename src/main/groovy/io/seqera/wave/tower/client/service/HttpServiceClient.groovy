@@ -45,20 +45,37 @@ class HttpServiceClient extends AbstractServiceClient {
         return httpResponse.thenCompose { CompletableFuture.completedFuture(new ProxyHttpResponse(
                 msgId: request.msgId,
                 status: it.statusCode(),
-                body: it.body()
+                body: it.body(),
+                headers: it.headers().map()
         ))}
     }
 
     private static HttpRequest buildHttpRequest(ProxyHttpRequest proxyRequest) {
-        if (proxyRequest.method == HttpMethod.GET.toString()) {
-            return HttpRequest.newBuilder()
-                    .uri(URI.create(proxyRequest.uri))
-                    .header('Authorization', "Bearer ${proxyRequest.bearerAuth}")
-                    .GET()
-                    .build()
+
+        final builder = HttpRequest
+                .newBuilder()
+                .uri(URI.create(proxyRequest.uri))
+
+        final method = HttpMethod.parse(proxyRequest.method)
+        switch (method) {
+            case HttpMethod.GET: builder.GET(); break
+            case HttpMethod.DELETE: builder.DELETE(); break
+            default:
+                builder.method(method.toString(), HttpRequest.BodyPublishers.ofString(proxyRequest.body))
         }
 
-        throw new UnsupportedOperationException("Unsupported http request method '${proxyRequest.method}'")
+        if (proxyRequest.bearerAuth)
+            builder.header('Authorization', "Bearer ${proxyRequest.bearerAuth}")
+
+        if (proxyRequest.headers) {
+            proxyRequest.headers.each { header ->
+                header.value.each {
+                    builder.header(header.key, it)
+                }
+            }
+        }
+
+        return builder.build()
     }
 
 }

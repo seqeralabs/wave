@@ -148,7 +148,7 @@ abstract class AbstractServiceClient {
                     if (resp.status >= 400) {
                         throw new HttpResponseException(resp.status, "Unexpected Tower response refreshing JWT token", resp.body)
                     }
-                    final cookies = resp.headers.getOrDefault('Set-Cookie', List.of())
+                    final cookies = resp.headers?['Set-Cookie'] ?: []
                     final jwtAuth = parseTokens(cookies, refreshToken)
                     return jwtAuthStore.putJwtAuth(serviceEndpoint, originalAuthToken, jwtAuth)
                 }
