@@ -236,7 +236,7 @@ class ContainerAugmenter {
         final content = ContentReaderFactory.of(location)
         storage.saveBlob(path, content, type, digest)
 
-        final result = new HashMap(10)
+        final result = new LinkedHashMap(10)
         result."mediaType" = type
         result."size" = size
         result."digest" = digest

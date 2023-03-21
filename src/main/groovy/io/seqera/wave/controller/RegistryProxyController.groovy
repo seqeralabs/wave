@@ -7,6 +7,7 @@ import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpMethod
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
@@ -25,6 +26,7 @@ import io.seqera.wave.core.RegistryProxyService.DelegateResponse
 import io.seqera.wave.core.RouteHandler
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.exception.DockerRegistryException
+import io.seqera.wave.exception.MismatchChecksumException
 import io.seqera.wave.exchange.RegistryErrorResponse
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
@@ -34,6 +36,7 @@ import io.seqera.wave.storage.Storage
 import jakarta.inject.Inject
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Mono
+import static io.seqera.wave.util.RegHelper.digest
 /**
  * Implement a registry proxy controller that forward registry pull requests to the target service
  *
@@ -52,6 +55,9 @@ class RegistryProxyController {
     @Inject ContainerBuildService containerBuildService
     @Inject @Nullable RateLimiterService rateLimiterService
     @Inject ErrorHandler errorHandler
+
+    @Value('${wave.debugChecksum:false}')
+    boolean debugChecksum
 
     @Error
     HttpResponse<RegistryErrorResponse> handleError(HttpRequest request, Throwable t) {
@@ -199,14 +205,21 @@ class RegistryProxyController {
     }
 
     MutableHttpResponse<?> fromCache(DigestStore entry) {
+        // validate checksum
+        String d0
+        final resp = entry.bytes
+        if( debugChecksum && entry.digest!=(d0=digest(resp)) ) {
+            throw new MismatchChecksumException("Digest checksum mismatch - expected=${entry.digest}; computed=$d0", entry)
+        }
+        // compose response
         Map<CharSequence, CharSequence> headers = Map.of(
-                        "Content-Length", entry.bytes.length.toString(),
+                        "Content-Length", resp.length.toString(),
                         "Content-Type", entry.mediaType,
                         "docker-content-digest", entry.digest,
                         "etag", entry.digest,
                         "docker-distribution-api-version", "registry/2.0") as Map<CharSequence, CharSequence>
         HttpResponse
-                .ok( entry.bytes )
+                .ok(resp)
                 .headers(headers)
     }
 

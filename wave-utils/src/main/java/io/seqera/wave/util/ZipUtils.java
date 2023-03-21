@@ -14,8 +14,8 @@ import java.util.zip.InflaterInputStream;
 public class ZipUtils {
 
     public static byte[] compress(InputStream stream) {
-        try (stream) {
-            return new DeflaterInputStream(stream).readAllBytes();
+        try (InputStream in0=new DeflaterInputStream(stream)) {
+            return in0.readAllBytes();
         }
         catch (IOException e) {
             throw new RuntimeException("Unable to compress provider stream", e);
@@ -35,12 +35,14 @@ public class ZipUtils {
     }
 
     public static String decompressAsString(byte[] buffer) throws IOException {
-        return new String(decompress(buffer).readAllBytes());
+        try( InputStream in0=decompress(buffer) ) {
+            return new String(in0.readAllBytes());
+        }
     }
 
     public static byte[] decompressAsBytes(byte[] buffer) {
-        try {
-            return decompress(buffer).readAllBytes();
+        try ( InputStream in0=decompress(buffer) ) {
+            return in0.readAllBytes();
         }
         catch (IOException e) {
             throw new RuntimeException("Unable to decompress provider buffer", e);

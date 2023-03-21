@@ -6,9 +6,13 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.encoder.MoshiEncodeStrategy
+import io.seqera.wave.exception.MismatchChecksumException
 import io.seqera.wave.service.cache.AbstractCacheStore
 import io.seqera.wave.service.cache.impl.CacheProvider
 import io.seqera.wave.storage.reader.ContentReader
+import io.seqera.wave.storage.reader.DataContentReader
+import io.seqera.wave.storage.reader.GzipContentReader
+import io.seqera.wave.util.RegHelper
 import jakarta.inject.Singleton
 
 /**
@@ -22,6 +26,9 @@ import jakarta.inject.Singleton
 class ManifestCacheStore extends AbstractCacheStore<DigestStore> implements Storage {
 
     final private Duration duration
+
+    @Value('${wave.debugChecksum:false}')
+    private boolean debugChecksum
 
     ManifestCacheStore(
             CacheProvider<String, String> provider,
@@ -83,6 +90,11 @@ class ManifestCacheStore extends AbstractCacheStore<DigestStore> implements Stor
         log.trace "Save Blob ==> $path"
         final result = new LazyDigestStore(content, type, digest)
         this.put(path, result)
+        // validate checksum
+        String d0
+        if( debugChecksum && (content instanceof DataContentReader || content instanceof GzipContentReader) && digest!=(d0=RegHelper.digest(content.readAllBytes()))) {
+            throw new MismatchChecksumException("Blob mismatch checksum - expected=$digest; computed=$d0", result)
+        }
         return result
     }
 

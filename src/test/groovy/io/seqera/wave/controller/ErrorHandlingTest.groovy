@@ -23,7 +23,6 @@ class ErrorHandlingTest extends Specification {
     @Client("/")
     HttpClient client;
 
-
     void 'should handle an error'() {
         when:
         HttpRequest request = HttpRequest.GET("/v2/hello-world/manifests/latest").headers({ h->
