@@ -325,4 +325,24 @@ class ContainerTokenControllerTest extends Specification {
         msg.message == 'Invalid container image name — offending value: http:docker.io/foo:latest'
 
     }
+
+    def 'should allow any registered endpoint' () {
+        given:
+        def registeredUri = 'ftp://127.0.0.1'
+        def validation = new ValidationServiceImpl()
+        def pairing = Mock(PairingService)
+        def channel = Mock(PairingChannel) {
+            isEndpointRegistered('tower', registeredUri) >> true
+        }
+        def controller = new ContainerTokenController(validationService: validation, pairingService: pairing, pairingChannel: channel)
+        def msg
+
+        when:
+        controller.validateContainerRequest(new SubmitContainerTokenRequest(towerEndpoint: registeredUri, towerAccessToken: '123'))
+        then:
+        1 * pairing.getPairingRecord('tower',registeredUri) >> Mock(PairingRecord)
+        and:
+        noExceptionThrown()
+
+    }
 }
