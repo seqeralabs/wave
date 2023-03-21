@@ -80,13 +80,16 @@ class RedisQueueBroker implements QueueBroker<String> {
 
     @Retryable(includes=[JedisConnectionException])
     void subscribe() {
-        // Check valid connection is available
-        try(Jedis conn=pool.getResource()) {}
-
-        // Subscribe at background
         final name = "redis-pairing-queue-subscriber"
+        try(Jedis conn=pool.getResource()) {
+            if (!conn.isConnected() || conn.isBroken()) {
+                throw new JedisConnectionException("Redis connection for '${name}' connected=${conn.isConnected()} and broken=${conn.isBroken()}")
+            }
+        }
+
         Thread.startDaemon(name) {
             try (Jedis conn = pool.getResource()) {
+                log.debug "Redis connection for '${name}' connected=${conn.isConnected()} and broken=${conn.isBroken()}"
                 conn.subscribe(subscriber, localConsumers.group())
             }
         }
