@@ -6,12 +6,15 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Prototype
 import io.micronaut.context.annotation.Requires
+import io.micronaut.retry.annotation.Retryable
 import io.seqera.wave.service.data.future.FutureListener
 import io.seqera.wave.service.data.future.FuturePublisher
 import jakarta.inject.Inject
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.JedisPubSub
+import redis.clients.jedis.exceptions.JedisConnectionException
+
 /**
  * Implements a future store publisher based on Redis pub-sub.
  *
@@ -51,9 +54,14 @@ class RedisFuturePublisher implements FuturePublisher<String> {
         // subscribe redis events
         final name = "redis-future-subscriber-${count.getAndIncrement()}"
         Thread.startDaemon(name) {
-            try(Jedis conn=pool.getResource()) {
-                conn.subscribe(subscriber, group)
-            }
+            subscribe()
+        }
+    }
+
+    @Retryable(includes=[JedisConnectionException])
+    void subscribe() {
+        try(Jedis conn=pool.getResource()) {
+            conn.subscribe(subscriber, group)
         }
     }
 

@@ -6,12 +6,14 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Prototype
 import io.micronaut.context.annotation.Requires
+import io.micronaut.retry.annotation.Retryable
 import io.seqera.wave.service.data.queue.ConsumerGroup
 import io.seqera.wave.service.data.queue.QueueBroker
 import jakarta.inject.Inject
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.JedisPubSub
+import redis.clients.jedis.exceptions.JedisConnectionException
 
 /**
  * Distributed message broker that forwards all incoming messages to a
@@ -74,11 +76,16 @@ class RedisQueueBroker implements QueueBroker<String> {
         // subscribe redis events
         final name = "redis-pairing-queue-subscriber"
         Thread.startDaemon(name) {
-            try(Jedis conn=pool.getResource()) {
-                conn.subscribe(subscriber, groupName)
-            }
+            subscribe()
         }
 
+    }
+
+    @Retryable(includes=[JedisConnectionException])
+    void subscribe() {
+        try(Jedis conn=pool.getResource()) {
+            conn.subscribe(subscriber, localConsumers.group())
+        }
     }
 
     @Override
