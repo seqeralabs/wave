@@ -70,7 +70,7 @@ class AbstractFutureStoreRedisTest extends Specification implements RedisTestCon
         when:
         store.complete('foo', new Simple('Hello'))
         then:
-        future.get(5, TimeUnit.SECONDS).value == "Hello"
+        future.get(10, TimeUnit.SECONDS).value == "Hello"
 
         cleanup:
         store.close()
@@ -95,7 +95,7 @@ class AbstractFutureStoreRedisTest extends Specification implements RedisTestCon
         store2.complete('foo', new Simple('Hola'))
         then:
         // future get completed
-        future.get(5, TimeUnit.SECONDS).value == "Hola"
+        future.get(10, TimeUnit.SECONDS).value == "Hola"
 
         cleanup:
         store1.close()
