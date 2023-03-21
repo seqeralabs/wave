@@ -58,17 +58,17 @@ class AbstractFutureStoreRedisTest extends Specification implements RedisTestCon
         def store = new SimpleRedisDataStore(pub)
 
         when:
-        def future = store.create('foo')
+        def future = store.create('foo_one')
         then:
         !future.isDone()
 
         when:
-        store.complete('bar', new Simple('Hola'))
+        store.complete('bar_one', new Simple('Hola'))
         then:
         !future.isDone()
 
         when:
-        store.complete('foo', new Simple('Hello'))
+        store.complete('foo_one', new Simple('Hello'))
         then:
         future.get(5, TimeUnit.SECONDS).value == "Hello"
 
@@ -86,13 +86,13 @@ class AbstractFutureStoreRedisTest extends Specification implements RedisTestCon
 
         // create a future on store1
         and:
-        def future = store1.create('foo')
+        def future = store1.create('foo_two')
         then:
         !future.isDone()
 
         // complete it on store2
         when:
-        store2.complete('foo', new Simple('Hola'))
+        store2.complete('foo_two', new Simple('Hola'))
         then:
         // future get completed
         future.get(5, TimeUnit.SECONDS).value == "Hola"
