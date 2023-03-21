@@ -13,6 +13,7 @@ import dev.failsafe.event.ExecutionAttemptedEvent
 import dev.failsafe.function.CheckedSupplier
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.http.server.exceptions.InternalServerException
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryInfo
@@ -170,7 +171,9 @@ class ProxyClient {
                     final msg = "Missing `Location` header for request URI '$target' ― origin request '$origin'"
                     throw new ClientResponseException(msg, result.request())
                 }
-                target = new URI(redirect)
+                // the redirect location can be a relative path i.e. without hostname
+                // therefore resolve it against the target registry hostname
+                target = registry.host.resolve(redirect)
                 if( target in visited ) {
                     final msg = "Redirect location already visited: $redirect ― origin request '$origin'"
                     throw new ClientResponseException(msg, result.request())
@@ -188,20 +191,25 @@ class ProxyClient {
     }
 
     private <T> HttpResponse<T> get1(URI uri, Map<String,List<String>> headers, BodyHandler<T> handler, boolean authorize) {
-        final builder = HttpRequest.newBuilder(uri) .GET()
-        copyHeaders(headers, builder)
-        if( authorize ) {
-            // add authorisation header
-            final header = loginService.getAuthorization(image, registry.auth, credentials)
-            if( header )
-                builder.setHeader("Authorization", header)
+        try{
+            final builder = HttpRequest.newBuilder(uri) .GET()
+            copyHeaders(headers, builder)
+            if( authorize ) {
+                // add authorisation header
+                final header = loginService.getAuthorization(image, registry.auth, credentials)
+                if( header )
+                    builder.setHeader("Authorization", header)
+            }
+            // build the request
+            final request = builder.build()
+            // send it
+            final response = httpClient.send(request, handler)
+            traceResponse(response)
+            return response
         }
-        // build the request
-        final request = builder.build()
-        // send it
-        final response = httpClient.send(request, handler)
-        traceResponse(response)
-        return response
+        catch (Exception e) {
+            throw new InternalServerException("Unexpected error on HTTP GET request '$uri'", e)
+        }
     }
 
     HttpResponse<Void> head(String path, Map<String,List<String>> headers=null) {

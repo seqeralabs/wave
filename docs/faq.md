@@ -55,9 +55,10 @@ wave.build.repository = 'example.com/your/build-repo'
 
 Wave has been tested with the following container registries:
 
+-   [AWS Elastic Container Registry](https://aws.amazon.com/ecr/)
+-   [Azure Container Registry](https://azure.microsoft.com/en-us/products/container-registry)
 -   [Docker Hub](https://hub.docker.com/)
 -   [Quay.io](https://quay.io/)
--   [AWS Elastic Container Registry](https://aws.amazon.com/ecr/)
--   [Google Artifactory Registry](https://cloud.google.com/artifact-registry)
--   [Azure Container Registry](https://azure.microsoft.com/en-us/products/container-registry)
 -   [Gitea Container Registry](https://docs.gitea.io/en-us/packages/container/)
+-   [GitHub Container Registry](https://github.blog/2020-09-01-introducing-github-container-registry/)
+-   [Google Artifactory Registry](https://cloud.google.com/artifact-registry)

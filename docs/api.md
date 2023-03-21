@@ -91,33 +91,6 @@ This page summarizes the API provided by the Wave service.
     | `targetImage`     | The Wave container image name e.g. `wave.seqera.io/wt/0123456789/library/ubuntu:latest`.  |
     | `expiration`      | The expiration timestamp of the Wave container using ISO-8601 format.                     |
 
-!!! api-get "/validate-creds"
-
-    It allows validating the access credentials of a container registry service.
-
-    #### Request
-
-    ```json
-    {
-        userName: string,
-        password: string,
-        registry: string
-    }
-    ```
-
-    | Attribute         | Description                          |
-    | ----------------- | ------------------------------------ |
-    | `userName`        | The registry service username (mandatory).    |
-    | `password`        | The registry serviec password (mandatory).    |
-    | `registry`        | The registry host name e.g. `docker.io`, `quay.io`, etc. Note: protocol prefix should be provided. When omitted it defaults to `docker.io`. |
-
-    #### Response
-
-    | HTTP status code  | Description                           |
-    | ----------------- | ------------------------------------- |
-    | `200`             | The credentials are valid.                |
-    | `400`             | The credentials provided are not valid.   |
-
 !!! api-get "/service-info"
 
     Provides basic information about the service status.

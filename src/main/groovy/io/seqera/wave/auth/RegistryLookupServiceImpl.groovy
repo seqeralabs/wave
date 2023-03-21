@@ -10,6 +10,7 @@ import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.seqera.wave.util.HttpRetryable
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -22,6 +23,7 @@ import static io.seqera.wave.WaveDefault.DOCKER_REGISTRY_1
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @Singleton
 @CompileStatic
 class RegistryLookupServiceImpl implements RegistryLookupService {
@@ -34,7 +36,14 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
     private CacheLoader<URI, RegistryAuth> loader = new CacheLoader<URI, RegistryAuth>() {
         @Override
         RegistryAuth load(URI endpoint) throws Exception {
-            return lookup0(endpoint)
+            RegistryAuth result = null
+            try {
+                result = lookup0(endpoint)
+            }
+            finally {
+                log.debug "Authority lookup for endpoint: '$endpoint' => $result"
+                return result
+            }
         }
     }
 
@@ -61,6 +70,7 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
         final code = response.statusCode()
         if( code == 401 ) {
             def authenticate = response.headers().firstValue('WWW-Authenticate').orElse(null)
+            log.trace "Authority lookup => endpoint: '$endpoint' - authenticate: '$authenticate'"
             def result = RegistryAuth.parse(authenticate)
             if( !result && authenticate?.startsWith('Basic realm=') ) {
                 result = new RegistryAuth(endpoint, null, RegistryAuth.Type.Basic)
