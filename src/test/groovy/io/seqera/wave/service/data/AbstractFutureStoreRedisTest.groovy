@@ -56,6 +56,8 @@ class AbstractFutureStoreRedisTest extends Specification implements RedisTestCon
         given:
         def pub = applicationContext.getBean(RedisFuturePublisher)
         def store = new SimpleRedisDataStore(pub)
+        and:
+        sleep(1000)
 
         when:
         def future = store.create('foo_one')
@@ -83,6 +85,8 @@ class AbstractFutureStoreRedisTest extends Specification implements RedisTestCon
         and:
         def pub2 = applicationContext.getBean(RedisFuturePublisher)
         def store2 = new SimpleRedisDataStore(pub2)
+        and:
+        sleep(1000)
 
         // create a future on store1
         and:
