@@ -75,20 +75,8 @@ class RedisQueueBroker implements QueueBroker<String> {
 
         // subscribe redis events
         final name = "redis-pairing-queue-subscriber"
-        checkRedis(name)
         Thread.startDaemon(name) {
             subscribe(name)
-        }
-    }
-
-    @Retryable(includes=[JedisConnectionException])
-    void checkRedis(String name) {
-        try(Jedis conn=pool.getResource()) {
-            if (!conn.isConnected() || conn.isBroken()) {
-                final msg = "Redis connection for '${name}' connected=${conn.isConnected()} and broken=${conn.isBroken()}"
-                log.error(msg)
-                throw new JedisConnectionException(msg)
-            }
         }
     }
 
