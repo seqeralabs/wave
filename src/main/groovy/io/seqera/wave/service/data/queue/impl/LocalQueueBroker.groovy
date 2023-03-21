@@ -31,8 +31,10 @@ class LocalQueueBroker implements QueueBroker<String> {
 
     @Override
     void send(String queueKey, String message) {
-        if (!localConsumers.canConsume(queueKey))
-            throw new BadRequestException("No consumers at '${queueKey}'")
+        if (!localConsumers.canConsume(queueKey)) {
+            log.debug "No local consumers for queue=$queueKey"
+            return
+        }
 
         localConsumers.consume(queueKey, message)
     }

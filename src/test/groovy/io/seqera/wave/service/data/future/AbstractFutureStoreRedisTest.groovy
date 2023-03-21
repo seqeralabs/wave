@@ -1,7 +1,5 @@
-package io.seqera.wave.service.data
+package io.seqera.wave.service.data.future
 
-import io.seqera.wave.service.data.future.AbstractFutureStore
-import io.seqera.wave.service.data.future.FuturePublisher
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -29,7 +27,7 @@ class AbstractFutureStoreRedisTest extends Specification implements RedisTestCon
     }
 
     /*
-     * A simple value classto be stored
+     * A simple value class to be stored
      */
     @Canonical
     static class Simple {
@@ -57,7 +55,7 @@ class AbstractFutureStoreRedisTest extends Specification implements RedisTestCon
         def pub = applicationContext.getBean(RedisFuturePublisher)
         def store = new SimpleRedisDataStore(pub)
         and:
-        sleep(1000)
+        sleep(500) // Workaround to wait for Redis subscribers to be ready
 
         when:
         def future = store.create('foo_one')
@@ -86,7 +84,7 @@ class AbstractFutureStoreRedisTest extends Specification implements RedisTestCon
         def pub2 = applicationContext.getBean(RedisFuturePublisher)
         def store2 = new SimpleRedisDataStore(pub2)
         and:
-        sleep(1000)
+        sleep(500) // Workaround to wait for Redis subscribers to be ready
 
         // create a future on store1
         and:
