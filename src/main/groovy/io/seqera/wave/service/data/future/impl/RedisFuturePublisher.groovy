@@ -52,16 +52,21 @@ class RedisFuturePublisher implements FuturePublisher<String> {
             }}
 
         // subscribe redis events
-        final name = "redis-future-subscriber-${count.getAndIncrement()}"
-        Thread.startDaemon(name) {
-            subscribe()
-        }
+        subscribe()
     }
 
     @Retryable(includes=[JedisConnectionException])
     void subscribe() {
-        try(Jedis conn=pool.getResource()) {
-            conn.subscribe(subscriber, group)
+
+        // Check valid connection is available
+        try(Jedis conn=pool.getResource()) {}
+
+        // Subscribe at background
+        final name = "redis-future-subscriber-${count.getAndIncrement()}"
+        Thread.startDaemon(name) {
+            try(Jedis conn=pool.getResource()) {
+                conn.subscribe(subscriber, group)
+            }
         }
     }
 

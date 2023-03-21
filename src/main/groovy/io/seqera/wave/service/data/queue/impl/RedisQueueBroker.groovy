@@ -74,17 +74,21 @@ class RedisQueueBroker implements QueueBroker<String> {
             }}
 
         // subscribe redis events
-        final name = "redis-pairing-queue-subscriber"
-        Thread.startDaemon(name) {
-            subscribe()
-        }
+        subscribe()
 
     }
 
     @Retryable(includes=[JedisConnectionException])
     void subscribe() {
-        try(Jedis conn=pool.getResource()) {
-            conn.subscribe(subscriber, localConsumers.group())
+        // Check valid connection is available
+        try(Jedis conn=pool.getResource()) {}
+
+        // Subscribe at background
+        final name = "redis-pairing-queue-subscriber"
+        Thread.startDaemon(name) {
+            try (Jedis conn = pool.getResource()) {
+                conn.subscribe(subscriber, localConsumers.group())
+            }
         }
     }
 
