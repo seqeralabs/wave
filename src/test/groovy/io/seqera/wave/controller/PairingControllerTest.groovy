@@ -1,6 +1,5 @@
 package io.seqera.wave.controller
 
-
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -18,7 +17,6 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.exchange.PairingResponse
 import io.seqera.wave.tower.client.ServiceInfoResponse
 import io.seqera.wave.tower.client.TowerClient
-import io.seqera.wave.tower.client.service.HttpServiceClient
 import jakarta.inject.Inject
 
 @MicronautTest(environments = ['test'])
