@@ -35,4 +35,9 @@ interface QueueBroker<V> {
      */
     void consume(String queueKey, Consumer<V> consumer)
 
+    /**
+     * Close the broker
+     */
+    default void close() { }
+
 }

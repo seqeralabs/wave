@@ -106,4 +106,18 @@ class RedisQueueBroker implements QueueBroker<String> {
             }
         }
     }
+
+    @Override
+    void close() {
+        try {
+            subscriber.unsubscribe()
+        }
+        catch (Throwable e) {
+            log.warn "Unexpected error while unsubscribing redis topic '${localConsumers.group()}' - cause: ${e.message}"
+        }
+
+        try( Jedis conn=pool.getResource() ) {
+            conn.flushAll()
+        }
+    }
 }

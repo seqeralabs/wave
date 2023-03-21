@@ -9,6 +9,7 @@ import io.seqera.wave.encoder.EncodingStrategy
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.util.TypeHelper
+import jakarta.annotation.PreDestroy
 
 /**
  * Abstract consumer queue implementation that can use any available queue broker.
@@ -18,7 +19,7 @@ import io.seqera.wave.util.TypeHelper
  */
 @Slf4j
 @CompileStatic
-abstract class AbstractConsumerQueue<V> implements ConsumerQueue<V>, ConsumerGroup<String> {
+abstract class AbstractConsumerQueue<V> implements ConsumerQueue<V>, ConsumerGroup<String>, AutoCloseable {
 
     private static final Random RANDOM = new Random()
     private Map<String, Map<String, Consumer<V>>> consumersMap = new ConcurrentHashMap<>()
@@ -88,5 +89,11 @@ abstract class AbstractConsumerQueue<V> implements ConsumerQueue<V>, ConsumerGro
             throw new BadRequestException("No consumer with ID '${consumerId}'")
 
         consumers.remove(consumerId)
+    }
+
+    @PreDestroy
+    @Override
+    void close() {
+        this.broker.close()
     }
 }

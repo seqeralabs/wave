@@ -9,6 +9,8 @@ import groovy.util.logging.Slf4j
 import io.seqera.wave.encoder.EncodingStrategy
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.util.TypeHelper
+import jakarta.annotation.PreDestroy
+
 /**
  * Implements a {@link FutureStore} that allow handling {@link CompletableFuture} objects
  * in a distributed environment.
@@ -94,6 +96,7 @@ abstract class AbstractFutureStore<V> implements FutureStore<String,V>, FutureLi
     /**
      * Cancel all non-completed futures nad close related resources.
      */
+    @PreDestroy
     @Override
     void close() {
         // cancel all pending futures
