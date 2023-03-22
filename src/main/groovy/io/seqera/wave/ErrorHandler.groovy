@@ -37,11 +37,11 @@ class ErrorHandler {
         def msg = t.message
         if( t instanceof WaveException && msg ) {
             // the the error cause
-            if( t.cause ) msg += " — Cause: ${t.cause.message ?: t.cause}".toString()
+            if( t.cause ) msg += " - Cause: ${t.cause.message ?: t.cause}".toString()
             // render the message for logging
             def render = msg
-            if( request ) render += " — Request: ${request}"
-            if( t instanceof MismatchChecksumException ) render += " — DigestStore: ${t.digestStore}"
+            if( request ) render += " - Request: ${request}"
+            if( t instanceof MismatchChecksumException ) render += " - DigestStore: ${t.digestStore}"
             if( !debug ) {
                 log.warn(render)
             }
@@ -54,11 +54,11 @@ class ErrorHandler {
                 msg = t.cause?.message
             if ( !debug && !msg )
                 msg = "Oops... Unable to process request"
-            msg += " — Error ID: ${errId}"
+            msg += " - Error ID: ${errId}"
             // render the message for logging
             def render = msg
-            if( request ) render += " — Request: ${request}"
-            if( t instanceof MismatchChecksumException ) render += " — DigestStore: ${t.digestStore}"
+            if( request ) render += " - Request: ${request}"
+            if( t instanceof MismatchChecksumException ) render += " - DigestStore: ${t.digestStore}"
             log.error(render, t)
         }
 
