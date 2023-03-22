@@ -19,6 +19,7 @@ class RedisCacheProviderTest extends Specification implements RedisTestContainer
                 REDIS_PORT : redisPort
         ], 'test', 'redis')
         redisCacheProvider = applicationContext.getBean(RedisCacheProvider)
+        sleep(500) // workaround to wait for Redis connection
     }
 
     def 'conditional put with current value when ke is not set'() {
