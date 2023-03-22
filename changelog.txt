@@ -1,4 +1,8 @@
 # Wave changelog
+v0.26.7 - 22 Mar 2023
+- Minor log change [da6cc096]
+- Fix digest store checksum compute [de07254e]
+
 v0.26.6 - 21 Mar 2023 
 - Add digest checksum validation [284e12a]
 
