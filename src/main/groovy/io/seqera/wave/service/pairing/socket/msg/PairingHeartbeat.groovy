@@ -1,6 +1,7 @@
 package io.seqera.wave.service.pairing.socket.msg
 
 import groovy.transform.Canonical
+import groovy.transform.CompileStatic
 import groovy.transform.ToString
 
 /**
@@ -9,6 +10,7 @@ import groovy.transform.ToString
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Canonical
+@CompileStatic
 @ToString(includePackage = false, includeNames = true)
 class PairingHeartbeat implements PairingMessage {
     String msgId

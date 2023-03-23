@@ -26,7 +26,7 @@ import io.seqera.wave.service.pairing.socket.msg.PairingResponse
 @Prototype  // note use prototype to have an instance for each session
 @ServerWebSocket("/pairing/{service}/token/{token}{?endpoint}")
 class PairingSocket {
-    public static final CloseReason INVALID_ENDPOINT_REGISTER = new CloseReason(4000, "Invalid endpoint register")
+    private static final CloseReason INVALID_ENDPOINT_REGISTER = new CloseReason(4000, "Invalid endpoint register")
 
     private WebSocketSession session
     private String service
@@ -53,10 +53,7 @@ class PairingSocket {
         // Register endpoint
         if( !channel.registerEndpoint(service, endpoint, token) ) {
             log.debug "Invalid registration. Close session service=$service endpoint=$endpoint"
-            scheduler.schedule(Duration.ofMillis(100), {
-
-                session.close(INVALID_ENDPOINT_REGISTER)
-            })
+            scheduler.schedule(Duration.ofMillis(100), ()-> session.close(INVALID_ENDPOINT_REGISTER))
             return
         }
 
