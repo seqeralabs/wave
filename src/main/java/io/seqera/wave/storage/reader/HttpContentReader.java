@@ -23,4 +23,9 @@ public class HttpContentReader implements ContentReader{
             return stream.readAllBytes();
         }
     }
+
+    @Override
+    public String toString() {
+        return String.format("HttpContentReader(%s)",url);
+    }
 }

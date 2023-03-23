@@ -1,5 +1,7 @@
 package io.seqera.wave.storage;
 
+import java.util.Base64;
+
 import io.seqera.wave.util.ZipUtils;
 
 /**
@@ -32,4 +34,7 @@ public class ZippedDigestStore implements DigestStore{
         return digest;
     }
 
+    public String toString() {
+        return String.format("ZippedDigestStore(mediaType=%s; digest=%s; bytesBase64=%s)", mediaType, digest, new String(Base64.getEncoder().encode(bytes)));
+    }
 }

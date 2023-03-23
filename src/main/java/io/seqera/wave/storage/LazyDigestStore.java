@@ -41,4 +41,7 @@ public class LazyDigestStore implements DigestStore{
         return digest;
     }
 
+    public String toString() {
+        return String.format("LazyDigestStore(mediaType=%s; digest=%s; reader=%s)", mediaType, digest, contentReader.toString());
+    }
 }

@@ -12,6 +12,7 @@ import io.seqera.wave.exception.BuildTimeoutException
 import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.exception.ForbiddenException
 import io.seqera.wave.exception.HttpResponseException
+import io.seqera.wave.exception.MismatchChecksumException
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.exception.UnauthorizedException
@@ -30,16 +31,22 @@ class ErrorHandler {
     @Value('${wave.debug}')
     private Boolean debug
 
-    def <T> HttpResponse<T> handle(HttpRequest request, Throwable t, BiFunction<String,String,T> responseFactory) {
+    def <T> HttpResponse<T> handle(HttpRequest httpRequest, Throwable t, BiFunction<String,String,T> responseFactory) {
         final errId = LongRndKey.rndHex()
+        final request = httpRequest?.toString()
         def msg = t.message
         if( t instanceof WaveException && msg ) {
-            msg = (t.cause ? "$msg -- Cause: ${t.cause.message ?: t.cause}".toString() : msg )
+            // the the error cause
+            if( t.cause ) msg += " - Cause: ${t.cause.message ?: t.cause}".toString()
+            // render the message for logging
+            def render = msg
+            if( request ) render += " - Request: ${request}"
+            if( t instanceof MismatchChecksumException ) render += " - DigestStore: ${t.digestStore}"
             if( !debug ) {
-                log.warn(msg)
+                log.warn(render)
             }
             else {
-                log.warn(msg,t)
+                log.warn(render, t)
             }
         }
         else {
@@ -48,7 +55,11 @@ class ErrorHandler {
             if ( !debug && !msg )
                 msg = "Oops... Unable to process request"
             msg += " - Error ID: ${errId}"
-            log.error(msg, t)
+            // render the message for logging
+            def render = msg
+            if( request ) render += " - Request: ${request}"
+            if( t instanceof MismatchChecksumException ) render += " - DigestStore: ${t.digestStore}"
+            log.error(render, t)
         }
 
         if( t instanceof DockerRegistryException ) {

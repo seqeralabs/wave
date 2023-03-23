@@ -32,4 +32,9 @@ public class GzipContentReader implements ContentReader {
         final byte[] decoded = Base64.getDecoder().decode(value);
         return new GzipContentReader(decoded);
     }
+
+    @Override
+    public String toString() {
+        return String.format("GzipContentReader(%s)",new String(Base64.getEncoder().encode(data)));
+    }
 }

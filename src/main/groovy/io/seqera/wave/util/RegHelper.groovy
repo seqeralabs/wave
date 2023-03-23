@@ -21,7 +21,6 @@ import groovy.transform.CompileStatic
 class RegHelper {
 
     final private static char PADDING = '_' as char
-    final private static MessageDigest SHA256 = java.security.MessageDigest.getInstance("SHA-256")
     final private static BaseEncoding BASE32 = BaseEncoding.base32() .withPadChar(PADDING)
 
     // this clas is not to be extended
@@ -44,7 +43,7 @@ class RegHelper {
     }
 
     static String digest(byte[] bytes) {
-        final digest = SHA256.digest(bytes)
+        final digest = MessageDigest.getInstance("SHA-256").digest(bytes)
         return "sha256:${bytesToHex(digest)}"
     }
 
@@ -109,7 +108,7 @@ class RegHelper {
     }
 
     static String stringToId(String str) {
-        def result = bytesToHex(SHA256.digest(str.bytes))
+        def result = bytesToHex(MessageDigest.getInstance("SHA-256").digest(str.bytes))
         // pad with extra zeros if necessary
         while( result.size()<64 )
             result = '0'+result

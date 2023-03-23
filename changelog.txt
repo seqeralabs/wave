@@ -1,4 +1,11 @@
 # Wave changelog
+v0.26.7 - 22 Mar 2023
+- Minor log change [da6cc096]
+- Fix digest store checksum compute [de07254e]
+
+v0.26.6 - 21 Mar 2023 
+- Add digest checksum validation [284e12a]
+
 v0.26.5 - 17 Mar 2023
 - Resolve host for relative redirects [b09d4d7b]
 - Minor log change [f36a2339]

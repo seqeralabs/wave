@@ -19,4 +19,9 @@ public class DataContentReader implements ContentReader{
     public byte[] readAllBytes() {
         return Base64.getDecoder().decode(data);
     }
+
+    @Override
+    public String toString() {
+        return String.format("DataContentReader(%s)",data);
+    }
 }
