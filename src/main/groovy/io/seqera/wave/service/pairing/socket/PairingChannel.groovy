@@ -44,7 +44,7 @@ class PairingChannel {
         return endpoints.get(key) != null
     }
 
-    public <M extends PairingMessage, R extends PairingMessage> CompletableFuture<R> sendServiceRequest(String service, String endpoint, M message) {
+    <M extends PairingMessage, R extends PairingMessage> CompletableFuture<R> sendServiceRequest(String service, String endpoint, M message) {
         log.debug "Request message=${message.class.simpleName} to endpoint='$endpoint'"
 
         // create a unique Id to identify this command

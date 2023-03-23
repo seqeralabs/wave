@@ -66,10 +66,7 @@ class PairingSocket {
         ))
 
         // Register on send consumer
-        consumerId = channel.onServiceRequestListener(service, endpoint, {
-            session.sendSync(it)
-        })
-
+        consumerId = channel.onServiceRequestListener(service, endpoint, (PairingMessage msg)-> session.sendSync(msg))
     }
 
     @OnMessage
