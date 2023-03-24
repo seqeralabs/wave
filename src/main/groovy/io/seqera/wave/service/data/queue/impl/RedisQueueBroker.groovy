@@ -59,17 +59,8 @@ class RedisQueueBroker implements QueueBroker<String> {
                     return
                 }
 
-                // Pop right value from the queue list
-                try(Jedis conn=pool.getResource()) {
-
-                    // Use a timeout because only one instance can consume this value
-                    final element = conn.brpop(10.0 as double, queueKey)
-                    if( !element )
-                        return
-
-                    // Pass request to one local consumer
-                    localConsumers.consume(queueKey, element.element)
-                }
+                // Consume all messages available at the queue
+                consume(queueKey, msg -> localConsumers.consume(queueKey, msg))
 
             }}
 
@@ -106,9 +97,17 @@ class RedisQueueBroker implements QueueBroker<String> {
         try(Jedis conn=pool.getResource()) {
             // Consume all pending messages
             while (true) {
+
+                // Pop an element from the right side of the queue with a timeout of one second
                 final element = conn.brpop(1.0 as double, queueKey)
+
+                // Redis BRPOP is an atomic operation, so only one instance of Wave will get the
+                // queue element. If it returns a null element it means that the timeout was
+                // reached and another Wave instance picked up the element. We don't need to
                 if (!element)
                     return
+
+                // Consume the element
                 consumer.accept(element.element)
             }
         }

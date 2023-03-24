@@ -31,7 +31,7 @@ interface QueueBroker<V> {
      * Non-blocking consume from a queue
      *
      * @param queueKey Queue identifier
-     * @param consumer Consumer that will consume a message if available
+     * @param consumer Consumer that will consume all pending messages if available
      */
     void consume(String queueKey, Consumer<V> consumer)
 
