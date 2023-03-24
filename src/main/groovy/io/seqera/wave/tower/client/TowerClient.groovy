@@ -9,8 +9,10 @@ import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.tower.client.service.HttpServiceClient
 import io.seqera.wave.tower.client.service.SocketServiceClient
 import jakarta.inject.Inject
+import jakarta.inject.Singleton
 import org.apache.commons.lang.StringUtils
 
+@Singleton
 @CompileStatic
 class TowerClient {
 
@@ -82,7 +84,7 @@ class TowerClient {
         return URI.create("${checkEndpoint(towerEndpoint)}/service-info")
     }
 
-    public static Throwable handleIoError(Throwable err, URI uri) {
+    static Throwable handleIoError(Throwable err, URI uri) {
         if (err instanceof CompletionException) {
             err = err.cause
         }
@@ -93,7 +95,7 @@ class TowerClient {
         return err
     }
 
-    public static String checkEndpoint(String endpoint) {
+    static String checkEndpoint(String endpoint) {
         if( !endpoint )
             throw new IllegalArgumentException("Missing endpoint argument")
         if( !endpoint.startsWith('http://') && !endpoint.startsWith('https://') )

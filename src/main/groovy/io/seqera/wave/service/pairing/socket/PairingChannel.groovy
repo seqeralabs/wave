@@ -1,10 +1,12 @@
 package io.seqera.wave.service.pairing.socket
 
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Value
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -28,6 +30,10 @@ class PairingChannel {
 
     @Inject
     private PairingEndpointsStore endpoints
+
+    @Value('${wave.pairing.future.timeout:5s}')
+    private Duration timeout
+
 
     boolean registerEndpoint(String service, String endpoint, String token) {
         final key = buildKey(service, endpoint)

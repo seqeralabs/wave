@@ -1,7 +1,7 @@
 package io.seqera.wave.service.data.future
 
-import java.util.concurrent.CompletableFuture
 
+import java.util.concurrent.CompletableFuture
 /**
  * Implements a {@link FutureStore} that allow handling {@link CompletableFuture} objects
  * in a distributed environment.
