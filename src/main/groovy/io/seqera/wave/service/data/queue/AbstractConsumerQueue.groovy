@@ -71,6 +71,8 @@ abstract class AbstractConsumerQueue<V> implements ConsumerQueue<V>, ConsumerGro
         consumersMap.get(queueKey).put(consumerId, consumer)
 
         // Try to consume all pending queue messages
+        // this can be the case if there is a disconnection just after a request is send
+        // but not yet consumed
         broker.consume(queueKey, message -> {
             consumer.accept(encodingStrategy.decode(message))
         })

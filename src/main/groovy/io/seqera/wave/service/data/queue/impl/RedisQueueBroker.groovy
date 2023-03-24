@@ -103,7 +103,7 @@ class RedisQueueBroker implements QueueBroker<String> {
 
                 // Redis BRPOP is an atomic operation, so only one instance of Wave will get the
                 // queue element. If it returns a null element it means that the timeout was
-                // reached and another Wave instance picked up the element. We don't need to
+                // reached and another Wave instance picked up the element.
                 if (!element)
                     return
 
