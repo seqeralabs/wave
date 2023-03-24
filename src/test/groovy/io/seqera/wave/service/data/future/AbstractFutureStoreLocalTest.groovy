@@ -2,6 +2,8 @@ package io.seqera.wave.service.data.future
 
 import spock.lang.Specification
 
+import java.time.Duration
+
 import groovy.transform.Canonical
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import jakarta.inject.Inject
@@ -20,7 +22,7 @@ class AbstractFutureStoreLocalTest extends Specification {
     static class SimpleDataStore extends AbstractFutureStore<Simple> {
 
         SimpleDataStore(FuturePublisher<String> publisher) {
-            super(publisher)
+            super(publisher, Duration.ofSeconds(5))
         }
 
         @Override

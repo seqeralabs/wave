@@ -1,7 +1,9 @@
 package io.seqera.wave.service.data.future
 
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 
 import com.squareup.moshi.Types
 import groovy.transform.CompileStatic
@@ -27,14 +29,17 @@ import jakarta.annotation.PreDestroy
 @CompileStatic
 abstract class AbstractFutureStore<V> implements FutureStore<String,V>, FutureListener<String>, AutoCloseable {
 
+    private Duration ttl
+
     private ConcurrentHashMap<String,CompletableFuture<V>> allFutures = new ConcurrentHashMap<>()
 
     private EncodingStrategy<FutureEntry<String,V>> encodingStrategy
 
     private FuturePublisher<String> publisher
 
-    AbstractFutureStore(FuturePublisher<String> publisher) {
+    AbstractFutureStore(FuturePublisher<String> publisher, Duration timeout) {
         final type = TypeHelper.getGenericType(this, 0)
+        this.ttl = timeout
         this.encodingStrategy = new MoshiEncodeStrategy<FutureEntry<String, V>>(Types.newParameterizedType(FutureEntry, String, type)) {}
         this.publisher = publisher
         publisher.subscribe(this)
@@ -53,6 +58,8 @@ abstract class AbstractFutureStore<V> implements FutureStore<String,V>, FutureLi
     @Override
     CompletableFuture<V> create(String key) {
         final result = new CompletableFuture<V>()
+                .orTimeout(ttl.toMillis(), TimeUnit.MILLISECONDS)
+
         final exists = allFutures.putIfAbsent(key, result)!=null
         if( exists )
             throw new IllegalArgumentException("Key already existing: '$key'")
