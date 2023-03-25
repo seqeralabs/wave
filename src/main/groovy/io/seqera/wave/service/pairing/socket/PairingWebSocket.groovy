@@ -1,7 +1,5 @@
 package io.seqera.wave.service.pairing.socket
 
-import java.time.Duration
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Prototype
@@ -17,7 +15,6 @@ import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import io.seqera.wave.service.pairing.socket.msg.PairingResponse
 import static io.seqera.wave.util.RegHelper.random256Hex
-
 /**
  * Implements Wave pairing websocket server
  *
@@ -33,7 +30,7 @@ class PairingWebSocket {
     private WebSocketSession session
     private String service
     private String endpoint
-    private String consumerId
+    private String token
 
     private PairingChannel channel
     private PairingService pairingService
@@ -47,17 +44,14 @@ class PairingWebSocket {
 
     @OnOpen
     void onOpen(String service, String token, String endpoint, WebSocketSession session) {
-        log.debug "New '$service' pairing session - endpoint: ${endpoint}"
+        log.debug "New '$service' pairing session - endpoint: ${endpoint} [sessionId: $session.id]"
         this.service = service
         this.endpoint = endpoint
         this.session = session
+        this.token = token
 
         // Register endpoint
-        if( !channel.registerEndpoint(service, endpoint, token) ) {
-            log.debug "Invalid registration. Close session service=$service endpoint=$endpoint"
-            scheduler.schedule(Duration.ofMillis(100), ()-> session.close(INVALID_ENDPOINT_REGISTER))
-            return
-        }
+        channel.registerWebsocketSession(session)
 
         // acquire a pairing
         final resp = this.pairingService.acquirePairingKey(service, endpoint)
@@ -67,24 +61,23 @@ class PairingWebSocket {
                 publicKey: resp.publicKey
         ))
 
-        // Register on send consumer
-        consumerId = channel.addMessageConsumer(service, endpoint, (PairingMessage msg)-> session.sendSync(msg))
     }
 
     @OnMessage
     void onMessage(PairingMessage message) {
         log.debug "Receiving '$service' message=$message [sessionId: $session.id]"
-        if( message instanceof PairingHeartbeat )
+        if( message instanceof PairingHeartbeat ) {
+            channel.registerWebsocketSession(session)
             return
+        }
 
         channel.receiveResponse(service, endpoint, message)
     }
 
     @OnClose
     void onClose() {
-        log.debug "Closed '$service' pairing session [sessionId: $session.id]"
-        if( consumerId )
-            channel.removeMessageConsumer(service, endpoint, consumerId)
+        log.debug "Closing '$service' pairing session [sessionId: $session.id]"
+        channel.deregisterWebsocketSession(session)
     }
 
 }

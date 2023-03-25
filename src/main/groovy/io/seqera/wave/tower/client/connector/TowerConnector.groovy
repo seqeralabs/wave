@@ -1,5 +1,6 @@
 package io.seqera.wave.tower.client.connector
 
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
 import java.util.concurrent.TimeUnit
@@ -17,12 +18,11 @@ import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
 import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.tower.client.TowerClient
+import io.seqera.wave.util.ExponentialAttempt
 import io.seqera.wave.util.JacksonHelper
 import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
-
 import static io.seqera.wave.util.RegHelper.random256Hex
-
 /**
  * Implements an abstract client that allows to connect Tower service either
  * via HTTP client or a WebSocket-based client
@@ -46,11 +46,8 @@ abstract class TowerConnector {
     @Value('${wave.pairing.channel.retryBackOffDelay:250}')
     private int retryBackOffDelay
 
-    protected int maxAttempts() { maxAttempts }
-
-    protected int retryBackOffBase() { retryBackOffBase }
-
-    protected int retryBackOffDelay() { retryBackOffDelay }
+    @Value('${wave.pairing.channel.retryMaxDelay:30s}')
+    private Duration retryMaxDelay
 
     /**
      * Generic async get with authorization
@@ -70,8 +67,20 @@ abstract class TowerConnector {
         return sendAsync0(endpoint, uri, auth, type, 1)
     }
 
+    protected ExponentialAttempt newAttempt(int attempt) {
+        new ExponentialAttempt()
+                .builder()
+                .withAttempt(attempt)
+                .withMaxDelay(retryMaxDelay)
+                .withBackOffBase(retryBackOffBase)
+                .withBackOffDelay(retryBackOffDelay)
+                .withMaxAttempts(maxAttempts)
+                .build()
+    }
+
     @CompileDynamic
-    protected <T> CompletableFuture<T> sendAsync0(String endpoint, URI uri, String authorization, Class<T> type, int attempt) {
+    protected <T> CompletableFuture<T> sendAsync0(String endpoint, URI uri, String authorization, Class<T> type, int attempt0) {
+        final attempt = newAttempt(attempt0)
         return sendAsync1(endpoint, uri, authorization, true)
                 .thenCompose { resp ->
                     log.trace "Tower response for request GET '${uri}' => ${resp.status}"
@@ -96,11 +105,11 @@ abstract class TowerConnector {
                         err = err.cause
                     // check for retryable condition
                     final retryable = err instanceof IOException || err instanceof TimeoutException
-                    if( retryable && attempt<=maxAttempts() ) {
-                        final delay = (Math.pow(retryBackOffBase(), attempt) as long) * retryBackOffDelay()
-                        final exec = CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS)
-                        log.debug "Unable to connect '$endpoint'; cause: ${err.message ?: err}; attempt=$attempt; await=${delay};"
-                        return CompletableFuture.supplyAsync(()->sendAsync0(endpoint, uri, authorization, type, attempt+1), exec)
+                    if( retryable && attempt.canAttempt() ) {
+                        final delay = attempt.delay()
+                        final exec = CompletableFuture.delayedExecutor(delay.toMillis(), TimeUnit.MILLISECONDS)
+                        log.debug "Unable to connect '$endpoint'; cause: ${err.message ?: err}; attempt=${attempt.current()}; await=${delay};"
+                        return CompletableFuture.supplyAsync(()->sendAsync0(endpoint, uri, authorization, type, attempt.current()+1), exec)
                                 .thenCompose(Function.identity());
                     }
                     // report IO error

@@ -255,7 +255,7 @@ class ContainerTokenControllerTest extends Specification {
         def validation = new ValidationServiceImpl()
         def pairing = Mock(PairingService)
         def channel = Mock(PairingChannel) {
-            isEndpointRegistered(_, _) >> false
+            hasWebsocketSession(_, _) >> false
         }
         def controller = new ContainerTokenController(validationService: validation, pairingService: pairing, pairingChannel: channel)
         def msg
@@ -332,7 +332,7 @@ class ContainerTokenControllerTest extends Specification {
         def validation = new ValidationServiceImpl()
         def pairing = Mock(PairingService)
         def channel = Mock(PairingChannel) {
-            isEndpointRegistered('tower', registeredUri) >> true
+            hasWebsocketSession('tower', registeredUri) >> true
         }
         def controller = new ContainerTokenController(validationService: validation, pairingService: pairing, pairingChannel: channel)
         def msg

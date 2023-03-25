@@ -1,5 +1,6 @@
 package io.seqera.wave.service.cache.impl
 
+import io.seqera.wave.service.cache.BiCacheStore
 import io.seqera.wave.service.cache.CacheStore
 
 /**
@@ -7,5 +8,5 @@ import io.seqera.wave.service.cache.CacheStore
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface CacheProvider<K,V> extends CacheStore<K,V> {
+interface CacheProvider<K,V> extends CacheStore<K,V>, BiCacheStore<K,V> {
 }

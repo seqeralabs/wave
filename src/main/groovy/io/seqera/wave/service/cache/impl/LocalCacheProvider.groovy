@@ -80,4 +80,56 @@ class LocalCacheProvider implements CacheProvider<String,String> {
     void clear() {
         store.clear()
     }
+
+    // =============== bi-cache store implementation ===============
+
+    private Map<Integer,Set<String>> index = new HashMap<>()
+
+    @Override
+    void biPut(String key, String value, Duration ttl) {
+        synchronized (this) {
+            this.put(key, value, ttl)
+            final id = value.hashCode()
+            def set = index.get(id)
+            if( set==null ) {
+                set=new HashSet<String>()
+                index.put(id, set)
+            }
+            set.add(key)
+        }
+    }
+
+    @Override
+    void biRemove(String key) {
+        synchronized (this) {
+            final entry = store.remove(key)
+            if( !entry )
+                return 
+            final id = entry.value.hashCode()
+            final set = index.get(id)
+            if( set ) {
+                set.remove(key)
+            }
+        }
+    }
+
+    @Override
+    Set<String> biKeysFor(String value) {
+        final id = value.hashCode()
+        return index.get(id) ?: Set.<String>of()
+    }
+
+    String biKeyFind(String value, boolean shuffled) {
+        final id = value.hashCode()
+        final list = biKeysFor(value).toList()
+        final keys = shuffled ? list.shuffled() : list
+        final itr = keys.iterator()
+        while( itr.hasNext() ) {
+            final result = itr.next()
+            if( get(result)!=null )
+                return result
+            index.get(id)?.remove(result)
+        }
+        return null
+    }
 }

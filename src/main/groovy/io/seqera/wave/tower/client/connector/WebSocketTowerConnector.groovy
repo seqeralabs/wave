@@ -24,7 +24,7 @@ class WebSocketTowerConnector extends TowerConnector {
     private PairingChannel channel
 
     boolean isEndpointRegistered(String endpoint) {
-        return channel.isEndpointRegistered(TOWER_SERVICE, endpoint)
+        return channel.hasWebsocketSession(TOWER_SERVICE, endpoint)
     }
 
     @Override
