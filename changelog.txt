@@ -1,4 +1,7 @@
 # Wave changelog
+v0.26.8 - 22 Mar 2023
+- Rename spack.yml to spack.yaml [9e67fdc7]
+
 v0.26.7 - 22 Mar 2023
 - Minor log change [da6cc096]
 - Fix digest store checksum compute [de07254e]
