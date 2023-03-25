@@ -3,31 +3,36 @@ package io.seqera.wave.tower.client
 import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
-import io.seqera.wave.service.pairing.PairingService
-import io.seqera.wave.tower.client.service.HttpServiceClient
-import io.seqera.wave.tower.client.service.SocketServiceClient
+import io.seqera.wave.tower.client.connector.HttpTowerConnector
+import io.seqera.wave.tower.client.connector.WebSocketTowerConnector
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import org.apache.commons.lang.StringUtils
 
+/**
+ * Implement a client to interact with Tower services
+ *
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * @author Jordi Deu-Pons <jordi@seqera.io>
+ */
 @Singleton
 @CompileStatic
 class TowerClient {
 
     @Inject
-    private HttpServiceClient httpClient
+    private HttpTowerConnector httpClient
 
     @Inject
-    private SocketServiceClient socketClient
+    private WebSocketTowerConnector socketClient
 
     protected <T> CompletableFuture<T> getAsync(URI uri, String towerEndpoint, String authorization, Class<T> type) {
 
         // Connect using websocket connection when available
         if( socketClient.isEndpointRegistered(towerEndpoint) )
-            return socketClient.sendAsync(PairingService.TOWER_SERVICE, towerEndpoint, uri, authorization, type)
+            return socketClient.sendAsync(towerEndpoint, uri, authorization, type)
 
         // Fallback to public HTTP connection
-        return httpClient.sendAsync(PairingService.TOWER_SERVICE, towerEndpoint, uri, authorization, type)
+        return httpClient.sendAsync(towerEndpoint, uri, authorization, type)
     }
 
     CompletableFuture<ServiceInfoResponse> serviceInfo(String towerEndpoint) {

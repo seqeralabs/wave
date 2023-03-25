@@ -1,5 +1,6 @@
 package io.seqera.wave.tower.client
 
+
 import spock.lang.Specification
 
 class TowerClientUrlCompositionTest extends Specification{

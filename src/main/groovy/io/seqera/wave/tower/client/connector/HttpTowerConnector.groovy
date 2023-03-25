@@ -1,4 +1,4 @@
-package io.seqera.wave.tower.client.service
+package io.seqera.wave.tower.client.connector
 
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -15,7 +15,7 @@ import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
- * Tower service client
+ * Implements a Tower client using a plain HTTP client
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  * @author Jordi Deu-Pons <jordi@seqera.io>
@@ -23,7 +23,7 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-class HttpServiceClient extends AbstractServiceClient {
+class HttpTowerConnector extends TowerConnector {
 
     @Inject
     private HttpClientConfig config
@@ -39,7 +39,7 @@ class HttpServiceClient extends AbstractServiceClient {
     }
 
     @Override
-    CompletableFuture<ProxyHttpResponse> sendAsync(String service, String endpoint, ProxyHttpRequest request) {
+    CompletableFuture<ProxyHttpResponse> sendAsync(String endpoint, ProxyHttpRequest request) {
         client
             .sendAsync(buildHttpRequest(request), HttpResponse.BodyHandlers.ofString())
             .thenApply( (resp)-> {

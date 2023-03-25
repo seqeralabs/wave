@@ -1,5 +1,6 @@
 package io.seqera.wave.tower.client
 
+
 import spock.lang.Specification
 
 import io.seqera.wave.WaveDefault
@@ -47,7 +48,7 @@ class ListCredentialsDeserTest extends Specification{
                 "keys":{"userName":"whatever","password":null,"registry":null,"discriminator":"container-reg"}}]}"""
 
         when: 'deserializing the object'
-        def resp = JacksonHelper.fromJson(json,ListCredentialsResponse)
+        def resp = JacksonHelper.fromJson(json, ListCredentialsResponse)
         then:
         resp.credentials?.size() == 3
         resp.credentials[0].registry == null

@@ -12,12 +12,15 @@ import io.seqera.wave.exchange.PairingResponse
 import io.seqera.wave.util.DigestFunctions
 import io.seqera.wave.util.LongRndKey
 import jakarta.inject.Inject
+import jakarta.inject.Singleton
+
 /**
  * Implements the pairing service for Tower and Wave credentials federation
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
+@Singleton
 @CompileStatic
 class PairingServiceImpl implements PairingService {
 

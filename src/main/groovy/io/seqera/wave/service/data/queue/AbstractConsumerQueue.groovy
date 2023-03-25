@@ -10,6 +10,7 @@ import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.util.TypeHelper
 import jakarta.annotation.PreDestroy
+import static io.seqera.wave.util.RegHelper.random256Hex
 
 /**
  * Abstract consumer queue implementation that can use any available queue broker.
@@ -67,7 +68,7 @@ abstract class AbstractConsumerQueue<V> implements ConsumerQueue<V>, ConsumerGro
         if( !consumersMap.containsKey(queueKey) )
             consumersMap.put(queueKey, new ConcurrentHashMap<String, Consumer<V>>())
 
-        String consumerId = UUID.randomUUID().toString()
+        final consumerId = random256Hex()
         consumersMap.get(queueKey).put(consumerId, consumer)
 
         // Try to consume all pending queue messages

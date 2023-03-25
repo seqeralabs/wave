@@ -16,8 +16,10 @@ import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import io.seqera.wave.service.pairing.socket.msg.PairingResponse
+import static io.seqera.wave.util.RegHelper.random256Hex
 
 /**
+ * Implements Wave pairing websocket server
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -25,7 +27,7 @@ import io.seqera.wave.service.pairing.socket.msg.PairingResponse
 @CompileStatic
 @Prototype  // note use prototype to have an instance for each session
 @ServerWebSocket("/pairing/{service}/token/{token}{?endpoint}")
-class PairingSocket {
+class PairingWebSocket {
     private static final CloseReason INVALID_ENDPOINT_REGISTER = new CloseReason(4000, "Invalid endpoint register")
 
     private WebSocketSession session
@@ -37,7 +39,7 @@ class PairingSocket {
     private PairingService pairingService
     private TaskScheduler scheduler
 
-    PairingSocket(PairingChannel channel, PairingService pairingService, TaskScheduler scheduler) {
+    PairingWebSocket(PairingChannel channel, PairingService pairingService, TaskScheduler scheduler) {
         this.channel = channel
         this.pairingService = pairingService
         this.scheduler = scheduler
@@ -60,7 +62,7 @@ class PairingSocket {
         // acquire a pairing
         final resp = this.pairingService.acquirePairingKey(service, endpoint)
         session.sendAsync(new PairingResponse(
-                msgId: UUID.randomUUID(),
+                msgId: random256Hex(),
                 pairingId: resp.pairingId,
                 publicKey: resp.publicKey
         ))

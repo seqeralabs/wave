@@ -20,7 +20,7 @@ import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
-import io.seqera.wave.tower.client.service.AbstractServiceClient
+import io.seqera.wave.tower.client.connector.TowerConnector
 import jakarta.inject.Inject
 import spock.lang.Specification
 
@@ -90,8 +90,6 @@ class TowerClientHttpTest extends Specification{
             }
         }
 
-
-
     }
 
     @Inject
@@ -118,8 +116,6 @@ class TowerClientHttpTest extends Specification{
         (e.cause  as HttpResponseException).statusCode() == HttpStatus.SERVICE_UNAVAILABLE
     }
 
-
-
     def "test user-info"() {
         when: 'requesting user info with a valid token'
         def resp = towerClient.userInfo(hostName,"token").get()
@@ -134,7 +130,6 @@ class TowerClientHttpTest extends Specification{
         then:
         resp.user.id == 1
     }
-
 
     def 'test user-info with invalid token'() {
         when:
@@ -239,7 +234,7 @@ class TowerClientHttpTest extends Specification{
 
     def 'parse tokens'() {
         when:
-        def tokens = AbstractServiceClient.parseTokens(cookies,'current-refresh')
+        def tokens = TowerConnector.parseTokens(cookies,'current-refresh')
 
         then:
         tokens.refresh == expectedRefresh
@@ -257,7 +252,7 @@ class TowerClientHttpTest extends Specification{
 
     def 'parse tokens when there is no jwt'() {
         when:
-        AbstractServiceClient.parseTokens(cookies,'current-refresh')
+        TowerConnector.parseTokens(cookies,'current-refresh')
         then:
         def e = thrown(HttpResponseException)
         e.statusCode() == HttpStatus.PRECONDITION_FAILED
