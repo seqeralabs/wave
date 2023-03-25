@@ -123,7 +123,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             }
             // save the spack file
             if( req.spackFile ) {
-                final spackFile = req.workDir.resolve('spack.yml')
+                final spackFile = req.workDir.resolve('spack.yaml')
                 Files.write(spackFile, req.spackFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             }
 

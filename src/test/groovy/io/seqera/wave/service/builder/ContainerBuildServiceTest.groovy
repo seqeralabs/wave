@@ -182,7 +182,7 @@ class ContainerBuildServiceTest extends Specification {
         and:
         REQ.workDir.resolve('Dockerfile').text == dockerFile
         REQ.workDir.resolve('conda.yml').text == condaFile
-        REQ.workDir.resolve('spack.yml').text == spackFile
+        REQ.workDir.resolve('spack.yaml').text == spackFile
         and:
         result == RESPONSE
 
