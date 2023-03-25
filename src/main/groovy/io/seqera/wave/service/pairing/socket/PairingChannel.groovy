@@ -2,6 +2,7 @@ package io.seqera.wave.service.pairing.socket
 
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
 
 import groovy.transform.CompileStatic
@@ -31,7 +32,7 @@ class PairingChannel {
     @Inject
     private PairingEndpointsStore endpoints
 
-    @Value('${wave.pairing.future.timeout:5s}')
+    @Value('${wave.pairing.channel.timeout:5s}')
     private Duration timeout
 
 
@@ -54,7 +55,9 @@ class PairingChannel {
         log.debug "Request message=${message.class.simpleName} to endpoint='$endpoint'"
 
         // create a unique Id to identify this command
-        final result = futuresStore.create(message.msgId)
+        final result = futuresStore
+                .create(message.msgId)
+                .orTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS)
 
         // publish
         final queue = buildKey(service, endpoint)

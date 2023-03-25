@@ -1,10 +1,8 @@
 package io.seqera.wave.tower.client
 
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CompletionException
 
 import groovy.transform.CompileStatic
-import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.tower.client.service.HttpServiceClient
 import io.seqera.wave.tower.client.service.SocketServiceClient
@@ -82,17 +80,6 @@ class TowerClient {
 
     protected static URI serviceInfoEndpoint(String towerEndpoint) {
         return URI.create("${checkEndpoint(towerEndpoint)}/service-info")
-    }
-
-    static Throwable handleIoError(Throwable err, URI uri) {
-        if (err instanceof CompletionException) {
-            err = err.cause
-        }
-        if( err instanceof IOException ) {
-            final message = "Unexpected I/O error while accessing Tower resource: $uri - cause: ${err.message ?: err}"
-            err = new HttpResponseException(503, message)
-        }
-        return err
     }
 
     static String checkEndpoint(String endpoint) {

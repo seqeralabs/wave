@@ -1,10 +1,15 @@
 package io.seqera.wave.tower.client.service
 
-
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionException
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
+import java.util.function.Function
 
+import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpMethod
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
@@ -23,6 +28,20 @@ abstract class AbstractServiceClient {
     @Inject
     private JwtAuthStore jwtAuthStore
 
+    @Value('${wave.pairing.channel.maxAttempts:5}')
+    private int maxAttempts
+
+    @Value('${wave.pairing.channel.retryBackOffBase:3}')
+    private int retryBackOffBase
+
+    @Value('${wave.pairing.channel.retryBackOffDelay:250}')
+    private int retryBackOffDelay
+
+    protected int maxAttempts() { maxAttempts }
+
+    protected int retryBackOffBase() { retryBackOffBase }
+
+    protected int retryBackOffDelay() { retryBackOffDelay }
 
     /**
      * Generic async get with authorization
@@ -32,17 +51,19 @@ abstract class AbstractServiceClient {
      *      the uri to get
      * @param towerEndpoint
      *      base tower endpoint
-     * @param authorization
-     *      the authorization tokens
+     * @param auth
+     *      the authorization token
      * @param type
      *      the type of the model to convert into
      * @return a future of T
      */
-    public <T> CompletableFuture<T> sendAsync(String service, String serviceEndpoint, URI uri, String authorization, Class<T> type) {
-        final result = authorization
-                ? getAsync1(service, serviceEndpoint, uri, authorization, true)
-                : getAsync0(service, serviceEndpoint, uri)
-        return result
+    public <T> CompletableFuture<T> sendAsync(String service, String endpoint, URI uri, String auth, Class<T> type) {
+        return sendAsync0(service, endpoint, uri, auth, type, 1)
+    }
+
+    @CompileDynamic
+    protected <T> CompletableFuture<T> sendAsync0(String service, String endpoint, URI uri, String authorization, Class<T> type, int attempt) {
+        return sendAsync1(service, endpoint, uri, authorization, true)
                 .thenCompose { resp ->
                     log.trace "Tower response for request GET '${uri}' => ${resp.status}"
                     switch (resp.status) {
@@ -61,9 +82,25 @@ abstract class AbstractServiceClient {
                             throw new HttpResponseException(resp.status, msg)
                     }
                 }
-                .exceptionally { err ->
-                    throw TowerClient.handleIoError(err, uri)
-                }
+                .exceptionallyCompose((Throwable err)-> {
+                    if (err instanceof CompletionException)
+                        err = err.cause
+                    // check for retryable condition
+                    final retryable = err instanceof IOException || err instanceof TimeoutException
+                    if( retryable && attempt<=maxAttempts() ) {
+                        final delay = (Math.pow(retryBackOffBase(), attempt) as long) * retryBackOffDelay()
+                        final exec = CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS)
+                        log.debug "Unable to connect '$endpoint'; cause: ${err.message ?: err}; attempt=$attempt; await=${delay};"
+                        return CompletableFuture.supplyAsync(()->sendAsync0(service, endpoint, uri, authorization, type, attempt+1), exec)
+                                .thenCompose(Function.identity());
+                    }
+                    // report IO error
+                    if( err instanceof IOException ) {
+                        final message = "Unexpected I/O error while accessing Tower resource: $uri - cause: ${err.message ?: err}"
+                        err = new HttpResponseException(503, message)
+                    }
+                    throw err
+                })
     }
 
     /**
@@ -82,43 +119,33 @@ abstract class AbstractServiceClient {
      * @return
      *      A future of the unparsed response
      */
-    private CompletableFuture<ProxyHttpResponse> getAsync1(String service, String serviceEndpoint, final URI uri, final String accessToken, final boolean canRefresh) {
+    private CompletableFuture<ProxyHttpResponse> sendAsync1(String service, String serviceEndpoint, final URI uri, final String accessToken, final boolean canRefresh) {
         // check the most updated JWT tokens
-        final tokens = jwtAuthStore.getJwtAuth(serviceEndpoint, accessToken)
+        final JwtAuth tokens = accessToken ? jwtAuthStore.getJwtAuth(serviceEndpoint, accessToken) : null
         log.trace "Tower GET '$uri' — can refresh=$canRefresh; tokens=$tokens"
         // submit the request
         final request = new ProxyHttpRequest(
                 msgId: UUID.randomUUID(),
                 method: HttpMethod.GET,
                 uri: uri,
-                bearerAuth: tokens.bearer
+                bearerAuth: tokens?.bearer
         )
 
-        return sendAsync(service, serviceEndpoint, request)
+        final response = sendAsync(service, serviceEndpoint, request)
+        // when accessing unauthorised resources, refresh token is not needed
+        if( !accessToken )
+            return response
+
+        return response
                 .thenCompose { resp ->
                     log.trace "Tower GET '$uri' response\n- status : ${resp.status}\n- content: ${resp.body}"
                     if (resp.status == 401 && tokens.refresh && canRefresh) {
                         return refreshJwtToken(service, serviceEndpoint, accessToken, tokens.refresh)
-                                .thenCompose((JwtAuth it) -> getAsync1(service, serviceEndpoint, uri, accessToken, false))
+                                .thenCompose((JwtAuth it) -> sendAsync1(service, serviceEndpoint, uri, accessToken, false))
                     } else {
                         return CompletableFuture.completedFuture(resp)
                     }
                 }
-    }
-
-    private CompletableFuture<ProxyHttpResponse> getAsync0(String service, String serviceEndpoint, final URI uri) {
-        log.trace "Tower GET '$uri'"
-        // submit the request
-        final request = new ProxyHttpRequest(
-                msgId: UUID.randomUUID(),
-                method: HttpMethod.GET,
-                uri: uri
-        )
-        // when accessing unauthorised resources, use the http client directly
-        // retryable logic is not needed, because those requests are not expected to have a high volume
-        // (ultimately this only used by the wave pairing controller, if it fails,
-        // tower itself will retry the request)
-        return sendAsync(service, serviceEndpoint, request)
     }
 
     /**
