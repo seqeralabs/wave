@@ -45,7 +45,7 @@ class AbstractFutureStoreRedisTest extends Specification implements RedisTestCon
         }
 
         @Override
-        String group() {
+        String topic() {
             return 'redis-topic-x'
         }
     }

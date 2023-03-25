@@ -20,7 +20,7 @@ import static io.seqera.wave.util.RegHelper.random256Hex
  */
 @Slf4j
 @CompileStatic
-abstract class AbstractConsumerQueue<V> implements ConsumerQueue<V>, ConsumerGroup<String>, AutoCloseable {
+abstract class AbstractConsumerQueue<V> implements ConsumerQueue<V>, ConsumerTopic<String>, AutoCloseable {
 
     private static final Random RANDOM = new Random()
     private Map<String, Map<String, Consumer<V>>> consumersMap = new ConcurrentHashMap<>()
@@ -36,7 +36,7 @@ abstract class AbstractConsumerQueue<V> implements ConsumerQueue<V>, ConsumerGro
     }
 
     @Override
-    abstract String group()
+    abstract String topic()
 
     @Override
     synchronized void send(String queueKey, V request) {
@@ -74,7 +74,7 @@ abstract class AbstractConsumerQueue<V> implements ConsumerQueue<V>, ConsumerGro
         // Try to consume all pending queue messages
         // this can be the case if there is a disconnection just after a request is send
         // but not yet consumed
-        broker.consume(queueKey, message -> {
+        broker.consume(queueKey, (message) -> {
             consumer.accept(encodingStrategy.decode(message))
         })
 

@@ -26,7 +26,7 @@ class AbstractFutureStoreLocalTest extends Specification {
         }
 
         @Override
-        String group() {
+        String topic() {
             // not needed for local implementation
             return null
         }

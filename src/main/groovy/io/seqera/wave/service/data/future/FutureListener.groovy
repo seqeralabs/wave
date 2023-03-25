@@ -11,7 +11,7 @@ interface FutureListener<T> {
     /**
      * @return A string representing the name of the group to be listened
      */
-    String group()
+    String topic()
 
     /**
      * Method invoked when a message is received over the topic

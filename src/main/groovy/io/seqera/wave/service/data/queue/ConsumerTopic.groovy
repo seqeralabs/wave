@@ -1,23 +1,23 @@
 package io.seqera.wave.service.data.queue
 
 /**
- * Defines a group of consumers that can consume objects of type V
+ * Defines a  of consumers that can consume objects of type V
  * from a queue
  *
  * @author Jordi Deu-Pons <jordi@seqera.io>
  * @param <V> Type of object consumed
  */
-interface ConsumerGroup<V> {
+interface ConsumerTopic<V> {
 
     /**
-     * Key to identify this group of consumers
+     * Key to identify this topic of consumers
      *
-     * @return the group identifier
+     * @return the topic identifier
      */
-    String group()
+    String topic()
 
     /**
-     * Check if this group can consume from a given queue
+     * Check if this topic can consume from a given queue
      *
      * @param queueKey Queue identifier
      * @return whether this queueKey can be consumed
@@ -25,7 +25,7 @@ interface ConsumerGroup<V> {
     boolean canConsume(String queueKey)
 
     /**
-     * Pass a message to the consume group to be consumed
+     * Pass a message to the consumer topic to be consumed
      * by only one consumer
      *
      * @param queueKey Source queue identifier

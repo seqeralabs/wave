@@ -7,7 +7,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Prototype
 import io.micronaut.context.annotation.Requires
 import io.micronaut.retry.annotation.Retryable
-import io.seqera.wave.service.data.queue.ConsumerGroup
+import io.seqera.wave.service.data.queue.ConsumerTopic
 import io.seqera.wave.service.data.queue.QueueBroker
 import jakarta.inject.Inject
 import redis.clients.jedis.Jedis
@@ -32,28 +32,27 @@ class RedisQueueBroker implements QueueBroker<String> {
 
     private JedisPubSub subscriber
 
-    private ConsumerGroup<String> localConsumers
+    private ConsumerTopic<String> localConsumers
 
     @Override
-    void init(ConsumerGroup<String> localConsumers) {
+    void init(ConsumerTopic<String> localConsumers) {
         this.localConsumers = localConsumers
 
         if( subscriber )
             return
 
-        final groupName = localConsumers.group()
+        final topic = localConsumers.topic()
         this.subscriber = new JedisPubSub() {
 
             @Override
             void onMessage(String channel, String queueKey) {
-
-                // When there is new request available for this group of
+                // When there is new request available for this topic of
                 // consumers a message is send to the group topic with the
                 // value of the queue that holds the new request
-                if( channel != groupName )
+                if( channel != topic )
                     return
 
-                log.debug "Receiving redis message on group='$groupName'; queue=$queueKey"
+                log.debug "Receiving redis message on topic='$topic'; queue=$queueKey"
                 if( !localConsumers.canConsume(queueKey) ) {
                     log.debug "No local consumers for queue=$queueKey"
                     return
@@ -66,16 +65,14 @@ class RedisQueueBroker implements QueueBroker<String> {
 
         // subscribe redis events
         final name = "redis-pairing-queue-subscriber"
-        Thread.startDaemon(name) {
-            subscribe(name)
-        }
+        Thread.startDaemon(name,() -> subscribe(name))
     }
 
     @Retryable(includes=[JedisConnectionException])
     void subscribe(String name) {
         try (Jedis conn = pool.getResource()) {
             log.debug "Redis connection for '${name}' connected=${conn.isConnected()} and broken=${conn.isBroken()}"
-            conn.subscribe(subscriber, localConsumers.group())
+            conn.subscribe(subscriber, localConsumers.topic())
         }
     }
 
@@ -88,7 +85,7 @@ class RedisQueueBroker implements QueueBroker<String> {
 
             // Notify local consumers topic that there is a
             // new request at the given queue key
-            conn.publish(localConsumers.group(), queueKey)
+            conn.publish(localConsumers.topic(), queueKey)
         }
     }
 
@@ -99,16 +96,19 @@ class RedisQueueBroker implements QueueBroker<String> {
             while (true) {
 
                 // Pop an element from the right side of the queue with a timeout of one second
-                final element = conn.brpop(1.0 as double, queueKey)
+                final entry = conn.brpop(1, queueKey)
 
                 // Redis BRPOP is an atomic operation, so only one instance of Wave will get the
                 // queue element. If it returns a null element it means that the timeout was
                 // reached and another Wave instance picked up the element.
-                if (!element)
+                if (!entry)
                     return
-
+                // the first element is the queue key
+                // the second element is the actual value received
+                if (entry.size()!=2)
+                    throw new IllegalStateException("Unexpected number elements: $entry")
                 // Consume the element
-                consumer.accept(element.element)
+                consumer.accept(entry.get(1))
             }
         }
     }
@@ -119,7 +119,7 @@ class RedisQueueBroker implements QueueBroker<String> {
             subscriber.unsubscribe()
         }
         catch (Throwable e) {
-            log.warn "Unexpected error while unsubscribing redis topic '${localConsumers.group()}' - cause: ${e.message}"
+            log.warn "Unexpected error while unsubscribing redis topic '${localConsumers.topic()}' - cause: ${e.message}"
         }
 
         try( Jedis conn=pool.getResource() ) {

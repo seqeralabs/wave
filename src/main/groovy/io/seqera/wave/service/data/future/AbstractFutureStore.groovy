@@ -19,7 +19,7 @@ import jakarta.annotation.PreDestroy
  * of {@link FutureStore}. Each {@link FutureStore} holds a collection of collection {@link CompletableFuture}.
  *
  * The {@link CompletableFuture} cannot be shared across the partitions, however it can be completed
- * by any party having the same {@link AbstractFutureStore#group()}.
+ * by any party having the same {@link AbstractFutureStore#topic()}.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -41,11 +41,11 @@ abstract class AbstractFutureStore<V> implements FutureStore<String,V>, FutureLi
     }
 
     @Override
-    abstract String group()
+    abstract String topic()
 
     /**
      * Create a new {@link CompletableFuture} instance. The future can be "completed" by this or any other instance
-     * having the same {@link #group()} value.
+     * having the same {@link #topic()} value.
      *
      * @param key A key identifying this future in an univocal manner.
      * @return A {@link CompletableFuture} object.
@@ -81,7 +81,7 @@ abstract class AbstractFutureStore<V> implements FutureStore<String,V>, FutureLi
 
     /**
      * Notify the completion of a {@link CompletableFuture}. This method can be invoked by any
-     * of the parties sharing the same {@link #group()} name, irrespective where the future object
+     * of the parties sharing the same {@link #topic()} name, irrespective where the future object
      * was created with the {@link #create(java.lang.String)}  method.
      *
      * @param key The {@link CompletableFuture} unique key.

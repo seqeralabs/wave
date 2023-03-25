@@ -30,7 +30,7 @@ class WebSocketTowerConnector extends TowerConnector {
     @Override
     CompletableFuture<ProxyHttpResponse> sendAsync(String endpoint, ProxyHttpRequest request) {
         return channel
-                .sendServiceRequest(TOWER_SERVICE, endpoint, request)
+                .sendRequest(TOWER_SERVICE, endpoint, request)
     }
 
 }

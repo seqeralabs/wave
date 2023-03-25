@@ -68,7 +68,7 @@ class PairingWebSocket {
         ))
 
         // Register on send consumer
-        consumerId = channel.onServiceRequestListener(service, endpoint, (PairingMessage msg)-> session.sendSync(msg))
+        consumerId = channel.addMessageConsumer(service, endpoint, (PairingMessage msg)-> session.sendSync(msg))
     }
 
     @OnMessage
@@ -77,14 +77,14 @@ class PairingWebSocket {
         if( message instanceof PairingHeartbeat )
             return
 
-        channel.receiveServiceResponse(service, endpoint, message)
+        channel.receiveResponse(service, endpoint, message)
     }
 
     @OnClose
     void onClose() {
         log.debug "Closed '$service' pairing session [sessionId: $session.id]"
         if( consumerId )
-            channel.removeListener(service, endpoint, consumerId)
+            channel.removeMessageConsumer(service, endpoint, consumerId)
     }
 
 }

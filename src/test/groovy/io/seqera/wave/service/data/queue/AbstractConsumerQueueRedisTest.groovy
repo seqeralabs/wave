@@ -43,7 +43,7 @@ class AbstractConsumerQueueRedisTest extends Specification implements RedisTestC
         }
 
         @Override
-        String group() {
+        String topic() {
             return 'redis-topic-x'
         }
     }

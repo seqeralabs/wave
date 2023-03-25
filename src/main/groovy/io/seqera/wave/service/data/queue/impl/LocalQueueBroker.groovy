@@ -6,8 +6,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Prototype
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.exception.BadRequestException
-import io.seqera.wave.service.data.queue.ConsumerGroup
+import io.seqera.wave.service.data.queue.ConsumerTopic
 import io.seqera.wave.service.data.queue.QueueBroker
 
 /**
@@ -22,10 +21,10 @@ import io.seqera.wave.service.data.queue.QueueBroker
 @CompileStatic
 class LocalQueueBroker implements QueueBroker<String> {
 
-    private ConsumerGroup<String> localConsumers
+    private ConsumerTopic<String> localConsumers
 
     @Override
-    void init(ConsumerGroup<String> localConsumers) {
+    void init(ConsumerTopic<String> localConsumers) {
         this.localConsumers = localConsumers
     }
 

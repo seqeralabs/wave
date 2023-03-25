@@ -20,7 +20,7 @@ class PairingSendQueue extends AbstractConsumerQueue<PairingMessage> {
     }
 
     @Override
-    String group() {
-        return "pairing-queue"
+    String topic() {
+        return "pairing-send-channel"
     }
 }

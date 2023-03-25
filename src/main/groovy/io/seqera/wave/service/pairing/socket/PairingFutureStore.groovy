@@ -17,7 +17,7 @@ class PairingFutureStore extends AbstractFutureStore<PairingMessage> {
     }
 
     @Override
-    String group() {
-        return "pairing-store"
+    String topic() {
+        return "pairing-future-channel"
     }
 }

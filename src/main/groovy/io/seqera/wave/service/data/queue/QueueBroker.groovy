@@ -17,7 +17,7 @@ interface QueueBroker<V> {
      *
      * @param localConsumers Consumers on the local instance
      */
-    void init(ConsumerGroup<V> localConsumers)
+    void init(ConsumerTopic<V> localConsumers)
 
     /**
      * Send a message to a given queue

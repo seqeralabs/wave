@@ -51,7 +51,7 @@ class PairingChannel {
         return endpoints.get(key) != null
     }
 
-    public <M extends PairingMessage, R extends PairingMessage> CompletableFuture<R> sendServiceRequest(String service, String endpoint, M message) {
+    public <M extends PairingMessage, R extends PairingMessage> CompletableFuture<R> sendRequest(String service, String endpoint, M message) {
         log.debug "Request message=${message.class.simpleName} to endpoint='$endpoint'"
 
         // create a unique Id to identify this command
@@ -68,17 +68,17 @@ class PairingChannel {
     }
 
 
-    void receiveServiceResponse(String service, String endpoint, PairingMessage message) {
+    void receiveResponse(String service, String endpoint, PairingMessage message) {
         futuresStore.complete(message.msgId, message)
     }
 
-    String onServiceRequestListener(String service, String endpoint, Consumer<PairingMessage> consumer) {
+    String addMessageConsumer(String service, String endpoint, Consumer<PairingMessage> consumer) {
         log.debug "Register consumer on send service='$service' endpoint='$endpoint'"
         final queue = buildKey(service, endpoint)
         return sendQueue.addConsumer(queue, consumer)
     }
 
-    void removeListener(String service, String endpoint, String consumerId) {
+    void removeMessageConsumer(String service, String endpoint, String consumerId) {
         final queue = buildKey(service, endpoint)
         sendQueue.removeConsumer(queue, consumerId)
     }

@@ -31,45 +31,43 @@ class RedisFuturePublisher implements FuturePublisher<String> {
     @Inject
     private JedisPool pool
 
-    private String group
+    private String topic
 
     private JedisPubSub subscriber
 
     @Override
     void subscribe(FutureListener<String> listener) {
-        this.group = listener.group()
-        if( !group )
+        this.topic = listener.topic()
+        if( !topic )
             throw new IllegalArgumentException("Missing 'group' name for RedisFuturePublisher")
 
         // create the subscriber
         this.subscriber = new JedisPubSub() {
             @Override
             void onMessage(String channel, String message) {
-                log.debug "Receiving redis message on group='$group'; message=$message"
-                if( channel==group ) {
+                log.debug "Receiving redis message on group='$topic'; message=$message"
+                if( channel==topic ) {
                     listener.receive(message)
                 }
             }}
 
         // subscribe redis events
         final name = "redis-future-subscriber-${count.getAndIncrement()}"
-        Thread.startDaemon(name) {
-            subscribe(name)
-        }
+        Thread.startDaemon(name,()-> subscribe(name))
     }
 
     @Retryable(includes=[JedisConnectionException])
     void subscribe(String name) {
         try(Jedis conn=pool.getResource()) {
             log.debug "Redis connection for '${name}' connected=${conn.isConnected()} and broken=${conn.isBroken()}"
-            conn.subscribe(subscriber, group)
+            conn.subscribe(subscriber, topic)
         }
     }
 
     @Override
     void publish(String message) {
         try(Jedis conn=pool.getResource() ) {
-            conn.publish(group, message)
+            conn.publish(topic, message)
         }
     }
 
@@ -79,7 +77,7 @@ class RedisFuturePublisher implements FuturePublisher<String> {
             subscriber.unsubscribe()
         }
         catch (Throwable e) {
-            log.warn "Unexpected error while unsubscribing redis topic '$group' - cause: ${e.message}"
+            log.warn "Unexpected error while unsubscribing redis topic '$topic' - cause: ${e.message}"
         }
     }
 }
