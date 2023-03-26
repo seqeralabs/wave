@@ -6,6 +6,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 
 /**
  * Define common interface for Wave pairing exchange objects
+ *
+ * @author Jordi Deu-Pons <jordi@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME)

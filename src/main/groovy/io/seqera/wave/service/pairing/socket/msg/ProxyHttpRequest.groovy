@@ -15,7 +15,7 @@ class ProxyHttpRequest implements PairingMessage {
     String msgId
     String method
     String uri
-    String bearerAuth
+    String auth
     String body
     Map<String, List<String>> headers
 }

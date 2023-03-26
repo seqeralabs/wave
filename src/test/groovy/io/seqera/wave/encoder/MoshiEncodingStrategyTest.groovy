@@ -155,7 +155,7 @@ class MoshiEncodingStrategyTest extends Specification {
                 method: 'GET',
                 uri: 'http://localhost',
                 body: 'body',
-                bearerAuth: 'secret',
+                auth: 'secret',
                 headers: ['name': ['val1', 'val2']]
         )
 
@@ -172,7 +172,7 @@ class MoshiEncodingStrategyTest extends Specification {
         copy.method == data.method
         copy.uri == data.uri
         copy.body == data.body
-        copy.bearerAuth == data.bearerAuth
+        copy.auth == data.auth
         copy.headers == data.headers
     }
 

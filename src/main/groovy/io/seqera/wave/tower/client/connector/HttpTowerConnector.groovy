@@ -65,8 +65,8 @@ class HttpTowerConnector extends TowerConnector {
                 builder.method(method.toString(), HttpRequest.BodyPublishers.ofString(proxyRequest.body))
         }
 
-        if (proxyRequest.bearerAuth)
-            builder.header('Authorization', "Bearer ${proxyRequest.bearerAuth}")
+        if (proxyRequest.auth)
+            builder.header('Authorization', proxyRequest.auth)
 
         final headers = proxyRequest.headers ?: Map.<String,List<String>>of()
         for( Map.Entry<String,List<String>> header : headers ) {

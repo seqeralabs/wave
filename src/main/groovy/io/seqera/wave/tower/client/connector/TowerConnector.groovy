@@ -146,7 +146,7 @@ abstract class TowerConnector {
                 msgId: random256Hex(),
                 method: HttpMethod.GET,
                 uri: uri,
-                bearerAuth: tokens?.bearer
+                auth: tokens && tokens.bearer ? "Bearer ${tokens.bearer}" : null
         )
 
         final response = sendAsync(endpoint, request)
