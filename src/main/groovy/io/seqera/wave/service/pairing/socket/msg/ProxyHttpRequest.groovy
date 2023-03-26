@@ -4,6 +4,7 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 /**
+ * Model a remote HTTP request send via WebSocket connection
  *
  * @author Jordi Deu-Pons <jordi@seqera.io>
  */
