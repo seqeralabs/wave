@@ -109,15 +109,17 @@ class RedisCacheProvider implements CacheProvider<String,String> {
     }
 
     @Override
-    String biKeyFind(String value, boolean shuffled) {
+    String biKeyFind(String value, boolean sorted) {
         final id = DigestUtils.sha256Hex(value)
         final list = biKeysFor(value).toList()
-        final keys = shuffled ? list.shuffled() : list
+        final keys = sorted ? list.toSorted() : list.shuffled()
         final itr = keys.iterator()
         while( itr.hasNext() ) {
             final key = itr.next()
+            // verify the key still exists
             if( get(key)!=null )
                 return key
+            // if the key is not found, remove it from the set
             try( Jedis conn=pool.getResource() ) {
                 conn.srem(id, key)
             }

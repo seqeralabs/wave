@@ -58,7 +58,7 @@ class PairingEndpointsStore extends AbstractCacheStore<Entry> {
     }
 
     String getWebsocketSessionId(String service, String endpoint) {
-        this.biKeyFind(new Entry(service,endpoint), true)
+        this.biKeyFind(new Entry(service,endpoint), false)
     }
 
     boolean hasWebsocketSession(String service, String endpoint) {

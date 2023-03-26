@@ -85,9 +85,12 @@ class RedisCacheProviderTest extends Specification implements RedisTestContainer
         redisCacheProvider.biRemove('x3')
         then:
         redisCacheProvider.biKeysFor('a') == [] as Set
+
+        cleanup:
+        redisCacheProvider.clear()
     }
 
-    def 'should add and find keys for values' () {
+    def 'should add and find single key for value' () {
         when:
         redisCacheProvider.biPut('x1', 'a', Duration.ofSeconds(1))
         redisCacheProvider.biPut('x2', 'b', Duration.ofMinutes(1))
@@ -95,21 +98,24 @@ class RedisCacheProviderTest extends Specification implements RedisTestContainer
         redisCacheProvider.biPut('x4', 'c', Duration.ofMinutes(1))
 
         then:
-        redisCacheProvider.biKeyFind('a', false) == 'x1'
+        redisCacheProvider.biKeyFind('a', true) == 'x1'
         and:
         redisCacheProvider.biKeysFor('a') == ['x1','x3'] as Set
         and:
         sleep 1500
         and:
-        redisCacheProvider.biKeyFind('a', false) == 'x3'
+        redisCacheProvider.biKeyFind('a', true) == 'x3'
         redisCacheProvider.biKeysFor('a') == ['x3'] as Set
+
+        cleanup:
+        redisCacheProvider.clear()
     }
 
     def 'should update expiration when re-putting the value' () {
         when:
         redisCacheProvider.biPut('x1', 'a', Duration.ofSeconds(1))
         then:
-        redisCacheProvider.biKeyFind('a', false) == 'x1'
+        redisCacheProvider.biKeyFind('a', true) == 'x1'
 
         when:
         sleep 500
@@ -118,7 +124,10 @@ class RedisCacheProviderTest extends Specification implements RedisTestContainer
         redisCacheProvider.biPut('x1', 'a', Duration.ofSeconds(1))
         sleep 500
         then:
-        redisCacheProvider.biKeyFind('a', false) == 'x1'
+        redisCacheProvider.biKeyFind('a', true) == 'x1'
+
+        cleanup:
+        redisCacheProvider.clear()
     }
 
 }

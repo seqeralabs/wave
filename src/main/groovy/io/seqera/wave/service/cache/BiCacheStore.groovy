@@ -38,9 +38,9 @@ interface BiCacheStore<K,V> {
      * Find a key in the cache for the given value.
      *
      * @param value The value for which find corresponding key
-     * @param shuffled When true, the list of keys is shuffled  before getting the first value
+     * @param sorted When true, the list of keys is sorted  before getting the first value
      * @return A key associated with the specified value or null if not key is found
      */
-    K biKeyFind(V value, boolean shuffled)
+    K biKeyFind(V value, boolean sorted)
 
 }

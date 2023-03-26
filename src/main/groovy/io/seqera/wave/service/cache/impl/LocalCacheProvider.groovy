@@ -119,15 +119,17 @@ class LocalCacheProvider implements CacheProvider<String,String> {
         return index.get(id) ?: Set.<String>of()
     }
 
-    String biKeyFind(String value, boolean shuffled) {
+    String biKeyFind(String value, boolean sorted) {
         final id = value.hashCode()
         final list = biKeysFor(value).toList()
-        final keys = shuffled ? list.shuffled() : list
+        final keys = sorted ? list.toSorted() : list.shuffled()
         final itr = keys.iterator()
         while( itr.hasNext() ) {
             final result = itr.next()
+            // verify the key still exists
             if( get(result)!=null )
                 return result
+            // if not exist, remove it from the set
             index.get(id)?.remove(result)
         }
         return null

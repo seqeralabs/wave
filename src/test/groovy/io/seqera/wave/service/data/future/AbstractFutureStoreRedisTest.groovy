@@ -3,7 +3,6 @@ package io.seqera.wave.service.data.future
 import spock.lang.Shared
 import spock.lang.Specification
 
-import java.time.Duration
 import java.util.concurrent.TimeUnit
 
 import groovy.transform.Canonical
@@ -41,7 +40,7 @@ class AbstractFutureStoreRedisTest extends Specification implements RedisTestCon
     static class SimpleRedisDataStore extends AbstractFutureStore<Simple> {
 
         SimpleRedisDataStore(FuturePublisher<String> publisher) {
-            super(publisher, Duration.ofSeconds(5))
+            super(publisher)
         }
 
         @Override

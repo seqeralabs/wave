@@ -93,13 +93,13 @@ class LocalCacheProviderTest extends Specification {
         localCacheProvider.biPut('x4', 'c', Duration.ofMinutes(1))
 
         then:
-        localCacheProvider.biKeyFind('a', false) == 'x1'
+        localCacheProvider.biKeyFind('a', true) == 'x1'
         and:
         localCacheProvider.biKeysFor('a') == ['x1','x3'] as Set
         and:
         sleep 500
         and:
-        localCacheProvider.biKeyFind('a', false) == 'x3'
+        localCacheProvider.biKeyFind('a', true) == 'x3'
         localCacheProvider.biKeysFor('a') == ['x3'] as Set
 
     }

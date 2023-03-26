@@ -100,8 +100,8 @@ abstract class AbstractCacheStore<V> implements CacheStore<String,V>, BiCacheSto
     }
 
     @Override
-    String biKeyFind(V value, boolean shuffled) {
-        final result = delegate.biKeyFind(serialize(value), shuffled)
+    String biKeyFind(V value, boolean sorted) {
+        final result = delegate.biKeyFind(serialize(value), sorted)
         result ? result.replace(getPrefix(),'') : null
     }
 }
