@@ -1,4 +1,8 @@
 # Wave changelog
+v0.27.0 - 27 Mar 2023 
+- Add Wave pairing via Websocket connection [f840fcdd]
+- Bump build timeout to 15m [d2970fb5]
+
 v0.26.8 - 22 Mar 2023
 - Rename spack.yml to spack.yaml [9e67fdc7]
 
