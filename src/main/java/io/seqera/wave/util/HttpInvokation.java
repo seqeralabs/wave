@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
  *
  * Inspired by https://gist.github.com/petrbouda/92647b243eac71b089eb4fb2cfa90bf2
  */
+@Deprecated
 public class HttpInvokation<T> {
 
     private static final Logger LOG = LoggerFactory.getLogger(HttpInvokation.class);

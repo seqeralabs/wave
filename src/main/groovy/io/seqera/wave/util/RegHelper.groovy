@@ -83,18 +83,13 @@ class RegHelper {
         }
     }
 
-    static String dumpHeaders(Headers headers) {
-        def result = new StringBuilder()
-        for( Map.Entry<String,List<String>> entry : headers )  {
-            for( String val : entry.value )
-                result.append("\n  $entry.key=$val")
-        }
-        return result.toString()
+    static String dumpHeaders(HttpHeaders headers) {
+        return dumpHeaders(headers.map())
     }
 
-    static String dumpHeaders(HttpHeaders headers) {
+    static String dumpHeaders(Map<String, List<String>> headers) {
         def result = new StringBuilder()
-        for( Map.Entry<String,List<String>> entry : headers.map() )  {
+        for( Map.Entry<String,List<String>> entry : headers )  {
             for( String val : entry.value )
                 result.append("\n  $entry.key=$val")
         }

@@ -62,4 +62,5 @@ interface CacheStore<K,V> {
      * Remove all entries from the cache
      */
     void clear()
+
 }

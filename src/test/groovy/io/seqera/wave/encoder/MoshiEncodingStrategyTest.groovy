@@ -9,6 +9,10 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
+import io.seqera.wave.service.pairing.socket.msg.PairingResponse
+import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
+import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.LazyDigestStore
 import io.seqera.wave.storage.ZippedDigestStore
@@ -18,6 +22,7 @@ import io.seqera.wave.storage.reader.GzipContentReader
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * @author Jordi Deu-Pons <jordi@seqera.io>
  */
 class MoshiEncodingStrategyTest extends Specification {
 
@@ -140,4 +145,100 @@ class MoshiEncodingStrategyTest extends Specification {
         and:
         new String(copy.bytes) == DATA
     }
+
+    def 'should encode and decode proxy http request message' () {
+        given:
+        def encoder = new MoshiEncodeStrategy<ProxyHttpRequest>() { }
+        and:
+        def data = new ProxyHttpRequest(
+                msgId: 'foo',
+                method: 'GET',
+                uri: 'http://localhost',
+                body: 'body',
+                auth: 'secret',
+                headers: ['name': ['val1', 'val2']]
+        )
+
+        when:
+        def json = encoder.encode(data)
+        println json
+
+        and:
+        def copy = encoder.decode(json)
+        then:
+        copy.getClass() == data.getClass()
+        and:
+        copy.msgId == data.msgId
+        copy.method == data.method
+        copy.uri == data.uri
+        copy.body == data.body
+        copy.auth == data.auth
+        copy.headers == data.headers
+    }
+
+    def 'should encode and decode proxy http response message' () {
+        given:
+        def encoder = new MoshiEncodeStrategy<ProxyHttpResponse>() { }
+        and:
+        def data = new ProxyHttpResponse(
+                msgId: 'foo',
+                status: 200,
+                body: 'body',
+                headers: ['name': ['val1', 'val2']]
+        )
+
+        when:
+        def json = encoder.encode(data)
+        println json
+
+        and:
+        def copy = encoder.decode(json)
+        then:
+        copy.getClass() == data.getClass()
+        and:
+        copy.msgId == data.msgId
+        copy.status == data.status
+        copy.body == data.body
+        copy.headers == data.headers
+    }
+
+    def 'should encode and decode pairing heartbeat message' () {
+        given:
+        def encoder = new MoshiEncodeStrategy<PairingHeartbeat>() { }
+        and:
+        def data = new PairingHeartbeat(msgId: 'foo')
+
+        when:
+        def json = encoder.encode(data)
+        println json
+
+        and:
+        def copy = encoder.decode(json)
+        then:
+        copy.getClass() == data.getClass()
+        and:
+        copy.msgId == data.msgId
+    }
+
+    def 'should encode and decode pairing response message' () {
+        given:
+        def encoder = new MoshiEncodeStrategy<PairingResponse>() { }
+        and:
+        def data = new PairingResponse(msgId: 'foo', publicKey: 'key', pairingId: 'id')
+
+        when:
+        def json = encoder.encode(data)
+        println json
+
+        and:
+        def copy = encoder.decode(json)
+        then:
+        copy.getClass() == data.getClass()
+        and:
+        copy.msgId == data.msgId
+        copy.publicKey == data.publicKey
+        copy.pairingId == data.pairingId
+    }
+
+
 }

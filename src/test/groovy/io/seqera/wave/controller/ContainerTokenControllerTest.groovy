@@ -20,6 +20,7 @@ import io.seqera.wave.exchange.DescribeWaveContainerResponse
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.pairing.PairingRecord
 import io.seqera.wave.service.pairing.PairingService
+import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
@@ -253,7 +254,10 @@ class ContainerTokenControllerTest extends Specification {
         given:
         def validation = new ValidationServiceImpl()
         def pairing = Mock(PairingService)
-        def controller = new ContainerTokenController(validationService: validation, pairingService: pairing)
+        def channel = Mock(PairingChannel) {
+            hasWebsocketSession(_, _) >> false
+        }
+        def controller = new ContainerTokenController(validationService: validation, pairingService: pairing, pairingChannel: channel)
         def msg
 
         when:
@@ -319,6 +323,26 @@ class ContainerTokenControllerTest extends Specification {
         then:
         msg = thrown(BadRequestException)
         msg.message == 'Invalid container image name — offending value: http:docker.io/foo:latest'
+
+    }
+
+    def 'should allow any registered endpoint' () {
+        given:
+        def registeredUri = 'ftp://127.0.0.1'
+        def validation = new ValidationServiceImpl()
+        def pairing = Mock(PairingService)
+        def channel = Mock(PairingChannel) {
+            hasWebsocketSession('tower', registeredUri) >> true
+        }
+        def controller = new ContainerTokenController(validationService: validation, pairingService: pairing, pairingChannel: channel)
+        def msg
+
+        when:
+        controller.validateContainerRequest(new SubmitContainerTokenRequest(towerEndpoint: registeredUri, towerAccessToken: '123'))
+        then:
+        1 * pairing.getPairingRecord('tower',registeredUri) >> Mock(PairingRecord)
+        and:
+        noExceptionThrown()
 
     }
 }

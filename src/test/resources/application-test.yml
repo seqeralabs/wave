@@ -42,3 +42,6 @@ logger:
 redis :
   pool :
     enabled : false
+  health:
+    enabled: false
+---

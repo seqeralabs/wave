@@ -11,6 +11,7 @@ import io.seqera.wave.util.ZipUtils
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * @author Jordi Deu-Pons <jordi@seqera.io>
  */
 @Slf4j
 class RegHelperTest extends Specification {
@@ -60,6 +61,18 @@ class RegHelperTest extends Specification {
         RegHelper.random256Hex().length() == 64
     }
 
+    def 'should dump headers' () {
+        expect:
+        RegHelper.dumpHeaders([
+                'key1': ['val1', 'val2'],
+                'key2': ['val3']
+        ]).trim() == """\
+          key1=val1
+          key1=val2
+          key2=val3
+        """.stripIndent().trim()
+    }
+
     def 'should validate digest generation' () {
         given:
         def futures = new ArrayList<>()
@@ -95,4 +108,5 @@ class RegHelperTest extends Specification {
         then:
         true
     }
+
 }
