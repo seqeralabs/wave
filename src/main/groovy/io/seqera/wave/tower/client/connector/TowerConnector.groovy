@@ -37,7 +37,7 @@ abstract class TowerConnector {
     @Inject
     private JwtAuthStore jwtAuthStore
 
-    @Value('${wave.pairing.channel.maxAttempts:5}')
+    @Value('${wave.pairing.channel.maxAttempts:6}')
     private int maxAttempts
 
     @Value('${wave.pairing.channel.retryBackOffBase:3}')
