@@ -12,7 +12,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
-import io.micronaut.scheduling.TaskScheduler
+import io.micronaut.retry.annotation.Retryable
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.data.stream.MessageBroker
 import jakarta.annotation.PostConstruct
@@ -45,21 +45,27 @@ class RedisMessageBroker implements MessageBroker<String> {
     @Value('${wave.streams.block:5s}')
     Duration blockTimeout
 
+    /**
+     * Consumers need to be periodically registered before this timeout to consider them active
+     */
     @Value('${wave.streams.expire:60s}')
     Duration expireTimeout
 
+    /**
+     * Message idle for more than this timeout are eligible to be reclaimed for another consumer
+     */
     @Value('${wave.streams.reclaim:20s}')
     Duration reclaimTimeout
 
+    /**
+     * The Redis stream won't persist more than 'maxLen' messages
+     */
     @Value('${wave.streams.maxlen:100}')
     Long maxLen
 
     @Inject
     private JedisPool pool
-
-    @Inject
-    private TaskScheduler scheduler
-
+    
     @Canonical
     static class ConsumerKey {
         String streamKey
@@ -111,30 +117,21 @@ class RedisMessageBroker implements MessageBroker<String> {
                 try (Jedis conn = pool.getResource()) {
 
                     // Read messages from the stream
-                    final messages = conn.xreadGroup(
-                            consumerGroup,
-                            consumerId,
-                            xReadGroupParams().count(1).block(blockTimeout.toMillis() as int),
-                            [streamKey: StreamEntryID.UNRECEIVED_ENTRY]
-                    )
+                    List<StreamEntry> messages = readPendingMessages(conn)
 
                     if (!messages || messages.isEmpty()) {
                         continue
                     }
 
                     // Process each message
-                    for (final message : messages) {
-                        if (message.key != streamKey)
-                            continue
-
-                        // Consume
-                        for (StreamEntry entry : message.value) {
-                            consumer.accept(entry.fields["message"] as String)
-                            conn.xack(streamKey, consumerGroup, entry.ID)
-                        }
+                    for (message in messages) {
+                        consumer.accept(message.fields["message"] as String)
+                        conn.xack(streamKey, consumerGroup, message.ID)
                     }
-                } catch (JedisException e) {
-                    // Handle the exception as appropriate for your application
+                } catch (Exception e) {
+                    log.error "while consumer '$consumerId' was processing a message from '$streamKey' -- ${e.message}"
+                    unregisterConsumer(streamKey, consumerId)
+                    return
                 }
             }
 
@@ -142,6 +139,44 @@ class RedisMessageBroker implements MessageBroker<String> {
             try (Jedis conn = pool.getResource()) {
                 conn.xgroupDelConsumer(streamKey, consumerGroup, consumerId)
             }
+        }
+
+        /**
+         * Reads the pending messages from a specific stream key and consumer group by attempting to reclaim them.
+         * If there are no pending messages, the function reads a single message from the stream key.
+         *
+         * @param conn the Jedis connection to use
+         * @return a List containing the reclaimed or newly received messages, or NULL if no messages were found
+         */
+        protected List<StreamEntry> readPendingMessages(Jedis conn) {
+            // check non-ack messages an claim them
+            final pending = conn.xautoclaim(
+                    streamKey,
+                    consumerGroup,
+                    consumerId,
+                    reclaimTimeout.toMillis(),
+                    new StreamEntryID(0, 0),
+                    xAutoClaimParams().count(10)
+            )
+
+            // return reclaimed messages
+            if (!pending?.value?.empty)
+                return pending.value
+
+            // otherwise check for new unreceived messages
+            final results = conn.xreadGroup(
+                    consumerGroup,
+                    consumerId,
+                    xReadGroupParams().count(1).block(blockTimeout.toMillis() as int),
+                    Map.of(streamKey, StreamEntryID.UNRECEIVED_ENTRY)
+            )
+            for (entry in results) {
+                if (entry.key == streamKey)
+                    return entry.value
+            }
+
+            // nothing found
+            return null
         }
     }
 
@@ -151,64 +186,31 @@ class RedisMessageBroker implements MessageBroker<String> {
      */
     @PostConstruct
     void init() {
-
         this.consumerGroup = "redis-message-broker-consumers"
         this.executorService = Executors.newCachedThreadPool()
         this.consumers = CacheBuilder.newBuilder().expireAfterAccess(expireTimeout).build()
-
-        // Claim non-acknowledged messages
-        scheduler.scheduleWithFixedDelay(reclaimTimeout, reclaimTimeout, this::claimMessages)
-
     }
-
-    /**
-     * Claim and resend messages not acknowledged after 'reclaimTimeout'
-     */
-    void claimMessages() {
-
-        for (key in consumers.asMap().keySet()) {
-            try (Jedis conn = pool.getResource()) {
-                final messages = conn.xautoclaim(
-                        key.streamKey,
-                        consumerGroup,
-                        key.consumerId,
-                        reclaimTimeout.toMillis(),
-                        new StreamEntryID(0, 0),
-                        xAutoClaimParams().count(1)
-                )
-
-                if (!messages)
-                    continue
-
-                for (StreamEntry entry : messages.value) {
-                    // Resend the message
-                    sendMessage(key.streamKey, entry.fields["message"] as String)
-
-                    // Acknowledge the old request
-                    conn.xack(key.streamKey, consumerGroup, entry.ID)
-                }
-            } catch (JedisException e) {
-                log.error "checking non-acknowledged messages -- ${e.message}"
-            }
-        }
-    }
-
 
     /**
      * Create a stream consumer group if it doesn't exists
      *
      * @param streamKey the key of the Redis stream to create consumer group
      */
+    @Retryable(includes = JedisException, multiplier = "2.0")
     void createConsumerGroup(String streamKey) {
         try (Jedis conn = pool.getResource()) {
             for (group in conn.xinfoGroup(streamKey)) {
                 if (group.name == consumerGroup) {
+                    // consumer group already exists
                     return
                 }
             }
-            conn.xgroupCreate(streamKey, consumerGroup, StreamEntryID.LAST_ENTRY, true)
         } catch (JedisException e) {
-            log.error "creating consumer group '$consumerGroup' at stream '$streamKey' -- ${e.message}"
+            log.warn "checking consumer group of '$streamKey' -- ${e.message}"
+        }
+
+        try (Jedis conn = pool.getResource()) {
+            conn.xgroupCreate(streamKey, consumerGroup, StreamEntryID.LAST_ENTRY, true)
         }
     }
 
@@ -223,8 +225,6 @@ class RedisMessageBroker implements MessageBroker<String> {
     void sendMessage(String streamKey, String message) {
         try (Jedis conn = pool.getResource()) {
             conn.xadd(streamKey, StreamEntryID.NEW_ENTRY, ["message": message], maxLen, true)
-        } catch (JedisException e) {
-            log.error "sending message to '${streamKey}' -- ${e.message}"
         }
     }
 
