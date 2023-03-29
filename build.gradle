@@ -60,10 +60,6 @@ dependencies {
     // caching deps
     implementation("io.micronaut.cache:micronaut-cache-core")
     implementation("io.micronaut.cache:micronaut-cache-caffeine")
-    // session persistence
-    runtimeOnly "io.micronaut:micronaut-session"
-    runtimeOnly "io.micronaut.redis:micronaut-redis-lettuce"
-
     implementation("io.micronaut.aws:micronaut-aws-parameter-store")
     implementation "software.amazon.awssdk:ecr"
     // this sts dependency is require by micronaut-aws-parameter-store,

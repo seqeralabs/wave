@@ -3,15 +3,15 @@ package io.seqera.wave.service.pairing.socket
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
+import java.util.function.Consumer
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
-import io.micronaut.websocket.WebSocketBroadcaster
-import io.micronaut.websocket.WebSocketSession
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+
 /**
  * Handle sending and replies for pairing messages
  *
@@ -27,24 +27,24 @@ class PairingChannel {
     private PairingFutureStore futuresStore
 
     @Inject
-    private PairingEndpointsStore endpointsStore
-
-    @Inject
-    private WebSocketBroadcaster broadcaster
+    private PairingStream messageStream
 
     @Value('${wave.pairing.channel.timeout:5s}')
     private Duration timeout
 
-    void registerWebsocketSession(WebSocketSession session) {
-        endpointsStore.addWebsocketSession(session)
+    void registerConsumer(String service, String endpoint, String consumerId, Consumer<PairingMessage> consumer) {
+        final topic = buildTopic(service, endpoint)
+        messageStream.registerConsumer(topic, consumerId, consumer)
     }
 
-    void deregisterWebsocketSession(WebSocketSession session) {
-        endpointsStore.removeWebsocketSession(session)
+    void deregisterConsumer(String service, String endpoint, String consumerId) {
+        final topic = buildTopic(service, endpoint)
+        messageStream.unregisterConsumer(topic, consumerId)
     }
 
-    boolean hasWebsocketSession(String service, String endpoint) {
-        return endpointsStore.hasWebsocketSession(service, endpoint)
+    boolean canConsume(String service, String endpoint) {
+        final topic = buildTopic(service, endpoint)
+        return messageStream.hasConsumer(topic)
     }
 
     public <M extends PairingMessage, R extends PairingMessage> CompletableFuture<R> sendRequest(String service, String endpoint, M message) {
@@ -55,10 +55,10 @@ class PairingChannel {
                 .create(message.msgId)
                 .orTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS)
 
-        // publish
-        final sessionId = endpointsStore.getWebsocketSessionId(service,endpoint)
-        log.debug "Broadcasting message to $service endpoint: '$endpoint' [sessionId: $sessionId]"
-        broadcaster.broadcastAsync(message, (sess) -> sess.id==sessionId)
+        // send message to the stream
+        final topic = buildTopic(service, endpoint)
+        log.debug "Sending message '${message.msgId}' to stream '${topic}'"
+        messageStream.sendMessage(topic, message)
 
         // return the future to the caller
         return (CompletableFuture<R>) result
@@ -66,6 +66,10 @@ class PairingChannel {
 
     void receiveResponse(String service, String endpoint, PairingMessage message) {
         futuresStore.complete(message.msgId, message)
+    }
+
+    private static String buildTopic(String service, String endpoint) {
+        return "${service}:${endpoint}".toString()
     }
 
 }
