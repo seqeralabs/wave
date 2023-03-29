@@ -115,7 +115,7 @@ class RedisMessageBroker implements MessageBroker<String> {
                             consumerGroup,
                             consumerId,
                             xReadGroupParams().count(1).block(blockTimeout.toMillis() as int),
-                            [streamKey: StreamEntryID.NEW_ENTRY]
+                            [streamKey: StreamEntryID.UNRECEIVED_ENTRY]
                     )
 
                     if (!messages || messages.isEmpty()) {
