@@ -8,7 +8,7 @@ import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.util.TypeHelper
 
 @CompileStatic
-abstract class AbstractMessageStream<M> {
+abstract class AbstractMessageStream<M> implements MessageBroker<M> {
 
     private MessageBroker<String> broker
     private EncodingStrategy<M> encodingStrategy
@@ -23,27 +23,27 @@ abstract class AbstractMessageStream<M> {
 
     protected String key0(String k) { return getPrefix() + k }
 
-    void sendMessage(String topic, M message) {
+    void sendMessage(String streamKey, M message) {
         final encodedMessage = encodingStrategy.encode(message)
-        final key = key0(topic)
+        final key = key0(streamKey)
         broker.sendMessage(key, encodedMessage)
     }
 
-    void registerConsumer(String topic, String consumerId, Consumer<M> consumer) {
-        final key = key0(topic)
+    void registerConsumer(String streamKey, String consumerId, Consumer<M> consumer) {
+        final key = key0(streamKey)
         broker.registerConsumer(key, consumerId, message -> {
             final decodeMessage = encodingStrategy.decode(message)
             consumer.accept(decodeMessage)
         })
     }
 
-    void unregisterConsumer(String topic, String consumerId) {
-        final key = key0(topic)
+    void unregisterConsumer(String streamKey, String consumerId) {
+        final key = key0(streamKey)
         broker.unregisterConsumer(key, consumerId)
     }
 
-    boolean hasConsumer(String topic) {
-        final key = key0(topic)
+    boolean hasConsumer(String streamKey) {
+        final key = key0(streamKey)
         return broker.hasConsumer(key)
     }
 }

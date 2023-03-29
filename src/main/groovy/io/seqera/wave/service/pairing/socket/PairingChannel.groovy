@@ -33,18 +33,18 @@ class PairingChannel {
     private Duration timeout
 
     void registerConsumer(String service, String endpoint, String consumerId, Consumer<PairingMessage> consumer) {
-        final topic = buildTopic(service, endpoint)
-        messageStream.registerConsumer(topic, consumerId, consumer)
+        final streamKey = buildStreamKey(service, endpoint)
+        messageStream.registerConsumer(streamKey, consumerId, consumer)
     }
 
     void deregisterConsumer(String service, String endpoint, String consumerId) {
-        final topic = buildTopic(service, endpoint)
-        messageStream.unregisterConsumer(topic, consumerId)
+        final streamKey = buildStreamKey(service, endpoint)
+        messageStream.unregisterConsumer(streamKey, consumerId)
     }
 
     boolean canConsume(String service, String endpoint) {
-        final topic = buildTopic(service, endpoint)
-        return messageStream.hasConsumer(topic)
+        final streamKey = buildStreamKey(service, endpoint)
+        return messageStream.hasConsumer(streamKey)
     }
 
     public <M extends PairingMessage, R extends PairingMessage> CompletableFuture<R> sendRequest(String service, String endpoint, M message) {
@@ -56,9 +56,9 @@ class PairingChannel {
                 .orTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS)
 
         // send message to the stream
-        final topic = buildTopic(service, endpoint)
-        log.debug "Sending message '${message.msgId}' to stream '${topic}'"
-        messageStream.sendMessage(topic, message)
+        final streamKey = buildStreamKey(service, endpoint)
+        log.debug "Sending message '${message.msgId}' to stream '${streamKey}'"
+        messageStream.sendMessage(streamKey, message)
 
         // return the future to the caller
         return (CompletableFuture<R>) result
@@ -68,7 +68,7 @@ class PairingChannel {
         futuresStore.complete(message.msgId, message)
     }
 
-    private static String buildTopic(String service, String endpoint) {
+    private static String buildStreamKey(String service, String endpoint) {
         return "${service}:${endpoint}".toString()
     }
 
