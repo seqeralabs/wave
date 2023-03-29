@@ -263,7 +263,7 @@ class ContainerTokenController {
         if( req.towerEndpoint && req.towerAccessToken ) {
 
             // check the endpoint is valid public URL if not registered
-            if( !pairingChannel.canConsume(PairingService.TOWER_SERVICE, req.towerEndpoint) ) {
+            if( !pairingChannel.canHandle(PairingService.TOWER_SERVICE, req.towerEndpoint) ) {
                 final msg = validationService.checkEndpoint(req.towerEndpoint)
                 if (msg)
                     throw new BadRequestException(msg.replaceAll(/(?i)endpoint/, 'Tower endpoint'))
