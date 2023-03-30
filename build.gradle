@@ -25,6 +25,7 @@ repositories {
     mavenCentral()
     maven { url = 'https://s3-eu-west-1.amazonaws.com/maven.seqera.io/releases' }
     maven { url = 'https://s3-eu-west-1.amazonaws.com/maven.seqera.io/snapshots' }
+    maven { url = 'https://jitpack.io' }
 }
 
 dependencies {
@@ -56,14 +57,10 @@ dependencies {
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
     implementation 'com.squareup.moshi:moshi:1.14.0'
     implementation 'com.squareup.moshi:moshi-adapters:1.14.0'
-    implementation 'redis.clients:jedis:3.9.0'
+    implementation 'redis.clients:jedis:4.3.1'
     // caching deps
     implementation("io.micronaut.cache:micronaut-cache-core")
     implementation("io.micronaut.cache:micronaut-cache-caffeine")
-    // session persistence
-    runtimeOnly "io.micronaut:micronaut-session"
-    runtimeOnly "io.micronaut.redis:micronaut-redis-lettuce"
-
     implementation("io.micronaut.aws:micronaut-aws-parameter-store")
     implementation "software.amazon.awssdk:ecr"
     // this sts dependency is require by micronaut-aws-parameter-store,
@@ -79,7 +76,7 @@ dependencies {
     implementation("ch.qos.logback:logback-classic")
 
     // rate limit
-    implementation 'com.coveo:spillway:2.1.1'
+    implementation 'com.github.seqeralabs:spillway:7b72700293'
 
     // monitoring
     implementation "io.micronaut.micrometer:micronaut-micrometer-registry-prometheus"

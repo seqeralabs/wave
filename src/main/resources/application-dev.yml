@@ -20,3 +20,7 @@ datasources:
     password: ""
     dialect: H2
     schema-generate: CREATE_DROP
+---
+logger:
+  levels:
+    io.seqera.wave.service.data.queue: 'TRACE'
