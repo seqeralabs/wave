@@ -83,9 +83,10 @@ class RedisMessageBroker implements MessageBroker<String> {
      */
     class RedisConsumer implements Runnable {
 
-        private String streamKey
-        private String consumerId
-        private Consumer<String> consumer
+        final private String streamKey
+        final private String consumerId
+        final private Consumer<String> consumer
+        final private String name
         private Thread thread
 
         /**
@@ -98,10 +99,11 @@ class RedisMessageBroker implements MessageBroker<String> {
             this.streamKey = streamKey
             this.consumerId = consumerId
             this.consumer = consumer
+            this.name = "redis-consumer-thread-${consumerCount.getAndIncrement()}"
         }
 
         RedisConsumer start() {
-            this.thread = new Thread(this, "redis-consumer-thread-${consumerCount.getAndIncrement()}")
+            thread = new Thread(this, name)
             thread.setDaemon(true)
             thread.start()
             return this
@@ -115,8 +117,9 @@ class RedisMessageBroker implements MessageBroker<String> {
 
             try (Jedis conn = pool.getResource()) {
                 conn.xgroupDelConsumer(streamKey, consumerGroup, consumerId)
-            } catch (JedisException e) {
-                log.error "deleting consumer '$consumerId' in group '$consumerGroup' from stream '$streamKey'"
+            }
+            catch (JedisException e) {
+                log.error "Deleting consumer '$consumerId' in group '$consumerGroup' from stream '$streamKey' -- cause: ${e.message}"
             }
         }
 
@@ -125,27 +128,33 @@ class RedisMessageBroker implements MessageBroker<String> {
          */
         @Override
         void run() {
-            while (!thread.isInterrupted()) {
-                try (Jedis conn = pool.getResource()) {
+            try (Jedis conn = pool.getResource()) {
+                run0(conn)
+            }
+            catch (Throwable e) {
+                log.error "While consumer '$consumerId' was processing a message from '$streamKey' -- ${e.message}", e
+                unregisterConsumer(streamKey, consumerId)
+            }
+            finally {
+                log.trace "Terminating redis consumer '$name'"
+            }
+        }
 
-                    // Read messages from the stream
-                    List<StreamEntry> messages = readPendingMessages(conn)
+        private void run0(Jedis conn) {
+            while( !thread.isInterrupted() ) {
+                // Read messages from the stream
+                List<StreamEntry> messages = readPendingMessages(conn)
 
-                    if (!messages || messages.isEmpty()) {
-                        continue
-                    }
+                if (!messages || messages.isEmpty()) {
+                    continue
+                }
 
-                    // Process each message
-                    for (message in messages) {
-                        final payload = message.fields["message"] as String
-                        log.debug "new message from '$streamKey' processed by '$consumerId' -- $payload"
-                        consumer.accept(payload)
-                        conn.xack(streamKey, consumerGroup, message.ID)
-                    }
-                } catch (Throwable e) {
-                    log.error "while consumer '$consumerId' was processing a message from '$streamKey' -- ${e.message}"
-                    unregisterConsumer(streamKey, consumerId)
-                    return
+                // Process each message
+                for (StreamEntry message in messages) {
+                    final payload = message.fields["message"] as String
+                    log.trace "New message from '$streamKey' processed by '$consumerId' -- $payload"
+                    consumer.accept(payload)
+                    conn.xack(streamKey, consumerGroup, message.ID)
                 }
             }
         }
@@ -236,7 +245,7 @@ class RedisMessageBroker implements MessageBroker<String> {
         createConsumer(streamKey, consumerId)
 
         // Start the consumer
-        log.debug "starting new consumer '$consumerId' on stream '$streamKey'"
+        log.trace "Starting new consumer '$consumerId' on stream '$streamKey'"
         final redisConsumer = new RedisConsumer(streamKey, consumerId, consumer)
         consumers.put(key, redisConsumer)
         redisConsumer.start()
@@ -252,12 +261,12 @@ class RedisMessageBroker implements MessageBroker<String> {
      */
     @Override
     void unregisterConsumer(String streamKey, String consumerId) {
-        log.debug "unregister consumer '$consumerId' on stream '$streamKey'"
+        log.trace "Unregister consumer '$consumerId' on stream '$streamKey'"
 
         final key = new ConsumerKey(streamKey, consumerId)
         final consumer = consumers.getIfPresent(key)
         if (!consumer) {
-            log.error "no consumer id=${consumerId} streamKey=${streamKey}"
+            log.error "No consumer id=${consumerId} streamKey=${streamKey}"
             return
         }
         consumer.unregister()
@@ -275,7 +284,7 @@ class RedisMessageBroker implements MessageBroker<String> {
             final consumers = conn.xinfoConsumers(streamKey, consumerGroup)
             return consumers && consumers.size() > 0
         } catch (JedisException e) {
-            log.error "checking if stream '$streamKey' has consumers on group '$consumerGroup'"
+            log.error "Checking if stream '$streamKey' has consumers on group '$consumerGroup'"
             return false
         }
     }
@@ -295,11 +304,11 @@ class RedisMessageBroker implements MessageBroker<String> {
                 }
             }
         } catch (JedisException e) {
-            log.warn "checking consumer group of '$streamKey' -- ${e.message}"
+            log.warn "Checking consumer group of '$streamKey' -- ${e.message}"
         }
 
         try (Jedis conn = pool.getResource()) {
-            log.debug "create new consumer group '$consumerGroup' on stream '$streamKey'"
+            log.trace "Create new consumer group '$consumerGroup' on stream '$streamKey'"
             conn.xgroupCreate(streamKey, consumerGroup, StreamEntryID.LAST_ENTRY, true)
         }
     }
