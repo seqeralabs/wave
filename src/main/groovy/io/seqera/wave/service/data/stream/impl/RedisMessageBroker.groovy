@@ -108,6 +108,12 @@ class RedisMessageBroker implements MessageBroker<String> {
          */
         void unregister() {
             this.registered = false
+
+            try (Jedis conn = pool.getResource()) {
+                conn.xgroupDelConsumer(streamKey, consumerGroup, consumerId)
+            } catch (JedisException e) {
+                log.error "deleting consumer '$consumerId' in group '$consumerGroup' from stream '$streamKey'"
+            }
         }
 
         /**
