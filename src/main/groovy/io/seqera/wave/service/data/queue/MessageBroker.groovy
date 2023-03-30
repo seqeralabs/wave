@@ -1,4 +1,4 @@
-package io.seqera.wave.service.data.stream
+package io.seqera.wave.service.data.queue
 
 import java.util.function.Consumer
 

@@ -1,4 +1,4 @@
-package io.seqera.wave.service.data.stream
+package io.seqera.wave.service.data.queue
 
 import spock.lang.Shared
 import spock.lang.Specification
@@ -6,7 +6,7 @@ import spock.lang.Specification
 import groovy.transform.Canonical
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.service.data.stream.impl.RedisMessageBroker
+import io.seqera.wave.service.data.queue.impl.RedisMessageBroker
 import io.seqera.wave.test.RedisTestContainer
 
 /**

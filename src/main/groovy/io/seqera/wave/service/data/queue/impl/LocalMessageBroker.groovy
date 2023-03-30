@@ -1,4 +1,4 @@
-package io.seqera.wave.service.data.stream.impl
+package io.seqera.wave.service.data.queue.impl
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
@@ -8,7 +8,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.exception.BadRequestException
-import io.seqera.wave.service.data.stream.MessageBroker
+import io.seqera.wave.service.data.queue.MessageBroker
 import jakarta.inject.Singleton
 
 /**

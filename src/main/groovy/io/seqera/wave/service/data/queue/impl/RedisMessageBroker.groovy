@@ -1,8 +1,7 @@
-package io.seqera.wave.service.data.stream.impl
+package io.seqera.wave.service.data.queue.impl
 
 import java.time.Duration
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Consumer
 
 import com.google.common.cache.Cache
@@ -14,7 +13,7 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.retry.annotation.Retryable
 import io.seqera.wave.exception.BadRequestException
-import io.seqera.wave.service.data.stream.MessageBroker
+import io.seqera.wave.service.data.queue.MessageBroker
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -26,7 +25,6 @@ import redis.clients.jedis.resps.StreamEntry
 import static redis.clients.jedis.params.XAddParams.xAddParams
 import static redis.clients.jedis.params.XAutoClaimParams.xAutoClaimParams
 import static redis.clients.jedis.params.XReadGroupParams.xReadGroupParams
-
 /**
  * An implementation of the {@link MessageBroker} interface that uses Redis to provide distributed message brokering capabilities.
  * This class provides methods to send messages to a Redis stream and to register/unregister consumers for the same stream.
@@ -43,26 +41,28 @@ import static redis.clients.jedis.params.XReadGroupParams.xReadGroupParams
 @CompileStatic
 class RedisMessageBroker implements MessageBroker<String> {
 
+    static private AtomicInteger consumerCount = new AtomicInteger()
+
     @Value('${wave.streams.block:5s}')
-    Duration blockTimeout
+    private Duration blockTimeout
 
     /**
      * Consumers need to be periodically registered before this timeout to consider them active
      */
     @Value('${wave.streams.expire:60s}')
-    Duration expireTimeout
+    private Duration expireTimeout
 
     /**
      * Message idle for more than this timeout are eligible to be reclaimed for another consumer
      */
     @Value('${wave.streams.reclaim:20s}')
-    Duration reclaimTimeout
+    private Duration reclaimTimeout
 
     /**
      * The Redis stream won't persist more than 'maxLen' messages
      */
     @Value('${wave.streams.maxlen:100}')
-    Long maxLen
+    private Long maxLen
 
     @Inject
     private JedisPool pool
@@ -74,10 +74,8 @@ class RedisMessageBroker implements MessageBroker<String> {
     }
 
 
-    private ExecutorService executorService
     private String consumerGroup
     private Cache<ConsumerKey, RedisConsumer> consumers
-
 
     /**
      * An inner class that represents a Redis consumer. This class is responsible for reading messages
@@ -88,7 +86,7 @@ class RedisMessageBroker implements MessageBroker<String> {
         private String streamKey
         private String consumerId
         private Consumer<String> consumer
-        private boolean registered
+        private Thread thread
 
         /**
          * Create a new RedisConsumer.
@@ -100,14 +98,20 @@ class RedisMessageBroker implements MessageBroker<String> {
             this.streamKey = streamKey
             this.consumerId = consumerId
             this.consumer = consumer
-            this.registered = true
+        }
+
+        RedisConsumer start() {
+            this.thread = new Thread(this, "redis-consumer-thread-${consumerCount.getAndIncrement()}")
+            thread.setDaemon(true)
+            thread.start()
+            return this
         }
 
         /**
          * Unregisters this consumer from the Redis consumer group.
          */
         void unregister() {
-            this.registered = false
+            thread.interrupt()
 
             try (Jedis conn = pool.getResource()) {
                 conn.xgroupDelConsumer(streamKey, consumerGroup, consumerId)
@@ -121,7 +125,7 @@ class RedisMessageBroker implements MessageBroker<String> {
          */
         @Override
         void run() {
-            while (registered) {
+            while (!thread.isInterrupted()) {
                 try (Jedis conn = pool.getResource()) {
 
                     // Read messages from the stream
@@ -138,7 +142,7 @@ class RedisMessageBroker implements MessageBroker<String> {
                         consumer.accept(payload)
                         conn.xack(streamKey, consumerGroup, message.ID)
                     }
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     log.error "while consumer '$consumerId' was processing a message from '$streamKey' -- ${e.message}"
                     unregisterConsumer(streamKey, consumerId)
                     return
@@ -192,7 +196,6 @@ class RedisMessageBroker implements MessageBroker<String> {
     @PostConstruct
     void init() {
         this.consumerGroup = "redis-message-broker-consumers"
-        this.executorService = Executors.newCachedThreadPool()
         this.consumers = CacheBuilder.newBuilder().expireAfterAccess(expireTimeout).build()
     }
 
@@ -236,8 +239,7 @@ class RedisMessageBroker implements MessageBroker<String> {
         log.debug "starting new consumer '$consumerId' on stream '$streamKey'"
         final redisConsumer = new RedisConsumer(streamKey, consumerId, consumer)
         consumers.put(key, redisConsumer)
-        executorService.submit(redisConsumer)
-
+        redisConsumer.start()
     }
 
     /**
@@ -297,7 +299,7 @@ class RedisMessageBroker implements MessageBroker<String> {
         }
 
         try (Jedis conn = pool.getResource()) {
-            log.info "create new consumer group '$consumerGroup' on stream '$streamKey'"
+            log.debug "create new consumer group '$consumerGroup' on stream '$streamKey'"
             conn.xgroupCreate(streamKey, consumerGroup, StreamEntryID.LAST_ENTRY, true)
         }
     }
