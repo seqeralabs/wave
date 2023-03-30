@@ -1,10 +1,10 @@
-package io.seqera.wave.service.data.stream
+package io.seqera.wave.service.data.queue
 
 import spock.lang.Specification
 
 import groovy.transform.Canonical
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.service.data.stream.impl.LocalMessageBroker
+import io.seqera.wave.service.data.queue.impl.LocalMessageBroker
 import jakarta.inject.Inject
 
 /**

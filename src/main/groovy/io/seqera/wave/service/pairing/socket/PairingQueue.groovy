@@ -1,8 +1,8 @@
 package io.seqera.wave.service.pairing.socket
 
 import groovy.transform.CompileStatic
-import io.seqera.wave.service.data.stream.AbstractMessageQueue
-import io.seqera.wave.service.data.stream.MessageBroker
+import io.seqera.wave.service.data.queue.AbstractMessageQueue
+import io.seqera.wave.service.data.queue.MessageBroker
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import jakarta.inject.Singleton
 
@@ -22,6 +22,6 @@ class PairingQueue extends AbstractMessageQueue<PairingMessage> {
 
     @Override
     protected String getPrefix() {
-        return 'wave-pairing-stream/v1:'
+        return 'wave-pairing-queue/v1:'
     }
 }
