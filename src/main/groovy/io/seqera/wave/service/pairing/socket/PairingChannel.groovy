@@ -27,7 +27,7 @@ class PairingChannel {
     private PairingFutureStore futuresStore
 
     @Inject
-    private PairingStream messageStream
+    private PairingQueue messageQueue
 
     @Value('${wave.pairing.channel.timeout:5s}')
     private Duration timeout
@@ -42,11 +42,11 @@ class PairingChannel {
      */
     void registerConsumer(String service, String endpoint, String consumerId, Consumer<PairingMessage> consumer) {
         final streamKey = buildStreamKey(service, endpoint)
-        messageStream.registerConsumer(streamKey, consumerId, consumer)
+        messageQueue.registerConsumer(streamKey, consumerId, consumer)
     }
 
     /**
-     * Deregisters a consumer with a given service, endpoint, and consumer ID.
+     * De-register a consumer with a given service, endpoint, and consumer ID.
      *
      * @param service the service to deregister the consumer from
      * @param endpoint the endpoint to deregister the consumer from
@@ -54,7 +54,7 @@ class PairingChannel {
      */
     void deregisterConsumer(String service, String endpoint, String consumerId) {
         final streamKey = buildStreamKey(service, endpoint)
-        messageStream.unregisterConsumer(streamKey, consumerId)
+        messageQueue.unregisterConsumer(streamKey, consumerId)
     }
 
     /**
@@ -66,7 +66,7 @@ class PairingChannel {
      */
     boolean canHandle(String service, String endpoint) {
         final streamKey = buildStreamKey(service, endpoint)
-        return messageStream.hasConsumer(streamKey)
+        return messageQueue.hasConsumer(streamKey)
     }
 
     /**
@@ -90,7 +90,7 @@ class PairingChannel {
         // send message to the stream
         final streamKey = buildStreamKey(service, endpoint)
         log.debug "Sending message '${message.msgId}' to stream '${streamKey}'"
-        messageStream.sendMessage(streamKey, message)
+        messageQueue.sendMessage(streamKey, message)
 
         // return the future to the caller
         return (CompletableFuture<R>) result
@@ -104,7 +104,7 @@ class PairingChannel {
      * @param endpoint the endpoint the response is sent to
      * @param message the pairing message response received
      */
-    void receiveResponse(String service, String endpoint, PairingMessage message) {
+    void receiveResponse(PairingMessage message) {
         futuresStore.complete(message.msgId, message)
     }
 

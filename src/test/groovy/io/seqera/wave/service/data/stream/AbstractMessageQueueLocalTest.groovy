@@ -8,19 +8,19 @@ import io.seqera.wave.service.data.stream.impl.LocalMessageBroker
 import jakarta.inject.Inject
 
 /**
- * Test class {@link AbstractMessageStream} using a {@link LocalMessageBroker}
+ * Test class {@link AbstractMessageQueue} using a {@link LocalMessageBroker}
  *
  * @author Jordi Deu-Pons <jordi@seqera.io>
  */
 @MicronautTest(environments = ['test'])
-class AbstractMessageStreamLocalTest extends Specification {
+class AbstractMessageQueueLocalTest extends Specification {
 
     @Canonical
     static class Simple {
         String value
     }
 
-    static class SimpleDataStream extends AbstractMessageStream<Simple> {
+    static class SimpleDataStream extends AbstractMessageQueue<Simple> {
 
         SimpleDataStream(MessageBroker<String> broker) {
             super(broker)
