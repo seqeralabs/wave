@@ -79,6 +79,6 @@ class PairingWebSocket implements Consumer<PairingMessage> {
 
     @Override
     void accept(PairingMessage pairingMessage) {
-        session.sendAsync(pairingService)
+        session.sendAsync(pairingMessage)
     }
 }
