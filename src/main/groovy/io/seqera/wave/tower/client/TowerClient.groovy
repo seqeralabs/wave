@@ -5,6 +5,7 @@ import java.util.concurrent.CompletableFuture
 import groovy.transform.CompileStatic
 import io.seqera.wave.tower.client.connector.HttpTowerConnector
 import io.seqera.wave.tower.client.connector.WebSocketTowerConnector
+import jakarta.annotation.Nullable
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import org.apache.commons.lang.StringUtils
@@ -25,19 +26,21 @@ class TowerClient {
     @Inject
     private WebSocketTowerConnector socketClient
 
-    protected <T> CompletableFuture<T> getAsync(URI uri, String towerEndpoint, String authorization, Class<T> type) {
+    protected <T> CompletableFuture<T> getAsync(URI uri, String endpoint, @Nullable String authorization, Class<T> type) {
+        assert uri, "Missing uri argument"
+        assert endpoint, "Missing endpoint argument"
 
         // Connect using websocket connection when available
-        if( socketClient.isEndpointRegistered(towerEndpoint) )
-            return socketClient.sendAsync(towerEndpoint, uri, authorization, type)
+        if( socketClient.isEndpointRegistered(endpoint) )
+            return socketClient.sendAsync(endpoint, uri, authorization, type)
 
         // Fallback to public HTTP connection
-        return httpClient.sendAsync(towerEndpoint, uri, authorization, type)
+        return httpClient.sendAsync(endpoint, uri, authorization, type)
     }
 
     CompletableFuture<ServiceInfoResponse> serviceInfo(String towerEndpoint) {
         final uri = serviceInfoEndpoint(towerEndpoint)
-        return getAsync(uri, null, null, ServiceInfoResponse)
+        return getAsync(uri, towerEndpoint, null, ServiceInfoResponse)
     }
 
     CompletableFuture<UserInfoResponse> userInfo(String towerEndpoint, String authorization) {
