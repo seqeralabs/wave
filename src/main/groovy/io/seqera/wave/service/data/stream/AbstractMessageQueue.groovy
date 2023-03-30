@@ -7,13 +7,20 @@ import io.seqera.wave.encoder.EncodingStrategy
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.util.TypeHelper
 
+/**
+ * Implements a distributed message queue in which many listeners can register
+ * to consume a message. A message instance can be consumed by one and only listener.
+ *
+ * @author Jordi Deu-Pons <jordi@seqera.io>
+ * @param <M>    The type of message that can be sent through the broker.
+ */
 @CompileStatic
-abstract class AbstractMessageStream<M> implements MessageBroker<M> {
+abstract class AbstractMessageQueue<M> implements MessageBroker<M> {
 
     private MessageBroker<String> broker
     private EncodingStrategy<M> encodingStrategy
 
-    AbstractMessageStream(MessageBroker<String> broker) {
+    AbstractMessageQueue(MessageBroker<String> broker) {
         final type = TypeHelper.getGenericType(this, 0)
         this.encodingStrategy = new MoshiEncodeStrategy<M>(type) {}
         this.broker = broker

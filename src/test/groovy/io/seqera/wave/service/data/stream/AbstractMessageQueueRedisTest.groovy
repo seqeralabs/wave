@@ -10,12 +10,12 @@ import io.seqera.wave.service.data.stream.impl.RedisMessageBroker
 import io.seqera.wave.test.RedisTestContainer
 
 /**
- * Test class {@link AbstractMessageStream} using a {@link RedisMessageBroker}
+ * Test class {@link AbstractMessageQueue} using a {@link RedisMessageBroker}
  *
  * @author Jordi Deu-Pons <jordi@seqera.io>
  */
 @MicronautTest(environments = ['test'])
-class AbstractMessageStreamRedisTest extends Specification implements RedisTestContainer {
+class AbstractMessageQueueRedisTest extends Specification implements RedisTestContainer {
 
     @Shared
     ApplicationContext applicationContext
@@ -33,7 +33,7 @@ class AbstractMessageStreamRedisTest extends Specification implements RedisTestC
         String value
     }
 
-    static class SimpleDataStream extends AbstractMessageStream<Simple> {
+    static class SimpleDataStream extends AbstractMessageQueue<Simple> {
 
         SimpleDataStream(MessageBroker<String> broker) {
             super(broker)
