@@ -1,4 +1,7 @@
 # Wave changelog
+v0.27.1 - 30 Mar 2023 
+- Add Websocket pairing using Redis streams (#238) [0b2ed0cd]
+
 v0.27.0 - 27 Mar 2023 
 - Add Wave pairing via Websocket connection [f840fcdd]
 - Bump build timeout to 15m [d2970fb5]
