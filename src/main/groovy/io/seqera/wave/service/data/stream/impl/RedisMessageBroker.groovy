@@ -20,9 +20,10 @@ import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
-import redis.clients.jedis.StreamEntry
 import redis.clients.jedis.StreamEntryID
 import redis.clients.jedis.exceptions.JedisException
+import redis.clients.jedis.resps.StreamEntry
+import static redis.clients.jedis.params.XAddParams.xAddParams
 import static redis.clients.jedis.params.XAutoClaimParams.xAutoClaimParams
 import static redis.clients.jedis.params.XReadGroupParams.xReadGroupParams
 
@@ -65,7 +66,7 @@ class RedisMessageBroker implements MessageBroker<String> {
 
     @Inject
     private JedisPool pool
-    
+
     @Canonical
     static class ConsumerKey {
         String streamKey
@@ -95,8 +96,9 @@ class RedisMessageBroker implements MessageBroker<String> {
          * @param streamKey the key of the Redis stream to consume from
          * @param consumer the consumer function that will process the messages
          */
-        RedisConsumer(String streamKey, Consumer<String> consumer) {
+        RedisConsumer(String streamKey, String consumerId, Consumer<String> consumer) {
             this.streamKey = streamKey
+            this.consumerId = consumerId
             this.consumer = consumer
             this.registered = true
         }
@@ -125,7 +127,9 @@ class RedisMessageBroker implements MessageBroker<String> {
 
                     // Process each message
                     for (message in messages) {
-                        consumer.accept(message.fields["message"] as String)
+                        final payload = message.fields["message"] as String
+                        log.debug "new message from '$streamKey' processed by '$consumerId' -- $payload"
+                        consumer.accept(payload)
                         conn.xack(streamKey, consumerGroup, message.ID)
                     }
                 } catch (Exception e) {
@@ -133,11 +137,6 @@ class RedisMessageBroker implements MessageBroker<String> {
                     unregisterConsumer(streamKey, consumerId)
                     return
                 }
-            }
-
-            // Delete the group consumer
-            try (Jedis conn = pool.getResource()) {
-                conn.xgroupDelConsumer(streamKey, consumerGroup, consumerId)
             }
         }
 
@@ -192,30 +191,6 @@ class RedisMessageBroker implements MessageBroker<String> {
     }
 
     /**
-     * Create a stream consumer group if it doesn't exists
-     *
-     * @param streamKey the key of the Redis stream to create consumer group
-     */
-    @Retryable(includes = JedisException, multiplier = "2.0")
-    void createConsumerGroup(String streamKey) {
-        try (Jedis conn = pool.getResource()) {
-            for (group in conn.xinfoGroup(streamKey)) {
-                if (group.name == consumerGroup) {
-                    // consumer group already exists
-                    return
-                }
-            }
-        } catch (JedisException e) {
-            log.warn "checking consumer group of '$streamKey' -- ${e.message}"
-        }
-
-        try (Jedis conn = pool.getResource()) {
-            conn.xgroupCreate(streamKey, consumerGroup, StreamEntryID.LAST_ENTRY, true)
-        }
-    }
-
-
-    /**
      * Send a message to a Redis stream.
      *
      * @param streamKey the key of the Redis stream to send the message to
@@ -224,7 +199,7 @@ class RedisMessageBroker implements MessageBroker<String> {
     @Override
     void sendMessage(String streamKey, String message) {
         try (Jedis conn = pool.getResource()) {
-            conn.xadd(streamKey, StreamEntryID.NEW_ENTRY, ["message": message], maxLen, true)
+            conn.xadd(streamKey, ["message": message], xAddParams().id(StreamEntryID.NEW_ENTRY).maxLen(maxLen).approximateTrimming())
         }
     }
 
@@ -248,8 +223,12 @@ class RedisMessageBroker implements MessageBroker<String> {
         // Create the consumer group if it doesn't exist
         createConsumerGroup(streamKey)
 
+        // Create the consumer
+        createConsumer(streamKey, consumerId)
+
         // Start the consumer
-        final redisConsumer = new RedisConsumer(streamKey, consumer)
+        log.debug "starting new consumer '$consumerId' on stream '$streamKey'"
+        final redisConsumer = new RedisConsumer(streamKey, consumerId, consumer)
         consumers.put(key, redisConsumer)
         executorService.submit(redisConsumer)
 
@@ -265,6 +244,8 @@ class RedisMessageBroker implements MessageBroker<String> {
      */
     @Override
     void unregisterConsumer(String streamKey, String consumerId) {
+        log.debug "unregister consumer '$consumerId' on stream '$streamKey'"
+
         final key = new ConsumerKey(streamKey, consumerId)
         final consumer = consumers.getIfPresent(key)
         if (!consumer) {
@@ -283,10 +264,47 @@ class RedisMessageBroker implements MessageBroker<String> {
     @Override
     boolean hasConsumer(String streamKey) {
         try (Jedis conn = pool.getResource()) {
-            return conn.xinfoConsumers(streamKey, consumerGroup).size() > 0
+            final consumers = conn.xinfoConsumers(streamKey, consumerGroup)
+            return consumers && consumers.size() > 0
         } catch (JedisException e) {
             log.error "checking if stream '$streamKey' has consumers on group '$consumerGroup'"
             return false
+        }
+    }
+
+    /**
+     * Create a stream consumer group if it doesn't exists
+     *
+     * @param streamKey the key of the Redis stream to create consumer group
+     */
+    @Retryable(includes = JedisException, multiplier = "2.0")
+    protected void createConsumerGroup(String streamKey) {
+        try (Jedis conn = pool.getResource()) {
+            for (group in conn.xinfoGroups(streamKey)) {
+                if (group.name == consumerGroup) {
+                    // consumer group already exists
+                    return
+                }
+            }
+        } catch (JedisException e) {
+            log.warn "checking consumer group of '$streamKey' -- ${e.message}"
+        }
+
+        try (Jedis conn = pool.getResource()) {
+            log.info "create new consumer group '$consumerGroup' on stream '$streamKey'"
+            conn.xgroupCreate(streamKey, consumerGroup, StreamEntryID.LAST_ENTRY, true)
+        }
+    }
+
+    /**
+     *
+     * @param streamKey
+     * @param consumerId
+     */
+    @Retryable(includes = JedisException, multiplier = "2.0")
+    protected void createConsumer(String streamKey, String consumerId) {
+        try (Jedis conn = pool.getResource()) {
+            conn.xgroupCreateConsumer(streamKey, consumerGroup, consumerId)
         }
     }
 
