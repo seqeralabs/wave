@@ -25,6 +25,7 @@ repositories {
     mavenCentral()
     maven { url = 'https://s3-eu-west-1.amazonaws.com/maven.seqera.io/releases' }
     maven { url = 'https://s3-eu-west-1.amazonaws.com/maven.seqera.io/snapshots' }
+    maven { url = 'https://jitpack.io' }
 }
 
 dependencies {
@@ -75,7 +76,7 @@ dependencies {
     implementation("ch.qos.logback:logback-classic")
 
     // rate limit
-    implementation 'com.coveo:spillway:2.1.1'
+    implementation 'com.github.seqeralabs:spillway:7b72700293'
 
     // monitoring
     implementation "io.micronaut.micrometer:micronaut-micrometer-registry-prometheus"
