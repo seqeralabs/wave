@@ -284,7 +284,13 @@ class RedisMessageBroker implements MessageBroker<String> {
             final consumers = conn.xinfoConsumers(streamKey, consumerGroup)
             return consumers && consumers.size() > 0
         } catch (JedisException e) {
-            log.error "Checking if stream '$streamKey' has consumers on group '$consumerGroup'"
+            if( e.message=='ERR no such key' ) {
+                log.debug "No such key '$streamKey' checking consumers group '$consumerGroup'"
+            }
+            else {
+                // likely this should be thrown instead
+                log.error("Unexpected error checking if stream '$streamKey' has consumers on group '$consumerGroup' - cause: ${e.message}", e)
+            }
             return false
         }
     }
