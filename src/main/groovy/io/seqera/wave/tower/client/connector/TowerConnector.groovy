@@ -12,6 +12,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpMethod
+import io.micronaut.http.HttpStatus
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
@@ -80,8 +81,9 @@ abstract class TowerConnector {
 
     @CompileDynamic
     protected <T> CompletableFuture<T> sendAsync0(String endpoint, URI uri, String authorization, Class<T> type, int attempt0) {
+        final msgId = random256Hex()
         final attempt = newAttempt(attempt0)
-        return sendAsync1(endpoint, uri, authorization, true)
+        return sendAsync1(endpoint, uri, authorization, msgId, true)
                 .thenCompose { resp ->
                     log.trace "Tower response for request GET '${uri}' => ${resp.status}"
                     switch (resp.status) {
@@ -108,16 +110,19 @@ abstract class TowerConnector {
                     if( retryable && attempt.canAttempt() ) {
                         final delay = attempt.delay()
                         final exec = CompletableFuture.delayedExecutor(delay.toMillis(), TimeUnit.MILLISECONDS)
-                        log.debug "Unable to connect '$endpoint'; cause: ${err.message ?: err}; attempt=${attempt.current()}; await=${delay};"
+                        log.debug "Unable to connect '$endpoint' - cause: ${err.message ?: err}; attempt=${attempt.current()}; await=${delay}; msgId=${msgId}"
                         return CompletableFuture.supplyAsync(()->sendAsync0(endpoint, uri, authorization, type, attempt.current()+1), exec)
                                 .thenCompose(Function.identity());
                     }
                     // report IO error
                     if( err instanceof IOException ) {
                         final message = "Unexpected I/O error while accessing Tower resource: $uri - cause: ${err.message ?: err}"
-                        err = new HttpResponseException(503, message)
+                        err = new HttpResponseException(HttpStatus.SERVICE_UNAVAILABLE, message)
                     }
-                    throw err
+                    else {
+                        final message =  "Enable to deliver msgId=$msgId to '$endpoint' - cause: ${err.message ?: err}".toString()
+                        throw new HttpResponseException(HttpStatus.INTERNAL_SERVER_ERROR, message, err)
+                    }
                 })
     }
 
@@ -137,13 +142,13 @@ abstract class TowerConnector {
      * @return
      *      A future of the unparsed response
      */
-    private CompletableFuture<ProxyHttpResponse> sendAsync1(String endpoint, final URI uri, final String accessToken, final boolean canRefresh) {
+    private CompletableFuture<ProxyHttpResponse> sendAsync1(String endpoint, final URI uri, final String accessToken, String msgId, final boolean canRefresh) {
         // check the most updated JWT tokens
         final JwtAuth tokens = accessToken ? jwtAuthStore.getJwtAuth(endpoint, accessToken) : null
         log.trace "Tower GET '$uri' - can refresh=$canRefresh; tokens=$tokens"
         // submit the request
         final request = new ProxyHttpRequest(
-                msgId: random256Hex(),
+                msgId: msgId,
                 method: HttpMethod.GET,
                 uri: uri,
                 auth: tokens && tokens.bearer ? "Bearer ${tokens.bearer}" : null
@@ -158,8 +163,9 @@ abstract class TowerConnector {
                 .thenCompose { resp ->
                     log.trace "Tower GET '$uri' response\n- status : ${resp.status}\n- content: ${resp.body}"
                     if (resp.status == 401 && tokens.refresh && canRefresh) {
+                        final refreshId = random256Hex()
                         return refreshJwtToken(endpoint, accessToken, tokens.refresh)
-                                .thenCompose((JwtAuth it) -> sendAsync1(endpoint, uri, accessToken, false))
+                                .thenCompose((JwtAuth it) -> sendAsync1(endpoint, uri, accessToken, refreshId, false))
                     } else {
                         return CompletableFuture.completedFuture(resp)
                     }
