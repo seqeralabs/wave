@@ -49,7 +49,7 @@ class PairingWebSocket implements Consumer<PairingMessage> {
         this.token = token
 
         // Register endpoint
-        channel.registerConsumer(service, endpoint, session.id, this)
+        channel.registerConsumer(service, endpoint, this)
 
         // acquire a pairing
         final resp = this.pairingService.acquirePairingKey(service, endpoint)
@@ -64,7 +64,9 @@ class PairingWebSocket implements Consumer<PairingMessage> {
     void onMessage(PairingMessage message) {
         log.debug "Receiving '$service' message=$message [sessionId: $session.id]"
         if( message instanceof PairingHeartbeat ) {
-            channel.registerConsumer(service, endpoint, session.id, this)
+            // send pong message
+            final pong = new PairingHeartbeat(msgId:random256Hex())
+            session.sendAsync(pong)
             return
         }
 
@@ -74,7 +76,7 @@ class PairingWebSocket implements Consumer<PairingMessage> {
     @OnClose
     void onClose() {
         log.debug "Closing '$service' pairing session [sessionId: $session.id]"
-        channel.deregisterConsumer(service, endpoint, session.id)
+        channel.deregisterConsumer(service, endpoint)
     }
 
     @Override

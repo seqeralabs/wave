@@ -23,20 +23,18 @@ interface MessageBroker<M> {
      * Registers a consumer for the specified stream and consumer ID.
      *
      * @param streamKey The unique key for the stream.
-     * @param consumerId The ID of the consumer to register.
      * @param messageConsumer The consumer that will receive messages from the stream.
      */
-    void registerConsumer(String streamKey, String consumerId, Consumer<M> messageConsumer)
+    void registerConsumer(String streamKey, Consumer<M> messageConsumer)
 
     /**
      *
      * Unregisters a consumer for the specified stream and consumer ID.
      *
      * @param streamKey The unique key for the stream.
-     * @param consumerId The ID of the consumer to unregister.
      *
      */
-    void unregisterConsumer(String streamKey, String consumerId)
+    void unregisterConsumer(String streamKey)
 
     /**
      * Checks if the specified stream has any registered consumers.

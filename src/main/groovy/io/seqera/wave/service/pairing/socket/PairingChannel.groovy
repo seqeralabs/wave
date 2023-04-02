@@ -37,12 +37,11 @@ class PairingChannel {
      *
      * @param service the name of the service to register the consumer for
      * @param endpoint the endpoint to register the consumer for
-     * @param consumerId the ID of the consumer being registered
      * @param consumer the pairing message consumer to be registered
      */
-    void registerConsumer(String service, String endpoint, String consumerId, Consumer<PairingMessage> consumer) {
+    void registerConsumer(String service, String endpoint, Consumer<PairingMessage> consumer) {
         final streamKey = buildStreamKey(service, endpoint)
-        messageQueue.registerConsumer(streamKey, consumerId, consumer)
+        messageQueue.registerConsumer(streamKey, consumer)
     }
 
     /**
@@ -50,11 +49,10 @@ class PairingChannel {
      *
      * @param service the service to deregister the consumer from
      * @param endpoint the endpoint to deregister the consumer from
-     * @param consumerId the ID of the consumer to be deregistered
      */
-    void deregisterConsumer(String service, String endpoint, String consumerId) {
+    void deregisterConsumer(String service, String endpoint) {
         final streamKey = buildStreamKey(service, endpoint)
-        messageQueue.unregisterConsumer(streamKey, consumerId)
+        messageQueue.unregisterConsumer(streamKey)
     }
 
     /**
@@ -80,7 +78,6 @@ class PairingChannel {
      * @return a future containing the response to the request
      */
     public <M extends PairingMessage, R extends PairingMessage> CompletableFuture<R> sendRequest(String service, String endpoint, M message) {
-        log.debug "Request message=${message.class.simpleName} to endpoint='$endpoint'"
 
         // create a unique Id to identify this command
         final result = futuresStore
@@ -89,7 +86,7 @@ class PairingChannel {
 
         // send message to the stream
         final streamKey = buildStreamKey(service, endpoint)
-        log.debug "Sending message '${message.msgId}' to stream '${streamKey}'"
+        log.debug "Sending message '${message}' to stream '${streamKey}'"
         messageQueue.sendMessage(streamKey, message)
 
         // return the future to the caller
