@@ -1,17 +1,14 @@
 package io.seqera.wave.service.pairing.socket
 
-import java.time.Duration
+
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Value
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 /**
  * Handle sending and replies for pairing messages
  *
@@ -28,9 +25,6 @@ class PairingChannel {
 
     @Inject
     private PairingQueue messageQueue
-
-    @Value('${wave.pairing.channel.timeout:5s}')
-    private Duration timeout
 
     /**
      * Registers a consumer for a given service, endpoint, consumer ID, and pairing message consumer.
@@ -80,10 +74,7 @@ class PairingChannel {
     public <M extends PairingMessage, R extends PairingMessage> CompletableFuture<R> sendRequest(String service, String endpoint, M message) {
 
         // create a unique Id to identify this command
-        final result = futuresStore
-                .create(message.msgId)
-                .orTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS)
-
+        final result = futuresStore .create(message.msgId)
         // send message to the stream
         final streamKey = buildStreamKey(service, endpoint)
         log.debug "Sending message '${message}' to stream '${streamKey}'"

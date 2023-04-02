@@ -1,15 +1,11 @@
 package io.seqera.wave.service.data.future
 
-
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
 
-import com.squareup.moshi.Types
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.encoder.EncodingStrategy
-import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.util.TypeHelper
 import jakarta.annotation.PreDestroy
 /**
  * Implements a {@link FutureStore} that allow handling {@link CompletableFuture} objects
@@ -25,23 +21,20 @@ import jakarta.annotation.PreDestroy
  */
 @Slf4j
 @CompileStatic
-abstract class AbstractFutureStore<V> implements FutureStore<String,V>, FutureListener<String>, AutoCloseable {
+abstract class AbstractFutureStore<V> implements FutureStore<String,V>, AutoCloseable {
 
-    private ConcurrentHashMap<String,CompletableFuture<V>> allFutures = new ConcurrentHashMap<>()
+    private EncodingStrategy<V> encodingStrategy
 
-    private EncodingStrategy<FutureEntry<String,V>> encodingStrategy
+    private FutureQueue<String> queue
 
-    private FuturePublisher<String> publisher
-
-    AbstractFutureStore(FuturePublisher<String> publisher) {
-        final type = TypeHelper.getGenericType(this, 0)
-        this.encodingStrategy = new MoshiEncodeStrategy<FutureEntry<String, V>>(Types.newParameterizedType(FutureEntry, String, type)) {}
-        this.publisher = publisher
-        publisher.subscribe(this)
+    AbstractFutureStore(FutureQueue<String> queue, EncodingStrategy<V> encodingStrategy) {
+        this.encodingStrategy = encodingStrategy
+        this.queue = queue
     }
 
-    @Override
     abstract String topic()
+
+    abstract Duration timeout()
 
     /**
      * Create a new {@link CompletableFuture} instance. The future can be "completed" by this or any other instance
@@ -52,31 +45,12 @@ abstract class AbstractFutureStore<V> implements FutureStore<String,V>, FutureLi
      */
     @Override
     CompletableFuture<V> create(String key) {
-        final result = new CompletableFuture<V>()
-        final exists = allFutures.putIfAbsent(key, result)!=null
-        if( exists )
-            throw new IllegalArgumentException("Key already existing: '$key'")
-        return result
-    }
-
-    /**
-     * Receive a message and fulfill the the corresponding {@link CompletableFuture}
-     * if available in this instance.
-     *
-     * @param message A string message representing a JSON serialised {@link FutureEntry} that holds
-     * the object value and its unique key.
-     */
-    @Override
-    void receive(String message) {
-        final FutureEntry<String,V> entry = encodingStrategy.decode(message)
-        final result = allFutures.get(entry.key)
-        if( result != null ) {
-            result.complete(entry.value)
-            allFutures.remove(entry.key)
-        }
-        else {
-            log.debug "Missing future entry with key: '$entry.key'"
-        }
+        final target = topic() + key
+        return (CompletableFuture<V>) CompletableFuture
+                .supplyAsync( () -> {
+                    final result = queue.poll(target, timeout())
+                    return encodingStrategy.decode(result)
+                })
     }
 
     /**
@@ -89,8 +63,9 @@ abstract class AbstractFutureStore<V> implements FutureStore<String,V>, FutureLi
      */
     @Override
     void complete(String key, V value) {
-        final encoded = encodingStrategy.encode(new FutureEntry<String,V>(key,value))
-        publisher.publish(encoded)
+        final encoded = encodingStrategy.encode(value)
+        final target = topic() + key
+        queue.offer(target, encoded)
     }
 
     /**
@@ -99,11 +74,6 @@ abstract class AbstractFutureStore<V> implements FutureStore<String,V>, FutureLi
     @PreDestroy
     @Override
     void close() {
-        // cancel all pending futures
-        for( CompletableFuture<V> fut : allFutures.values() ) {
-            fut.cancel(true)
-        }
-        // close the corresponding publisher
-        publisher.close()
+        queue.close()
     }
 }
