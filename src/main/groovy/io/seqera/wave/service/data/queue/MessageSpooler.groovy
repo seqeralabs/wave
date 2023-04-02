@@ -24,11 +24,19 @@ class MessageSpooler implements Runnable {
     final MessageBroker<String> broker
     final Thread thread
 
+    MessageSpooler(String key, MessageBroker<String> broker) {
+        log.debug "Creating spooler thread for queue: $key"
+        this.key = key
+        this.broker = broker
+        this.consumer = null
+        this.thread = null
+    }
+
     MessageSpooler(String key, MessageBroker<String> broker, Consumer<String> consumer) {
         log.debug "Creating spooler thread for queue: $key"
         this.key = key
-        this.consumer = consumer
         this.broker = broker
+        this.consumer = consumer
         this.thread = new Thread(this, "message-spooler-${count.getAndIncrement()}")
         this.thread.setDaemon(true)
         this.thread.start()
@@ -56,6 +64,8 @@ class MessageSpooler implements Runnable {
     }
 
     void close() {
+        if( !thread )
+            return
         // interrupt the thread
         thread.interrupt()
         // wait for the termination

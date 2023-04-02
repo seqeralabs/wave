@@ -37,11 +37,13 @@ abstract class AbstractMessageQueue<M> {
 
     void sendMessage(String streamKey, M message) {
         final encodedMessage = encoder.encode(message)
-        spooler.get(key0(streamKey)).offer(encodedMessage)
+        spooler
+                .computeIfAbsent(key0(streamKey), (it)-> new MessageSpooler(it,broker))
+                .offer(encodedMessage)
     }
 
     void registerConsumer(String streamKey, Consumer<M> consumer) {
-        spooler.computeIfAbsent(key0(streamKey), (it)-> new MessageSpooler(it,broker,(message) -> {
+        spooler.computeIfAbsent(key0(streamKey), (it)-> new MessageSpooler(it,broker,(String message) -> {
             final decodeMessage = encoder.decode(message)
             consumer.accept(decodeMessage)
         }))
