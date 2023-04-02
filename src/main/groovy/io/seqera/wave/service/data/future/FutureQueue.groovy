@@ -4,6 +4,7 @@ import java.time.Duration
 import java.util.concurrent.TimeoutException
 
 /**
+ * Define the interface for a future queue communication channel
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -13,5 +14,5 @@ interface FutureQueue<V> {
 
     V poll(String key, Duration timeout) throws TimeoutException
 
-    default close() { }
+    default void close() { }
 }

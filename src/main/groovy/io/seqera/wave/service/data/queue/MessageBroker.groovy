@@ -1,48 +1,45 @@
 package io.seqera.wave.service.data.queue
 
-import java.util.function.Consumer
+import java.time.Duration
 
 /**
- * Interface for a message broker that can send messages to different streams and register/unregister consumers for those streams.
+ * Interface for a message broker modelled as a blocking queue.
  *
  * @author Jordi Deu-Pons <jordi@seqera.io>
+ * @author Paolo Di Tommmaso <paolo.ditommaso@gmail.com>
  * @param <M>    The type of message that can be sent through the broker.
  */
 interface MessageBroker<M> {
 
     /**
-     * Sends a message to the specified stream.
+     * Inserts the specified element at the tail of the specified queue.
      *
-     * @param streamKey The unique key for the stream.
-     * @param message The message to send.
+     * @param key
+     *      The queue unique identified
+     * @param value
+     *  The value that should be added to the queue
      */
-    void sendMessage(String streamKey, M message)
-
-
-    /**
-     * Registers a consumer for the specified stream and consumer ID.
-     *
-     * @param streamKey The unique key for the stream.
-     * @param messageConsumer The consumer that will receive messages from the stream.
-     */
-    void registerConsumer(String streamKey, Consumer<M> messageConsumer)
+    void offer(String key, M value)
 
     /**
+     * Retrieves and removes the head of this queue, waiting up to the specified wait time if necessary
+     * for an element to become available.
      *
-     * Unregisters a consumer for the specified stream and consumer ID.
-     *
-     * @param streamKey The unique key for the stream.
-     *
+     * @param key
+     *      The queue unique identifier
+     * @param timeout
+     *      How long to wait before giving up, in units of unit unit – a TimeUnit determining how to interpret the timeout parameter
+     * @return
+     *      The head of this queue, or null if the specified waiting time elapses before an element is available
      */
-    void unregisterConsumer(String streamKey)
+    M poll(String key, Duration timeout)
 
     /**
-     * Checks if the specified stream has any registered consumers.
+     * Remove the queue with the specified identifier
      *
-     * @param streamKey The unique key for the stream.
-     * @return true if there is at least one registered consumer for the stream, false otherwise.
+     * @param key The queue unique identifier
      */
-    boolean hasConsumer(String streamKey)
+    void delete(String key)
 }
 
 

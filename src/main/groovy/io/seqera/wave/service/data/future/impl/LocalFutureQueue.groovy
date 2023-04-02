@@ -13,6 +13,8 @@ import io.micronaut.context.annotation.Requires
 import io.seqera.wave.service.data.future.FutureQueue
 import jakarta.inject.Singleton
 /**
+ * Implement a future queue based on a simple blocking queue.
+ * This is only meant for local/development purposes
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

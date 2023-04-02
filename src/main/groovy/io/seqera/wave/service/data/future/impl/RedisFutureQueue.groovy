@@ -13,6 +13,7 @@ import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
 
 /**
+ * Implements a future queue using Redis list
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
