@@ -40,6 +40,19 @@ interface MessageBroker<M> {
      * @param key The queue unique identifier
      */
     void delete(String key)
+
+    /**
+     * Initialise the broker broker
+     */
+    void init(String key)
+
+    /**
+     * Check for the key existance
+     *
+     * @param key
+     * @return
+     */
+    boolean exists(String key)
 }
 
 

@@ -40,6 +40,8 @@ class MessageSpooler implements Runnable {
         this.thread = new Thread(this, "message-spooler-${count.getAndIncrement()}")
         this.thread.setDaemon(true)
         this.thread.start()
+        // init
+        broker.init(key)
     }
 
     @Override
@@ -61,6 +63,10 @@ class MessageSpooler implements Runnable {
 
     void offer(String message) {
         broker.offer(key, message)
+    }
+
+    boolean exists(String key) {
+        broker.exists(key)
     }
 
     void close() {

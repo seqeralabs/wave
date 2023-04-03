@@ -59,4 +59,15 @@ class RedisQueueBroker implements MessageBroker<String>  {
         }
     }
 
+    void init(String key) {
+        try (Jedis conn = pool.getResource()) {
+            conn.lpush(key)
+        }
+    }
+
+    boolean exists(String key) {
+        try (Jedis conn = pool.getResource()) {
+            conn.exists(key)
+        }
+    }
 }

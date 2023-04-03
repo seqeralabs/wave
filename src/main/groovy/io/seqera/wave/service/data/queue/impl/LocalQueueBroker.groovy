@@ -44,4 +44,13 @@ class LocalQueueBroker implements MessageBroker<String> {
     void delete(String key) {
         store.remove(key)
     }
+
+    void init(String key) {
+        store
+                .computeIfAbsent(key, (it)-> new LinkedBlockingQueue<>())
+    }
+
+    boolean exists(String key) {
+        store.containsKey(key)
+    }
 }
