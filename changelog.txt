@@ -1,4 +1,8 @@
 # Wave changelog
+v0.28.0 - 3 Apr 2023 
+- Replace Redis pub/sub and stream with a list based approach [2af4fc01]
+- Bump amazon corretto 17.0.6 [b6b6e0d0]
+
 v0.27.2 - 1 Apr 2023
 - Minor improvement on tower client [275d21b9]
 
