@@ -54,6 +54,9 @@ abstract class AbstractMessageQueue<M> {
     }
 
     boolean hasConsumer(String streamKey) {
-        return spooler.get(key0(streamKey))?.exists(streamKey)
+        final key = key0(streamKey)
+        return spooler
+                .computeIfAbsent(key, (it)-> new MessageSpooler(it,broker))
+                .exists(key)
     }
 }

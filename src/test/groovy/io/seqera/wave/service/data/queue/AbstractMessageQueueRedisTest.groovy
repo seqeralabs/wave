@@ -104,5 +104,28 @@ class AbstractMessageQueueRedisTest extends Specification implements RedisTestCo
 
     }
 
+    def 'should check register and unregister consumers across instances'() {
+        given:
+        def broker1 = applicationContext.getBean(RedisQueueBroker)
+        def stream1 = new SimpleDataStream(broker1)
+        and:
+        def broker2 = applicationContext.getBean(RedisQueueBroker)
+        def stream2 = new SimpleDataStream(broker2)
+
+        when:
+        stream1.registerConsumer('service-key-four', {})
+        and:
+        sleep(100)
+        then:
+        stream2.hasConsumer('service-key-four')
+
+        when:
+        stream1.unregisterConsumer('service-key-four')
+        and:
+        sleep(100)
+        then:
+        !stream2.hasConsumer('service-key-four')
+    }
+
 
 }

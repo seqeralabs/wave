@@ -52,7 +52,12 @@ class RedisQueueBroker implements MessageBroker<String>  {
     void delete(String key) {
         // clean up the redis queue
         try (Jedis conn = pool.getResource()) {
+
+            // delete message list
             conn.del(key)
+
+            // delete initialized key
+            conn.del(keyInit(key))
         }
         catch (Exception e) {
             log.debug "Unexpected exception while deleting queue $key - cause: ${e.message}"
@@ -61,13 +66,17 @@ class RedisQueueBroker implements MessageBroker<String>  {
 
     void init(String key) {
         try (Jedis conn = pool.getResource()) {
-            conn.lpush(key)
+            conn.set(keyInit(key), "init")
         }
     }
 
     boolean exists(String key) {
         try (Jedis conn = pool.getResource()) {
-            conn.exists(key)
+            conn.exists(keyInit(key))
         }
+    }
+
+    private static String keyInit(String key) {
+        return key + "/init"
     }
 }
