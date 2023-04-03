@@ -77,7 +77,7 @@ class PairingChannel {
         final result = futuresStore .create(message.msgId)
         // send message to the stream
         final streamKey = buildStreamKey(service, endpoint)
-        log.debug "Sending message '${message}' to stream '${streamKey}'"
+        log.trace "Sending message '${message}' to stream '${streamKey}'"
         messageQueue.sendMessage(streamKey, message)
 
         // return the future to the caller

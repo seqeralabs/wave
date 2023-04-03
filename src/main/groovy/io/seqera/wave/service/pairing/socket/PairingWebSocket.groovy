@@ -63,17 +63,15 @@ class PairingWebSocket implements Consumer<PairingMessage> {
     @OnMessage
     void onMessage(PairingMessage message) {
         if( message instanceof PairingHeartbeat ) {
-            log.debug "Receiving heartbeat - endpoint: ${endpoint} [sessionId: $session.id]"
+            log.trace "Receiving heartbeat - endpoint: ${endpoint} [sessionId: $session.id]"
             // send pong message
             final pong = new PairingHeartbeat(msgId:random256Hex())
             session.sendAsync(pong)
-            return
         }
         else {
             log.trace "Receiving message=$message - endpoint: ${endpoint} [sessionId: $session.id]"
+            channel.receiveResponse(message)
         }
-
-        channel.receiveResponse(message)
     }
 
     @OnClose
@@ -84,7 +82,7 @@ class PairingWebSocket implements Consumer<PairingMessage> {
 
     @Override
     void accept(PairingMessage pairingMessage) {
-        log.trace "Sending message=$pairingMessage"
+        log.trace "Accepting message $pairingMessage"
         session.sendSync(pairingMessage)
     }
 }
