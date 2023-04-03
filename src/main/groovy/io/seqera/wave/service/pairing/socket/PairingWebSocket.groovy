@@ -42,14 +42,14 @@ class PairingWebSocket implements Consumer<PairingMessage> {
 
     @OnOpen
     void onOpen(String service, String token, String endpoint, WebSocketSession session) {
-        log.debug "New '$service' pairing session - endpoint: ${endpoint} [sessionId: $session.id]"
+        log.debug "Opening pairing session - endpoint: ${endpoint} [sessionId: $session.id]"
         this.service = service
         this.endpoint = endpoint
         this.session = session
         this.token = token
 
         // Register endpoint
-        channel.registerConsumer(service, endpoint, session.id, this)
+        channel.registerConsumer(service, endpoint, this)
 
         // acquire a pairing
         final resp = this.pairingService.acquirePairingKey(service, endpoint)
@@ -62,10 +62,15 @@ class PairingWebSocket implements Consumer<PairingMessage> {
 
     @OnMessage
     void onMessage(PairingMessage message) {
-        log.debug "Receiving '$service' message=$message [sessionId: $session.id]"
         if( message instanceof PairingHeartbeat ) {
-            channel.registerConsumer(service, endpoint, session.id, this)
+            log.debug "Receiving heartbeat - endpoint: ${endpoint} [sessionId: $session.id]"
+            // send pong message
+            final pong = new PairingHeartbeat(msgId:random256Hex())
+            session.sendAsync(pong)
             return
+        }
+        else {
+            log.trace "Receiving message=$message - endpoint: ${endpoint} [sessionId: $session.id]"
         }
 
         channel.receiveResponse(message)
@@ -73,12 +78,13 @@ class PairingWebSocket implements Consumer<PairingMessage> {
 
     @OnClose
     void onClose() {
-        log.debug "Closing '$service' pairing session [sessionId: $session.id]"
-        channel.deregisterConsumer(service, endpoint, session.id)
+        log.debug "Closing pairing session - endpoint: ${endpoint} [sessionId: $session.id]"
+        channel.deregisterConsumer(service, endpoint)
     }
 
     @Override
     void accept(PairingMessage pairingMessage) {
-        session.sendAsync(pairingMessage)
+        log.trace "Sending message=$pairingMessage"
+        session.sendSync(pairingMessage)
     }
 }

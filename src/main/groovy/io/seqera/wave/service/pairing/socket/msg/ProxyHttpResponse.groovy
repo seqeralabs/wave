@@ -15,7 +15,7 @@ import groovy.transform.ToString
 @ToString(includePackage = false, includeNames = true)
 class ProxyHttpResponse implements PairingMessage {
     String msgId
-    int status
+    Integer status
     String body
     Map<String, List<String>> headers
 }

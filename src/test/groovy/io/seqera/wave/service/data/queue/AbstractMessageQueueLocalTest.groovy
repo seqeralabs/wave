@@ -2,9 +2,10 @@ package io.seqera.wave.service.data.queue
 
 import spock.lang.Specification
 
+import java.util.concurrent.CompletableFuture
+
 import groovy.transform.Canonical
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.service.data.queue.impl.LocalMessageBroker
 import jakarta.inject.Inject
 
 /**
@@ -41,12 +42,12 @@ class AbstractMessageQueueLocalTest extends Specification {
         def stream = new SimpleDataStream(broker)
 
         when:
-        stream.registerConsumer('service-key', 'consumer-id', {})
+        stream.registerConsumer('service-key', {})
         then:
         stream.hasConsumer('service-key')
 
         when:
-        stream.unregisterConsumer('service-key', 'consumer-id')
+        stream.unregisterConsumer('service-key')
         then:
         !stream.hasConsumer('service-key')
 
@@ -55,14 +56,14 @@ class AbstractMessageQueueLocalTest extends Specification {
     def 'should send and consume a request'() {
         given:
         def stream = new SimpleDataStream(broker)
-        def result = null
 
         when:
-        stream.registerConsumer('service-key', 'consumer-id', { result = it })
+        def result = new CompletableFuture()
+        stream.registerConsumer('service-key',  { result.complete(it) })
         and:
         stream.sendMessage('service-key', new Simple('hello'))
         then:
-        result.value == 'hello'
+        result.get().value == 'hello'
 
     }
 

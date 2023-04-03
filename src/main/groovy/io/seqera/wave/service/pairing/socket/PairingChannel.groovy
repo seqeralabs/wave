@@ -1,17 +1,14 @@
 package io.seqera.wave.service.pairing.socket
 
-import java.time.Duration
+
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Value
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 /**
  * Handle sending and replies for pairing messages
  *
@@ -29,20 +26,16 @@ class PairingChannel {
     @Inject
     private PairingQueue messageQueue
 
-    @Value('${wave.pairing.channel.timeout:5s}')
-    private Duration timeout
-
     /**
      * Registers a consumer for a given service, endpoint, consumer ID, and pairing message consumer.
      *
      * @param service the name of the service to register the consumer for
      * @param endpoint the endpoint to register the consumer for
-     * @param consumerId the ID of the consumer being registered
      * @param consumer the pairing message consumer to be registered
      */
-    void registerConsumer(String service, String endpoint, String consumerId, Consumer<PairingMessage> consumer) {
+    void registerConsumer(String service, String endpoint, Consumer<PairingMessage> consumer) {
         final streamKey = buildStreamKey(service, endpoint)
-        messageQueue.registerConsumer(streamKey, consumerId, consumer)
+        messageQueue.registerConsumer(streamKey, consumer)
     }
 
     /**
@@ -50,11 +43,10 @@ class PairingChannel {
      *
      * @param service the service to deregister the consumer from
      * @param endpoint the endpoint to deregister the consumer from
-     * @param consumerId the ID of the consumer to be deregistered
      */
-    void deregisterConsumer(String service, String endpoint, String consumerId) {
+    void deregisterConsumer(String service, String endpoint) {
         final streamKey = buildStreamKey(service, endpoint)
-        messageQueue.unregisterConsumer(streamKey, consumerId)
+        messageQueue.unregisterConsumer(streamKey)
     }
 
     /**
@@ -80,16 +72,12 @@ class PairingChannel {
      * @return a future containing the response to the request
      */
     public <M extends PairingMessage, R extends PairingMessage> CompletableFuture<R> sendRequest(String service, String endpoint, M message) {
-        log.debug "Request message=${message.class.simpleName} to endpoint='$endpoint'"
 
         // create a unique Id to identify this command
-        final result = futuresStore
-                .create(message.msgId)
-                .orTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS)
-
+        final result = futuresStore .create(message.msgId)
         // send message to the stream
         final streamKey = buildStreamKey(service, endpoint)
-        log.debug "Sending message '${message.msgId}' to stream '${streamKey}'"
+        log.debug "Sending message '${message}' to stream '${streamKey}'"
         messageQueue.sendMessage(streamKey, message)
 
         // return the future to the caller
