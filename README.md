@@ -238,6 +238,17 @@ curl --request GET \
             ....
 ```
 
+Count all Wave requests
+
+```
+curl --request POST \
+    --header "Accept: application/json" \
+    --header "NS:seqera" \
+    --header "DB:wave" \
+    --user 'root:root' --data "select count() from wave_request group by all;" \
+    http://surrealdb:8000/sql
+```
+
 ## Debugging
 
 -   To debug http requests made proxy client add the following Jvm setting:
