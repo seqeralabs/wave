@@ -8,9 +8,18 @@ on:
       - '*'
     paths-ignore:
       - 'docs/**'
+      - mkdocs.yml
       - '*.md'
+      - .github/workflows/website_preview.yml
+      - .github/workflows/website_deploy.yml
   pull_request:
     types: [opened, reopened, synchronize]
+    paths-ignore:
+      - 'docs/**'
+      - mkdocs.yml
+      - '*.md'
+      - .github/workflows/website_preview.yml
+      - .github/workflows/website_deploy.yml
 
 jobs:
   build:

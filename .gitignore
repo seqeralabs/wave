@@ -25,3 +25,9 @@ tower-reg.yml
 wave.log
 build-workspace/
 /k8s/dev/config-k3d.yml
+
+# Docs
+.vercel
+.cache
+site/
+deployment-url.txt
