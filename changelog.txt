@@ -1,4 +1,7 @@
 # Wave changelog
+v0.28.3 - 4 Apr 2023 
+- Use Redis hash for inbound futures [844f4f2e]
+
 v0.28.2 - 4 Apr 2023 
 - Improve future poll + refactor [53c6a335]
 
