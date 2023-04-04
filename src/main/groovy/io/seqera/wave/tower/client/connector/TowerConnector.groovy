@@ -182,8 +182,9 @@ abstract class TowerConnector {
         final uri = refreshTokenEndpoint(endpoint)
         log.trace "Tower Refresh '$uri'"
 
+        final msgId = random256Hex()
         final request = new ProxyHttpRequest(
-                msgId: random256Hex(),
+                msgId: msgId,
                 method: HttpMethod.POST,
                 uri: uri,
                 headers: ['Content-Type': ['application/x-www-form-urlencoded']],
@@ -192,9 +193,11 @@ abstract class TowerConnector {
 
         return sendAsync(endpoint, request)
                 .thenApply { resp ->
-                    log.trace "Tower Refresh '$uri' response\n- status : ${resp.status}\n- headers: ${RegHelper.dumpHeaders(resp.headers)}\n- content: ${resp.body}"
-                    if (resp.status >= 400) {
-                        throw new HttpResponseException(resp.status, "Unexpected Tower response refreshing JWT token", resp.body)
+                    log.trace "Tower Refresh '$uri' response; msgId=${msgId}\n- status : ${resp.status}\n- headers: ${RegHelper.dumpHeaders(resp.headers)}\n- content: ${resp.body}"
+                    if ( !resp || resp.status >= 400 ) {
+                        def msg = "Unexpected Tower response refreshing JWT token"
+                        if( resp ) msg += " [${resp.status}]"
+                        throw new HttpResponseException(resp.status, msg, resp.body)
                     }
                     final cookies = resp.headers?['set-cookie'] ?: []
                     final jwtAuth = parseTokens(cookies, refreshToken)

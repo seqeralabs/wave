@@ -25,3 +25,4 @@ logger:
   levels:
     io.seqera.wave.service.data.queue: 'TRACE'
     io.seqera.wave.service.pairing: 'TRACE'
+    io.seqera.wave.tower.client.connector: 'TRACE'
