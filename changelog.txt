@@ -1,4 +1,7 @@
 # Wave changelog
+v0.28.2 - 4 Apr 2023 
+- Improve future poll + refactor [53c6a335]
+
 v0.28.1 - 4 Apr 2023 
 - Fix missing timeout exeception on redis future [a9d640a0]
 - Minor logging changes [c81e78bf] [4943ba6f] [6768b7eb]
