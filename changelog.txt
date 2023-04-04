@@ -1,4 +1,7 @@
 # Wave changelog
+v0.28.4 - 4 Apr 2023 
+- Use websocket send async [bc136f55]
+
 v0.28.3 - 4 Apr 2023 
 - Use Redis hash for inbound futures [844f4f2e]
 
