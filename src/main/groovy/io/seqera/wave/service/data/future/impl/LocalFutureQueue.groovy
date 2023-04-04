@@ -27,7 +27,7 @@ class LocalFutureQueue implements FutureQueue<String> {
     private ConcurrentHashMap<String, BlockingQueue<String>> store = new ConcurrentHashMap<>()
 
     @Override
-    void offer(String key, String value) {
+    void offer(String key, String value, Duration timeout) {
         store.computeIfAbsent(key, (it)-> new LinkedTransferQueue<String>())
         store.get(key).offer(value)
     }

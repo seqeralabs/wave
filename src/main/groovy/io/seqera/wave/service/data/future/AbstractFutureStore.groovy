@@ -49,6 +49,7 @@ abstract class AbstractFutureStore<V> implements FutureStore<String,V>, AutoClos
         return (CompletableFuture<V>) CompletableFuture
                 .supplyAsync( () -> {
                     final result = queue.poll(target, timeout())
+                    log.trace "Received future message=$result"
                     return encodingStrategy.decode(result)
                 })
     }
@@ -65,7 +66,7 @@ abstract class AbstractFutureStore<V> implements FutureStore<String,V>, AutoClos
     void complete(String key, V value) {
         final encoded = encodingStrategy.encode(value)
         final target = topic() + key
-        queue.offer(target, encoded)
+        queue.offer(target, encoded, timeout())
     }
 
     /**

@@ -10,7 +10,7 @@ import java.util.concurrent.TimeoutException
  */
 interface FutureQueue<V> {
 
-    void offer(String key, V value)
+    void offer(String key, V value, Duration timeout)
 
     V poll(String key, Duration timeout) throws TimeoutException
 

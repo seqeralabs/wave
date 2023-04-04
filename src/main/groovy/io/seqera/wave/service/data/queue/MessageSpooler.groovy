@@ -49,7 +49,7 @@ class MessageSpooler implements Runnable {
         while( !thread.isInterrupted() ) {
             try {
                 final value = broker.poll(key, Duration.ofSeconds(1))
-                if( value!= null ) {
+                if( value != null ) {
                     consumer.accept(value)
                 }
             }

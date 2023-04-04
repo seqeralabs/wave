@@ -1,10 +1,12 @@
 package io.seqera.wave.service.data.queue.impl
 
 import java.time.Duration
+import java.util.concurrent.TimeoutException
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
+import io.micronaut.context.annotation.Value
 import io.seqera.wave.service.data.queue.MessageBroker
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -24,6 +26,9 @@ class RedisQueueBroker implements MessageBroker<String>  {
     @Inject
     private JedisPool pool
 
+    @Value('${wave.pairing.channel.awaitTimeout:100ms}')
+    private Duration poolInterval
+
     @Override
     void offer(String key, String message) {
         try (Jedis conn = pool.getResource()) {
@@ -32,19 +37,23 @@ class RedisQueueBroker implements MessageBroker<String>  {
     }
 
     @Override
-    String poll(String key, Duration timeout) {
-        try (Jedis conn = pool.getResource()) {
-            final result = conn.brpop(timeout.toSeconds() as int , key)
-            if( !result )
+    String poll(String key, Duration timeout) throws TimeoutException {
+        final max = timeout.toMillis()
+        final begin = System.currentTimeMillis()
+        while( true ) {
+            final result = poll0(key)
+            if( result != null )
+                return result
+            final delta = System.currentTimeMillis()-begin
+            if( delta > max )
                 return null
-            if( result && result.size()==2 ) {
-                log.trace "Received queue message=$result"
-                return result[1]
-            }
-            else {
-                log.error "Unexpected length for queue message=$result"
-                return result[1]
-            }
+        }
+    }
+
+    private String poll0(String key) {
+        try (Jedis conn = pool.getResource()) {
+            final t0 = poolInterval.toMillis() / 1_000d
+            conn.brpop(t0, key)?.getValue()
         }
     }
 
