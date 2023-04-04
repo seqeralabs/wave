@@ -1,4 +1,9 @@
 # Wave changelog
+v0.28.1 - 4 Apr 2023 
+- Fix missing timeout exeception on redis future [a9d640a0]
+- Minor logging changes [c81e78bf] [4943ba6f] [6768b7eb]
+- Update application dev [db4ae108]
+
 v0.28.0 - 3 Apr 2023 
 - Replace Redis pub/sub and stream with a list based approach [2af4fc01]
 - Bump amazon corretto 17.0.6 [b6b6e0d0]
