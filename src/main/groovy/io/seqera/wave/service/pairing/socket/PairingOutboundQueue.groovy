@@ -14,14 +14,14 @@ import jakarta.inject.Singleton
  */
 @Singleton
 @CompileStatic
-class PairingQueue extends AbstractMessageQueue<PairingMessage> {
+class PairingOutboundQueue extends AbstractMessageQueue<PairingMessage> {
 
-    PairingQueue(MessageBroker<String> broker) {
+    PairingOutboundQueue(MessageBroker<String> broker) {
         super(broker)
     }
 
     @Override
     protected String getPrefix() {
-        return 'wave-pairing-queue/v1:'
+        return 'pairing-outbound-queue/v1:'
     }
 }

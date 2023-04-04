@@ -35,19 +35,36 @@ class RedisFutureQueue implements FutureQueue<String>  {
 
     @Override
     String poll(String key, Duration timeout) throws TimeoutException {
-        try (Jedis conn = pool.getResource()) {
-            try {
-                final result = conn.brpop(timeout.toSeconds() as int , key)
-                if( !result )
-                    throw new TimeoutException("Unable to retrieve a value for key: $key")
-                if( result.size()!=2 )
-                    throw new IllegalStateException("Unexpected length for future message: $result")
-                log.trace "Received future message=$result"
-                return result[1]
-            }
-            finally {
-                conn.del(key)
-            }
+        try {
+            return poll1(key, timeout)
+        }
+        finally {
+            delete0(key)
         }
     }
+
+    private String poll0(String key) {
+        try (Jedis conn = pool.getResource()) {
+            conn.brpop(0.2d, key)?.getValue()
+        }
+    }
+
+    private String poll1(String key, Duration timeout) {
+        final max = timeout.toMillis()
+        final begin = System.currentTimeMillis()
+        while( true ) {
+            final result = poll0(key)
+            if( result != null )
+                return result
+            if( System.currentTimeMillis()-begin > max )
+                throw new TimeoutException("Unable to retrieve a value for key: $key")
+        }
+    }
+
+    private void delete0(String key) {
+        try (Jedis conn = pool.getResource()) {
+            conn.del(key)
+        }
+    }
+
 }

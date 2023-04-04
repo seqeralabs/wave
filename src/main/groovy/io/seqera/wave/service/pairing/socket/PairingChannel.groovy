@@ -21,10 +21,10 @@ import jakarta.inject.Singleton
 class PairingChannel {
 
     @Inject
-    private PairingFutureStore futuresStore
+    private PairingInboundStore inbound
 
     @Inject
-    private PairingQueue messageQueue
+    private PairingOutboundQueue outbound
 
     /**
      * Registers a consumer for a given service, endpoint, consumer ID, and pairing message consumer.
@@ -35,7 +35,7 @@ class PairingChannel {
      */
     void registerConsumer(String service, String endpoint, Consumer<PairingMessage> consumer) {
         final streamKey = buildStreamKey(service, endpoint)
-        messageQueue.registerConsumer(streamKey, consumer)
+        outbound.registerConsumer(streamKey, consumer)
     }
 
     /**
@@ -46,7 +46,7 @@ class PairingChannel {
      */
     void deregisterConsumer(String service, String endpoint) {
         final streamKey = buildStreamKey(service, endpoint)
-        messageQueue.unregisterConsumer(streamKey)
+        outbound.unregisterConsumer(streamKey)
     }
 
     /**
@@ -58,7 +58,7 @@ class PairingChannel {
      */
     boolean canHandle(String service, String endpoint) {
         final streamKey = buildStreamKey(service, endpoint)
-        return messageQueue.hasConsumer(streamKey)
+        return outbound.hasConsumer(streamKey)
     }
 
     /**
@@ -74,11 +74,11 @@ class PairingChannel {
     public <M extends PairingMessage, R extends PairingMessage> CompletableFuture<R> sendRequest(String service, String endpoint, M message) {
 
         // create a unique Id to identify this command
-        final result = futuresStore .create(message.msgId)
+        final result = inbound .create(message.msgId)
         // send message to the stream
         final streamKey = buildStreamKey(service, endpoint)
         log.trace "Sending message '${message}' to stream '${streamKey}'"
-        messageQueue.sendMessage(streamKey, message)
+        outbound.sendMessage(streamKey, message)
 
         // return the future to the caller
         return (CompletableFuture<R>) result
@@ -93,7 +93,7 @@ class PairingChannel {
      * @param message the pairing message response received
      */
     void receiveResponse(PairingMessage message) {
-        futuresStore.complete(message.msgId, message)
+        inbound.complete(message.msgId, message)
     }
 
     private static String buildStreamKey(String service, String endpoint) {

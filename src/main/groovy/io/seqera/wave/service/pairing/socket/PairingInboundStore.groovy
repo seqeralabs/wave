@@ -9,22 +9,24 @@ import io.seqera.wave.service.data.future.FutureQueue
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import jakarta.inject.Singleton
 /**
- *
+ * Model an distribute store for completable future that
+ * used to collect inbound messages
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Singleton
-class PairingFutureStore extends AbstractFutureStore<PairingMessage> {
+class PairingInboundStore extends AbstractFutureStore<PairingMessage> {
 
     @Value('${wave.pairing.channel.timeout:5s}')
     private Duration timeout
 
-    PairingFutureStore(FutureQueue<String> publisher) {
+    PairingInboundStore(FutureQueue<String> publisher) {
         super(publisher, new MoshiEncodeStrategy<PairingMessage>() {})
     }
 
     @Override
     String topic() {
-        return "pairing-future-channel/v1:"
+        return "pairing-inbound-queue/v1:"
     }
 
     @Override
