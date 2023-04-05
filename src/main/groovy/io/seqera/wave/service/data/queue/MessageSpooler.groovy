@@ -58,6 +58,9 @@ class MessageSpooler implements Runnable {
                 Thread.currentThread().interrupt()
                 break
             }
+            catch (Throwable e) {
+                log.error("Unexpected error on message spooler - cause: ${e.message}", e)
+            }
         }
     }
 
