@@ -1,4 +1,12 @@
 # Wave changelog
+v0.28.6 - 5 Apr 2023 
+- Add consumers list [7d561f6d]
+- Use singleton websocket instace [c0390502]
+- Add custom MN worker pool [be3cbe78]
+- Remove redis session [b23c7225]
+- Improve logs [0f29cef7]
+- Add CPUs info [30f1e999]
+
 v0.28.5 - 4 Apr 2023 
 - Add websocket sent log [0e7e9fd5]
 
