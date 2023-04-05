@@ -20,7 +20,7 @@ micronaut:
   netty:
     event-loops:
       wave:
-        num-threads: 20
+        num-threads: 10
   views :
     folder : io/seqera/wave
   router:
@@ -57,5 +57,4 @@ jackson:
 logger:
   levels:
     io.seqera: "DEBUG"
-#    io.seqera.wave.core: 'TRACE'
 ...
