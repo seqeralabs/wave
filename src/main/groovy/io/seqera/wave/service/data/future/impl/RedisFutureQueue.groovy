@@ -1,6 +1,6 @@
 package io.seqera.wave.service.data.future.impl
 
-import java.time.Duration
+
 import java.util.concurrent.TimeoutException
 
 import groovy.transform.CompileStatic
@@ -11,7 +11,6 @@ import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
-import redis.clients.jedis.params.SetParams
 /**
  * Implements a future queue using Redis list
  *
@@ -27,17 +26,16 @@ class RedisFutureQueue implements FutureQueue<String>  {
     private JedisPool pool
 
     @Override
-    void offer(String key, String value, Duration expiration) {
+    void offer(String key, String value) {
         try (Jedis conn = pool.getResource()) {
-            final params = new SetParams().ex(expiration.toSeconds())
-            conn.set(key, value, params)
+            conn.lpush(key, value)
         }
     }
 
     @Override
     String poll(String key) throws TimeoutException {
         try (Jedis conn = pool.getResource()) {
-            return conn.get(key)
+            return conn.rpop(key)
         }
     }
 

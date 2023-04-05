@@ -1,6 +1,4 @@
 package io.seqera.wave.service.data.future
-
-import java.time.Duration
 /**
  * Define the interface for a future queue communication channel
  *
@@ -8,7 +6,7 @@ import java.time.Duration
  */
 interface FutureQueue<V> {
 
-    void offer(String key, V value, Duration expiration)
+    void offer(String key, V value)
 
     V poll(String key)
 

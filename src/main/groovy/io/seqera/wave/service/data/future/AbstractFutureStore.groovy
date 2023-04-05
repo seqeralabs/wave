@@ -88,9 +88,8 @@ abstract class AbstractFutureStore<V> implements FutureStore<String,V>, AutoClos
     void complete(String key, V value) {
         final encoded = encodingStrategy.encode(value)
         final target = topic() + key
-        final expiration = Duration.ofMillis( timeout().toMillis() *10 )
         // add the received value to corresponding queue
-        queue.offer(target, encoded, expiration)
+        queue.offer(target, encoded)
     }
 
     @Override
