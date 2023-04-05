@@ -1,4 +1,7 @@
 # Wave changelog
+v0.29.0 - 5 Apr 2023 
+- Use polling over supplyAsync [4a1e336a]
+
 v0.28.6 - 5 Apr 2023 
 - Add consumers list [7d561f6d]
 - Use singleton websocket instace [c0390502]
