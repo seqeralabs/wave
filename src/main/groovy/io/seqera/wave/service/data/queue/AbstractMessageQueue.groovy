@@ -23,7 +23,7 @@ abstract class AbstractMessageQueue<M> {
 
     private EncodingStrategy<M> encoder
 
-    private ConcurrentHashMap<String,MessageSpooler> spooler = new ConcurrentHashMap<>()
+    final private ConcurrentHashMap<String,MessageSpooler> spooler = new ConcurrentHashMap<>()
 
     AbstractMessageQueue(MessageBroker<String> broker) {
         final type = TypeHelper.getGenericType(this, 0)
@@ -42,15 +42,37 @@ abstract class AbstractMessageQueue<M> {
                 .offer(encodedMessage)
     }
 
-    void registerConsumer(String streamKey, Consumer<M> consumer) {
-        spooler.computeIfAbsent(key0(streamKey), (it)-> new MessageSpooler(it,broker,(String message) -> {
-            final decodeMessage = encoder.decode(message)
-            consumer.accept(decodeMessage)
-        }))
+    void registerConsumer(String streamKey, String sessionId, Consumer<M> consumer) {
+        synchronized (spooler) {
+            final k = key0(streamKey)
+            def instance = spooler.get(k)
+            if( instance == null ) {
+                instance = new MessageSpooler(k, broker, true)
+                spooler.put(k, instance)
+            }
+            // add the consumer
+            instance.addConsumer(sessionId, (String message) -> {
+                final decodeMessage = encoder.decode(message)
+                consumer.accept(decodeMessage)
+            })
+        }
     }
 
-    void unregisterConsumer(String streamKey) {
-        spooler.remove(key0(streamKey))?.close()
+    void unregisterConsumer(String streamKey, String sessionId) {
+        synchronized (spooler) {
+            final k = key0(streamKey)
+            final instance = spooler.remove(k)
+            if( !instance ) {
+                log.warn "Cannot find spooler instance for key: ${k}"
+                return
+            }
+            final count = instance.removeConsumer(sessionId)
+            // remember to switch off the light
+            if( count==0 ) {
+                instance.close()
+                spooler.remove(k)
+            }
+        }
     }
 
     boolean hasConsumer(String streamKey) {

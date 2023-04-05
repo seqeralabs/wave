@@ -33,9 +33,9 @@ class PairingChannel {
      * @param endpoint the endpoint to register the consumer for
      * @param consumer the pairing message consumer to be registered
      */
-    void registerConsumer(String service, String endpoint, Consumer<PairingMessage> consumer) {
+    void registerConsumer(String service, String endpoint, String sessionId, Consumer<PairingMessage> consumer) {
         final streamKey = buildStreamKey(service, endpoint)
-        outbound.registerConsumer(streamKey, consumer)
+        outbound.registerConsumer(streamKey, sessionId, consumer)
     }
 
     /**
@@ -44,9 +44,9 @@ class PairingChannel {
      * @param service the service to deregister the consumer from
      * @param endpoint the endpoint to deregister the consumer from
      */
-    void deregisterConsumer(String service, String endpoint) {
+    void deregisterConsumer(String service, String endpoint, String sessionId) {
         final streamKey = buildStreamKey(service, endpoint)
-        outbound.unregisterConsumer(streamKey)
+        outbound.unregisterConsumer(streamKey, sessionId)
     }
 
     /**

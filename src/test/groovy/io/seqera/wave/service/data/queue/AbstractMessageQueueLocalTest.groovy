@@ -42,12 +42,12 @@ class AbstractMessageQueueLocalTest extends Specification {
         def stream = new SimpleDataStream(broker)
 
         when:
-        stream.registerConsumer('service-key', {})
+        stream.registerConsumer('service-key', '123', {})
         then:
         stream.hasConsumer('service-key')
 
         when:
-        stream.unregisterConsumer('service-key')
+        stream.unregisterConsumer('service-key', '123',)
         then:
         !stream.hasConsumer('service-key')
 
@@ -59,7 +59,7 @@ class AbstractMessageQueueLocalTest extends Specification {
 
         when:
         def result = new CompletableFuture()
-        stream.registerConsumer('service-key',  { result.complete(it) })
+        stream.registerConsumer('service-key', '123', { result.complete(it) })
         and:
         stream.sendMessage('service-key', new Simple('hello'))
         then:

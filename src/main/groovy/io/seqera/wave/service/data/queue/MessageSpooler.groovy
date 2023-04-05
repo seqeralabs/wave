@@ -5,8 +5,8 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Consumer
 
 import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
 import groovy.util.logging.Slf4j
-
 /**
  * Implements a queue spooler that takes care removing the message from a queue
  * as they are made available and dispatch them to the corresponding consumer
@@ -19,24 +19,41 @@ class MessageSpooler implements Runnable {
 
     static final private AtomicInteger count = new AtomicInteger()
 
+    @EqualsAndHashCode
+    @CompileStatic
+    static class QueueConsumer<T> implements Consumer<T> {
+
+        final String id
+
+        @Delegate
+        private Consumer<T> delegate
+
+        QueueConsumer(String id, Consumer<T> consumer) {
+            this.id = id
+            this.delegate = consumer
+        }
+
+    }
+
     final String key
-    final Consumer<String> consumer
+    final List<QueueConsumer<String>> consumers
     final MessageBroker<String> broker
-    final Thread thread
+    private Thread thread
+    private final Random random = new Random()
 
     MessageSpooler(String key, MessageBroker<String> broker) {
         log.debug "Creating spooler thread for queue: $key"
         this.key = key
         this.broker = broker
-        this.consumer = null
+        this.consumers = new ArrayList<>(10)
         this.thread = null
     }
 
-    MessageSpooler(String key, MessageBroker<String> broker, Consumer<String> consumer) {
+    MessageSpooler(String key, MessageBroker<String> broker, boolean startThread) {
         log.debug "Creating spooler thread for queue: $key"
         this.key = key
         this.broker = broker
-        this.consumer = consumer
+        this.consumers = new ArrayList<>(10)
         this.thread = new Thread(this, "message-spooler-${count.getAndIncrement()}")
         this.thread.setDaemon(true)
         this.thread.start()
@@ -50,7 +67,8 @@ class MessageSpooler implements Runnable {
             try {
                 final value = broker.poll(key, Duration.ofSeconds(1))
                 if( value != null ) {
-                    consumer.accept(value)
+                    final p = random.nextInt(0,consumers.size())
+                    consumers[p].accept(value)
                 }
             }
             catch (InterruptedException e) {
@@ -86,5 +104,17 @@ class MessageSpooler implements Runnable {
         }
         // remove the key
         broker.delete(key)
+    }
+
+    MessageSpooler addConsumer(String id, Consumer<String> consumer) {
+        consumers.add(new QueueConsumer<String>(id,consumer))
+        return this
+    }
+
+    int removeConsumer(String consumerId) {
+        final p = consumers.findIndexOf( (it)->it.id == consumerId)
+        if( p>=0 )
+            consumers.remove(p)
+        return consumers.size()
     }
 }

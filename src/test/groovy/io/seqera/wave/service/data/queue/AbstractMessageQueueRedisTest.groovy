@@ -51,14 +51,14 @@ class AbstractMessageQueueRedisTest extends Specification implements RedisTestCo
         def stream = new SimpleDataStream(broker)
 
         when:
-        stream.registerConsumer('service-key-one',  {})
+        stream.registerConsumer('service-key-one', '123',  {})
         and:
         sleep(500)
         then:
         stream.hasConsumer('service-key-one')
 
         when:
-        stream.unregisterConsumer('service-key-one')
+        stream.unregisterConsumer('service-key-one', '123')
         and:
         sleep(500)
         then:
@@ -73,7 +73,7 @@ class AbstractMessageQueueRedisTest extends Specification implements RedisTestCo
         def result = null
 
         when:
-        stream.registerConsumer('service-key-two', { result = it })
+        stream.registerConsumer('service-key-two', '123', { result = it })
         and:
         stream.sendMessage('service-key-two', new Simple('hello'))
         and:
@@ -94,7 +94,7 @@ class AbstractMessageQueueRedisTest extends Specification implements RedisTestCo
         def result = null
 
         when:
-        stream2.registerConsumer('service-key-three',  { result = it })
+        stream2.registerConsumer('service-key-three', '123', { result = it })
         and:
         stream1.sendMessage('service-key-three', new Simple('hello'))
         and:
@@ -113,14 +113,14 @@ class AbstractMessageQueueRedisTest extends Specification implements RedisTestCo
         def stream2 = new SimpleDataStream(broker2)
 
         when:
-        stream1.registerConsumer('service-key-four', {})
+        stream1.registerConsumer('service-key-four', '123', {})
         and:
         sleep(100)
         then:
         stream2.hasConsumer('service-key-four')
 
         when:
-        stream1.unregisterConsumer('service-key-four')
+        stream1.unregisterConsumer('service-key-four', '123')
         and:
         sleep(100)
         then:

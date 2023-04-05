@@ -38,7 +38,7 @@ class PairingWebSocket {
         log.debug "Opening pairing session - endpoint: ${endpoint} [sessionId: $session.id]"
 
         // Register endpoint
-        channel.registerConsumer(service, endpoint, (pairingMessage) -> {
+        channel.registerConsumer(service, endpoint, session.id,(pairingMessage) -> {
             log.trace "Websocket send message=$pairingMessage"
             session
                     .sendAsync(pairingMessage)
@@ -71,7 +71,7 @@ class PairingWebSocket {
     @OnClose
     void onClose(String service, String token, String endpoint, WebSocketSession session) {
         log.debug "Closing pairing session - endpoint: ${endpoint} [sessionId: $session.id]"
-        channel.deregisterConsumer(service, endpoint)
+        channel.deregisterConsumer(service, endpoint, session.id)
     }
 
 }
