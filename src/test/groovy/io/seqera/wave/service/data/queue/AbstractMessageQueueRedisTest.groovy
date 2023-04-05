@@ -51,18 +51,18 @@ class AbstractMessageQueueRedisTest extends Specification implements RedisTestCo
         def stream = new SimpleDataStream(broker)
 
         when:
-        stream.registerConsumer('service-key-one', '123',  {})
+        stream.registerClient('service-key-one', '123',  {})
         and:
         sleep(500)
         then:
-        stream.hasConsumer('service-key-one')
+        stream.hasClient('service-key-one')
 
         when:
-        stream.unregisterConsumer('service-key-one', '123')
+        stream.unregisterClient('service-key-one', '123')
         and:
         sleep(500)
         then:
-        !stream.hasConsumer('service-key-one')
+        !stream.hasClient('service-key-one')
 
     }
 
@@ -73,7 +73,7 @@ class AbstractMessageQueueRedisTest extends Specification implements RedisTestCo
         def result = null
 
         when:
-        stream.registerConsumer('service-key-two', '123', { result = it })
+        stream.registerClient('service-key-two', '123', { result = it })
         and:
         stream.sendMessage('service-key-two', new Simple('hello'))
         and:
@@ -94,7 +94,7 @@ class AbstractMessageQueueRedisTest extends Specification implements RedisTestCo
         def result = null
 
         when:
-        stream2.registerConsumer('service-key-three', '123', { result = it })
+        stream2.registerClient('service-key-three', '123', { result = it })
         and:
         stream1.sendMessage('service-key-three', new Simple('hello'))
         and:
@@ -113,18 +113,18 @@ class AbstractMessageQueueRedisTest extends Specification implements RedisTestCo
         def stream2 = new SimpleDataStream(broker2)
 
         when:
-        stream1.registerConsumer('service-key-four', '123', {})
+        stream1.registerClient('service-key-four', '123', {})
         and:
         sleep(100)
         then:
-        stream2.hasConsumer('service-key-four')
+        stream2.hasClient('service-key-four')
 
         when:
-        stream1.unregisterConsumer('service-key-four', '123')
+        stream1.unregisterClient('service-key-four', '123')
         and:
         sleep(100)
         then:
-        !stream2.hasConsumer('service-key-four')
+        !stream2.hasClient('service-key-four')
     }
 
 

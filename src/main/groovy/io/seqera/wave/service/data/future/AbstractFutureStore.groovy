@@ -89,27 +89,8 @@ abstract class AbstractFutureStore<V> implements FutureStore<String,V>, AutoClos
         final encoded = encodingStrategy.encode(value)
         final target = topic() + key
         final expiration = Duration.ofMillis( timeout().toMillis() *10 )
+        // add the received value to corresponding queue
         queue.offer(target, encoded, expiration)
-    }
-
-    /**
-     * Cancel all non-completed futures nad close related resources.
-     */
-    @Override
-    void close() {
-        if( !thread )
-            return
-        // interrupt the thread
-        thread.interrupt()
-        // wait for the termination
-        try {
-            thread.join(1_000)
-        }
-        catch (Exception e) {
-            log.debug "Unexpected exception while waiting thread ${name0} - cause: ${e.message}"
-        }
-        // close the queue
-        queue.close()
     }
 
     @Override
@@ -143,5 +124,29 @@ abstract class AbstractFutureStore<V> implements FutureStore<String,V>, AutoClos
                 sleep(d0.toMillis())
             }
         }
+        // cancel pending futures
+        final itr = futures.values().iterator()
+        while( itr.hasNext() ) {
+            itr.next().cancel(true)
+        }
     }
+
+    /**
+     * Cancel all non-completed futures nad close related resources.
+     */
+    @Override
+    void close() {
+        if( !thread )
+            return
+        // interrupt the thread
+        thread.interrupt()
+        // wait for the termination
+        try {
+            thread.join(1_000)
+        }
+        catch (Exception e) {
+            log.debug "Unexpected exception while waiting thread ${name0} - cause: ${e.message}"
+        }
+    }
+
 }

@@ -12,5 +12,4 @@ interface FutureQueue<V> {
 
     V poll(String key)
 
-    default void close() { }
 }

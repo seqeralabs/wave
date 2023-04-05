@@ -37,15 +37,16 @@ class PairingWebSocket {
     void onOpen(String service, String token, String endpoint, WebSocketSession session) {
         log.debug "Opening pairing session - endpoint: ${endpoint} [sessionId: $session.id]"
 
-        // Register endpoint
-        channel.registerConsumer(service, endpoint, session.id,(pairingMessage) -> {
+        // Register the client and the sender callback that it's needed to deliver
+        // the message to the remote client
+        channel.registerClient(service, endpoint, session.id,(pairingMessage) -> {
             log.trace "Websocket send message=$pairingMessage"
             session
                     .sendAsync(pairingMessage)
                     .thenAccept( (msg) -> log.trace("Websocket sent message=$msg") )
         })
 
-        // acquire a pairing
+        // acquire a pairing key and send it to the remote client
         final resp = this.pairingService.acquirePairingKey(service, endpoint)
         session.sendAsync(new PairingResponse(
                 msgId: random256Hex(),
@@ -63,6 +64,8 @@ class PairingWebSocket {
             session.sendAsync(pong)
         }
         else {
+            // Collect a reply from the client and takes care to dispatch it
+            // to the source instance.
             log.trace "Receiving message=$message - endpoint: ${endpoint} [sessionId: $session.id]"
             channel.receiveResponse(message)
         }
@@ -71,7 +74,7 @@ class PairingWebSocket {
     @OnClose
     void onClose(String service, String token, String endpoint, WebSocketSession session) {
         log.debug "Closing pairing session - endpoint: ${endpoint} [sessionId: $session.id]"
-        channel.deregisterConsumer(service, endpoint, session.id)
+        channel.unregisterClient(service, endpoint, session.id)
     }
 
 }

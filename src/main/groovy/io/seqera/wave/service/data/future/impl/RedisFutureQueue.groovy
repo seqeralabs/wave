@@ -34,6 +34,7 @@ class RedisFutureQueue implements FutureQueue<String>  {
         }
     }
 
+    @Override
     String poll(String key) throws TimeoutException {
         try (Jedis conn = pool.getResource()) {
             return conn.get(key)

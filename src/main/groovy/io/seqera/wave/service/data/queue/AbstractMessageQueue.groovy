@@ -1,12 +1,12 @@
 package io.seqera.wave.service.data.queue
 
 import java.util.concurrent.ConcurrentHashMap
-import java.util.function.Consumer
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.encoder.EncodingStrategy
 import io.seqera.wave.encoder.MoshiEncodeStrategy
+import io.seqera.wave.service.pairing.socket.MessageSender
 import io.seqera.wave.util.TypeHelper
 /**
  * Implements a distributed message queue in which many listeners can register
@@ -35,38 +35,38 @@ abstract class AbstractMessageQueue<M> {
 
     protected String key0(String k) { return getPrefix() + k }
 
-    void sendMessage(String streamKey, M message) {
+    void sendMessage(String target, M message) {
         final encodedMessage = encoder.encode(message)
         spooler
-                .computeIfAbsent(key0(streamKey), (it)-> new MessageSpooler(it,broker))
+                .computeIfAbsent(key0(target), (it)-> new MessageSpooler(it,broker))
                 .offer(encodedMessage)
     }
 
-    void registerConsumer(String streamKey, String sessionId, Consumer<M> consumer) {
+    void registerClient(String target, String clientId, MessageSender<M> sender) {
         synchronized (spooler) {
-            final k = key0(streamKey)
+            final k = key0(target)
             def instance = spooler.get(k)
             if( instance == null ) {
                 instance = new MessageSpooler(k, broker, true)
                 spooler.put(k, instance)
             }
-            // add the consumer
-            instance.addConsumer(sessionId, (String message) -> {
+            // add the client
+            instance.addClient(clientId, (String message) -> {
                 final decodeMessage = encoder.decode(message)
-                consumer.accept(decodeMessage)
+                sender.sendAsync(decodeMessage)
             })
         }
     }
 
-    void unregisterConsumer(String streamKey, String sessionId) {
+    void unregisterClient(String target, String clientId) {
         synchronized (spooler) {
-            final k = key0(streamKey)
+            final k = key0(target)
             final instance = spooler.remove(k)
             if( !instance ) {
                 log.warn "Cannot find spooler instance for key: ${k}"
                 return
             }
-            final count = instance.removeConsumer(sessionId)
+            final count = instance.removeClient(clientId)
             // remember to switch off the light
             if( count==0 ) {
                 instance.close()
@@ -75,8 +75,8 @@ abstract class AbstractMessageQueue<M> {
         }
     }
 
-    boolean hasConsumer(String streamKey) {
-        final key = key0(streamKey)
+    boolean hasClient(String target) {
+        final key = key0(target)
         return spooler
                 .computeIfAbsent(key, (it)-> new MessageSpooler(it,broker))
                 .exists(key)

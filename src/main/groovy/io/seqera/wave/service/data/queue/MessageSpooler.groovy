@@ -2,16 +2,16 @@ package io.seqera.wave.service.data.queue
 
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.function.Consumer
 
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.util.logging.Slf4j
+import io.seqera.wave.service.pairing.socket.MessageSender
 import io.seqera.wave.util.ExponentialAttempt
 
 /**
  * Implements a queue spooler that takes care removing the message from a queue
- * as they are made available and dispatch them to the corresponding consumer
+ * as they are made available and dispatch them to the corresponding sender
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -23,22 +23,22 @@ class MessageSpooler implements Runnable {
 
     @EqualsAndHashCode
     @CompileStatic
-    static class QueueConsumer<T> implements Consumer<T> {
+    static class Sender<T> implements MessageSender<T> {
 
         final String id
 
         @Delegate
-        private Consumer<T> delegate
+        private MessageSender<T> delegate
 
-        QueueConsumer(String id, Consumer<T> consumer) {
+        Sender(String id, MessageSender<T> sender) {
             this.id = id
-            this.delegate = consumer
+            this.delegate = sender
         }
 
     }
 
     final String key
-    final List<QueueConsumer<String>> consumers
+    final List<Sender<String>> senders
     final MessageBroker<String> broker
     private Thread thread
     private final Random random = new Random()
@@ -48,7 +48,7 @@ class MessageSpooler implements Runnable {
         log.debug "Creating spooler thread for queue: $key"
         this.key = key
         this.broker = broker
-        this.consumers = new ArrayList<>(10)
+        this.senders = new ArrayList<>(10)
         this.thread = null
     }
 
@@ -56,7 +56,7 @@ class MessageSpooler implements Runnable {
         log.debug "Creating spooler thread for queue: $key"
         this.key = key
         this.broker = broker
-        this.consumers = new ArrayList<>(10)
+        this.senders = new ArrayList<>(10)
         this.thread = new Thread(this, "message-spooler-${count.getAndIncrement()}")
         this.thread.setDaemon(true)
         this.thread.start()
@@ -70,8 +70,8 @@ class MessageSpooler implements Runnable {
             try {
                 final value = broker.poll(key, Duration.ofSeconds(1))
                 if( value != null ) {
-                    final p = random.nextInt(0,consumers.size())
-                    consumers[p].accept(value)
+                    final p = random.nextInt(0,senders.size())
+                    senders[p].sendAsync(value)
                 }
                 //
                 attempt.reset()
@@ -113,15 +113,15 @@ class MessageSpooler implements Runnable {
         broker.delete(key)
     }
 
-    MessageSpooler addConsumer(String id, Consumer<String> consumer) {
-        consumers.add(new QueueConsumer<String>(id,consumer))
+    MessageSpooler addClient(String clientId, MessageSender<String> sender) {
+        senders.add(new Sender<String>(clientId, sender))
         return this
     }
 
-    int removeConsumer(String consumerId) {
-        final p = consumers.findIndexOf( (it)->it.id == consumerId)
+    int removeClient(String clientId) {
+        final p = senders.findIndexOf( (it)->it.id == clientId)
         if( p>=0 )
-            consumers.remove(p)
-        return consumers.size()
+            senders.remove(p)
+        return senders.size()
     }
 }

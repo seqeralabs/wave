@@ -47,7 +47,7 @@ interface MessageBroker<M> {
     void init(String key)
 
     /**
-     * Check for the key existance
+     * Check for the key existence
      *
      * @param key
      * @return

@@ -1,8 +1,6 @@
 package io.seqera.wave.service.pairing.socket
 
-
 import java.util.concurrent.CompletableFuture
-import java.util.function.Consumer
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -27,15 +25,15 @@ class PairingChannel {
     private PairingOutboundQueue outbound
 
     /**
-     * Registers a consumer for a given service, endpoint, consumer ID, and pairing message consumer.
+     * Registers a sender for a given service, endpoint, sender Id, and pairing message consumer.
      *
      * @param service the name of the service to register the consumer for
      * @param endpoint the endpoint to register the consumer for
-     * @param consumer the pairing message consumer to be registered
+     * @param sender the pairing message consumer to be registered
      */
-    void registerConsumer(String service, String endpoint, String sessionId, Consumer<PairingMessage> consumer) {
-        final streamKey = buildStreamKey(service, endpoint)
-        outbound.registerConsumer(streamKey, sessionId, consumer)
+    void registerClient(String service, String endpoint, String clientId, MessageSender<PairingMessage> sender) {
+        final streamKey = clientTarget(service, endpoint)
+        outbound.registerClient(streamKey, clientId, sender)
     }
 
     /**
@@ -44,9 +42,9 @@ class PairingChannel {
      * @param service the service to deregister the consumer from
      * @param endpoint the endpoint to deregister the consumer from
      */
-    void deregisterConsumer(String service, String endpoint, String sessionId) {
-        final streamKey = buildStreamKey(service, endpoint)
-        outbound.unregisterConsumer(streamKey, sessionId)
+    void unregisterClient(String service, String endpoint, String clientId) {
+        final streamKey = clientTarget(service, endpoint)
+        outbound.unregisterClient(streamKey, clientId)
     }
 
     /**
@@ -57,8 +55,7 @@ class PairingChannel {
      * @return true if the message stream has a consumer for the given service and endpoint, false otherwise
      */
     boolean canHandle(String service, String endpoint) {
-        final streamKey = buildStreamKey(service, endpoint)
-        return outbound.hasConsumer(streamKey)
+        return outbound.hasClient(clientTarget(service, endpoint))
     }
 
     /**
@@ -76,9 +73,9 @@ class PairingChannel {
         // create a unique Id to identify this command
         final result = inbound .create(message.msgId)
         // send message to the stream
-        final streamKey = buildStreamKey(service, endpoint)
-        log.trace "Outbond message ${message}; target: ${streamKey}"
-        outbound.sendMessage(streamKey, message)
+        final target = clientTarget(service, endpoint)
+        log.trace "Outbond message ${message}; target: ${target}"
+        outbound.sendMessage(target, message)
 
         // return the future to the caller
         return (CompletableFuture<R>) result
@@ -88,15 +85,13 @@ class PairingChannel {
      * Receives a pairing message response from a given service and endpoint and completes
      * the future associated with the message's msgId with the response message.
      *
-     * @param service the name of the service sending the response
-     * @param endpoint the endpoint the response is sent to
      * @param message the pairing message response received
      */
     void receiveResponse(PairingMessage message) {
         inbound.complete(message.msgId, message)
     }
 
-    private static String buildStreamKey(String service, String endpoint) {
+    private static String clientTarget(String service, String endpoint) {
         return "${service}:${endpoint}".toString()
     }
 
