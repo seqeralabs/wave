@@ -7,6 +7,8 @@ import java.util.function.Consumer
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.util.logging.Slf4j
+import io.seqera.wave.util.ExponentialAttempt
+
 /**
  * Implements a queue spooler that takes care removing the message from a queue
  * as they are made available and dispatch them to the corresponding consumer
@@ -40,6 +42,7 @@ class MessageSpooler implements Runnable {
     final MessageBroker<String> broker
     private Thread thread
     private final Random random = new Random()
+    private final ExponentialAttempt attempt = new ExponentialAttempt()
 
     MessageSpooler(String key, MessageBroker<String> broker) {
         log.debug "Creating spooler thread for queue: $key"
@@ -70,6 +73,8 @@ class MessageSpooler implements Runnable {
                     final p = random.nextInt(0,consumers.size())
                     consumers[p].accept(value)
                 }
+                //
+                attempt.reset()
             }
             catch (InterruptedException e) {
                 log.debug "Interrupting spooler thread for queue: $key"
@@ -77,7 +82,9 @@ class MessageSpooler implements Runnable {
                 break
             }
             catch (Throwable e) {
-                log.error("Unexpected error on message spooler - cause: ${e.message}", e)
+                final d0 = attempt.delay()
+                log.error("Unexpected error on message spooler (await: ${d0}) - cause: ${e.message}", e)
+                sleep(d0.toMillis())
             }
         }
     }

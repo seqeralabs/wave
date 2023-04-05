@@ -38,4 +38,8 @@ class ExponentialAttempt {
     boolean canAttempt() {
         attempt <= maxAttempts
     }
+
+    void reset() {
+        attempt=0
+    }
 }

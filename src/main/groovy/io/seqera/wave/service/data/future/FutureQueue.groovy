@@ -1,8 +1,6 @@
 package io.seqera.wave.service.data.future
 
 import java.time.Duration
-import java.util.concurrent.TimeoutException
-
 /**
  * Define the interface for a future queue communication channel
  *
@@ -10,9 +8,9 @@ import java.util.concurrent.TimeoutException
  */
 interface FutureQueue<V> {
 
-    void offer(String key, V value, Duration timeout)
+    void offer(String key, V value, Duration expiration)
 
-    V poll(String key, Duration timeout) throws TimeoutException
+    V poll(String key)
 
     default void close() { }
 }

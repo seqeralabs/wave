@@ -77,7 +77,7 @@ class PairingChannel {
         final result = inbound .create(message.msgId)
         // send message to the stream
         final streamKey = buildStreamKey(service, endpoint)
-        log.trace "Sending message '${message}' to stream '${streamKey}'"
+        log.trace "Outbond message ${message}; target: ${streamKey}"
         outbound.sendMessage(streamKey, message)
 
         // return the future to the caller
