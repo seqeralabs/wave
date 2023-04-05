@@ -1,4 +1,8 @@
 # Wave changelog
+v0.29.1 - 5 Apr 2023 
+- Bump 10 thread for wave event loop [7b000a7e]
+- Cleanup and refactoring [f8c8be3e]
+
 v0.29.0 - 5 Apr 2023 
 - Use polling over supplyAsync [4a1e336a]
 
