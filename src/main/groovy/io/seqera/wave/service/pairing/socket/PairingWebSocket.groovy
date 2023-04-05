@@ -42,8 +42,7 @@ class PairingWebSocket {
         channel.registerClient(service, endpoint, session.id,(pairingMessage) -> {
             log.trace "Websocket send message=$pairingMessage"
             session
-                    .sendAsync(pairingMessage)
-                    .thenAccept( (msg) -> log.trace("Websocket sent message=$msg") )
+                    .sendSync(pairingMessage)
         })
 
         // acquire a pairing key and send it to the remote client
