@@ -1,10 +1,8 @@
 package io.seqera.wave.service.pairing.socket
 
-import java.util.function.Consumer
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Prototype
 import io.micronaut.websocket.WebSocketSession
 import io.micronaut.websocket.annotation.OnClose
 import io.micronaut.websocket.annotation.OnMessage
@@ -14,8 +12,8 @@ import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import io.seqera.wave.service.pairing.socket.msg.PairingResponse
+import jakarta.inject.Singleton
 import static io.seqera.wave.util.RegHelper.random256Hex
-
 /**
  * Implements Wave pairing websocket server
  *
@@ -23,14 +21,9 @@ import static io.seqera.wave.util.RegHelper.random256Hex
  */
 @Slf4j
 @CompileStatic
-@Prototype  // note use prototype to have an instance for each session
+@Singleton
 @ServerWebSocket("/pairing/{service}/token/{token}{?endpoint}")
-class PairingWebSocket implements Consumer<PairingMessage> {
-
-    private WebSocketSession session
-    private String service
-    private String endpoint
-    private String token
+class PairingWebSocket {
 
     private PairingChannel channel
     private PairingService pairingService
@@ -43,13 +36,14 @@ class PairingWebSocket implements Consumer<PairingMessage> {
     @OnOpen
     void onOpen(String service, String token, String endpoint, WebSocketSession session) {
         log.debug "Opening pairing session - endpoint: ${endpoint} [sessionId: $session.id]"
-        this.service = service
-        this.endpoint = endpoint
-        this.session = session
-        this.token = token
 
         // Register endpoint
-        channel.registerConsumer(service, endpoint, this)
+        channel.registerConsumer(service, endpoint, (pairingMessage) -> {
+            log.trace "Websocket send message=$pairingMessage"
+            session
+                    .sendAsync(pairingMessage)
+                    .thenAccept( (msg) -> log.trace("Websocket sent message=$msg") )
+        })
 
         // acquire a pairing
         final resp = this.pairingService.acquirePairingKey(service, endpoint)
@@ -61,7 +55,7 @@ class PairingWebSocket implements Consumer<PairingMessage> {
     }
 
     @OnMessage
-    void onMessage(PairingMessage message) {
+    void onMessage(String service, String token, String endpoint, PairingMessage message, WebSocketSession session) {
         if( message instanceof PairingHeartbeat ) {
             log.trace "Receiving heartbeat - endpoint: ${endpoint} [sessionId: $session.id]"
             // send pong message
@@ -75,16 +69,9 @@ class PairingWebSocket implements Consumer<PairingMessage> {
     }
 
     @OnClose
-    void onClose() {
+    void onClose(String service, String token, String endpoint, WebSocketSession session) {
         log.debug "Closing pairing session - endpoint: ${endpoint} [sessionId: $session.id]"
         channel.deregisterConsumer(service, endpoint)
     }
 
-    @Override
-    void accept(PairingMessage pairingMessage) {
-        log.trace "Websocket send message=$pairingMessage"
-        session
-                .sendAsync(pairingMessage)
-                .thenAccept( (msg) -> log.trace("Websocket sent message=$msg") )
-    }
 }
