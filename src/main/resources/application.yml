@@ -14,6 +14,13 @@ micronaut:
     port: 9090
     # https://docs.micronaut.io/latest/guide/#atBlocking
     thread-selection: AUTO
+    netty:
+      worker:
+        event-loop-group: wave
+  netty:
+    event-loops:
+      wave:
+        num-threads: 20
   views :
     folder : io/seqera/wave
   router:
@@ -26,11 +33,6 @@ micronaut:
         paths: 'classpath:io/seqera/wave/assets'
         mapping: '/assets/**'
         enabled: true
----
-netty:
-  default:
-    allocator:
-      max-order: 3
 ---
 wave:
   debug: false
