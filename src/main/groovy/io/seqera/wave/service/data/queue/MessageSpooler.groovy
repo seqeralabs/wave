@@ -6,9 +6,10 @@ import java.util.concurrent.atomic.AtomicInteger
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.util.logging.Slf4j
+import io.micronaut.websocket.exceptions.WebSocketSessionException
+import io.seqera.wave.exception.NoSenderAvailException
 import io.seqera.wave.service.pairing.socket.MessageSender
 import io.seqera.wave.util.ExponentialAttempt
-
 /**
  * Implements a queue spooler that takes care removing the message from a queue
  * as they are made available and dispatch them to the corresponding sender
@@ -64,14 +65,36 @@ class MessageSpooler implements Runnable {
         broker.init(key)
     }
 
+    private void send(String message) {
+        // make a copy to prevent concurrent modifications
+        // made by 'addClient' and 'removeClient' methods
+        final avail = new ArrayList<Sender<String>>(senders)
+        while( avail.size()>0 ) {
+            final p = random.nextInt(0,avail.size())
+            final sender = avail[p]
+            try {
+                sender.sendAsync(message)
+                return
+            }
+            catch (WebSocketSessionException e) {
+                // this session is not available any more, remove it from the list of avail senders
+                log.debug "Websocket session with id '${sender.id}' has been closed"
+                avail.remove(p)
+            }
+        }
+        if( !avail ) {
+            // throw an exception to cause a delay before the next attempt
+            throw new NoSenderAvailException("No sender available for Websocket target '$key'")
+        }
+    }
+
     @Override
     void run() {
         while( !thread.isInterrupted() ) {
             try {
                 final value = broker.poll(key, Duration.ofSeconds(1))
                 if( value != null ) {
-                    final p = random.nextInt(0,senders.size())
-                    senders[p].sendAsync(value)
+                    send(value)
                 }
                 //
                 attempt.reset()
