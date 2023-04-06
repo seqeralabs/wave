@@ -1,4 +1,9 @@
 # Wave changelog
+v0.29.6 - 6 Apr 2023 
+- Offload proxy controller to IO executor [2800fbf7]
+- Revert "Use send sync" [4a460691]
+- Improve logging [151a633b]
+
 v0.29.5 - 6 Apr 2023 
 - Code cleanup [317a7666]
 - Handle Websocket session closed exception [7fe3c5f5]
