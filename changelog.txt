@@ -1,4 +1,15 @@
 # Wave changelog
+v0.29.5 - 6 Apr 2023 
+- Code cleanup [317a7666]
+- Handle Websocket session closed exception [7fe3c5f5]
+- Add Redis connection pool config [b8a35655]
+
+v0.29.3/4 - 5 Apr 2023 
+- Use list for future [51164817]
+
+v0.29.2 - 5 Apr 2023 
+- Use send sync [cbc47d5d]
+
 v0.29.1 - 5 Apr 2023 
 - Bump 10 thread for wave event loop [7b000a7e]
 - Cleanup and refactoring [f8c8be3e]
