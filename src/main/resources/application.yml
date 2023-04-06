@@ -21,6 +21,10 @@ micronaut:
     event-loops:
       wave:
         num-threads: 10
+  executors:
+    io:
+      type: fixed
+      nThreads: 75
   views :
     folder : io/seqera/wave
   router:

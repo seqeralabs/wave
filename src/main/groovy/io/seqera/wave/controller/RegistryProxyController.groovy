@@ -20,6 +20,8 @@ import io.micronaut.http.annotation.Error
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.http.server.util.HttpClientAddressResolver
+import io.micronaut.scheduling.TaskExecutors
+import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.ErrorHandler
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RegistryProxyService.DelegateResponse
@@ -73,6 +75,7 @@ class RegistryProxyController {
         )
     }
 
+    @ExecuteOn(TaskExecutors.IO)
     @Get(uri="/{url:(.+)}", produces = "*/*")
     CompletableFuture<MutableHttpResponse<?>> handleGet(String url, HttpRequest httpRequest) {
         log.info "> Request [$httpRequest.method] $httpRequest.path"
