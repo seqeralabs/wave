@@ -38,31 +38,31 @@ class MessageSpooler implements Runnable {
 
     }
 
-    final String key
+    final String target
     final List<Sender<String>> senders
     final MessageBroker<String> broker
     private Thread thread
     private final Random random = new Random()
     private final ExponentialAttempt attempt = new ExponentialAttempt()
 
-    MessageSpooler(String key, MessageBroker<String> broker) {
-        log.debug "Creating spooler thread for queue: $key"
-        this.key = key
+    MessageSpooler(String target, MessageBroker<String> broker) {
+        log.debug "Creating spooler thread for target '$target'"
+        this.target = target
         this.broker = broker
         this.senders = new ArrayList<>(10)
         this.thread = null
     }
 
-    MessageSpooler(String key, MessageBroker<String> broker, boolean startThread) {
-        log.debug "Creating spooler thread for queue: $key"
-        this.key = key
+    MessageSpooler(String target, MessageBroker<String> broker, boolean startThread) {
+        log.debug "Creating spooler thread for target '$target'"
+        this.target = target
         this.broker = broker
         this.senders = new ArrayList<>(10)
         this.thread = new Thread(this, "message-spooler-${count.getAndIncrement()}")
         this.thread.setDaemon(true)
         this.thread.start()
         // init
-        broker.init(key)
+        broker.init(target)
     }
 
     private void send(String message) {
@@ -84,7 +84,7 @@ class MessageSpooler implements Runnable {
         }
         if( !avail ) {
             // throw an exception to cause a delay before the next attempt
-            throw new NoSenderAvailException("No sender available for Websocket target '$key'")
+            throw new NoSenderAvailException("No sender available for Websocket target '$target'")
         }
     }
 
@@ -92,7 +92,7 @@ class MessageSpooler implements Runnable {
     void run() {
         while( !thread.isInterrupted() ) {
             try {
-                final value = broker.poll(key, Duration.ofSeconds(1))
+                final value = broker.poll(target, Duration.ofSeconds(1))
                 if( value != null ) {
                     send(value)
                 }
@@ -100,7 +100,7 @@ class MessageSpooler implements Runnable {
                 attempt.reset()
             }
             catch (InterruptedException e) {
-                log.debug "Interrupting spooler thread for queue: $key"
+                log.debug "Interrupting spooler thread for queue: $target"
                 Thread.currentThread().interrupt()
                 break
             }
@@ -113,7 +113,7 @@ class MessageSpooler implements Runnable {
     }
 
     void offer(String message) {
-        broker.offer(key, message)
+        broker.offer(target, message)
     }
 
     boolean exists(String key) {
@@ -130,10 +130,10 @@ class MessageSpooler implements Runnable {
             thread.join(1_000)
         }
         catch (Exception e) {
-            log.debug "Unexpected exception while waiting spooler thread $key - cause: ${e.message}"
+            log.debug "Unexpected exception while waiting spooler thread $target - cause: ${e.message}"
         }
         // remove the key
-        broker.delete(key)
+        broker.delete(target)
     }
 
     MessageSpooler addClient(String clientId, MessageSender<String> sender) {
@@ -143,8 +143,12 @@ class MessageSpooler implements Runnable {
 
     int removeClient(String clientId) {
         final p = senders.findIndexOf( (it)->it.id == clientId)
-        if( p>=0 )
+        if( p>=0 ) {
             senders.remove(p)
+        }
+        else {
+            log.warn "Unable find a sender with clientId: '$clientId'"
+        }
         return senders.size()
     }
 }
