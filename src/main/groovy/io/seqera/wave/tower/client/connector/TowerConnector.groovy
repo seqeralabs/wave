@@ -158,7 +158,7 @@ abstract class TowerConnector {
 
         return response
                 .thenCompose { resp ->
-                    log.trace "Tower GET '$uri' response\n- msgId  :$msgId\n- status : ${resp.status}\n- content: ${resp.body}"
+                    log.trace "Tower GET '$uri' response => msgId:$msgId; status: ${resp.status}; content: ${resp.body}"
                     if (resp.status == 401 && tokens.refresh && canRefresh) {
                         final refreshId = rndHex()
                         return refreshJwtToken(endpoint, accessToken, tokens.refresh)
