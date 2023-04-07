@@ -57,7 +57,6 @@ abstract class AbstractMessageQueue<M> implements Runnable {
 
     protected abstract Duration pollInterval()
 
-
     protected abstract String prefix()
 
     protected String targetKey(String k) { return prefix() + k }
@@ -197,7 +196,7 @@ abstract class AbstractMessageQueue<M> implements Runnable {
             thread.join(1_000)
         }
         catch (Exception e) {
-            log.debug "Unexpected exception while termianting ${name()} - cause: ${e.message}"
+            log.debug "Unexpected error while terminating ${name()} - cause: ${e.message}"
         }
     }
 }
