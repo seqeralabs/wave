@@ -52,7 +52,6 @@ abstract class AbstractMessageQueue<M> implements Runnable {
         this.thread.start()
     }
 
-
     protected abstract String name()
 
     protected abstract Duration pollInterval()
@@ -64,7 +63,7 @@ abstract class AbstractMessageQueue<M> implements Runnable {
     }
 
     protected String clientKey(String target, String clientId) {
-        return targetKey(target) + ":client=$clientId"
+        return targetKey(target) + ":client=$clientId/queue"
     }
 
     protected String targetFromClientKey(String clientKey) {
@@ -74,7 +73,7 @@ abstract class AbstractMessageQueue<M> implements Runnable {
     }
 
     protected String markerKey(String target, String clientId) {
-        clientKey(target,clientId) + '/marker'
+        clientKey(target,clientId).replaceAll('/queue$','/marker')
     }
 
     /**

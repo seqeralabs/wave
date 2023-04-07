@@ -58,5 +58,19 @@ class AbstractMessageQueueLocalTest extends Specification {
         queue.close()
     }
 
+    def 'should validate '() {
+        given:
+        def queue = new PairingOutboundQueue(broker, Duration.ofMillis(100))
+
+        expect:
+        queue.targetKey('foo') == 'pairing-outbound-queue/v1:foo'
+        queue.clientKey('foo','bar') == 'pairing-outbound-queue/v1:foo:client=bar/queue'
+        queue.markerKey('foo','bar') == 'pairing-outbound-queue/v1:foo:client=bar/marker'
+
+        cleanup:
+        queue.close()
+    }
+
+
 
 }
