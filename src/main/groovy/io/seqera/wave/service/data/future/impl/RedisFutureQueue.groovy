@@ -1,6 +1,6 @@
 package io.seqera.wave.service.data.future.impl
 
-
+import java.time.Duration
 import java.util.concurrent.TimeoutException
 
 import groovy.transform.CompileStatic
@@ -33,9 +33,13 @@ class RedisFutureQueue implements FutureQueue<String>  {
     }
 
     @Override
-    String poll(String key) throws TimeoutException {
+    String poll(String key, Duration timeout) throws TimeoutException {
+        final t0 = timeout.toMillis() / 1_000d
         try (Jedis conn = pool.getResource()) {
-            return conn.rpop(key)
+            final result = conn.brpop(t0, key)?.getValue()
+            if( result != null )
+                return result
+            throw new TimeoutException("Unable to retrieve a value for key: $key")
         }
     }
 

@@ -1,9 +1,11 @@
 package io.seqera.wave.service.data.future.impl
 
-
+import java.time.Duration
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.LinkedTransferQueue
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -31,11 +33,12 @@ class LocalFutureQueue implements FutureQueue<String> {
     }
 
     @Override
-    String poll(String key)  {
+    String poll(String key, Duration timeout) throws TimeoutException {
         store.computeIfAbsent(key, (it)-> new LinkedTransferQueue<String>())
-        final result = store.get(key).poll()
-        if( result!=null )
-            store.remove(key)
+        final result = store.get(key).poll(timeout.toMillis(), TimeUnit.MILLISECONDS)
+        if( result==null )
+            throw new TimeoutException("Unable to retrieve a value for key: $key")
+        store.remove(key)
         return result
     }
 }
