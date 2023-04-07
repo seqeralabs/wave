@@ -3,6 +3,8 @@ micronaut:
   application:
     name: wave-app
   caches :
+    cache-20sec:
+      expire-after-access: 20s
     cache-1min:
       expire-after-access: 1m
     # Discovery client by default uses a cache for results. This is a transitive behaviour

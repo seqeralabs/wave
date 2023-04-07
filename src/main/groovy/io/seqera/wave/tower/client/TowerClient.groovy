@@ -3,6 +3,7 @@ package io.seqera.wave.tower.client
 import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
+import io.micronaut.cache.annotation.Cacheable
 import io.seqera.wave.tower.client.connector.HttpTowerConnector
 import io.seqera.wave.tower.client.connector.WebSocketTowerConnector
 import jakarta.annotation.Nullable
@@ -38,21 +39,25 @@ class TowerClient {
         return httpClient.sendAsync(endpoint, uri, authorization, type)
     }
 
+    @Cacheable('cache-20sec')
     CompletableFuture<ServiceInfoResponse> serviceInfo(String towerEndpoint) {
         final uri = serviceInfoEndpoint(towerEndpoint)
         return getAsync(uri, towerEndpoint, null, ServiceInfoResponse)
     }
 
+    @Cacheable('cache-20sec')
     CompletableFuture<UserInfoResponse> userInfo(String towerEndpoint, String authorization) {
         final uri = userInfoEndpoint(towerEndpoint)
         return getAsync(uri, towerEndpoint, authorization, UserInfoResponse)
     }
 
+    @Cacheable('cache-20sec')
     CompletableFuture<ListCredentialsResponse> listCredentials(String towerEndpoint, String authorization, Long workspaceId) {
         final uri = listCredentialsEndpoint(towerEndpoint, workspaceId)
         return getAsync(uri, towerEndpoint, authorization, ListCredentialsResponse)
     }
 
+    @Cacheable('cache-20sec')
     CompletableFuture<GetCredentialsKeysResponse> fetchEncryptedCredentials(String towerEndpoint, String authorization, String credentialsId, String pairingId, Long workspaceId) {
         final uri = fetchCredentialsEndpoint(towerEndpoint, credentialsId, pairingId, workspaceId)
         return getAsync(uri, towerEndpoint, authorization, GetCredentialsKeysResponse)
