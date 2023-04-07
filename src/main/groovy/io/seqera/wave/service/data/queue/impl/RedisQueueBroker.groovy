@@ -1,12 +1,10 @@
 package io.seqera.wave.service.data.queue.impl
 
-import java.util.concurrent.ConcurrentHashMap
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.service.data.queue.MessageBroker
-import io.seqera.wave.service.pairing.socket.MessageSender
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import redis.clients.jedis.Jedis
@@ -25,8 +23,6 @@ class RedisQueueBroker implements MessageBroker<String>  {
     @Inject
     private JedisPool pool
 
-    private ConcurrentHashMap<String, MessageSender<String>> clients = new ConcurrentHashMap<>()
-
     @Override
     void offer(String target, String message) {
         try (Jedis conn = pool.getResource()) {
@@ -35,16 +31,16 @@ class RedisQueueBroker implements MessageBroker<String>  {
     }
 
     @Override
-    String poll(String target) {
+    String take(String target) {
         try (Jedis conn = pool.getResource()) {
             return conn.rpop(target)
         }
     }
 
     @Override
-    boolean matches(String target) {
+    boolean hasMark(String prefix) {
         try (Jedis conn = pool.getResource()) {
-            return conn.keys(target + '*')?.size()>0
+            return conn.keys(prefix + '*')?.size()>0
         }
     }
 

@@ -6,21 +6,21 @@ import spock.lang.Specification
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class LocalFutureQueueTest extends Specification {
+class LocalFutureHashTest extends Specification {
 
     def 'should set and get a value' () {
         given:
-        def queue = new LocalFutureQueue()
+        def queue = new LocalFutureHash()
 
         expect:
-        queue.poll('xyz') == null
+        queue.take('xyz') == null
 
         when:
-        queue.offer('xyz', 'hello', null)
+        queue.put('xyz', 'hello', null)
         then:
-        queue.poll('xyz') == 'hello'
+        queue.take('xyz') == 'hello'
         and:
-        queue.poll('xyz') == null
+        queue.take('xyz') == null
     }
 
 }

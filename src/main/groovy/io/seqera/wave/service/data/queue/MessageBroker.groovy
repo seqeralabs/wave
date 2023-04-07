@@ -32,13 +32,34 @@ interface MessageBroker<M> {
      * @return
      *      The head of this queue, or null if the specified waiting time elapses before an element is available
      */
-    M poll(String target)
+    M take(String target)
 
+    /**
+     * Create a mark with for the specified key
+     *
+     * @param key
+     *      The mark unique key
+     */
     void mark(String key)
 
+    /**
+     * Remove the mark from the specified key
+     *
+     * @param key
+     *      The mark unique key
+     */
     void unmark(String key)
 
-    boolean matches(String key)
+    /**
+     * Check if one or more marks with the specified prefix exists
+     *
+     * @param prefix
+     *      The prefix of the mark key
+     * @return
+     *      {@code true} when one or more marks exist with a key matching the specified prefix,
+     *      {@code false} otherwise
+     */
+    boolean hasMark(String prefix)
 }
 
 

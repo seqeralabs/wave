@@ -49,7 +49,7 @@ class AbstractMessageQueueLocalTest extends Specification {
         def result = new CompletableFuture<PairingMessage>()
         queue.registerClient('service-key', '123', { result.complete(it) })
         and:
-        queue.queueMessage('service-key', new PairingHeartbeat('msg-1'))
+        queue.offer('service-key', new PairingHeartbeat('msg-1'))
         then:
         result.get(1, TimeUnit.SECONDS).msgId == 'msg-1'
 

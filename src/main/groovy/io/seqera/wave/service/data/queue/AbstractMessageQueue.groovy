@@ -20,6 +20,8 @@ import io.seqera.wave.util.TypeHelper
  * to consume a message. A message instance can be consumed by one and only listener.
  *
  * @author Jordi Deu-Pons <jordi@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ *
  * @param <M>    The type of message that can be sent through the broker.
  */
 @Slf4j
@@ -28,15 +30,17 @@ abstract class AbstractMessageQueue<M> implements Runnable {
 
     private static AtomicInteger count = new AtomicInteger()
 
-    private MessageBroker<String> broker
+    private final MessageBroker<String> broker
 
-    private EncodingStrategy<M> encoder
+    private final EncodingStrategy<M> encoder
 
     private final ExponentialAttempt attempt = new ExponentialAttempt()
 
     final private Thread thread
 
     final private ConcurrentHashMap<String,MessageSender<String>> clients = new ConcurrentHashMap<>()
+
+    final private String name0
 
     final private Cache<String,Boolean> closedClients = CacheBuilder<String, Boolean>
                     .newBuilder()
@@ -47,7 +51,8 @@ abstract class AbstractMessageQueue<M> implements Runnable {
         final type = TypeHelper.getGenericType(this, 0)
         this.encoder = new MoshiEncodeStrategy<M>(type) {}
         this.broker = broker
-        this.thread = new Thread(this, name() + '-thread-' + count.getAndIncrement())
+        this.name0 = name() + '-thread-' + count.getAndIncrement()
+        this.thread = new Thread(this, name0)
         this.thread.setDaemon(true)
         this.thread.start()
     }
@@ -82,8 +87,14 @@ abstract class AbstractMessageQueue<M> implements Runnable {
      * @param target The name of the queue to which the message should be added
      * @param message The message to queue
      */
-    void queueMessage(String target, M message) {
+    void offer(String target, M message) {
+        // serialise the message to a string
         final serialized = encoder.encode(message)
+        // add the message the target queue
+        // NOTE: all clients connecting from the same endpoint
+        // will use the *same* target queue name
+        // Any register sender having matching target key
+        // will be able to take and send the message
         broker.offer(targetKey(target), serialized)
     }
 
@@ -133,7 +144,7 @@ abstract class AbstractMessageQueue<M> implements Runnable {
      *      {@code true} if a queue with the specified name exists, {@code false} otherwise
      */
     boolean hasTarget(String target) {
-        broker.matches(targetKey(target))
+        broker.hasMark(targetKey(target))
     }
 
     @Override
@@ -149,7 +160,7 @@ abstract class AbstractMessageQueue<M> implements Runnable {
                     // infer the target queue from the client key
                     final target = targetFromClientKey(entry.key)
                     // poll for a message from the queue
-                    final value = broker.poll(target)
+                    final value = broker.take(target)
                     // if there's a message try to send it
                     if( value != null ) {
                         try {
@@ -175,13 +186,13 @@ abstract class AbstractMessageQueue<M> implements Runnable {
                 }
             }
             catch (InterruptedException e) {
-                log.debug "Interrupting spooler thread for queue ${name()}"
+                log.debug "Interrupting spooler thread for queue ${name0}"
                 Thread.currentThread().interrupt()
                 break
             }
             catch (Throwable e) {
                 final d0 = attempt.delay()
-                log.error("Unexpected error on queue ${name()} (await: ${d0}) - cause: ${e.message}", e)
+                log.error("Unexpected error on queue ${name0} (await: ${d0}) - cause: ${e.message}", e)
                 sleep(d0.toMillis())
             }
         }
@@ -197,7 +208,7 @@ abstract class AbstractMessageQueue<M> implements Runnable {
             thread.join(1_000)
         }
         catch (Exception e) {
-            log.debug "Unexpected error while terminating ${name()} - cause: ${e.message}"
+            log.debug "Unexpected error while terminating ${name0} - cause: ${e.message}"
         }
     }
 }

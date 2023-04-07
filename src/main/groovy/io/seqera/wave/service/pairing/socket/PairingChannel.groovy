@@ -68,14 +68,13 @@ class PairingChannel {
      * @param <R> the type of the response expected
      * @return a future containing the response to the request
      */
-    public <M extends PairingMessage, R extends PairingMessage> CompletableFuture<R> sendRequest(String service, String endpoint, M message) {
+    <M extends PairingMessage, R extends PairingMessage> CompletableFuture<R> sendRequest(String service, String endpoint, M message) {
 
         // create a unique Id to identify this command
         final result = inbound .create(message.msgId)
         // send message to the stream
         final target = clientTarget(service, endpoint)
-        log.trace "Outbond message ${message}; target: ${target}"
-        outbound.queueMessage(target, message)
+        outbound.offer(target, message)
 
         // return the future to the caller
         return (CompletableFuture<R>) result

@@ -60,7 +60,7 @@ class AbstractMessageQueueRedisTest extends Specification implements RedisTestCo
         when:
         queue.registerClient('service-key-two', '123', { result.complete(it) })
         and:
-        queue.queueMessage('service-key-two', new PairingHeartbeat('xyz'))
+        queue.offer('service-key-two', new PairingHeartbeat('xyz'))
         then:
         result.get(1,TimeUnit.SECONDS).msgId == 'xyz'
 
@@ -82,7 +82,7 @@ class AbstractMessageQueueRedisTest extends Specification implements RedisTestCo
         when:
         queue2.registerClient('service-key-three', '123', { result.complete(it) })
         and:
-        queue1.queueMessage('service-key-three', new PairingHeartbeat('123'))
+        queue1.offer('service-key-three', new PairingHeartbeat('123'))
         then:
         result.get(1,TimeUnit.SECONDS).msgId == '123'
 

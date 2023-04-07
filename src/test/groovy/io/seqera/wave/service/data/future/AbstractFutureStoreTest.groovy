@@ -24,12 +24,12 @@ class AbstractFutureStoreTest extends Specification{
         @Value('${wave.pairing.channel.timeout:1s}')
         Duration timeout
 
-        TestFutureStore(FutureQueue queue) {
+        TestFutureStore(FutureHash queue) {
             super(queue, new MoshiEncodeStrategy<String>() {})
         }
 
         @Override
-        String topic() {
+        String prefix() {
             return 'foo:'
         }
     }

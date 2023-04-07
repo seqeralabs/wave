@@ -32,7 +32,7 @@ class LocalQueueBroker implements MessageBroker<String> {
     }
 
     @Override
-    String poll(String target) {
+    String take(String target) {
         store
             .computeIfAbsent(target, (it)->new LinkedBlockingQueue<String>())
             .poll()
@@ -49,7 +49,7 @@ class LocalQueueBroker implements MessageBroker<String> {
     }
 
     @Override
-    boolean matches(String key) {
-        marks.keySet().find((String it) -> it.startsWith(key))
+    boolean hasMark(String prefix) {
+        marks.keySet().find((String it) -> it.startsWith(prefix))
     }
 }

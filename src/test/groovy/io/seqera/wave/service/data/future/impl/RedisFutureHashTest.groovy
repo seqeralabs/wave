@@ -12,7 +12,7 @@ import io.seqera.wave.test.RedisTestContainer
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class RedisFutureQueueTest extends Specification implements RedisTestContainer  {
+class RedisFutureHashTest extends Specification implements RedisTestContainer  {
 
     @Shared
     ApplicationContext applicationContext
@@ -27,16 +27,16 @@ class RedisFutureQueueTest extends Specification implements RedisTestContainer  
 
     def 'should set and get a value' () {
         given:
-        def queue = applicationContext.getBean(RedisFutureQueue)
+        def queue = applicationContext.getBean(RedisFutureHash)
 
         expect:
-        queue.poll('xyz') == null
+        queue.take('xyz') == null
 
         when:
-        queue.offer('xyz', 'hello', Duration.ofSeconds(5))
+        queue.put('xyz', 'hello', Duration.ofSeconds(5))
         then:
-        queue.poll('xyz') == 'hello'
+        queue.take('xyz') == 'hello'
         and:
-        queue.poll('xyz') == null
+        queue.take('xyz') == null
     }
 }

@@ -6,10 +6,10 @@ import java.util.concurrent.ConcurrentHashMap
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.service.data.future.FutureQueue
+import io.seqera.wave.service.data.future.FutureHash
 import jakarta.inject.Singleton
 /**
- * Implement a future queue based on a simple blocking queue.
+ * Implement a future queue based on a simple hash map.
  * This is only meant for local/development purposes
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -18,17 +18,17 @@ import jakarta.inject.Singleton
 @Requires(notEnv = 'redis')
 @Singleton
 @CompileStatic
-class LocalFutureQueue implements FutureQueue<String> {
+class LocalFutureHash implements FutureHash<String> {
 
     private ConcurrentHashMap<String, String> store = new ConcurrentHashMap<>()
 
     @Override
-    void offer(String key, String value, Duration expiration) {
+    void put(String key, String value, Duration expiration) {
         store.putIfAbsent(key, value)
     }
 
     @Override
-    String poll(String key) {
+    String take(String key) {
         return store.remove(key)
     }
 }

@@ -6,7 +6,7 @@ import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.data.future.AbstractFutureStore
-import io.seqera.wave.service.data.future.FutureQueue
+import io.seqera.wave.service.data.future.FutureHash
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import jakarta.inject.Singleton
 
@@ -23,12 +23,12 @@ class PairingInboundStore extends AbstractFutureStore<PairingMessage> {
     @Value('${wave.pairing.channel.timeout:5s}')
     Duration timeout
 
-    PairingInboundStore(FutureQueue<String> publisher) {
+    PairingInboundStore(FutureHash<String> publisher) {
         super(publisher, new MoshiEncodeStrategy<PairingMessage>() {})
     }
 
     @Override
-    String topic() {
+    String prefix() {
         return "pairing-inbound-queue/v1:"
     }
 

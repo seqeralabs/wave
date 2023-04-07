@@ -6,7 +6,7 @@ import java.util.concurrent.TimeoutException
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.service.data.future.FutureQueue
+import io.seqera.wave.service.data.future.FutureHash
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import redis.clients.jedis.Jedis
@@ -14,7 +14,9 @@ import redis.clients.jedis.JedisPool
 import redis.clients.jedis.params.SetParams
 
 /**
- * Implements a future queue using Redis list
+ * Implements a future queue using Redis hash. The hash was chosen over
+ * a Redis list, because values that fail to be collected within the
+ * expected timout, are evicted by Redis by simply specifying the hash expiration.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -22,13 +24,13 @@ import redis.clients.jedis.params.SetParams
 @Requires(env = 'redis')
 @Singleton
 @CompileStatic
-class RedisFutureQueue implements FutureQueue<String>  {
+class RedisFutureHash implements FutureHash<String>  {
 
     @Inject
     private JedisPool pool
 
     @Override
-    void offer(String key, String value, Duration expiration) {
+    void put(String key, String value, Duration expiration) {
         try (Jedis conn = pool.getResource()) {
             final params = new SetParams().ex(expiration.toSeconds())
             conn.set(key, value, params)
@@ -36,9 +38,11 @@ class RedisFutureQueue implements FutureQueue<String>  {
     }
 
     @Override
-    String poll(String key) throws TimeoutException {
+    String take(String key) throws TimeoutException {
         try (Jedis conn = pool.getResource()) {
-            // get and delete atomically
+            /*
+             * get and remove the value using an atomic operation
+             */
             final tx = conn.multi()
             final result = tx.get(key)
             tx.del(key)
