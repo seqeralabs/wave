@@ -21,7 +21,7 @@ import jakarta.inject.Singleton
 class PairingInboundStore extends AbstractFutureStore<PairingMessage> {
 
     @Value('${wave.pairing.channel.timeout:5s}')
-    private Duration timeout
+    Duration timeout
 
     PairingInboundStore(FutureQueue<String> publisher) {
         super(publisher, new MoshiEncodeStrategy<PairingMessage>() {})
@@ -33,10 +33,5 @@ class PairingInboundStore extends AbstractFutureStore<PairingMessage> {
     }
 
     String name() { "inbound-queue" }
-
-    @Override
-    Duration timeout() {
-        return timeout
-    }
 
 }

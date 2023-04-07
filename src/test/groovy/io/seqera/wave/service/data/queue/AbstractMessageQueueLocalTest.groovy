@@ -19,7 +19,6 @@ import jakarta.inject.Inject
 @MicronautTest(environments = ['test'])
 class AbstractMessageQueueLocalTest extends Specification {
 
-
     @Inject
     private MessageBroker<String> broker
 

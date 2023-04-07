@@ -11,6 +11,8 @@ import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
+import redis.clients.jedis.params.SetParams
+
 /**
  * Implements a future queue using Redis list
  *
@@ -26,20 +28,22 @@ class RedisFutureQueue implements FutureQueue<String>  {
     private JedisPool pool
 
     @Override
-    void offer(String key, String value) {
+    void offer(String key, String value, Duration expiration) {
         try (Jedis conn = pool.getResource()) {
-            conn.lpush(key, value)
+            final params = new SetParams().ex(expiration.toSeconds())
+            conn.set(key, value, params)
         }
     }
 
     @Override
-    String poll(String key, Duration timeout) throws TimeoutException {
-        final t0 = timeout.toMillis() / 1_000d
+    String poll(String key) throws TimeoutException {
         try (Jedis conn = pool.getResource()) {
-            final result = conn.brpop(t0, key)?.getValue()
-            if( result != null )
-                return result
-            throw new TimeoutException("Unable to retrieve a value for key: $key")
+            // get and delete atomically
+            final tx = conn.multi()
+            final result = tx.get(key)
+            tx.del(key)
+            tx.exec()
+            return result.get()
         }
     }
 

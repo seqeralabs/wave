@@ -2,11 +2,12 @@ package io.seqera.wave.service.data.future
 
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeoutException
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Value
 import io.seqera.wave.encoder.EncodingStrategy
-
 /**
  * Implements a {@link FutureStore} that allow handling {@link CompletableFuture} objects
  * in a distributed environment.
@@ -27,14 +28,17 @@ abstract class AbstractFutureStore<V> implements FutureStore<String,V> {
 
     private FutureQueue<String> queue
 
+    @Value('${wave.pairing.channel.awaitTimeout:100ms}')
+    private Duration pollInterval
+
     AbstractFutureStore(FutureQueue<String> queue, EncodingStrategy<V> encodingStrategy) {
-        this.encodingStrategy = encodingStrategy
         this.queue = queue
+        this.encodingStrategy = encodingStrategy
     }
 
     abstract String topic()
 
-    abstract Duration timeout()
+    abstract Duration getTimeout()
 
     /**
      * Create a new {@link CompletableFuture} instance. The future can be "completed" by this or any other instance
@@ -46,11 +50,23 @@ abstract class AbstractFutureStore<V> implements FutureStore<String,V> {
     @Override
     CompletableFuture<V> create(String key) {
         final target = topic() + key
-        return (CompletableFuture<V>) CompletableFuture
-                .supplyAsync( () -> {
-                    final result = queue.poll(target, timeout())
-                    return encodingStrategy.decode(result)
-                })
+        return CompletableFuture<V>.supplyAsync(() -> {
+            final start = System.currentTimeMillis()
+            final max = getTimeout().toMillis()
+            while( true ) {
+                // try to poll a value
+                final result = queue.poll(target)
+                // if it's available decode it and return it
+                if( result != null ) {
+                    return (V)encodingStrategy.decode(result)
+                }
+                // check if still can wait or timeout
+                if( System.currentTimeMillis()-start > max )
+                    throw new TimeoutException("Unable to retrieve a value for key: $target")
+                // sleep for a while
+                sleep(pollInterval.toMillis())
+            }
+        })
     }
 
     /**
@@ -63,10 +79,11 @@ abstract class AbstractFutureStore<V> implements FutureStore<String,V> {
      */
     @Override
     void complete(String key, V value) {
+        final expiration = Duration.ofMillis(getTimeout().toMillis() * 20)
         final encoded = encodingStrategy.encode(value)
         final target = topic() + key
         // add the received value to corresponding queue
-        queue.offer(target, encoded)
+        queue.offer(target, encoded, expiration)
     }
 
 }
