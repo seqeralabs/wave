@@ -1,4 +1,15 @@
 # Wave changelog
+v0.30.0 - 7 Apr 2023
+- Add cacheable to tower client [2e0242d7]
+- Refactor and cleanup [ff709edb]
+- Reimplement PairingOutboundQueue [4834187a]
+- Reimplement future store with redis atomic hash [55e63684]
+- Improve queue naming [21114305]
+- Use short random as msgId [84ea26ad]
+- Strip protocol [558c9faf]
+- Use completable future [15324cf3]
+- Remove pairing connect check [24115400]
+
 v0.29.6 - 6 Apr 2023 
 - Offload proxy controller to IO executor [2800fbf7]
 - Revert "Use send sync" [4a460691]
