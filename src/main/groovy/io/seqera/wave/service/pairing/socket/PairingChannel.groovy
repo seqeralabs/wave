@@ -91,7 +91,8 @@ class PairingChannel {
         inbound.complete(message.msgId, message)
     }
 
-    private static String clientTarget(String service, String endpoint) {
+    private static String clientTarget(String service, String uri) {
+        final endpoint = uri.replace('http://','').replace('https://','')
         return "${service}:${endpoint}".toString()
     }
 

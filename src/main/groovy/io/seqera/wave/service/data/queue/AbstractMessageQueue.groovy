@@ -59,7 +59,9 @@ abstract class AbstractMessageQueue<M> implements Runnable {
 
     protected abstract String prefix()
 
-    protected String targetKey(String k) { return prefix() + k }
+    protected String targetKey(String k) {
+        return prefix() + k
+    }
 
     protected String clientKey(String target, String clientId) {
         return targetKey(target) + ":client=$clientId"
