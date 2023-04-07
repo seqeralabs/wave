@@ -1,16 +1,20 @@
 package io.seqera.wave.tower.client
 
+import spock.lang.Specification
+
+import java.util.concurrent.ExecutionException
 import javax.annotation.Nullable
 
+import io.micronaut.cache.CacheManager
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
+import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Consumes
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.Header
-import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Post
 import io.micronaut.http.annotation.QueryValue
 import io.micronaut.http.cookie.Cookie
@@ -22,12 +26,10 @@ import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.tower.client.connector.TowerConnector
 import jakarta.inject.Inject
-import spock.lang.Specification
-
-import java.util.concurrent.ExecutionException
 
 @MicronautTest(environments = ['test','tower'])
 @Property(name = 'spec.name', value = 'TowerClientHttpTest')
+@Property(name = 'wave.pairing.channel.maxAttempts', value = '0')
 class TowerClientHttpTest extends Specification{
 
     @Controller('/')
@@ -101,6 +103,12 @@ class TowerClientHttpTest extends Specification{
     @Inject
     JwtAuthStore jwtAuthStore
 
+    @Inject
+    CacheManager cacheManager;
+
+    def setup() {
+        cacheManager.getCache("cache-20sec").invalidateAll()
+    }
 
     private String getHostName() {
         return embeddedServer.getURL().toString()
