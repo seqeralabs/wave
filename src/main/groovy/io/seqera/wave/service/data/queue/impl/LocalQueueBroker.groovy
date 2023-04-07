@@ -1,13 +1,10 @@
 package io.seqera.wave.service.data.queue.impl
 
-import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.TimeUnit
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.service.data.queue.MessageBroker
 import jakarta.inject.Singleton
@@ -19,38 +16,40 @@ import jakarta.inject.Singleton
  */
 @Slf4j
 @Requires(notEnv = 'redis')
-@Primary
 @Singleton
 @CompileStatic
 class LocalQueueBroker implements MessageBroker<String> {
 
     private ConcurrentHashMap<String, LinkedBlockingQueue<String>> store = new ConcurrentHashMap<>()
 
+    private ConcurrentHashMap<String, Boolean> marks = new ConcurrentHashMap<>()
+
     @Override
-    void offer(String key, String message) {
+    void offer(String target, String message) {
         store
-            .computeIfAbsent(key, (it)-> new LinkedBlockingQueue<>())
+            .computeIfAbsent(target, (it)->new LinkedBlockingQueue<String>())
             .offer(message)
     }
 
     @Override
-    String poll(String key, Duration timeout) {
+    String poll(String target) {
         store
-            .computeIfAbsent(key, (it)-> new LinkedBlockingQueue<>())
-            .poll(timeout.toMillis(), TimeUnit.MILLISECONDS)
+            .computeIfAbsent(target, (it)->new LinkedBlockingQueue<String>())
+            .poll()
     }
 
     @Override
-    void delete(String key) {
-        store.remove(key)
+    void mark(String key) {
+        marks.put(key, true)
     }
 
-    void init(String key) {
-        store
-                .computeIfAbsent(key, (it)-> new LinkedBlockingQueue<>())
+    @Override
+    void unmark(String key) {
+        marks.remove(key)
     }
 
-    boolean exists(String key) {
-        store.containsKey(key)
+    @Override
+    boolean matches(String key) {
+        marks.keySet().find((String it) -> it.startsWith(key))
     }
 }

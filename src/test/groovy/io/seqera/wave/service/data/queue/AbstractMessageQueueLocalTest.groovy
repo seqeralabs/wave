@@ -2,36 +2,23 @@ package io.seqera.wave.service.data.queue
 
 import spock.lang.Specification
 
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 
-import groovy.transform.Canonical
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.service.pairing.socket.PairingOutboundQueue
+import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
+import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import jakarta.inject.Inject
-
 /**
- * Test class {@link AbstractMessageQueue} using a {@link LocalMessageBroker}
+ * Test class {@link AbstractMessageQueue} using a {@link io.seqera.wave.service.data.queue.impl.LocalQueueBroker}
  *
  * @author Jordi Deu-Pons <jordi@seqera.io>
  */
 @MicronautTest(environments = ['test'])
 class AbstractMessageQueueLocalTest extends Specification {
 
-    @Canonical
-    static class Simple {
-        String value
-    }
-
-    static class SimpleDataStream extends AbstractMessageQueue<Simple> {
-
-        SimpleDataStream(MessageBroker<String> broker) {
-            super(broker)
-        }
-
-        @Override
-        String getPrefix() {
-            return "local-test"
-        }
-    }
 
     @Inject
     private MessageBroker<String> broker
@@ -39,32 +26,36 @@ class AbstractMessageQueueLocalTest extends Specification {
 
     def 'should register and unregister consumers'() {
         given:
-        def stream = new SimpleDataStream(broker)
+        def queue = new PairingOutboundQueue(broker, Duration.ofMillis(100))
 
         when:
-        stream.registerClient('service-key', '123', {})
+        queue.registerClient('service-key', '123', {})
         then:
-        stream.hasClient('service-key')
+        queue.hasTarget('service-key')
 
         when:
-        stream.unregisterClient('service-key', '123',)
+        queue.unregisterClient('service-key', '123')
         then:
-        !stream.hasClient('service-key')
+        !queue.hasTarget('service-key')
 
+        cleanup:
+        queue.close()
     }
 
     def 'should send and consume a request'() {
         given:
-        def stream = new SimpleDataStream(broker)
+        def queue = new PairingOutboundQueue(broker, Duration.ofMillis(100))
 
         when:
-        def result = new CompletableFuture()
-        stream.registerClient('service-key', '123', { result.complete(it) })
+        def result = new CompletableFuture<PairingMessage>()
+        queue.registerClient('service-key', '123', { result.complete(it) })
         and:
-        stream.sendMessage('service-key', new Simple('hello'))
+        queue.queueMessage('service-key', new PairingHeartbeat('msg-1'))
         then:
-        result.get().value == 'hello'
+        result.get(1, TimeUnit.SECONDS).msgId == 'msg-1'
 
+        cleanup:
+        queue.close()
     }
 
 

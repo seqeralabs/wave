@@ -32,8 +32,8 @@ class PairingChannel {
      * @param sender the pairing message consumer to be registered
      */
     void registerClient(String service, String endpoint, String clientId, MessageSender<PairingMessage> sender) {
-        final streamKey = clientTarget(service, endpoint)
-        outbound.registerClient(streamKey, clientId, sender)
+        final target = clientTarget(service, endpoint)
+        outbound.registerClient(target, clientId, sender)
     }
 
     /**
@@ -43,8 +43,8 @@ class PairingChannel {
      * @param endpoint the endpoint to deregister the consumer from
      */
     void unregisterClient(String service, String endpoint, String clientId) {
-        final streamKey = clientTarget(service, endpoint)
-        outbound.unregisterClient(streamKey, clientId)
+        final target = clientTarget(service, endpoint)
+        outbound.unregisterClient(target, clientId)
     }
 
     /**
@@ -55,7 +55,7 @@ class PairingChannel {
      * @return true if the message stream has a consumer for the given service and endpoint, false otherwise
      */
     boolean canHandle(String service, String endpoint) {
-        return outbound.hasClient(clientTarget(service, endpoint))
+        return outbound.hasTarget(clientTarget(service, endpoint))
     }
 
     /**
@@ -75,7 +75,7 @@ class PairingChannel {
         // send message to the stream
         final target = clientTarget(service, endpoint)
         log.trace "Outbond message ${message}; target: ${target}"
-        outbound.sendMessage(target, message)
+        outbound.queueMessage(target, message)
 
         // return the future to the caller
         return (CompletableFuture<R>) result

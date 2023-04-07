@@ -1,7 +1,4 @@
 package io.seqera.wave.service.pairing.socket
-
-import java.util.concurrent.CompletableFuture
-
 /**
  * Interface modelling a generic message sender
  *
@@ -9,6 +6,6 @@ import java.util.concurrent.CompletableFuture
  */
 interface MessageSender<M> {
 
-    CompletableFuture sendAsync(M message)
+    void send(M message)
 
 }

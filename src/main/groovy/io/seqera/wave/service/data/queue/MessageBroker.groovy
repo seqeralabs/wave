@@ -1,7 +1,6 @@
 package io.seqera.wave.service.data.queue
 
-import java.time.Duration
-
+import groovy.transform.CompileStatic
 /**
  * Interface for a message broker modelled as a blocking queue.
  *
@@ -9,50 +8,37 @@ import java.time.Duration
  * @author Paolo Di Tommmaso <paolo.ditommaso@gmail.com>
  * @param <M>    The type of message that can be sent through the broker.
  */
+@CompileStatic
 interface MessageBroker<M> {
 
     /**
      * Inserts the specified element at the tail of the specified queue.
      *
-     * @param key
+     * @param target
      *      The queue unique identified
      * @param value
      *  The value that should be added to the queue
      */
-    void offer(String key, M value)
+    void offer(String target, M value)
 
     /**
      * Retrieves and removes the head of this queue, waiting up to the specified wait time if necessary
      * for an element to become available.
      *
-     * @param key
+     * @param target
      *      The queue unique identifier
      * @param timeout
      *      How long to wait before giving up, in units of unit unit – a TimeUnit determining how to interpret the timeout parameter
      * @return
      *      The head of this queue, or null if the specified waiting time elapses before an element is available
      */
-    M poll(String key, Duration timeout)
+    M poll(String target)
 
-    /**
-     * Remove the queue with the specified identifier
-     *
-     * @param key The queue unique identifier
-     */
-    void delete(String key)
+    void mark(String key)
 
-    /**
-     * Initialise the broker broker
-     */
-    void init(String key)
+    void unmark(String key)
 
-    /**
-     * Check for the key existence
-     *
-     * @param key
-     * @return
-     */
-    boolean exists(String key)
+    boolean matches(String key)
 }
 
 

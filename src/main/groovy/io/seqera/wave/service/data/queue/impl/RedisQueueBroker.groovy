@@ -1,13 +1,12 @@
 package io.seqera.wave.service.data.queue.impl
 
-import java.time.Duration
-import java.util.concurrent.TimeoutException
+import java.util.concurrent.ConcurrentHashMap
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.micronaut.context.annotation.Value
 import io.seqera.wave.service.data.queue.MessageBroker
+import io.seqera.wave.service.pairing.socket.MessageSender
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import redis.clients.jedis.Jedis
@@ -26,66 +25,41 @@ class RedisQueueBroker implements MessageBroker<String>  {
     @Inject
     private JedisPool pool
 
-    @Value('${wave.pairing.channel.awaitTimeout:100ms}')
-    private Duration poolInterval
+    private ConcurrentHashMap<String, MessageSender<String>> clients = new ConcurrentHashMap<>()
 
     @Override
-    void offer(String key, String message) {
+    void offer(String target, String message) {
         try (Jedis conn = pool.getResource()) {
-            conn.lpush(key, message)
+            conn.lpush(target, message)
         }
     }
 
     @Override
-    String poll(String key, Duration timeout) throws TimeoutException {
-        final max = timeout.toMillis()
-        final begin = System.currentTimeMillis()
-        while( true ) {
-            final result = poll0(key)
-            if( result != null )
-                return result
-            final delta = System.currentTimeMillis()-begin
-            if( delta > max )
-                return null
-        }
-    }
-
-    private String poll0(String key) {
+    String poll(String target) {
         try (Jedis conn = pool.getResource()) {
-            final t0 = poolInterval.toMillis() / 1_000d
-            conn.brpop(t0, key)?.getValue()
+            return conn.rpop(target)
         }
     }
 
     @Override
-    void delete(String key) {
-        // clean up the redis queue
+    boolean matches(String target) {
         try (Jedis conn = pool.getResource()) {
-            // delete message list
+            return conn.keys(target + '*')?.size()>0
+        }
+    }
+
+    @Override
+    void mark(String key) {
+        try (Jedis conn = pool.getResource()) {
+            conn.set(key, 'true')
+        }
+    }
+
+    @Override
+    void unmark(String key) {
+        try (Jedis conn = pool.getResource()) {
             conn.del(key)
-            // delete initialized key
-            conn.del(keyInit(key))
-        }
-        catch (Exception e) {
-            log.debug "Unexpected exception while deleting queue $key - cause: ${e.message}"
         }
     }
 
-    @Override
-    void init(String key) {
-        try (Jedis conn = pool.getResource()) {
-            conn.set(keyInit(key), "init")
-        }
-    }
-
-    @Override
-    boolean exists(String key) {
-        try (Jedis conn = pool.getResource()) {
-            conn.exists(keyInit(key))
-        }
-    }
-
-    private static String keyInit(String key) {
-        return key + "/init"
-    }
 }
