@@ -23,7 +23,7 @@ import io.seqera.wave.util.ExponentialAttempt
 import io.seqera.wave.util.JacksonHelper
 import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
-import static io.seqera.wave.util.RegHelper.random256Hex
+import static io.seqera.wave.util.LongRndKey.rndHex
 /**
  * Implements an abstract client that allows to connect Tower service either
  * via HTTP client or a WebSocket-based client
@@ -81,7 +81,7 @@ abstract class TowerConnector {
 
     @CompileDynamic
     protected <T> CompletableFuture<T> sendAsync0(String endpoint, URI uri, String authorization, Class<T> type, int attempt0) {
-        final msgId = random256Hex()
+        final msgId = rndHex()
         final attempt = newAttempt(attempt0)
         return sendAsync1(endpoint, uri, authorization, msgId, true)
                 .thenCompose { resp ->
@@ -160,7 +160,7 @@ abstract class TowerConnector {
                 .thenCompose { resp ->
                     log.trace "Tower GET '$uri' response\n- msgId  :$msgId\n- status : ${resp.status}\n- content: ${resp.body}"
                     if (resp.status == 401 && tokens.refresh && canRefresh) {
-                        final refreshId = random256Hex()
+                        final refreshId = rndHex()
                         return refreshJwtToken(endpoint, accessToken, tokens.refresh)
                                 .thenCompose((JwtAuth it) -> sendAsync1(endpoint, uri, accessToken, refreshId, false))
                     } else {
@@ -182,7 +182,7 @@ abstract class TowerConnector {
         final uri = refreshTokenEndpoint(endpoint)
         log.trace "Tower Refresh '$uri'"
 
-        final msgId = random256Hex()
+        final msgId = rndHex()
         final request = new ProxyHttpRequest(
                 msgId: msgId,
                 method: HttpMethod.POST,

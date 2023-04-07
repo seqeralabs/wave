@@ -1,6 +1,5 @@
 package io.seqera.wave.service.pairing.socket
 
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.websocket.WebSocketSession
@@ -13,7 +12,7 @@ import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import io.seqera.wave.service.pairing.socket.msg.PairingResponse
 import jakarta.inject.Singleton
-import static io.seqera.wave.util.RegHelper.random256Hex
+import static io.seqera.wave.util.LongRndKey.rndHex
 /**
  * Implements Wave pairing websocket server
  *
@@ -47,7 +46,7 @@ class PairingWebSocket {
         // acquire a pairing key and send it to the remote client
         final resp = this.pairingService.acquirePairingKey(service, endpoint)
         session.sendAsync(new PairingResponse(
-                msgId: random256Hex(),
+                msgId: rndHex(),
                 pairingId: resp.pairingId,
                 publicKey: resp.publicKey
         ))
@@ -58,7 +57,7 @@ class PairingWebSocket {
         if( message instanceof PairingHeartbeat ) {
             log.trace "Receiving heartbeat - endpoint: ${endpoint} [sessionId: $session.id]"
             // send pong message
-            final pong = new PairingHeartbeat(msgId:random256Hex())
+            final pong = new PairingHeartbeat(msgId:rndHex())
             session.sendAsync(pong)
         }
         else {
