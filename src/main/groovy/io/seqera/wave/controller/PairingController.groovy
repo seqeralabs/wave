@@ -55,14 +55,6 @@ class PairingController {
         final err = validationService.checkEndpoint(req.endpoint)
         if( err )
             throw new BadRequestException(err)
-        // connect back to check connectivity
-        try {
-            final info = tower.serviceInfo(req.endpoint).get()
-            log.trace "Connected to Tower '${req.endpoint}'; version: ${info.serviceInfo.version}; commitId: ${info.serviceInfo.commitId}"
-        }
-        catch (Exception e) {
-            throw new BadRequestException("Pairing requested rejected - Unable to connect '$req.endpoint'")
-        }
     }
 
     @Error(exception = ConstraintViolationException)
