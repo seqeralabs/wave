@@ -1,4 +1,8 @@
 # Wave changelog
+v0.30.1 - 8 Apr 2023
+- Rollback to default thread pools [4b422337]
+- Bump Micronaut 3.8.8 [bc84bf5f]
+
 v0.30.0 - 7 Apr 2023
 - Add cacheable to tower client [2e0242d7]
 - Refactor and cleanup [ff709edb]
