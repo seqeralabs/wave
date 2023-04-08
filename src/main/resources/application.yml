@@ -16,17 +16,6 @@ micronaut:
     port: 9090
     # https://docs.micronaut.io/latest/guide/#atBlocking
     thread-selection: AUTO
-    netty:
-      worker:
-        event-loop-group: wave
-  netty:
-    event-loops:
-      wave:
-        num-threads: 10
-  executors:
-    io:
-      type: fixed
-      nThreads: 75
   views :
     folder : io/seqera/wave
   router:
