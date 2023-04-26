@@ -164,7 +164,7 @@ class ProxyClient {
                 loginService.invalidateAuthorization(image, registry.auth, credentials)
                 continue
             }
-            if( result.statusCode() in REDIRECT_CODES && followRedirect  ) {
+            if( result.statusCode() in REDIRECT_CODES && followRedirect ) {
                 final redirect = result.headers().firstValue('location').orElse(null)
                 log.trace "Redirecting (${++redirectCount}) $target ==> $redirect ${RegHelper.dumpHeaders(result.headers())}"
                 if( !redirect ) {

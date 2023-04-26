@@ -114,7 +114,7 @@ class RegistryProxyService {
 
     DelegateResponse handleRequest(RoutePath route, Map<String,List<String>> headers){
         ProxyClient proxyClient = client(route)
-        final resp1 = proxyClient.getString(route.path, headers, false)
+        final resp1 = proxyClient.getStream(route.path, headers, false)
         final redirect = resp1.headers().firstValue('Location').orElse(null)
         if( redirect && resp1.statusCode() in REDIRECT_CODES ) {
             // the redirect location can be a relative path i.e. without hostname
@@ -126,11 +126,10 @@ class RegistryProxyService {
                     headers:resp1.headers().map())
         }
         
-        final resp2 = proxyClient.getStream(route.path, headers)
         new DelegateResponse(
-                statusCode: resp2.statusCode(),
-                headers: resp2.headers().map(),
-                body: resp2.body() )
+                statusCode: resp1.statusCode(),
+                headers: resp1.headers().map(),
+                body: resp1.body() )
     }
 
     boolean isManifestPresent(String image){

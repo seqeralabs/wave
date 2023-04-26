@@ -235,16 +235,19 @@ class RegistryProxyController {
                 .headers(toMutableHeaders(resp.headers, override))
     }
 
-    MutableHttpResponse<?> fromDelegateResponse(final DelegateResponse delegateResponse){
+    MutableHttpResponse<?> fromDelegateResponse(final DelegateResponse response){
 
-        final Long contentLength = delegateResponse.headers
+        final Long len = response.headers
                 .find {it.key.toLowerCase()=='content-length'}?.value?.first() as long ?: null
-        final fluxInputStream = createFluxFromChunkBytes(delegateResponse.body, contentLength)
+
+        final streamedFile =  len
+                    ?  new StreamedFile(response.body, MediaType.APPLICATION_OCTET_STREAM_TYPE, Instant.now().toEpochMilli(), len)
+                    :  new StreamedFile(response.body, MediaType.APPLICATION_OCTET_STREAM_TYPE)
 
         HttpResponse
-                .status(HttpStatus.valueOf(delegateResponse.statusCode))
-                .body(fluxInputStream)
-                .headers(toMutableHeaders(delegateResponse.headers))
+                .status(HttpStatus.valueOf(response.statusCode))
+                .body(streamedFile)
+                .headers(toMutableHeaders(response.headers))
     }
 
     MutableHttpResponse<?> fromManifestResponse(DelegateResponse resp) {
@@ -268,13 +271,6 @@ class RegistryProxyController {
                 }
             }
         }
-    }
-
-    static protected StreamedFile createFluxFromChunkBytes(InputStream inputStream, Long size){
-        if( size )
-            new StreamedFile(inputStream, MediaType.APPLICATION_OCTET_STREAM_TYPE, Instant.now().toEpochMilli(), size)
-        else
-            new StreamedFile(inputStream, MediaType.APPLICATION_OCTET_STREAM_TYPE)
     }
 
 
