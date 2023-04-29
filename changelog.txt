@@ -1,4 +1,8 @@
 # Wave changelog
+v0.31.0 - 29 Apr 2023
+- Add Conda and Spack file to build reports [b63fd2a1]
+- Fix flaky test [63e361da]
+
 v0.30.3 - 26 Apr 2023
 - Fix OOM error when pulling layer blobs [f0653794]
 
