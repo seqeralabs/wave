@@ -41,6 +41,7 @@ class ViewControllerTest extends Specification {
                 buildId: '12345',
                 dockerFile: 'FROM foo',
                 condaFile: 'conda::foo',
+                spackFile: 'some-spack-recipe',
                 targetImage: 'docker.io/some:image',
                 userName: 'paolo',
                 userEmail: 'paolo@seqera.io',
@@ -52,17 +53,26 @@ class ViewControllerTest extends Specification {
                 exitStatus: 0,
                 platform: 'linux/amd64' )
         when:
-        def page = controller.renderBuildView(record)
+        def binding = controller.renderBuildView(record)
         then:
-        page
+        binding.build_id == '12345'
+        binding.build_dockerfile == 'FROM foo'
+        binding.build_condafile == 'conda::foo'
+        binding.build_image == 'docker.io/some:image'
+        binding.build_user == 'paolo (ip: 10.20.30.40)'
+        binding.build_platform == 'linux/amd64'
+        binding.build_exit_status == 0
+        binding.build_platform == 'linux/amd64'
+        binding.build_dockerfile == 'FROM foo'
+        binding.build_condafile == 'conda::foo'
+        binding.build_spackfile == 'some-spack-recipe'
     }
 
     def 'should render a build page' () {
         given:
         def record1 = new WaveBuildRecord(
                 buildId: 'test',
-                dockerFile: 'test',
-                condaFile: 'test',
+                dockerFile: 'FROM docker.io/test:foo',
                 targetImage: 'test',
                 userName: 'test',
                 userEmail: 'test',
@@ -79,8 +89,75 @@ class ViewControllerTest extends Specification {
         def response = client.toBlocking().exchange(request, String)
         then:
         response.body().contains(record1.buildId)
+        and:
+        response.body().contains('Docker file')
+        response.body().contains('FROM docker.io/test:foo')
+        and:
+        !response.body().contains('Conda file')
+        !response.body().contains('Spack file')
     }
 
+    def 'should render a build page with conda file' () {
+        given:
+        def record1 = new WaveBuildRecord(
+                buildId: 'test',
+                condaFile: 'conda::foo',
+                targetImage: 'test',
+                userName: 'test',
+                userEmail: 'test',
+                userId: 1,
+                requestIp: '127.0.0.1',
+                startTime: Instant.now(),
+                duration: Duration.ofSeconds(1),
+                exitStatus: 0 )
+
+        when:
+        persistenceService.saveBuild(record1)
+        and:
+        def request = HttpRequest.GET("/view/builds/${record1.buildId}")
+        def response = client.toBlocking().exchange(request, String)
+        then:
+        response.body().contains(record1.buildId)
+        and:
+        response.body().contains('Docker file')
+        response.body().contains('-')
+        and:
+        response.body().contains('Conda file')
+        response.body().contains('conda::foo')
+        and:
+        !response.body().contains('Spack file')
+    }
+
+    def 'should render a build page with spack file' () {
+        given:
+        def record1 = new WaveBuildRecord(
+                buildId: 'test',
+                spackFile: 'foo/conda/recipe',
+                targetImage: 'test',
+                userName: 'test',
+                userEmail: 'test',
+                userId: 1,
+                requestIp: '127.0.0.1',
+                startTime: Instant.now(),
+                duration: Duration.ofSeconds(1),
+                exitStatus: 0 )
+
+        when:
+        persistenceService.saveBuild(record1)
+        and:
+        def request = HttpRequest.GET("/view/builds/${record1.buildId}")
+        def response = client.toBlocking().exchange(request, String)
+        then:
+        response.body().contains(record1.buildId)
+        and:
+        response.body().contains('Docker file')
+        response.body().contains('-')
+        and:
+        !response.body().contains('Conda file')
+        and:
+        response.body().contains('Spack file')
+        response.body().contains('foo/conda/recipe')
+    }
 
     def 'should render container view page' () {
         given:

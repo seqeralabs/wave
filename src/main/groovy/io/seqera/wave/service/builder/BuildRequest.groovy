@@ -123,4 +123,59 @@ class BuildRequest {
         return "BuildRequest[id=$id; targetImage=$targetImage; user=$user; dockerFile=${trunc(dockerFile)}; condaFile=${trunc(condaFile)}; spackFile=${trunc(spackFile)}]"
     }
 
+    String getId() {
+        return id
+    }
+
+    String getDockerFile() {
+        return dockerFile
+    }
+
+    String getCondaFile() {
+        return condaFile
+    }
+
+    String getSpackFile() {
+        return spackFile
+    }
+
+    Path getWorkDir() {
+        return workDir
+    }
+
+    String getTargetImage() {
+        return targetImage
+    }
+
+    User getUser() {
+        return user
+    }
+
+    ContainerPlatform getPlatform() {
+        return platform
+    }
+
+    String getCacheRepository() {
+        return cacheRepository
+    }
+
+    Instant getStartTime() {
+        return startTime
+    }
+
+    String getJob() {
+        return job
+    }
+
+    String getIp() {
+        return ip
+    }
+
+    String getConfigJson() {
+        return configJson
+    }
+
+    String getOffsetId() {
+        return offsetId
+    }
 }

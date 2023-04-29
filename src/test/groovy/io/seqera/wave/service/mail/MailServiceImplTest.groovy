@@ -18,20 +18,50 @@ class MailServiceImplTest extends Specification {
 
     @Inject MailServiceImpl service
 
-    def 'should build build mail' () {
+    def 'should create build mail' () {
         given:
         def recipient = 'foo@gmail.com'
         def result = BuildResult.completed('12345', 0, 'pull foo:latest', Instant.now())
-        def request= Mock(BuildRequest) {
-            getDockerFile() >> 'from foo';
-            getTargetImage() >> 'wave/build:xyz'
-            getPlatform() >> ContainerPlatform.DEFAULT
-        }
-        
+        def request= Mock(BuildRequest)
+
         when:
         def mail = service.buildCompletionMail(request, result, recipient)
         then:
+        1* request.getDockerFile() >> 'from foo';
+        1* request.getTargetImage() >> 'wave/build:xyz'
+        1* request.getPlatform() >> ContainerPlatform.DEFAULT
+        1* request.getCondaFile() >> null
+        1* request.getSpackFile() >> null
+        and:
         mail.to == recipient
+        mail.body.contains('from foo')
+        and:
+        !mail.body.contains('Conda file')
+        !mail.body.contains('Spack file')
+
+        // check it adds the Conda file content
+        when:
+        mail = service.buildCompletionMail(request, result, recipient)
+        then:
+        1* request.getTargetImage() >> 'wave/build:xyz'
+        1* request.getPlatform() >> ContainerPlatform.DEFAULT
+        1* request.getCondaFile() >> 'bioconda::foo'
+        and:
+        mail.to == recipient
+        mail.body.contains('Conda file')
+        mail.body.contains('bioconda::foo')
+
+        // check it add the spack file content
+        when:
+        mail = service.buildCompletionMail(request, result, recipient)
+        then:
+        1* request.getTargetImage() >> 'wave/build:xyz'
+        1* request.getPlatform() >> ContainerPlatform.DEFAULT
+        1* request.getSpackFile() >> 'some-spac-recipe'
+        and:
+        mail.to == recipient
+        mail.body.contains('Spack file')
+        mail.body.contains('some-spac-recipe')
     }
 
 }

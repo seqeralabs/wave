@@ -49,6 +49,8 @@ class ViewController {
         binding.build_image = result.targetImage
         binding.build_platform = result.platform
         binding.build_dockerfile = result.dockerFile ?: '-'
+        binding.build_condafile = result.condaFile
+        binding.build_spackfile = result.spackFile
         binding.put('server_url', serverUrl)
         // result the main object
         return binding

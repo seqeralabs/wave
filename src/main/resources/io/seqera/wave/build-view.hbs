@@ -64,8 +64,18 @@
         </tr>
     </table>
 
-    <h3>Dockerfile</h3>
+    <h3>Docker file</h3>
     <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{build_dockerfile}}</pre>
+
+    {{#if build_condafile}}
+    <h3>Conda file</h3>
+    <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{build_condafile}}</pre>
+    {{/if}}
+
+    {{#if build_spackfile}}
+    <h3>Spack file</h3>
+    <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{build_spackfile}}</pre>
+    {{/if}}
 
     <div class="footer" style="clear:both;width:100%;">
         <hr class="footer-hr" style="height:0;overflow:visible;margin-top:30px;border:0;border-top:1px solid #eee;color:#999999;font-size:12px;line-height:18px;margin-bottom:30px;">

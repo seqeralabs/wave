@@ -64,7 +64,7 @@ class MailServiceImpl implements MailService {
 
     Mail buildCompletionMail(BuildRequest req, BuildResult result, String recipient) {
         // create template binding
-        final binding = new HashMap(5)
+        final binding = new HashMap(20)
         final status = result.exitStatus==0 ? 'DONE': 'FAILED'
         binding.build_id = result.id
         binding.build_user =  "${req.user ? req.user.userName : 'n/a'} (${req.ip})"
@@ -75,6 +75,8 @@ class MailServiceImpl implements MailService {
         binding.build_image = req.targetImage
         binding.build_platform = req.platform
         binding.build_dockerfile = req.dockerFile ?: '-'
+        binding.build_condafile = req.condaFile
+        binding.build_spackfile = req.spackFile
         binding.put('build_logs', result.logs)
         binding.build_url = "$serverUrl/view/builds/${result.id}"
         binding.put('server_url', serverUrl)

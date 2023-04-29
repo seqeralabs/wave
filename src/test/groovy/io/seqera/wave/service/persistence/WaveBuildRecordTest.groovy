@@ -25,7 +25,7 @@ class WaveBuildRecordTest extends Specification {
                 Path.of("/some/path"),
                 "buildrepo",
                 'conda::recipe',
-                null,
+                'some-spack-recipe',
                 null,
                 ContainerPlatform.of('amd64'),
                 '{auth}',

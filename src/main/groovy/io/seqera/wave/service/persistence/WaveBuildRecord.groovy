@@ -22,6 +22,7 @@ class WaveBuildRecord {
     String buildId
     String dockerFile
     String condaFile
+    String spackFile
     String targetImage
     String userName
     String userEmail
@@ -42,6 +43,7 @@ class WaveBuildRecord {
                 // see https://pullanswer.com/questions/bug-unicode-escaped-characters-with-surrogate-pairs-causes-surrealdb-to-panic
                 dockerFile: event.request.dockerFile?.replaceAll("[\ud83c\udf00-\ud83d\ude4f]|[\ud83d\ude80-\ud83d\udeff]", ""),
                 condaFile: event.request.condaFile?.replaceAll("[\ud83c\udf00-\ud83d\ude4f]|[\ud83d\ude80-\ud83d\udeff]", ""),
+                spackFile: event.request.spackFile?.replaceAll("[\ud83c\udf00-\ud83d\ude4f]|[\ud83d\ude80-\ud83d\udeff]", ""),
                 targetImage: event.request.targetImage,
                 userName: event.request.user?.userName,
                 userEmail: event.request.user?.email,
