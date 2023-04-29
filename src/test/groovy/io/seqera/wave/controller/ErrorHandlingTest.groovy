@@ -25,7 +25,7 @@ class ErrorHandlingTest extends Specification {
 
     void 'should handle an error'() {
         when:
-        HttpRequest request = HttpRequest.GET("/v2/hello-world/manifests/latest").headers({ h->
+        HttpRequest request = HttpRequest.GET("/v2/quay.io/hello-world/manifests/latest").headers({ h->
             h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
             h.add('Accept', ContentType.DOCKER_MANIFEST_V1_JWS_TYPE)
             h.add('Accept', MediaType.APPLICATION_JSON)
@@ -34,6 +34,6 @@ class ErrorHandlingTest extends Specification {
         then:
         final exception = thrown(HttpClientResponseException)
         RegistryErrorResponse error = exception.response.getBody(RegistryErrorResponse).get()
-        error.errors.get(0).message == "repository 'docker.io/hello-world:latest' unauthorized (401)"
+        error.errors.get(0).message == "repository 'quay.io/hello-world:latest' not found"
     }
 }
