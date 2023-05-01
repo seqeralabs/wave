@@ -1,12 +1,12 @@
 ---
-title: API documentation
+title: API reference
 description: Endpoints for the Wave API
 hide:
     - navigation
     - footer
 ---
 
-# API documentation
+# API reference
 
 This page summarizes the API provided by the Wave service.
 

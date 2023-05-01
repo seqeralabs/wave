@@ -10,6 +10,9 @@ hide:
 
 ## Getting started
 
+Wave containers can be used with any container runtime supporting the [Docker Registry API v2](https://docs.docker.com/registry/spec/api/) 
+and it's smoothly integrated with [Nextflow](https://www.nextflow.io/) and [Nextflow Tower](https://cloud.tower.nf/).
+
 !!! note
 
     This feature requires Nextflow ``22.10.0`` or later.
@@ -47,14 +50,14 @@ tower {
     The use of the Tower access token is not mandatory, however, it's required to enable access to private repositories
     and it allows higher service rate limits compared to anonymous users.
 
-## Use cases
+## Tutorials
 
 ### Authenticate private repositories
 
 Wave allows the use of private repositories in your Nextflow pipelines. The repository access keys need to be provided
-via the [Nextflow Tower credentials](https://help.tower.nf/22.2/credentials/overview/) manager feature.
+via the [Nextflow Tower credentials](https://help.tower.nf/23.1/credentials/overview/) manager feature.
 
-Once the credentials have been created, you only need to specify your [Tower account access token](https://help.tower.nf/22.2/api/overview/#authentication)
+Once the credentials have been created, you only need to specify your [Tower account access token](https://help.tower.nf/23.1/api/overview/#authentication)
 in your pipeline configuration file. If the credentials were created in a Tower organization workspace, specify the workspace ID
 as well in the config file as shown below:
 
@@ -65,11 +68,14 @@ tower {
 }
 ```
 
-### Build module containers
+That's it. When launching the pipeline execution, Wave will allow Nextflow to access the private container repositories 
+defined in your pipeline configuration, using the credentials stored in the Tower credentials manager. 
+
+### Build Nextflow module containers
 
 Wave can build and provision container images on-demand for your Nextflow pipelines.
 
-To enable this feature, add the Dockerfile of the container to be built in the :ref:`module directory <dsl2-module-directory>`
+To enable this feature, add the `Dockerfile` of the container to be built in the [module directory](https://www.nextflow.io/docs/latest/dsl2.html#module-binaries)
 where the pipeline process is defined. When Wave is enabled, it automatically uses the Dockerfile to build the required container,
 upload to the registry, and uses the container to carry out the tasks defined in the module.
 
@@ -78,14 +84,14 @@ upload to the registry, and uses the container to carry out the tasks defined in
     Make sure the process does not declare a `container` directive, otherwise it will take precedence over
     the Dockerfile definition.
 
-If a process uses a `container` directive and you still want to build the container using the Dockerfile provided in
+If a process uses a `container` directive and you still want to build the container using the `Dockerfile` provided in
 the module directory, add the following setting to the pipeline config file:
 
 ```groovy
 wave.strategy = ['dockerfile','container']
 ```
 
-The above line instructs Wave to give the module Dockerfile priority over process `container` directives.
+The above line instructs Wave to give the module `Dockerfile` priority over process `container` directives.
 
 !!! warning
 
@@ -94,8 +100,8 @@ The above line instructs Wave to give the module Dockerfile priority over proces
 
 ### Build Conda based containers
 
-Wave allows the provisioning of containers based on the :ref:`process-conda` directive used by the processes in your
-pipeline. This is a quick alternative to building Conda packages in the local computer. Moreoever, this enables the use of
+Wave allows the provisioning of containers based on the [`conda` directive](https://www.nextflow.io/docs/latest/process.html#conda) used by the processes in your
+Nextflow pipeline. This is a quick alternative to building Conda packages in the local computer. Moreover, this enables the use of
 Conda packages in your pipeline when deploying it in cloud-native platforms such as AWS Batch and Kubernetes,
 which do not allow the (easy) use of the Conda package manager.
 
@@ -109,9 +115,9 @@ wave.strategy = ['conda']
 ```
 
 The above setting instructs Wave to only use the `conda` directive to provision the pipeline containers, ignoring the use of
-the `container` directive and any Dockerfile(s).
+the `container` directive and any `Dockerfile`(s).
 
-### Push to a private repository
+### Store container images into a private repository
 
 Containers built by Wave are uploaded to the Wave default repository hosted on AWS ECR with name
 `195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build`. The images in this repository are automatically deleted
@@ -129,7 +135,7 @@ The first repository is used to store the built container images. The second one
 image layers for caching purposes.
 
 The repository access keys need to be specified using the Tower credentials manager as specified in the
-`Authenticate private repositories`\_ section.
+[Authenticate private repositories] section.
 
 ## Advanced settings
 
