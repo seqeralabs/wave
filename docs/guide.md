@@ -47,9 +47,9 @@ tower {
     The use of the Tower access token is not mandatory, however, it's required to enable access to private repositories
     and it allows higher service rate limits compared to anonymous users.
 
-### Use cases
+## Use cases
 
-#### Authenticate private repositories
+### Authenticate private repositories
 
 Wave allows the use of private repositories in your Nextflow pipelines. The repository access keys need to be provided
 via the [Nextflow Tower credentials](https://help.tower.nf/22.2/credentials/overview/) manager feature.
@@ -65,7 +65,7 @@ tower {
 }
 ```
 
-#### Build module containers
+### Build module containers
 
 Wave can build and provision container images on-demand for your Nextflow pipelines.
 
@@ -111,7 +111,7 @@ wave.strategy = ['conda']
 The above setting instructs Wave to only use the `conda` directive to provision the pipeline containers, ignoring the use of
 the `container` directive and any Dockerfile(s).
 
-## Push to a private repository
+### Push to a private repository
 
 Containers built by Wave are uploaded to the Wave default repository hosted on AWS ECR with name
 `195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build`. The images in this repository are automatically deleted
