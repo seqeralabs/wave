@@ -17,7 +17,7 @@ because it does not store container images, and it's not possible to push image 
 From a technical point of view Wave behave a proxy server that intermediates container pull requests from
 the Docker client and the target registry where the container image is stored.
 
-### Why I should use Wav instead of a container registry?
+### Why I should use Wave instead of a container registry?
 
 Wave has been designed to streamline the use of software containers with Nextflow data analysis pipelines, in three ways:
 
