@@ -1,4 +1,7 @@
 # Wave changelog
+v0.31.1 - 3 May 2023
+- Improve error handling for connection timeout [f2fbd39c]
+
 v0.31.0 - 29 Apr 2023
 - Add Conda and Spack file to build reports [b63fd2a1]
 - Fix flaky test [63e361da]
