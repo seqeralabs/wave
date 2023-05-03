@@ -119,6 +119,10 @@ abstract class TowerConnector {
                         final message = "Unexpected I/O error while accessing Tower resource: $uri - cause: ${err.message ?: err}"
                         err = new HttpResponseException(HttpStatus.SERVICE_UNAVAILABLE, message)
                     }
+                    if( err instanceof TimeoutException ) {
+                        final message = "Timeout error connecting to '$endpoint'"
+                        err = new HttpResponseException(HttpStatus.REQUEST_TIMEOUT, message, err)
+                    }
                     throw err
                 })
     }
