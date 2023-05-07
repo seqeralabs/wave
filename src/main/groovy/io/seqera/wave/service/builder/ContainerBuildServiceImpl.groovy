@@ -9,6 +9,7 @@ import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.annotation.Value
 import io.micronaut.context.event.ApplicationEventPublisher
 import io.seqera.wave.auth.RegistryCredentialsProvider
@@ -72,6 +73,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     @Inject
     @Nullable
     private RateLimiterService rateLimiterService
+
+    @Inject
+    private MeterRegistry meterRegistry
 
     @PostConstruct
     void init() {
@@ -174,10 +178,27 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             buildStore.removeBuild(request.targetImage)
             throw e
         }
+        // increment the build counter
+        incrementBuildCounter(request)
+
         // launch the build async
         CompletableFuture
                 .<BuildResult>supplyAsync(() -> launch(request), executor)
                 .thenApply((result) -> { notifyCompletion(request,result); return result })
+    }
+
+    protected void incrementBuildCounter(BuildRequest request) {
+        try {
+            final tags = new ArrayList<String>()
+            tags.add('platform'); tags.add(request.platform.toString())
+            if( request.user?.id ) {
+                tags.add('userId'); tags.add(request.user.id as String)
+            }
+            meterRegistry.counter('wave.builds', tags as String[]).increment()
+        }
+        catch (Throwable e) {
+            log.error "Unable to increment build counter",e
+        }
     }
 
     protected notifyCompletion(BuildRequest request, BuildResult result) {

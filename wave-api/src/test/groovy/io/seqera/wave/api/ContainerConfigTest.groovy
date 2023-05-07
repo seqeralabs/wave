@@ -53,4 +53,15 @@ class ContainerConfigTest extends Specification {
         and:
         ContainerConfig.copy(c1,true).layers[0].location == 'data:DATA+OMITTED'
     }
+
+    def 'should find fusion version' () {
+        given:
+        def l1 = new ContainerLayer( location: 'https://fusionfs.seqera.io/releases/v2.1.3-amd64.json' )
+        def config = new ContainerConfig(['/entry/point.sh'], ['/my/cmd'], ['FOO=1'], '/work/dir', [l1])
+
+        expect:
+        new ContainerConfig().fusionVersion() == null
+        and:
+        config.fusionVersion() == new FusionVersion('2.1.3', 'amd64')
+    }
 }

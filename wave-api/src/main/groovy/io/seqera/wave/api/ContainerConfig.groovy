@@ -35,6 +35,24 @@ class ContainerConfig {
         }
     }
 
+    boolean hasFusionLayer() {
+        if( !layers )
+            return false
+        for( ContainerLayer it : layers ) {
+            if( it.location && it.location.contains('https://fusionfs.seqera.io') )
+                return true
+        }
+        return false
+    }
+
+    FusionVersion fusionVersion() {
+        for( ContainerLayer it : (layers ?: List.<ContainerLayer>of()) ) {
+            if( it.location && it.location.startsWith('https://fusionfs.seqera.io/') )
+                return FusionVersion.from(it.location)
+        }
+        return null
+    }
+
     /**
      * Copy method
      *

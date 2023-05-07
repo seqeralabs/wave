@@ -7,6 +7,7 @@ import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpMethod
 import io.micronaut.http.HttpRequest
@@ -61,6 +62,9 @@ class RegistryProxyController {
     @Value('${wave.debugChecksum:false}')
     boolean debugChecksum
 
+    @Inject
+    MeterRegistry meterRegistry
+
     @Error
     HttpResponse<RegistryErrorResponse> handleError(HttpRequest request, Throwable t) {
         return errorHandler.handle(request, t, (msg, code) -> new RegistryErrorResponse(msg,code) )
@@ -75,6 +79,41 @@ class RegistryProxyController {
         )
     }
 
+    protected void increaseWavePullsCounter(RoutePath route) {
+        try {
+            final tags = new ArrayList<String>(20)
+            tags.add('registry'); tags.add(route.registry)
+            tags.add('repository'); tags.add(route.repository)
+            tags.add('container'); tags.add(route.targetContainer)
+            if( route.request?.towerEndpoint ) {
+                tags.add('endpoint'); tags.add(route.request.towerEndpoint)
+            }
+            if( route.request?.userId ) {
+                tags.add('userId'); tags.add(route.request.userId as String)
+            }
+            if( route.request?.workspaceId ) {
+                tags.add('workspaceId'); tags.add(route.request.workspaceId as String)
+            }
+
+            meterRegistry.counter('wave.pulls', tags as String[]).increment()
+        }
+        catch (Throwable e) {
+            log.error "Unable to increment wave pulls counter", e
+        }
+    }
+
+    protected void increaseFusionPullsCounter(RoutePath route) {
+        try {
+            final version = route.request?.containerConfig?.fusionVersion()
+            if( version ) {
+                meterRegistry.counter('fusion.pulls', 'version', version.number, 'arch', version.arch).increment()
+            }
+        }
+        catch (Throwable e) {
+            log.error "Unable to increment fusion pulls counter", e
+        }
+    }
+
     @ExecuteOn(TaskExecutors.IO)
     @Get(uri="/{url:(.+)}", produces = "*/*")
     CompletableFuture<MutableHttpResponse<?>> handleGet(String url, HttpRequest httpRequest) {
@@ -84,6 +123,10 @@ class RegistryProxyController {
         if( route.manifest && route.digest ){
             String ip = addressResolver.resolve(httpRequest)
             rateLimiterService?.acquirePull( new AcquireRequest(route.request?.userId?.toString(), ip) )
+        }
+        if( httpRequest.method==HttpMethod.GET && route.manifest && route.isTag() ) {
+            increaseWavePullsCounter(route)
+            increaseFusionPullsCounter(route)
         }
 
         // check if it's a container under build
