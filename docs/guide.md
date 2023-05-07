@@ -135,7 +135,7 @@ The first repository is used to store the built container images. The second one
 image layers for caching purposes.
 
 The repository access keys need to be specified using the Tower credentials manager as specified in the
-[Authenticate private repositories] section.
+[Authenticate private repositories](#Authenticate private repositories) section.
 
 ## Advanced settings
 
