@@ -124,10 +124,6 @@ class RegistryProxyController {
             String ip = addressResolver.resolve(httpRequest)
             rateLimiterService?.acquirePull( new AcquireRequest(route.request?.userId?.toString(), ip) )
         }
-        if( httpRequest.method==HttpMethod.GET && route.manifest && route.isTag() ) {
-            increaseWavePullsCounter(route)
-            increaseFusionPullsCounter(route)
-        }
 
         // check if it's a container under build
         final future = handleFutureBuild0(route, httpRequest)
@@ -202,6 +198,9 @@ class RegistryProxyController {
     }
 
     protected DigestStore manifestForPath(RoutePath route, HttpRequest httpRequest) {
+        // increase the quest counters
+        increaseWavePullsCounter(route)
+        increaseFusionPullsCounter(route)
         // when the request contains a wave token and the manifest is specified
         // using a container 'tag' instead of a 'digest' the request path is used as storage key
         // because the target container path could be not unique (multiple wave containers request
