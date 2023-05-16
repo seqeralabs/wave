@@ -20,16 +20,15 @@ class AwsEcrServiceTest extends Specification {
         def provider = new AwsEcrService()
 
         when:
-        def creds = provider.getLoginToken(accessKey, secretKey, REGION).tokenize(":")
+        def creds = provider.getLoginToken(accessKey, secretKey, REGION, false).tokenize(":")
         then:
         creds[0] == 'AWS'
         creds[1].size() > 0
 
         when:
-        provider.getLoginToken('a','b','c')
+        provider.getLoginToken('a','b','c',false)
         then:
         thrown(Exception)
-
     }
 
     def 'should check registry info' () {
@@ -40,6 +39,8 @@ class AwsEcrServiceTest extends Specification {
         provider.getEcrHostInfo('foo') == null
         provider.getEcrHostInfo('195996028523.dkr.ecr.eu-west-1.amazonaws.com') == new AwsEcrService.AwsEcrHostInfo('195996028523', 'eu-west-1')
         provider.getEcrHostInfo('195996028523.dkr.ecr.eu-west-1.amazonaws.com/foo') == new AwsEcrService.AwsEcrHostInfo('195996028523', 'eu-west-1')
+        and:
+        provider.getEcrHostInfo('public.ecr.aws') == new AwsEcrService.AwsEcrHostInfo(null, 'us-east-1')
 
     }
 
@@ -49,6 +50,9 @@ class AwsEcrServiceTest extends Specification {
         !AwsEcrService.isEcrHost('foo')
         AwsEcrService.isEcrHost('195996028523.dkr.ecr.eu-west-1.amazonaws.com')
         AwsEcrService.isEcrHost('195996028523.dkr.ecr.eu-west-1.amazonaws.com/foo')
-
+        and:
+        AwsEcrService.isEcrHost('public.ecr.aws')
+        AwsEcrService.isEcrHost('public.ecr.aws/foo')
+        !AwsEcrService.isEcrHost('public.ecr.com')
     }
 }

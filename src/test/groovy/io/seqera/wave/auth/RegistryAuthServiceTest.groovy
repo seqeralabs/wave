@@ -84,9 +84,17 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
     }
 
     @IgnoreIf({!System.getenv('AWS_ACCESS_KEY_ID')})
-    void 'test valid aws ecr'() {
+    void 'test valid aws ecr private'() {
         given:
         String REGISTRY_URL = '195996028523.dkr.ecr.eu-west-1.amazonaws.com'
+        expect:
+        loginService.login(REGISTRY_URL, awsEcrUsername, awsEcrPassword)
+    }
+
+    @IgnoreIf({!System.getenv('AWS_ACCESS_KEY_ID')})
+    void 'test valid aws ecr public'() {
+        given:
+        String REGISTRY_URL = 'public.ecr.aws'
         expect:
         loginService.login(REGISTRY_URL, awsEcrUsername, awsEcrPassword)
     }

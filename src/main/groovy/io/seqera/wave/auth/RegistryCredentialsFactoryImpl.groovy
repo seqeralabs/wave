@@ -22,7 +22,8 @@ class RegistryCredentialsFactoryImpl implements RegistryCredentialsFactory {
 
         AwsEcrService.AwsEcrHostInfo host
         if( (host=awsEcrService.getEcrHostInfo(registry)) ) {
-            final token = awsEcrService.getLoginToken(userName, password, host.region)
+            final isPublic = host.account==null
+            final token = awsEcrService.getLoginToken(userName, password, host.region, isPublic)
             // token is made up by the aws username and password separated by a `:`
             final parts = token.tokenize(':')
             // wrap and return it

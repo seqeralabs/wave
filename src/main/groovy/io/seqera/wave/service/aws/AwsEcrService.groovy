@@ -18,6 +18,9 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.ecr.EcrClient
 import software.amazon.awssdk.services.ecr.model.GetAuthorizationTokenRequest
+import software.amazon.awssdk.services.ecrpublic.model.GetAuthorizationTokenRequest as GetPublicAuthorizationTokenRequest
+import software.amazon.awssdk.services.ecrpublic.EcrPublicClient
+
 /**
  * Implement AWS ECR login service
  *
@@ -28,13 +31,16 @@ import software.amazon.awssdk.services.ecr.model.GetAuthorizationTokenRequest
 @CompileStatic
 class AwsEcrService {
 
-    static final private Pattern AWS_ECR = ~/^(\d+)\.dkr\.ecr\.([a-z\-\d]+)\.amazonaws\.com/
+    static final private Pattern AWS_ECR_PRIVATE = ~/^(\d+)\.dkr\.ecr\.([a-z\-\d]+)\.amazonaws\.com/
+
+    static final private Pattern AWS_ECR_PUBLIC = ~/public\.ecr\.aws/
 
     @Canonical
     private static class AwsCreds {
         String accessKey
         String secretKey
         String region
+        boolean ecrPublic
     }
 
     @Canonical
@@ -46,7 +52,9 @@ class AwsEcrService {
     private CacheLoader<AwsCreds, String> loader = new CacheLoader<AwsCreds, String>() {
         @Override
         String load(AwsCreds creds) throws Exception {
-            getLoginToken0(creds.accessKey, creds.secretKey, creds.region)
+            return creds.ecrPublic
+                    ? getLoginToken1(creds.accessKey, creds.secretKey, creds.region)
+                    : getLoginToken0(creds.accessKey, creds.secretKey, creds.region)
         }
     }
 
@@ -64,12 +72,26 @@ class AwsEcrService {
                 .build()
     }
 
+    private EcrPublicClient ecrPublicClient(String accessKey, String secretKey, String region) {
+        EcrPublicClient.builder()
+                .region( Region.of(region))
+                .credentialsProvider( StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)))
+                .build()
+    }
 
     protected String getLoginToken0(String accessKey, String secretKey, String region) {
         log.debug "Getting AWS ECR auth token - region=$region; accessKey=$accessKey; secretKey=${StringUtils.redact(secretKey)}"
         final client = ecrClient(accessKey,secretKey,region)
         final resp = client.getAuthorizationToken(GetAuthorizationTokenRequest.builder().build() as GetAuthorizationTokenRequest)
         final encoded = resp.authorizationData().get(0).authorizationToken()
+        return new String(encoded.decodeBase64())
+    }
+
+    protected String getLoginToken1(String accessKey, String secretKey, String region) {
+        log.debug "Getting AWS ECR public auth token - region=$region; accessKey=$accessKey; secretKey=${StringUtils.redact(secretKey)}"
+        final client = ecrPublicClient(accessKey,secretKey,region)
+        final resp = client.getAuthorizationToken(GetPublicAuthorizationTokenRequest.builder().build() as GetPublicAuthorizationTokenRequest)
+        final encoded = resp.authorizationData().authorizationToken()
         return new String(encoded.decodeBase64())
     }
 
@@ -81,7 +103,7 @@ class AwsEcrService {
      * @param region The AWS region
      * @return The ECR login token. The token is made up by the aws username and password separated by a `:`
      */
-    String getLoginToken(String accessKey, String secretKey, String region) {
+    String getLoginToken(String accessKey, String secretKey, String region, boolean isPublic) {
         assert accessKey, "Missing AWS accessKey argument"
         assert secretKey, "Missing AWS secretKet argument"
         assert region, "Missing AWS region argument"
@@ -89,7 +111,7 @@ class AwsEcrService {
         try {
             // get the token from the cache, if missing the it's automatically
             // fetch using the AWS ECR client
-            return cache.get(new AwsCreds(accessKey,secretKey,region))
+            return cache.get(new AwsCreds(accessKey,secretKey,region,isPublic))
         }
         catch (UncheckedExecutionException | ExecutionException e) {
             throw e.cause
@@ -108,13 +130,16 @@ class AwsEcrService {
     AwsEcrHostInfo getEcrHostInfo(String host) {
         if( !host )
             return null
-        final m = AWS_ECR.matcher(host)
-        if( !m.find() )
-            return null
-        return new AwsEcrHostInfo(m.group(1), m.group(2))
+        final m = AWS_ECR_PRIVATE.matcher(host)
+        if( m.find() )
+            return new AwsEcrHostInfo(m.group(1), m.group(2))
+        final n = AWS_ECR_PUBLIC.matcher(host)
+        if( n.find() )
+            return new AwsEcrHostInfo(null, 'us-east-1')
+        return null
     }
 
     static boolean isEcrHost(String registry) {
-        registry ? AWS_ECR.matcher(registry).find() : false
+        registry ? AWS_ECR_PRIVATE.matcher(registry).find() || AWS_ECR_PUBLIC.matcher(registry).find() : false
     }
 }
