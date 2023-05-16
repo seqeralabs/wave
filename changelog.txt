@@ -1,4 +1,7 @@
 # Wave changelog
+v0.33.0 - 15 May 2023 
+- Add support for AWS ECR public registry 
+ 
 v0.32.2 - 13 May 2023 
 - Bump base image nf-jdk:corretto-17.0.7 [275e3377]
 
