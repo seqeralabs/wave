@@ -239,7 +239,7 @@ class RegistryProxyController {
         if( !entry ) {
             throw new DockerRegistryException("Unable to find cache manifest for '$httpRequest.path'", 400, 'UNKNOWN')
         }
-        return fromCache(entry)
+        return fromCache(entry, true)
     }
 
     MutableHttpResponse<?> handleTagList(RoutePath route, HttpRequest httpRequest) {
@@ -251,7 +251,7 @@ class RegistryProxyController {
                 .headers(toMutableHeaders(resp.headers))
     }
 
-    MutableHttpResponse<?> fromCache(DigestStore entry) {
+    MutableHttpResponse<?> fromCache(DigestStore entry, boolean head=false) {
         // validate checksum
         String d0
         final resp = entry.bytes
@@ -260,14 +260,13 @@ class RegistryProxyController {
         }
         // compose response
         Map<CharSequence, CharSequence> headers = Map.of(
-                        "Connection", "close",
                         "Content-Length", resp.length.toString(),
                         "Content-Type", entry.mediaType,
                         "docker-content-digest", entry.digest,
                         "etag", entry.digest,
                         "docker-distribution-api-version", "registry/2.0") as Map<CharSequence, CharSequence>
         final result = HttpResponse
-                .ok(resp)
+                .ok(head ? null : resp)
                 .headers(headers)
         traceResponse(result)
         return result
