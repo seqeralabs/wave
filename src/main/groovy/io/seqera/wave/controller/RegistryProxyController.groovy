@@ -40,6 +40,8 @@ import jakarta.inject.Inject
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Mono
 import static io.seqera.wave.util.RegHelper.digest
+import static io.seqera.wave.util.RegHelper.traceResponse
+
 /**
  * Implement a registry proxy controller that forward registry pull requests to the target service
  *
@@ -264,9 +266,11 @@ class RegistryProxyController {
                         "docker-content-digest", entry.digest,
                         "etag", entry.digest,
                         "docker-distribution-api-version", "registry/2.0") as Map<CharSequence, CharSequence>
-        HttpResponse
+        final result = HttpResponse
                 .ok(resp)
                 .headers(headers)
+        traceResponse(result)
+        return result
     }
 
     MutableHttpResponse<?> fromRedirectResponse(final DelegateResponse resp) {
