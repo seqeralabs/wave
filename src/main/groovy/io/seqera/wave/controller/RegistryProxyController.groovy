@@ -258,6 +258,7 @@ class RegistryProxyController {
         }
         // compose response
         Map<CharSequence, CharSequence> headers = Map.of(
+                        "Connection", "close",
                         "Content-Length", resp.length.toString(),
                         "Content-Type", entry.mediaType,
                         "docker-content-digest", entry.digest,
