@@ -29,7 +29,7 @@ class DockerBuildStrategy extends BuildStrategy {
     @Value('${wave.build.image}')
     String buildImage
 
-    @Value('${wave.build.timeout:5m}')
+    @Value('${wave.build.timeout}')
     Duration buildTimeout
 
     @Value('${wave.debug}')

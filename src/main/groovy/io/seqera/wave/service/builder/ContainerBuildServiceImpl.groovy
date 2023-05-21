@@ -40,13 +40,13 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     @Value('${wave.build.image}')
     String buildImage
 
-    @Value('${wave.build.timeout:5m}')
+    @Value('${wave.build.timeout}')
     Duration buildTimeout
 
-    @Value('${wave.build.status.duration:`1d`}')
+    @Value('${wave.build.status.duration}')
     private Duration statusDuration
 
-    @Value('${wave.build.status.delay:5s}')
+    @Value('${wave.build.status.delay}')
     private Duration statusDelay
 
     @Value('${wave.build.cleanup}')
