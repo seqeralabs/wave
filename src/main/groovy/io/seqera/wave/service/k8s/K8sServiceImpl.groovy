@@ -55,7 +55,7 @@ class K8sServiceImpl implements K8sService {
     @Value('${wave.build.workspace}')
     private String buildWorkspace
 
-    @Value('${wave.build.timeout:5m}')
+    @Value('${wave.build.timeout:15m}')
     private Duration buildTimeout
 
     @Property(name='wave.build.k8s.labels')

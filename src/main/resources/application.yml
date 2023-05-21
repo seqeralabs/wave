@@ -16,6 +16,9 @@ micronaut:
     port: 9090
     # https://docs.micronaut.io/latest/guide/#atBlocking
     thread-selection: AUTO
+    idle-timeout: 15m
+    read-idle-timeout: 15m
+    write-idle-timeout: 15m
   views :
     folder : io/seqera/wave
   router:

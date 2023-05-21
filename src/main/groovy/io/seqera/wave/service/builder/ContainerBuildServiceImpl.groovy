@@ -133,6 +133,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
             resp = buildStrategy.build(req)
             log.info "== Build completed with status=$resp.exitStatus; stdout: (see below)\n${indent(resp.logs)}"
+            sleep 310 * 1000
+            log.info "== Sleep done"
             return resp
         }
         catch (Throwable e) {
