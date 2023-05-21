@@ -42,7 +42,7 @@ interface ContainerBuildService {
      *      {@code null} if not request has been submitted for such image
      */
     default CompletableFuture<BuildResult> buildResult(RoutePath route) {
-        return route.request?.containerImage
+        return route.request?.containerImage && route.isUnresolvedManifest()
                 ? buildResult(route.request.containerImage)
                 : null
     }

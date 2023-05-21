@@ -139,7 +139,7 @@ class RegistryProxyController {
         if( future ) {
             // wait for the build completion, then apply the usual 'handleGet0' logic
             future
-                .thenApply( (build) -> build.exitStatus==0 ? handleGet0(route, httpRequest) : badRequest(build.logs ) )
+                .thenApply( (build) -> build.exitStatus==0 ? handleGet0(route, httpRequest) : badRequest(build.logs) )
         }
         else
             return null
@@ -205,7 +205,7 @@ class RegistryProxyController {
         // using a container 'tag' instead of a 'digest' the request path is used as storage key
         // because the target container path could be not unique (multiple wave containers request
         // could shared the same target container with a different configuration request)
-        final unsolvedContainer = route.token && route.isTag()
+        final unsolvedContainer = route.isUnresolvedManifest()
         final key = unsolvedContainer ? httpRequest.path : route.targetPath
         // check if there's cached manifest
         final manifest = storage.getManifest(key)
@@ -237,6 +237,7 @@ class RegistryProxyController {
         if( !entry ) {
             throw new DockerRegistryException("Unable to find cache manifest for '$httpRequest.path'", 400, 'UNKNOWN')
         }
+
         return fromCache(entry)
     }
 

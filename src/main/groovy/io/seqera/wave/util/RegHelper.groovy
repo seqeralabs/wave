@@ -8,7 +8,6 @@ import java.security.MessageDigest
 import java.security.SecureRandom
 
 import com.google.common.io.BaseEncoding
-import com.sun.net.httpserver.Headers
 import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 

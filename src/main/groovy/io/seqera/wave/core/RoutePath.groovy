@@ -83,6 +83,18 @@ class RoutePath implements ContainerPath {
         return registry + path
     }
 
+    /**
+     * This method define when the request is an unresolved wave container path that is:
+     * - should contain a wave token
+     * - should be a manifest path
+     * - should be a tag not (not a digest)
+     *
+     * @return {@true} whenever is a Wave unresolved manifest request or {@code false} otherwise
+     */
+    boolean isUnresolvedManifest() {
+        return token && isManifest() && isTag()
+    }
+
     static RoutePath v2path(String type, String registry, String image, String ref, ContainerRequestData request=null, String token=null) {
         assert type in ALLOWED_TYPES, "Unknown container path type: '$type'"
         new RoutePath(type, registry ?: DOCKER_IO, image, ref, "/v2/$image/$type/$ref", request, token)
