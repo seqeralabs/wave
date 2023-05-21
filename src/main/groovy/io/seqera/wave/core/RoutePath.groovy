@@ -83,8 +83,16 @@ class RoutePath implements ContainerPath {
         return registry + path
     }
 
-    boolean isUnresolved() {
-        return token && isTag()
+    /**
+     * This method define when the request is an unresolved wave container path that is:
+     * - should contain a wave token
+     * - should be a manifest path
+     * - should be a tag not (not a digest)
+     *
+     * @return {@true} whenever is a Wave unresolved manifest request or {@code false} otherwise
+     */
+    boolean isUnresolvedManifest() {
+        return token && isManifest() && isTag()
     }
 
     static RoutePath v2path(String type, String registry, String image, String ref, ContainerRequestData request=null, String token=null) {

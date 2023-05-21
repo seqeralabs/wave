@@ -40,8 +40,6 @@ import jakarta.inject.Inject
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Mono
 import static io.seqera.wave.util.RegHelper.digest
-import static io.seqera.wave.util.RegHelper.traceResponse
-
 /**
  * Implement a registry proxy controller that forward registry pull requests to the target service
  *
@@ -148,8 +146,6 @@ class RegistryProxyController {
     }
 
     protected MutableHttpResponse<?> handleGet0(RoutePath route, HttpRequest httpRequest) {
-        log.debug "++ Handle request=$httpRequest"
-
         if( httpRequest.method == HttpMethod.HEAD )
             return handleHead(route, httpRequest)
 
@@ -209,7 +205,7 @@ class RegistryProxyController {
         // using a container 'tag' instead of a 'digest' the request path is used as storage key
         // because the target container path could be not unique (multiple wave containers request
         // could shared the same target container with a different configuration request)
-        final unsolvedContainer = route.isUnresolved()
+        final unsolvedContainer = route.isUnresolvedManifest()
         final key = unsolvedContainer ? httpRequest.path : route.targetPath
         // check if there's cached manifest
         final manifest = storage.getManifest(key)
@@ -255,7 +251,6 @@ class RegistryProxyController {
     }
 
     MutableHttpResponse<?> fromCache(DigestStore entry) {
-        log.debug "From cache entry=$entry"
         // validate checksum
         String d0
         final resp = entry.bytes
@@ -269,11 +264,9 @@ class RegistryProxyController {
                         "docker-content-digest", entry.digest,
                         "etag", entry.digest,
                         "docker-distribution-api-version", "registry/2.0") as Map<CharSequence, CharSequence>
-        final result = HttpResponse
+        HttpResponse
                 .ok(resp)
                 .headers(headers)
-        traceResponse(result)
-        return result
     }
 
     MutableHttpResponse<?> fromRedirectResponse(final DelegateResponse resp) {

@@ -32,8 +32,13 @@ abstract class BuildStrategy {
                 << req.workDir.toString()
                 << "--destination"
                 << req.targetImage
+                << "--cache=true"
                 << "--custom-platform"
                 << req.platform.toString()
+
+        if( req.cacheRepository ) {
+            result << "--cache-repo" << req.cacheRepository
+        }
 
         if( !compressCaching )
             result << "--compressed-caching=false"

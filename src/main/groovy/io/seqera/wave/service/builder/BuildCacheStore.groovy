@@ -25,9 +25,9 @@ class BuildCacheStore extends AbstractCacheStore<BuildResult> implements BuildSt
 
     BuildCacheStore(
             CacheProvider<String, String> provider,
-            @Value('${wave.build.status.delay:5s}') Duration delay,
-            @Value('${wave.build.timeout:5m}') Duration timeout,
-            @Value('${wave.build.status.duration:`1d`}') Duration duration
+            @Value('${wave.build.status.delay}') Duration delay,
+            @Value('${wave.build.timeout}') Duration timeout,
+            @Value('${wave.build.status.duration}') Duration duration
     ) {
         super(provider, new MoshiEncodeStrategy<BuildResult>() {})
         this.duration = duration

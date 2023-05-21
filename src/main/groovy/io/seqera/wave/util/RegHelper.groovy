@@ -10,14 +10,12 @@ import java.security.SecureRandom
 import com.google.common.io.BaseEncoding
 import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
-import io.micronaut.http.MutableHttpResponse
+
 /**
  * Helper methods
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Slf4j
 @CompileStatic
 class RegHelper {
 
@@ -114,18 +112,5 @@ class RegHelper {
         while( result.size()<64 )
             result = '0'+result
         return result
-    }
-
-    static void traceResponse(MutableHttpResponse<?> resp) {
-        // dump response
-        if( !log.isTraceEnabled() || !resp )
-            return
-        final trace = new StringBuilder()
-        trace.append("= response status : ${resp.status()}\n")
-        trace.append('- response headers:\n')
-        for( Map.Entry<String,List<String>> entry : resp.getHeaders() ) {
-            trace.append("< ${entry.key}=${entry.value?.join(',')}\n")
-        }
-        log.trace(trace.toString())
     }
 }
