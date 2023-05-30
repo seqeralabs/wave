@@ -152,9 +152,6 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
      */
     @Override
     String getAuthorization(String image, RegistryAuth auth, RegistryCredentials creds) throws RegistryUnauthorizedAccessException {
-        if( !creds || creds.username==null || creds.password==null )
-            return null
-
         if( !auth )
             throw new RegistryUnauthorizedAccessException("Missing authentication credentials")
 
@@ -164,8 +161,8 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         }
 
         if( auth.type == RegistryAuth.Type.Basic ) {
-            final basic = "$creds.username:$creds.password".bytes.encodeBase64()
-            return "Basic $basic"
+            final String basic = creds ? "$creds.username:$creds.password".bytes.encodeBase64() : null
+            return basic ? "Basic $basic" : null
         }
 
         throw new RegistryUnauthorizedAccessException("Unknown authentication type: $auth.type")
