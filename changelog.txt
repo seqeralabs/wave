@@ -1,4 +1,7 @@
 # Wave changelog
+v0.33.2 - 30 May 2023 
+- Fix support for anonymous container registry 
+
 v0.33.1 - 21 May 2023 
 - Improve build route path handling [77388e3a]
 - Increase server idle-timeout to 910 seconds (~ 15min) [6da03877]
