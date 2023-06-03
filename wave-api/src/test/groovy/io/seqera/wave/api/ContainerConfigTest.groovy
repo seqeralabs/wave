@@ -28,6 +28,39 @@ class ContainerConfigTest extends Specification {
         c1.hashCode() != c3.hashCode()
     }
 
+    def 'should validate empty' () {
+        expect:
+        new ContainerConfig().empty()
+        new ContainerConfig([], null, null, null, null).empty()
+        new ContainerConfig(null, [], null, null, null).empty()
+        new ContainerConfig(null, null, [], null, null).empty()
+        new ContainerConfig(null, null, null, '', null).empty()
+        new ContainerConfig(null, null, null, null, []).empty()
+        and:
+        !new ContainerConfig(['x'], null, null, null, null).empty()
+        !new ContainerConfig(null, ['x'], null, null, null).empty()
+        !new ContainerConfig(null, null, ['x'], null, null).empty()
+        !new ContainerConfig(null, null, null, 'x', null).empty()
+        !new ContainerConfig(null, null, null, null, [new ContainerLayer()]).empty()
+    }
+
+    def 'should validate groovy truth' () {
+        expect:
+        !new ContainerConfig()
+        and:
+        !new ContainerConfig([], null, null, null, null)
+        !new ContainerConfig(null, [], null, null, null)
+        !new ContainerConfig(null, null, [], null, null)
+        !new ContainerConfig(null, null, null, '', null)
+        !new ContainerConfig(null, null, null, null, [])
+        and:
+        new ContainerConfig(['x'], null, null, null, null)
+        new ContainerConfig(null, ['x'], null, null, null)
+        new ContainerConfig(null, null, ['x'], null, null)
+        new ContainerConfig(null, null, null, 'x', null)
+        new ContainerConfig(null, null, null, null, [new ContainerLayer()])
+    }
+
     def 'should copy objects' () {
         given:
         def l1 = new ContainerLayer( 'http://foo.com', 'sha256:12345', 100, 'sha256:67890' )
@@ -56,12 +89,12 @@ class ContainerConfigTest extends Specification {
 
     def 'should find fusion version' () {
         given:
-        def l1 = new ContainerLayer( location: 'https://fusionfs.seqera.io/releases/v2.1.3-amd64.json' )
+        def l1 = new ContainerLayer( 'https://fusionfs.seqera.io/releases/v2.1.3-amd64.json' )
         def config = new ContainerConfig(['/entry/point.sh'], ['/my/cmd'], ['FOO=1'], '/work/dir', [l1])
 
         expect:
-        new ContainerConfig().fusionVersion() == null
-        and:
         config.fusionVersion() == new FusionVersion('2.1.3', 'amd64')
+        and:
+        new ContainerConfig().fusionVersion() == null
     }
 }

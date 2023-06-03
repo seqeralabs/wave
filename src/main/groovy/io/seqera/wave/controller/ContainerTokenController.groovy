@@ -143,7 +143,7 @@ class ContainerTokenController {
         final data = makeRequestData(req, user, ip)
         final token = tokenService.computeToken(data)
         final target = targetImage(token.value, data.coordinates())
-        final resp = new SubmitContainerTokenResponse(containerToken: token.value, targetImage: target, expiration: token.expiration)
+        final resp = new SubmitContainerTokenResponse(token.value, target, token.expiration)
         // persist request
         storeContainerRequest0(req, data, user, token, target, ip)
         // return response

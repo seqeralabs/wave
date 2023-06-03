@@ -1,10 +1,5 @@
 plugins {
-    id 'io.seqera.wave.groovy-library-conventions'
+    id 'io.seqera.wave.java-library-conventions'
 }
 
-dependencies {
-    implementation "org.codehaus.groovy:groovy:3.0.15"
-    implementation "org.codehaus.groovy:groovy-nio:3.0.15"
-}
-
-group = 'io.seqera'
+version '0.1.0'

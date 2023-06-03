@@ -25,9 +25,7 @@ class ServiceInfoController {
 
     @Get('/service-info')
     HttpResponse<ServiceInfoResponse> info() {
-        final info = new ServiceInfo()
-        info.version = BuildInfo.getVersion()
-        info.commitId = BuildInfo.getCommitId()
+        final info = new ServiceInfo(BuildInfo.getVersion(), BuildInfo.getCommitId())
         HttpResponse.ok(new ServiceInfoResponse(info))
     }
 
