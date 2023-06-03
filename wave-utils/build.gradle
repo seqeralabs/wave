@@ -1,5 +1,5 @@
 plugins {
-    id 'io.seqera.wave.groovy-library-conventions'
+    id 'io.seqera.wave.java-library-conventions'
 }
 
 dependencies {
