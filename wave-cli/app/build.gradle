@@ -1,0 +1,64 @@
+plugins {
+    id 'io.seqera.wavelit.java-application-conventions'
+    id 'groovy'
+    id 'org.graalvm.buildtools.native' version '0.9.22'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(19)
+    }
+}
+
+compileJava {
+    options.release.set(11)
+}
+
+repositories {
+    maven { url = "https://s3-eu-west-1.amazonaws.com/maven.seqera.io/releases" }
+    maven { url = "https://s3-eu-west-1.amazonaws.com/maven.seqera.io/snapshots" }
+}
+
+dependencies {
+    implementation 'io.seqera:wave-api:0.1.0'
+    implementation 'info.picocli:picocli:4.6.1'
+    implementation 'com.squareup.moshi:moshi:1.14.0'
+    implementation 'com.squareup.moshi:moshi-adapters:1.14.0'
+    implementation 'dev.failsafe:failsafe:3.1.0'
+    implementation 'org.apache.commons:commons-lang3:3.12.0'
+    annotationProcessor 'info.picocli:picocli-codegen:4.6.1'
+
+    testImplementation "org.codehaus.groovy:groovy:3.0.15"
+    testImplementation "org.codehaus.groovy:groovy-nio:3.0.15"
+    testImplementation ("org.codehaus.groovy:groovy-test:3.0.17")
+    testImplementation ("cglib:cglib-nodep:3.3.0")
+    testImplementation ("org.objenesis:objenesis:3.2")
+    testImplementation ("org.spockframework:spock-core:2.3-groovy-3.0") { exclude group: 'org.codehaus.groovy'; exclude group: 'net.bytebuddy' }
+    testImplementation ('org.spockframework:spock-junit4:2.3-groovy-3.0') { exclude group: 'org.codehaus.groovy'; exclude group: 'net.bytebuddy' }
+}
+
+test {
+    useJUnitPlatform()
+}
+
+application {
+    // Define the main class for the application.
+    mainClass = 'io.seqera.wavelit.app.App'
+    //  Run the Graalvm agent to resolve dynamic proxyes configuration
+    applicationDefaultJvmArgs = ["-agentlib:native-image-agent=config-merge-dir=conf/"]
+}
+
+graalvmNative {
+    binaries {
+        main {
+            imageName = 'wavelit'
+            mainClass = 'io.seqera.wavelit.app.App'
+            configurationFileDirectories.from(file('conf'))
+            javaLauncher = javaToolchains.launcherFor {
+                languageVersion = JavaLanguageVersion.of(19)
+            }
+        }
+    }
+    toolchainDetection = true
+    testSupport = false
+}
