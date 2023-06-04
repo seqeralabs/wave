@@ -29,6 +29,47 @@ jobs:
       - name: Upload binary
         uses: actions/upload-artifact@v3
         with:
-          name: wavelit-${{ matrix.os }}
-          path: ./app/build/native/nativeCompile/wavelit
+          name: nativeCompile-${{ matrix.os }}
+          path: ./app/build/native/nativeCompile
+  release:
+    name: Release
+#    if: "contains(github.event.head_commit.message, '[release]') && github.event.ref=='refs/heads/master'"
+    needs: [ build ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v2
+
+      - name: Setup Java for JReleaser
+        uses: actions/setup-java@v3
+        with:
+          java-version: 19
+          distribution: 'adopt'
+
+      - name: Version
+        id: version
+        run: |
+          VERSION=$(cat ./VERSION)
+          echo "VERSION=$VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Run JReleaser
+        uses: jreleaser/release-action@v2
+        env:
+          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JRELEASER_PROJECT_VERSION: ${{ steps.version.outputs.VERSION }}
+
+      - name: JReleaser release output
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: jreleaser-release
+          path: |
+            out/jreleaser/trace.log
+            out/jreleaser/output.properties
 ...

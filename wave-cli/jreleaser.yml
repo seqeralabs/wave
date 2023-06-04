@@ -1,0 +1,87 @@
+project:
+  name: wavelit
+  description: Wavelit CLI
+  longDescription: Command line tool for Wave container provisioning
+  website: https://github.com/seqeralabs/wavelit
+  authors:
+    - Seqera Labs
+  license: MPL-2.0
+  extraProperties:
+    inceptionYear: 2023
+
+release:
+  github:
+    overwrite: true
+    draft: true
+    prerelease:
+      pattern: .*-beta
+    changelog:
+      formatted: ALWAYS
+      format: '- {{commitShortHash}} {{commitTitle}}'
+      contributors:
+        format: '- {{contributorName}}{{#contributorUsernameAsLink}} ({{.}}){{/contributorUsernameAsLink}}'
+      labelers:
+        - label: 'feature'
+          title: 'Resolves #'
+          body: 'Resolves #'
+        - label: 'feature'
+          title: '[feature]'
+        - label: 'issue'
+          title: 'Fixes #'
+          body: 'Fixes #'
+        - label: 'issue'
+          title: 'Relates to #'
+          body: 'Relates to #'
+        - label: 'issue'
+          title: '[bug]'
+        - label: 'task'
+          title: '[task]'
+        - label: 'merge_pull'
+          title: 'Merge pull'
+        - label: 'merge_branch'
+          title: 'Merge branch'
+        - label: 'release'
+          title: '[release]'
+      categories:
+        - title: '🚀 Features'
+          labels:
+            - 'feature'
+        - title: '✅ Issues'
+          labels:
+            - 'issue'
+        - title: '🧰 Tasks'
+          labels:
+            - 'task'
+        - title: 'Merge'
+          labels:
+            - 'merge_pull'
+            - 'merge_branch'
+        - title: 'Release'
+          labels:
+            - 'release'
+      hide:
+        categories:
+          - 'Merge'
+          - 'Release'
+        contributors:
+          - 'GitHub'
+      replacers:
+        - search: ' \[feature\]'
+        - search: ' \[bug\]'
+        - search: ' \[task\]'
+        - search: ' \[skip ci\]'
+        - search: ' \[release\]'
+
+distributions:
+  wavelit:
+    type: NATIVE_IMAGE
+    artifacts:
+      - path: "nativeCompile-ubuntu-latest/wavelit"
+        transform: "{{distributionName}}-{{projectEffectiveVersion}}-linux-x86_64"
+        platform: linux-x86_64
+      - path: "nativeCompile-macos-latest/wavelit"
+        transform: "{{distributionName}}-{{projectEffectiveVersion}}-osx-x86_64"
+        platform: osx-x86_64
+      - path: "nativeCompile-windows-latest/wavelit.exe"
+        transform: "{{distributionName}}-{{projectEffectiveVersion}}-windows-x86_64.exe"
+        platform: windows-x86_64
