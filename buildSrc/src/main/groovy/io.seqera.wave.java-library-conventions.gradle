@@ -56,16 +56,16 @@ dependencies {
 publishing {
     repositories {
         maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/seqeralabs/wave")
-            credentials {
-                username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_USERNAME")
-                password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
+            name = "SeqeraRepository"
+            url = uri("s3://maven.seqera.io/snapshots")
+            credentials(AwsCredentials) {
+                accessKey = project.findProperty('aws_access_key_id') ?: System.getenv('AWS_ACCESS_KEY_ID')
+                secretKey = project.findProperty('aws_secret_access_key') ?: System.getenv('AWS_SECRET_ACCESS_KEY')
             }
         }
     }
     publications {
-        gpr(MavenPublication) {
+        maven(MavenPublication) {
             from(components.java)
         }
     }
