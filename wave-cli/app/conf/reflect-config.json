@@ -159,22 +159,28 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
-  "name":"io.seqera.wavelit.app.App",
+  "name":"io.seqera.wavelit.App",
   "allDeclaredFields":true,
   "queryAllDeclaredMethods":true
 },
 {
-  "name":"io.seqera.wavelit.app.json.ByteArrayAdapter",
+  "name":"io.seqera.wavelit.json.ByteArrayAdapter",
   "queryAllDeclaredMethods":true
 },
 {
-  "name":"io.seqera.wavelit.app.json.DateTimeAdapter",
+  "name":"io.seqera.wavelit.json.DateTimeAdapter",
   "queryAllDeclaredMethods":true,
   "methods":[{"name":"deserializeInstant","parameterTypes":["java.lang.String"] }]
 },
 {
-  "name":"io.seqera.wavelit.app.json.PathAdapter",
+  "name":"io.seqera.wavelit.json.PathAdapter",
   "queryAllDeclaredMethods":true
+},
+{
+  "name":"io.seqera.wavelit.util.CliVersionProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
   "name":"java.io.FilePermission"

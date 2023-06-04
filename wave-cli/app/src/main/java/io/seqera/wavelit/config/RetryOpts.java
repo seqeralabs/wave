@@ -9,7 +9,7 @@
  *  defined by the Mozilla Public License, v. 2.0.
  */
 
-package io.seqera.wavelit.app.config;
+package io.seqera.wavelit.config;
 
 import java.time.Duration;
 

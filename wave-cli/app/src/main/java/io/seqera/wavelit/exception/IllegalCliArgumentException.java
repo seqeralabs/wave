@@ -9,26 +9,20 @@
  *  defined by the Mozilla Public License, v. 2.0.
  */
 
-package io.seqera.wavelit.app.json;
-
-import java.util.Base64;
-
-import com.squareup.moshi.FromJson;
-import com.squareup.moshi.ToJson;
+package io.seqera.wavelit.exception;
 
 /**
- * Moshi adapter for JSON serialization
+ * Exception thrown to report a CLI validation error
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class ByteArrayAdapter {
-    @ToJson
-    public String serialize(byte[] data) {
-        return Base64.getEncoder().encodeToString(data);
+public class IllegalCliArgumentException extends RuntimeException {
+
+    public IllegalCliArgumentException(String message) {
+        super(message);
     }
 
-    @FromJson
-    public byte[] deserialize(String data) {
-        return Base64.getDecoder().decode(data);
+    public IllegalCliArgumentException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

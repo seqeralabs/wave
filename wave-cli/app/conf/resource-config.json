@@ -2,6 +2,9 @@
   "resources":{
   "includes":[
     {
+      "pattern":"\\QMETA-INF/build-info.properties\\E"
+    }, 
+    {
       "pattern":"\\QMETA-INF/services/ch.qos.logback.classic.spi.Configurator\\E"
     }, 
     {

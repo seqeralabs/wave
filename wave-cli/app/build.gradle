@@ -41,9 +41,13 @@ test {
     useJUnitPlatform()
 }
 
+// read the version from the `VERSION` file
+version = new File(rootDir,'VERSION').text.trim()
+group = 'io.seqera'
+
 application {
     // Define the main class for the application.
-    mainClass = 'io.seqera.wavelit.app.App'
+    mainClass = 'io.seqera.wavelit.App'
     //  Run the Graalvm agent to resolve dynamic proxyes configuration
     applicationDefaultJvmArgs = ["-agentlib:native-image-agent=config-merge-dir=conf/"]
 }
@@ -52,7 +56,7 @@ graalvmNative {
     binaries {
         main {
             imageName = 'wavelit'
-            mainClass = 'io.seqera.wavelit.app.App'
+            mainClass = 'io.seqera.wavelit.App'
             configurationFileDirectories.from(file('conf'))
             javaLauncher = javaToolchains.launcherFor {
                 languageVersion = JavaLanguageVersion.of(19)
@@ -61,4 +65,23 @@ graalvmNative {
     }
     toolchainDetection = true
     testSupport = false
+}
+
+task buildInfo {
+    doLast {
+        def version = rootProject.file('VERSION').text.trim()
+        def commitId = System.env.getOrDefault("GITHUB_SHA", "unknown").substring(0,7)
+        def info = """\
+                    name=${rootProject.name}
+                    version=${version}
+                    commitId=${commitId}
+                """.stripIndent().toString()
+        def f = file("src/main/resources/META-INF/build-info.properties")
+        f.parentFile.mkdirs()
+        f.text = info
+    }
+}
+
+compileJava {
+    dependsOn buildInfo
 }

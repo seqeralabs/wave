@@ -9,7 +9,7 @@
  *  defined by the Mozilla Public License, v. 2.0.
  */
 
-package io.seqera.wavelit.app;
+package io.seqera.wavelit;
 
 import java.io.IOException;
 import java.net.URI;
@@ -27,8 +27,8 @@ import dev.failsafe.event.ExecutionAttemptedEvent;
 import dev.failsafe.function.CheckedSupplier;
 import io.seqera.wave.api.SubmitContainerTokenRequest;
 import io.seqera.wave.api.SubmitContainerTokenResponse;
-import io.seqera.wavelit.app.config.RetryOpts;
-import io.seqera.wavelit.app.json.JsonHelper;
+import io.seqera.wavelit.config.RetryOpts;
+import io.seqera.wavelit.json.JsonHelper;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
