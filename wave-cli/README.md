@@ -29,3 +29,23 @@ that it can be used in your Docker (replace-with-your-own-fav-container-engine) 
     ```bash
     docker run --rm $(wavelit -c ./Dockerfile) cowsay "Hello world"
     ```
+
+
+### Development 
+
+1. Install GraalVM 22.3.1 + Java 19 
+
+    sdk install java 22.3.1.r19-grl
+
+
+2. Compile & run tests 
+
+    ./gradlew check
+
+3. Native compile
+
+    ./gradlew app:nativeCompile
+
+4. Run native binary 
+
+    ./app/build/native/nativeCompile/wavelit --version
