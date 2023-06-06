@@ -78,6 +78,9 @@ class K8sServiceImpl implements K8sService {
     @Nullable
     private String requestsMemory
 
+    @Value('${wave.build.spack.cacheContainerPath:`/var/seqera/spack/cache`}')
+    private String spackCacheContainerPath
+
     @Inject
     private K8sClient k8sClient
 
@@ -251,6 +254,16 @@ class K8sServiceImpl implements K8sService {
                 .readOnly(true)
     }
 
+    protected V1VolumeMount mountSpackCacheDir(Path spackCacheDir, @Nullable String storageMountPath, String containerPath) {
+        final rel = Path.of(storageMountPath).relativize(spackCacheDir).toString()
+        if( !rel || rel.startsWith('../') )
+            throw new IllegalArgumentException("Spack cacheDirectory '$spackCacheDir' must be a sub-directory of storage path '$storageMountPath'")
+        return new V1VolumeMount()
+                .name('build-data')
+                .mountPath(containerPath)
+                .subPath(rel)
+    }
+
     /**
      * Create a container for container image building via Kaniko
      *
@@ -288,6 +301,10 @@ class K8sServiceImpl implements K8sService {
 
         if( creds ){
             mounts.add(0, mountDockerConfig(workDir, storageMountPath))
+        }
+
+        if( spackCacheDir ) {
+            mounts.add(mountSpackCacheDir(spackCacheDir, storageMountPath, spackCacheContainerPath))
         }
 
         V1PodBuilder builder = new V1PodBuilder()

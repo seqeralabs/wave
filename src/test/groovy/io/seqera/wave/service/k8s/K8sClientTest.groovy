@@ -39,8 +39,10 @@ class K8sClientTest extends Specification {
                 'my-pod',
                 'busybox',
                 ['cat','/kaniko/.docker/config.json'],
-                Path.of('/foo'),
-                'my-creds')
+                Path.of('/work/dir'),
+                Path.of('/creds'),
+                Path.of('/spack/dir'),
+                ['my-creds': 'selector'])
         then:
         true
 
