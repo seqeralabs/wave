@@ -44,7 +44,7 @@ class DockerBuildStrategy extends BuildStrategy {
             Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
         }
 
-        // comand the docker build command
+        // command the docker build command
         final buildCmd= buildCmd(req, configFile)
         log.debug "Build run command: ${buildCmd.join(' ')}"
         // save docker cli for debugging purpose
@@ -66,11 +66,11 @@ class DockerBuildStrategy extends BuildStrategy {
     }
 
     protected List<String> buildCmd(BuildRequest req, Path credsFile) {
-        final dockerCmd = dockerWrapper(req.workDir, credsFile, req.platform)
+        final dockerCmd = dockerWrapper(req.workDir, credsFile, spackCacheDir(req), req.platform)
         return dockerCmd + launchCmd(req)
     }
 
-    protected List<String> dockerWrapper(Path workDir, Path credsFile, ContainerPlatform platform) {
+    protected List<String> dockerWrapper(Path workDir, Path credsFile, Path spackCacheDir, ContainerPlatform platform ) {
         final wrapper = ['docker',
                          'run',
                          '--rm',
@@ -80,6 +80,11 @@ class DockerBuildStrategy extends BuildStrategy {
         if( credsFile ) {
             wrapper.add('-v')
             wrapper.add("$credsFile:/kaniko/.docker/config.json:ro".toString())
+        }
+
+        if( spackCacheDir ) {
+            wrapper.add('-v')
+            wrapper.add("$spackCacheDir:/opt/spack/cache:rw".toString())
         }
 
         if( platform ) {

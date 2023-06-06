@@ -37,6 +37,9 @@ wave:
       password: ${AZURECR_PAT:test}
     europe-southwest1-docker.pkg.dev:
       credentials : ${GOOGLECR_KEYS:test}
+  build:
+    spack:
+      cacheDirectory: "spack-cache"
 ---
 logger:
   levels:

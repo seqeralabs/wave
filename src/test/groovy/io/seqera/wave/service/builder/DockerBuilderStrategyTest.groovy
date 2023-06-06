@@ -22,7 +22,7 @@ class DockerBuilderStrategyTest extends Specification {
         and:
         def work = Path.of('/work/foo')
         when:
-        def cmd = service.dockerWrapper(work, null, null)
+        def cmd = service.dockerWrapper(work, null, null, null)
         then:
         cmd == ['docker',
                 'run',
@@ -32,7 +32,7 @@ class DockerBuilderStrategyTest extends Specification {
                 'gcr.io/kaniko-project/executor:v1.9.1']
 
         when:
-        cmd = service.dockerWrapper(work, Path.of('/foo/creds.json'), ContainerPlatform.of('arm64'))
+        cmd = service.dockerWrapper(work, Path.of('/foo/creds.json'), null, ContainerPlatform.of('arm64'))
         then:
         cmd == ['docker',
                 'run',
@@ -42,6 +42,19 @@ class DockerBuilderStrategyTest extends Specification {
                 '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
                 '--platform', 'linux/arm64',
                 'gcr.io/kaniko-project/executor:v1.9.1']
+
+        when:
+        cmd = service.dockerWrapper(work, Path.of('/foo/creds.json'), Path.of('/efs/wave/spack'), null)
+        then:
+        cmd == ['docker',
+                'run',
+                '--rm',
+                '-w', '/work/foo',
+                '-v', '/work/foo:/work/foo',
+                '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
+                '-v', '/efs/wave/spack:/opt/spack/cache:rw',
+                'gcr.io/kaniko-project/executor:v1.9.1']
+
 
         cleanup:
         ctx.close()

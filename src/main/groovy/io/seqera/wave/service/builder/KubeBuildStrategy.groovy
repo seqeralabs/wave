@@ -62,7 +62,7 @@ class KubeBuildStrategy extends BuildStrategy {
         final buildCmd = launchCmd(req)
         final name = podName(req)
         final selector= getSelectorLabel(req.platform, nodeSelectorMap)
-        final pod = k8sService.buildContainer(name, buildImage, buildCmd, req.workDir, configFile, selector)
+        final pod = k8sService.buildContainer(name, buildImage, buildCmd, req.workDir, configFile, spackCacheDir(req), selector)
         final terminated = k8sService.waitPod(pod, buildTimeout.toMillis())
         final stdout = k8sService.logsPod(name)
         if( terminated ) {

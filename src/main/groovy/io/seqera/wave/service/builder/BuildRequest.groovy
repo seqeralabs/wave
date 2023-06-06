@@ -91,6 +91,8 @@ class BuildRequest {
      */
     final String offsetId
 
+    final boolean isSpackBuild
+
     BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, User user, ContainerPlatform platform, String configJson, String cacheRepo, String ip, String offsetId = null) {
         this.id = computeDigest(containerFile, condaFile, spackFile, platform, repo)
         this.dockerFile = containerFile
@@ -106,6 +108,7 @@ class BuildRequest {
         this.startTime = Instant.now()
         this.job = "${id}-${startTime.toEpochMilli().toString().md5()[-5..-1]}"
         this.ip = ip
+        this.isSpackBuild = spackFile
     }
 
     static private String computeDigest(String containerFile, String condaFile, String spackFile, ContainerPlatform platform, String repository) {
