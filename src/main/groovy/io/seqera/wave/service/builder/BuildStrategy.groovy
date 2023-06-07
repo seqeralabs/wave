@@ -1,10 +1,8 @@
 package io.seqera.wave.service.builder
 
-import java.nio.file.Path
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
-
 /**
  * Defines an abstract container build strategy.
  *
@@ -18,9 +16,6 @@ abstract class BuildStrategy {
 
     @Value('${wave.build.compress-caching:true}')
     private Boolean compressCaching = true
-
-    @Value('${wave.build.spack.cacheDirectory}')
-    private String spackCacheDirectory
 
     abstract BuildResult build(BuildRequest req)
 
@@ -49,14 +44,6 @@ abstract class BuildStrategy {
             result << "--compressed-caching=false"
 
         return result
-    }
-
-    protected Path spackCacheDir(BuildRequest req) {
-        if( !req.isSpackBuild )
-            return null
-        if( !spackCacheDirectory )
-            throw new IllegalStateException("Missing Spack cacheDirectory configuration setting")
-        return Path.of(spackCacheDirectory).toAbsolutePath().normalize()
     }
 
 }

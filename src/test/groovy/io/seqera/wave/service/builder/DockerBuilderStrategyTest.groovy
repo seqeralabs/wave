@@ -6,6 +6,7 @@ import java.nio.file.Path
 
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
 /**
@@ -17,8 +18,15 @@ class DockerBuilderStrategyTest extends Specification {
 
     def 'should get docker command' () {
         given:
-        def ctx = ApplicationContext.run()
+        def props = [
+                'wave.build.spack.cacheDirectory':'/host/spack/cache',
+                'wave.build.spack.cacheMountPath':'/opt/spack/cache',
+                'wave.build.spack.secretKeyFile':'/host/spack/key',
+                'wave.build.spack.secretMountPath':'/opt/spack/key'  ]
+        def ctx = ApplicationContext.run(props)
+        and:
         def service = ctx.getBean(DockerBuildStrategy)
+        def spackConfig = ctx.getBean(SpackConfig)
         and:
         def work = Path.of('/work/foo')
         when:
@@ -44,7 +52,7 @@ class DockerBuilderStrategyTest extends Specification {
                 'gcr.io/kaniko-project/executor:v1.9.1']
 
         when:
-        cmd = service.dockerWrapper(work, Path.of('/foo/creds.json'), Path.of('/efs/wave/spack'), null)
+        cmd = service.dockerWrapper(work, Path.of('/foo/creds.json'), spackConfig, null)
         then:
         cmd == ['docker',
                 'run',
@@ -52,7 +60,8 @@ class DockerBuilderStrategyTest extends Specification {
                 '-w', '/work/foo',
                 '-v', '/work/foo:/work/foo',
                 '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
-                '-v', '/efs/wave/spack:/opt/spack/cache:rw',
+                '-v', '/host/spack/key:/opt/spack/key:ro',
+                '-v', '/host/spack/cache:/opt/spack/cache:rw',
                 'gcr.io/kaniko-project/executor:v1.9.1']
 
 

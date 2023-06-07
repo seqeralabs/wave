@@ -9,7 +9,9 @@ import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
+import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
 import static java.nio.file.StandardOpenOption.CREATE
@@ -34,6 +36,9 @@ class DockerBuildStrategy extends BuildStrategy {
 
     @Value('${wave.debug}')
     Boolean debug
+
+    @Inject
+    SpackConfig spackConfig
 
     @Override
     BuildResult build(BuildRequest req) {
@@ -66,11 +71,15 @@ class DockerBuildStrategy extends BuildStrategy {
     }
 
     protected List<String> buildCmd(BuildRequest req, Path credsFile) {
-        final dockerCmd = dockerWrapper(req.workDir, credsFile, spackCacheDir(req), req.platform)
+        final dockerCmd = dockerWrapper(
+                                            req.workDir,
+                                            credsFile,
+                                            req.isSpackBuild ? spackConfig : null,
+                                            req.platform)
         return dockerCmd + launchCmd(req)
     }
 
-    protected List<String> dockerWrapper(Path workDir, Path credsFile, Path spackCacheDir, ContainerPlatform platform ) {
+    protected List<String> dockerWrapper(Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform ) {
         final wrapper = ['docker',
                          'run',
                          '--rm',
@@ -82,9 +91,13 @@ class DockerBuildStrategy extends BuildStrategy {
             wrapper.add("$credsFile:/kaniko/.docker/config.json:ro".toString())
         }
 
-        if( spackCacheDir ) {
+        if( spackConfig ) {
+            // secret file
             wrapper.add('-v')
-            wrapper.add("$spackCacheDir:/opt/spack/cache:rw".toString())
+            wrapper.add("${spackConfig.secretKeyFile}:${spackConfig.secretMountPath}:ro".toString())
+            // cache directory
+            wrapper.add('-v')
+            wrapper.add("${spackConfig.cacheDirectory}:${spackConfig.cacheMountPath}:rw".toString())
         }
 
         if( platform ) {
