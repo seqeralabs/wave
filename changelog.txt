@@ -1,4 +1,7 @@
 # Wave changelog
+v0.33.4 - 8 Jun 2023 
+- Fix non-deterministic auth failure with AWS public registry [41bc6992]
+
 v0.33.3 - 30 May 2023
 - Fix support for anonymous container registry
 
