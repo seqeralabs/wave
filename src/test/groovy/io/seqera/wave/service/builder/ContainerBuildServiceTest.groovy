@@ -12,8 +12,10 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.auth.DockerAuthService
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
+import io.seqera.wave.util.TemplateRenderer
 import jakarta.inject.Inject
 /**
  *
@@ -153,6 +155,7 @@ class ContainerBuildServiceTest extends Specification {
         def dockerFile = '''
                 FROM busybox
                 RUN echo Hello > hello.txt
+                RUN {{spack_cache_dir}} {{spack_key_file}}
                 '''.stripIndent()
         and:
         def condaFile = '''
@@ -167,11 +170,12 @@ class ContainerBuildServiceTest extends Specification {
                 build file
                 '''
         and:
+        def spackConfig = new SpackConfig(cacheMountPath: '/mnt/cache', secretMountPath: '/mnt/secret')
         def REQ = new BuildRequest(dockerFile, folder, 'box:latest', condaFile, spackFile, Mock(User), ContainerPlatform.of('amd64'), cfg, null, "")
         and:
         def store = Mock(BuildStore)
         def strategy = Mock(BuildStrategy)
-        def builder = new ContainerBuildServiceImpl(buildStrategy: strategy, buildStore: store, statusDuration: DURATION)
+        def builder = new ContainerBuildServiceImpl(buildStrategy: strategy, buildStore: store, statusDuration: DURATION, spackConfig:spackConfig)
         def RESPONSE = Mock(BuildResult)
 
         when:
@@ -180,11 +184,53 @@ class ContainerBuildServiceTest extends Specification {
         1 * strategy.build(REQ) >> RESPONSE
         1 * store.storeBuild(REQ.targetImage, RESPONSE, DURATION) >> null
         and:
-        REQ.workDir.resolve('Dockerfile').text == dockerFile
+        REQ.workDir.resolve('Dockerfile').text == new TemplateRenderer().render(dockerFile, [spack_cache_dir:'/mnt/cache', spack_key_file:'/mnt/secret'])
         REQ.workDir.resolve('conda.yml').text == condaFile
         REQ.workDir.resolve('spack.yaml').text == spackFile
         and:
         result == RESPONSE
+
+        cleanup:
+        folder?.deleteDir()
+    }
+
+    def 'should resolve docker file' () {
+        given:
+        def folder = Files.createTempDirectory('test')
+        def builder = new ContainerBuildServiceImpl()
+        and:
+        def dockerFile = 'FROM something; {{foo}}'
+        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', null, null, Mock(User), ContainerPlatform.of('amd64'), null, null, "")
+        and:
+        def spack = Mock(SpackConfig)
+
+        when:
+        def result = builder.dockerFile0(REQ, spack)
+        then:
+        result == 'FROM something; {{foo}}'
+
+        cleanup:
+        folder?.deleteDir()
+    }
+
+    def 'should resolve docker file with spack config' () {
+        given:
+        def folder = Files.createTempDirectory('test')
+        def builder = new ContainerBuildServiceImpl()
+        and:
+        def dockerFile = 'FROM something; {{spack_cache_dir}} {{spack_key_file}}'
+        def spackFile = 'some spack packages'
+        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', null, spackFile, Mock(User), ContainerPlatform.of('amd64'), null, null, "")
+        and:
+        def spack = Mock(SpackConfig)
+
+        when:
+        def result = builder.dockerFile0(REQ, spack)
+        then:
+        spack.getCacheMountPath() >> '/mnt/cache'
+        spack.getSecretMountPath() >> '/mnt/key'
+        and:
+        result == 'FROM something; /mnt/cache /mnt/key'
 
         cleanup:
         folder?.deleteDir()
