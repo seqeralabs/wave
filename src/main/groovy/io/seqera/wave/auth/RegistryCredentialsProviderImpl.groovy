@@ -91,7 +91,9 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
         final keys = credentialsService.findRegistryCreds(registry, userId, workspaceId, towerToken, towerEndpoint)
         final result = keys
                 ? credentialsFactory.create(registry, keys.userName, keys.password)
-                : null as RegistryCredentials
+                // create a missing credentials class with a unique key (the access token) because even when
+                // no credentials are provided a registry auth token token can be associated to this user
+                : new MissingCredentials(towerToken)
         return result
     }
 }
