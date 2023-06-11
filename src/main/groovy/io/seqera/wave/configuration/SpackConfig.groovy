@@ -19,22 +19,37 @@ import jakarta.inject.Singleton
 @CompileStatic
 class SpackConfig {
 
+    /**
+     * The host path where where Spack cached binaries are stored
+     */
     @Nullable
     @Value('${wave.build.spack.cacheDirectory}')
     private String cacheDirectory
 
+    /**
+     * The container mount path where Spack cached binaries are stored
+     */
     @Nullable
     @Value('${wave.build.spack.cacheMountPath}')
     private String cacheMountPath
 
+    /**
+     * The host path where the GPG key required by the Spack "buildcache" is located
+     */
     @Nullable
     @Value('${wave.build.spack.secretKeyFile}')
     private String secretKeyFile
 
+    /**
+     * The container path where the GPG key required by the Spack "buildcache" is located
+     */
     @Nullable
     @Value('${wave.build.spack.secretMountPath}')
     private String secretMountPath
 
+    /**
+     * The container image used for Spack builds
+     */
     @Value('${wave.build.spack.builderImage:`spack/ubuntu-jammy:v0.20.0`}')
     private String builderImage
 

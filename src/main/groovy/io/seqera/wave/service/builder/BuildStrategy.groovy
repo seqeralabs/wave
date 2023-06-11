@@ -1,8 +1,8 @@
 package io.seqera.wave.service.builder
 
-
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
+
 /**
  * Defines an abstract container build strategy.
  *
