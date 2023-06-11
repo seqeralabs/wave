@@ -207,6 +207,10 @@ class ContainerBuildServiceTest extends Specification {
         when:
         def result = builder.dockerFile0(REQ, spack)
         then:
+        0* spack.getCacheMountPath() >> null
+        0* spack.getSecretMountPath() >> null
+        0* spack.getBuilderImage() >> null
+        and:
         result == 'FROM something; {{foo}}'
 
         cleanup:
@@ -218,7 +222,7 @@ class ContainerBuildServiceTest extends Specification {
         def folder = Files.createTempDirectory('test')
         def builder = new ContainerBuildServiceImpl()
         and:
-        def dockerFile = 'FROM something; {{spack_cache_dir}} {{spack_key_file}}'
+        def dockerFile = 'FROM {{builder_image}}; {{spack_cache_dir}} {{spack_key_file}}'
         def spackFile = 'some spack packages'
         def REQ = new BuildRequest(dockerFile, folder, 'box:latest', null, spackFile, Mock(User), ContainerPlatform.of('amd64'), null, null, "")
         and:
@@ -227,10 +231,11 @@ class ContainerBuildServiceTest extends Specification {
         when:
         def result = builder.dockerFile0(REQ, spack)
         then:
-        spack.getCacheMountPath() >> '/mnt/cache'
-        spack.getSecretMountPath() >> '/mnt/key'
+        1* spack.getCacheMountPath() >> '/mnt/cache'
+        1* spack.getSecretMountPath() >> '/mnt/key'
+        1* spack.getBuilderImage() >> 'spack-builder:2:0'
         and:
-        result == 'FROM something; /mnt/cache /mnt/key'
+        result == 'FROM spack-builder:2:0; /mnt/cache /mnt/key'
 
         cleanup:
         folder?.deleteDir()

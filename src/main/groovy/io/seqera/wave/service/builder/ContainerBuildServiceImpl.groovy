@@ -121,6 +121,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             final binding = new HashMap(2)
             binding.spack_cache_dir = config.cacheMountPath
             binding.spack_key_file = config.secretMountPath
+            binding.builder_image = config.builderImage
             return new TemplateRenderer().render(req.dockerFile, binding)
         }
         else

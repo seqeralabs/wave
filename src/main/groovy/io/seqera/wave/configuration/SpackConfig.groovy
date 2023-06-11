@@ -35,6 +35,9 @@ class SpackConfig {
     @Value('${wave.build.spack.secretMountPath}')
     private String secretMountPath
 
+    @Value('${wave.build.spack.builderImage:`spack/ubuntu-jammy:v0.20.0`}')
+    private String builderImage
+
     Path getCacheDirectory() {
         if( !cacheDirectory )
             throw new IllegalStateException("Missing Spack cacheDirectory configuration setting")
@@ -57,5 +60,9 @@ class SpackConfig {
         if( !secretMountPath )
             throw new IllegalStateException("Missing Spack secretMountPath configuration setting")
         return secretMountPath
+    }
+
+    String getBuilderImage() {
+        return builderImage
     }
 }
