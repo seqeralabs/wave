@@ -37,9 +37,8 @@ import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
 import jakarta.inject.Inject
-
 import static io.seqera.wave.WaveDefault.TOWER
-
+import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
 /**
  * Implement a controller to receive container token requests
  * 
@@ -177,7 +176,7 @@ class ContainerTokenController {
         final offset = DataTimeUtils.offsetId(req.timestamp)
         // create a unique digest to identify the request
         return new BuildRequest(
-                dockerContent,
+                (spackContent ? prependBuilderTemplate(dockerContent) : dockerContent),
                 Path.of(workspace),
                 build,
                 condaContent,
