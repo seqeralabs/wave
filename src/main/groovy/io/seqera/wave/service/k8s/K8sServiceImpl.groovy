@@ -23,6 +23,7 @@ import io.kubernetes.client.openapi.models.V1VolumeMount
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -77,6 +78,9 @@ class K8sServiceImpl implements K8sService {
     @Value('${wave.build.k8s.resources.requests.memory}')
     @Nullable
     private String requestsMemory
+
+    @Inject
+    private SpackConfig spackConfig
 
     @Inject
     private K8sClient k8sClient
@@ -251,6 +255,27 @@ class K8sServiceImpl implements K8sService {
                 .readOnly(true)
     }
 
+    protected V1VolumeMount mountSpackCacheDir(Path spackCacheDir, @Nullable String storageMountPath, String containerPath) {
+        final rel = Path.of(storageMountPath).relativize(spackCacheDir).toString()
+        if( !rel || rel.startsWith('../') )
+            throw new IllegalArgumentException("Spack cacheDirectory '$spackCacheDir' must be a sub-directory of storage path '$storageMountPath'")
+        return new V1VolumeMount()
+                .name('build-data')
+                .mountPath(containerPath)
+                .subPath(rel)
+    }
+
+    protected V1VolumeMount mountSpackSecretFile(Path secretFile, @Nullable String storageMountPath, String containerPath) {
+        final rel = Path.of(storageMountPath).relativize(secretFile).toString()
+        if( !rel || rel.startsWith('../') )
+            throw new IllegalArgumentException("Spack secretKeyFile '$secretFile' must be a sub-directory of storage path '$storageMountPath'")
+        return new V1VolumeMount()
+                .name('build-data')
+                .readOnly(true)
+                .mountPath(containerPath)
+                .subPath(rel)
+    }
+
     /**
      * Create a container for container image building via Kaniko
      *
@@ -269,15 +294,14 @@ class K8sServiceImpl implements K8sService {
      */
     @Override
     @CompileDynamic
-    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, Map<String,String> nodeSelector) {
-        final spec = buildSpec(name, containerImage, args, workDir, creds, nodeSelector)
+    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector) {
+        final spec = buildSpec(name, containerImage, args, workDir, creds, spackConfig, nodeSelector)
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec, null, null, null)
     }
 
-    @CompileDynamic
-    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path creds, Map<String,String> nodeSelector) {
+    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector) {
 
         // required volumes
         final mounts = new ArrayList<V1VolumeMount>(5)
@@ -288,6 +312,11 @@ class K8sServiceImpl implements K8sService {
 
         if( creds ){
             mounts.add(0, mountDockerConfig(workDir, storageMountPath))
+        }
+
+        if( spackConfig ) {
+            mounts.add(mountSpackCacheDir(spackConfig.cacheDirectory, storageMountPath, spackConfig.cacheMountPath))
+            mounts.add(mountSpackSecretFile(spackConfig.secretKeyFile, storageMountPath, spackConfig.secretMountPath))
         }
 
         V1PodBuilder builder = new V1PodBuilder()

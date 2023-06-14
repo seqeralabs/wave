@@ -12,6 +12,7 @@ import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
@@ -46,6 +47,9 @@ class KubeBuildStrategy extends BuildStrategy {
     @Nullable
     private Map<String, String> nodeSelectorMap
 
+    @Inject
+    private SpackConfig spackConfig
+
     private String podName(BuildRequest req) {
         return "build-${req.job}"
     }
@@ -62,7 +66,8 @@ class KubeBuildStrategy extends BuildStrategy {
         final buildCmd = launchCmd(req)
         final name = podName(req)
         final selector= getSelectorLabel(req.platform, nodeSelectorMap)
-        final pod = k8sService.buildContainer(name, buildImage, buildCmd, req.workDir, configFile, selector)
+        final spackCfg0 = req.isSpackBuild ? spackConfig : null
+        final pod = k8sService.buildContainer(name, buildImage, buildCmd, req.workDir, configFile, spackCfg0, selector)
         final terminated = k8sService.waitPod(pod, buildTimeout.toMillis())
         final stdout = k8sService.logsPod(name)
         if( terminated ) {

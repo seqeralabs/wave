@@ -7,6 +7,8 @@ import java.nio.file.Path
 import io.kubernetes.client.custom.Quantity
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.configuration.SpackConfig
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -143,6 +145,29 @@ class K8sServiceImplTest extends Specification {
         ctx.close()
     }
 
+    def 'should get spack dir vol' () {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'foo',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.storage.claimName': 'bar',
+                'wave.build.k8s.storage.mountPath': '/build' ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+
+        when:
+        def mount = k8sService.mountSpackCacheDir(Path.of('/foo/work/x1'), '/foo', '/opt/spack/cache')
+        then:
+        mount.name == 'build-data'
+        mount.mountPath == '/opt/spack/cache'
+        mount.subPath == 'work/x1'
+        !mount.readOnly
+
+        cleanup:
+        ctx.close()
+    }
 
     def 'should create build pod' () {
         given:
@@ -158,7 +183,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), Path.of('secret'),[:])
+        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), Path.of('secret'), null, [:])
         then:
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
@@ -188,6 +213,60 @@ class K8sServiceImplTest extends Specification {
         ctx.close()
     }
 
+    def 'should create build pod with spack cache' () {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.timeout': '10s',
+                'wave.build.k8s.namespace': 'my-ns',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.storage.claimName': 'build-claim',
+                'wave.build.k8s.storage.mountPath': '/build',
+                'wave.build.spack.cacheDirectory':'/build/host/spack/cache',
+                'wave.build.spack.cacheMountPath':'/opt/container/spack/cache',
+                'wave.build.spack.secretKeyFile':'/build/host/spack/key',
+                'wave.build.spack.secretMountPath':'/opt/container/spack/key'
+        ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def spackConfig = ctx.getBean(SpackConfig)
+        when:
+        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null, spackConfig, [:])
+        then:
+        result.metadata.name == 'foo'
+        result.metadata.namespace == 'my-ns'
+        and:
+        result.spec.activeDeadlineSeconds == 10
+        and:
+        result.spec.containers.get(0).name == 'foo'
+        result.spec.containers.get(0).image == 'my-image:latest'
+        result.spec.containers.get(0).args ==  ['this','that']
+        and:
+        result.spec.containers.get(0).volumeMounts.size() == 3
+        and:
+        result.spec.containers.get(0).volumeMounts.get(0).name == 'build-data'
+        result.spec.containers.get(0).volumeMounts.get(0).mountPath == '/build/work/xyz'
+        result.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz'
+        and:
+        result.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
+        result.spec.containers.get(0).volumeMounts.get(1).mountPath == '/opt/container/spack/cache'
+        result.spec.containers.get(0).volumeMounts.get(1).subPath == 'host/spack/cache'
+        !result.spec.containers.get(0).volumeMounts.get(1).readOnly
+        and:
+        result.spec.containers.get(0).volumeMounts.get(2).name == 'build-data'
+        result.spec.containers.get(0).volumeMounts.get(2).mountPath == '/opt/container/spack/key'
+        result.spec.containers.get(0).volumeMounts.get(2).subPath == 'host/spack/key'
+        result.spec.containers.get(0).volumeMounts.get(2).readOnly
+
+        and:
+        result.spec.volumes.get(0).name == 'build-data'
+        result.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
+
+        cleanup:
+        ctx.close()
+    }
+
     def 'should create build pod without init container' () {
         given:
         def PROPS = [
@@ -202,7 +281,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null,[:])
+        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null, null,[:])
         then:
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
@@ -245,7 +324,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null,[:])
+        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null, null,[:])
         then:
         result.metadata.name == 'foo'
         result.metadata.labels.toString() == PROPS['wave.build.k8s.labels'].toString()
@@ -273,7 +352,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null, PROPS['wave.build.k8s.node-selector'] as Map<String,String>)
+        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null, null, PROPS['wave.build.k8s.node-selector'] as Map<String,String>)
         then:
         result.spec.nodeSelector.toString() == PROPS['wave.build.k8s.node-selector'].toString()
         and:
@@ -298,7 +377,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null,[:])
+        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null, null,[:])
         then:
         result.spec.serviceAccount == PROPS['wave.build.k8s.service-account']
         and:

@@ -1,5 +1,8 @@
 wave:
   debug: true
+  build:
+    spack:
+      cacheDirectory: 'spack-cache'
 ---
 # uses TOWER_xxx variable because the dev environment is expected to be
 # the same as of tower

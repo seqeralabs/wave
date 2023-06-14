@@ -5,6 +5,7 @@ import java.nio.file.Path
 import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1Pod
+import io.seqera.wave.configuration.SpackConfig
 
 /**
  * Defines Kubernetes operations
@@ -27,7 +28,7 @@ interface K8sService {
 
     void deletePod(String name)
 
-    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, Map<String,String> nodeSelector)
+    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector)
 
     V1ContainerStateTerminated waitPod(V1Pod pod, long timeout)
 }

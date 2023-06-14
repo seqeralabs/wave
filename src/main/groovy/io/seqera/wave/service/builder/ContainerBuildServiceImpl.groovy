@@ -14,8 +14,11 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.context.event.ApplicationEventPublisher
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
+import io.seqera.wave.util.SpackHelper
+import io.seqera.wave.util.TemplateRenderer
 import io.seqera.wave.util.ThreadPoolBuilder
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -77,6 +80,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     @Inject
     private MeterRegistry meterRegistry
 
+    @Inject
+    private SpackConfig spackConfig
+
     @PostConstruct
     void init() {
         executor = ThreadPoolBuilder.io(10, 10, 100, 'wave-builder')
@@ -111,6 +117,20 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 .awaitBuild(targetImage)
     }
 
+    protected String dockerFile0(BuildRequest req, SpackConfig config) {
+        if( req.isSpackBuild ) {
+            final binding = new HashMap(2)
+            binding.spack_builder_image = config.builderImage
+            binding.spack_runner_image = config.runnerImage
+            binding.spack_arch = SpackHelper.toSpackArch(req.getPlatform())
+            binding.spack_cache_dir = config.cacheMountPath
+            binding.spack_key_file = config.secretMountPath
+            return new TemplateRenderer().render(req.dockerFile, binding)
+        }
+        else
+            return req.dockerFile
+    }
+
     protected BuildResult launch(BuildRequest req) {
         // launch an external process to build the container
         BuildResult resp=null
@@ -118,8 +138,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             // create the workdir path
             Files.createDirectories(req.workDir)
             // save the dockerfile
-            final dockerfile = req.workDir.resolve('Dockerfile')
-            Files.write(dockerfile, req.dockerFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            final dockerFile = req.workDir.resolve('Dockerfile')
+            Files.write(dockerFile, dockerFile0(req,spackConfig).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             // save the conda file
             if( req.condaFile ) {
                 final condaFile = req.workDir.resolve('conda.yml')
