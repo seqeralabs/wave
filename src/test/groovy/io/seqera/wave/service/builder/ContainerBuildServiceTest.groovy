@@ -222,7 +222,7 @@ class ContainerBuildServiceTest extends Specification {
         def folder = Files.createTempDirectory('test')
         def builder = new ContainerBuildServiceImpl()
         and:
-        def dockerFile = 'FROM {{spack_image}}; {{spack_cache_dir}} {{spack_key_file}}; arch={{spack_arch}}'
+        def dockerFile = 'FROM {{spack_builder_image}}; {{spack_cache_dir}} {{spack_key_file}}; runner={{spack_runner_image}}; arch={{spack_arch}}'
         def spackFile = 'some spack packages'
         def REQ = new BuildRequest(dockerFile, folder, 'box:latest', null, spackFile, Mock(User), ContainerPlatform.of('amd64'), null, null, "")
         and:
@@ -233,9 +233,10 @@ class ContainerBuildServiceTest extends Specification {
         then:
         1* spack.getCacheMountPath() >> '/mnt/cache'
         1* spack.getSecretMountPath() >> '/mnt/key'
-        1* spack.getBuilderImage() >> 'spack-builder:2:0'
+        1* spack.getBuilderImage() >> 'spack-builder:2.0'
+        1* spack.getRunnerImage() >> 'ubuntu:22.04'
         and:
-        result == 'FROM spack-builder:2:0; /mnt/cache /mnt/key; arch=x86_64'
+        result == 'FROM spack-builder:2.0; /mnt/cache /mnt/key; runner=ubuntu:22.04; arch=x86_64'
 
         cleanup:
         folder?.deleteDir()

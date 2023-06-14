@@ -120,7 +120,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     protected String dockerFile0(BuildRequest req, SpackConfig config) {
         if( req.isSpackBuild ) {
             final binding = new HashMap(2)
-            binding.spack_image = config.builderImage
+            binding.spack_builder_image = config.builderImage
+            binding.spack_runner_image = config.runnerImage
             binding.spack_arch = SpackHelper.toSpackArch(req.getPlatform())
             binding.spack_cache_dir = config.cacheMountPath
             binding.spack_key_file = config.secretMountPath

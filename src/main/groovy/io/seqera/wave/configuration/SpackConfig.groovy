@@ -53,6 +53,12 @@ class SpackConfig {
     @Value('${wave.build.spack.builderImage:`spack/ubuntu-jammy:v0.20.0`}')
     private String builderImage
 
+    /**
+     * The container image used for Spack container
+     */
+    @Value('${wave.build.spack.runnerImage:`ubuntu:22.04`}')
+    private String runnerImage
+
     Path getCacheDirectory() {
         if( !cacheDirectory )
             throw new IllegalStateException("Missing Spack cacheDirectory configuration setting")
@@ -79,5 +85,9 @@ class SpackConfig {
 
     String getBuilderImage() {
         return builderImage
+    }
+
+    String getRunnerImage() {
+        return runnerImage
     }
 }
