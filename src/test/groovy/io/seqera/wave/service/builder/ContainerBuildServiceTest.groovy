@@ -15,6 +15,7 @@ import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
+import io.seqera.wave.util.SpackHelper
 import io.seqera.wave.util.TemplateRenderer
 import jakarta.inject.Inject
 /**
@@ -222,7 +223,7 @@ class ContainerBuildServiceTest extends Specification {
         def folder = Files.createTempDirectory('test')
         def builder = new ContainerBuildServiceImpl()
         and:
-        def dockerFile = 'FROM {{spack_builder_image}}; {{spack_cache_dir}} {{spack_key_file}}; runner={{spack_runner_image}}; arch={{spack_arch}}'
+        def dockerFile = SpackHelper.builderTemplate()
         def spackFile = 'some spack packages'
         def REQ = new BuildRequest(dockerFile, folder, 'box:latest', null, spackFile, Mock(User), ContainerPlatform.of('amd64'), null, null, "")
         and:
@@ -236,7 +237,10 @@ class ContainerBuildServiceTest extends Specification {
         1* spack.getBuilderImage() >> 'spack-builder:2.0'
         1* spack.getRunnerImage() >> 'ubuntu:22.04'
         and:
-        result == 'FROM spack-builder:2.0; /mnt/cache /mnt/key; runner=ubuntu:22.04; arch=x86_64'
+        result.contains('FROM spack-builder:2.0 as builder')
+        result.contains('spack config add packages:all:target:[x86_64]')
+        result.contains('spack mirror add seqera-spack /mnt/cache')
+        result.contains('spack gpg trust /mnt/key')
 
         cleanup:
         folder?.deleteDir()
