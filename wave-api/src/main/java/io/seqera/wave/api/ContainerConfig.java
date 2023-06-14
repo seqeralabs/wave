@@ -85,6 +85,11 @@ public class ContainerConfig {
     }
 
     @Override
+    public String toString() {
+        return String.format("ContainerConfig[entrypoint=%s; cmd=%s; env=%s; workingDir=%s; layers=%s]", entrypoint, cmd, env, workingDir, layers);
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;

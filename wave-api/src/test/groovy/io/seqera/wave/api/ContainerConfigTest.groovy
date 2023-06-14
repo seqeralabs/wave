@@ -22,10 +22,23 @@ class ContainerConfigTest extends Specification {
         expect:
         c1 == c2
         c1 != c3
-        
+
         and:
         c1.hashCode() == c2.hashCode()
         c1.hashCode() != c3.hashCode()
+    }
+
+
+    def 'should convert to a string' () {
+        given:
+        def c0 = new ContainerConfig()
+        and:
+        def l1 = new ContainerLayer( 'http://foo.com', 'sha256:12345', 100, 'sha256:67890' )
+        def c1 = new ContainerConfig(['/entry/point.sh'], ['/my/cmd'], ['FOO=1'], '/work/dir', [l1])
+
+        expect:
+        c0.toString() == 'ContainerConfig[entrypoint=null; cmd=null; env=null; workingDir=null; layers=[]]'
+        c1.toString() == 'ContainerConfig[entrypoint=[/entry/point.sh]; cmd=[/my/cmd]; env=[FOO=1]; workingDir=/work/dir; layers=[ContainerLayer[location=http://foo.com; tarDigest=sha256:67890; gzipDigest=sha256:12345; gzipSize=100]]]'
     }
 
     def 'should validate empty' () {
