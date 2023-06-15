@@ -1,4 +1,8 @@
 # Wave changelog
+v0.34.0 - 15 Jun 2023
+- Add support for binary cache for Spack builds (#249) [b2c66af4]
+- Fix ContainerConfig toString method [bebd78f2]
+
 v0.33.4 - 8 Jun 2023 
 - Fix non-deterministic auth failure with AWS public registry [41bc6992]
 
