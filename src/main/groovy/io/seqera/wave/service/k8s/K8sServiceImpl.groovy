@@ -9,17 +9,14 @@ import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.custom.Quantity
-import io.kubernetes.client.openapi.models.V1Container
 import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1DeleteOptions
 import io.kubernetes.client.openapi.models.V1HostPathVolumeSource
 import io.kubernetes.client.openapi.models.V1Job
-import io.kubernetes.client.openapi.models.V1JobSpec
-import io.kubernetes.client.openapi.models.V1ObjectMeta
+import io.kubernetes.client.openapi.models.V1JobBuilder
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource
 import io.kubernetes.client.openapi.models.V1Pod
-import io.kubernetes.client.openapi.models.V1PodSpec
-import io.kubernetes.client.openapi.models.V1PodTemplateSpec
+import io.kubernetes.client.openapi.models.V1PodBuilder
 import io.kubernetes.client.openapi.models.V1ResourceRequirements
 import io.kubernetes.client.openapi.models.V1Volume
 import io.kubernetes.client.openapi.models.V1VolumeMount
@@ -125,34 +122,30 @@ class K8sServiceImpl implements K8sService {
     @Override
     @CompileDynamic
     V1Job createJob(String name, String containerImage, List<String> args) {
-        V1ObjectMeta v1ObjectMeta = new V1ObjectMeta();
-        v1ObjectMeta.setNamespace(namespace);
-        v1ObjectMeta.setName(name);
 
-        V1Container v1Container = new V1Container();
-        v1Container.setName(name);
-        v1Container.setImage(containerImage);
-        v1Container.setArgs(args);
-
-        V1PodSpec v1PodSpec = new V1PodSpec();
-        v1PodSpec.setContainers(List.of(v1Container));
-        v1PodSpec.setRestartPolicy("Never");
-
-        V1PodTemplateSpec v1PodTemplateSpec = new V1PodTemplateSpec();
-        v1PodTemplateSpec.setSpec(v1PodSpec);
-
-        V1JobSpec v1JobSpec = new V1JobSpec();
-        v1JobSpec.setTemplate(v1PodTemplateSpec);
-        v1JobSpec.setBackoffLimit(0);
-
-        V1Job v1Job = new V1Job();
-        v1Job.setMetadata(v1ObjectMeta);
-        v1Job.setSpec(v1JobSpec);
-
+        V1Job body = new V1JobBuilder()
+                .withNewMetadata()
+                .withNamespace(namespace)
+                .withName(name)
+                .endMetadata()
+                .withNewSpec()
+                .withBackoffLimit(0)
+                .withNewTemplate()
+                .editOrNewSpec()
+                .addNewContainer()
+                .withName(name)
+                .withImage(containerImage)
+                .withArgs(args)
+                .endContainer()
+                .withRestartPolicy("Never")
+                .endSpec()
+                .endTemplate()
+                .endSpec()
+                .build();
 
         return k8sClient
                 .batchV1Api()
-                .createNamespacedJob(namespace, v1Job, null, null, null)
+                .createNamespacedJob(namespace, body, null, null, null)
     }
 
     /**
@@ -326,20 +319,23 @@ class K8sServiceImpl implements K8sService {
             mounts.add(mountSpackSecretFile(spackConfig.secretKeyFile, storageMountPath, spackConfig.secretMountPath))
         }
 
+        V1PodBuilder builder = new V1PodBuilder()
+
         //metadata section
-        V1ObjectMeta v1ObjectMeta = new V1ObjectMeta();
-        v1ObjectMeta.setNamespace(namespace);
-        v1ObjectMeta.setName(name);
-        v1ObjectMeta.setLabels(labels);
+        builder.withNewMetadata()
+                .withNamespace(namespace)
+                .withName(name)
+                .addToLabels(labels)
+                .endMetadata()
 
         //spec section
-        V1PodSpec v1PodSpec = new V1PodSpec();
-        v1PodSpec.setNodeSelector(nodeSelector);
-        v1PodSpec.setServiceAccount(serviceAccount);
-        v1PodSpec.setActiveDeadlineSeconds(buildTimeout.toSeconds());
-        v1PodSpec.setRestartPolicy("Never");
-        v1PodSpec.setVolumes(volumes);
-
+        def spec = builder
+                .withNewSpec()
+                .withNodeSelector(nodeSelector)
+                .withServiceAccount(serviceAccount)
+                .withActiveDeadlineSeconds( buildTimeout.toSeconds() )
+                .withRestartPolicy("Never")
+                .addAllToVolumes(volumes)
 
 
         final requests = new V1ResourceRequirements()
@@ -349,19 +345,16 @@ class K8sServiceImpl implements K8sService {
             requests.putRequestsItem('memory', new Quantity(requestsMemory))
 
         //container section
-        V1Container v1Container = new V1Container();
-        v1Container.setName(name);
-        v1Container.setImage(containerImage);
-        v1Container.setArgs(args);
-        v1Container.setVolumeMounts(mounts);
-        v1Container.setResources(requests);
-        v1PodSpec.setContainers(List.of(v1Container));
+        spec.addNewContainer()
+                .withName(name)
+                .withImage(containerImage)
+                .withArgs(args)
+                .withVolumeMounts(mounts)
+                .withResources(requests)
+                .endContainer()
+                .endSpec()
 
-        V1Pod v1Pod = new V1Pod();
-        v1Pod.setMetadata(v1ObjectMeta);
-        v1Pod.setSpec(v1PodSpec);
-
-        return v1Pod;
+        builder.build()
     }
 
     /**
