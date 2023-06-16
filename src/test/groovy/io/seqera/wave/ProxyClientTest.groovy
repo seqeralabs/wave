@@ -142,8 +142,8 @@ class ProxyClientTest extends Specification {
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
     def 'should call target manifest on ecr public' () {
         given:
-        def IMAGE = 'seqera-labs/nf-jdk'
-        def REG = 'public.ecr.aws'
+        def IMAGE = 'nf-jdk'
+        def REG = 'cr.seqera.io'
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
         and:
@@ -154,7 +154,7 @@ class ProxyClientTest extends Specification {
                 .withCredentials(creds)
 
         when:
-        def resp = proxy.getString("/v2/$IMAGE/manifests/corretto-17.0.5")
+        def resp = proxy.getString("/$IMAGE/manifests/corretto-17.0.5")
         then:
         resp.statusCode() == 200
     }
