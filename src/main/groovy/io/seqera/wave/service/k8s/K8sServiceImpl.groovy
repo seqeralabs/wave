@@ -158,7 +158,7 @@ class K8sServiceImpl implements K8sService {
     V1Job getJob(String name) {
         k8sClient
                 .batchV1Api()
-                .readNamespacedJob(name, namespace, null, null, null)
+                .readNamespacedJob(name, namespace, null)
     }
 
     /**
@@ -171,7 +171,7 @@ class K8sServiceImpl implements K8sService {
     JobStatus getJobStatus(String name) {
         def job = k8sClient
                 .batchV1Api()
-                .readNamespacedJob(name, namespace, null, null, null)
+                .readNamespacedJob(name, namespace, null)
         if( !job )
             return null
         if( job.status.succeeded==1 )
@@ -191,7 +191,7 @@ class K8sServiceImpl implements K8sService {
     V1Pod getPod(String name) {
         return k8sClient
                 .coreV1Api()
-                .readNamespacedPod(name, namespace, null, null, null)
+                .readNamespacedPod(name, namespace, null)
     }
 
     /**
@@ -298,7 +298,7 @@ class K8sServiceImpl implements K8sService {
         final spec = buildSpec(name, containerImage, args, workDir, creds, spackConfig, nodeSelector)
         return k8sClient
                 .coreV1Api()
-                .createNamespacedPod(namespace, spec, null, null, null)
+                .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
     V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector) {
