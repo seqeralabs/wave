@@ -298,7 +298,7 @@ class K8sServiceImpl implements K8sService {
         final spec = buildSpec(name, containerImage, args, workDir, creds, spackConfig, nodeSelector)
         return k8sClient
                 .coreV1Api()
-                .createNamespacedPod(namespace, spec, null, null, null)
+                .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
     V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector) {
