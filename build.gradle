@@ -75,7 +75,7 @@ dependencies {
     testImplementation("org.testcontainers:mysql:1.17.3")
 
     // --
-    implementation("ch.qos.logback:logback-classic")
+    implementation("ch.qos.logback:logback-classic:1.4.8")
 
     // rate limit
     implementation 'com.github.seqeralabs:spillway:7b72700293'
