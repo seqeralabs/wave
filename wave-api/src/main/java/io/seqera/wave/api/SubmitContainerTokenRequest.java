@@ -2,13 +2,14 @@ package io.seqera.wave.api;
 
 
 import java.time.OffsetDateTime;
+import java.util.Map;
 
 /**
  * Model a request for an augmented container
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-public class SubmitContainerTokenRequest {
+public class SubmitContainerTokenRequest implements Cloneable {
 
     /**
      * Tower access token required to enable the service
@@ -86,6 +87,55 @@ public class SubmitContainerTokenRequest {
      */
     public boolean forceBuild;
 
+    /**
+     * Request a sealed Wave container that cause the build of a container including
+     * all {@link #containerConfig} dependencies
+     */
+    public boolean sealedMode;
+
+    public SubmitContainerTokenRequest copyWith(Map opts) {
+        try {
+            final SubmitContainerTokenRequest copy = (SubmitContainerTokenRequest) this.clone();
+            if( opts.containsKey("towerAccessToken") )
+                copy.towerAccessToken = (String)opts.get("towerAccessToken");
+            if( opts.containsKey("towerRefreshToken") )
+                copy.towerRefreshToken = (String)opts.get("towerRefreshToken");
+            if( opts.containsKey("towerEndpoint") )
+                copy.towerEndpoint = (String)opts.get("towerEndpoint");
+            if( opts.containsKey("towerWorkspaceId") )
+                copy.towerWorkspaceId = Long.valueOf(opts.get("towerWorkspaceId").toString());
+            if( opts.containsKey("containerImage") )
+                copy.containerImage = (String)opts.get("containerImage");
+            if( opts.containsKey("containerFile") )
+                copy.containerFile = (String)opts.get("containerFile");
+            if( opts.containsKey("containerConfig") )
+                copy.containerConfig = (ContainerConfig)opts.get("containerConfig");
+            if( opts.containsKey("condaFile") )
+                copy.condaFile = (String)opts.get("condaFile");
+            if( opts.containsKey("spackFile") )
+                copy.spackFile = (String)opts.get("spackFile");
+            if( opts.containsKey("containerPlatform") )
+                copy.containerPlatform = (String)opts.get("containerPlatform");
+            if( opts.containsKey("buildRepository") )
+                copy.buildRepository = (String)opts.get("buildRepository");
+            if( opts.containsKey("cacheRepository") )
+                copy.cacheRepository = (String)opts.get("cacheRepository");
+            if( opts.containsKey("timestamp") )
+                copy.timestamp = (String)opts.get("timestamp");
+            if( opts.containsKey("fingerprint") )
+                copy.fingerprint = (String)opts.get("fingerprint");
+            if( opts.containsKey("forceBuild") )
+                copy.forceBuild = (boolean)opts.get("forceBuild");
+            if( opts.containsKey("sealedMode") )
+                copy.sealedMode = (boolean)opts.get("sealedMode");
+            // done
+            return copy;
+        }
+        catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public SubmitContainerTokenRequest withTowerAccessToken(String token) {
         this.towerAccessToken = token;
         return this;
@@ -158,6 +208,11 @@ public class SubmitContainerTokenRequest {
 
     public SubmitContainerTokenRequest withFingerprint(String fingerprint) {
         this.fingerprint = fingerprint;
+        return this;
+    }
+
+    public SubmitContainerTokenRequest withSealedMode(boolean value) {
+        this.sealedMode = value;
         return this;
     }
 }

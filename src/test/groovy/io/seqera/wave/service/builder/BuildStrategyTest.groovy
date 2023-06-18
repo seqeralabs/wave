@@ -19,7 +19,7 @@ class BuildStrategyTest extends Specification {
         def service = Spy(BuildStrategy)
         and:
         def work = Path.of('/work/foo')
-        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, null, Mock(User), ContainerPlatform.of('amd64'),'{auth}', cache, "")
+        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, null, Mock(User), null, ContainerPlatform.of('amd64'),'{auth}', cache, "")
 
         when:
         def cmd = service.launchCmd(REQ)

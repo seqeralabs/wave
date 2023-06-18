@@ -1,23 +1,24 @@
 package io.seqera.wave.service.builder
 
-import spock.lang.Requires
-import spock.lang.Specification
-
 import java.nio.file.Files
 import java.time.Duration
 
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.auth.DockerAuthService
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
+import io.seqera.wave.util.Packer
 import io.seqera.wave.util.SpackHelper
 import io.seqera.wave.util.TemplateRenderer
 import jakarta.inject.Inject
+import spock.lang.Requires
+import spock.lang.Specification
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -46,7 +47,7 @@ class ContainerBuildServiceTest extends Specification {
         '''.stripIndent()
         and:
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, cacheRepo, null, null,null,null)
-        def REQ = new BuildRequest(dockerFile, folder, buildRepo, null, null, Mock(User), ContainerPlatform.of('amd64'),cfg, cacheRepo, "")
+        def REQ = new BuildRequest(dockerFile, folder, buildRepo, null, null, Mock(User), null, ContainerPlatform.of('amd64'), cfg, cacheRepo, "")
 
         when:
         def result = service.launch(REQ)
@@ -75,7 +76,7 @@ class ContainerBuildServiceTest extends Specification {
         buildRepo = "docker.io/pditommaso/wave-tests"
         and:
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, null, null,null,null)
-        def REQ = new BuildRequest(dockerFile, folder, buildRepo, null, null, Mock(User), ContainerPlatform.of('amd64'),cfg, null, null)
+        def REQ = new BuildRequest(dockerFile, folder, buildRepo, null, null, Mock(User), null, ContainerPlatform.of('amd64'),cfg, null, null)
 
         when:
         def result = service.launch(REQ)
@@ -103,7 +104,7 @@ class ContainerBuildServiceTest extends Specification {
         and:
         buildRepo = "quay.io/pditommaso/wave-tests"
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, null, null, null, null)
-        def REQ = new BuildRequest(dockerFile, folder, buildRepo, null, null, Mock(User), ContainerPlatform.of('amd64'),cfg, null, "")
+        def REQ = new BuildRequest(dockerFile, folder, buildRepo, null, null, Mock(User), null, ContainerPlatform.of('amd64'),cfg, null, "")
 
         when:
         def result = service.launch(REQ)
@@ -131,7 +132,7 @@ class ContainerBuildServiceTest extends Specification {
         and:
         buildRepo = "seqeralabs.azurecr.io/wave-tests"
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, null, null, null, null)
-        def REQ = new BuildRequest(dockerFile, folder, buildRepo, null, null, Mock(User), ContainerPlatform.of('amd64'),cfg, null, "")
+        def REQ = new BuildRequest(dockerFile, folder, buildRepo, null, null, Mock(User), null, ContainerPlatform.of('amd64'),cfg, null, "")
 
         when:
         def result = service.launch(REQ)
@@ -172,7 +173,7 @@ class ContainerBuildServiceTest extends Specification {
                 '''
         and:
         def spackConfig = new SpackConfig(cacheMountPath: '/mnt/cache', secretMountPath: '/mnt/secret')
-        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', condaFile, spackFile, Mock(User), ContainerPlatform.of('amd64'), cfg, null, "")
+        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', condaFile, spackFile, Mock(User), null, ContainerPlatform.of('amd64'), cfg, null, "")
         and:
         def store = Mock(BuildStore)
         def strategy = Mock(BuildStrategy)
@@ -201,7 +202,7 @@ class ContainerBuildServiceTest extends Specification {
         def builder = new ContainerBuildServiceImpl()
         and:
         def dockerFile = 'FROM something; {{foo}}'
-        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', null, null, Mock(User), ContainerPlatform.of('amd64'), null, null, "")
+        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', null, null, Mock(User), null, ContainerPlatform.of('amd64'), null, null, "")
         and:
         def spack = Mock(SpackConfig)
 
@@ -225,7 +226,7 @@ class ContainerBuildServiceTest extends Specification {
         and:
         def dockerFile = SpackHelper.builderTemplate()
         def spackFile = 'some spack packages'
-        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', null, spackFile, Mock(User), ContainerPlatform.of('amd64'), null, null, "")
+        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', null, spackFile, Mock(User), null, ContainerPlatform.of('amd64'), null, null, "")
         and:
         def spack = Mock(SpackConfig)
 
@@ -245,4 +246,41 @@ class ContainerBuildServiceTest extends Specification {
         cleanup:
         folder?.deleteDir()
     }
+
+    @Requires({System.getenv('DOCKER_USER') && System.getenv('DOCKER_PAT')})
+    def 'should build & push container to docker.io with local layers' () {
+        given:
+        def folder = Files.createTempDirectory('test')
+        def context = Files.createDirectories(folder.resolve('context'))
+        def layer = Files.createDirectories(folder.resolve('layer'))
+        def file1 = layer.resolve('hola.txt'); file1.text = 'Hola\n'
+        def file2 = layer.resolve('ciao.txt'); file2.text = 'Ciao\n'
+        and:
+        def dockerFile = '''
+        FROM busybox
+        RUN echo Hello > hello.txt
+        '''.stripIndent()
+        and:
+        def l1 = new Packer().layer(layer, [file1, file2])
+        def containerConfig = new ContainerConfig(cmd: ['echo', 'Hola'], layers: [l1])
+        and:
+        buildRepo = "docker.io/pditommaso/wave-tests"
+        and:
+        def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, null, null,null,null)
+        def REQ = new BuildRequest(dockerFile, context, buildRepo, null, null, Mock(User), containerConfig, ContainerPlatform.of('amd64'),cfg, null, null)
+
+        when:
+        def result = service.launch(REQ)
+        and:
+        println result.logs
+        then:
+        result.id
+        result.startTime
+        result.duration
+        result.exitStatus == 0
+
+        cleanup:
+        folder?.deleteDir()
+    }
+
 }

@@ -1,11 +1,15 @@
 package io.seqera.wave.service.builder
 
+import static BuildHelper.*
+import static io.seqera.wave.util.StringUtils.*
+import static java.nio.file.StandardOpenOption.*
+
+import javax.annotation.Nullable
+import javax.annotation.PostConstruct
 import java.nio.file.Files
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
-import javax.annotation.Nullable
-import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -22,10 +26,6 @@ import io.seqera.wave.util.TemplateRenderer
 import io.seqera.wave.util.ThreadPoolBuilder
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import static io.seqera.wave.util.StringUtils.indent
-import static java.nio.file.StandardOpenOption.CREATE
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
-import static java.nio.file.StandardOpenOption.WRITE
 /**
  * Implements container build service
  *
@@ -118,6 +118,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     }
 
     protected String dockerFile0(BuildRequest req, SpackConfig config) {
+        // render the Spack template if needed
         if( req.isSpackBuild ) {
             final binding = new HashMap(2)
             binding.spack_builder_image = config.builderImage
@@ -127,8 +128,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             binding.spack_key_file = config.secretMountPath
             return new TemplateRenderer().render(req.dockerFile, binding)
         }
-        else
+        else {
             return req.dockerFile
+        }
     }
 
     protected BuildResult launch(BuildRequest req) {
@@ -150,7 +152,10 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 final spackFile = req.workDir.resolve('spack.yaml')
                 Files.write(spackFile, req.spackFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             }
-
+            // save layers provided via the container config
+            if( req.containerConfig ) {
+                saveLayersToContext(req.containerConfig, req.workDir)
+            }
             resp = buildStrategy.build(req)
             log.info "== Build completed with status=$resp.exitStatus; stdout: (see below)\n${indent(resp.logs)}"
             return resp

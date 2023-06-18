@@ -1,7 +1,5 @@
 package io.seqera.wave.controller
 
-import spock.lang.Specification
-
 import java.nio.file.Path
 
 import io.micronaut.http.HttpRequest
@@ -17,6 +15,7 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.exchange.DescribeWaveContainerResponse
+import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.pairing.PairingRecord
 import io.seqera.wave.service.pairing.PairingService
@@ -24,6 +23,7 @@ import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
+import spock.lang.Specification
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -68,6 +68,25 @@ class ContainerTokenControllerTest extends Specification {
         controller.makeRequestData(req, new User(id: 100),"")
         then:
         thrown(BadRequestException)
+
+    }
+
+    def 'should create request data with sealed mode' () {
+        given:
+        def controller = Spy(new ContainerTokenController())
+        and:
+        def BUILD = Mock(BuildRequest) {
+            getTargetImage() >> 'docker.io/repo/ubuntu:latest'
+        }
+        
+        when:
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', sealedMode: true)
+        def data = controller.makeRequestData(req, null, "")
+
+        then:
+        1 * controller.buildRequest(_,_,_) >> BUILD
+        and:
+        data.containerImage == 'docker.io/repo/ubuntu:latest'
 
     }
 

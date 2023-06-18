@@ -9,7 +9,7 @@ import java.net.URL;
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-public class HttpContentReader implements ContentReader{
+public class HttpContentReader implements ContentReader {
 
     final private String url;
 
@@ -19,9 +19,14 @@ public class HttpContentReader implements ContentReader{
 
     @Override
     public byte[] readAllBytes() throws IOException {
-        try(InputStream stream = new URL(url).openConnection().getInputStream()) {
+        try(InputStream stream = new URL(url).openStream()) {
             return stream.readAllBytes();
         }
+    }
+
+    @Override
+    public InputStream openStream() throws IOException {
+        return new URL(url).openStream();
     }
 
     @Override

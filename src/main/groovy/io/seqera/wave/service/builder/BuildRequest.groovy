@@ -6,6 +6,7 @@ import java.time.OffsetDateTime
 
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
+import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
 import io.seqera.wave.util.DigestFunctions
@@ -91,11 +92,14 @@ class BuildRequest {
      */
     final String offsetId
 
+    final ContainerConfig containerConfig
+
     final boolean isSpackBuild
 
-    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, User user, ContainerPlatform platform, String configJson, String cacheRepo, String ip, String offsetId = null) {
+    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, User user, ContainerConfig containerConfig, ContainerPlatform platform, String configJson, String cacheRepo, String ip, String offsetId = null) {
         this.id = computeDigest(containerFile, condaFile, spackFile, platform, repo)
         this.dockerFile = containerFile
+        this.containerConfig = containerConfig
         this.condaFile = condaFile
         this.spackFile = spackFile
         this.targetImage = "${repo}:${id}"

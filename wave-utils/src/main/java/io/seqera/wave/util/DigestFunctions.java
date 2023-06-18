@@ -24,16 +24,26 @@ public class DigestFunctions {
     final private static char PADDING = '_';
     final private static BaseEncoding BASE32 = BaseEncoding.base32() .withPadChar(PADDING);
 
-    private static MessageDigest getSha256() throws NoSuchAlgorithmException {
-        // warning: MessageDigest instance is not thread safe!
-        return MessageDigest.getInstance("SHA-256");
+    private static MessageDigest getSha256() {
+        try {
+            // warning: MessageDigest instance is not thread safe!
+            return MessageDigest.getInstance("SHA-256");
+        }
+        catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("Unable to load SHA-256 digest algorithm", e);
+        }
     }
 
-    private static MessageDigest getMd5() throws NoSuchAlgorithmException {
-        return MessageDigest.getInstance("MD5");
+    private static MessageDigest getMd5() {
+        try {
+            return MessageDigest.getInstance("MD5");
+        }
+        catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("Unable to load MD5 digest algorithm", e);
+        }
     }
 
-    public static String md5(String str) throws NoSuchAlgorithmException {
+    public static String md5(String str) {
         if( str==null )
             str = Character.toString(0);
         final byte[] digest = getMd5().digest(str.getBytes());
@@ -47,7 +57,7 @@ public class DigestFunctions {
         return md5(result);
     }
 
-    private static String concat0(Map<String,Object> map, StringBuilder result) throws NoSuchAlgorithmException {
+    private static String concat0(Map<String,Object> map, StringBuilder result) {
         for( Map.Entry<String,Object> entry : map.entrySet() ) {
             // compute key checksum
             result.append( entry.getKey() );
@@ -83,21 +93,21 @@ public class DigestFunctions {
         return result.toString();
     }
 
-    public static String digest(String str) throws NoSuchAlgorithmException {
+    public static String digest(String str) {
         return digest(str.getBytes());
     }
 
-    public static String digest(byte[] bytes) throws NoSuchAlgorithmException {
+    public static String digest(byte[] bytes) {
         final byte[] digest = getSha256().digest(bytes);
         return "sha256:"+bytesToHex(digest);
     }
 
-    public static String digest(File file) throws IOException, NoSuchAlgorithmException {
+    public static String digest(File file) throws IOException {
         final byte[] digest = getSha256().digest(Files.readAllBytes(Path.of(file.toURI())));
         return "sha256:"+bytesToHex(digest);
     }
 
-    public static String digest(Path path) throws IOException, NoSuchAlgorithmException {
+    public static String digest(Path path) throws IOException {
         final byte[] digest = getSha256().digest(Files.readAllBytes(path));
         return "sha256:"+bytesToHex(digest);
     }

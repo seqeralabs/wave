@@ -26,6 +26,7 @@ import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
+import io.seqera.wave.service.builder.BuildHelper
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
@@ -141,8 +142,9 @@ class ContainerTokenController {
         final ip = addressResolver.resolve(httpRequest)
         final data = makeRequestData(req, user, ip)
         final token = tokenService.computeToken(data)
-        final target = targetImage(token.value, data.coordinates())
-        final resp = new SubmitContainerTokenResponse(token.value, target, token.expiration)
+        final target = !req.sealedMode ? targetImage(token.value, data.coordinates()) : data.containerImage
+        final expiration = !req.sealedMode ? token.expiration : null
+        final resp = new SubmitContainerTokenResponse(token.value, target, expiration)
         // persist request
         storeContainerRequest0(req, data, user, token, target, ip)
         // return response
@@ -173,6 +175,7 @@ class ContainerTokenController {
         final build = req.buildRepository ?: defaultBuildRepo
         final cache = req.cacheRepository ?: defaultCacheRepo
         final configJson = dockerAuthService.credentialsConfigJson(dockerContent, build, cache, user?.id, req.towerWorkspaceId, req.towerAccessToken, req.towerEndpoint)
+        final containerConfig = req.sealedMode ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
         // create a unique digest to identify the request
         return new BuildRequest(
@@ -182,6 +185,7 @@ class ContainerTokenController {
                 condaContent,
                 spackContent,
                 user,
+                containerConfig,
                 platform,
                 configJson,
                 cache,
@@ -205,10 +209,17 @@ class ContainerTokenController {
     }
 
     ContainerRequestData makeRequestData(SubmitContainerTokenRequest req, User user, String ip) {
+        if( !req.containerImage && !req.containerFile )
+            throw new BadRequestException("Specify either 'containerImage' or 'containerFile' attribute")
         if( req.containerImage && req.containerFile )
             throw new BadRequestException("Attributes 'containerImage' and 'containerFile' cannot be used in the same request")
-        if( req.containerImage?.contains('@sha256:') && req.containerConfig )
+        if( req.containerImage?.contains('@sha256:') && req.containerConfig && !req.sealedMode )
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
+
+        // in sealed mode use the specified `containerImage` to force build with that image
+        if( req.sealedMode ) {
+            req = BuildHelper.createBuildRequest(req)
+        }
 
         String targetImage
         String targetContent
@@ -227,9 +238,9 @@ class ContainerTokenController {
             condaContent = null
         }
         else
-            throw new BadRequestException("Specify either 'containerImage' or 'containerFile' attribute")
+            throw new IllegalStateException("Specify either 'containerImage' or 'containerFile' attribute")
 
-        final data = new ContainerRequestData(
+        new ContainerRequestData(
                 user?.id,
                 req.towerWorkspaceId,
                 targetImage,
@@ -242,7 +253,6 @@ class ContainerTokenController {
                 // the actual authorization tokens from the store
                 req.towerAccessToken,
                 req.towerEndpoint )
-        return data
     }
 
     protected String targetImage(String token, ContainerCoordinates container) {
