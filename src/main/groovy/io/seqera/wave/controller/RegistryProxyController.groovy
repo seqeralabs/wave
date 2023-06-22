@@ -37,6 +37,7 @@ import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
 import jakarta.inject.Inject
+import org.apache.commons.io.IOUtils
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Mono
 import static io.seqera.wave.util.RegHelper.digest
@@ -283,13 +284,11 @@ class RegistryProxyController {
         final Long len = response.headers
                 .find {it.key.toLowerCase()=='content-length'}?.value?.first() as long ?: null
 
-        final streamedFile =  len
-                    ?  new StreamedFile(response.body, MediaType.APPLICATION_OCTET_STREAM_TYPE, Instant.now().toEpochMilli(), len)
-                    :  new StreamedFile(response.body, MediaType.APPLICATION_OCTET_STREAM_TYPE)
+        byte[] bodyBytes = IOUtils.toByteArray(response.body);
 
         HttpResponse
                 .status(HttpStatus.valueOf(response.statusCode))
-                .body(streamedFile)
+                .body(bodyBytes)
                 .headers(toMutableHeaders(response.headers))
     }
 
