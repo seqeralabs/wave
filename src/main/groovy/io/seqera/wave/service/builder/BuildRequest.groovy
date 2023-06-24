@@ -96,6 +96,8 @@ class BuildRequest {
 
     final boolean isSpackBuild
 
+    volatile boolean isNew
+
     BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, User user, ContainerConfig containerConfig, ContainerPlatform platform, String configJson, String cacheRepo, String ip, String offsetId = null) {
         this.id = computeDigest(containerFile, condaFile, spackFile, platform, repo)
         this.dockerFile = containerFile

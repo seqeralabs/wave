@@ -142,9 +142,9 @@ class ContainerTokenController {
         final ip = addressResolver.resolve(httpRequest)
         final data = makeRequestData(req, user, ip)
         final token = tokenService.computeToken(data)
-        final target = !req.sealedMode ? targetImage(token.value, data.coordinates()) : data.containerImage
-        final expiration = !req.sealedMode ? token.expiration : null
-        final resp = new SubmitContainerTokenResponse(token.value, target, expiration)
+        final target = targetImage(token.value, data.coordinates())
+        final build = !data.buildCached ? data.buildId : null
+        final resp = new SubmitContainerTokenResponse(token.value, target, token.expiration, data.containerImage, build)
         // persist request
         storeContainerRequest0(req, data, user, token, target, ip)
         // return response
@@ -224,11 +224,15 @@ class ContainerTokenController {
         String targetImage
         String targetContent
         String condaContent
+        String buildId
+        boolean buildCached
         if( req.containerFile ) {
             final build = buildRequest(req, user, ip)
             targetImage = build.targetImage
             targetContent = build.dockerFile
             condaContent = build.condaFile
+            buildId = build.id
+            buildCached = !build.isNew
         }
         else if( req.containerImage ) {
             // normalize container image
@@ -236,6 +240,8 @@ class ContainerTokenController {
             targetImage = coords.getTargetContainer()
             targetContent = null
             condaContent = null
+            buildId = null
+            buildCached = null
         }
         else
             throw new IllegalStateException("Specify either 'containerImage' or 'containerFile' attribute")
@@ -252,7 +258,9 @@ class ContainerTokenController {
                 // in the presence of a refresh token this is used just as a key to retrieve
                 // the actual authorization tokens from the store
                 req.towerAccessToken,
-                req.towerEndpoint )
+                req.towerEndpoint,
+                buildId,
+                buildCached )
     }
 
     protected String targetImage(String token, ContainerCoordinates container) {
