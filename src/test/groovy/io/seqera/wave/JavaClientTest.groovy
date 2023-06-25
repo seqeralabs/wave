@@ -55,25 +55,8 @@ class JavaClientTest extends Specification{
                 .build()
         and:
         HttpResponse<String> resp1 = httpClient.send(req1, HttpResponse.BodyHandlers.ofString());
-        println resp1.body()
         then:
         resp1.statusCode() == 200
 
-//        when:
-//        def token = resp.body().token
-//        def registry = HttpClient.create(new URL(' https://registry-1.docker.io'))
-//        HttpRequest req1 = HttpRequest.create(HttpMethod.GET, "/v2/library/hello-world/blobs/sha256:feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412")
-//                    .header("Authorization", "Bearer ${token}")
-//                    .header('Accept-Encoding', 'identity')
-////                    .accept("application/json")
-////                    .accept("application/vnd.docker.distribution.manifest.v2+json")
-////                    .accept("application/vnd.docker.distribution.manifest.list.v2+json")
-////                    .accept("application/vnd.oci.image.index.v1+json")
-////                    .accept("application/vnd.docker.distribution.manifest.v1+prettyjws")
-////                    .accept("application/vnd.oci.image.manifest.v1+json")
-//        HttpResponse resp1 = registry.toBlocking().exchange(req1);
-//        println resp1
-//        then:
-//        resp1.status == HttpStatus.OK
     }
 }
