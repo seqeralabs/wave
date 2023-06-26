@@ -23,6 +23,9 @@ import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
+import io.reactivex.rxjava3.core.BackpressureStrategy
+import io.reactivex.rxjava3.core.Flowable
+import io.reactivex.rxjava3.schedulers.Schedulers
 import io.seqera.wave.ErrorHandler
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RegistryProxyService.DelegateResponse
@@ -284,11 +287,21 @@ class RegistryProxyController {
         final Long len = response.headers
                 .find {it.key.toLowerCase()=='content-length'}?.value?.first() as long ?: null
 
-        byte[] bodyBytes = IOUtils.toByteArray(response.body);
-
+        Flowable bodyReader = Flowable.create({ emitter ->
+            try {
+                byte[] buffer = new byte[1024];
+                int l;
+                while ((l = response.getBody().read(buffer)) != -1) {
+                    emitter.onNext(Arrays.copyOf(buffer, l));
+                }
+                emitter.onComplete();
+            } catch (Throwable e) {
+                emitter.onError(e);
+            }
+        }, BackpressureStrategy.BUFFER).subscribeOn(Schedulers.io());
         HttpResponse
                 .status(HttpStatus.valueOf(response.statusCode))
-                .body(bodyBytes)
+                .body(bodyReader)
                 .headers(toMutableHeaders(response.headers))
     }
 

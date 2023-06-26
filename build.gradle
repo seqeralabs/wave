@@ -65,6 +65,9 @@ dependencies {
     implementation("io.micronaut.aws:micronaut-aws-parameter-store")
     implementation "software.amazon.awssdk:ecr"
     implementation "software.amazon.awssdk:ecrpublic"
+
+    implementation("io.micronaut.rxjava3:micronaut-rxjava3")
+
     // this sts dependency is require by micronaut-aws-parameter-store,
     // not directly used by the app, for this reason keeping `runtimeOnly`
     runtimeOnly "software.amazon.awssdk:sts"
