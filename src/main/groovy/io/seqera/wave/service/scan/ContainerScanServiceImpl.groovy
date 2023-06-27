@@ -2,9 +2,11 @@ package io.seqera.wave.service.scan
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.runtime.event.annotation.EventListener;
 import io.seqera.wave.service.ContainerScanService
-import io.seqera.wave.service.builder.BuildEvent;
+import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.storage.Storage;
 import jakarta.inject.Inject
 import jakarta.inject.Singleton;
 /**
@@ -17,7 +19,9 @@ import jakarta.inject.Singleton;
 @CompileStatic
 class ContainerScanServiceImpl implements ContainerScanService {
     @Inject
-    ContainerScanStrategy containerScanStrategy;
+    ContainerScanStrategy containerScanStrategy
+    @Inject
+    Storage storage
 
     @EventListener
     void onBuildEvent(BuildEvent event) {
@@ -32,6 +36,8 @@ class ContainerScanServiceImpl implements ContainerScanService {
     @Override
     String scan(String containerName) {
         log.info("started scanning of "+containerName)
-        return containerScanStrategy.scanContainer(containerName)
+        String scanResults = containerScanStrategy.scanContainer(containerName)
+        log.debug(scanResults)
+        return scanResults
     }
 }

@@ -21,4 +21,5 @@ public interface Storage {
     DigestStore saveBlob(String path, byte[] content, String type, String digest);
 
     DigestStore saveBlob(String path, ContentReader content, String type, String digest);
+
 }

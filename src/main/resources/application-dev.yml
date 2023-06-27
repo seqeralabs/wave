@@ -3,6 +3,9 @@ wave:
   build:
     spack:
       cacheDirectory: 'spack-cache'
+  scanner:
+    image:
+      name: aquasec/trivy
 ---
 # uses TOWER_xxx variable because the dev environment is expected to be
 # the same as of tower

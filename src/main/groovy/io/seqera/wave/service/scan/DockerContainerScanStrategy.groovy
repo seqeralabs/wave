@@ -1,7 +1,11 @@
 package io.seqera.wave.service.scan
 
+import java.time.Instant
+
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.wave.configuration.ContainerScanConfig
+import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
 /**
@@ -13,27 +17,29 @@ import jakarta.inject.Singleton
 @Singleton
 @CompileStatic
 class DockerContainerScanStrategy extends ContainerScanStrategy{
+    @Inject
+    ContainerScanConfig containerScanConfig
     @Override
-    String scanContainer(String containerName) {
-        if(isScanToolAvailable()) {
-            Process process = new ProcessBuilder(scanToolName, containerName).start()
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()))
-            StringBuilder processOutput = new StringBuilder();
-            String outputLine;
-            while((outputLine = bufferedReader.readLine())!=null){
-                processOutput.append(outputLine).append("\n")
-            }
-            try {
-                int exitCode = process.waitFor()
-                if ( exitCode == 0 ) {
-                    return processOutput.toString()
-                } else {
-                    log.warn("Container scanner failed to scan container, it exited with code : "+ exitCode)
-                }
-            }catch (Exception e){
-                log.warn("Container scanner failed to scan container, reason : "+ e.getMessage())
-            }
+    String scanContainer(String imageName) {
+
+        log.info("Launching container scan for ${imageName}")
+        String command = "docker run --rm ${containerScanConfig.scannerImage} -f json image ${imageName}"
+        Process process = Runtime.getRuntime().exec(command)
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.inputStream))
+        StringBuilder processOutput = new StringBuilder()
+        String outputLine;
+        while((outputLine = bufferedReader.readLine())!=null){
+            processOutput.append(outputLine)
         }
-        return null
+        try {
+            int exitCode = process.waitFor()
+            if ( exitCode != 0 ) {
+                log.warn("Container scanner failed to scan container, it exited with code : ${exitCode}")
+            }
+
+        }catch (Exception e){
+            log.warn("Container scanner failed to scan container, reason : ${e.getMessage()}")
+        }
+        return processOutput.toString()
     }
 }
