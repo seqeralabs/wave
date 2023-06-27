@@ -27,7 +27,7 @@ class KubernetesContainerScanStrategy extends ContainerScanStrategy{
 
     @Override
     String scanContainer(String containerName) {
-        V1Job job = k8sService.createJob("containerscan","aquasec/trivy:latest",List.of("--format", "json", containerName))
+        V1Job job = k8sService.createJob("containerscan","aquasec/trivy:latest",List.of("-f", "json","image", containerName))
         log.info("Container scan job created: ${job.getMetadata().getName()}")
         return job.getMetadata().getName()
     }
