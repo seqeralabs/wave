@@ -201,7 +201,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         // increment the build counter
         incrementBuildCounter(request)
 
-        log.info("launch build")
         // launch the build async
         CompletableFuture
                 .<BuildResult>supplyAsync(() -> launch(request), executor)

@@ -112,6 +112,7 @@ class ContainerTokenController {
     CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
         log.info("get token for request : "+httpRequest.toString())
         validateContainerRequest(req)
+
         // this is needed for backward compatibility with old clients
         if( !req.towerEndpoint ) {
             req.towerEndpoint = towerEndpointUrl
