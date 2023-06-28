@@ -60,4 +60,20 @@ interface PersistenceService {
      */
     WaveContainerRecord loadContainerRequest(String token)
 
+    /**
+     * Store a {@link WaveContainerScanRecord} object in the Surreal wave_request table.
+     *
+     * @param buildId The request token associated with this request
+     * @param data A {@link WaveContainerScanRecord} object representing a Wave request record
+     */
+    void saveContainerScanResult(String buildId, WaveContainerScanRecord waveContainerScanRecord)
+
+    /**
+     * Retrieve a {@link WaveContainerScanRecord} object corresponding to the a specified request token
+     *
+     * @param buildId The token for which recover the corresponding {@link WaveContainerScanRecord} object
+     * @return The {@link WaveContainerScanRecord} object associated with the corresponding token or {@code null} otherwise
+     */
+    WaveContainerScanRecord loadContainerScanResult(String buildId)
+
 }

@@ -5,6 +5,7 @@ import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.persistence.WaveContainerScanRecord
 import jakarta.inject.Singleton
 /**
  * Basic persistence for dev purpose
@@ -18,6 +19,7 @@ class LocalPersistenceService implements PersistenceService {
     private Map<String,WaveBuildRecord> buildStore = new HashMap<>()
 
     private Map<String,WaveContainerRecord> requestStore = new HashMap<>()
+    private Map<String,WaveContainerScanRecord> scanStore = new HashMap<>()
 
     @Override
     void saveBuild(WaveBuildRecord record) {
@@ -45,5 +47,15 @@ class LocalPersistenceService implements PersistenceService {
     @Override
     WaveContainerRecord loadContainerRequest(String token) {
         requestStore.get(token)
+    }
+
+    @Override
+    void saveContainerScanResult(String buildId, WaveContainerScanRecord waveContainerScanRecord) {
+        scanStore.put(buildId,waveContainerScanRecord)
+    }
+
+    @Override
+    WaveContainerScanRecord loadContainerScanResult(String buildId) {
+        scanStore.get(buildId)
     }
 }

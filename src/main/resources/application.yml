@@ -51,6 +51,9 @@ wave:
       delay: '500ms'
       attempts: 5
       multiplier: '1.75'
+  scanner :
+    image :
+      name : aquasec/trivy
 ---
 jackson:
   serialization:

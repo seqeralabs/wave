@@ -10,6 +10,7 @@ import io.micronaut.http.annotation.Put
 import io.micronaut.http.client.annotation.Client
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
+import io.seqera.wave.service.persistence.WaveContainerScanRecord
 import reactor.core.publisher.Flux
 
 /**
@@ -50,4 +51,9 @@ interface SurrealClient {
     @Put('/key/wave_request/{token}')
     Flux<Map<String, Object>> updateContainerRequestAsync(@Header String authorization, String token, @Body WaveContainerRecord body)
 
+    @Post('/key/wave_scan')
+    Flux<Map<String, Object>> insertScanAsync(@Header String authorization, @Body WaveContainerScanRecord body)
+
+    @Post('/key/wave_scan')
+    Map<String, Object> insertScan(@Header String authorization, @Body WaveContainerScanRecord body)
 }

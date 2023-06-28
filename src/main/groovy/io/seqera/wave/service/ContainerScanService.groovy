@@ -5,6 +5,6 @@ package io.seqera.wave.service;
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 interface ContainerScanService {
-    String scan(String containerName)
-
+    void scan(String buildId, String containerName)
+    String getScanResult(String buildId)
 }

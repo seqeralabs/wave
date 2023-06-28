@@ -4,6 +4,7 @@ import java.time.Instant
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.ContainerScanConfig
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -15,15 +16,14 @@ import jakarta.inject.Singleton
  */
 @Slf4j
 @Singleton
+@Requires(missingProperty = 'wave.build.k8s')
 @CompileStatic
 class DockerContainerScanStrategy extends ContainerScanStrategy{
-    @Inject
-    ContainerScanConfig containerScanConfig
     @Override
-    String scanContainer(String imageName) {
+    String scanContainer(String containerScanner, String imageName) {
 
         log.info("Launching container scan for ${imageName}")
-        String command = "docker run --rm ${containerScanConfig.scannerImage} -f json image ${imageName}"
+        String command = "docker run --rm ${containerScanner} -f json image ${imageName}"
         Process process = Runtime.getRuntime().exec(command)
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.inputStream))
         StringBuilder processOutput = new StringBuilder()
