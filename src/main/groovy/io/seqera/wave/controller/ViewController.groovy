@@ -96,10 +96,13 @@ class ViewController {
 
     @View("scan-view")
     @Get('/scans/{buildId}')
-    HttpResponse<?> viewScan(String buildId) {
+    HttpResponse<Map<String,Object>> viewScan(String buildId) {
         final record = persistenceService.loadContainerScanResult(buildId)
         if( !record )
             throw new NotFoundException("Unknown build id '$buildId'")
-        return HttpResponse.ok(record)
+        // return the response
+        final binding = new HashMap(5)
+        binding.request_scan_result = record.scanResult
+        return HttpResponse.<Map<String,Object>>ok(binding)
     }
 }

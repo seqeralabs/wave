@@ -10,6 +10,7 @@ import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.configuration.ContainerScanConfig;
 import io.seqera.wave.service.ContainerScanService
 import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerScanRecord
 import io.seqera.wave.util.ThreadPoolBuilder;
@@ -45,7 +46,7 @@ class ContainerScanServiceImpl implements ContainerScanService {
     @EventListener
     void onBuildEvent(BuildEvent event) {
         try {
-            scan(event.request.getId(),event.request.getTargetImage())
+            scan(event.request)
         }
         catch (Exception e) {
             log.warn "Unable to run the container scan - reason: ${e.message?:e}"
@@ -53,11 +54,11 @@ class ContainerScanServiceImpl implements ContainerScanService {
     }
 
     @Override
-    void scan(String buildId, String containerName) {
+    void scan(BuildRequest buildRequest) {
         CompletableFuture
-                .supplyAsync(() -> containerScanStrategy.scanContainer(containerScanConfig.scannerImage, containerName), executor)
+                .supplyAsync(() -> containerScanStrategy.scanContainer(containerScanConfig.scannerImage, buildRequest), executor)
                 .thenApply((result) ->
-                { persistenceService.saveContainerScanResult(buildId, new WaveContainerScanRecord(buildId,result))})
+                { persistenceService.saveContainerScanResult(buildRequest.id, new WaveContainerScanRecord(buildRequest.id,result)); return result})
     }
 
     @Override
