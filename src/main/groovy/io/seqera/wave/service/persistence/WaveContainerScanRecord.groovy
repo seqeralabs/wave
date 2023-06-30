@@ -4,7 +4,11 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
-
+/**
+ * Model a Wave container scan result
+ *
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
+ */
 @Slf4j
 @ToString(includeNames = true, includePackage = false)
 @Canonical

@@ -53,7 +53,7 @@ wave:
       multiplier: '1.75'
   scanner :
     image :
-      name : aquasec/trivy
+      name : aquasec/trivy:0.43.0
 ---
 jackson:
   serialization:

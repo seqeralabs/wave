@@ -4,13 +4,11 @@ package io.seqera.wave.service.scan
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.service.aws.AwsEcrService
 import io.seqera.wave.service.builder.BuildRequest
-import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
 /**
- * Implements ContainerScanService
+ * Implements ContainerScanStrategy for Docker
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */

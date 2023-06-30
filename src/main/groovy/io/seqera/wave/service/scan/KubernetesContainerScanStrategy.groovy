@@ -10,7 +10,7 @@ import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Singleton
 
 /**
- * Implements ContainerScanService
+ * Implements ContainerScanStrategy for Kubernetes
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
