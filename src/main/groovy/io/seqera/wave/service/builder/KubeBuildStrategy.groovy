@@ -80,7 +80,7 @@ class KubeBuildStrategy extends BuildStrategy {
             }
         }
         catch (ApiException e) {
-            throw new BadRequestException("Unexpected build failed - ${e.responseBody}", e)
+            throw new BadRequestException("Unexpected build failure - ${e.responseBody}", e)
         }
     }
 
