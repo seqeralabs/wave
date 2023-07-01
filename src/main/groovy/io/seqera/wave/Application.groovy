@@ -24,7 +24,6 @@ class Application {
                 .start();
     }
 
-
     static void setupConfig() {
         // config file
         def configFile = 'config.yml'
@@ -33,13 +32,5 @@ class Application {
             log.info "Detected WAVE_CONFIG_FILE variable: ${configFile}"
         }
         System.setProperty('micronaut.config.files', "file:$configFile")
-
-        // detected layer path
-        if( System.getenv('WAVE_LAYER_PATH') ) {
-            def layerPath = System.getenv('WAVE_LAYER_PATH')
-            log.info "Detected WAVE_LAYER_PATH variable: ${layerPath}"
-            System.setProperty('wave.layerPath', layerPath)
-        }
-
     }
 }
