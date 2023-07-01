@@ -155,12 +155,12 @@ class RegistryProxyController {
 
         if( route.manifest ) {
             if ( !route.digest ) {
-                def entry = manifestForPath(route, httpRequest)
+                final entry = manifestForPath(route, httpRequest)
                 if (entry) {
                     return fromCache(entry)
                 }
             } else {
-                def entry = storage.getManifest(route.getTargetPath())
+                final entry = storage.getManifest(route.getTargetPath())
                 if (entry.present) {
                     return fromCache(entry.get())
                 }
@@ -168,7 +168,7 @@ class RegistryProxyController {
         }
 
         if( route.blob ) {
-            def entry = storage.getBlob(route.getTargetPath())
+            final entry = storage.getBlob(route.getTargetPath())
             if (entry.present) {
                 log.info "Blob found in the cache: $route.path"
                 return fromCache(entry.get())

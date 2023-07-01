@@ -90,7 +90,7 @@ class K8sServiceImpl implements K8sService {
      */
     @PostConstruct
     private void init() {
-        log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; node-selector=$nodeSelectorMap; buildTimeout=$buildTimeout; cpus=$requestsCpu; memory=$requestsMemory"
+        log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; node-selector=$nodeSelectorMap; buildTimeout=$buildTimeout; cpus=$requestsCpu; memory=$requestsMemory; buildWorkspace=$buildWorkspace; storageClaimName=$storageClaimName; storageMountPath=$storageMountPath; "
         if( storageClaimName && !storageMountPath )
             throw new IllegalArgumentException("Missing 'wave.build.k8s.storage.mountPath' configuration attribute")
         if( storageMountPath ) {
@@ -201,7 +201,7 @@ class K8sServiceImpl implements K8sService {
      * @param storageMountPath
      * @return A {@link V1VolumeMount} representing the mount path for the build config
      */
-    protected V1VolumeMount mountBuildStorage(Path workDir, @Nullable String storageMountPath) {
+    protected V1VolumeMount mountBuildStorage(Path workDir, String storageMountPath) {
         assert workDir, "K8s mount build storage is mandatory"
 
         final vol = new V1VolumeMount()
@@ -225,7 +225,7 @@ class K8sServiceImpl implements K8sService {
      * @param claimName The claim name of the corresponding storage
      * @return An instance of {@link V1Volume} representing the build storage volume
      */
-    protected V1Volume volumeBuildStorage(String mountPath, String claimName) {
+    protected V1Volume volumeBuildStorage(String mountPath, @Nullable String claimName) {
         final vol= new V1Volume()
                 .name('build-data')
         if( claimName ) {
@@ -243,7 +243,7 @@ class K8sServiceImpl implements K8sService {
      *
      * @return A {@link V1VolumeMount} representing the docker config for kaniko
      */
-    protected V1VolumeMount mountDockerConfig(Path workDir, @Nullable String storageMountPath) {
+    protected V1VolumeMount mountDockerConfig(Path workDir, String storageMountPath) {
         assert workDir, "K8s mount build storage is mandatory"
 
         final rel = Path.of(storageMountPath).relativize(workDir).toString()
@@ -255,7 +255,7 @@ class K8sServiceImpl implements K8sService {
                 .readOnly(true)
     }
 
-    protected V1VolumeMount mountSpackCacheDir(Path spackCacheDir, @Nullable String storageMountPath, String containerPath) {
+    protected V1VolumeMount mountSpackCacheDir(Path spackCacheDir, String storageMountPath, String containerPath) {
         final rel = Path.of(storageMountPath).relativize(spackCacheDir).toString()
         if( !rel || rel.startsWith('../') )
             throw new IllegalArgumentException("Spack cacheDirectory '$spackCacheDir' must be a sub-directory of storage path '$storageMountPath'")
@@ -265,7 +265,7 @@ class K8sServiceImpl implements K8sService {
                 .subPath(rel)
     }
 
-    protected V1VolumeMount mountSpackSecretFile(Path secretFile, @Nullable String storageMountPath, String containerPath) {
+    protected V1VolumeMount mountSpackSecretFile(Path secretFile, String storageMountPath, String containerPath) {
         final rel = Path.of(storageMountPath).relativize(secretFile).toString()
         if( !rel || rel.startsWith('../') )
             throw new IllegalArgumentException("Spack secretKeyFile '$secretFile' must be a sub-directory of storage path '$storageMountPath'")
