@@ -71,7 +71,7 @@ class ContainerTokenControllerTest extends Specification {
 
     }
 
-    def 'should create request data with sealed mode' () {
+    def 'should create request data with freeze mode' () {
         given:
         def controller = Spy(new ContainerTokenController())
         and:
@@ -80,7 +80,7 @@ class ContainerTokenControllerTest extends Specification {
         }
         
         when:
-        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', sealedMode: true)
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true)
         def data = controller.makeRequestData(req, null, "")
 
         then:

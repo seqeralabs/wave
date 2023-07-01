@@ -90,7 +90,7 @@ class BuildHelperTest extends Specification  {
     def 'should create build file given a container image' () {
 
         when:
-        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', sealedMode: true)
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true)
         def result = BuildHelper.createBuildFile(req)
         then:
         result == '''\
@@ -99,7 +99,7 @@ class BuildHelperTest extends Specification  {
             '''.stripIndent(true)
 
         when:
-        req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', sealedMode: true, containerConfig: new ContainerConfig(env:['FOO=1','BAR=2']))
+        req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2']))
          result = BuildHelper.createBuildFile(req)
         then:
         result == '''\
@@ -112,14 +112,14 @@ class BuildHelperTest extends Specification  {
     def 'should create build file given a container file' () {
 
         when:
-        def req = new SubmitContainerTokenRequest(containerFile: 'FROM foo\nRUN this\n', sealedMode: true)
+        def req = new SubmitContainerTokenRequest(containerFile: 'FROM foo\nRUN this\n', freeze: true)
         def result = BuildHelper.createBuildFile(req)
         then:
         // nothing to do here =>  returns null
         result == null
 
         when:
-        req = new SubmitContainerTokenRequest(containerFile: 'FROM foo\nRUN this\n', sealedMode: true, containerConfig: new ContainerConfig(env:['FOO=1','BAR=2'], workingDir: '/work/dir'))
+        req = new SubmitContainerTokenRequest(containerFile: 'FROM foo\nRUN this\n', freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2'], workingDir: '/work/dir'))
         result = BuildHelper.createBuildFile(req)
         then:
         // nothing to do here =>  returns null
@@ -135,7 +135,7 @@ class BuildHelperTest extends Specification  {
 
     def 'should throw an error' () {
         when:
-        def req = new SubmitContainerTokenRequest(containerFile: 'FROM foo\nRUN this\n', sealedMode: false)
+        def req = new SubmitContainerTokenRequest(containerFile: 'FROM foo\nRUN this\n', freeze: false)
         BuildHelper.createBuildFile(req)
         then:
         thrown(AssertionError)
@@ -144,7 +144,7 @@ class BuildHelperTest extends Specification  {
     def 'should create build request given a container image' () {
 
         when:
-        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', sealedMode: true)
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true)
         def result = BuildHelper.createBuildRequest(req)
         then:
         new String(result.containerFile.decodeBase64()) == '''\
@@ -153,7 +153,7 @@ class BuildHelperTest extends Specification  {
             '''.stripIndent(true)
 
         when:
-        req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', sealedMode: true, containerConfig: new ContainerConfig(env:['FOO=1','BAR=2']))
+        req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2']))
         result = BuildHelper.createBuildRequest(req)
         then:
         new String(result.containerFile.decodeBase64()) == '''\
@@ -166,13 +166,13 @@ class BuildHelperTest extends Specification  {
     def 'should create build request' () {
 
         when:
-        def req = new SubmitContainerTokenRequest(containerFile: 'FROM foo\nRUN this\n', sealedMode: true)
+        def req = new SubmitContainerTokenRequest(containerFile: 'FROM foo\nRUN this\n', freeze: true)
         def result = BuildHelper.createBuildRequest(req)
         then:
         result.containerFile == req.containerFile
 
         when:
-        req = new SubmitContainerTokenRequest(containerFile: 'FROM foo\nRUN this\n', sealedMode: true, containerConfig: new ContainerConfig(env:['FOO=1','BAR=2'], workingDir: '/work/dir'))
+        req = new SubmitContainerTokenRequest(containerFile: 'FROM foo\nRUN this\n', freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2'], workingDir: '/work/dir'))
         result = BuildHelper.createBuildRequest(req)
         then:
         // nothing to do here =>  returns null

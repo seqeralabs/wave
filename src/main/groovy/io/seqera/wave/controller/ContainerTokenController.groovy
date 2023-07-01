@@ -175,7 +175,7 @@ class ContainerTokenController {
         final build = req.buildRepository ?: defaultBuildRepo
         final cache = req.cacheRepository ?: defaultCacheRepo
         final configJson = dockerAuthService.credentialsConfigJson(dockerContent, build, cache, user?.id, req.towerWorkspaceId, req.towerAccessToken, req.towerEndpoint)
-        final containerConfig = req.sealedMode ? req.containerConfig : null
+        final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
         // create a unique digest to identify the request
         return new BuildRequest(
@@ -213,11 +213,11 @@ class ContainerTokenController {
             throw new BadRequestException("Specify either 'containerImage' or 'containerFile' attribute")
         if( req.containerImage && req.containerFile )
             throw new BadRequestException("Attributes 'containerImage' and 'containerFile' cannot be used in the same request")
-        if( req.containerImage?.contains('@sha256:') && req.containerConfig && !req.sealedMode )
+        if( req.containerImage?.contains('@sha256:') && req.containerConfig && !req.freeze )
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
 
-        // in sealed mode use the specified `containerImage` to force build with that image
-        if( req.sealedMode ) {
+        // in freeze mode use the specified `containerImage` to force build with that image
+        if( req.freeze ) {
             req = BuildHelper.createBuildRequest(req)
         }
 

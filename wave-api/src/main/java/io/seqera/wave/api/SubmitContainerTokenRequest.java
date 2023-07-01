@@ -88,10 +88,10 @@ public class SubmitContainerTokenRequest implements Cloneable {
     public boolean forceBuild;
 
     /**
-     * Request a sealed Wave container that cause the build of a container including
+     * Enable the freeze mode that causes the build of a container including
      * all {@link #containerConfig} dependencies
      */
-    public boolean sealedMode;
+    public boolean freeze;
 
     public SubmitContainerTokenRequest copyWith(Map opts) {
         try {
@@ -126,8 +126,8 @@ public class SubmitContainerTokenRequest implements Cloneable {
                 copy.fingerprint = (String)opts.get("fingerprint");
             if( opts.containsKey("forceBuild") )
                 copy.forceBuild = (boolean)opts.get("forceBuild");
-            if( opts.containsKey("sealedMode") )
-                copy.sealedMode = (boolean)opts.get("sealedMode");
+            if( opts.containsKey("freeze") )
+                copy.freeze = (boolean)opts.get("freeze");
             // done
             return copy;
         }
@@ -211,8 +211,8 @@ public class SubmitContainerTokenRequest implements Cloneable {
         return this;
     }
 
-    public SubmitContainerTokenRequest withSealedMode(boolean value) {
-        this.sealedMode = value;
+    public SubmitContainerTokenRequest withFreezeMode(boolean value) {
+        this.freeze = value;
         return this;
     }
 }

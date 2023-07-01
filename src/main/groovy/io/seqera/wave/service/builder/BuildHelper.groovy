@@ -20,7 +20,7 @@ import io.seqera.wave.storage.reader.ContentReaderFactory
 class BuildHelper {
 
     static String createBuildFile(SubmitContainerTokenRequest req) {
-        assert req.sealedMode, "Not a sealed container request"
+        assert req.freeze, "Not a freeze container request"
 
         // create a build container file for the provider image,
         // and append the container config when provided
