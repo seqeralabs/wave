@@ -8,6 +8,7 @@ import javax.annotation.Nullable
 import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.kubernetes.client.openapi.ApiException
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
@@ -63,18 +64,23 @@ class KubeBuildStrategy extends BuildStrategy {
             Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
         }
 
-        final buildCmd = launchCmd(req)
-        final name = podName(req)
-        final selector= getSelectorLabel(req.platform, nodeSelectorMap)
-        final spackCfg0 = req.isSpackBuild ? spackConfig : null
-        final pod = k8sService.buildContainer(name, buildImage, buildCmd, req.workDir, configFile, spackCfg0, selector)
-        final terminated = k8sService.waitPod(pod, buildTimeout.toMillis())
-        final stdout = k8sService.logsPod(name)
-        if( terminated ) {
-            return BuildResult.completed(req.id, terminated.exitCode, stdout, req.startTime )
+        try {
+            final buildCmd = launchCmd(req)
+            final name = podName(req)
+            final selector= getSelectorLabel(req.platform, nodeSelectorMap)
+            final spackCfg0 = req.isSpackBuild ? spackConfig : null
+            final pod = k8sService.buildContainer(name, buildImage, buildCmd, req.workDir, configFile, spackCfg0, selector)
+            final terminated = k8sService.waitPod(pod, buildTimeout.toMillis())
+            final stdout = k8sService.logsPod(name)
+            if( terminated ) {
+                return BuildResult.completed(req.id, terminated.exitCode, stdout, req.startTime )
+            }
+            else {
+                return BuildResult.completed(req.id, -1, stdout, req.startTime )
+            }
         }
-        else {
-            return BuildResult.completed(req.id, -1, stdout, req.startTime )
+        catch (ApiException e) {
+            throw new BadRequestException("Unexpected build failed - ${e.responseBody}", e)
         }
     }
 
