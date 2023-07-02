@@ -39,6 +39,6 @@ class Application {
         }
         if( !Files.exists(configFile) )
             throw new IllegalArgumentException("Config file does not exist or cannot accessed: $configFile")
-        System.setProperty('micronaut.config.files', "$configFile")
+        System.setProperty('micronaut.config.files', "classpath:application.yml,file:$configFile")
     }
 }
