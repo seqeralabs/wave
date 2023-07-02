@@ -117,7 +117,7 @@ class ProxyClient {
     }
 
 
-    private static final List<String> SKIP_HEADERS = ['host', 'connection', 'authorization']
+    private static final List<String> SKIP_HEADERS = ['host', 'connection', 'authorization', 'content-length']
 
     private void copyHeaders(Map<String,List<String>> headers, HttpRequest.Builder builder) {
         if( !headers )
