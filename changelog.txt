@@ -1,4 +1,8 @@
 # Wave changelog
+v0.34.2 - 2 Jul 2023
+- Fix config resolution [b6f06bc3]
+- Bump base image nf-jdk:corretto-17.0.7-up2 [70425710]
+
 v0.34.1 - 2 Jul 2023 
 - K8s build improvements [9ea63642]
 - Update dependencies to fix CVEs (#250) [e5e3d0e8]
