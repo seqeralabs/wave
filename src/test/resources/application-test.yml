@@ -38,6 +38,7 @@ wave:
     europe-southwest1-docker.pkg.dev:
       credentials : ${GOOGLECR_KEYS:test}
   build:
+    workspace: 'build-workspace'
     spack:
       cacheDirectory: "spack-cache"
 ---
