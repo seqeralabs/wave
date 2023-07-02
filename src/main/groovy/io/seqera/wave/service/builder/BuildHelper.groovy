@@ -31,7 +31,7 @@ class BuildHelper {
         }
         // append the container config to the provided build container file
         else if( !req.containerImage && req.containerFile && req.containerConfig ) {
-            def containerFile = req.containerFile + '\n'
+            def containerFile = new String(req.containerFile.decodeBase64()) + '\n'
             containerFile += "# wave generated container file\n"
             return appendConfigToDockerFile(containerFile, req.containerConfig)
         }

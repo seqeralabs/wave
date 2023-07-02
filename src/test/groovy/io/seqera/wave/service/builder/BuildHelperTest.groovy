@@ -164,15 +164,16 @@ class BuildHelperTest extends Specification  {
     }
 
     def 'should create build request' () {
-
+        given:
+        def ENCODED = 'FROM foo\nRUN this\n'.bytes.encodeBase64().toString()
         when:
-        def req = new SubmitContainerTokenRequest(containerFile: 'FROM foo\nRUN this\n', freeze: true)
+        def req = new SubmitContainerTokenRequest(containerFile: ENCODED, freeze: true)
         def result = BuildHelper.createBuildRequest(req)
         then:
         result.containerFile == req.containerFile
 
         when:
-        req = new SubmitContainerTokenRequest(containerFile: 'FROM foo\nRUN this\n', freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2'], workingDir: '/work/dir'))
+        req = new SubmitContainerTokenRequest(containerFile: ENCODED, freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2'], workingDir: '/work/dir'))
         result = BuildHelper.createBuildRequest(req)
         then:
         // nothing to do here =>  returns null
