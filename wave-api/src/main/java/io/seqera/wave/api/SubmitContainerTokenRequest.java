@@ -88,7 +88,7 @@ public class SubmitContainerTokenRequest implements Cloneable {
     public boolean forceBuild;
 
     /**
-     * Enable the freeze mode that causes the build of a container including
+     * Enable freeze mode that cause the container build to include
      * all {@link #containerConfig} dependencies
      */
     public boolean freeze;

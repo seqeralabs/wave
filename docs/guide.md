@@ -150,6 +150,7 @@ The following configuration options are available:
 | `wave.conda.mambaImage`      | The Mamba container image is used to build Conda based container. This is expected to be [micromamba-docker](https://github.com/mamba-org/micromamba-docker) image.     |
 | `wave.conda.commands`        | One or more commands to be added to the Dockerfile used by build a Conda based image.                                                                                   |
 | `wave.strategy`              | The strategy to be used when resolving ambiguous Wave container requirement (default: `'container,dockerfile,conda'`)                                                   |
+| `wave.freeze`                | When `freeze` mode is enabled containers provisioned by Wave are stored permanently in the repository specified via the setting `wave.build.repository`.                | 
 
 ## More examples
 

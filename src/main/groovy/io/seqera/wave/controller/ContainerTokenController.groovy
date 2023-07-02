@@ -215,7 +215,8 @@ class ContainerTokenController {
             throw new BadRequestException("Attributes 'containerImage' and 'containerFile' cannot be used in the same request")
         if( req.containerImage?.contains('@sha256:') && req.containerConfig && !req.freeze )
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
-
+        if( req.freeze && !req.buildRepository )
+            throw new BadRequestException("When freeze mode is enabled the target build repository must be specified - see 'wave.build.repository' setting")
         // in freeze mode use the specified `containerImage` to force build with that image
         if( req.freeze ) {
             req = BuildHelper.createBuildRequest(req)

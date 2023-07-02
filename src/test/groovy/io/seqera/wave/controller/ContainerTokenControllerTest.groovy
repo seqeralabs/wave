@@ -80,7 +80,7 @@ class ContainerTokenControllerTest extends Specification {
         }
         
         when:
-        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true)
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true, buildRepository: 'docker.io/foo/bar')
         def data = controller.makeRequestData(req, null, "")
 
         then:
