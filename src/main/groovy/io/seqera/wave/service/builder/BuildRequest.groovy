@@ -92,10 +92,19 @@ class BuildRequest {
      */
     final String offsetId
 
+    /**
+     * The associated {@link ContainerConfig} instance
+     */
     final ContainerConfig containerConfig
 
+    /**
+     * Whenever is a spack build
+     */
     final boolean isSpackBuild
 
+    /**
+     * Mark this request as a new build i.e. not cached 
+     */
     volatile boolean isNew
 
     BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, User user, ContainerConfig containerConfig, ContainerPlatform platform, String configJson, String cacheRepo, String ip, String offsetId = null) {
