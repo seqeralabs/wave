@@ -1,4 +1,15 @@
 # Wave changelog
+v0.34.2 - 2 Jul 2023
+- Fix config resolution [b6f06bc3]
+- Bump base image nf-jdk:corretto-17.0.7-up2 [70425710]
+
+v0.34.1 - 2 Jul 2023 
+- K8s build improvements [9ea63642]
+- Update dependencies to fix CVEs (#250) [e5e3d0e8]
+- Remove unsupported WAVE_LAYER_PATH [a5f5fda1]
+- Fix failing test [434ab374]
+- Bump nf-jdk:corretto-17.0.7-up1 as base image [0e93bfaa]
+
 v0.34.0 - 15 Jun 2023
 - Add support for binary cache for Spack builds (#249) [b2c66af4]
 - Fix ContainerConfig toString method [bebd78f2]

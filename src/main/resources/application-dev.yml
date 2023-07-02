@@ -1,6 +1,7 @@
 wave:
   debug: true
   build:
+    workspace: 'build-workspace'
     spack:
       cacheDirectory: 'spack-cache'
 ---
