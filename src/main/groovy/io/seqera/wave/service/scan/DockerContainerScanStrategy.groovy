@@ -1,12 +1,18 @@
 package io.seqera.wave.service.scan
 
-
+import java.nio.file.Files
+import java.nio.file.Path
+import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
+import io.seqera.wave.configuration.ContainerScanConfig
 import io.seqera.wave.service.builder.BuildRequest
 import jakarta.inject.Singleton
 
+import static java.nio.file.StandardOpenOption.CREATE
+import static java.nio.file.StandardOpenOption.WRITE
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 /**
  * Implements ContainerScanStrategy for Docker
  *
@@ -17,15 +23,34 @@ import jakarta.inject.Singleton
 @Requires(missingProperty = 'wave.build.k8s')
 @CompileStatic
 class DockerContainerScanStrategy extends ContainerScanStrategy{
+
+    private final ContainerScanConfig containerScanConfig
+
+    DockerContainerScanStrategy(ContainerScanConfig containerScanConfig) {
+        this.containerScanConfig = containerScanConfig
+    }
+
     @Override
     String scanContainer(String containerScanner, BuildRequest buildRequest) {
-        String image = buildRequest.targetImage
+
         log.info("Launching container scan for buildId: "+buildRequest.id)
-        def dockerCommand = dockerWrapper()
-        def trivyCommand = trivyWrapper(containerScanner, image)
+
+        Path configFile;
+        try{
+        if( buildRequest.configJson ) {
+            Path scanDir = Files.createDirectories(Path.of(containerScanConfig.workspace))
+            configFile = scanDir.resolve('config.json').toAbsolutePath()
+            Files.write(configFile, JsonOutput.prettyPrint(buildRequest.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+        }}catch (Exception e){
+            log.info("Error getting credentials "+e.getMessage())
+        }
+
+        def dockerCommand = dockerWrapper(configFile)
+        def trivyCommand = trivyWrapper(containerScanner, buildRequest.targetImage)
         def command = dockerCommand+trivyCommand
+
         //launch scanning
-        log.info("Conatienr Scan Command "+command.join(' '))
+        log.info("Container Scan Command "+command.join(' '))
         Process process = new ProcessBuilder()
                 .command(command)
                 .start()
@@ -56,24 +81,26 @@ class DockerContainerScanStrategy extends ContainerScanStrategy{
         return processOutput.toString()
     }
 
-    private List<String> dockerWrapper() {
+    private List<String> dockerWrapper(Path credsFile) {
+
         List<String> wrapper = ['docker',
                                 'run',
-                                '--rm',
-                                '-e',
-                                'AWS_ACCESS_KEY_ID='+System.getenv('AWS_ACCESS_KEY_ID'),
-                                '-e',
-                                'AWS_SECRET_ACCESS_KEY='+System.getenv('AWS_SECRET_ACCESS_KEY'),
-                                '-e',
-                                'AWS_DEFAULT_REGION=eu-west-1',
-                                ]
+                                '--rm']
+        if(credsFile) {
+            wrapper.add('-v')
+            wrapper.add("${credsFile}:/root/.docker/config.json:ro".toString())
+        }
+
+        if(containerScanConfig.cacheDirectory){
+            // cache directory
+            wrapper.add('-v')
+            wrapper.add("${containerScanConfig.cacheDirectory}:/root/.cache/:rw".toString())
+        }
         return wrapper
     }
-    private List<String> trivyWrapper(String containerScanner, String image){
+    private List<String> trivyWrapper(String containerScanner, String targetImage){
         List<String> wrapper = [containerScanner,
-                                '--format',
-                                'json',
                                 'image',
-                                 image]
+                                 targetImage]
     }
 }

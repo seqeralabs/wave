@@ -5,6 +5,7 @@ import javax.annotation.PostConstruct
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
 import jakarta.inject.Singleton
 /**
  * Container Scan service settings
@@ -16,7 +17,31 @@ import jakarta.inject.Singleton
 @Slf4j
 class ContainerScanConfig {
     @Value('${wave.scanner.image.name:aquasec/trivy:0.43.0}')
-    String scannerImage
+    private String scannerImage
+
+    /**
+     * The host path where where Trivy cache DB stored
+     */
+    @Nullable
+    @Value('${wave.scan.trivy.cacheDirectory}')
+    private String cacheDirectory
+
+    @Value('${wave.scan.workspace}')
+    String workspace
+
+    String getScannerImage() {
+        return scannerImage
+    }
+
+    @Nullable
+    String getCacheDirectory() {
+        return cacheDirectory
+    }
+
+    String getWorkspace() {
+        return workspace
+    }
+
     @PostConstruct
     private void init() {
         log.debug("Scanner config : docker image name : ${scannerImage}")
