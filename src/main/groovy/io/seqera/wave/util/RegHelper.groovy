@@ -113,4 +113,18 @@ class RegHelper {
             result = '0'+result
         return result
     }
+
+    static String parseFromStatement(String line){
+        if( !line )
+            return null
+        if( !line.startsWith('FROM ') )
+            return null
+        final tokens = line.tokenize(' ')
+        if( tokens.size() < 2 )
+            return null
+        if ( tokens[1].startsWith('--platform=') )
+            return tokens[2]
+        else
+            return tokens[1]
+    }
 }
