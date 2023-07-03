@@ -7,15 +7,15 @@ import javax.annotation.PostConstruct
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.runtime.event.annotation.EventListener
-import io.seqera.wave.configuration.ContainerScanConfig;
+import io.seqera.wave.configuration.ContainerScanConfig
 import io.seqera.wave.service.ContainerScanService
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerScanRecord
-import io.seqera.wave.util.ThreadPoolBuilder;
+import io.seqera.wave.util.ThreadPoolBuilder
 import jakarta.inject.Inject
-import jakarta.inject.Singleton;
+import jakarta.inject.Singleton
 /**
  * Implements ContainerScanService
  *
@@ -62,7 +62,7 @@ class ContainerScanServiceImpl implements ContainerScanService {
     }
 
     @Override
-    String getScanResult(String buildId) {
+    WaveContainerScanRecord getScanResult(String buildId) {
         return persistenceService.loadContainerScanResult(buildId)
     }
 }

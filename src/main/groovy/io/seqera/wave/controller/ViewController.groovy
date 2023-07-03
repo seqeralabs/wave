@@ -97,14 +97,16 @@ class ViewController {
     @View("scan-view")
     @Get('/scans/{buildId}')
     HttpResponse<Map<String,Object>> viewScan(String buildId) {
-        final record = persistenceService.loadContainerScanResult(buildId)
+        final result = persistenceService.loadContainerScanResult(buildId)
         final binding = new HashMap(5)
-        if( !record ){
+        if( !result ){
             binding.scan_success=false
         }else{
             binding.scan_success=true
             binding.build_id = buildId
-            binding.scan_result = record.scanResult
+            binding.scan_time = formatTimestamp(result.scanResult.startTime) ?: '-'
+            binding.scan_duration = formatDuration(result.scanResult.duration) ?: '-'
+            binding.scan_result = result.scanResult
         }
 
         // return the response

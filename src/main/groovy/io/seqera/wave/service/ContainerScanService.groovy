@@ -1,6 +1,7 @@
 package io.seqera.wave.service
 
-import io.seqera.wave.service.builder.BuildRequest;
+import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.persistence.WaveContainerScanRecord
 /**
  * Declare operations to scan containers
  *
@@ -8,5 +9,6 @@ import io.seqera.wave.service.builder.BuildRequest;
  */
 interface ContainerScanService {
     void scan(BuildRequest buildRequest)
-    String getScanResult(String buildId)
+
+    WaveContainerScanRecord getScanResult(String buildId)
 }

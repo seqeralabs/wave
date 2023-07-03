@@ -4,6 +4,8 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
+import io.seqera.wave.model.ScanResult
+
 /**
  * Model a Wave container scan result
  *
@@ -15,5 +17,5 @@ import groovy.util.logging.Slf4j
 @CompileStatic
 class WaveContainerScanRecord {
     String buildId
-    String scanResult
+    ScanResult scanResult
 }
