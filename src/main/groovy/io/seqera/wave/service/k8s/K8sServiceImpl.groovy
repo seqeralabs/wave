@@ -147,6 +147,50 @@ class K8sServiceImpl implements K8sService {
                 .batchV1Api()
                 .createNamespacedJob(namespace, body, null, null, null,null)
     }
+    /**
+     * Create a K8s job with the specified name
+     *
+     * @param name
+     *      The K8s job name. It must be unique
+     * @param containerImage
+     *      The container image to be used to run the job
+     * @param args
+     *      The command to be executed by the job
+     * @param credsFile
+     *      Path to credentials file
+     * @param credsFile
+     *      Path to credentials file in container
+     * @return
+     *      An instance of {@link V1Job}
+     */
+    @Override
+    @CompileDynamic
+    V1Job createJobWithCredentials(String name, String containerImage, List<String> args, String mountConfigFile, String credsFile) {
+
+        V1Job body = new V1JobBuilder()
+                .withNewMetadata()
+                    .withNamespace(namespace)
+                    .withName(name)
+                .endMetadata()
+                .withNewSpec()
+                    .withBackoffLimit(0)
+                    .withNewTemplate()
+                        .editOrNewSpec()
+                        .addNewContainer()
+                            .withName(name)
+                            .withImage(containerImage)
+                            .withArgs(args)
+                        .endContainer()
+                    .withRestartPolicy("Never")
+                .endSpec()
+                .endTemplate()
+                .endSpec()
+                .build();
+
+        return k8sClient
+                .batchV1Api()
+                .createNamespacedJob(namespace, body, null, null, null,null)
+    }
 
     /**
      * Get a Jobs Job.

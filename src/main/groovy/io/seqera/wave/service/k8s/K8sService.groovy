@@ -18,6 +18,8 @@ interface K8sService {
 
     V1Job createJob(String name, String containerImage, List<String> args)
 
+    V1Job createJobWithCredentials(String name, String containerImage, List<String> args, String mountConfigFile, String credsFile)
+
     V1Job getJob(String name)
 
     JobStatus getJobStatus(String name)
