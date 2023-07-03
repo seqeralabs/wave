@@ -63,10 +63,10 @@ class DockerAuthServiceTest extends Specification {
         DockerAuthService.findRepositories() == [] as Set
 
         and:
-        DockerAuthService.findRepositories('from ubuntu:latest')  == ['ubuntu:latest'] as Set
+        DockerAuthService.findRepositories('FROM ubuntu:latest')  == ['ubuntu:latest'] as Set
 
         and:
-        DockerAuthService.findRepositories('FROM quay.io/ubuntu:latest')  == ['quay.io/ubuntu:latest'] as Set
+        DockerAuthService.findRepositories('FROM --platform=amd64 quay.io/ubuntu:latest')  == ['quay.io/ubuntu:latest'] as Set
 
         and:
         DockerAuthService.findRepositories('''

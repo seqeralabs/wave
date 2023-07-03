@@ -4,6 +4,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.model.ContainerCoordinates
+import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
@@ -65,13 +66,9 @@ class DockerAuthService {
         if( !dockerfile )
             return result
         for( String line : dockerfile.readLines()) {
-            if( !line.trim().toLowerCase().startsWith('from '))
-                continue
-            def repo = line.trim().substring(5)
-            def p = repo.indexOf(' ')
-            if( p!=-1 )
-                repo = repo.substring(0,p)
-            result.add(repo)
+            final repo = RegHelper.parseFromStatement(line.trim())
+            if( repo )
+                result.add(repo)
         }
         return result
     }

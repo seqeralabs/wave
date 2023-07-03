@@ -1,6 +1,7 @@
 package io.seqera.wave
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.util.concurrent.CompletableFuture
 
@@ -109,4 +110,17 @@ class RegHelperTest extends Specification {
         true
     }
 
+    @Unroll
+    def 'should parse docker from statement' () {
+        expect:
+        RegHelper.parseFromStatement(LINE) == EXPECT
+
+        where:
+        LINE                                | EXPECT
+        null                                | null
+        'FROM foo'                          | 'foo'
+        'FROM  foo '                        | 'foo'
+        'FROM --platform=xyz foo'           | 'foo'
+        'FROM --platform=xyz foo as this'   | 'foo'
+    }
 }
