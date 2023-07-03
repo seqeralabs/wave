@@ -1,0 +1,43 @@
+<html>
+<head>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="Wave container scan notification email">
+        <title>Wave container scan notification</title>
+    </head>
+<body>
+<div style="font-family:'-apple-system', BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; padding: 30px; max-width: 800px; margin: 0 auto;">
+
+    <h1>Wave container scan completion</h1>
+
+{{#if scan_success}}
+        <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+            <h4 style="margin-top:0; color: inherit;">
+                Container scan completed successfully!
+            </h4>
+            <h3>Summary</h3>
+        </div>
+    <table cellpadding="4" >
+        <tr>
+            <td>Request ID</td>
+            <td>{{build_id}}</td>
+        </tr>
+        <tr>
+            <td>Scan Result</td>
+            <td>{{scan_result}}</td>
+        </tr>
+    </table>
+{{else}}
+        <div style="color: #a94442; background-color: #f2dede; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+            <h4 style="margin-top:0; color: inherit;">
+                Container scan failed
+            </h4>
+        </div>
+{{/if}}
+
+</div>
+
+</body>
+</html>
