@@ -78,6 +78,11 @@
     <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">${build_spackfile}</pre>
     <% } %>
 
+    <% if (scan_url) { %>
+    <h3>Scan Results</h3>
+    <a href="${scan_url}">${build_id}</a>
+    <% } %>
+
     <h3>Build logs</h3>
     <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">${build_logs}</pre>
 
