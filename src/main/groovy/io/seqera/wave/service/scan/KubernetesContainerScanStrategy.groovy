@@ -73,7 +73,7 @@ class KubernetesContainerScanStrategy extends ContainerScanStrategy{
         }
         V1Job job;
         try {
-            job = createJobWithCredentials("${image}-scan", containerScanner, List.of('image',image), "/root/.docker/config.json", credsFile.toString())
+            job = k8sService.createJobWithCredentials("${image}-scan", containerScanner, List.of('image',image), "/root/.docker/config.json", credsFile.toString())
 
             log.info("Container scan job created: ${job.getMetadata().getName()}")
         }catch (Exception e){
@@ -86,39 +86,5 @@ class KubernetesContainerScanStrategy extends ContainerScanStrategy{
         scanResult.result = jobName
 
         return scanResult
-    }
-
-    @CompileDynamic
-    V1Job createJobWithCredentials(String name, String containerImage, List<String> args, String mountConfigFile, String credsFile) {
-
-        V1Job body = new V1JobBuilder()
-                .withNewMetadata()
-                .withNamespace('default')
-                .withName(name)
-                .endMetadata()
-                .withNewSpec()
-                .withBackoffLimit(0)
-                .withNewTemplate()
-                .editOrNewSpec()
-                .addNewContainer()
-                .withName(name)
-                .withImage(containerImage)
-                .withArgs(args)
-                .endContainer()
-                .withRestartPolicy("Never")
-                .endSpec()
-                .endTemplate()
-                .endSpec()
-                .build();
-// Create the default Kubernetes client configuration
-        ApiClient client = Config.defaultClient();
-
-        // Set the default client configuration
-        Configuration.setDefaultApiClient(client);
-
-        // Create an instance of the BatchV1Api client
-        BatchV1Api batchApi = new BatchV1Api(client);
-        return batchApi
-                .createNamespacedJob('default', body, null, null, null,null)
     }
 }
