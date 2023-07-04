@@ -25,6 +25,7 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.exception.BadRequestException
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
@@ -141,57 +142,7 @@ class K8sServiceImpl implements K8sService {
                 .endSpec()
                 .endTemplate()
                 .endSpec()
-                .build();
-
-        return k8sClient
-                .batchV1Api()
-                .createNamespacedJob(namespace, body, null, null, null,null)
-    }
-    /**
-     * Create a K8s job with the specified name
-     *
-     * @param name
-     *      The K8s job name. It must be unique
-     * @param containerImage
-     *      The container image to be used to run the job
-     * @param args
-     *      The command to be executed by the job
-     * @param credsFile
-     *      Path to credentials file
-     * @param credsFile
-     *      Path to credentials file in container
-     * @return
-     *      An instance of {@link V1Job}
-     */
-    @Override
-    @CompileDynamic
-    V1Job createJobWithCredentials(String name, String containerImage, List<String> args, String mountConfigFile, String credsFile) {
-
-        V1Job body = new V1JobBuilder()
-                .withNewMetadata()
-                    .withNamespace(namespace)
-                    .withName(name)
-                .endMetadata()
-                .withNewSpec()
-                    .withBackoffLimit(0)
-                    .withNewTemplate()
-                        .editOrNewSpec()
-                        .addNewContainer()
-                            .withName(name)
-                            .withImage(containerImage)
-                            .withArgs(args)
-                            .addNewVolumeMount()
-                                .withName("docker-config")
-                                .withMountPath(mountConfigFile)
-                                .withSubPath(credsFile)
-                                .withReadOnly(true)
-                            .endVolumeMount()
-                        .endContainer()
-                    .withRestartPolicy("Never")
-                .endSpec()
-                .endTemplate()
-                .endSpec()
-                .build();
+                .build()
 
         return k8sClient
                 .batchV1Api()
@@ -289,18 +240,18 @@ class K8sServiceImpl implements K8sService {
     }
 
     /**
-     * Defines the volume mount for the Kaniko docker config
+     * Defines the volume mount for the  docker config
      *
-     * @return A {@link V1VolumeMount} representing the docker config for kaniko
+     * @return A {@link V1VolumeMount} representing the docker config
      */
-    protected V1VolumeMount mountDockerConfig(Path workDir, String storageMountPath) {
+    protected V1VolumeMount mountDockerConfig(Path workDir, String storageMountPath, String mountPath) {
         assert workDir, "K8s mount build storage is mandatory"
 
         final rel = Path.of(storageMountPath).relativize(workDir).toString()
         final String config = rel ? "$rel/config.json" : 'config.json'
         return new V1VolumeMount()
                 .name('build-data')
-                .mountPath('/kaniko/.docker/config.json')
+                .mountPath(mountPath)
                 .subPath(config)
                 .readOnly(true)
     }
@@ -344,24 +295,27 @@ class K8sServiceImpl implements K8sService {
      */
     @Override
     @CompileDynamic
-    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector) {
-        final spec = buildSpec(name, containerImage, args, workDir, creds, spackConfig, nodeSelector)
+    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path credsDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector, String mountPath) {
+        final spec = buildSpec(name, containerImage, args, workDir, credsDir, creds, spackConfig, nodeSelector, mountPath)
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
-    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector) {
+    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path credsDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector, String mountPath) {
 
         // required volumes
+
         final mounts = new ArrayList<V1VolumeMount>(5)
-        mounts.add(mountBuildStorage(workDir, storageMountPath))
+        if (workDir) {
+            mounts.add(mountBuildStorage(workDir, storageMountPath))
+        }
 
         final volumes = new ArrayList<V1Volume>(5)
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
         if( creds ){
-            mounts.add(0, mountDockerConfig(workDir, storageMountPath))
+            mounts.add(0, mountDockerConfig(credsDir, storageMountPath,mountPath))
         }
 
         if( spackConfig ) {
@@ -474,5 +428,48 @@ class K8sServiceImpl implements K8sService {
         k8sClient
                 .coreV1Api()
                 .deleteNamespacedPod(name, namespace, (String)null, (String)null, (Integer)null, (Boolean)null, (String)null, (V1DeleteOptions)null)
+    }
+    /**
+     * Given the requested container platform and collection of node selector labels find the best
+     * matching label
+     *
+     * @param platform
+     *      The requested container platform e.g. {@code linux/amd64}
+     * @param nodeSelectors
+     *      A map that associate the platform architecture with a corresponding node selector label
+     * @return
+     *      A {@link Map} object representing a kubernetes label to be used as node selector for the specified
+     *      platform or a empty map when there's no matching
+     */
+    Map<String,String> getSelectorLabel(ContainerPlatform platform, Map<String,String> nodeSelectors) {
+        if( !nodeSelectors )
+            return Collections.emptyMap()
+
+        final key = platform.toString()
+        if( nodeSelectors.containsKey(key) ) {
+            return toLabelMap(nodeSelectors[key])
+        }
+
+        final allKeys = nodeSelectors.keySet().sort( it -> it.size() ).reverse()
+        for( String it : allKeys ) {
+            if( ContainerPlatform.of(it) == platform ) {
+                return toLabelMap(nodeSelectors[it])
+            }
+        }
+
+        throw new BadRequestException("Unsupported container platform '${platform}'")
+    }
+
+    /**
+     * Given a label formatted as key=value, return it as a map
+     *
+     * @param label A label composed by a key and a value, separated by a `=` character.
+     * @return The same label as Java {@link Map} object
+     */
+    private Map<String,String> toLabelMap(String label) {
+        final parts = label.tokenize('=')
+        if( parts.size() != 2 )
+            throw new IllegalArgumentException("Label should be specified as 'key=value' -- offending value: '$label'")
+        return Map.of(parts[0], parts[1])
     }
 }

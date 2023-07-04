@@ -16,4 +16,6 @@ wave:
       namespace: 'wave-local'
       storage:
         mountPath: "${HOME}/.wave/build-workspace"
+  scan:
+    workspace: "${HOME}/.wave/scan-workspace"
 ...

@@ -98,17 +98,18 @@ class ViewController {
     @Get('/scans/{buildId}')
     HttpResponse<Map<String,Object>> viewScan(String buildId) {
         final result = persistenceService.loadContainerScanResult(buildId)
-        final binding = new HashMap(5)
-        if( !result ){
-            binding.scan_success=false
-        }else{
-            binding.scan_success=true
+        final binding = new HashMap(6)
+        if( !result ) {
+            binding.completed=false
+        }else {
+            binding.completed = true
+            binding.scan_success = result.scanResult.isSuccess
             binding.build_id = buildId
             binding.scan_time = formatTimestamp(result.scanResult.startTime) ?: '-'
             binding.scan_duration = formatDuration(result.scanResult.duration) ?: '-'
-            binding.scan_result = result.scanResult
+            if((result.scanResult.result!=null)&&(!result.scanResult.result.isEmpty()))
+            binding.vulnerabilities = result.scanResult.result
         }
-
         // return the response
         binding.put('server_url', serverUrl)
         return HttpResponse.<Map<String,Object>>ok(binding)

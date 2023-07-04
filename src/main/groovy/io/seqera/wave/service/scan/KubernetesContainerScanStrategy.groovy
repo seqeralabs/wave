@@ -19,9 +19,11 @@ import io.kubernetes.client.util.Config
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
+import io.micronaut.context.annotation.Value
 import io.seqera.wave.configuration.ContainerScanConfig
 import io.seqera.wave.model.ScanResult
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Singleton
 import static java.nio.file.StandardOpenOption.CREATE
@@ -39,6 +41,9 @@ import static java.nio.file.StandardOpenOption.WRITE
 @Singleton
 @CompileStatic
 class KubernetesContainerScanStrategy extends ContainerScanStrategy{
+    @Value('${wave.scan.timeout:5m}')
+    Duration scanTimeout
+
     @Property(name='wave.scan.k8s.node-selector')
     @Nullable
     private Map<String, String> nodeSelectorMap
@@ -56,35 +61,35 @@ class KubernetesContainerScanStrategy extends ContainerScanStrategy{
     ScanResult scanContainer(String containerScanner, BuildRequest buildRequest) {
         log.info("Launching container scan for buildId: "+buildRequest.id)
 
-        ScanResult scanResult = new ScanResult()
-        scanResult.buildId = buildRequest.id
-        scanResult.startTime = Instant.now()
+        Instant startTime = Instant.now()
 
-        String image = buildRequest.targetImage
-
-        Path credsFile;
+        Path configFile = null
+        Path scanDir = null
         try{
             if( buildRequest.configJson ) {
-                Path scanDir = Files.createDirectories(Path.of(containerScanConfig.workspace))
-                credsFile = scanDir.resolve('config.json').toAbsolutePath()
-                Files.write(credsFile, JsonOutput.prettyPrint(buildRequest.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
-            }}catch (Exception e){
-            log.warn("Error getting credentials "+e.getMessage())
-        }
-        V1Job job;
-        try {
-            job = k8sService.createJobWithCredentials("${image}-scan", containerScanner, List.of('image',image), "/root/.docker/config.json", credsFile.toString())
-
-            log.info("Container scan job created: ${job.getMetadata().getName()}")
+                scanDir = Files.createDirectories(Path.of(containerScanConfig.workspace))
+                configFile = scanDir.resolve('config.json').toAbsolutePath()
+                Files.write(configFile, JsonOutput.prettyPrint(buildRequest.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            }
+        V1Job job
+            def trivyCommand = trivyWrapper(buildRequest.targetImage)
+            final trivyCredsPath = '/root/.docker/config.json'
+            final name = podName(buildRequest)
+            final selector= k8sService.getSelectorLabel(buildRequest.platform, nodeSelectorMap)
+            final pod = k8sService.buildContainer(name, containerScanner, trivyCommand, null, scanDir, configFile, null, selector,trivyCredsPath)
+            final terminated = k8sService.waitPod(pod, scanTimeout.toMillis())
+            final stdout = k8sService.logsPod(name)
+            if( terminated ) {
+                return ScanResult.success(buildRequest.id, startTime, TrivyResultProcessor.process(stdout))
+            }else{
+                return ScanResult.failure(buildRequest.id, startTime, null)
+            }
         }catch (Exception e){
-            log.warn("Error in creating scan Job in kubernetes : ${e.getMessage()}")
-            e.printStackTrace()
+            log.warn("Error in creating scan pod in kubernetes : ${e.getMessage()}", e)
+            return ScanResult.failure(buildRequest.id, startTime, null)
         }
-        String jobName = job.getMetadata().getName();
-
-        scanResult.duration = Duration.between(scanResult.startTime,Instant.now())
-        scanResult.result = jobName
-
-        return scanResult
+    }
+    private String podName(BuildRequest req) {
+        return "scan-${req.job}"
     }
 }

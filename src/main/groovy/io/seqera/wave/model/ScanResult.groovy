@@ -16,40 +16,25 @@ import groovy.transform.ToString
 @EqualsAndHashCode
 @CompileStatic
 class ScanResult {
-    private String buildId
-    private Instant startTime
-    private Duration duration
+    String buildId
+    Instant startTime
+    Duration duration
+    List<Map<String,Object>> result
+    boolean isCompleted
+    boolean isSuccess
 
-    void setStartTime(Instant startTime) {
-        this.startTime = startTime
-    }
-
-    void setDuration(Duration duration) {
-        this.duration = duration
-    }
-
-    void setResult(String result) {
-        this.result = result
-    }
-    private String result
-
-    String getBuildId() {
-        return buildId
-    }
-
-    void setBuildId(String buildId) {
+    private ScanResult(String buildId, Instant startTime, List<Map<String,Object>> result, Duration duration, boolean isSuccess) {
         this.buildId = buildId
+        this.startTime = startTime
+        this.duration = duration
+        this.result = result
+        this.isSuccess = isSuccess
     }
 
-    Instant getStartTime() {
-        return startTime
+    static ScanResult success(String buildId, Instant startTime, List<Map<String,Object>> result){
+        return new ScanResult(buildId, startTime, result, Duration.between(startTime, Instant.now()), true)
     }
-
-    Duration getDuration() {
-        return duration
-    }
-
-    String getResult() {
-        return result
+    static ScanResult failure(String buildId, Instant startTime, List<Map<String,Object>> result){
+        return new ScanResult(buildId, startTime, result, Duration.between(startTime, Instant.now()), false)
     }
 }

@@ -2,7 +2,6 @@ package io.seqera.wave.service.scan
 
 import java.nio.file.Files
 import java.nio.file.Path
-import java.time.Duration
 import java.time.Instant
 
 import groovy.json.JsonOutput
@@ -39,21 +38,18 @@ class DockerContainerScanStrategy extends ContainerScanStrategy{
 
         log.info("Launching container scan for buildId: "+buildRequest.id)
 
-        ScanResult scanResult = new ScanResult()
-        scanResult.buildId = buildRequest.id
-        scanResult.startTime = Instant.now()
+        Instant startTime = Instant.now()
         Path configFile
+        StringBuilder processOutput = new StringBuilder()
         try{
-        if( buildRequest.configJson ) {
-            Path scanDir = Files.createDirectories(Path.of(containerScanConfig.workspace))
-            configFile = scanDir.resolve('config.json').toAbsolutePath()
-            Files.write(configFile, JsonOutput.prettyPrint(buildRequest.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
-        }}catch (Exception e){
-            log.warn("Error getting credentials "+e.getMessage())
-        }
+            if( buildRequest.configJson ) {
+                Path scanDir = Files.createDirectories(Path.of(containerScanConfig.workspace))
+                configFile = scanDir.resolve('config.json').toAbsolutePath()
+                Files.write(configFile, JsonOutput.prettyPrint(buildRequest.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            }
 
         def dockerCommand = dockerWrapper(configFile)
-        def trivyCommand = trivyWrapper(containerScanner, buildRequest.targetImage)
+        def trivyCommand = List.of(containerScanner)+trivyWrapper(buildRequest.targetImage)
         def command = dockerCommand+trivyCommand
 
         //launch scanning
@@ -63,15 +59,14 @@ class DockerContainerScanStrategy extends ContainerScanStrategy{
                 .start()
 
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.inputStream))
-        StringBuilder processOutput = new StringBuilder()
         String outputLine
         while((outputLine = bufferedReader.readLine())!=null){
             processOutput.append(outputLine)
         }
-        try {
             int exitCode = process.waitFor()
             if ( exitCode != 0 ) {
                 log.warn("Container scanner failed to scan container, it exited with code : ${exitCode}")
+                return ScanResult.failure(buildRequest.id, startTime, null)
                 InputStream errorStream = process.getErrorStream()
                 BufferedReader reader = new BufferedReader(new InputStreamReader(errorStream))
                 String line
@@ -83,12 +78,9 @@ class DockerContainerScanStrategy extends ContainerScanStrategy{
             }
         }catch (Exception e){
             log.warn("Container scanner failed to scan container, reason : ${e.getMessage()}")
+            return ScanResult.failure(buildRequest.id, startTime, null)
         }
-
-        scanResult.duration = Duration.between(scanResult.startTime,Instant.now())
-        scanResult.result = processOutput.toString()
-
-        return scanResult
+        return ScanResult.success(buildRequest.id, startTime, TrivyResultProcessor.process(processOutput.toString()))
     }
 
     private List<String> dockerWrapper(Path credsFile) {
@@ -106,12 +98,6 @@ class DockerContainerScanStrategy extends ContainerScanStrategy{
             wrapper.add('-v')
             wrapper.add("${containerScanConfig.cacheDirectory}:/root/.cache/:rw".toString())
         }
-        return wrapper
-    }
-    private List<String> trivyWrapper(String containerScanner, String targetImage){
-        List<String> wrapper = [containerScanner,
-                                'image',
-                                 targetImage]
         return wrapper
     }
 }

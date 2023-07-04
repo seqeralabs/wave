@@ -1,6 +1,8 @@
 <html>
 <head>
     <head>
+
+        <meta http-equiv="refresh" content="5">
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,8 +13,7 @@
 <div style="font-family:'-apple-system', BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; padding: 30px; max-width: 800px; margin: 0 auto;">
 
     <h1>Wave container scan completion</h1>
-
-{{#if scan_success}}
+{{#if completed}}
         <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
             <h4 style="margin-top:0; color: inherit;">
                 Container scan completed successfully!
@@ -24,10 +25,17 @@
             <td>Request ID</td>
             <td>{{build_id}}</td>
         </tr>
+    {{#if scan_success}}
         <tr>
-            <td>Scan Result</td>
-            <td>{{scan_result}}</td>
+            <td>Scan Status</td>
+            <td>Successful</td>
         </tr>
+    {{else}}
+        <tr>
+            <td>Scan Status</td>
+            <td>Failed</td>
+        </tr>
+    {{/if}}
         <tr>
             <td>Build time</td>
             <td>{{scan_time}}</td>
@@ -37,15 +45,61 @@
             <td>Duration</td>
             <td>{{scan_duration}}</td>
         </tr>
+
+        <tr>
+            <td>Scan Result</td>
+            <td>
+                {{#if vulnerabilities.length}}
+                    <style>
+                        .bordered-table {
+                            border-collapse: collapse;
+                        }
+
+                        .bordered-table, .bordered-table th, .bordered-table td {
+                            border: 1px solid black;
+                        }
+                    </style>
+                    <table class="bordered-table">
+                        <thead>
+                        <tr>
+                            <th>Vulnerability ID</th>
+                            <th>Severity</th>
+                            <th>Title</th>
+                            <th>Package ID</th>
+                            <th>Package Name</th>
+                            <th>Installed Version</th>
+                            <th>Primary URL</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                            {{#each vulnerabilities}}
+                                <tr>
+                                    <td>{{this.vulnerabilityId}}</td>
+                                    <td>{{this.severity}}</td>
+                                    <td>{{title}}</td>
+                                    <td>{{this.pkgId}}</td>
+                                    <td>{{this.pkgName}}</td>
+                                    <td>{{this.installedVersion}}</td>
+                                    <td>{{this.primaryUrl}}</td>
+                                </tr>
+                            {{/each}}
+                        </tbody>
+                    </table>
+                {{else}}
+                    <tr>
+                        <td colspan="3">No vulnerabilities found</td>
+                    </tr>
+                {{/if}}
+        </td>
+        </tr>
     </table>
 {{else}}
-        <div style="color: #a94442; background-color: #f2dede; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
-            <h4 style="margin-top:0; color: inherit;">
-                Container scan failed
-            </h4>
-        </div>
+    <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+        <h4 style="margin-top:0; color: inherit;">
+            Container scan still in progress
+        </h4>
+    </div>
 {{/if}}
-
 </div>
 
 </body>

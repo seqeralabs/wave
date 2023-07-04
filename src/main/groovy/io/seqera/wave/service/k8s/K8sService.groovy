@@ -6,6 +6,7 @@ import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1Pod
 import io.seqera.wave.configuration.SpackConfig
+import io.seqera.wave.core.ContainerPlatform
 
 /**
  * Defines Kubernetes operations
@@ -18,8 +19,6 @@ interface K8sService {
 
     V1Job createJob(String name, String containerImage, List<String> args)
 
-    V1Job createJobWithCredentials(String name, String containerImage, List<String> args, String mountConfigFile, String credsFile)
-
     V1Job getJob(String name)
 
     JobStatus getJobStatus(String name)
@@ -30,7 +29,9 @@ interface K8sService {
 
     void deletePod(String name)
 
-    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector)
+    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path credsDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector, String mountPath)
 
     V1ContainerStateTerminated waitPod(V1Pod pod, long timeout)
+
+    Map<String,String> getSelectorLabel(ContainerPlatform platform, Map<String,String> nodeSelectors)
 }

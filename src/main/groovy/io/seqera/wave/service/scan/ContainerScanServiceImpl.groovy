@@ -57,8 +57,10 @@ class ContainerScanServiceImpl implements ContainerScanService {
     void scan(BuildRequest buildRequest) {
         CompletableFuture
                 .supplyAsync(() -> containerScanStrategy.scanContainer(containerScanConfig.scannerImage, buildRequest), executor)
-                .thenApply((result) ->
-                { persistenceService.saveContainerScanResult(buildRequest.id, new WaveContainerScanRecord(buildRequest.id,result)); return result})
+                .thenApply((result) -> {
+                    result.isCompleted = true
+                    persistenceService.saveContainerScanResult(buildRequest.id, new WaveContainerScanRecord(buildRequest.id,result))
+                    return result})
     }
 
     @Override
