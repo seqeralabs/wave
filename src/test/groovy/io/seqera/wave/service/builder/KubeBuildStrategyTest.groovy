@@ -79,7 +79,7 @@ class KubeBuildStrategyTest extends Specification {
         then:
         resp
         and:
-        1 * k8sService.buildContainer(_, _, _, _, _, _, [service:'wave-build']) >> null
+        1 * k8sService.buildContainer(_, _, _, _, _, _, [service:'wave-build'], _) >> null
 
         when:
         def req2 = new BuildRequest('from foo', PATH, repo, null, null, USER, ContainerPlatform.of('arm64'),'{}', cache, "")
@@ -89,7 +89,7 @@ class KubeBuildStrategyTest extends Specification {
         then:
         resp2
         and:
-        1 * k8sService.buildContainer(_, _, _, _, _, _, [service:'wave-build-arm64']) >> null
+        1 * k8sService.buildContainer(_, _, _, _, _, _, [service:'wave-build-arm64'], _) >> null
 
     }
 }

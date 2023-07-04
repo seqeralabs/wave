@@ -295,27 +295,25 @@ class K8sServiceImpl implements K8sService {
      */
     @Override
     @CompileDynamic
-    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path credsDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector, String mountPath) {
-        final spec = buildSpec(name, containerImage, args, workDir, credsDir, creds, spackConfig, nodeSelector, mountPath)
+    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector, String mountPath) {
+        final spec = buildSpec(name, containerImage, args, workDir, creds, spackConfig, nodeSelector, mountPath)
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
-    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path credsDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector, String mountPath) {
+    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector, String mountPath) {
 
         // required volumes
 
         final mounts = new ArrayList<V1VolumeMount>(5)
-        if (workDir) {
             mounts.add(mountBuildStorage(workDir, storageMountPath))
-        }
 
         final volumes = new ArrayList<V1Volume>(5)
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
         if( creds ){
-            mounts.add(0, mountDockerConfig(credsDir, storageMountPath,mountPath))
+            mounts.add(0, mountDockerConfig(workDir, storageMountPath,mountPath))
         }
 
         if( spackConfig ) {
@@ -429,47 +427,64 @@ class K8sServiceImpl implements K8sService {
                 .coreV1Api()
                 .deleteNamespacedPod(name, namespace, (String)null, (String)null, (Integer)null, (Boolean)null, (String)null, (V1DeleteOptions)null)
     }
-    /**
-     * Given the requested container platform and collection of node selector labels find the best
-     * matching label
-     *
-     * @param platform
-     *      The requested container platform e.g. {@code linux/amd64}
-     * @param nodeSelectors
-     *      A map that associate the platform architecture with a corresponding node selector label
-     * @return
-     *      A {@link Map} object representing a kubernetes label to be used as node selector for the specified
-     *      platform or a empty map when there's no matching
-     */
-    Map<String,String> getSelectorLabel(ContainerPlatform platform, Map<String,String> nodeSelectors) {
-        if( !nodeSelectors )
-            return Collections.emptyMap()
-
-        final key = platform.toString()
-        if( nodeSelectors.containsKey(key) ) {
-            return toLabelMap(nodeSelectors[key])
-        }
-
-        final allKeys = nodeSelectors.keySet().sort( it -> it.size() ).reverse()
-        for( String it : allKeys ) {
-            if( ContainerPlatform.of(it) == platform ) {
-                return toLabelMap(nodeSelectors[it])
-            }
-        }
-
-        throw new BadRequestException("Unsupported container platform '${platform}'")
+    @Override
+    @CompileDynamic
+    V1Pod scanContainer(String name, String containerImage, List<String> args, Path credsDir, Path creds, Map<String,String> nodeSelector, String mountPath) {
+        final spec = scanSpec(name, containerImage, args, credsDir, creds, spackConfig, nodeSelector, mountPath)
+        return k8sClient
+                .coreV1Api()
+                .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
-    /**
-     * Given a label formatted as key=value, return it as a map
-     *
-     * @param label A label composed by a key and a value, separated by a `=` character.
-     * @return The same label as Java {@link Map} object
-     */
-    private Map<String,String> toLabelMap(String label) {
-        final parts = label.tokenize('=')
-        if( parts.size() != 2 )
-            throw new IllegalArgumentException("Label should be specified as 'key=value' -- offending value: '$label'")
-        return Map.of(parts[0], parts[1])
+    V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path creds, Map<String,String> nodeSelector, String mountPath) {
+
+        // required volumes
+
+        final mounts = new ArrayList<V1VolumeMount>(5)
+        mounts.add(mountBuildStorage(workDir, storageMountPath))
+
+        final volumes = new ArrayList<V1Volume>(5)
+        volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
+
+        if( creds ){
+            mounts.add(0, mountDockerConfig(workDir, storageMountPath,mountPath))
+        }
+
+        V1PodBuilder builder = new V1PodBuilder()
+
+        //metadata section
+        builder.withNewMetadata()
+                .withNamespace(namespace)
+                .withName(name)
+                .addToLabels(labels)
+                .endMetadata()
+
+        //spec section
+        def spec = builder
+                .withNewSpec()
+                .withNodeSelector(nodeSelector)
+                .withServiceAccount(serviceAccount)
+                .withActiveDeadlineSeconds( buildTimeout.toSeconds() )
+                .withRestartPolicy("Never")
+                .addAllToVolumes(volumes)
+
+
+        final requests = new V1ResourceRequirements()
+        if( requestsCpu )
+            requests.putRequestsItem('cpu', new Quantity(requestsCpu))
+        if( requestsMemory )
+            requests.putRequestsItem('memory', new Quantity(requestsMemory))
+
+        //container section
+        spec.addNewContainer()
+                .withName(name)
+                .withImage(containerImage)
+                .withArgs(args)
+                .withVolumeMounts(mounts)
+                .withResources(requests)
+                .endContainer()
+                .endSpec()
+
+        builder.build()
     }
 }

@@ -29,9 +29,9 @@ interface K8sService {
 
     void deletePod(String name)
 
-    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path credsDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector, String mountPath)
+    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector, String mountPath)
+
+    V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, Map<String,String> nodeSelector, String mountPath)
 
     V1ContainerStateTerminated waitPod(V1Pod pod, long timeout)
-
-    Map<String,String> getSelectorLabel(ContainerPlatform platform, Map<String,String> nodeSelectors)
 }
