@@ -16,14 +16,17 @@ import jakarta.inject.Singleton
 @Singleton
 @Slf4j
 class ContainerScanConfig {
+    /**
+     * DOcker image of tool need to be used for container scanner
+     */
     @Value('${wave.scan.image.name:aquasec/trivy:0.43.0}')
     private String scannerImage
 
     /**
-     * The host path where where Trivy cache DB stored
+     * The host path where cache DB stored
      */
     @Nullable
-    @Value('${wave.scan.trivy.cacheDirectory}')
+    @Value('${wave.scan.cacheDirectory}')
     private String cacheDirectory
 
     @Value('${wave.scan.workspace}')
@@ -44,6 +47,6 @@ class ContainerScanConfig {
 
     @PostConstruct
     private void init() {
-        log.debug("Scanner config : docker image name : ${scannerImage}")
+        log.debug("Scanner config : docker image name : ${scannerImage} , workspace ${workspace}, cache directory ${cacheDirectory}")
     }
 }
