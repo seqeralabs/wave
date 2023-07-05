@@ -50,7 +50,7 @@ wave:
       delay: '500ms'
       attempts: 5
       multiplier: '1.75'
-  scanner :
+  scan :
     image :
       name : aquasec/trivy:0.43.0
 ---

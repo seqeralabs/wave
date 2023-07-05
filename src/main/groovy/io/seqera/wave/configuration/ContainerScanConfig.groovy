@@ -16,7 +16,7 @@ import jakarta.inject.Singleton
 @Singleton
 @Slf4j
 class ContainerScanConfig {
-    @Value('${wave.scanner.image.name:aquasec/trivy:0.43.0}')
+    @Value('${wave.scan.image.name:aquasec/trivy:0.43.0}')
     private String scannerImage
 
     /**
