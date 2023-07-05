@@ -80,6 +80,13 @@ class K8sServiceImpl implements K8sService {
     @Nullable
     private String requestsMemory
 
+    @Value('${wave.scan.k8s.storage.mountPath}')
+    @Nullable
+    private String scanStorageMountPath
+
+    @Value('${wave.scan.timeout:5m}')
+    Duration scanTimeout
+
     @Inject
     private SpackConfig spackConfig
 
@@ -246,8 +253,7 @@ class K8sServiceImpl implements K8sService {
      */
     protected V1VolumeMount mountDockerConfig(Path workDir, String storageMountPath, String mountPath) {
         assert workDir, "K8s mount build storage is mandatory"
-
-        final rel = Path.of(storageMountPath).relativize(workDir).toString()
+        def rel = Path.of(storageMountPath).relativize(workDir).toString()
         final String config = rel ? "$rel/config.json" : 'config.json'
         return new V1VolumeMount()
                 .name('build-data')
@@ -430,7 +436,7 @@ class K8sServiceImpl implements K8sService {
     @Override
     @CompileDynamic
     V1Pod scanContainer(String name, String containerImage, List<String> args, Path credsDir, Path creds, Map<String,String> nodeSelector, String mountPath) {
-        final spec = scanSpec(name, containerImage, args, credsDir, creds, spackConfig, nodeSelector, mountPath)
+        final spec = scanSpec(name, containerImage, args, credsDir, creds, nodeSelector, mountPath)
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec, null, null, null,null)
@@ -438,16 +444,14 @@ class K8sServiceImpl implements K8sService {
 
     V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path creds, Map<String,String> nodeSelector, String mountPath) {
 
-        // required volumes
-
         final mounts = new ArrayList<V1VolumeMount>(5)
-        mounts.add(mountBuildStorage(workDir, storageMountPath))
+        mounts.add(mountBuildStorage(workDir, scanStorageMountPath))
 
         final volumes = new ArrayList<V1Volume>(5)
-        volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
+        volumes.add(volumeBuildStorage(scanStorageMountPath, storageClaimName))
 
         if( creds ){
-            mounts.add(0, mountDockerConfig(workDir, storageMountPath,mountPath))
+            mounts.add(0, mountDockerConfig(workDir, scanStorageMountPath, mountPath))
         }
 
         V1PodBuilder builder = new V1PodBuilder()
@@ -464,7 +468,7 @@ class K8sServiceImpl implements K8sService {
                 .withNewSpec()
                 .withNodeSelector(nodeSelector)
                 .withServiceAccount(serviceAccount)
-                .withActiveDeadlineSeconds( buildTimeout.toSeconds() )
+                .withActiveDeadlineSeconds( scanTimeout.toSeconds() )
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
 

@@ -11,6 +11,7 @@ import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.openapi.ApiClient
+import io.kubernetes.client.openapi.ApiException
 import io.kubernetes.client.openapi.Configuration
 import io.kubernetes.client.openapi.apis.BatchV1Api
 import io.kubernetes.client.openapi.models.V1Job
@@ -67,6 +68,7 @@ class KubernetesContainerScanStrategy extends ContainerScanStrategy{
 
         Path configFile = null
         Path scanDir = null
+        final podName = podName(buildRequest)
         try{
             if( buildRequest.configJson ) {
                 scanDir = Files.createDirectories(Path.of(containerScanConfig.workspace))
@@ -75,20 +77,26 @@ class KubernetesContainerScanStrategy extends ContainerScanStrategy{
             }
         V1Job job
             def trivyCommand = trivyWrapper(buildRequest.targetImage)
-            final trivyCredsPath = '/root/.docker/config.json'
-            final name = podName(buildRequest)
             final selector= getSelectorLabel(buildRequest.platform, nodeSelectorMap)
-            final pod = k8sService.scanContainer(name, containerScanner, trivyCommand, scanDir, configFile, selector,trivyCredsPath)
+            final trivyCredsPath = '/root/.docker/config.json'
+            final pod = k8sService.scanContainer(podName, containerScanner, trivyCommand, scanDir, configFile, selector,trivyCredsPath)
             final terminated = k8sService.waitPod(pod, scanTimeout.toMillis())
-            final stdout = k8sService.logsPod(name)
+            final stdout = k8sService.logsPod(podName)
+
             if( terminated ) {
-                return ScanResult.success(buildRequest.id, startTime, TrivyResultProcessor.process(stdout))
+                log.info("Container scan completed for buildId: "+buildRequest.id)
+                return ScanResult.success(buildRequest.id, startTime, TrivyResultProcessor.processLog(stdout))
             }else{
+                log.info("Container scan failed for buildId: "+buildRequest.id)
                 return ScanResult.failure(buildRequest.id, startTime, null)
             }
+        }catch (ApiException e) {
+            throw new BadRequestException("Unexpected build failure - ${e.responseBody}", e)
         }catch (Exception e){
             log.warn("Error in creating scan pod in kubernetes : ${e.getMessage()}", e)
             return ScanResult.failure(buildRequest.id, startTime, null)
+        }finally {
+            cleanup(scanDir, podName)
         }
     }
     private String podName(BuildRequest req) {
@@ -136,5 +144,15 @@ class KubernetesContainerScanStrategy extends ContainerScanStrategy{
         if( parts.size() != 2 )
             throw new IllegalArgumentException("Label should be specified as 'key=value' -- offending value: '$label'")
         return Map.of(parts[0], parts[1])
+    }
+
+    void cleanup(Path scanDir, String podName) {
+        scanDir?.deleteDir()
+        try {
+            k8sService.deletePod(podName)
+        }
+        catch (Exception e) {
+            log.warn ("Unable to delete pod=$podName - cause: ${e.message ?: e}", e)
+        }
     }
 }

@@ -6,7 +6,6 @@ import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1Pod
 import io.seqera.wave.configuration.SpackConfig
-import io.seqera.wave.core.ContainerPlatform
 
 /**
  * Defines Kubernetes operations

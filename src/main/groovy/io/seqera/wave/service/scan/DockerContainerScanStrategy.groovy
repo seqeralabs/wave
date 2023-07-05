@@ -39,11 +39,12 @@ class DockerContainerScanStrategy extends ContainerScanStrategy{
         log.info("Launching container scan for buildId: "+buildRequest.id)
 
         Instant startTime = Instant.now()
-        Path configFile
+        Path configFile = null
+        Path scanDir = null
         StringBuilder processOutput = new StringBuilder()
         try{
             if( buildRequest.configJson ) {
-                Path scanDir = Files.createDirectories(Path.of(containerScanConfig.workspace))
+                scanDir = Files.createDirectories(Path.of(containerScanConfig.workspace))
                 configFile = scanDir.resolve('config.json').toAbsolutePath()
                 Files.write(configFile, JsonOutput.prettyPrint(buildRequest.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             }
@@ -79,6 +80,8 @@ class DockerContainerScanStrategy extends ContainerScanStrategy{
         }catch (Exception e){
             log.warn("Container scanner failed to scan container, reason : ${e.getMessage()}")
             return ScanResult.failure(buildRequest.id, startTime, null)
+        }finally {
+            cleanup(scanDir)
         }
         return ScanResult.success(buildRequest.id, startTime, TrivyResultProcessor.process(processOutput.toString()))
     }
@@ -99,5 +102,8 @@ class DockerContainerScanStrategy extends ContainerScanStrategy{
             wrapper.add("${containerScanConfig.cacheDirectory}:/root/.cache/:rw".toString())
         }
         return wrapper
+    }
+    void cleanup(Path scanDir) {
+        scanDir?.deleteDir()
     }
 }
