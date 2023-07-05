@@ -99,7 +99,7 @@ class K8sServiceImpl implements K8sService {
     @PostConstruct
     private void init() {
         log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; node-selector=$nodeSelectorMap; buildTimeout=$buildTimeout; cpus=$requestsCpu; memory=$requestsMemory; buildWorkspace=$buildWorkspace; storageClaimName=$storageClaimName; storageMountPath=$storageMountPath; "
-        if( storageClaimName && !storageMountPath )
+        if( storageClaimName && (!storageMountPath && !scanStorageMountPath) )
             throw new IllegalArgumentException("Missing 'wave.build.k8s.storage.mountPath' configuration attribute")
         if( storageMountPath ) {
             if( !buildWorkspace )
