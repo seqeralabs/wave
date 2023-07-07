@@ -66,7 +66,7 @@ class DockerContainerScanStrategy extends ContainerScanStrategy{
         }
             int exitCode = process.waitFor()
             if ( exitCode != 0 ) {
-                log.warn("Container scanner failed to scan container, it exited with code : ${exitCode}")
+                log.warn("Container scan failed to scan container, it exited with code : ${exitCode}")
                 return ScanResult.failure(buildRequest.id, startTime, null)
                 InputStream errorStream = process.getErrorStream()
                 BufferedReader reader = new BufferedReader(new InputStreamReader(errorStream))
@@ -78,7 +78,7 @@ class DockerContainerScanStrategy extends ContainerScanStrategy{
                 log.info("Container scan completed for buildId: "+buildRequest.id)
             }
         }catch (Exception e){
-            log.warn("Container scanner failed to scan container, reason : ${e.getMessage()}")
+            log.warn("Container scan failed to scan container, reason : ${e.getMessage()}")
             return ScanResult.failure(buildRequest.id, startTime, null)
         }finally {
             cleanup(scanDir)
