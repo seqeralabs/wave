@@ -164,4 +164,13 @@ class TrivyResultProcessorTest extends Specification {
         vulnerability['primaryUrl'] == "https://avd.aquasec.com/nvd/cve-2010-4756"
 
     }
+
+    def "process should throw exception if json is not correct"() {
+        given:
+        def trivyResultJson = {"invalid json"}
+        when:
+        TrivyResultProcessor.process(trivyResultJson)
+        then:
+        thrown Exception
+    }
 }

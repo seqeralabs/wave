@@ -86,7 +86,7 @@ class DockerContainerScanStrategy extends ContainerScanStrategy{
         return ScanResult.success(buildRequest.id, startTime, TrivyResultProcessor.process(processOutput.toString()))
     }
 
-    private List<String> dockerWrapper(Path credsFile) {
+    protected List<String> dockerWrapper(Path credsFile) {
 
         List<String> wrapper = ['docker',
                                 'run',
@@ -103,7 +103,7 @@ class DockerContainerScanStrategy extends ContainerScanStrategy{
         }
         return wrapper
     }
-    void cleanup(Path scanDir) {
+    protected void cleanup(Path scanDir) {
         scanDir?.deleteDir()
     }
 }
