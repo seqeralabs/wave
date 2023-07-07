@@ -16,7 +16,10 @@ import io.seqera.wave.service.k8s.K8sService
 import io.seqera.wave.service.k8s.K8sServiceImpl
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
-
+/**
+ *
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
+ */
 @MicronautTest
 @Property(name="wave.scan.workspace",value="scan-test-workspace")
 @Property(name="wave.build.k8s.namespace",value="foo")

@@ -1,7 +1,10 @@
 package io.seqera.wave.service.scan
 
 import spock.lang.Specification
-
+/**
+ *
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
+ */
 class ContainerScanStrategyTest extends Specification {
     def "should return trivy command"() {
         given:

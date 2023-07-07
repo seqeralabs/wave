@@ -6,7 +6,10 @@ import java.nio.file.Path
 
 import io.micronaut.context.ApplicationContext
 import io.seqera.wave.configuration.ContainerScanConfig
-
+/**
+ *
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
+ */
 class DockerContainerScanStrategyTest extends Specification {
     def 'should get docker command' () {
         given:

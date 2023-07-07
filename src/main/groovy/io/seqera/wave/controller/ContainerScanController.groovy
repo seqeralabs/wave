@@ -26,6 +26,12 @@ class ContainerScanController {
 
     @Get("/v1alpha1/scan/{buildId}")
     HttpResponse<WaveContainerScanRecord> scanImage(String buildId){
-        HttpResponse.ok(containerScanService.getScanResult(buildId))
+        def record = containerScanService.getScanResult(buildId)
+        if(record != null){
+            HttpResponse.ok(record)
+        } else{
+            HttpResponse.notFound()
+        }
+
     }
 }
