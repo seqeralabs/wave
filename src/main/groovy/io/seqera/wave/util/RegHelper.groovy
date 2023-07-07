@@ -127,4 +127,22 @@ class RegHelper {
         else
             return tokens[1]
     }
+
+    static List<String> parseEntrypoint(String line) {
+        if( !line )
+            return null
+        if( !line.startsWith('ENTRYPOINT '))
+            return null
+        final value = line.substring(10).trim()
+        if( value.startsWith('[') && value.endsWith(']') ) {
+            // parse syntax as ["executable", "param1", "param2"]
+           return value.substring(1, value.length()-1)
+                   .tokenize(',')
+                   .collect(it-> it.trim().replaceAll(/^"(.*)"$/,'$1'))
+        }
+        else {
+            // parse syntax ENTRYPOINT command param1 param2
+            return value.tokenize(' ')
+        }
+    }
 }

@@ -7,7 +7,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
-import io.seqera.wave.auth.DockerAuthService
+import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.SpackConfig
@@ -30,7 +30,7 @@ class ContainerBuildServiceTest extends Specification {
     @Inject ContainerBuildServiceImpl service
     @Inject RegistryLookupService lookupService
     @Inject RegistryCredentialsProvider credentialsProvider
-    @Inject DockerAuthService dockerAuthService
+    @Inject ContainerInspectServiceImpl dockerAuthService
 
     @Value('${wave.build.repo}') String buildRepo
     @Value('${wave.build.cache}') String cacheRepo

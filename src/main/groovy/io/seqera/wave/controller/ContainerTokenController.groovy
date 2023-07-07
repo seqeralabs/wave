@@ -15,7 +15,7 @@ import io.micronaut.http.annotation.Post
 import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
-import io.seqera.wave.auth.DockerAuthService
+import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
@@ -26,7 +26,7 @@ import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
-import io.seqera.wave.service.builder.BuildHelper
+import io.seqera.wave.service.builder.FreezeService
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
@@ -87,7 +87,7 @@ class ContainerTokenController {
     ContainerBuildService buildService
 
     @Inject
-    DockerAuthService dockerAuthService
+    ContainerInspectService dockerAuthService
 
     @Inject
     RegistryProxyService registryProxyService
@@ -103,6 +103,8 @@ class ContainerTokenController {
 
     @Inject
     PairingChannel pairingChannel
+
+    @Inject FreezeService freezeService
 
     @PostConstruct
     private void init() {
@@ -219,7 +221,7 @@ class ContainerTokenController {
             throw new BadRequestException("When freeze mode is enabled the target build repository must be specified - see 'wave.build.repository' setting")
         // in freeze mode use the specified `containerImage` to force build with that image
         if( req.freeze ) {
-            req = BuildHelper.createBuildRequest(req)
+            req = freezeService.freezeBuildRequest(req, user)
         }
 
         String targetImage

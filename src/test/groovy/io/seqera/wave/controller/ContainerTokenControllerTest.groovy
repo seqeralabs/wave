@@ -10,13 +10,14 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
-import io.seqera.wave.auth.DockerAuthService
+import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.exchange.DescribeWaveContainerResponse
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
+import io.seqera.wave.service.builder.FreezeService
 import io.seqera.wave.service.pairing.PairingRecord
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
@@ -73,17 +74,20 @@ class ContainerTokenControllerTest extends Specification {
 
     def 'should create request data with freeze mode' () {
         given:
-        def controller = Spy(new ContainerTokenController())
+        def freeze = Mock(FreezeService)
+        and:
+        def controller = Spy(new ContainerTokenController(freezeService: freeze))
         and:
         def BUILD = Mock(BuildRequest) {
             getTargetImage() >> 'docker.io/repo/ubuntu:latest'
         }
-        
-        when:
+        and:
         def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true, buildRepository: 'docker.io/foo/bar')
-        def data = controller.makeRequestData(req, null, "")
 
+        when:
+        def data = controller.makeRequestData(req, null, "")
         then:
+        1 * freeze.freezeBuildRequest(req, _) >> req.copyWith(containerFile: 'FROM ubuntu:latest')
         1 * controller.buildRequest(_,_,_) >> BUILD
         and:
         data.containerImage == 'docker.io/repo/ubuntu:latest'
@@ -101,7 +105,7 @@ class ContainerTokenControllerTest extends Specification {
     def 'should make a build request' () {
         given:
         def builder = Mock(ContainerBuildService)
-        def dockerAuth = Mock(DockerAuthService)
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
         def proxyRegistry = Mock(RegistryProxyService)
         def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry,
                 workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
@@ -129,7 +133,7 @@ class ContainerTokenControllerTest extends Specification {
     def 'should not run a build request if manifest is present' () {
         given:
         def builder = Mock(ContainerBuildService)
-        def dockerAuth = Mock(DockerAuthService)
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
         def proxyRegistry = Mock(RegistryProxyService)
         def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry,
                 workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
@@ -156,7 +160,7 @@ class ContainerTokenControllerTest extends Specification {
 
     def 'should create build request' () {
         given:
-        def dockerAuth = Mock(DockerAuthService)
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
         def controller = new ContainerTokenController(dockerAuthService: dockerAuth, workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
 
         when:

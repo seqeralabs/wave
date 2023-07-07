@@ -1,6 +1,5 @@
 package io.seqera.wave.service.builder
 
-
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -9,17 +8,25 @@ import groovy.util.logging.Slf4j
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.storage.reader.ContentReaderFactory
+import io.seqera.wave.tower.User
+import jakarta.inject.Inject
+import jakarta.inject.Singleton
 /**
  * Implements helper methods to handle container build context
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
+@Singleton
 @CompileStatic
-class BuildHelper {
+class FreezeServiceImpl implements FreezeService {
 
-    static String createBuildFile(SubmitContainerTokenRequest req) {
+    @Inject
+    private ContainerInspectService inspectService
+
+    protected String createBuildFile(SubmitContainerTokenRequest req, User user) {
         assert req.freeze, "Not a freeze container request"
 
         // create a build container file for the provider image,
@@ -27,12 +34,14 @@ class BuildHelper {
         if( req.containerImage && !req.containerFile ) {
             def containerFile = "# wave generated container file\n"
             containerFile += "FROM $req.containerImage\n"
+            containerFile = appendEntrypoint(containerFile, req, user)
             return appendConfigToDockerFile(containerFile, req.containerConfig)
         }
         // append the container config to the provided build container file
         else if( !req.containerImage && req.containerFile && req.containerConfig ) {
             def containerFile = new String(req.containerFile.decodeBase64()) + '\n'
             containerFile += "# wave generated container file\n"
+            containerFile = appendEntrypoint(containerFile, req, user)
             return appendConfigToDockerFile(containerFile, req.containerConfig)
         }
 
@@ -40,8 +49,19 @@ class BuildHelper {
         return null
     }
 
-    static SubmitContainerTokenRequest createBuildRequest(final SubmitContainerTokenRequest req) {
-        final containerFile = createBuildFile(req)
+    protected String appendEntrypoint(String containerFile, SubmitContainerTokenRequest req, User user) {
+        // get the container manifest
+        final entry = inspectService.containerEntrypoint(containerFile, user?.id, req.towerWorkspaceId, req.towerAccessToken, req.towerEndpoint)
+        if( entry ) {
+            return containerFile + "ENV WAVE_ENTRY_CHAIN=\"${entry.join(' ')}\"\n"
+        }
+        else
+            return containerFile
+    }
+
+    @Override
+    SubmitContainerTokenRequest freezeBuildRequest(final SubmitContainerTokenRequest req, User user) {
+        final containerFile = createBuildFile(req, user)
         return containerFile
                 ? req.copyWith(containerFile: containerFile.bytes.encodeBase64().toString())
                 : req
@@ -51,7 +71,7 @@ class BuildHelper {
         return "layer-${layer.gzipDigest.replace(/sha256:/,'')}.tar.gz"
     }
 
-    static String appendConfigToDockerFile(final String dockerFile, final ContainerConfig containerConfig) {
+    static protected String appendConfigToDockerFile(final String dockerFile, final ContainerConfig containerConfig) {
         assert dockerFile, "Argument dockerFile cannot empty"
 
         if( !containerConfig )
@@ -85,7 +105,7 @@ class BuildHelper {
         return dockerFile + result
     }
 
-    static void saveLayersToContext(ContainerConfig config, Path contextDir) {
+    static protected void saveLayersToContext(ContainerConfig config, Path contextDir) {
         final layers = config.layers
         for(int i=0; i<layers.size(); i++) {
             final it = layers[i]

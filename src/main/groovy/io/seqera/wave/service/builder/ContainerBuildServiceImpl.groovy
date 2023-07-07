@@ -1,6 +1,6 @@
 package io.seqera.wave.service.builder
 
-import static BuildHelper.*
+import static FreezeServiceImpl.*
 import static io.seqera.wave.util.StringUtils.*
 import static java.nio.file.StandardOpenOption.*
 
