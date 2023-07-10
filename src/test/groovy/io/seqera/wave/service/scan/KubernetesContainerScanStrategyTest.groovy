@@ -3,7 +3,6 @@ package io.seqera.wave.service.scan
 import spock.lang.Specification
 
 import java.nio.file.Files
-import java.nio.file.Path
 
 import io.micronaut.context.annotation.Property
 import io.micronaut.test.annotation.MockBean
@@ -21,11 +20,10 @@ import jakarta.inject.Inject
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @MicronautTest
-@Property(name="wave.scan.workspace",value="scan-test-workspace")
 @Property(name="wave.build.k8s.namespace",value="foo")
 @Property(name="wave.build.k8s.configPath",value="/home/kube.config")
 @Property(name="wave.build.k8s.storage.claimName",value="bar")
-@Property(name="wave.scan.k8s.storage.mountPath",value="/build")
+@Property(name="wave.build.k8s.storage.mountPath",value="/build")
 @Property(name='wave.scan.k8s.node-selector[linux/amd64]',value="service=wave-scan")
 @Property(name='wave.scan.k8s.node-selector[linux/arm64]',value="service=wave-scan-arm64")
 class KubernetesContainerScanStrategyTest extends Specification {
@@ -79,7 +77,7 @@ class KubernetesContainerScanStrategyTest extends Specification {
 
         when:
         def buildRequest = new BuildRequest('from foo', PATH, repo, null, null, USER, ContainerPlatform.of('amd64'),'{}', cache, "")
-        Files.createDirectories(Path.of(containerScanConfig.workspace))
+        Files.createDirectories(buildRequest.workDir)
 
         def scanResult = strategy.scanContainer(containerScanConfig.scannerImage, buildRequest)
         then:
@@ -89,7 +87,7 @@ class KubernetesContainerScanStrategyTest extends Specification {
 
         when:
         def buildRequest2 = new BuildRequest('from foo', PATH, repo, null, null, USER, ContainerPlatform.of('arm64'),'{}', cache, "")
-        Files.createDirectories(Path.of(containerScanConfig.workspace))
+        Files.createDirectories(buildRequest.workDir)
 
         def scanResult2 = strategy.scanContainer(containerScanConfig.scannerImage, buildRequest2)
         then:

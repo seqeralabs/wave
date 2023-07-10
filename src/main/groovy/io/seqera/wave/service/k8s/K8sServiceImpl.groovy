@@ -78,10 +78,6 @@ class K8sServiceImpl implements K8sService {
     @Nullable
     private String requestsMemory
 
-    @Value('${wave.scan.k8s.storage.mountPath}')
-    @Nullable
-    private String scanStorageMountPath
-
     @Value('${wave.scan.timeout:5m}')
     Duration scanTimeout
 
@@ -97,7 +93,7 @@ class K8sServiceImpl implements K8sService {
     @PostConstruct
     private void init() {
         log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; node-selector=$nodeSelectorMap; buildTimeout=$buildTimeout; cpus=$requestsCpu; memory=$requestsMemory; buildWorkspace=$buildWorkspace; storageClaimName=$storageClaimName; storageMountPath=$storageMountPath; "
-        if( storageClaimName && (!storageMountPath && !scanStorageMountPath) )
+        if( storageClaimName && !storageMountPath )
             throw new IllegalArgumentException("Missing 'wave.build.k8s.storage.mountPath' configuration attribute")
         if( storageMountPath ) {
             if( !buildWorkspace )
@@ -433,8 +429,8 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
-    V1Pod scanContainer(String name, String containerImage, List<String> args, Path credsDir, Path creds, Map<String,String> nodeSelector, String mountPath) {
-        final spec = scanSpec(name, containerImage, args, credsDir, creds, nodeSelector, mountPath)
+    V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds,Map<String,String> nodeSelector, String mountPath) {
+        final spec = scanSpec(name, containerImage, args, workDir, creds, nodeSelector, mountPath)
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec, null, null, null,null)
@@ -443,13 +439,13 @@ class K8sServiceImpl implements K8sService {
     V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path creds, Map<String,String> nodeSelector, String mountPath) {
 
         final mounts = new ArrayList<V1VolumeMount>(5)
-        mounts.add(mountBuildStorage(workDir, scanStorageMountPath))
+        mounts.add(mountBuildStorage(workDir, storageMountPath))
 
         final volumes = new ArrayList<V1Volume>(5)
-        volumes.add(volumeBuildStorage(scanStorageMountPath, storageClaimName))
+        volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
         if( creds ){
-            mounts.add(0, mountDockerConfig(workDir, scanStorageMountPath, mountPath))
+            mounts.add(0, mountDockerConfig(workDir, storageMountPath, mountPath))
         }
 
         V1PodBuilder builder = new V1PodBuilder()

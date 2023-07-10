@@ -387,18 +387,18 @@ class K8sServiceImplTest extends Specification {
     def 'should create scan pod' () {
         given:
         def PROPS = [
-                'wave.scan.workspace': '/scan/work',
+                'wave.build.workspace': '/build/work',
                 'wave.scan.timeout': '10s',
                 'wave.build.k8s.namespace': 'my-ns',
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'build-claim',
-                'wave.scan.k8s.storage.mountPath': '/scan' ]
+                'wave.build.k8s.storage.mountPath': '/build', ]
         and:
         def ctx = ApplicationContext.run(PROPS)
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.scanSpec('foo', 'my-image:latest', ['this','that'], Path.of('/scan/work/xyz'), Path.of('secret'), null,'/root/.docker/config.json')
+        def result = k8sService.scanSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), Path.of('secret'), null,'/root/.docker/config.json')
         then:
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
@@ -416,7 +416,7 @@ class K8sServiceImplTest extends Specification {
         result.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz/config.json'
         and:
         result.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
-        result.spec.containers.get(0).volumeMounts.get(1).mountPath == '/scan/work/xyz'
+        result.spec.containers.get(0).volumeMounts.get(1).mountPath == '/build/work/xyz'
         result.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz'
 
         and:

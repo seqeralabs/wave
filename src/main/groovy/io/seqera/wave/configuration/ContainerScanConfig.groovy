@@ -29,9 +29,6 @@ class ContainerScanConfig {
     @Value('${wave.scan.cacheDirectory}')
     private String cacheDirectory
 
-    @Value('${wave.scan.workspace}')
-    String workspace
-
     String getScannerImage() {
         return scannerImage
     }
@@ -41,12 +38,9 @@ class ContainerScanConfig {
         return cacheDirectory
     }
 
-    String getWorkspace() {
-        return workspace
-    }
 
     @PostConstruct
     private void init() {
-        log.debug("Scanner config : docker image name : ${scannerImage} , workspace ${workspace}, cache directory ${cacheDirectory}")
+        log.debug("Scanner config : docker image name : ${scannerImage} , cache directory ${cacheDirectory}")
     }
 }

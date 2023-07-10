@@ -5,7 +5,6 @@ wave:
     spack:
       cacheDirectory: 'spack-cache'
   scan:
-    workspace: 'scan-workspace'
     cacheDirectory: 'trivy-cache'
 ---
 # uses TOWER_xxx variable because the dev environment is expected to be
