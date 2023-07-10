@@ -57,10 +57,13 @@ class ContainerScanServiceImpl implements ContainerScanService {
     @EventListener
     void onBuildEvent(BuildEvent event) {
         try {
-            if(event.result.exitStatus == 0)
-            scan(event.request, event.result)
-        }
-        catch (Exception e) {
+            if (event.result.exitStatus == 0) {
+                scan(event.request, event.result)
+            } else {
+                // cleanup build context
+                cleanup(event.request, event.result)
+            }
+        }catch (Exception e) {
             log.warn "Unable to run the container scan - reason: ${e.message?:e}"
         }
     }
@@ -87,8 +90,7 @@ class ContainerScanServiceImpl implements ContainerScanService {
             log.warn "Unable to launch the scan results for build : ${buildRequest.id}",e
         }finally{
             // cleanup build context
-            if( containerBuildService.shouldCleanup(buildResult) )
-                buildStrategy.cleanup(buildRequest)
+            cleanup(buildRequest,buildResult)
         }
         return scanResult
     }
@@ -101,5 +103,10 @@ class ContainerScanServiceImpl implements ContainerScanService {
         }catch (Exception e){
             log.warn "Unable to save the scan results for build : ${buildRequest.id}",e
         }
+    }
+
+    void cleanup(BuildRequest buildRequest, BuildResult buildResult){
+        if( containerBuildService.shouldCleanup(buildResult) )
+            buildStrategy.cleanup(buildRequest)
     }
 }
