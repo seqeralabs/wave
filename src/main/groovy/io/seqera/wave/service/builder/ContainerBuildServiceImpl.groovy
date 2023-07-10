@@ -171,7 +171,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         }
     }
 
-    protected boolean shouldCleanup(BuildResult result) {
+    boolean shouldCleanup(BuildResult result) {
         if( cleanup==null )
             return !debugMode
         if( cleanup == 'true' )
