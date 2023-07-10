@@ -40,10 +40,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     @Nullable
     Boolean debugMode
 
-    @Value('${wave.build.cleanup}')
-    @Nullable
-    String cleanup
-
     @Value('${wave.build.image}')
     String buildImage
 
@@ -55,6 +51,10 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     @Value('${wave.build.status.delay}')
     private Duration statusDelay
+
+    @Value('${wave.build.cleanup}')
+    @Nullable
+    String cleanup
 
     @Inject
     ApplicationEventPublisher<BuildEvent> eventPublisher
@@ -171,6 +171,20 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         }
     }
 
+    protected boolean shouldCleanup(BuildResult result) {
+        if( cleanup==null )
+            return !debugMode
+        if( cleanup == 'true' )
+            return true
+        if( cleanup == 'false' )
+            return false
+        if( cleanup.toLowerCase() == 'onsuccess' ) {
+            return result?.exitStatus==0
+        }
+        log.debug "Invalid cleanup value: '$cleanup'"
+        return true
+    }
+
     protected CompletableFuture<BuildResult> launchAsync(BuildRequest request) {
         // check the build rate limit
         try {
@@ -227,19 +241,5 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         }
         // invalid state
         throw new IllegalStateException("Unable to determine build status for '$request.targetImage'")
-    }
-
-    boolean shouldCleanup(BuildResult result) {
-        if( cleanup==null )
-            return !debugMode
-        if( cleanup == 'true' )
-            return true
-        if( cleanup == 'false' )
-            return false
-        if( cleanup.toLowerCase() == 'onsuccess' ) {
-            return result?.exitStatus==0
-        }
-        log.debug "Invalid cleanup value: '$cleanup'"
-        return true
     }
 }

@@ -2,12 +2,10 @@ package io.seqera.wave.service.scan
 
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
-import javax.annotation.Nullable
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Value
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.configuration.ContainerScanConfig
 import io.seqera.wave.model.ScanResult
