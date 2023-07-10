@@ -16,14 +16,11 @@ class TrivyResultProcessor {
         try{
             Map<String, Object> jsonMap = slurper.parseText(trivyResult)
             vulnerabilities = jsonMap.Results.collect { result ->
-                def target = result.Target
                 result.Vulnerabilities.collect { vulnerability ->
                     [
-                            target: target ?: "",
                             vulnerabilityId: vulnerability.VulnerabilityID ?: "",
                             severity: vulnerability.Severity ?: "",
                             title: vulnerability.Title ?: "",
-                            pkgId: vulnerability.PkgID ?: "",
                             pkgName: vulnerability.PkgName ?: "",
                             installedVersion: vulnerability.InstalledVersion ?: "",
                             fixedVersion: vulnerability.FixedVersion ?: "",

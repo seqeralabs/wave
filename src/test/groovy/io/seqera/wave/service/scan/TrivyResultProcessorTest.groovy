@@ -73,11 +73,9 @@ class TrivyResultProcessorTest extends Specification {
 
         then:
         def vulnerability = result[0]
-        vulnerability['target'] == "redis (debian 12.0)"
         vulnerability['vulnerabilityId'] == "CVE-2010-4756"
         vulnerability['severity'] == "LOW"
         vulnerability['title'] == "glibc: glob implementation can cause excessive CPU and memory consumption due to crafted glob expressions"
-        vulnerability['pkgId'] == "libc-bin@2.36-9"
         vulnerability['pkgName'] == "libc-bin"
         vulnerability['installedVersion'] == "2.36-9"
         vulnerability['fixedVersion'] == ""
@@ -153,11 +151,9 @@ class TrivyResultProcessorTest extends Specification {
 
         then:
         def vulnerability = result[0]
-        vulnerability['target'] == "redis (debian 12.0)"
         vulnerability['vulnerabilityId'] == "CVE-2010-4756"
         vulnerability['severity'] == "LOW"
         vulnerability['title'] == "glibc: glob implementation can cause excessive CPU and memory consumption due to crafted glob expressions"
-        vulnerability['pkgId'] == "libc-bin@2.36-9"
         vulnerability['pkgName'] == "libc-bin"
         vulnerability['installedVersion'] == "2.36-9"
         vulnerability['fixedVersion'] == ""
