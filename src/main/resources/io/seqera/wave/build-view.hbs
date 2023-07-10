@@ -62,6 +62,13 @@
             <td>Exit status</td>
             <td>{{build_exit_status}}</td>
         </tr>
+            {{#if scan_url}}
+            <% if () { %>
+                <tr>
+                    <td>Container security scan report</td>
+                    <td><a href="{{scan_url}}">{{scan_url}}</a></td>
+                </tr>
+            {{/if}}
     </table>
 
     <h3>Docker file</h3>

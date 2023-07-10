@@ -52,6 +52,7 @@ class ViewController {
         binding.build_condafile = result.condaFile
         binding.build_spackfile = result.spackFile
         binding.put('server_url', serverUrl)
+        binding.scan_url = "$serverUrl/view/scans/${result.buildId}"
         // result the main object
         return binding
       }
@@ -100,7 +101,12 @@ class ViewController {
         final result = persistenceService.loadContainerScanResult(buildId)
         final binding = new HashMap(6)
         if( !result ) {
-            binding.completed=false
+            if(persistenceService.loadBuild(buildId)) {
+                binding.completed = false
+            }
+            else{
+                throw new NotFoundException("Unknown build id '$buildId'")
+            }
         }else {
             binding.completed = true
             binding.scan_success = result.scanResult.isSuccess

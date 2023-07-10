@@ -48,8 +48,8 @@
         </tr>
 
         <tr>
-            <td>Scan Result</td>
-            <td>
+            <td colspan="2">
+        <h4>Scan Result</h4>
                 {{#if vulnerabilities.length}}
                     <style>
                         .bordered-table {
@@ -63,25 +63,23 @@
                     <table class="bordered-table">
                         <thead>
                         <tr>
+                            <th>Library</th>
                             <th>Vulnerability ID</th>
                             <th>Severity</th>
-                            <th>Title</th>
-                            <th>Package ID</th>
-                            <th>Package Name</th>
                             <th>Installed Version</th>
-                            <th>Primary URL</th>
+                            <th>Fixed Version</th>
+                            <th>Title</th>
                         </tr>
                         </thead>
                         <tbody>
                             {{#each vulnerabilities}}
                                 <tr>
+                                    <td>{{this.pkgName}}</td>
                                     <td>{{this.vulnerabilityId}}</td>
                                     <td>{{this.severity}}</td>
-                                    <td>{{title}}</td>
-                                    <td>{{this.pkgId}}</td>
-                                    <td>{{this.pkgName}}</td>
                                     <td>{{this.installedVersion}}</td>
-                                    <td>{{this.primaryUrl}}</td>
+                                    <td>{{this.fixedVersion}}</td>
+                                    <td>{{title}}<br/><a href="{{this.primaryUrl}}">{{this.primaryUrl}}</a></td>
                                 </tr>
                             {{/each}}
                         </tbody>
