@@ -25,10 +25,8 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.exception.BadRequestException
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 /**
  * implements the support for Kubernetes cluster
  *
@@ -433,8 +431,8 @@ class K8sServiceImpl implements K8sService {
                 .coreV1Api()
                 .deleteNamespacedPod(name, namespace, (String)null, (String)null, (Integer)null, (Boolean)null, (String)null, (V1DeleteOptions)null)
     }
+
     @Override
-    @CompileDynamic
     V1Pod scanContainer(String name, String containerImage, List<String> args, Path credsDir, Path creds, Map<String,String> nodeSelector, String mountPath) {
         final spec = scanSpec(name, containerImage, args, credsDir, creds, nodeSelector, mountPath)
         return k8sClient

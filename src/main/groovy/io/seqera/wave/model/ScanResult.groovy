@@ -34,6 +34,7 @@ class ScanResult {
     static ScanResult success(String buildId, Instant startTime, List<Map<String,Object>> result){
         return new ScanResult(buildId, startTime, result, Duration.between(startTime, Instant.now()), true)
     }
+
     static ScanResult failure(String buildId, Instant startTime, List<Map<String,Object>> result){
         return new ScanResult(buildId, startTime, result, Duration.between(startTime, Instant.now()), false)
     }
