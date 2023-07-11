@@ -32,6 +32,7 @@ import jakarta.inject.Singleton
 @Singleton
 @CompileStatic
 class KubernetesContainerScanStrategy extends ContainerScanStrategy{
+
     @Value('${wave.scan.timeout:5m}')
     Duration scanTimeout
 
@@ -39,7 +40,7 @@ class KubernetesContainerScanStrategy extends ContainerScanStrategy{
     @Nullable
     private Map<String, String> nodeSelectorMap
 
-    private  final K8sService k8sService
+    private final K8sService k8sService
 
     private final ContainerScanConfig containerScanConfig
 
@@ -64,7 +65,7 @@ class KubernetesContainerScanStrategy extends ContainerScanStrategy{
             V1Job job
             def trivyCommand = trivyWrapper(buildRequest.targetImage)
             final selector= getSelectorLabel(buildRequest.platform, nodeSelectorMap)
-            final pod = k8sService.scanContainer(podName, scannerImage, trivyCommand, buildRequest.workDir, configFile, selector)
+            final pod = k8sService.scanContainer(podName, scannerImage, trivyCommand, buildRequest.workDir, configFile, containerScanConfig, selector)
             final terminated = k8sService.waitPod(pod, scanTimeout.toMillis())
             final stdout = k8sService.logsPod(podName)
             if( terminated ) {
@@ -83,9 +84,11 @@ class KubernetesContainerScanStrategy extends ContainerScanStrategy{
             cleanup(podName)
         }
     }
+
     private String podName(BuildRequest req) {
         return "scan-${req.job}"
     }
+
     /**
      * Given the requested container platform and collection of node selector labels find the best
      * matching label

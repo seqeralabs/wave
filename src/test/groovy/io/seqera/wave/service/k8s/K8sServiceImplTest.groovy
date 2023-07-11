@@ -8,7 +8,6 @@ import io.kubernetes.client.custom.Quantity
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.SpackConfig
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -398,7 +397,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.scanSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), Path.of('secret'), null )
+        def result = k8sService.scanSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), Path.of('secret'), Path.of('/build/work/.trivy'), null )
         then:
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
@@ -409,7 +408,7 @@ class K8sServiceImplTest extends Specification {
         result.spec.containers.get(0).image == 'my-image:latest'
         result.spec.containers.get(0).args ==  ['this','that']
         and:
-        result.spec.containers.get(0).volumeMounts.size() == 2
+        result.spec.containers.get(0).volumeMounts.size() == 3
         and:
         result.spec.containers.get(0).volumeMounts.get(0).name == 'build-data'
         result.spec.containers.get(0).volumeMounts.get(0).mountPath == '/root/.docker/config.json'
@@ -418,6 +417,10 @@ class K8sServiceImplTest extends Specification {
         result.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
         result.spec.containers.get(0).volumeMounts.get(1).mountPath == '/build/work/xyz'
         result.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz'
+        and:
+        result.spec.containers.get(0).volumeMounts.get(2).name == 'build-data'
+        result.spec.containers.get(0).volumeMounts.get(2).mountPath == '/root/.cache/'
+        result.spec.containers.get(0).volumeMounts.get(2).subPath == 'work/.trivy'
 
         and:
         result.spec.volumes.get(0).name == 'build-data'

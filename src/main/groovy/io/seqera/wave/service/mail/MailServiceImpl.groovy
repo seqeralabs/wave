@@ -80,6 +80,7 @@ class MailServiceImpl implements MailService {
         binding.put('build_logs', result.logs)
         binding.build_url = "$serverUrl/view/builds/${result.id}"
         binding.scan_url = "$serverUrl/view/scans/${result.id}"
+        binding.scan_id = result.id
         binding.put('server_url', serverUrl)
         // result the main object
         Mail mail = new Mail()

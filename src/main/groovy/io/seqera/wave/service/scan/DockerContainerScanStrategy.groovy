@@ -9,6 +9,7 @@ import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.ContainerScanConfig
 import io.seqera.wave.model.ScanResult
 import io.seqera.wave.service.builder.BuildRequest
+import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
 /**
@@ -22,7 +23,8 @@ import jakarta.inject.Singleton
 @CompileStatic
 class DockerContainerScanStrategy extends ContainerScanStrategy{
 
-    private final ContainerScanConfig containerScanConfig
+    @Inject
+    private ContainerScanConfig containerScanConfig
 
     DockerContainerScanStrategy(ContainerScanConfig containerScanConfig) {
         this.containerScanConfig = containerScanConfig
@@ -72,13 +74,17 @@ class DockerContainerScanStrategy extends ContainerScanStrategy{
 
     protected List<String> dockerWrapper(Path credsFile) {
 
-        List<String> wrapper = ['docker',
-                                'run',
-                                '--rm']
+        final wrapper = ['docker','run', '--rm']
+
         if(credsFile) {
             wrapper.add('-v')
-            wrapper.add("${credsFile}:/root/.docker/config.json:ro".toString())
+            wrapper.add("${credsFile}:${Trivy.CONFIG_MOUNT_PATH}:ro".toString())
         }
+
+        // cache directory
+        wrapper.add('-v')
+        wrapper.add("${containerScanConfig.cacheDirectory}:${Trivy.CACHE_MOUNT_PATH}:rw".toString())
+
         return wrapper
     }
 }

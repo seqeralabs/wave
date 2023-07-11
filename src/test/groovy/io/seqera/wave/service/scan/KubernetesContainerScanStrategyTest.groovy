@@ -83,7 +83,7 @@ class KubernetesContainerScanStrategyTest extends Specification {
         then:
         scanResult
         and:
-        1 * k8sService.scanContainer(_, _, _, _, _, [service:'wave-scan']) >> null
+        1 * k8sService.scanContainer(_, _, _, _, _, _, [service:'wave-scan']) >> null
 
         when:
         def buildRequest2 = new BuildRequest('from foo', PATH, repo, null, null, USER, ContainerPlatform.of('arm64'),'{}', cache, "")
@@ -93,6 +93,6 @@ class KubernetesContainerScanStrategyTest extends Specification {
         then:
         scanResult2
         and:
-        1 * k8sService.scanContainer(_, _, _, _, _, [service:'wave-scan-arm64']) >> null
+        1 * k8sService.scanContainer(_, _, _, _, _, _, [service:'wave-scan-arm64']) >> null
     }
 }

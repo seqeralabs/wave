@@ -53,6 +53,7 @@ class ViewController {
         binding.build_spackfile = result.spackFile
         binding.put('server_url', serverUrl)
         binding.scan_url = "$serverUrl/view/scans/${result.buildId}"
+        binding.scan_id = result.buildId
         // result the main object
         return binding
       }
@@ -113,6 +114,7 @@ class ViewController {
             binding.completed = true
             binding.scan_success = result.scanResult.isSuccess
             binding.build_id = buildId
+            binding.build_url = "$serverUrl/view/builds/${buildId}"
             binding.scan_time = formatTimestamp(result.scanResult.startTime) ?: '-'
             binding.scan_duration = formatDuration(result.scanResult.duration) ?: '-'
             if( result.scanResult.result!=null && !result.scanResult.result.isEmpty() )

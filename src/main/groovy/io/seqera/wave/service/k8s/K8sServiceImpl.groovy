@@ -23,8 +23,10 @@ import io.kubernetes.client.openapi.models.V1VolumeMount
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.configuration.ContainerScanConfig
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.scan.Trivy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -278,6 +280,16 @@ class K8sServiceImpl implements K8sService {
                 .subPath(rel)
     }
 
+    protected V1VolumeMount mountScanCacheDir(Path scanCacheDir, String storageMountPath) {
+        final rel = Path.of(storageMountPath).relativize(scanCacheDir).toString()
+        if( !rel || rel.startsWith('../') )
+            throw new IllegalArgumentException("Container scan cacheDirectory '$scanCacheDir' must be a sub-directory of storage path '$storageMountPath'")
+        return new V1VolumeMount()
+                .name('build-data')
+                .mountPath( Trivy.CACHE_MOUNT_PATH )
+                .subPath(rel)
+    }
+
     /**
      * Create a container for container image building via Kaniko
      *
@@ -428,23 +440,24 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
-    V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds,Map<String,String> nodeSelector) {
-        final spec = scanSpec(name, containerImage, args, workDir, creds, nodeSelector)
+    V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ContainerScanConfig scanConfig, Map<String,String> nodeSelector) {
+        final spec = scanSpec(name, containerImage, args, workDir, creds, scanConfig.cacheDirectory, nodeSelector)
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
-    V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path creds, Map<String,String> nodeSelector) {
+    V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path creds, Path scanCacheDir, Map<String,String> nodeSelector) {
 
         final mounts = new ArrayList<V1VolumeMount>(5)
         mounts.add(mountBuildStorage(workDir, storageMountPath))
+        mounts.add(mountScanCacheDir(scanCacheDir, storageMountPath))
 
         final volumes = new ArrayList<V1Volume>(5)
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
         if( creds ){
-            mounts.add(0, mountDockerConfig(workDir, storageMountPath, '/root/.docker/config.json'))
+            mounts.add(0, mountDockerConfig(workDir, storageMountPath, Trivy.CONFIG_MOUNT_PATH))
         }
 
         V1PodBuilder builder = new V1PodBuilder()
