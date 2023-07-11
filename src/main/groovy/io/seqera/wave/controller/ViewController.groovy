@@ -113,8 +113,8 @@ class ViewController {
             binding.build_id = buildId
             binding.scan_time = formatTimestamp(result.scanResult.startTime) ?: '-'
             binding.scan_duration = formatDuration(result.scanResult.duration) ?: '-'
-            if((result.scanResult.result!=null)&&(!result.scanResult.result.isEmpty()))
-            binding.vulnerabilities = result.scanResult.result
+            if( result.scanResult.result!=null && !result.scanResult.result.isEmpty() )
+                binding.vulnerabilities = result.scanResult.result
         }
         // return the response
         binding.put('server_url', serverUrl)

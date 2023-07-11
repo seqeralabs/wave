@@ -60,24 +60,24 @@ class KubernetesContainerScanStrategy extends ContainerScanStrategy{
             if( buildRequest.configJson ) {
                 configFile = buildRequest.workDir.resolve('config.json')
             }
+
             V1Job job
-                def trivyCommand = trivyWrapper(buildRequest.targetImage)
-                final selector= getSelectorLabel(buildRequest.platform, nodeSelectorMap)
-                final trivyCredsPath = '/root/.docker/config.json'
-                final pod = k8sService.scanContainer(podName, scannerImage, trivyCommand, buildRequest.workDir, configFile, selector,trivyCredsPath)
-                final terminated = k8sService.waitPod(pod, scanTimeout.toMillis())
-                final stdout = k8sService.logsPod(podName)
-                if( terminated ) {
-                    log.info("Container scan completed for buildId: "+buildRequest.id)
-                    return ScanResult.success(buildRequest.id, startTime, TrivyResultProcessor.processLog(stdout))
-                }else{
-                    log.info("Container scan failed for buildId: "+buildRequest.id)
-                    return ScanResult.failure(buildRequest.id, startTime, null)
-                }
+            def trivyCommand = trivyWrapper(buildRequest.targetImage)
+            final selector= getSelectorLabel(buildRequest.platform, nodeSelectorMap)
+            final pod = k8sService.scanContainer(podName, scannerImage, trivyCommand, buildRequest.workDir, configFile, selector)
+            final terminated = k8sService.waitPod(pod, scanTimeout.toMillis())
+            final stdout = k8sService.logsPod(podName)
+            if( terminated ) {
+                log.info("Container scan completed for buildId: ${buildRequest.id}")
+                return ScanResult.success(buildRequest.id, startTime, TrivyResultProcessor.processLog(stdout))
+            }else{
+                log.info("Container scan failed for buildId: ${buildRequest.id}")
+                return ScanResult.failure(buildRequest.id, startTime, null)
+            }
         }catch (ApiException e) {
-            throw new BadRequestException("Unexpected scan failure - ${e.responseBody}", e)
+            throw new BadRequestException("Unexpected scan failure: ${e.responseBody}", e)
         }catch (Exception e){
-            log.warn("Error in creating scan pod in kubernetes : ${e.getMessage()}", e)
+            log.warn("Error creating scan pod: ${e.getMessage()}", e)
             return ScanResult.failure(buildRequest.id, startTime, null)
         }finally {
             cleanup(podName)

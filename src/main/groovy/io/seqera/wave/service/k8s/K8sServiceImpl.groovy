@@ -247,7 +247,8 @@ class K8sServiceImpl implements K8sService {
      */
     protected V1VolumeMount mountDockerConfig(Path workDir, String storageMountPath, String mountPath) {
         assert workDir, "K8s mount build storage is mandatory"
-        def rel = Path.of(storageMountPath).relativize(workDir).toString()
+
+        final rel = Path.of(storageMountPath).relativize(workDir).toString()
         final String config = rel ? "$rel/config.json" : 'config.json'
         return new V1VolumeMount()
                 .name('build-data')
@@ -294,26 +295,24 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Pod} description the submitted pod
      */
     @Override
-    @CompileDynamic
-    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector, String mountPath) {
-        final spec = buildSpec(name, containerImage, args, workDir, creds, spackConfig, nodeSelector, mountPath)
+    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector) {
+        final spec = buildSpec(name, containerImage, args, workDir, creds, spackConfig, nodeSelector)
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
-    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector, String mountPath) {
+    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector) {
 
         // required volumes
-
         final mounts = new ArrayList<V1VolumeMount>(5)
-            mounts.add(mountBuildStorage(workDir, storageMountPath))
+        mounts.add(mountBuildStorage(workDir, storageMountPath))
 
         final volumes = new ArrayList<V1Volume>(5)
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
         if( creds ){
-            mounts.add(0, mountDockerConfig(workDir, storageMountPath,mountPath))
+            mounts.add(0, mountDockerConfig(workDir, storageMountPath, '/kaniko/.docker/config.json'))
         }
 
         if( spackConfig ) {
@@ -429,14 +428,14 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
-    V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds,Map<String,String> nodeSelector, String mountPath) {
-        final spec = scanSpec(name, containerImage, args, workDir, creds, nodeSelector, mountPath)
+    V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds,Map<String,String> nodeSelector) {
+        final spec = scanSpec(name, containerImage, args, workDir, creds, nodeSelector)
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
-    V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path creds, Map<String,String> nodeSelector, String mountPath) {
+    V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path creds, Map<String,String> nodeSelector) {
 
         final mounts = new ArrayList<V1VolumeMount>(5)
         mounts.add(mountBuildStorage(workDir, storageMountPath))
@@ -445,7 +444,7 @@ class K8sServiceImpl implements K8sService {
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
         if( creds ){
-            mounts.add(0, mountDockerConfig(workDir, storageMountPath, mountPath))
+            mounts.add(0, mountDockerConfig(workDir, storageMountPath, '/root/.docker/config.json'))
         }
 
         V1PodBuilder builder = new V1PodBuilder()
