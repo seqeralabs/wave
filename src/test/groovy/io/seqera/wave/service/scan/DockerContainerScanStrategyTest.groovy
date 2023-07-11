@@ -15,7 +15,6 @@ class DockerContainerScanStrategyTest extends Specification {
         given:
         def props =[
                 'wave.scan.image.name':'scanimage',
-                'wave.scan.cacheDirectory':'/host/scan/cache',
                 'wave.build.workspace':'build-test-workspace']
         def ctx = ApplicationContext.run(props)
         and:
@@ -30,8 +29,6 @@ class DockerContainerScanStrategyTest extends Specification {
                 'run',
                 '--rm',
                 '-v',
-                '/user/test/build-workspace/config.json:/root/.docker/config.json:ro',
-                '-v',
-                '/host/scan/cache:/root/.cache/:rw']
+                '/user/test/build-workspace/config.json:/root/.docker/config.json:ro']
     }
 }

@@ -60,12 +60,6 @@ class DockerContainerScanStrategy extends ContainerScanStrategy{
                 if ( exitCode != 0 ) {
                     log.warn("Container scan failed to scan container, it exited with code : ${exitCode}")
                     return ScanResult.failure(buildRequest.id, startTime, null)
-                    InputStream errorStream = process.getErrorStream()
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(errorStream))
-                    String line
-                    while ((line = reader.readLine()) != null) {
-                        log.warn(line)
-                    }
                 } else{
                     log.info("Container scan completed for buildId: "+buildRequest.id)
                 }
@@ -84,12 +78,6 @@ class DockerContainerScanStrategy extends ContainerScanStrategy{
         if(credsFile) {
             wrapper.add('-v')
             wrapper.add("${credsFile}:/root/.docker/config.json:ro".toString())
-        }
-
-        if(containerScanConfig.cacheDirectory){
-            // cache directory
-            wrapper.add('-v')
-            wrapper.add("${containerScanConfig.cacheDirectory}:/root/.cache/:rw".toString())
         }
         return wrapper
     }
