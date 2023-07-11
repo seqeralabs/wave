@@ -100,12 +100,14 @@ class ViewController {
     HttpResponse<Map<String,Object>> viewScan(String buildId) {
         final result = persistenceService.loadContainerScanResult(buildId)
         final binding = new HashMap(6)
+        binding.exist = true
         if( !result ) {
             if(persistenceService.loadBuild(buildId)) {
                 binding.completed = false
             }
             else{
-                throw new NotFoundException("Unknown build id '$buildId'")
+                binding.exist = false
+                binding.errormessage = "Unknown build id '$buildId'"
             }
         }else {
             binding.completed = true

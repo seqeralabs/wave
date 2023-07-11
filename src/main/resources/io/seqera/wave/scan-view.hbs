@@ -13,6 +13,7 @@
 <div style="font-family:'-apple-system', BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; padding: 30px; max-width: 800px; margin: 0 auto;">
 
     <h1>Wave container security scan</h1>
+{{#if exist}}
 {{#if completed}}
         <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
             <h4 style="margin-top:0; color: inherit;">
@@ -99,7 +100,13 @@
         </h4>
     </div>
 {{/if}}
-
+{{else}}
+    <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+        <h4 style="margin-top:0; color: inherit;">
+            {{errormessage}}
+        </h4>
+    </div>
+{{/if}}
 <div class="footer" style="clear:both;width:100%;">
     <hr class="footer-hr" style="height:0;overflow:visible;margin-top:30px;border:0;border-top:1px solid #eee;color:#999999;font-size:12px;line-height:18px;margin-bottom:30px;">
     <img style="float:right" src="/assets/seqera-logo.png">
