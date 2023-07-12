@@ -1,5 +1,6 @@
 package io.seqera.wave.service.scan
 
+
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 import javax.annotation.PostConstruct
@@ -13,8 +14,8 @@ import io.seqera.wave.service.ContainerScanService
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
-import io.seqera.wave.service.builder.BuildStrategy
 import io.seqera.wave.service.builder.ContainerBuildServiceImpl
+import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerScanRecord
 import io.seqera.wave.util.ThreadPoolBuilder
@@ -34,9 +35,6 @@ class ContainerScanServiceImpl implements ContainerScanService {
     ContainerBuildServiceImpl containerBuildService
 
     @Inject
-    BuildStrategy buildStrategy
-
-    @Inject
     ContainerScanStrategy containerScanStrategy
 
     @Inject
@@ -48,6 +46,7 @@ class ContainerScanServiceImpl implements ContainerScanService {
     @Inject
     private PersistenceService persistenceService
 
+    @Inject CleanupStrategy cleanup
 
     @PostConstruct
     void init() {
@@ -57,13 +56,9 @@ class ContainerScanServiceImpl implements ContainerScanService {
     @EventListener
     void onBuildEvent(BuildEvent event) {
         try {
-            if (event.result.exitStatus == 0) {
-                scan(event.request, event.result)
-            } else {
-                // cleanup build context
-                cleanup(event.request, event.result)
-            }
-        }catch (Exception e) {
+            scan(event.request, event.result)
+        }
+        catch (Exception e) {
             log.warn "Unable to run the container scan - reason: ${e.message?:e}"
         }
     }
@@ -86,11 +81,14 @@ class ContainerScanServiceImpl implements ContainerScanService {
         try {
             //launch container scan
             scanResult = containerScanStrategy.scanContainer(containerScanConfig.scannerImage, buildRequest)
-        }catch (Exception e){
+        }
+        catch (Exception e){
             log.warn "Unable to launch the scan results for build : ${buildRequest.id}",e
-        }finally{
+        }
+        finally{
             // cleanup build context
-            cleanup(buildRequest,buildResult)
+            if( cleanup.shouldCleanup(scanResult?.isSuccess ? 0 : 1) )
+                buildRequest.scanDir?.deleteDir()
         }
         return scanResult
     }
@@ -100,13 +98,10 @@ class ContainerScanServiceImpl implements ContainerScanService {
             //save scan results
             scanResult.isCompleted = true
             persistenceService.saveContainerScanResult(buildRequest.id, new WaveContainerScanRecord(buildRequest.id,scanResult))
-        }catch (Exception e){
+        }
+        catch (Exception e){
             log.warn "Unable to save the scan results for build: ${buildRequest.id}",e
         }
     }
 
-    void cleanup(BuildRequest buildRequest, BuildResult buildResult){
-        if( containerBuildService.shouldCleanup(buildResult) )
-            buildStrategy.cleanup(buildRequest)
-    }
 }

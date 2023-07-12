@@ -32,7 +32,6 @@ micronaut:
         enabled: true
 ---
 wave:
-  debug: false
   allowAnonymous: true
   server:
       url: "${WAVE_SERVER_URL:`http://localhost:9090`}"

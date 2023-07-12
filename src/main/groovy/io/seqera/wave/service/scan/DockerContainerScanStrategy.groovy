@@ -1,8 +1,11 @@
 package io.seqera.wave.service.scan
 
+import java.nio.file.FileAlreadyExistsException
+import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Instant
 
+import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
@@ -11,6 +14,9 @@ import io.seqera.wave.model.ScanResult
 import io.seqera.wave.service.builder.BuildRequest
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+import static java.nio.file.StandardOpenOption.CREATE
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
+import static java.nio.file.StandardOpenOption.WRITE
 
 /**
  * Implements ContainerScanStrategy for Docker
@@ -31,23 +37,35 @@ class DockerContainerScanStrategy extends ContainerScanStrategy {
     }
 
     @Override
-    ScanResult scanContainer(String scannerImage, BuildRequest buildRequest) {
-
-        log.info("Launching container scan for buildId: ${buildRequest.id}")
+    ScanResult scanContainer(String scannerImage, BuildRequest req) {
+        log.info("Launching container scan for buildId: ${req.id}")
         final startTime = Instant.now()
 
         try {
-            Path configFile = null
-            if( buildRequest.configJson ) {
-                configFile = buildRequest.workDir.resolve('config.json')
+            // create the scan dir
+            try {
+                Files.createDirectory(req.scanDir)
             }
-            final reportFile = buildRequest.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
-            final dockerCommand = dockerWrapper(buildRequest.workDir, configFile)
-            final trivyCommand = List.of(scannerImage) + scanCommand(buildRequest.targetImage, reportFile)
+            catch (FileAlreadyExistsException e) {
+                log.warn("Container scan directory already exists: $e")
+            }
+
+            // save the config file with docker auth credentials
+            Path configFile = null
+            if( req.configJson ) {
+                configFile = req.scanDir.resolve('config.json')
+                Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            }
+
+            // outfile file name
+            final reportFile = req.scanDir.resolve(Trivy.OUTPUT_FILE_NAME)
+            // create the launch command 
+            final dockerCommand = dockerWrapper(req.scanDir, configFile)
+            final trivyCommand = List.of(scannerImage) + scanCommand(req.targetImage, reportFile)
             final command = dockerCommand + trivyCommand
 
             //launch scanning
-            log.debug("Container Scan Command: ${command.join(' ')}")
+            log.debug("Container scan command: ${command.join(' ')}")
             final process = new ProcessBuilder()
                     .command(command)
                     .redirectErrorStream(true)
@@ -56,29 +74,29 @@ class DockerContainerScanStrategy extends ContainerScanStrategy {
             final exitCode = process.waitFor()
             if ( exitCode != 0 ) {
                 log.warn("Container scan failed to scan container, it exited with code: ${exitCode} - cause: ${process.text}")
-                return ScanResult.failure(buildRequest.id, startTime, null)
+                return ScanResult.failure(req.id, startTime, null)
             }
             else{
-                log.info("Container scan completed for buildId: ${buildRequest.id}")
-                return ScanResult.success(buildRequest.id, startTime, TrivyResultProcessor.process(reportFile.text))
+                log.info("Container scan completed for buildId: ${req.id}")
+                return ScanResult.success(req.id, startTime, TrivyResultProcessor.process(reportFile.text))
             }
         }
         catch (Exception e){
             log.warn("Container scan failed to scan container, reason: ${e.getMessage()}")
-            return ScanResult.failure(buildRequest.id, startTime, null)
+            return ScanResult.failure(req.id, startTime, null)
         }
     }
 
-    protected List<String> dockerWrapper(Path workDir, Path credsFile) {
+    protected List<String> dockerWrapper(Path scanDir, Path credsFile) {
 
         final wrapper = ['docker','run', '--rm']
         
         // scan work dir
         wrapper.add('-w')
-        wrapper.add(workDir.toString())
+        wrapper.add(scanDir.toString())
 
         wrapper.add('-v')
-        wrapper.add("$workDir:$workDir:rw".toString())
+        wrapper.add("$scanDir:$scanDir:rw".toString())
 
         // cache directory
         wrapper.add('-v')

@@ -14,6 +14,7 @@ import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.tower.User
 import io.seqera.wave.util.SpackHelper
 import io.seqera.wave.util.TemplateRenderer
@@ -176,7 +177,7 @@ class ContainerBuildServiceTest extends Specification {
         and:
         def store = Mock(BuildStore)
         def strategy = Mock(BuildStrategy)
-        def builder = new ContainerBuildServiceImpl(buildStrategy: strategy, buildStore: store, statusDuration: DURATION, spackConfig:spackConfig)
+        def builder = new ContainerBuildServiceImpl(buildStrategy: strategy, buildStore: store, statusDuration: DURATION, spackConfig:spackConfig, cleanup: new CleanupStrategy())
         def RESPONSE = Mock(BuildResult)
 
         when:

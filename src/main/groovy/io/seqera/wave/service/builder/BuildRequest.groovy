@@ -93,6 +93,8 @@ class BuildRequest {
 
     final boolean isSpackBuild
 
+    final Path scanDir
+
     BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, User user, ContainerPlatform platform, String configJson, String cacheRepo, String ip, String offsetId = null) {
         this.id = computeDigest(containerFile, condaFile, spackFile, platform, repo)
         this.dockerFile = containerFile
@@ -109,6 +111,7 @@ class BuildRequest {
         this.job = "${id}-${startTime.toEpochMilli().toString().md5()[-5..-1]}"
         this.ip = ip
         this.isSpackBuild = spackFile
+        this.scanDir = workspace.resolve("${id}-scan").toAbsolutePath()
     }
 
     static private String computeDigest(String containerFile, String condaFile, String spackFile, ContainerPlatform platform, String repository) {

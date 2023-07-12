@@ -13,11 +13,9 @@ import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 import static java.nio.file.StandardOpenOption.CREATE
-import static java.nio.file.StandardOpenOption.WRITE
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
-
+import static java.nio.file.StandardOpenOption.WRITE
 /**
  *  Build a container image using a Docker CLI tool
  *
@@ -34,7 +32,7 @@ class DockerBuildStrategy extends BuildStrategy {
     @Value('${wave.build.timeout}')
     Duration buildTimeout
 
-    @Value('${wave.debug}')
+    @Value('${wave.debug:false}')
     Boolean debug
 
     @Inject
