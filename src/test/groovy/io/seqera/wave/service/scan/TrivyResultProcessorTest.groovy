@@ -75,13 +75,13 @@ class TrivyResultProcessorTest extends Specification {
 
         then:
         def vulnerability = result[0]
-        vulnerability['vulnerabilityId'] == "CVE-2010-4756"
-        vulnerability['severity'] == "LOW"
-        vulnerability['title'] == "glibc: glob implementation can cause excessive CPU and memory consumption due to crafted glob expressions"
-        vulnerability['pkgName'] == "libc-bin"
-        vulnerability['installedVersion'] == "2.36-9"
-        vulnerability['fixedVersion'] == ""
-        vulnerability['primaryUrl'] == "https://avd.aquasec.com/nvd/cve-2010-4756"
+        vulnerability.vulnerabilityId == "CVE-2010-4756"
+        vulnerability.severity == "LOW"
+        vulnerability.title == "glibc: glob implementation can cause excessive CPU and memory consumption due to crafted glob expressions"
+        vulnerability.pkgName == "libc-bin"
+        vulnerability.installedVersion == "2.36-9"
+        vulnerability.fixedVersion == ""
+        vulnerability.primaryUrl == "https://avd.aquasec.com/nvd/cve-2010-4756"
 
     }
 

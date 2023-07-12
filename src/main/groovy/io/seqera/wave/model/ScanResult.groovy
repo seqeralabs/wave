@@ -19,11 +19,11 @@ class ScanResult {
     String buildId
     Instant startTime
     Duration duration
-    List<Map<String,Object>> result
+    List<ScanVulnerability> result
     boolean isCompleted
     boolean isSuccess
 
-    private ScanResult(String buildId, Instant startTime, List<Map<String,Object>> result, Duration duration, boolean isSuccess) {
+    private ScanResult(String buildId, Instant startTime, List<ScanVulnerability> result, Duration duration, boolean isSuccess) {
         this.buildId = buildId
         this.startTime = startTime
         this.duration = duration
@@ -31,11 +31,11 @@ class ScanResult {
         this.isSuccess = isSuccess
     }
 
-    static ScanResult success(String buildId, Instant startTime, List<Map<String,Object>> result){
+    static ScanResult success(String buildId, Instant startTime, List<ScanVulnerability> result){
         return new ScanResult(buildId, startTime, result, Duration.between(startTime, Instant.now()), true)
     }
 
-    static ScanResult failure(String buildId, Instant startTime, List<Map<String,Object>> result){
+    static ScanResult failure(String buildId, Instant startTime, List<ScanVulnerability> result){
         return new ScanResult(buildId, startTime, result, Duration.between(startTime, Instant.now()), false)
     }
 }
