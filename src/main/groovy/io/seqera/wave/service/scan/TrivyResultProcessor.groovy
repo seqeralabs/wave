@@ -2,6 +2,7 @@ package io.seqera.wave.service.scan
 
 import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
+import io.seqera.wave.exception.ScanRuntimeException
 
 /**
  * Implements ScanStrategy for Docker
@@ -30,6 +31,7 @@ class TrivyResultProcessor {
             }.flatten()
         }catch(Exception e){
             log.warn("Failed to parse the trivy result reason: ${e.getMessage()}", e)
+            throw new ScanRuntimeException("Failed to parse the trivy result", e)
         }
 
         return vulnerabilities

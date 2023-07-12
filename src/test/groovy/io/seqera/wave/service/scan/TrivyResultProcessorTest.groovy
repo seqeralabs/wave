@@ -2,6 +2,8 @@ package io.seqera.wave.service.scan
 
 import spock.lang.Specification
 
+import io.seqera.wave.exception.ScanRuntimeException
+
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
@@ -85,8 +87,8 @@ class TrivyResultProcessorTest extends Specification {
 
     def "process should throw exception if json is not correct"() {
         when:
-        TrivyResultProcessor.process({"invalid json"})
+        TrivyResultProcessor.process("invalid json")
         then:
-        thrown Exception
+        thrown ScanRuntimeException
     }
 }
