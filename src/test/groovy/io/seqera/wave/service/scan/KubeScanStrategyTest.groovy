@@ -32,7 +32,7 @@ class KubeScanStrategyTest extends Specification {
     KubeScanStrategy strategy
 
     @Inject
-    ScanConfig containerScanConfig
+    ScanConfig scanConfig
 
     @Inject
     K8sService k8sService
@@ -79,7 +79,7 @@ class KubeScanStrategyTest extends Specification {
         def buildRequest = new BuildRequest('from foo', PATH, repo, null, null, USER, ContainerPlatform.of('amd64'),'{}', cache, "")
         Files.createDirectories(buildRequest.workDir)
 
-        def scanResult = strategy.scanContainer(containerScanConfig.scannerImage, buildRequest)
+        def scanResult = strategy.scanContainer(scanConfig.scannerImage, buildRequest)
         then:
         scanResult
         and:
@@ -89,7 +89,7 @@ class KubeScanStrategyTest extends Specification {
         def buildRequest2 = new BuildRequest('from foo', PATH, repo, null, null, USER, ContainerPlatform.of('arm64'),'{}', cache, "")
         Files.createDirectories(buildRequest.workDir)
 
-        def scanResult2 = strategy.scanContainer(containerScanConfig.scannerImage, buildRequest2)
+        def scanResult2 = strategy.scanContainer(scanConfig.scannerImage, buildRequest2)
         then:
         scanResult2
         and:

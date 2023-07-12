@@ -441,17 +441,17 @@ class K8sServiceImpl implements K8sService {
 
     @Override
     V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
-        final spec = scanSpec(name, containerImage, args, workDir, creds, scanConfig.cacheDirectory, nodeSelector)
+        final spec = scanSpec(name, containerImage, args, workDir, creds, scanConfig, nodeSelector)
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
-    V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path creds, Path scanCacheDir, Map<String,String> nodeSelector) {
+    V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
 
         final mounts = new ArrayList<V1VolumeMount>(5)
         mounts.add(mountBuildStorage(workDir, storageMountPath, false))
-        mounts.add(mountScanCacheDir(scanCacheDir, storageMountPath))
+        mounts.add(mountScanCacheDir(scanConfig.cacheDirectory, storageMountPath))
 
         final volumes = new ArrayList<V1Volume>(5)
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
@@ -480,10 +480,10 @@ class K8sServiceImpl implements K8sService {
 
 
         final requests = new V1ResourceRequirements()
-        if( requestsCpu )
-            requests.putRequestsItem('cpu', new Quantity(requestsCpu))
-        if( requestsMemory )
-            requests.putRequestsItem('memory', new Quantity(requestsMemory))
+        if( scanConfig.requestsCpu )
+            requests.putRequestsItem('cpu', new Quantity(scanConfig.requestsCpu))
+        if( scanConfig.requestsMemory )
+            requests.putRequestsItem('memory', new Quantity(scanConfig.requestsMemory))
 
         //container section
         spec.addNewContainer()

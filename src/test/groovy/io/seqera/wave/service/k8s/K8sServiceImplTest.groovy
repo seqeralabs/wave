@@ -7,6 +7,7 @@ import java.nio.file.Path
 import io.kubernetes.client.custom.Quantity
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.SpackConfig
 /**
  *
@@ -395,9 +396,12 @@ class K8sServiceImplTest extends Specification {
         and:
         def ctx = ApplicationContext.run(PROPS)
         def k8sService = ctx.getBean(K8sServiceImpl)
+        def config = Mock(ScanConfig) {
+            getCacheDirectory() >> Path.of('/build/work/.trivy')
+        }
 
         when:
-        def result = k8sService.scanSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), Path.of('secret'), Path.of('/build/work/.trivy'), null )
+        def result = k8sService.scanSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), Path.of('secret'), config, null )
         then:
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'

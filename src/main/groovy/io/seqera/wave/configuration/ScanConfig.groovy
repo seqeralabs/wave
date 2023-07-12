@@ -2,6 +2,7 @@ package io.seqera.wave.configuration
 
 import java.nio.file.Files
 import java.nio.file.Path
+import javax.annotation.Nullable
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
@@ -25,6 +26,14 @@ class ScanConfig {
     @Value('${wave.scan.image.name:aquasec/trivy:0.43.0}')
     private String scannerImage
 
+    @Value('${wave.scan.k8s.resources.requests.cpu}')
+    @Nullable
+    private String requestsCpu
+
+    @Value('${wave.scan.k8s.resources.requests.memory}')
+    @Nullable
+    private String requestsMemory
+
     /**
      * The host path where cache DB stored
      */
@@ -42,8 +51,16 @@ class ScanConfig {
         return result
     }
 
+    String getRequestsCpu() {
+        return requestsCpu
+    }
+
+    String getRequestsMemory() {
+        return requestsMemory
+    }
+
     @PostConstruct
     private void init() {
-        log.debug("Scanner config: docker image name: ${scannerImage}; cache directory: ${cacheDirectory}")
+        log.debug("Scanner config: docker image name: ${scannerImage}; cache directory: ${cacheDirectory}; cpus: ${requestsCpu}; mem: ${requestsMemory}")
     }
 }
