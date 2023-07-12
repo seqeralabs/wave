@@ -163,7 +163,7 @@ class TrivyResultProcessorTest extends Specification {
 
     def "process should throw exception if json is not correct"() {
         when:
-        TrivyResultProcessor.process("invalid json")
+        TrivyResultProcessor.process({"invalid json"})
         then:
         thrown Exception
     }
