@@ -101,7 +101,7 @@ class ContainerScanServiceImpl implements ContainerScanService {
             scanResult.isCompleted = true
             persistenceService.saveContainerScanResult(buildRequest.id, new WaveContainerScanRecord(buildRequest.id,scanResult))
         }catch (Exception e){
-            log.warn "Unable to save the scan results for build : ${buildRequest.id}",e
+            log.warn "Unable to save the scan results for build: ${buildRequest.id}",e
         }
     }
 

@@ -11,4 +11,5 @@ interface Trivy {
 
     static final public String CONFIG_MOUNT_PATH = '/root/.docker/config.json'
 
+    static final public String OUTPUT_FILE_NAME = 'report.json'
 }

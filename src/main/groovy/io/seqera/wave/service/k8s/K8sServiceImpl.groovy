@@ -205,13 +205,13 @@ class K8sServiceImpl implements K8sService {
      * @param storageMountPath
      * @return A {@link V1VolumeMount} representing the mount path for the build config
      */
-    protected V1VolumeMount mountBuildStorage(Path workDir, String storageMountPath) {
+    protected V1VolumeMount mountBuildStorage(Path workDir, String storageMountPath, boolean readOnly) {
         assert workDir, "K8s mount build storage is mandatory"
 
         final vol = new V1VolumeMount()
                 .name('build-data')
                 .mountPath(workDir.toString())
-                .readOnly(true)
+                .readOnly(readOnly)
 
         if( storageMountPath ) {
             // check sub-path
@@ -318,7 +318,7 @@ class K8sServiceImpl implements K8sService {
 
         // required volumes
         final mounts = new ArrayList<V1VolumeMount>(5)
-        mounts.add(mountBuildStorage(workDir, storageMountPath))
+        mounts.add(mountBuildStorage(workDir, storageMountPath, true))
 
         final volumes = new ArrayList<V1Volume>(5)
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
@@ -450,7 +450,7 @@ class K8sServiceImpl implements K8sService {
     V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path creds, Path scanCacheDir, Map<String,String> nodeSelector) {
 
         final mounts = new ArrayList<V1VolumeMount>(5)
-        mounts.add(mountBuildStorage(workDir, storageMountPath))
+        mounts.add(mountBuildStorage(workDir, storageMountPath, false))
         mounts.add(mountScanCacheDir(scanCacheDir, storageMountPath))
 
         final volumes = new ArrayList<V1Volume>(5)

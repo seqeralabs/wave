@@ -1,5 +1,7 @@
 package io.seqera.wave.service.scan
 
+import java.nio.file.Path
+
 import groovy.util.logging.Slf4j
 import io.seqera.wave.model.ScanResult
 import io.seqera.wave.service.builder.BuildRequest
@@ -13,11 +15,14 @@ abstract class ContainerScanStrategy {
 
     abstract ScanResult scanContainer(String containerScanner, BuildRequest buildRequest)
 
-    protected List<String> trivyWrapper(String targetImage){
-        List<String> wrapper = ['--format',
-                                'json',
-                                'image',
-                                targetImage]
-        return wrapper
+    protected List<String> scanCommand(String targetImage, Path outputFile){
+        return List.of(
+                '--quiet',
+                'image',
+                '--format',
+                'json',
+                '--output',
+                outputFile.toString(),
+                targetImage)
     }
 }

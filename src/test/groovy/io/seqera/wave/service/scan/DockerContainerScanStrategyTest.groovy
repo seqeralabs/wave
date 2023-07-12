@@ -6,7 +6,6 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 import io.micronaut.context.ApplicationContext
-
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
@@ -23,17 +22,24 @@ class DockerContainerScanStrategyTest extends Specification {
         def dockerContainerStrategy = ctx.getBean(DockerContainerScanStrategy)
 
         when:
-        def command = dockerContainerStrategy.dockerWrapper(Path.of("/user/test/build-workspace/config.json"))
+        def scanDir = Path.of('/some/scan/dir')
+        def config = Path.of("/user/test/build-workspace/config.json")
+        def command = dockerContainerStrategy.dockerWrapper(scanDir, config)
 
         then:
         command == [
                 'docker',
                 'run',
                 '--rm',
+                '-w',
+                '/some/scan/dir',
                 '-v',
-                '/user/test/build-workspace/config.json:/root/.docker/config.json:ro',
+                '/some/scan/dir:/some/scan/dir:rw',
                 '-v',
-                 "$workspace/.trivy-cache:/root/.cache/:rw" ]
+                 "$workspace/.trivy-cache:/root/.cache/:rw",
+                '-v',
+                '/user/test/build-workspace/config.json:/root/.docker/config.json:ro'
+        ]
 
         cleanup:
         ctx.close()

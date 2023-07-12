@@ -58,7 +58,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.mountBuildStorage(Path.of('/foo'), '/foo')
+        def result = k8sService.mountBuildStorage(Path.of('/foo'), '/foo', true)
         then:
         result.name == 'build-data'
         result.mountPath == '/foo'
@@ -66,7 +66,7 @@ class K8sServiceImplTest extends Specification {
         result.readOnly
 
         when:
-        result = k8sService.mountBuildStorage(Path.of('/foo/'), '/foo')
+        result = k8sService.mountBuildStorage(Path.of('/foo/'), '/foo', true)
         then:
         result.name == 'build-data'
         result.mountPath == '/foo'
@@ -74,7 +74,7 @@ class K8sServiceImplTest extends Specification {
         result.readOnly
 
         when:
-        result = k8sService.mountBuildStorage(Path.of('/foo/work/x1'), '/foo')
+        result = k8sService.mountBuildStorage(Path.of('/foo/work/x1'), '/foo', true)
         then:
         result.name == 'build-data'
         result.mountPath == '/foo/work/x1'
@@ -82,11 +82,11 @@ class K8sServiceImplTest extends Specification {
         result.readOnly
 
         when:
-        result = k8sService.mountBuildStorage(Path.of('/foo/work/x1'), null)
+        result = k8sService.mountBuildStorage(Path.of('/foo/work/x1'), null, false)
         then:
         result.name == 'build-data'
         result.mountPath == '/foo/work/x1'
-        result.readOnly
+        !result.readOnly
 
         cleanup:
         ctx.close()

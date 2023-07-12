@@ -21,7 +21,7 @@ import jakarta.inject.Singleton
 @Singleton
 @Requires(missingProperty = 'wave.build.k8s')
 @CompileStatic
-class DockerContainerScanStrategy extends ContainerScanStrategy{
+class DockerContainerScanStrategy extends ContainerScanStrategy {
 
     @Inject
     private ContainerScanConfig containerScanConfig
@@ -33,57 +33,62 @@ class DockerContainerScanStrategy extends ContainerScanStrategy{
     @Override
     ScanResult scanContainer(String scannerImage, BuildRequest buildRequest) {
 
-        log.info("Launching container scan for buildId: "+buildRequest.id)
+        log.info("Launching container scan for buildId: ${buildRequest.id}")
+        final startTime = Instant.now()
 
-        Instant startTime = Instant.now()
-        StringBuilder processOutput = new StringBuilder()
-
-        try{
+        try {
             Path configFile = null
             if( buildRequest.configJson ) {
                 configFile = buildRequest.workDir.resolve('config.json')
             }
-            def dockerCommand = dockerWrapper(configFile)
-            def trivyCommand = List.of(scannerImage)+trivyWrapper(buildRequest.targetImage)
-            def command = dockerCommand+trivyCommand
+            final reportFile = buildRequest.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
+            final dockerCommand = dockerWrapper(buildRequest.workDir, configFile)
+            final trivyCommand = List.of(scannerImage) + scanCommand(buildRequest.targetImage, reportFile)
+            final command = dockerCommand + trivyCommand
 
             //launch scanning
-            log.info("Container Scan Command: "+command.join(' '))
-            Process process = new ProcessBuilder()
+            log.debug("Container Scan Command: ${command.join(' ')}")
+            final process = new ProcessBuilder()
                     .command(command)
+                    .redirectErrorStream(true)
                     .start()
 
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.inputStream))
-            String outputLine
-            while((outputLine = bufferedReader.readLine())!=null){
-                processOutput.append(outputLine)
+            final exitCode = process.waitFor()
+            if ( exitCode != 0 ) {
+                log.warn("Container scan failed to scan container, it exited with code: ${exitCode} - cause: ${process.text}")
+                return ScanResult.failure(buildRequest.id, startTime, null)
             }
-                int exitCode = process.waitFor()
-                if ( exitCode != 0 ) {
-                    log.warn("Container scan failed to scan container, it exited with code : ${exitCode}")
-                    return ScanResult.failure(buildRequest.id, startTime, null)
-                } else{
-                    log.info("Container scan completed for buildId: "+buildRequest.id)
-                }
-        }catch (Exception e){
-            log.warn("Container scan failed to scan container, reason : ${e.getMessage()}")
+            else{
+                log.info("Container scan completed for buildId: ${buildRequest.id}")
+                return ScanResult.success(buildRequest.id, startTime, TrivyResultProcessor.process(reportFile.text))
+            }
+        }
+        catch (Exception e){
+            log.warn("Container scan failed to scan container, reason: ${e.getMessage()}")
             return ScanResult.failure(buildRequest.id, startTime, null)
         }
-        return ScanResult.success(buildRequest.id, startTime, TrivyResultProcessor.process(processOutput.toString()))
     }
 
-    protected List<String> dockerWrapper(Path credsFile) {
+    protected List<String> dockerWrapper(Path workDir, Path credsFile) {
 
         final wrapper = ['docker','run', '--rm']
+        
+        // scan work dir
+        wrapper.add('-w')
+        wrapper.add(workDir.toString())
+
+        wrapper.add('-v')
+        wrapper.add("$workDir:$workDir:rw".toString())
+
+        // cache directory
+        wrapper.add('-v')
+        wrapper.add("${containerScanConfig.cacheDirectory}:${Trivy.CACHE_MOUNT_PATH}:rw".toString())
 
         if(credsFile) {
             wrapper.add('-v')
             wrapper.add("${credsFile}:${Trivy.CONFIG_MOUNT_PATH}:ro".toString())
         }
 
-        // cache directory
-        wrapper.add('-v')
-        wrapper.add("${containerScanConfig.cacheDirectory}:${Trivy.CACHE_MOUNT_PATH}:rw".toString())
 
         return wrapper
     }

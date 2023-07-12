@@ -61,26 +61,30 @@ class KubernetesContainerScanStrategy extends ContainerScanStrategy{
             if( buildRequest.configJson ) {
                 configFile = buildRequest.workDir.resolve('config.json')
             }
+            final reportFile = buildRequest.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
 
             V1Job job
-            def trivyCommand = trivyWrapper(buildRequest.targetImage)
+            final trivyCommand = scanCommand(buildRequest.targetImage, reportFile)
             final selector= getSelectorLabel(buildRequest.platform, nodeSelectorMap)
             final pod = k8sService.scanContainer(podName, scannerImage, trivyCommand, buildRequest.workDir, configFile, containerScanConfig, selector)
             final terminated = k8sService.waitPod(pod, scanTimeout.toMillis())
-            final stdout = k8sService.logsPod(podName)
             if( terminated ) {
                 log.info("Container scan completed for buildId: ${buildRequest.id}")
-                return ScanResult.success(buildRequest.id, startTime, TrivyResultProcessor.processLog(stdout))
-            }else{
+                return ScanResult.success(buildRequest.id, startTime, TrivyResultProcessor.processLog(reportFile.text))
+            }
+            else{
                 log.info("Container scan failed for buildId: ${buildRequest.id}")
                 return ScanResult.failure(buildRequest.id, startTime, null)
             }
-        }catch (ApiException e) {
+        }
+        catch (ApiException e) {
             throw new BadRequestException("Unexpected scan failure: ${e.responseBody}", e)
-        }catch (Exception e){
+        }
+        catch (Exception e){
             log.warn("Error creating scan pod: ${e.getMessage()}", e)
             return ScanResult.failure(buildRequest.id, startTime, null)
-        }finally {
+        }
+        finally {
             cleanup(podName)
         }
     }
