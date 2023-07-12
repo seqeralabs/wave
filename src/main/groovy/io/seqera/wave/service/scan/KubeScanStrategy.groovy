@@ -88,7 +88,7 @@ class KubeScanStrategy extends ScanStrategy {
             final terminated = k8sService.waitPod(pod, scanTimeout.toMillis())
             if( terminated ) {
                 log.info("Container scan completed for buildId: ${req.id}")
-                return ScanResult.success(req.id, startTime, TrivyResultProcessor.processLog(reportFile.text))
+                return ScanResult.success(req.id, startTime, TrivyResultProcessor.process(reportFile.text))
             }
             else{
                 log.info("Container scan failed for buildId: ${req.id}")

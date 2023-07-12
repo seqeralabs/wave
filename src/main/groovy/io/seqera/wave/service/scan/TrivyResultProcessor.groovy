@@ -34,8 +34,4 @@ class TrivyResultProcessor {
 
         return vulnerabilities
     }
-
-    static List<Map<String,Object>> processLog(String trivyResult){
-        return process(trivyResult.substring(trivyResult.indexOf("{"),trivyResult.lastIndexOf("}")+1))
-    }
 }
