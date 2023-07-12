@@ -23,7 +23,7 @@ import io.kubernetes.client.openapi.models.V1VolumeMount
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
-import io.seqera.wave.configuration.ContainerScanConfig
+import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.scan.Trivy
@@ -440,7 +440,7 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
-    V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ContainerScanConfig scanConfig, Map<String,String> nodeSelector) {
+    V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
         final spec = scanSpec(name, containerImage, args, workDir, creds, scanConfig.cacheDirectory, nodeSelector)
         return k8sClient
                 .coreV1Api()

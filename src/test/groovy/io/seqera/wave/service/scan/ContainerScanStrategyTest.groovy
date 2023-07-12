@@ -13,7 +13,7 @@ class ContainerScanStrategyTest extends Specification {
     def "should return trivy command"() {
         given:
         def targetImage = "respository/scantool"
-        def containerScanStrategy = Spy(ContainerScanStrategy)
+        def containerScanStrategy = Spy(ScanStrategy)
         def outFile = Path.of('/some/out.json')
         when:
         def command = containerScanStrategy.scanCommand(targetImage, outFile)

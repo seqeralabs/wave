@@ -10,7 +10,7 @@ import io.micronaut.context.ApplicationContext
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-class DockerContainerScanStrategyTest extends Specification {
+class DockerScanStrategyTest extends Specification {
 
     def 'should get docker command' () {
         given:
@@ -19,7 +19,7 @@ class DockerContainerScanStrategyTest extends Specification {
         and:
         def ctx = ApplicationContext.run(props)
         and:
-        def dockerContainerStrategy = ctx.getBean(DockerContainerScanStrategy)
+        def dockerContainerStrategy = ctx.getBean(DockerScanStrategy)
 
         when:
         def scanDir = Path.of('/some/scan/dir')

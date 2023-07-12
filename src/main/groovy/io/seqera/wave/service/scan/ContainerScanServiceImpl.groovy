@@ -8,7 +8,7 @@ import javax.annotation.PostConstruct
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.runtime.event.annotation.EventListener
-import io.seqera.wave.configuration.ContainerScanConfig
+import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.model.ScanResult
 import io.seqera.wave.service.ContainerScanService
 import io.seqera.wave.service.builder.BuildEvent
@@ -35,10 +35,10 @@ class ContainerScanServiceImpl implements ContainerScanService {
     ContainerBuildServiceImpl containerBuildService
 
     @Inject
-    ContainerScanStrategy containerScanStrategy
+    ScanStrategy containerScanStrategy
 
     @Inject
-    ContainerScanConfig containerScanConfig
+    ScanConfig containerScanConfig
 
 
     private ExecutorService executor

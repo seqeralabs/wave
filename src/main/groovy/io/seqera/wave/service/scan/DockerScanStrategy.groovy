@@ -9,7 +9,7 @@ import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.configuration.ContainerScanConfig
+import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.model.ScanResult
 import io.seqera.wave.service.builder.BuildRequest
 import jakarta.inject.Inject
@@ -19,7 +19,7 @@ import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import static java.nio.file.StandardOpenOption.WRITE
 
 /**
- * Implements ContainerScanStrategy for Docker
+ * Implements ScanStrategy for Docker
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
@@ -27,12 +27,12 @@ import static java.nio.file.StandardOpenOption.WRITE
 @Singleton
 @Requires(missingProperty = 'wave.build.k8s')
 @CompileStatic
-class DockerContainerScanStrategy extends ContainerScanStrategy {
+class DockerScanStrategy extends ScanStrategy {
 
     @Inject
-    private ContainerScanConfig containerScanConfig
+    private ScanConfig containerScanConfig
 
-    DockerContainerScanStrategy(ContainerScanConfig containerScanConfig) {
+    DockerScanStrategy(ScanConfig containerScanConfig) {
         this.containerScanConfig = containerScanConfig
     }
 

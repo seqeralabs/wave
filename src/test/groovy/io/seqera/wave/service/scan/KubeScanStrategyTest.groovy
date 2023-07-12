@@ -7,7 +7,7 @@ import java.nio.file.Files
 import io.micronaut.context.annotation.Property
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.configuration.ContainerScanConfig
+import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.builder.BuildRequest
@@ -26,13 +26,13 @@ import jakarta.inject.Inject
 @Property(name="wave.build.k8s.storage.mountPath",value="/build")
 @Property(name='wave.scan.k8s.node-selector[linux/amd64]',value="service=wave-scan")
 @Property(name='wave.scan.k8s.node-selector[linux/arm64]',value="service=wave-scan-arm64")
-class KubernetesContainerScanStrategyTest extends Specification {
+class KubeScanStrategyTest extends Specification {
 
     @Inject
-    KubernetesContainerScanStrategy strategy
+    KubeScanStrategy strategy
 
     @Inject
-    ContainerScanConfig containerScanConfig
+    ScanConfig containerScanConfig
 
     @Inject
     K8sService k8sService

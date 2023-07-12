@@ -4,7 +4,7 @@ import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 
 /**
- * Implements ContainerScanStrategy for Docker
+ * Implements ScanStrategy for Docker
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */

@@ -17,7 +17,7 @@ import jakarta.inject.Singleton
 @CompileStatic
 @Singleton
 @Slf4j
-class ContainerScanConfig {
+class ScanConfig {
 
     /**
      * Docker image of tool need to be used for container scanner

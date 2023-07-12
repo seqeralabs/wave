@@ -16,7 +16,7 @@ import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
-import io.seqera.wave.configuration.ContainerScanConfig
+import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.model.ScanResult
@@ -28,7 +28,7 @@ import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import static java.nio.file.StandardOpenOption.WRITE
 
 /**
- * Implements ContainerScanStrategy for Kubernetes
+ * Implements ScanStrategy for Kubernetes
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
@@ -37,7 +37,7 @@ import static java.nio.file.StandardOpenOption.WRITE
 @Requires(property = 'wave.build.k8s')
 @Singleton
 @CompileStatic
-class KubernetesContainerScanStrategy extends ContainerScanStrategy {
+class KubeScanStrategy extends ScanStrategy {
 
     @Value('${wave.scan.timeout:5m}')
     Duration scanTimeout
@@ -48,18 +48,17 @@ class KubernetesContainerScanStrategy extends ContainerScanStrategy {
 
     private final K8sService k8sService
 
-    private final ContainerScanConfig containerScanConfig
+    private final ScanConfig scanConfig
 
-    KubernetesContainerScanStrategy(K8sService k8sService, ContainerScanConfig containerScanConfig) {
+    KubeScanStrategy(K8sService k8sService, ScanConfig scanConfig) {
         this.k8sService = k8sService
-        this.containerScanConfig = containerScanConfig
+        this.scanConfig = scanConfig
     }
 
     @Override
     ScanResult scanContainer(String scannerImage, BuildRequest req) {
         log.info("Launching container scan for buildId: ${req.id}")
-
-        Instant startTime = Instant.now()
+        final startTime = Instant.now()
 
         final podName = podName(req)
         try{
@@ -83,7 +82,7 @@ class KubernetesContainerScanStrategy extends ContainerScanStrategy {
             V1Job job
             final trivyCommand = scanCommand(req.targetImage, reportFile)
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
-            final pod = k8sService.scanContainer(podName, scannerImage, trivyCommand, req.scanDir, configFile, containerScanConfig, selector)
+            final pod = k8sService.scanContainer(podName, scannerImage, trivyCommand, req.scanDir, configFile, scanConfig, selector)
             final terminated = k8sService.waitPod(pod, scanTimeout.toMillis())
             if( terminated ) {
                 log.info("Container scan completed for buildId: ${req.id}")
