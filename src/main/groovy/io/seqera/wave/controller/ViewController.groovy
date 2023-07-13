@@ -101,25 +101,18 @@ class ViewController {
     HttpResponse<Map<String,Object>> viewScan(String buildId) {
         final binding = new HashMap(6)
         def result = null
-
         try {
             result = persistenceService.loadContainerScanVulResult(buildId)
         }catch (NotFoundException e){
             binding.exist = false
             binding.errormessage = e.getMessage()
+            if (persistenceService.loadBuild(buildId)) {
+                binding.completed = false
+            }
         }
 
         if(result) {
-            binding.exist = true
-            if (!result) {
-                if (persistenceService.loadBuild(buildId)) {
-                    binding.completed = false
-                } else {
-                    binding.exist = false
-                    binding.completed = true
-                    binding.errormessage = "Unknown build id '$buildId'"
-                }
-            } else {
+                binding.exist = true
                 binding.completed = true
                 binding.scan_success = result.isSuccess
                 binding.build_id = buildId
@@ -128,7 +121,6 @@ class ViewController {
                 binding.scan_duration = formatDuration(result.duration) ?: '-'
                 if (result.result != null && !result.result.isEmpty())
                     binding.vulnerabilities = result.result
-            }
         }
         // return the response
         binding.put('server_url', serverUrl)

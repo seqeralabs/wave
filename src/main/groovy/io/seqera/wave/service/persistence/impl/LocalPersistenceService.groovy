@@ -4,6 +4,7 @@ import java.util.stream.Collectors
 
 import groovy.transform.CompileStatic
 import io.seqera.wave.core.ContainerDigestPair
+import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.model.ScanResult
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
@@ -67,7 +68,13 @@ class LocalPersistenceService implements PersistenceService {
     @Override
     ScanResult loadContainerScanVulResult(String buildId) {
         WaveContainerScanRecord waveContainerScanRecord = loadContainerScanResult(buildId)
-        List<ScanVulnerability> scanVulnerabilities = waveContainerScanRecord.scanVulnerabilitiesIds.parallelStream()
+        if(waveContainerScanRecord == null)
+            throw new NotFoundException("Scan Report does not exist for the buildid: ${buildId}")
+
+        List<ScanVulnerability> scanVulnerabilities = null
+
+        if(waveContainerScanRecord.scanVulnerabilitiesIds)
+        scanVulnerabilities = waveContainerScanRecord.scanVulnerabilitiesIds.parallelStream()
                                                                     .map {scanVulStore.get(it)}
                                                                     .collect(Collectors.toList())
         return ScanResult.load(waveContainerScanRecord.buildId,
