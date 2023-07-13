@@ -144,10 +144,10 @@ class ContainerAugmenter {
         }
 
         final manifestResult = findImageManifestAndDigest(manifestsList, imageName, tag, headers)
-        final imageManifest = manifestResult.first
-        final configDigest = manifestResult.second
-        final targetDigest = manifestResult.third
-        final oci = manifestResult.fourth
+        final imageManifest = manifestResult.v1
+        final configDigest = manifestResult.v2
+        final targetDigest = manifestResult.v3
+        final oci = manifestResult.v4
 
         // fetch the image config
         final resp5 = client.getString("/v2/$imageName/blobs/$configDigest", headers)
