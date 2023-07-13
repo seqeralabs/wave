@@ -1,5 +1,9 @@
 package io.seqera.wave.service.persistence
 
+import java.time.Duration
+import java.time.Instant
+import java.util.stream.Collectors
+
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
@@ -17,5 +21,26 @@ import io.seqera.wave.model.ScanResult
 @CompileStatic
 class WaveContainerScanRecord {
     String buildId
-    ScanResult scanResult
+    Instant startTime
+    Duration duration
+    boolean isSuccess
+    List<String> scanVulnerabilitiesIds
+    WaveContainerScanRecord(){}
+    WaveContainerScanRecord(String buildId, Instant startTime, Duration duration, boolean isSuccess, List<String> scanVulnerabilitiesIds) {
+        this.buildId = buildId
+        this.startTime = startTime
+        this.duration = duration
+        this.isSuccess = isSuccess
+        this.scanVulnerabilitiesIds = scanVulnerabilitiesIds
+    }
+    WaveContainerScanRecord(String buildId, ScanResult scanResult) {
+        this.buildId = buildId
+        this.startTime = scanResult.startTime
+        this.duration = scanResult.duration
+        this.isSuccess = scanResult.isSuccess
+        if(scanResult.result!=null || !scanResult.result.isEmpty())
+        this.scanVulnerabilitiesIds = scanResult.result.parallelStream()
+                .map {it.vulnerabilityId}
+                .collect(Collectors.toList())
+    }
 }

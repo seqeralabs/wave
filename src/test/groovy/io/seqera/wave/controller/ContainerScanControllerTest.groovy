@@ -9,6 +9,7 @@ import io.micronaut.context.annotation.Property
 import io.micronaut.http.HttpResponse
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.model.ScanResult
+import io.seqera.wave.model.ScanVulnerability
 import io.seqera.wave.service.ContainerScanService
 import io.seqera.wave.service.persistence.WaveContainerScanRecord
 /**
@@ -25,8 +26,15 @@ class ContainerScanControllerTest extends Specification {
         def startTime = Instant.now()
         def duration = Duration.ofMinutes(2)
         def buildId = "testbuildid"
-        def result = Map.of("key1","value1","key2","value2")
-        def results = List.of(result)
+        def scanVulnerability = new ScanVulnerability(
+                "id1",
+                "low",
+                "title",
+                "pkgname",
+                "installed.version",
+                "fix.version",
+                "url")
+        def results = List.of(scanVulnerability)
         def waveContainerScanRecord = new WaveContainerScanRecord(
                                                 buildId,
                                                 new ScanResult(

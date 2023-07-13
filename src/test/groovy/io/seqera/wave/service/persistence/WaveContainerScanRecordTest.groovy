@@ -6,6 +6,8 @@ import java.time.Duration
 import java.time.Instant
 
 import io.seqera.wave.model.ScanResult
+import io.seqera.wave.model.ScanVulnerability
+
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
@@ -16,8 +18,15 @@ class WaveContainerScanRecordTest extends Specification {
         def startTime = Instant.now()
         def duration = Duration.ofMinutes(2)
         def buildId = "testbuildid"
-        def result = Map.of("key1","value1","key2","value2")
-        def results = List.of(result)
+        def scanVulnerability = new ScanVulnerability(
+                                "id1",
+                                "low",
+                                "title",
+                                "pkgname",
+                                "installed.version",
+                                "fix.version",
+                                "url")
+        def results = List.of(scanVulnerability)
         def scanresult= new ScanResult(
                 buildId,
                 startTime,
@@ -30,7 +39,6 @@ class WaveContainerScanRecordTest extends Specification {
 
         then:
         waveContainerScanRecord.buildId == buildId
-        waveContainerScanRecord.scanResult == scanresult
-
+        waveContainerScanRecord.scanVulnerabilitiesIds[0] == "id1"
     }
 }

@@ -99,26 +99,36 @@ class ViewController {
     @View("scan-view")
     @Get('/scans/{buildId}')
     HttpResponse<Map<String,Object>> viewScan(String buildId) {
-        final result = persistenceService.loadContainerScanResult(buildId)
         final binding = new HashMap(6)
-        binding.exist = true
-        if( !result ) {
-            if(persistenceService.loadBuild(buildId)) {
-                binding.completed = false
+        def result = null
+
+        try {
+            result = persistenceService.loadContainerScanVulResult(buildId)
+        }catch (NotFoundException e){
+            binding.exist = false
+            binding.errormessage = e.getMessage()
+        }
+
+        if(result) {
+            binding.exist = true
+            if (!result) {
+                if (persistenceService.loadBuild(buildId)) {
+                    binding.completed = false
+                } else {
+                    binding.exist = false
+                    binding.completed = true
+                    binding.errormessage = "Unknown build id '$buildId'"
+                }
+            } else {
+                binding.completed = true
+                binding.scan_success = result.isSuccess
+                binding.build_id = buildId
+                binding.build_url = "$serverUrl/view/builds/${buildId}"
+                binding.scan_time = formatTimestamp(result.startTime) ?: '-'
+                binding.scan_duration = formatDuration(result.duration) ?: '-'
+                if (result.result != null && !result.result.isEmpty())
+                    binding.vulnerabilities = result.result
             }
-            else{
-                binding.exist = false
-                binding.errormessage = "Unknown build id '$buildId'"
-            }
-        }else {
-            binding.completed = true
-            binding.scan_success = result.scanResult.isSuccess
-            binding.build_id = buildId
-            binding.build_url = "$serverUrl/view/builds/${buildId}"
-            binding.scan_time = formatTimestamp(result.scanResult.startTime) ?: '-'
-            binding.scan_duration = formatDuration(result.scanResult.duration) ?: '-'
-            if( result.scanResult.result!=null && !result.scanResult.result.isEmpty() )
-                binding.vulnerabilities = result.scanResult.result
         }
         // return the response
         binding.put('server_url', serverUrl)

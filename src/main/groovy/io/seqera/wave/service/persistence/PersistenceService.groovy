@@ -3,7 +3,10 @@ package io.seqera.wave.service.persistence
 import groovy.transform.CompileStatic
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
+import io.seqera.wave.model.ScanResult
 import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.model.ScanVulnerability
+
 /**
  * A storage for statistic data
  *
@@ -66,7 +69,7 @@ interface PersistenceService {
      * @param buildId The request token associated with this request
      * @param data A {@link WaveContainerScanRecord} object representing a Wave request record
      */
-    void saveContainerScanResult(String buildId, WaveContainerScanRecord waveContainerScanRecord)
+    void saveContainerScanResult(String buildId, WaveContainerScanRecord waveContainerScanRecord, List<ScanVulnerability> scanVulnerabilities)
 
     /**
      * Retrieve a {@link WaveContainerScanRecord} object corresponding to the a specified request token
@@ -75,5 +78,13 @@ interface PersistenceService {
      * @return The {@link WaveContainerScanRecord} object associated with the corresponding token or {@code null} otherwise
      */
     WaveContainerScanRecord loadContainerScanResult(String buildId)
+
+    /**
+     * Retrieve a {@link WaveContainerScanRecord} object corresponding to the a specified request token
+     *
+     * @param buildId The token for which recover the corresponding {@link List<ScanVulnerability>} object
+     * @return The {@link @link List<ScanVulnerability>} object associated with the corresponding token or {@code null} otherwise
+     */
+    ScanResult loadContainerScanVulResult(String buildId)
 
 }

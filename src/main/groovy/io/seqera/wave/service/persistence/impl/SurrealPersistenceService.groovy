@@ -11,10 +11,14 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
+import io.seqera.wave.exception.NotFoundException
+import io.seqera.wave.model.ScanResult
+import io.seqera.wave.model.ScanVulnerability
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerScanRecord
+
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -63,6 +67,11 @@ class SurrealPersistenceService implements PersistenceService {
         final ret3 = surrealDb.sqlAsMap(authorization, "define table wave_scan SCHEMALESS")
         if( ret3.status != "OK")
             throw new IllegalStateException("Unable to define SurrealDB table wave_scan - cause: $ret3")
+        // create wave_scan table
+        final ret4 = surrealDb.sqlAsMap(authorization, "define table wave_scan_vul SCHEMALESS")
+        if( ret4.status != "OK")
+            throw new IllegalStateException("Unable to define SurrealDB table wave_scan_vul - cause: $ret3")
+
     }
 
     private String getAuthorization() {
@@ -150,7 +159,7 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveContainerScanResult(String buildId, WaveContainerScanRecord waveContainerScanRecord) {
+    void saveContainerScanResult(String buildId, WaveContainerScanRecord waveContainerScanRecord, List<ScanVulnerability> scanVulnerabilities) {
         surrealDb.insertScanAsync(authorization, waveContainerScanRecord).subscribe({ result->
             log.trace "scan record saved ${result}"
         }, {error->
@@ -160,10 +169,18 @@ class SurrealPersistenceService implements PersistenceService {
             }
             log.error "Error saving scan record ${msg}\n${waveContainerScanRecord}", error
         })
+        scanVulnerabilities.forEach {
+        surrealDb.updateScanVulAsync(authorization,it.vulnerabilityId, it).subscribe({ result->
+            log.trace "scan record saved ${result}"
+        }, {error->
+            def msg = error.message
+            if( error instanceof HttpClientResponseException ){
+                msg += ":\n $error.response.body"
+            }
+            log.error "Error saving scan record ${msg}\n${it}", error
+        })}
     }
-    void saveScanBlocking(WaveContainerScanRecord record) {
-        surrealDb.insertScan(getAuthorization(), record)
-    }
+
     @Override
     WaveContainerScanRecord loadContainerScanResult(String buildId) {
         if( !buildId )
@@ -174,5 +191,26 @@ class SurrealPersistenceService implements PersistenceService {
         final data= json ? JacksonHelper.fromJson(patchDuration(json), type) : null
         final result = data && data[0].result ? data[0].result[0] : null
         return result
+    }
+
+    @Override
+    ScanResult loadContainerScanVulResult(String buildId) {
+        if( !buildId )
+            throw new IllegalArgumentException("Missing 'buildId' argument")
+        WaveContainerScanRecord waveContainerScanRecord = loadContainerScanResult(buildId)
+        if( !waveContainerScanRecord )
+            throw new NotFoundException("Scan Report does not exist for the buildid: ${buildId}")
+
+        final query = "select * from  wave_scan_vul where vulnerabilityId inside '$waveContainerScanRecord.scanVulnerabilitiesIds'"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<ScanVulnerability>>>() {}
+        final data= json ? JacksonHelper.fromJson(patchDuration(json), type) : null
+        final result = data && data[0].result ? List.of(data[0].result) : null
+
+        return ScanResult.load(waveContainerScanRecord.buildId,
+                waveContainerScanRecord.startTime,
+                waveContainerScanRecord.duration,
+                waveContainerScanRecord.isSuccess,
+                result)
     }
 }

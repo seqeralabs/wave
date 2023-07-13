@@ -11,6 +11,7 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
+import io.seqera.wave.service.persistence.WaveContainerScanRecord
 
 @ToString(includePackage = false, includeNames = true)
 @EqualsAndHashCode
@@ -20,7 +21,6 @@ class ScanResult {
     Instant startTime
     Duration duration
     List<ScanVulnerability> result
-    boolean isCompleted
     boolean isSuccess
 
     private ScanResult(String buildId, Instant startTime, List<ScanVulnerability> result, Duration duration, boolean isSuccess) {
@@ -37,5 +37,9 @@ class ScanResult {
 
     static ScanResult failure(String buildId, Instant startTime, List<ScanVulnerability> result){
         return new ScanResult(buildId, startTime, result, Duration.between(startTime, Instant.now()), false)
+    }
+
+    static ScanResult load(String buildId, Instant startTime, Duration duration1,  boolean isSuccess, List<ScanVulnerability> result){
+        return new ScanResult(buildId, startTime, result, duration1, isSuccess)
     }
 }
