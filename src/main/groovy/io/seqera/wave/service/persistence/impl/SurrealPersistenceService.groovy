@@ -68,9 +68,9 @@ class SurrealPersistenceService implements PersistenceService {
         if( ret3.status != "OK")
             throw new IllegalStateException("Unable to define SurrealDB table wave_scan - cause: $ret3")
         // create wave_scan table
-        final ret4 = surrealDb.sqlAsMap(authorization, "define table wave_scan_vul SCHEMALESS")
+        final ret4 = surrealDb.sqlAsMap(authorization, "define table wave_scan_vulnerabilities SCHEMALESS")
         if( ret4.status != "OK")
-            throw new IllegalStateException("Unable to define SurrealDB table wave_scan_vul - cause: $ret3")
+            throw new IllegalStateException("Unable to define SurrealDB table wave_scan_vulnerabilities - cause: $ret3")
 
     }
 
@@ -171,13 +171,13 @@ class SurrealPersistenceService implements PersistenceService {
         })
         scanVulnerabilities.forEach {
         surrealDb.updateScanVulAsync(authorization,it.vulnerabilityId, it).subscribe({ result->
-            log.trace "scan record saved ${result}"
+            log.trace "vulnerability record saved ${result}"
         }, {error->
             def msg = error.message
             if( error instanceof HttpClientResponseException ){
                 msg += ":\n $error.response.body"
             }
-            log.error "Error saving scan record ${msg}\n${it}", error
+            log.error "Error saving vulnerability record ${msg}\n${it}", error
         })}
     }
 
@@ -201,7 +201,7 @@ class SurrealPersistenceService implements PersistenceService {
         if( !waveContainerScanRecord )
             throw new NotFoundException("Scan Report does not exist for the buildid: ${buildId}")
 
-        final query = "select * from  wave_scan_vul where vulnerabilityId inside '$waveContainerScanRecord.scanVulnerabilitiesIds'"
+        final query = "select * from  wave_scan_vulnerabilities where vulnerabilityId inside '$waveContainerScanRecord.scanVulnerabilitiesIds'"
         final json = surrealDb.sqlAsString(getAuthorization(), query)
         final type = new TypeReference<ArrayList<SurrealResult<ScanVulnerability>>>() {}
         final data= json ? JacksonHelper.fromJson(patchDuration(json), type) : null

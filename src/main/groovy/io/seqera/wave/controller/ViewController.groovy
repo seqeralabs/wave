@@ -99,15 +99,19 @@ class ViewController {
     @View("scan-view")
     @Get('/scans/{buildId}')
     HttpResponse<Map<String,Object>> viewScan(String buildId) {
-        final binding = new HashMap(6)
+        final binding = new HashMap(10)
         def result = null
         try {
             result = persistenceService.loadContainerScanVulResult(buildId)
         }catch (NotFoundException e){
             binding.exist = false
+            binding.completed = true
+            binding.color = "#D3D3D3"
             binding.errormessage = e.getMessage()
             if (persistenceService.loadBuild(buildId)) {
+                binding.exist = true
                 binding.completed = false
+                binding.color = "#ffffe0"
             }
         }
 
@@ -119,8 +123,8 @@ class ViewController {
                 binding.build_url = "$serverUrl/view/builds/${buildId}"
                 binding.scan_time = formatTimestamp(result.startTime) ?: '-'
                 binding.scan_duration = formatDuration(result.duration) ?: '-'
-                if (result.result != null && !result.result.isEmpty())
-                    binding.vulnerabilities = result.result
+                if (result.vulnerabilities != null && !result.vulnerabilities.isEmpty())
+                    binding.vulnerabilities = result.vulnerabilities
         }
         // return the response
         binding.put('server_url', serverUrl)

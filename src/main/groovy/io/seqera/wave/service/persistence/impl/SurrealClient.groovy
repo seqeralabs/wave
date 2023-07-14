@@ -55,6 +55,6 @@ interface SurrealClient {
     @Post('/key/wave_scan')
     Flux<Map<String, Object>> insertScanAsync(@Header String authorization, @Body WaveContainerScanRecord body)
 
-    @Post('/key/wave_scan_vul/{vulnerabilityId}')
-    Flux<Map<String, Object>> updateScanVulAsync(@Header String authorization, String vulnerabilityId, @Body ScanVulnerability scanVulnerability)
+    @Put('/key/wave_scan_vulnerabilities/{id}')
+    Flux<Map<String, Object>> updateScanVulAsync(@Header String authorization, String id, @Body ScanVulnerability scanVulnerability)
 }

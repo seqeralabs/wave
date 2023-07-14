@@ -38,8 +38,8 @@ class WaveContainerScanRecord {
         this.startTime = scanResult.startTime
         this.duration = scanResult.duration
         this.isSuccess = scanResult.isSuccess
-        if(scanResult.result!=null || !scanResult.result.isEmpty())
-        this.scanVulnerabilitiesIds = scanResult.result.parallelStream()
+        if(scanResult.vulnerabilities!=null && !scanResult.vulnerabilities.isEmpty())
+        this.scanVulnerabilitiesIds = scanResult.vulnerabilities.parallelStream()
                 .map {it.vulnerabilityId}
                 .collect(Collectors.toList())
     }
