@@ -13,12 +13,14 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.ContainerDigestPair
+import io.seqera.wave.model.ScanVulnerability
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
+import io.seqera.wave.service.persistence.WaveContainerScanRecord
 import io.seqera.wave.test.SurrealDBTestContainer
 import io.seqera.wave.tower.User
 /**
@@ -258,6 +260,32 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         updated.waveDigest == '222'
         updated.waveImage == request.waveImage
 
+    }
+
+    def 'should save a scan and load a result' () {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def BUILD_ID = '100'
+        def CVE1 = new ScanVulnerability('cve1', 'x1', 'title1', 'package1', 'version1', 'fixed1', 'url1')
+        def CVE2 = new ScanVulnerability('cve2', 'x2', 'title2', 'package2', 'version2', 'fixed2', 'url2')
+        def CVE3 = new ScanVulnerability('cve3', 'x3', 'title3', 'package3', 'version3', 'fixed3', 'url3')
+        def scanRecord = new WaveContainerScanRecord(BUILD_ID, Instant.now(), Duration.ofSeconds(10), true, ['cve1', 'cve2', 'cve3'])
+        def vulnerabilities = [ CVE1, CVE2, CVE3 ]
+        when:
+        persistence.saveContainerScanResult(BUILD_ID, scanRecord, vulnerabilities)
+        and:
+        sleep 200
+        then:
+        def result = persistence.loadContainerScanResult(BUILD_ID)
+        and:
+        result.buildId == BUILD_ID
+        result.isSuccess
+        result.scanVulnerabilitiesIds == ['cve1', 'cve2', 'cve3']
+        and:
+        def scan = persistence.loadContainerScanVulResult(BUILD_ID)
+        scan.isSuccess
+        scan.buildId == BUILD_ID
+        scan.vulnerabilities.size() == 3
     }
 
 }
