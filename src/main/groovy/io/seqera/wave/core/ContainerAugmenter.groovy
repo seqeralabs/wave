@@ -144,10 +144,10 @@ class ContainerAugmenter {
         }
 
         final manifestResult = findImageManifestAndDigest(manifestsList, imageName, tag, headers)
-        final imageManifest = manifestResult.first
-        final configDigest = manifestResult.second
-        final targetDigest = manifestResult.third
-        final oci = manifestResult.fourth
+        final imageManifest = manifestResult.v1
+        final configDigest = manifestResult.v2
+        final targetDigest = manifestResult.v3
+        final oci = manifestResult.v4
 
         // fetch the image config
         final resp5 = client.getString("/v2/$imageName/blobs/$configDigest", headers)
@@ -163,7 +163,9 @@ class ContainerAugmenter {
 
         // update the image manifest adding a new layer
         // returns the updated image manifest digest
-        final newManifestDigest = updateImageManifest(imageName, imageManifest, newConfigDigest, newConfigJson.size(), oci)
+        final newManifestResult = updateImageManifest(imageName, imageManifest, newConfigDigest, newConfigJson.size(), oci)
+        final newManifestDigest = newManifestResult.v1
+        final newManifestSize = newManifestResult.v2
         log.trace "Resolve (7) ==> new image digest: $newManifestDigest"
 
         if( !targetDigest ) {
@@ -172,7 +174,7 @@ class ContainerAugmenter {
         else {
             // update the manifests list with the new digest
             // returns the manifests list digest
-            final newListDigest = updateImageIndex(imageName, manifestsList, targetDigest, newManifestDigest, oci)
+            final newListDigest = updateImageIndex(imageName, manifestsList, targetDigest, newManifestDigest, newManifestSize, oci)
             log.trace "Resolve (8) ==> new list digest: $newListDigest"
             return new ContainerDigestPair(digest, newListDigest)
         }
@@ -211,8 +213,17 @@ class ContainerAugmenter {
 
     }
 
-    protected String updateImageIndex(String imageName, String manifestsList, String targetDigest, String newDigest, boolean oci) {
-        final updated = manifestsList.replace(targetDigest, newDigest)
+    protected String updateImageIndex(String imageName, String manifestsList, String targetDigest, String newDigest, Integer newSize, boolean oci) {
+        final json = new JsonSlurper().parseText(manifestsList) as Map
+        final list = json.manifests as List<Map>
+        final entry = list.find( it -> it.digest==targetDigest )
+        if( !entry )
+            throw new IllegalStateException("Missing manifest entry for digest: $targetDigest")
+        // update the target entry digest and size
+        entry.digest = newDigest
+        entry.size = newSize
+        // serialize to json again  
+        final updated = JsonOutput.toJson(json)
         final result = RegHelper.digest(updated)
         final type = oci ? OCI_IMAGE_INDEX_V1 : DOCKER_IMAGE_INDEX_V2
         // make sure the manifest was updated
@@ -271,7 +282,7 @@ class ContainerAugmenter {
         return json.config.digest
     }
 
-    protected String updateImageManifest(String imageName, String imageManifest, String newImageConfigDigest, newImageConfigSize, boolean oci) {
+    protected Tuple2<String,Integer> updateImageManifest(String imageName, String imageManifest, String newImageConfigDigest, newImageConfigSize, boolean oci) {
 
         // turn the json string into a json map
         // and append the new layer
@@ -296,10 +307,11 @@ class ContainerAugmenter {
         final digest = RegHelper.digest(newManifest)
         final path = "$client.registry.name/v2/$imageName/manifests/$digest"
         final type = oci ? OCI_IMAGE_MANIFEST_V1 : DOCKER_MANIFEST_V2_TYPE
+        final size = newManifest.size()
         storage.saveManifest(path, newManifest, type, digest)
 
         // return the updated image manifest digest
-        return digest
+        return new Tuple2<String, Integer>(digest, size)
     }
 
     protected String getFirst(value) {
