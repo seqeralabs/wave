@@ -7,6 +7,7 @@ import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.views.View
 import io.seqera.wave.exception.NotFoundException
+import io.seqera.wave.model.ScanResult
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import jakarta.inject.Inject
@@ -100,9 +101,9 @@ class ViewController {
     @Get('/scans/{buildId}')
     HttpResponse<Map<String,Object>> viewScan(String buildId) {
         final binding = new HashMap(10)
-        def result = null
+        ScanResult result = null
         try {
-            result = persistenceService.loadContainerScanVulResult(buildId)
+            result = persistenceService.loadScanResult(buildId)
         }catch (NotFoundException e){
             binding.exist = false
             binding.completed = true
@@ -116,15 +117,15 @@ class ViewController {
         }
 
         if(result) {
-                binding.exist = true
-                binding.completed = true
-                binding.scan_success = result.isSuccess
-                binding.build_id = buildId
-                binding.build_url = "$serverUrl/view/builds/${buildId}"
-                binding.scan_time = formatTimestamp(result.startTime) ?: '-'
-                binding.scan_duration = formatDuration(result.duration) ?: '-'
-                if (result.vulnerabilities != null && !result.vulnerabilities.isEmpty())
-                    binding.vulnerabilities = result.vulnerabilities
+            binding.exist = true
+            binding.completed = true
+            binding.scan_success = result.isSuccess
+            binding.build_id = buildId
+            binding.build_url = "$serverUrl/view/builds/${buildId}"
+            binding.scan_time = formatTimestamp(result.startTime) ?: '-'
+            binding.scan_duration = formatDuration(result.duration) ?: '-'
+            if (result.vulnerabilities != null && !result.vulnerabilities.isEmpty())
+                binding.vulnerabilities = result.vulnerabilities
         }
         // return the response
         binding.put('server_url', serverUrl)

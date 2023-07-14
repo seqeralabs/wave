@@ -11,9 +11,7 @@ import io.micronaut.http.client.annotation.Client
 import io.seqera.wave.model.ScanVulnerability
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
-import io.seqera.wave.service.persistence.WaveContainerScanRecord
 import reactor.core.publisher.Flux
-
 /**
  * Declarative http client for SurrealDB
  *
@@ -52,9 +50,7 @@ interface SurrealClient {
     @Put('/key/wave_request/{token}')
     Flux<Map<String, Object>> updateContainerRequestAsync(@Header String authorization, String token, @Body WaveContainerRecord body)
 
-    @Post('/key/wave_scan')
-    Flux<Map<String, Object>> insertScanAsync(@Header String authorization, @Body WaveContainerScanRecord body)
+    @Put('/key/wave_scan_vul/{id}')
+    Map<String, Object> updateScanVulnerability(@Header String authorization, String id, @Body ScanVulnerability scanVulnerability)
 
-    @Put('/key/wave_scan_vulnerabilities/{id}')
-    Flux<Map<String, Object>> updateScanVulAsync(@Header String authorization, String id, @Body ScanVulnerability scanVulnerability)
 }

@@ -17,7 +17,7 @@ import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.ContainerBuildServiceImpl
 import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.persistence.PersistenceService
-import io.seqera.wave.service.persistence.WaveContainerScanRecord
+import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.util.ThreadPoolBuilder
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -72,8 +72,8 @@ class ContainerScanServiceImpl implements ContainerScanService {
     }
 
     @Override
-    WaveContainerScanRecord getScanResult(String buildId) {
-        return persistenceService.loadContainerScanResult(buildId)
+    WaveScanRecord getScanResult(String buildId) {
+        return persistenceService.loadScanRecord(buildId)
     }
 
     ScanResult launch(BuildRequest buildRequest, BuildResult buildResult){
@@ -96,7 +96,7 @@ class ContainerScanServiceImpl implements ContainerScanService {
     void completeScan(BuildRequest buildRequest, ScanResult scanResult){
         try{
             //save scan results
-            persistenceService.saveContainerScanResult(buildRequest.id, new WaveContainerScanRecord(buildRequest.id,scanResult), scanResult.vulnerabilities)
+            persistenceService.saveContainerScanResult(buildRequest.id, new WaveScanRecord(buildRequest.id, scanResult))
         }
         catch (Exception e){
             log.warn "Unable to save the scan results for build: ${buildRequest.id}",e

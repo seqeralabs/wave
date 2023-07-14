@@ -2,7 +2,7 @@ package io.seqera.wave.service
 
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
-import io.seqera.wave.service.persistence.WaveContainerScanRecord
+import io.seqera.wave.service.persistence.WaveScanRecord
 /**
  * Declare operations to scan containers
  *
@@ -12,5 +12,5 @@ interface ContainerScanService {
 
     void scan(BuildRequest buildRequest, BuildResult buildResult)
 
-    WaveContainerScanRecord getScanResult(String buildId)
+    WaveScanRecord getScanResult(String buildId)
 }

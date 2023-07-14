@@ -11,7 +11,7 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.model.ScanResult
 import io.seqera.wave.model.ScanVulnerability
 import io.seqera.wave.service.ContainerScanService
-import io.seqera.wave.service.persistence.WaveContainerScanRecord
+import io.seqera.wave.service.persistence.WaveScanRecord
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
@@ -35,7 +35,7 @@ class ContainerScanControllerTest extends Specification {
                 "fix.version",
                 "url")
         def results = List.of(scanVulnerability)
-        def waveContainerScanRecord = new WaveContainerScanRecord(
+        def waveContainerScanRecord = new WaveScanRecord(
                                                 buildId,
                                                 new ScanResult(
                                                         buildId,

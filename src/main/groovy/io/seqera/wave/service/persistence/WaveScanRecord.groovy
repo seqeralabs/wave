@@ -2,14 +2,13 @@ package io.seqera.wave.service.persistence
 
 import java.time.Duration
 import java.time.Instant
-import java.util.stream.Collectors
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.wave.model.ScanResult
-
+import io.seqera.wave.model.ScanVulnerability
 /**
  * Model a Wave container scan result
  *
@@ -19,28 +18,32 @@ import io.seqera.wave.model.ScanResult
 @ToString(includeNames = true, includePackage = false)
 @Canonical
 @CompileStatic
-class WaveContainerScanRecord {
-    String buildId
+class WaveScanRecord {
+    String id
     Instant startTime
     Duration duration
     boolean isSuccess
-    List<String> scanVulnerabilitiesIds
-    WaveContainerScanRecord(){}
-    WaveContainerScanRecord(String buildId, Instant startTime, Duration duration, boolean isSuccess, List<String> scanVulnerabilitiesIds) {
-        this.buildId = buildId
+    List<ScanVulnerability> vulnerabilities
+
+    WaveScanRecord(){}
+
+    WaveScanRecord(String id, Instant startTime, Duration duration, boolean isSuccess, List<ScanVulnerability> vulnerabilities) {
+        this.id = id
         this.startTime = startTime
         this.duration = duration
         this.isSuccess = isSuccess
-        this.scanVulnerabilitiesIds = scanVulnerabilitiesIds
+        this.vulnerabilities = vulnerabilities
+                ? new ArrayList<ScanVulnerability>(vulnerabilities)
+                : List.<ScanVulnerability>of()
     }
-    WaveContainerScanRecord(String buildId, ScanResult scanResult) {
-        this.buildId = buildId
+
+    WaveScanRecord(String id, ScanResult scanResult) {
+        this.id = id
         this.startTime = scanResult.startTime
         this.duration = scanResult.duration
         this.isSuccess = scanResult.isSuccess
-        if(scanResult.vulnerabilities!=null && !scanResult.vulnerabilities.isEmpty())
-        this.scanVulnerabilitiesIds = scanResult.vulnerabilities.parallelStream()
-                .map {it.vulnerabilityId}
-                .collect(Collectors.toList())
+        this.vulnerabilities = scanResult.vulnerabilities
+                ? new ArrayList<ScanVulnerability>(scanResult.vulnerabilities)
+                : List.<ScanVulnerability>of()
     }
 }

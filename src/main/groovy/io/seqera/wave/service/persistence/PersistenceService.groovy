@@ -3,10 +3,9 @@ package io.seqera.wave.service.persistence
 import groovy.transform.CompileStatic
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
+import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.model.ScanResult
 import io.seqera.wave.service.builder.BuildEvent
-import io.seqera.wave.model.ScanVulnerability
-
 /**
  * A storage for statistic data
  *
@@ -64,27 +63,37 @@ interface PersistenceService {
     WaveContainerRecord loadContainerRequest(String token)
 
     /**
-     * Store a {@link WaveContainerScanRecord} object in the Surreal wave_request table.
+     * Store a {@link WaveScanRecord} object in the Surreal wave_request table.
      *
      * @param buildId The request token associated with this request
-     * @param data A {@link WaveContainerScanRecord} object representing a Wave request record
+     * @param data A {@link WaveScanRecord} object representing a Wave request record
      */
-    void saveContainerScanResult(String buildId, WaveContainerScanRecord waveContainerScanRecord, List<ScanVulnerability> scanVulnerabilities)
+    void saveContainerScanResult(String buildId, WaveScanRecord waveContainerScanRecord)
 
     /**
-     * Retrieve a {@link WaveContainerScanRecord} object corresponding to the a specified request token
+     * Retrieve a {@link WaveScanRecord} object corresponding to the a specified request token
      *
-     * @param buildId The token for which recover the corresponding {@link WaveContainerScanRecord} object
-     * @return The {@link WaveContainerScanRecord} object associated with the corresponding token or {@code null} otherwise
+     * @param buildId The token for which recover the corresponding {@link WaveScanRecord} object
+     * @return The {@link WaveScanRecord} object associated with the corresponding token or {@code null} otherwise
      */
-    WaveContainerScanRecord loadContainerScanResult(String buildId)
+    WaveScanRecord loadScanRecord(String buildId)
 
     /**
-     * Retrieve a {@link WaveContainerScanRecord} object corresponding to the a specified request token
+     * Retrieve a {@link WaveScanRecord} object corresponding to the a specified request token
      *
      * @param buildId The token for which recover the corresponding {@link List<ScanVulnerability>} object
      * @return The {@link @link List<ScanVulnerability>} object associated with the corresponding token or {@code null} otherwise
      */
-    ScanResult loadContainerScanVulResult(String buildId)
+    default ScanResult loadScanResult(String buildId) {
+        final scanRecord = loadScanRecord(buildId)
+        if(scanRecord == null)
+            throw new NotFoundException("Scan Report does not exist for the buildid: ${buildId}")
+
+        return ScanResult.create(scanRecord.id,
+                scanRecord.startTime,
+                scanRecord.duration,
+                scanRecord.isSuccess,
+                scanRecord.vulnerabilities)
+    }
 
 }

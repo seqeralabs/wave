@@ -20,7 +20,7 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
-import io.seqera.wave.service.persistence.WaveContainerScanRecord
+import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.test.SurrealDBTestContainer
 import io.seqera.wave.tower.User
 /**
@@ -269,23 +269,28 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def CVE1 = new ScanVulnerability('cve1', 'x1', 'title1', 'package1', 'version1', 'fixed1', 'url1')
         def CVE2 = new ScanVulnerability('cve2', 'x2', 'title2', 'package2', 'version2', 'fixed2', 'url2')
         def CVE3 = new ScanVulnerability('cve3', 'x3', 'title3', 'package3', 'version3', 'fixed3', 'url3')
-        def scanRecord = new WaveContainerScanRecord(BUILD_ID, Instant.now(), Duration.ofSeconds(10), true, ['cve1', 'cve2', 'cve3'])
-        def vulnerabilities = [ CVE1, CVE2, CVE3 ]
+        def scanRecord = new WaveScanRecord(BUILD_ID, Instant.now(), Duration.ofSeconds(10), true, [CVE1, CVE2, CVE3 ])
         when:
-        persistence.saveContainerScanResult(BUILD_ID, scanRecord, vulnerabilities)
-        and:
-        sleep 200
+        persistence.saveContainerScanResult(BUILD_ID, scanRecord)
         then:
-        def result = persistence.loadContainerScanResult(BUILD_ID)
+        def result = persistence.loadScanRecord(BUILD_ID)
         and:
-        result.buildId == BUILD_ID
-        result.isSuccess
-        result.scanVulnerabilitiesIds == ['cve1', 'cve2', 'cve3']
+        result == scanRecord
         and:
-        def scan = persistence.loadContainerScanVulResult(BUILD_ID)
+        def scan = persistence.loadScanResult(BUILD_ID)
         scan.isSuccess
         scan.buildId == BUILD_ID
-        scan.vulnerabilities.size() == 3
+        scan.vulnerabilities == scanRecord.vulnerabilities
+
+        when:
+        def BUILD_ID2 = '102'
+        def scanRecord2 = new WaveScanRecord(BUILD_ID2, Instant.now(), Duration.ofSeconds(20), true, [CVE1])
+        // should save the same CVE into another build
+        persistence.saveContainerScanResult(BUILD_ID2, scanRecord2)
+        then:
+        def result2 = persistence.loadScanRecord(BUILD_ID2)
+        and:
+        result2 == scanRecord2
     }
 
 }

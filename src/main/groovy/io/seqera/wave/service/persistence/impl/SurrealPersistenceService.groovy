@@ -1,5 +1,6 @@
 package io.seqera.wave.service.persistence.impl
 
+
 import com.fasterxml.jackson.core.type.TypeReference
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -11,14 +12,11 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
-import io.seqera.wave.exception.NotFoundException
-import io.seqera.wave.model.ScanResult
 import io.seqera.wave.model.ScanVulnerability
+import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
-import io.seqera.wave.service.persistence.PersistenceService
-import io.seqera.wave.service.persistence.WaveContainerScanRecord
-
+import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -68,9 +66,9 @@ class SurrealPersistenceService implements PersistenceService {
         if( ret3.status != "OK")
             throw new IllegalStateException("Unable to define SurrealDB table wave_scan - cause: $ret3")
         // create wave_scan table
-        final ret4 = surrealDb.sqlAsMap(authorization, "define table wave_scan_vulnerabilities SCHEMALESS")
+        final ret4 = surrealDb.sqlAsMap(authorization, "define table wave_scan_vul SCHEMALESS")
         if( ret4.status != "OK")
-            throw new IllegalStateException("Unable to define SurrealDB table wave_scan_vulnerabilities - cause: $ret3")
+            throw new IllegalStateException("Unable to define SurrealDB table wave_scan_vul - cause: $ret3")
 
     }
 
@@ -159,58 +157,49 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveContainerScanResult(String buildId, WaveContainerScanRecord waveContainerScanRecord, List<ScanVulnerability> scanVulnerabilities) {
-        surrealDb.insertScanAsync(authorization, waveContainerScanRecord).subscribe({ result->
-            log.trace "scan record saved ${result}"
-        }, {error->
-            def msg = error.message
-            if( error instanceof HttpClientResponseException ){
-                msg += ":\n $error.response.body"
-            }
-            log.error "Error saving scan record ${msg}\n${waveContainerScanRecord}", error
-        })
-        scanVulnerabilities.forEach {
-        surrealDb.updateScanVulAsync(authorization,it.vulnerabilityId, it).subscribe({ result->
-            log.trace "vulnerability record saved ${result}"
-        }, {error->
-            def msg = error.message
-            if( error instanceof HttpClientResponseException ){
-                msg += ":\n $error.response.body"
-            }
-            log.error "Error saving vulnerability record ${msg}\n${it}", error
-        })}
+    void saveContainerScanResult(String buildId, WaveScanRecord scanRecord) {
+        final vulnerabilities = scanRecord.vulnerabilities ?: List.<ScanVulnerability>of()
+
+        // save all vulnerabilities
+        for( ScanVulnerability it : vulnerabilities ) {
+            surrealDb.updateScanVulnerability(authorization, it.id, it)
+        }
+
+        // compose the list of ids
+        final ids = vulnerabilities
+                .collect(it-> "wave_scan_vul:$it.id")
+                .join(', ')
+
+        // create the scan record
+        final statement = """\
+                                UPDATE wave_scan:$buildId SET 
+                                    startTime = '$scanRecord.startTime',
+                                    duration = '${scanRecord.duration}',
+                                    isSuccess = ${scanRecord.isSuccess},
+                                    vulnerabilities = ${ids ? "[$ids]" : "[]" } 
+                                """.stripIndent()
+        final result = surrealDb.sqlAsMap(authorization, statement)
+        log.debug "save scan result=$result"
     }
 
     @Override
-    WaveContainerScanRecord loadContainerScanResult(String buildId) {
+    WaveScanRecord loadScanRecord(String buildId) {
         if( !buildId )
             throw new IllegalArgumentException("Missing 'buildId' argument")
-        final query = "select * from wave_scan where buildId = '$buildId'"
-        final json = surrealDb.sqlAsString(getAuthorization(), query)
-        final type = new TypeReference<ArrayList<SurrealResult<WaveContainerScanRecord>>>() {}
+        final statement = "SELECT * FROM wave_scan:$buildId FETCH vulnerabilities"
+        final json = surrealDb.sqlAsString(getAuthorization(), statement)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveScanRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(patchDuration(json), type) : null
         final result = data && data[0].result ? data[0].result[0] : null
+        if( result ) {
+            // remove the entity prefix
+            result.id = result.id?.replaceFirst('wave_scan:','')
+            // remove the entity prefix
+            for( ScanVulnerability it : (result.vulnerabilities ?: List.<ScanVulnerability>of())) {
+                it.id = it.id.replaceFirst('wave_scan_vul:','')
+            }
+        }
         return result
     }
 
-    @Override
-    ScanResult loadContainerScanVulResult(String buildId) {
-        if( !buildId )
-            throw new IllegalArgumentException("Missing 'buildId' argument")
-        WaveContainerScanRecord waveContainerScanRecord = loadContainerScanResult(buildId)
-        if( !waveContainerScanRecord )
-            throw new NotFoundException("Scan Report does not exist for the buildid: ${buildId}")
-
-        final query = "select * from  wave_scan_vulnerabilities where vulnerabilityId inside '$waveContainerScanRecord.scanVulnerabilitiesIds'"
-        final json = surrealDb.sqlAsString(getAuthorization(), query)
-        final type = new TypeReference<ArrayList<SurrealResult<ScanVulnerability>>>() {}
-        final data= json ? JacksonHelper.fromJson(patchDuration(json), type) : null
-        final result = data && data[0].result ? List.of(data[0].result) : null
-
-        return ScanResult.load(waveContainerScanRecord.buildId,
-                waveContainerScanRecord.startTime,
-                waveContainerScanRecord.duration,
-                waveContainerScanRecord.isSuccess,
-                result)
-    }
 }

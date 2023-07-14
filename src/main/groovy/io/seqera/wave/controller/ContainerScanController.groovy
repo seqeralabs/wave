@@ -5,9 +5,8 @@ import groovy.util.logging.Slf4j
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
-import io.seqera.wave.model.ScanResult
 import io.seqera.wave.service.ContainerScanService
-import io.seqera.wave.service.persistence.WaveContainerScanRecord
+import io.seqera.wave.service.persistence.WaveScanRecord
 
 /**
  * Implements a controller to receive get scan result of build images
@@ -25,7 +24,7 @@ class ContainerScanController {
     }
 
     @Get("/v1alpha1/scan/{buildId}")
-    HttpResponse<WaveContainerScanRecord> scanImage(String buildId){
+    HttpResponse<WaveScanRecord> scanImage(String buildId){
         def record = containerScanService.getScanResult(buildId)
         if(record != null){
             HttpResponse.ok(record)

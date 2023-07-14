@@ -12,7 +12,8 @@ import io.seqera.wave.model.ScanVulnerability
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-class WaveContainerScanRecordTest extends Specification {
+class WaveScanRecordTest extends Specification {
+
     def 'should create wave scan record' () {
         given:
         def startTime = Instant.now()
@@ -35,10 +36,10 @@ class WaveContainerScanRecordTest extends Specification {
                 true)
 
         when:
-        def waveContainerScanRecord = new WaveContainerScanRecord(buildId, scanresult)
+        def waveContainerScanRecord = new WaveScanRecord(buildId, scanresult)
 
         then:
-        waveContainerScanRecord.buildId == buildId
-        waveContainerScanRecord.scanVulnerabilitiesIds[0] == "id1"
+        waveContainerScanRecord.id == buildId
+        waveContainerScanRecord.vulnerabilities[0] == scanVulnerability
     }
 }

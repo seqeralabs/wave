@@ -19,8 +19,8 @@ class ScanResult {
     String buildId
     Instant startTime
     Duration duration
-    List<ScanVulnerability> vulnerabilities
     boolean isSuccess
+    List<ScanVulnerability> vulnerabilities
 
     private ScanResult(String buildId, Instant startTime, List<ScanVulnerability> vulnerabilities, Duration duration, boolean isSuccess) {
         this.buildId = buildId
@@ -30,15 +30,15 @@ class ScanResult {
         this.isSuccess = isSuccess
     }
 
-    static ScanResult success(String buildId, Instant startTime, List<ScanVulnerability> result){
-        return new ScanResult(buildId, startTime, result, Duration.between(startTime, Instant.now()), true)
+    static ScanResult success(String buildId, Instant startTime, List<ScanVulnerability> vulnerabilities){
+        return new ScanResult(buildId, startTime, vulnerabilities, Duration.between(startTime, Instant.now()), true)
     }
 
-    static ScanResult failure(String buildId, Instant startTime, List<ScanVulnerability> result){
-        return new ScanResult(buildId, startTime, result, Duration.between(startTime, Instant.now()), false)
+    static ScanResult failure(String buildId, Instant startTime, List<ScanVulnerability> vulnerabilities){
+        return new ScanResult(buildId, startTime, vulnerabilities, Duration.between(startTime, Instant.now()), false)
     }
 
-    static ScanResult load(String buildId, Instant startTime, Duration duration1,  boolean isSuccess, List<ScanVulnerability> result){
-        return new ScanResult(buildId, startTime, result, duration1, isSuccess)
+    static ScanResult create(String buildId, Instant startTime, Duration duration1, boolean isSuccess, List<ScanVulnerability> vulnerabilities){
+        return new ScanResult(buildId, startTime, vulnerabilities, duration1, isSuccess)
     }
 }
