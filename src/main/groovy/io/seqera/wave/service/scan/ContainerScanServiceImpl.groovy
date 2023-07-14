@@ -67,8 +67,8 @@ class ContainerScanServiceImpl implements ContainerScanService {
     void scan(BuildRequest buildRequest, BuildResult buildResult) {
         //start scanning of build container
         CompletableFuture
-                .supplyAsync(() -> launch(buildRequest, buildResult), executor)
-                .thenApply((result) -> {completeScan(buildRequest,result); return result})
+                .supplyAsync(() -> launch(buildRequest), executor)
+                .thenAcceptAsync((scanResult) -> completeScan(scanResult))
     }
 
     @Override
@@ -76,7 +76,7 @@ class ContainerScanServiceImpl implements ContainerScanService {
         return persistenceService.loadScanRecord(buildId)
     }
 
-    ScanResult launch(BuildRequest buildRequest, BuildResult buildResult){
+    ScanResult launch(BuildRequest buildRequest){
         ScanResult scanResult = null
         try {
             //launch container scan
@@ -93,13 +93,13 @@ class ContainerScanServiceImpl implements ContainerScanService {
         return scanResult
     }
 
-    void completeScan(BuildRequest buildRequest, ScanResult scanResult){
+    void completeScan(ScanResult scanResult){
         try{
             //save scan results
-            persistenceService.saveContainerScanResult(buildRequest.id, new WaveScanRecord(buildRequest.id, scanResult))
+            persistenceService.saveContainerScanResult(scanResult.buildId, new WaveScanRecord(scanResult.buildId, scanResult))
         }
         catch (Exception e){
-            log.warn "Unable to save the scan results for build: ${buildRequest.id}",e
+            log.warn "Unable to save the scan results for build: ${scanResult.buildId}",e
         }
     }
 
