@@ -86,8 +86,8 @@ interface PersistenceService {
      */
     default ScanResult loadScanResult(String buildId) {
         final scanRecord = loadScanRecord(buildId)
-        if(scanRecord == null)
-            throw new NotFoundException("Scan Report does not exist for the buildid: ${buildId}")
+        if( !scanRecord )
+            throw new NotFoundException("No scan report exists with id: ${buildId}")
 
         return ScanResult.create(scanRecord.id,
                 scanRecord.startTime,

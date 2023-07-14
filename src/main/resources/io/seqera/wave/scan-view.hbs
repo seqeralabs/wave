@@ -14,33 +14,27 @@
 <div style="font-family:'-apple-system', BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; padding: 30px; max-width: 800px; margin: 0 auto;">
 
     <h1>Wave container security scan</h1>
+<div style="min-height: 60vh">
 {{#if exist}}
-{{#if completed}}
-        <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
-            <h4 style="margin-top:0; color: inherit;">
-                Container scan completed
-            </h4>
-        </div>
+    {{#if completed}}
+    <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+        <h4 style="margin-top:0; color: inherit;">
+            Scan completed
+        </h4>
+    </div>
     <h3>Summary</h3>
 
     <table cellpadding="4" >
         <tr>
-            <td>Request ID</td>
+            <td>Build ID</td>
             <td><a href="{{build_url}}">{{build_id}}</a></td>
         </tr>
-    {{#if scan_success}}
         <tr>
             <td>Scan Status</td>
-            <td>Successful</td>
+            <td>{{scan_status}}</td>
         </tr>
-    {{else}}
         <tr>
-            <td>Scan Status</td>
-            <td>Failed</td>
-        </tr>
-    {{/if}}
-        <tr>
-            <td>Build time</td>
+            <td>Scan time</td>
             <td>{{scan_time}}</td>
         </tr>
 
@@ -51,7 +45,7 @@
 
         <tr>
             <td colspan="2">
-        <h4>Scan Result</h4>
+                <h4>Security scan result</h4>
                 {{#if vulnerabilities.length}}
                     <style>
                         .bordered-table {
@@ -87,27 +81,52 @@
                         </tbody>
                     </table>
                 {{else}}
-                    <tr>
-                        <td colspan="3">No vulnerabilities found</td>
-                    </tr>
+                   No vulnerabilities found
                 {{/if}}
         </td>
         </tr>
     </table>
+    {{else}}
+    <style>
+    .lds-dual-ring {
+      display: inline-block;
+      width: 50px;
+      height: 30px;
+    }
+    .lds-dual-ring:after {
+      content: " ";
+      display: block;
+      width: 20px;
+      height: 20px;
+      margin: 8px;
+      border-radius: 50%;
+      border: 6px solid #3c763d;
+      border-color: #3c763d transparent #3c763d transparent;
+      animation: lds-dual-ring 1.2s linear infinite;
+    }
+    @keyframes lds-dual-ring {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+    </style>
+    <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+        <h4 style="margin-top:0; color: inherit; font-weight: normal">
+            <div class="lds-dual-ring"></div> Scan in progress
+        </h4>
+    </div>
+    {{/if}}
 {{else}}
-    <div style="color: #3c763d; background-color: {{color}}; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
-        <h4 style="margin-top:0; color: inherit;">
-            Container scan still in progress
+    <div style="color: black; background-color: #d3d3d3; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+        <h4 style="margin-top:0; font-weight: normal">
+            {{error_message}}
         </h4>
     </div>
 {{/if}}
-{{else}}
-    <div style="color: #3c763d; background-color: {{color}}; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
-        <h4 style="margin-top:0; color: inherit;">
-            {{errormessage}}
-        </h4>
-    </div>
-{{/if}}
+</div>
 <div class="footer" style="clear:both;width:100%;">
     <hr class="footer-hr" style="height:0;overflow:visible;margin-top:30px;border:0;border-top:1px solid #eee;color:#999999;font-size:12px;line-height:18px;margin-bottom:30px;">
     <img style="float:right" src="/assets/seqera-logo.png">

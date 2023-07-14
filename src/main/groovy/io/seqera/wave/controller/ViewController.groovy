@@ -7,7 +7,6 @@ import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.views.View
 import io.seqera.wave.exception.NotFoundException
-import io.seqera.wave.model.ScanResult
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import jakarta.inject.Inject
@@ -101,32 +100,32 @@ class ViewController {
     @Get('/scans/{buildId}')
     HttpResponse<Map<String,Object>> viewScan(String buildId) {
         final binding = new HashMap(10)
-        ScanResult result = null
         try {
-            result = persistenceService.loadScanResult(buildId)
-        }catch (NotFoundException e){
-            binding.exist = false
-            binding.completed = true
-            binding.color = "#D3D3D3"
-            binding.errormessage = e.getMessage()
-            if (persistenceService.loadBuild(buildId)) {
-                binding.exist = true
-                binding.completed = false
-                binding.color = "#ffffe0"
-            }
-        }
-
-        if(result) {
+            final result = persistenceService.loadScanResult(buildId)
             binding.exist = true
             binding.completed = true
-            binding.scan_success = result.isSuccess
+            binding.scan_status = result.isSuccess ? 'Succeeded' : 'Failed'
             binding.build_id = buildId
             binding.build_url = "$serverUrl/view/builds/${buildId}"
             binding.scan_time = formatTimestamp(result.startTime) ?: '-'
             binding.scan_duration = formatDuration(result.duration) ?: '-'
             if (result.vulnerabilities != null && !result.vulnerabilities.isEmpty())
                 binding.vulnerabilities = result.vulnerabilities
+
         }
+        catch (NotFoundException e){
+            if (persistenceService.loadBuild(buildId)) {
+                binding.exist = true
+                binding.completed = false
+                binding.color = "#ffffe0"
+            }
+            else {
+                binding.exist = false
+                binding.completed = true
+                binding.error_message = e.getMessage()
+            }
+        }
+
         // return the response
         binding.put('server_url', serverUrl)
         return HttpResponse.<Map<String,Object>>ok(binding)
