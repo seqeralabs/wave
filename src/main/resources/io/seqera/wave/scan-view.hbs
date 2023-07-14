@@ -56,11 +56,11 @@
                             border: 1px solid black;
                         }
                     </style>
-                    <table class="bordered-table">
+                    <table class="bordered-table" style='font-size: 0.8em'>
                         <thead>
                         <tr>
+                            <th>ID</th>
                             <th>Library</th>
-                            <th>Vulnerability ID</th>
                             <th>Severity</th>
                             <th>Installed Version</th>
                             <th>Fixed Version</th>
@@ -70,8 +70,8 @@
                         <tbody>
                             {{#each vulnerabilities}}
                                 <tr>
+                                    <td>{{this.id}}</td>
                                     <td>{{this.pkgName}}</td>
-                                    <td>{{this.vulnerabilityId}}</td>
                                     <td>{{this.severity}}</td>
                                     <td>{{this.installedVersion}}</td>
                                     <td>{{this.fixedVersion}}</td>

@@ -266,9 +266,9 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         given:
         def persistence = applicationContext.getBean(SurrealPersistenceService)
         def BUILD_ID = '100'
-        def CVE1 = new ScanVulnerability('cve1', 'x1', 'title1', 'package1', 'version1', 'fixed1', 'url1')
-        def CVE2 = new ScanVulnerability('cve2', 'x2', 'title2', 'package2', 'version2', 'fixed2', 'url2')
-        def CVE3 = new ScanVulnerability('cve3', 'x3', 'title3', 'package3', 'version3', 'fixed3', 'url3')
+        def CVE1 = new ScanVulnerability('cve-1', 'x1', 'title1', 'package1', 'version1', 'fixed1', 'url1')
+        def CVE2 = new ScanVulnerability('cve-2', 'x2', 'title2', 'package2', 'version2', 'fixed2', 'url2')
+        def CVE3 = new ScanVulnerability('cve-3', 'x3', 'title3', 'package3', 'version3', 'fixed3', 'url3')
         def scanRecord = new WaveScanRecord(BUILD_ID, Instant.now(), Duration.ofSeconds(10), true, [CVE1, CVE2, CVE3 ])
         when:
         persistence.saveContainerScanResult(BUILD_ID, scanRecord)

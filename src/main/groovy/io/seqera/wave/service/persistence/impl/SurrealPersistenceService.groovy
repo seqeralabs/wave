@@ -1,6 +1,5 @@
 package io.seqera.wave.service.persistence.impl
 
-
 import com.fasterxml.jackson.core.type.TypeReference
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -167,7 +166,7 @@ class SurrealPersistenceService implements PersistenceService {
 
         // compose the list of ids
         final ids = vulnerabilities
-                .collect(it-> "wave_scan_vul:$it.id")
+                .collect(it-> "wave_scan_vul:⟨$it.id⟩")
                 .join(', ')
 
         // create the scan record
@@ -191,14 +190,6 @@ class SurrealPersistenceService implements PersistenceService {
         final type = new TypeReference<ArrayList<SurrealResult<WaveScanRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(patchDuration(json), type) : null
         final result = data && data[0].result ? data[0].result[0] : null
-        if( result ) {
-            // remove the entity prefix
-            result.id = result.id?.replaceFirst('wave_scan:','')
-            // remove the entity prefix
-            for( ScanVulnerability it : (result.vulnerabilities ?: List.<ScanVulnerability>of())) {
-                it.id = it.id.replaceFirst('wave_scan_vul:','')
-            }
-        }
         return result
     }
 

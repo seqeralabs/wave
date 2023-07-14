@@ -9,6 +9,8 @@ import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.wave.model.ScanResult
 import io.seqera.wave.model.ScanVulnerability
+import io.seqera.wave.util.StringUtils
+
 /**
  * Model a Wave container scan result
  *
@@ -28,7 +30,7 @@ class WaveScanRecord {
     WaveScanRecord(){}
 
     WaveScanRecord(String id, Instant startTime, Duration duration, boolean isSuccess, List<ScanVulnerability> vulnerabilities) {
-        this.id = id
+        this.id = StringUtils.surrealId(id)
         this.startTime = startTime
         this.duration = duration
         this.isSuccess = isSuccess
@@ -38,12 +40,16 @@ class WaveScanRecord {
     }
 
     WaveScanRecord(String id, ScanResult scanResult) {
-        this.id = id
+        this.id = StringUtils.surrealId(id)
         this.startTime = scanResult.startTime
         this.duration = scanResult.duration
         this.isSuccess = scanResult.isSuccess
         this.vulnerabilities = scanResult.vulnerabilities
                 ? new ArrayList<ScanVulnerability>(scanResult.vulnerabilities)
                 : List.<ScanVulnerability>of()
+    }
+
+    void setId(String id) {
+        this.id = StringUtils.surrealId(id)
     }
 }
