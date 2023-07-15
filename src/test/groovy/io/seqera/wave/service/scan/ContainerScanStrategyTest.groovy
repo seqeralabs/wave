@@ -20,6 +20,8 @@ class ContainerScanStrategyTest extends Specification {
         then:
         command == [ '--quiet',
                      'image',
+                     '--timeout',
+                     '10m',
                      '--format',
                      'json',
                      '--output',

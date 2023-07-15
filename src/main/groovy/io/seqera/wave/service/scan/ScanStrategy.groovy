@@ -19,6 +19,8 @@ abstract class ScanStrategy {
         return List.of(
                 '--quiet',
                 'image',
+                '--timeout',
+                '10m',
                 '--format',
                 'json',
                 '--output',
