@@ -117,7 +117,6 @@ class ViewController {
             if (persistenceService.loadBuild(buildId)) {
                 binding.exist = true
                 binding.completed = false
-                binding.color = "#ffffe0"
             }
             else {
                 binding.exist = false
