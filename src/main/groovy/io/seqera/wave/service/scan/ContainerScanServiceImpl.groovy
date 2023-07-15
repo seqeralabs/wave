@@ -31,10 +31,10 @@ class ContainerScanServiceImpl implements ContainerScanService {
     private ContainerBuildServiceImpl containerBuildService
 
     @Inject
-    private ScanStrategy containerScanStrategy
+    private ScanStrategy scanStrategy
 
     @Inject
-    private ScanConfig containerScanConfig
+    private ScanConfig scanConfig
 
     private ExecutorService executor
 
@@ -76,7 +76,7 @@ class ContainerScanServiceImpl implements ContainerScanService {
         ScanResult scanResult = null
         try {
             //launch container scan
-            scanResult = containerScanStrategy.scanContainer(containerScanConfig.scannerImage, buildRequest)
+            scanResult = scanStrategy.scanContainer(buildRequest)
         }
         catch (Exception e){
             log.warn "Unable to launch the scan results for build : ${buildRequest.id}",e

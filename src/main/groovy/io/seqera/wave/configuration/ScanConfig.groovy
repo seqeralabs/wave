@@ -2,6 +2,7 @@ package io.seqera.wave.configuration
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.Duration
 import javax.annotation.Nullable
 import javax.annotation.PostConstruct
 
@@ -24,7 +25,7 @@ class ScanConfig {
      * Docker image of tool need to be used for container scanner
      */
     @Value('${wave.scan.image.name:aquasec/trivy:0.43.0}')
-    private String scannerImage
+    private String scanImage
 
     @Value('${wave.scan.k8s.resources.requests.cpu}')
     @Nullable
@@ -40,8 +41,11 @@ class ScanConfig {
     @Value('${wave.build.workspace}')
     private String buildDirectory
 
-    String getScannerImage() {
-        return scannerImage
+    @Value('${wave.scan.timeout:10m}')
+    private Duration timeout
+
+    String getScanImage() {
+        return scanImage
     }
 
     @Memoized
@@ -59,8 +63,12 @@ class ScanConfig {
         return requestsMemory
     }
 
+    Duration getTimeout() {
+        return timeout
+    }
+
     @PostConstruct
     private void init() {
-        log.debug("Scanner config: docker image name: ${scannerImage}; cache directory: ${cacheDirectory}; cpus: ${requestsCpu}; mem: ${requestsMemory}")
+        log.debug("Scanner config: docker image name: ${scanImage}; cache directory: ${cacheDirectory}; timeout=${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}")
     }
 }

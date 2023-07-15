@@ -2,7 +2,9 @@ package io.seqera.wave.service.scan
 
 import java.nio.file.Path
 
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.service.builder.BuildRequest
 /**
  * Implements ScanStrategy for Docker
@@ -10,16 +12,17 @@ import io.seqera.wave.service.builder.BuildRequest
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @Slf4j
+@CompileStatic
 abstract class ScanStrategy {
 
-    abstract ScanResult scanContainer(String containerScanner, BuildRequest buildRequest)
+    abstract ScanResult scanContainer(BuildRequest buildRequest)
 
-    protected List<String> scanCommand(String targetImage, Path outputFile){
+    protected List<String> scanCommand(String targetImage, Path outputFile, ScanConfig config) {
         return List.of(
                 '--quiet',
                 'image',
                 '--timeout',
-                '10m',
+                "${config.timeout.toMinutes()}m".toString(),
                 '--format',
                 'json',
                 '--output',

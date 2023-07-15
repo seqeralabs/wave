@@ -53,7 +53,7 @@ class KubeScanStrategyTest extends Specification {
         def buildRequest = new BuildRequest('from foo', PATH, repo, null, null, USER, ContainerPlatform.of('amd64'),'{}', cache, "")
         Files.createDirectories(buildRequest.workDir)
 
-        def scanResult = strategy.scanContainer(scanConfig.scannerImage, buildRequest)
+        def scanResult = strategy.scanContainer(buildRequest)
         then:
         scanResult
         and:
@@ -63,7 +63,7 @@ class KubeScanStrategyTest extends Specification {
         def buildRequest2 = new BuildRequest('from foo', PATH, repo, null, null, USER, ContainerPlatform.of('arm64'),'{}', cache, "")
         Files.createDirectories(buildRequest.workDir)
 
-        def scanResult2 = strategy.scanContainer(scanConfig.scannerImage, buildRequest2)
+        def scanResult2 = strategy.scanContainer(buildRequest2)
         then:
         scanResult2
         and:

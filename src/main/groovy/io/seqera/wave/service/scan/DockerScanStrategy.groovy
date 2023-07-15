@@ -29,14 +29,14 @@ import static java.nio.file.StandardOpenOption.WRITE
 class DockerScanStrategy extends ScanStrategy {
 
     @Inject
-    private ScanConfig containerScanConfig
+    private ScanConfig scanConfig
 
-    DockerScanStrategy(ScanConfig containerScanConfig) {
-        this.containerScanConfig = containerScanConfig
+    DockerScanStrategy(ScanConfig scanConfig) {
+        this.scanConfig = scanConfig
     }
 
     @Override
-    ScanResult scanContainer(String scannerImage, BuildRequest req) {
+    ScanResult scanContainer(BuildRequest req) {
         log.info("Launching container scan for buildId: ${req.id}")
         final startTime = Instant.now()
 
@@ -60,7 +60,7 @@ class DockerScanStrategy extends ScanStrategy {
             final reportFile = req.scanDir.resolve(Trivy.OUTPUT_FILE_NAME)
             // create the launch command 
             final dockerCommand = dockerWrapper(req.scanDir, configFile)
-            final trivyCommand = List.of(scannerImage) + scanCommand(req.targetImage, reportFile)
+            final trivyCommand = List.of(scanConfig.scanImage) + scanCommand(req.targetImage, reportFile, scanConfig)
             final command = dockerCommand + trivyCommand
 
             //launch scanning
@@ -81,7 +81,7 @@ class DockerScanStrategy extends ScanStrategy {
             }
         }
         catch (Exception e){
-            log.warn("Container scan failed to scan container, reason: ${e.getMessage()}")
+            log.warn("Container scan failed to scan container, reason: ${e.getMessage()}", e)
             return ScanResult.failure(req.id, startTime, null)
         }
     }
@@ -99,7 +99,7 @@ class DockerScanStrategy extends ScanStrategy {
 
         // cache directory
         wrapper.add('-v')
-        wrapper.add("${containerScanConfig.cacheDirectory}:${Trivy.CACHE_MOUNT_PATH}:rw".toString())
+        wrapper.add("${scanConfig.cacheDirectory}:${Trivy.CACHE_MOUNT_PATH}:rw".toString())
 
         if(credsFile) {
             wrapper.add('-v')

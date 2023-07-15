@@ -3,7 +3,6 @@ package io.seqera.wave.service.scan
 import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
 import java.nio.file.Path
-import java.time.Duration
 import java.time.Instant
 import javax.annotation.Nullable
 
@@ -15,7 +14,6 @@ import io.kubernetes.client.openapi.models.V1Job
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
-import io.micronaut.context.annotation.Value
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.builder.BuildRequest
@@ -39,9 +37,6 @@ import static io.seqera.wave.util.K8sHelper.getSelectorLabel
 @CompileStatic
 class KubeScanStrategy extends ScanStrategy {
 
-    @Value('${wave.scan.timeout:5m}')
-    Duration scanTimeout
-
     @Property(name='wave.scan.k8s.node-selector')
     @Nullable
     private Map<String, String> nodeSelectorMap
@@ -56,7 +51,7 @@ class KubeScanStrategy extends ScanStrategy {
     }
 
     @Override
-    ScanResult scanContainer(String scannerImage, BuildRequest req) {
+    ScanResult scanContainer(BuildRequest req) {
         log.info("Launching container scan for buildId: ${req.id}")
         final startTime = Instant.now()
 
@@ -80,10 +75,10 @@ class KubeScanStrategy extends ScanStrategy {
             final reportFile = req.scanDir.resolve(Trivy.OUTPUT_FILE_NAME)
 
             V1Job job
-            final trivyCommand = scanCommand(req.targetImage, reportFile)
+            final trivyCommand = scanCommand(req.targetImage, reportFile, scanConfig)
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
-            final pod = k8sService.scanContainer(podName, scannerImage, trivyCommand, req.scanDir, configFile, scanConfig, selector)
-            final terminated = k8sService.waitPod(pod, scanTimeout.toMillis())
+            final pod = k8sService.scanContainer(podName, scanConfig.scanImage, trivyCommand, req.scanDir, configFile, scanConfig, selector)
+            final terminated = k8sService.waitPod(pod, scanConfig.timeout.toMillis())
             if( terminated ) {
                 log.info("Container scan completed for buildId: ${req.id}")
                 return ScanResult.success(req.id, startTime, TrivyResultProcessor.process(reportFile.text))
