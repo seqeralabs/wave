@@ -33,6 +33,7 @@ class WaveBuildRecord {
     Duration duration
     int exitStatus
     String platform
+    String scanId
 
     static WaveBuildRecord fromEvent(BuildEvent event) {
         if( event.request.id != event.result.id )
@@ -53,7 +54,8 @@ class WaveBuildRecord {
                 duration: event.result.duration,
                 exitStatus: event.result.exitStatus,
                 platform: event.request.platform,
-                offsetId: event.request.offsetId
+                offsetId: event.request.offsetId,
+                scanId: event.request.scanId
         )
     }
 }

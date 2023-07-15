@@ -21,6 +21,7 @@ import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
+import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.util.SpackHelper
 import io.seqera.wave.util.TemplateRenderer
 import io.seqera.wave.util.ThreadPoolBuilder
@@ -36,10 +37,6 @@ import jakarta.inject.Singleton
 @CompileStatic
 class ContainerBuildServiceImpl implements ContainerBuildService {
 
-    @Value('${wave.debug}')
-    @Nullable
-    Boolean debugMode
-
     @Value('${wave.build.image}')
     String buildImage
 
@@ -51,10 +48,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     @Value('${wave.build.status.delay}')
     private Duration statusDelay
-
-    @Value('${wave.build.cleanup}')
-    @Nullable
-    String cleanup
 
     @Inject
     ApplicationEventPublisher<BuildEvent> eventPublisher
@@ -82,6 +75,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     @Inject
     private SpackConfig spackConfig
+
+    @Inject CleanupStrategy cleanup
 
     @PostConstruct
     void init() {
@@ -174,24 +169,11 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             // update build status store
             buildStore.storeBuild(req.targetImage, resp, ttl)
             // cleanup build context
-            if( shouldCleanup(resp) )
+            if( cleanup.shouldCleanup(resp) )
                 buildStrategy.cleanup(req)
         }
     }
 
-    protected boolean shouldCleanup(BuildResult result) {
-        if( cleanup==null )
-            return !debugMode
-        if( cleanup == 'true' )
-            return true
-        if( cleanup == 'false' )
-            return false
-        if( cleanup.toLowerCase() == 'onsuccess' ) {
-            return result?.exitStatus==0
-        }
-        log.debug "Invalid cleanup value: '$cleanup'"
-        return true
-    }
 
     protected CompletableFuture<BuildResult> launchAsync(BuildRequest request) {
         // check the build rate limit
@@ -252,5 +234,4 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         // invalid state
         throw new IllegalStateException("Unable to determine build status for '$request.targetImage'")
     }
-
 }

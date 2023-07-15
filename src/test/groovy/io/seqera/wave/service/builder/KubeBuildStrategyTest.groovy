@@ -38,31 +38,6 @@ class KubeBuildStrategyTest extends Specification {
         Mock(K8sService)
     }
 
-    def 'should get platform selector' () {
-        expect:
-        strategy.getSelectorLabel(ContainerPlatform.of(PLATFORM), SELECTORS) == EXPECTED
-
-        where:
-        PLATFORM        | SELECTORS                                             | EXPECTED
-        'amd64'         | ['amd64': 'foo=1', 'arm64': 'bar=2']                  | ['foo': '1']
-        'arm64'         | ['amd64': 'foo=1', 'arm64': 'bar=2']                  | ['bar': '2']
-        and:
-        'amd64'         | ['linux/amd64': 'foo=1', 'linux/arm64': 'bar=2']      | ['foo': '1']
-        'x86_64'        | ['linux/amd64': 'foo=1', 'linux/arm64': 'bar=2']      | ['foo': '1']
-        'arm64'         | ['linux/amd64': 'foo=1', 'linux/arm64': 'bar=2']      | ['bar': '2']
-        
-    }
-
-    def 'should check unmatched platform' () {
-        expect:
-        strategy.getSelectorLabel(ContainerPlatform.of('amd64'), [:]) == [:]
-
-        when:
-        strategy.getSelectorLabel(ContainerPlatform.of('amd64'), [arm64:'x=1'])
-        then:
-        def err = thrown(BadRequestException)
-        err.message == "Unsupported container platform 'linux/amd64'"
-    }
 
     def "request to build a container with right selector"(){
         given:

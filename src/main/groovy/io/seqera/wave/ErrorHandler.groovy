@@ -28,7 +28,7 @@ import jakarta.inject.Singleton
 @Singleton
 class ErrorHandler {
 
-    @Value('${wave.debug}')
+    @Value('${wave.debug:false}')
     private Boolean debug
 
     def <T> HttpResponse<T> handle(HttpRequest httpRequest, Throwable t, BiFunction<String,String,T> responseFactory) {

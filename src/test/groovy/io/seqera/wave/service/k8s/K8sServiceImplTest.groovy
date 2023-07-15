@@ -3,12 +3,13 @@ package io.seqera.wave.service.k8s
 import spock.lang.Specification
 
 import java.nio.file.Path
+import java.time.Duration
 
 import io.kubernetes.client.custom.Quantity
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.SpackConfig
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -59,7 +60,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.mountBuildStorage(Path.of('/foo'), '/foo')
+        def result = k8sService.mountBuildStorage(Path.of('/foo'), '/foo', true)
         then:
         result.name == 'build-data'
         result.mountPath == '/foo'
@@ -67,7 +68,7 @@ class K8sServiceImplTest extends Specification {
         result.readOnly
 
         when:
-        result = k8sService.mountBuildStorage(Path.of('/foo/'), '/foo')
+        result = k8sService.mountBuildStorage(Path.of('/foo/'), '/foo', true)
         then:
         result.name == 'build-data'
         result.mountPath == '/foo'
@@ -75,7 +76,7 @@ class K8sServiceImplTest extends Specification {
         result.readOnly
 
         when:
-        result = k8sService.mountBuildStorage(Path.of('/foo/work/x1'), '/foo')
+        result = k8sService.mountBuildStorage(Path.of('/foo/work/x1'), '/foo', true)
         then:
         result.name == 'build-data'
         result.mountPath == '/foo/work/x1'
@@ -83,11 +84,11 @@ class K8sServiceImplTest extends Specification {
         result.readOnly
 
         when:
-        result = k8sService.mountBuildStorage(Path.of('/foo/work/x1'), null)
+        result = k8sService.mountBuildStorage(Path.of('/foo/work/x1'), null, false)
         then:
         result.name == 'build-data'
         result.mountPath == '/foo/work/x1'
-        result.readOnly
+        !result.readOnly
 
         cleanup:
         ctx.close()
@@ -134,7 +135,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def mount = k8sService.mountDockerConfig(Path.of('/foo/work/x1'), '/foo')
+        def mount = k8sService.mountDockerConfig(Path.of('/foo/work/x1'), '/foo','/kaniko/.docker/config.json')
         then:
         mount.name == 'build-data'
         mount.mountPath == '/kaniko/.docker/config.json'
@@ -381,6 +382,56 @@ class K8sServiceImplTest extends Specification {
         then:
         result.spec.serviceAccount == PROPS['wave.build.k8s.service-account']
         and:
+        ctx.close()
+    }
+
+    def 'should create scan pod' () {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'my-ns',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.storage.claimName': 'build-claim',
+                'wave.build.k8s.storage.mountPath': '/build', ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def config = Mock(ScanConfig) {
+            getCacheDirectory() >> Path.of('/build/work/.trivy')
+            getTimeout() >> Duration.ofSeconds(10)
+        }
+
+        when:
+        def result = k8sService.scanSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), Path.of('secret'), config, null )
+        then:
+        result.metadata.name == 'foo'
+        result.metadata.namespace == 'my-ns'
+        and:
+        result.spec.activeDeadlineSeconds == 10
+        and:
+        result.spec.containers.get(0).name == 'foo'
+        result.spec.containers.get(0).image == 'my-image:latest'
+        result.spec.containers.get(0).args ==  ['this','that']
+        and:
+        result.spec.containers.get(0).volumeMounts.size() == 3
+        and:
+        result.spec.containers.get(0).volumeMounts.get(0).name == 'build-data'
+        result.spec.containers.get(0).volumeMounts.get(0).mountPath == '/root/.docker/config.json'
+        result.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz/config.json'
+        and:
+        result.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
+        result.spec.containers.get(0).volumeMounts.get(1).mountPath == '/build/work/xyz'
+        result.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz'
+        and:
+        result.spec.containers.get(0).volumeMounts.get(2).name == 'build-data'
+        result.spec.containers.get(0).volumeMounts.get(2).mountPath == '/root/.cache/'
+        result.spec.containers.get(0).volumeMounts.get(2).subPath == 'work/.trivy'
+
+        and:
+        result.spec.volumes.get(0).name == 'build-data'
+        result.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
+
+        cleanup:
         ctx.close()
     }
 }

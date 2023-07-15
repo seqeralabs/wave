@@ -10,6 +10,7 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
 import io.seqera.wave.util.DigestFunctions
+import io.seqera.wave.util.LongRndKey
 import static io.seqera.wave.util.StringUtils.trunc
 /**
  * Model a container builder result
@@ -102,6 +103,11 @@ class BuildRequest {
      */
     final boolean isSpackBuild
 
+    /** 
+     * The ID of the security scan triggered by this build 
+     */
+    final String scanId
+    
     /**
      * Mark this request as a new build i.e. not cached 
      */
@@ -124,6 +130,7 @@ class BuildRequest {
         this.job = "${id}-${startTime.toEpochMilli().toString().md5()[-5..-1]}"
         this.ip = ip
         this.isSpackBuild = spackFile
+        this.scanId = LongRndKey.rndHex()
     }
 
     static private String computeDigest(String containerFile, String condaFile, String spackFile, ContainerPlatform platform, String repository) {

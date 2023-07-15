@@ -1,4 +1,10 @@
 # Wave changelog
+v0.34.3 - 13 Jul 2023
+- Fix Invalid size in container manifest [e2c4c536]
+- Fix parsing Dockerfile FROM statement [5104f8a6]
+- Bump Kaniko 1.12.1 [4a13d77e]
+- Bump MN 3.9.4 [2b314592]
+
 v0.34.2 - 2 Jul 2023
 - Fix config resolution [b6f06bc3]
 - Bump base image nf-jdk:corretto-17.0.7-up2 [70425710]

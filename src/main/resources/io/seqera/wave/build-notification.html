@@ -63,6 +63,13 @@
         <td>Exit status</td>
         <td>${build_exit_status}</td>
         </tr>
+
+        <% if (scan_url) { %>
+        <tr>
+        <td>Security</td>
+        <td><a href="${scan_url}">Image scan report</a></td>
+        </tr>
+        <% } %>
     </table>
 
     <h3>Dockerfile</h3>
