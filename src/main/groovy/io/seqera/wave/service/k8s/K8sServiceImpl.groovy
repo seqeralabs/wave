@@ -23,11 +23,12 @@ import io.kubernetes.client.openapi.models.V1VolumeMount
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.scan.Trivy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 /**
  * implements the support for Kubernetes cluster
  *
@@ -141,7 +142,7 @@ class K8sServiceImpl implements K8sService {
                 .endSpec()
                 .endTemplate()
                 .endSpec()
-                .build();
+                .build()
 
         return k8sClient
                 .batchV1Api()
@@ -201,13 +202,13 @@ class K8sServiceImpl implements K8sService {
      * @param storageMountPath
      * @return A {@link V1VolumeMount} representing the mount path for the build config
      */
-    protected V1VolumeMount mountBuildStorage(Path workDir, String storageMountPath) {
+    protected V1VolumeMount mountBuildStorage(Path workDir, String storageMountPath, boolean readOnly) {
         assert workDir, "K8s mount build storage is mandatory"
 
         final vol = new V1VolumeMount()
                 .name('build-data')
                 .mountPath(workDir.toString())
-                .readOnly(true)
+                .readOnly(readOnly)
 
         if( storageMountPath ) {
             // check sub-path
@@ -239,18 +240,18 @@ class K8sServiceImpl implements K8sService {
     }
 
     /**
-     * Defines the volume mount for the Kaniko docker config
+     * Defines the volume mount for the  docker config
      *
-     * @return A {@link V1VolumeMount} representing the docker config for kaniko
+     * @return A {@link V1VolumeMount} representing the docker config
      */
-    protected V1VolumeMount mountDockerConfig(Path workDir, String storageMountPath) {
+    protected V1VolumeMount mountDockerConfig(Path workDir, String storageMountPath, String mountPath) {
         assert workDir, "K8s mount build storage is mandatory"
 
         final rel = Path.of(storageMountPath).relativize(workDir).toString()
         final String config = rel ? "$rel/config.json" : 'config.json'
         return new V1VolumeMount()
                 .name('build-data')
-                .mountPath('/kaniko/.docker/config.json')
+                .mountPath(mountPath)
                 .subPath(config)
                 .readOnly(true)
     }
@@ -276,6 +277,16 @@ class K8sServiceImpl implements K8sService {
                 .subPath(rel)
     }
 
+    protected V1VolumeMount mountScanCacheDir(Path scanCacheDir, String storageMountPath) {
+        final rel = Path.of(storageMountPath).relativize(scanCacheDir).toString()
+        if( !rel || rel.startsWith('../') )
+            throw new IllegalArgumentException("Container scan cacheDirectory '$scanCacheDir' must be a sub-directory of storage path '$storageMountPath'")
+        return new V1VolumeMount()
+                .name('build-data')
+                .mountPath( Trivy.CACHE_MOUNT_PATH )
+                .subPath(rel)
+    }
+
     /**
      * Create a container for container image building via Kaniko
      *
@@ -293,7 +304,6 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Pod} description the submitted pod
      */
     @Override
-    @CompileDynamic
     V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector) {
         final spec = buildSpec(name, containerImage, args, workDir, creds, spackConfig, nodeSelector)
         return k8sClient
@@ -305,13 +315,13 @@ class K8sServiceImpl implements K8sService {
 
         // required volumes
         final mounts = new ArrayList<V1VolumeMount>(5)
-        mounts.add(mountBuildStorage(workDir, storageMountPath))
+        mounts.add(mountBuildStorage(workDir, storageMountPath, true))
 
         final volumes = new ArrayList<V1Volume>(5)
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
         if( creds ){
-            mounts.add(0, mountDockerConfig(workDir, storageMountPath))
+            mounts.add(0, mountDockerConfig(workDir, storageMountPath, '/kaniko/.docker/config.json'))
         }
 
         if( spackConfig ) {
@@ -424,5 +434,64 @@ class K8sServiceImpl implements K8sService {
         k8sClient
                 .coreV1Api()
                 .deleteNamespacedPod(name, namespace, (String)null, (String)null, (Integer)null, (Boolean)null, (String)null, (V1DeleteOptions)null)
+    }
+
+    @Override
+    V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
+        final spec = scanSpec(name, containerImage, args, workDir, creds, scanConfig, nodeSelector)
+        return k8sClient
+                .coreV1Api()
+                .createNamespacedPod(namespace, spec, null, null, null,null)
+    }
+
+    V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
+
+        final mounts = new ArrayList<V1VolumeMount>(5)
+        mounts.add(mountBuildStorage(workDir, storageMountPath, false))
+        mounts.add(mountScanCacheDir(scanConfig.cacheDirectory, storageMountPath))
+
+        final volumes = new ArrayList<V1Volume>(5)
+        volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
+
+        if( creds ){
+            mounts.add(0, mountDockerConfig(workDir, storageMountPath, Trivy.CONFIG_MOUNT_PATH))
+        }
+
+        V1PodBuilder builder = new V1PodBuilder()
+
+        //metadata section
+        builder.withNewMetadata()
+                .withNamespace(namespace)
+                .withName(name)
+                .addToLabels(labels)
+                .endMetadata()
+
+        //spec section
+        def spec = builder
+                .withNewSpec()
+                .withNodeSelector(nodeSelector)
+                .withServiceAccount(serviceAccount)
+                .withActiveDeadlineSeconds( scanConfig.timeout.toSeconds() )
+                .withRestartPolicy("Never")
+                .addAllToVolumes(volumes)
+
+
+        final requests = new V1ResourceRequirements()
+        if( scanConfig.requestsCpu )
+            requests.putRequestsItem('cpu', new Quantity(scanConfig.requestsCpu))
+        if( scanConfig.requestsMemory )
+            requests.putRequestsItem('memory', new Quantity(scanConfig.requestsMemory))
+
+        //container section
+        spec.addNewContainer()
+                .withName(name)
+                .withImage(containerImage)
+                .withArgs(args)
+                .withVolumeMounts(mounts)
+                .withResources(requests)
+                .endContainer()
+                .endSpec()
+
+        builder.build()
     }
 }

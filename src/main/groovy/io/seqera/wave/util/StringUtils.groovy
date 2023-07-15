@@ -3,7 +3,6 @@ package io.seqera.wave.util
 import java.util.regex.Pattern
 
 import groovy.transform.CompileStatic
-
 /**
  * String utils methods
  *
@@ -43,4 +42,14 @@ class StringUtils {
         return m.matches() ? m.group(1) : null
     }
 
+    static String surrealId(String id) {
+        if( !id )
+            return null
+        final p = id.indexOf(':')
+        if( p!=-1 )
+            id = id.substring(p+1)
+        if( id.startsWith('⟨') && id.endsWith('⟩'))
+            id = id.substring(1,id.length()-1)
+        return id
+    }
 }

@@ -52,6 +52,8 @@ class ViewController {
         binding.build_condafile = result.condaFile
         binding.build_spackfile = result.spackFile
         binding.put('server_url', serverUrl)
+        binding.scan_url = "$serverUrl/view/scans/${result.scanId}"
+        binding.scan_id = result.scanId
         // result the main object
         return binding
       }
@@ -93,4 +95,34 @@ class ViewController {
 
         return HttpResponse.<Map<String,Object>>ok(binding)
     }
+
+    @View("scan-view")
+    @Get('/scans/{scanId}')
+    HttpResponse<Map<String,Object>> viewScan(String scanId) {
+        final binding = new HashMap(10)
+        try {
+            final result = persistenceService.loadScanResult(scanId)
+            binding.scan_id = result.id
+            binding.scan_exist = true
+            binding.scan_completed = result.isCompleted()
+            binding.scan_status = result.status
+            binding.build_id = result.buildId
+            binding.build_url = "$serverUrl/view/builds/${result.buildId}"
+            binding.scan_time = formatTimestamp(result.startTime) ?: '-'
+            binding.scan_duration = formatDuration(result.duration) ?: '-'
+            if ( result.vulnerabilities )
+                binding.vulnerabilities = result.vulnerabilities.toSorted().reverse()
+
+        }
+        catch (NotFoundException e){
+            binding.exist = false
+            binding.completed = true
+            binding.error_message = e.getMessage()
+        }
+
+        // return the response
+        binding.put('server_url', serverUrl)
+        return HttpResponse.<Map<String,Object>>ok(binding)
+    }
+
 }

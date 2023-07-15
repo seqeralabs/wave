@@ -11,9 +11,11 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
+import io.seqera.wave.service.scan.ScanVulnerability
+import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
-import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -58,6 +60,15 @@ class SurrealPersistenceService implements PersistenceService {
         final ret2 = surrealDb.sqlAsMap(authorization, "define table wave_request SCHEMALESS")
         if( ret2.status != "OK")
             throw new IllegalStateException("Unable to define SurrealDB table wave_request - cause: $ret2")
+        // create wave_scan table
+        final ret3 = surrealDb.sqlAsMap(authorization, "define table wave_scan SCHEMALESS")
+        if( ret3.status != "OK")
+            throw new IllegalStateException("Unable to define SurrealDB table wave_scan - cause: $ret3")
+        // create wave_scan table
+        final ret4 = surrealDb.sqlAsMap(authorization, "define table wave_scan_vuln SCHEMALESS")
+        if( ret4.status != "OK")
+            throw new IllegalStateException("Unable to define SurrealDB table wave_scan_vuln - cause: $ret3")
+
     }
 
     private String getAuthorization() {
@@ -143,4 +154,48 @@ class SurrealPersistenceService implements PersistenceService {
         final result = data && data[0].result ? data[0].result[0] : null
         return result
     }
+
+    void createScanRecord(WaveScanRecord scanRecord) {
+        final result = surrealDb.insertScanRecord(authorization, scanRecord.id, scanRecord)
+        log.debug "Scan create result=$result"
+    }
+
+    @Override
+    void updateScanRecord(WaveScanRecord scanRecord) {
+        final vulnerabilities = scanRecord.vulnerabilities ?: List.<ScanVulnerability>of()
+
+        // save all vulnerabilities
+        for( ScanVulnerability it : vulnerabilities ) {
+            surrealDb.insertScanVulnerability(authorization, it.id, it)
+        }
+
+        // compose the list of ids
+        final ids = vulnerabilities
+                .collect(it-> "wave_scan_vuln:⟨$it.id⟩")
+                .join(', ')
+
+        // create the scan record
+        final statement = """\
+                                UPDATE wave_scan:${scanRecord.id} 
+                                SET 
+                                    status = '${scanRecord.status}',
+                                    duration = '${scanRecord.duration}',
+                                    vulnerabilities = ${ids ? "[$ids]" : "[]" } 
+                                """.stripIndent()
+        final result = surrealDb.sqlAsMap(authorization, statement)
+        log.debug "Scan update result=$result"
+    }
+
+    @Override
+    WaveScanRecord loadScanRecord(String scanId) {
+        if( !scanId )
+            throw new IllegalArgumentException("Missing 'buildId' argument")
+        final statement = "SELECT * FROM wave_scan:$scanId FETCH vulnerabilities"
+        final json = surrealDb.sqlAsString(getAuthorization(), statement)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveScanRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(patchDuration(json), type) : null
+        final result = data && data[0].result ? data[0].result[0] : null
+        return result
+    }
+
 }
