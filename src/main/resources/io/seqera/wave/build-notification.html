@@ -63,6 +63,13 @@
         <td>Exit status</td>
         <td>${build_exit_status}</td>
         </tr>
+
+        <% if (scan_url) { %>
+        <tr>
+        <td>Scan report</td>
+        <td><a href="${scan_url}">${scan_id}</a></td>
+        </tr>
+        <% } %>
     </table>
 
     <h3>Dockerfile</h3>
@@ -76,16 +83,6 @@
     <% if (build_spackfile) { %>
     <h3>Spack file</h3>
     <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">${build_spackfile}</pre>
-    <% } %>
-
-    <% if (scan_url) { %>
-    <h3>Security scan</h3>
-    <table cellpadding="4" >
-        <tr>
-            <td>Scan report</td>
-            <td><a href="${scan_url}">${scan_id}</a></td>
-        </tr>
-    </table>
     <% } %>
 
     <h3>Build logs</h3>
