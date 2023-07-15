@@ -3,7 +3,6 @@ package io.seqera.wave.service.scan
 import java.nio.file.Path
 
 import groovy.util.logging.Slf4j
-import io.seqera.wave.model.ScanResult
 import io.seqera.wave.service.builder.BuildRequest
 /**
  * Implements ScanStrategy for Docker

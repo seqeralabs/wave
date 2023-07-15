@@ -3,7 +3,7 @@ package io.seqera.wave.service.scan
 import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 import io.seqera.wave.exception.ScanRuntimeException
-import io.seqera.wave.model.ScanVulnerability
+import io.seqera.wave.service.scan.ScanVulnerability
 
 /**
  * Implements ScanStrategy for Docker

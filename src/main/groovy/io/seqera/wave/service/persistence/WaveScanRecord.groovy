@@ -7,8 +7,8 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
-import io.seqera.wave.model.ScanResult
-import io.seqera.wave.model.ScanVulnerability
+import io.seqera.wave.service.scan.ScanResult
+import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.StringUtils
 
 /**

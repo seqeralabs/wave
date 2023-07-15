@@ -1,5 +1,6 @@
 package io.seqera.wave.service.scan
 
+
 import spock.lang.Specification
 
 import io.seqera.wave.exception.ScanRuntimeException

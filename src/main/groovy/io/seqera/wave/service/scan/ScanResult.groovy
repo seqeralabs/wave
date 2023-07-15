@@ -1,4 +1,4 @@
-package io.seqera.wave.model
+package io.seqera.wave.service.scan
 
 import java.time.Duration
 import java.time.Instant

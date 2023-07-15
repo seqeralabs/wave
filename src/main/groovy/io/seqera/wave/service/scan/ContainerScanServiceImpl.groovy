@@ -1,6 +1,5 @@
 package io.seqera.wave.service.scan
 
-
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 import javax.annotation.PostConstruct
@@ -9,11 +8,8 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.configuration.ScanConfig
-import io.seqera.wave.model.ScanResult
-import io.seqera.wave.service.ContainerScanService
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.ContainerBuildServiceImpl
 import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.persistence.PersistenceService
@@ -32,21 +28,21 @@ import jakarta.inject.Singleton
 class ContainerScanServiceImpl implements ContainerScanService {
 
     @Inject
-    ContainerBuildServiceImpl containerBuildService
+    private ContainerBuildServiceImpl containerBuildService
 
     @Inject
-    ScanStrategy containerScanStrategy
+    private ScanStrategy containerScanStrategy
 
     @Inject
-    ScanConfig containerScanConfig
-
+    private ScanConfig containerScanConfig
 
     private ExecutorService executor
 
     @Inject
     private PersistenceService persistenceService
 
-    @Inject CleanupStrategy cleanup
+    @Inject
+    private CleanupStrategy cleanup
 
     @PostConstruct
     void init() {
@@ -56,7 +52,7 @@ class ContainerScanServiceImpl implements ContainerScanService {
     @EventListener
     void onBuildEvent(BuildEvent event) {
         try {
-            scan(event.request, event.result)
+            scan(event.request)
         }
         catch (Exception e) {
             log.warn "Unable to run the container scan - reason: ${e.message?:e}"
@@ -64,11 +60,11 @@ class ContainerScanServiceImpl implements ContainerScanService {
     }
 
     @Override
-    void scan(BuildRequest buildRequest, BuildResult buildResult) {
+    void scan(BuildRequest buildRequest) {
         //start scanning of build container
         CompletableFuture
                 .supplyAsync(() -> launch(buildRequest), executor)
-                .thenAcceptAsync((scanResult) -> completeScan(scanResult))
+                .thenAcceptAsync((scanResult) -> completeScan(scanResult), executor)
     }
 
     @Override
@@ -76,7 +72,7 @@ class ContainerScanServiceImpl implements ContainerScanService {
         return persistenceService.loadScanRecord(buildId)
     }
 
-    ScanResult launch(BuildRequest buildRequest){
+    protected  ScanResult launch(BuildRequest buildRequest) {
         ScanResult scanResult = null
         try {
             //launch container scan
@@ -93,7 +89,7 @@ class ContainerScanServiceImpl implements ContainerScanService {
         return scanResult
     }
 
-    void completeScan(ScanResult scanResult){
+    protected void completeScan(ScanResult scanResult) {
         try{
             //save scan results
             persistenceService.saveContainerScanResult(scanResult.buildId, new WaveScanRecord(scanResult.buildId, scanResult))

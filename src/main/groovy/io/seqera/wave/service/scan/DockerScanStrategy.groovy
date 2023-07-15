@@ -10,7 +10,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.ScanConfig
-import io.seqera.wave.model.ScanResult
 import io.seqera.wave.service.builder.BuildRequest
 import jakarta.inject.Inject
 import jakarta.inject.Singleton

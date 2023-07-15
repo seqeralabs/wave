@@ -5,7 +5,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
-import io.seqera.wave.service.ContainerScanService
+import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.persistence.WaveScanRecord
 
 /**

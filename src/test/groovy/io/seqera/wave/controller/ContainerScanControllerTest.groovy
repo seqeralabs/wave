@@ -8,9 +8,9 @@ import java.time.Instant
 import io.micronaut.context.annotation.Property
 import io.micronaut.http.HttpResponse
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.model.ScanResult
-import io.seqera.wave.model.ScanVulnerability
-import io.seqera.wave.service.ContainerScanService
+import io.seqera.wave.service.scan.ScanResult
+import io.seqera.wave.service.scan.ScanVulnerability
+import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.persistence.WaveScanRecord
 /**
  *

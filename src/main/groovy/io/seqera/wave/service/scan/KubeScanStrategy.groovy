@@ -17,9 +17,7 @@ import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.configuration.ScanConfig
-import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
-import io.seqera.wave.model.ScanResult
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Singleton
