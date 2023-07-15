@@ -9,6 +9,7 @@ import groovy.transform.EqualsAndHashCode
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
 import io.seqera.wave.util.DigestFunctions
+import io.seqera.wave.util.LongRndKey
 import static io.seqera.wave.util.StringUtils.trunc
 /**
  * Model a container builder result
@@ -93,7 +94,7 @@ class BuildRequest {
 
     final boolean isSpackBuild
 
-    final Path scanDir
+    final String scanId
 
     BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, User user, ContainerPlatform platform, String configJson, String cacheRepo, String ip, String offsetId = null) {
         this.id = computeDigest(containerFile, condaFile, spackFile, platform, repo)
@@ -111,7 +112,7 @@ class BuildRequest {
         this.job = "${id}-${startTime.toEpochMilli().toString().md5()[-5..-1]}"
         this.ip = ip
         this.isSpackBuild = spackFile
-        this.scanDir = workspace.resolve("${id}-scan").toAbsolutePath()
+        this.scanId = LongRndKey.rndHex()
     }
 
     static private String computeDigest(String containerFile, String condaFile, String spackFile, ContainerPlatform platform, String repository) {

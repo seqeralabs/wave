@@ -18,6 +18,7 @@ class WaveScanRecordTest extends Specification {
         given:
         def startTime = Instant.now()
         def duration = Duration.ofMinutes(2)
+        def scanId = '12345'
         def buildId = "testbuildid"
         def scanVulnerability = new ScanVulnerability(
                                 "id1",
@@ -27,19 +28,28 @@ class WaveScanRecordTest extends Specification {
                                 "installed.version",
                                 "fix.version",
                                 "url")
-        def results = List.of(scanVulnerability)
-        def scanresult= new ScanResult(
-                buildId,
-                startTime,
-                results,
-                duration,
-                true)
+        def vulns = List.of(scanVulnerability)
 
         when:
-        def waveContainerScanRecord = new WaveScanRecord(buildId, scanresult)
+        def scanResult= new ScanResult(
+                scanId,
+                buildId,
+                startTime,
+                duration,
+                'SUCCEEDED',
+                vulns)
+        then:
+        scanResult.id == scanId
+        scanResult.buildId == buildId
+        scanResult.isCompleted()
+        scanResult.isSucceeded()
+
+        when:
+        def scanRecord = new WaveScanRecord(scanId, scanResult)
 
         then:
-        waveContainerScanRecord.id == buildId
-        waveContainerScanRecord.vulnerabilities[0] == scanVulnerability
+        scanRecord.id == scanId
+        scanRecord.buildId == buildId
+        scanRecord.vulnerabilities[0] == scanVulnerability
     }
 }

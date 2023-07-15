@@ -155,8 +155,13 @@ class SurrealPersistenceService implements PersistenceService {
         return result
     }
 
+    void createScanRecord(WaveScanRecord scanRecord) {
+        final result = surrealDb.insertScanRecord(authorization, scanRecord.id, scanRecord)
+        log.debug "Scan create result=$result"
+    }
+
     @Override
-    void saveScanResult(String buildId, WaveScanRecord scanRecord) {
+    void updateScanRecord(WaveScanRecord scanRecord) {
         final vulnerabilities = scanRecord.vulnerabilities ?: List.<ScanVulnerability>of()
 
         // save all vulnerabilities
@@ -171,21 +176,21 @@ class SurrealPersistenceService implements PersistenceService {
 
         // create the scan record
         final statement = """\
-                                UPDATE wave_scan:$buildId SET 
-                                    startTime = '$scanRecord.startTime',
+                                UPDATE wave_scan:${scanRecord.id} 
+                                SET 
+                                    status = '${scanRecord.status}',
                                     duration = '${scanRecord.duration}',
-                                    isSuccess = ${scanRecord.isSuccess},
                                     vulnerabilities = ${ids ? "[$ids]" : "[]" } 
                                 """.stripIndent()
         final result = surrealDb.sqlAsMap(authorization, statement)
-        log.debug "save scan result=$result"
+        log.debug "Scan update result=$result"
     }
 
     @Override
-    WaveScanRecord loadScanRecord(String buildId) {
-        if( !buildId )
+    WaveScanRecord loadScanRecord(String scanId) {
+        if( !scanId )
             throw new IllegalArgumentException("Missing 'buildId' argument")
-        final statement = "SELECT * FROM wave_scan:$buildId FETCH vulnerabilities"
+        final statement = "SELECT * FROM wave_scan:$scanId FETCH vulnerabilities"
         final json = surrealDb.sqlAsString(getAuthorization(), statement)
         final type = new TypeReference<ArrayList<SurrealResult<WaveScanRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(patchDuration(json), type) : null

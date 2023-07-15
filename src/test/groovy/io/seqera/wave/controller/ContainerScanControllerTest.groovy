@@ -25,6 +25,7 @@ class ContainerScanControllerTest extends Specification {
         def containerScanService = Mock(ContainerScanService)
         def startTime = Instant.now()
         def duration = Duration.ofMinutes(2)
+        def scanId = '123'
         def buildId = "testbuildid"
         def scanVulnerability = new ScanVulnerability(
                 "id1",
@@ -35,23 +36,24 @@ class ContainerScanControllerTest extends Specification {
                 "fix.version",
                 "url")
         def results = List.of(scanVulnerability)
-        def waveContainerScanRecord = new WaveScanRecord(
+        def scanRecord = new WaveScanRecord(
                                                 buildId,
                                                 new ScanResult(
+                                                        scanId,
                                                         buildId,
                                                         startTime,
-                                                        results,
                                                         duration,
-                                                    true))
-        def containerScanController = new ContainerScanController(containerScanService)
+                                                        'SUCCEEDED',
+                                                        results))
+        def scanController = new ContainerScanController(containerScanService)
 
         when:
-        def controllerResult = containerScanController.scanImage(buildId)
+        def controllerResult = scanController.scanImage(buildId)
 
         then:
-        1*containerScanService.getScanResult(buildId) >> waveContainerScanRecord
+        1*containerScanService.getScanResult(buildId) >> scanRecord
         controllerResult.status == HttpResponse.ok().status
-        controllerResult.body.get() == waveContainerScanRecord
+        controllerResult.body.get() == scanRecord
     }
     def "should return 404 and null"() {
         given:

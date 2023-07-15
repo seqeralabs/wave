@@ -3,14 +3,13 @@ package io.seqera.wave.service.persistence
 import java.time.Duration
 import java.time.Instant
 
-import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.wave.service.scan.ScanResult
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.StringUtils
-
 /**
  * Model a Wave container scan result
  *
@@ -18,22 +17,31 @@ import io.seqera.wave.util.StringUtils
  */
 @Slf4j
 @ToString(includeNames = true, includePackage = false)
-@Canonical
+@EqualsAndHashCode
 @CompileStatic
 class WaveScanRecord {
     String id
+    String buildId
     Instant startTime
     Duration duration
-    boolean isSuccess
+    String status
     List<ScanVulnerability> vulnerabilities
 
-    WaveScanRecord(){}
+    /* required by jackson deserialization - do not remove */
+    WaveScanRecord() {}
 
-    WaveScanRecord(String id, Instant startTime, Duration duration, boolean isSuccess, List<ScanVulnerability> vulnerabilities) {
+    WaveScanRecord(String id, String buildId, Instant startTime) {
         this.id = StringUtils.surrealId(id)
+        this.buildId = buildId
+        this.startTime = startTime
+    }
+
+    WaveScanRecord(String id, String buildId, Instant startTime, Duration duration, String status, List<ScanVulnerability> vulnerabilities) {
+        this.id = StringUtils.surrealId(id)
+        this.buildId = buildId
         this.startTime = startTime
         this.duration = duration
-        this.isSuccess = isSuccess
+        this.status = status
         this.vulnerabilities = vulnerabilities
                 ? new ArrayList<ScanVulnerability>(vulnerabilities)
                 : List.<ScanVulnerability>of()
@@ -41,9 +49,10 @@ class WaveScanRecord {
 
     WaveScanRecord(String id, ScanResult scanResult) {
         this.id = StringUtils.surrealId(id)
+        this.buildId = scanResult.buildId
         this.startTime = scanResult.startTime
         this.duration = scanResult.duration
-        this.isSuccess = scanResult.isSuccess
+        this.status = scanResult.status
         this.vulnerabilities = scanResult.vulnerabilities
                 ? new ArrayList<ScanVulnerability>(scanResult.vulnerabilities)
                 : List.<ScanVulnerability>of()

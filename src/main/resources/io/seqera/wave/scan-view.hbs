@@ -1,7 +1,7 @@
 <html>
 <head>
     <head>
-{{#unless completed}}
+{{#unless scan_completed}}
         <meta http-equiv="refresh" content="5">
 {{/unless}}
         <meta charset="utf-8">
@@ -15,8 +15,8 @@
 
     <h1>Wave container security scan</h1>
 <div style="min-height: 60vh">
-{{#if exist}}
-    {{#if completed}}
+{{#if scan_exist}}
+    {{#if scan_completed}}
     <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
         <h4 style="margin-top:0; color: inherit;">
             Scan completed
@@ -26,15 +26,19 @@
 
     <table cellpadding="4" >
         <tr>
+            <td>Scan ID</td>
+            <td>{{scan_id}}</td>
+        </tr>
+        <tr>
             <td>Build ID</td>
             <td><a href="{{build_url}}">{{build_id}}</a></td>
         </tr>
         <tr>
-            <td>Scan Status</td>
+            <td>Status</td>
             <td>{{scan_status}}</td>
         </tr>
         <tr>
-            <td>Scan time</td>
+            <td>Created</td>
             <td>{{scan_time}}</td>
         </tr>
 

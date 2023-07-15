@@ -10,13 +10,11 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.ScanConfig
-import io.seqera.wave.service.builder.BuildRequest
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static java.nio.file.StandardOpenOption.CREATE
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import static java.nio.file.StandardOpenOption.WRITE
-
 /**
  * Implements ScanStrategy for Docker
  *
@@ -36,14 +34,14 @@ class DockerScanStrategy extends ScanStrategy {
     }
 
     @Override
-    ScanResult scanContainer(BuildRequest req) {
+    ScanResult scanContainer(ScanRequest req) {
         log.info("Launching container scan for buildId: ${req.id}")
         final startTime = Instant.now()
 
         try {
             // create the scan dir
             try {
-                Files.createDirectory(req.scanDir)
+                Files.createDirectory(req.workDir)
             }
             catch (FileAlreadyExistsException e) {
                 log.warn("Container scan directory already exists: $e")
@@ -52,14 +50,14 @@ class DockerScanStrategy extends ScanStrategy {
             // save the config file with docker auth credentials
             Path configFile = null
             if( req.configJson ) {
-                configFile = req.scanDir.resolve('config.json')
+                configFile = req.workDir.resolve('config.json')
                 Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             }
 
             // outfile file name
-            final reportFile = req.scanDir.resolve(Trivy.OUTPUT_FILE_NAME)
+            final reportFile = req.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
             // create the launch command 
-            final dockerCommand = dockerWrapper(req.scanDir, configFile)
+            final dockerCommand = dockerWrapper(req.workDir, configFile)
             final trivyCommand = List.of(scanConfig.scanImage) + scanCommand(req.targetImage, reportFile, scanConfig)
             final command = dockerCommand + trivyCommand
 
@@ -73,16 +71,16 @@ class DockerScanStrategy extends ScanStrategy {
             final exitCode = process.waitFor()
             if ( exitCode != 0 ) {
                 log.warn("Container scan failed to scan container, it exited with code: ${exitCode} - cause: ${process.text}")
-                return ScanResult.failure(req.id, startTime, null)
+                return ScanResult.failure(req, startTime, null)
             }
             else{
                 log.info("Container scan completed for buildId: ${req.id}")
-                return ScanResult.success(req.id, startTime, TrivyResultProcessor.process(reportFile.text))
+                return ScanResult.success(req, startTime, TrivyResultProcessor.process(reportFile.text))
             }
         }
         catch (Exception e){
             log.warn("Container scan failed to scan container, reason: ${e.getMessage()}", e)
-            return ScanResult.failure(req.id, startTime, null)
+            return ScanResult.failure(req, startTime, null)
         }
     }
 

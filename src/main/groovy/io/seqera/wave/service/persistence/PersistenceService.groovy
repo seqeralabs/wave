@@ -62,13 +62,15 @@ interface PersistenceService {
      */
     WaveContainerRecord loadContainerRequest(String token)
 
+    void createScanRecord(WaveScanRecord scanRecord)
+
     /**
      * Store a {@link WaveScanRecord} object in the Surreal wave_scan table.
      *
-     * @param buildId The ID of the container build for which the scan has been created
+     * @param scanId The ID of the container build for which the scan has been created
      * @param data A {@link WaveScanRecord} object representing a Wave request record
      */
-    void saveScanResult(String buildId, WaveScanRecord scanRecord)
+    void updateScanRecord(WaveScanRecord scanRecord)
 
     /**
      * Retrieve a {@link WaveScanRecord} object for the specified build ID
@@ -76,7 +78,7 @@ interface PersistenceService {
      * @param buildId The ID of the build for which load the scan record
      * @return The {@link WaveScanRecord} object for the specified build ID or null otherwise
      */
-    WaveScanRecord loadScanRecord(String buildId)
+    WaveScanRecord loadScanRecord(String scanId)
 
     /**
      * Retrieve a {@link ScanResult} object for the specified build ID
@@ -85,16 +87,18 @@ interface PersistenceService {
      * @return The {@link ScanResult} object associated with the specified build ID or throws the exception {@link NotFoundException} otherwise
      * @throws NotFoundException If the a record for the specified build ID cannot be found
      */
-    default ScanResult loadScanResult(String buildId) {
-        final scanRecord = loadScanRecord(buildId)
+    default ScanResult loadScanResult(String scanId) {
+        final scanRecord = loadScanRecord(scanId)
         if( !scanRecord )
-            throw new NotFoundException("No scan report exists with id: ${buildId}")
+            throw new NotFoundException("No scan report exists with id: ${scanId}")
 
-        return ScanResult.create(scanRecord.id,
+        return ScanResult.create(
+                scanRecord.id,
+                scanRecord.buildId,
                 scanRecord.startTime,
                 scanRecord.duration,
-                scanRecord.isSuccess,
-                scanRecord.vulnerabilities)
+                scanRecord.status,
+                scanRecord.vulnerabilities )
     }
 
 }

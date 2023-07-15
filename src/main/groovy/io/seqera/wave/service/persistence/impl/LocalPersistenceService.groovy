@@ -50,13 +50,18 @@ class LocalPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveScanResult(String buildId, WaveScanRecord scanRecord) {
-        scanStore.put(buildId, scanRecord)
+    void createScanRecord(WaveScanRecord scanRecord) {
+        scanStore.put(scanRecord.id, scanRecord)
     }
 
     @Override
-    WaveScanRecord loadScanRecord(String buildId) {
-        scanStore.get(buildId)
+    void updateScanRecord(WaveScanRecord scanRecord) {
+        scanStore.put(scanRecord.id, scanRecord)
+    }
+
+    @Override
+    WaveScanRecord loadScanRecord(String scanId) {
+        scanStore.get(scanId)
     }
 
 }

@@ -265,30 +265,36 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
     def 'should save a scan and load a result' () {
         given:
         def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def NOW = Instant.now()
+        def SCAN_ID = 'a1'
         def BUILD_ID = '100'
         def CVE1 = new ScanVulnerability('cve-1', 'x1', 'title1', 'package1', 'version1', 'fixed1', 'url1')
         def CVE2 = new ScanVulnerability('cve-2', 'x2', 'title2', 'package2', 'version2', 'fixed2', 'url2')
         def CVE3 = new ScanVulnerability('cve-3', 'x3', 'title3', 'package3', 'version3', 'fixed3', 'url3')
-        def scanRecord = new WaveScanRecord(BUILD_ID, Instant.now(), Duration.ofSeconds(10), true, [CVE1, CVE2, CVE3 ])
+        def scanRecord = new WaveScanRecord(SCAN_ID, BUILD_ID, NOW, Duration.ofSeconds(10), 'SUCCEEDED', [CVE1, CVE2, CVE3])
         when:
-        persistence.saveScanResult(BUILD_ID, scanRecord)
+        persistence.createScanRecord(new WaveScanRecord(SCAN_ID, BUILD_ID, NOW))
+        persistence.updateScanRecord(scanRecord)
         then:
-        def result = persistence.loadScanRecord(BUILD_ID)
+        def result = persistence.loadScanRecord(SCAN_ID)
         and:
         result == scanRecord
         and:
-        def scan = persistence.loadScanResult(BUILD_ID)
-        scan.isSuccess
+        def scan = persistence.loadScanResult(SCAN_ID)
+        scan.status == 'SUCCEEDED'
         scan.buildId == BUILD_ID
         scan.vulnerabilities == scanRecord.vulnerabilities
 
         when:
+        def SCAN_ID2 = 'b2'
         def BUILD_ID2 = '102'
-        def scanRecord2 = new WaveScanRecord(BUILD_ID2, Instant.now(), Duration.ofSeconds(20), true, [CVE1])
+        def scanRecord2 = new WaveScanRecord(SCAN_ID2, BUILD_ID2, NOW, Duration.ofSeconds(20), 'FAILED', [CVE1])
+        and:
+        persistence.createScanRecord(new WaveScanRecord(SCAN_ID2, BUILD_ID2, NOW))
         // should save the same CVE into another build
-        persistence.saveScanResult(BUILD_ID2, scanRecord2)
+        persistence.updateScanRecord(scanRecord2)
         then:
-        def result2 = persistence.loadScanRecord(BUILD_ID2)
+        def result2 = persistence.loadScanRecord(SCAN_ID2)
         and:
         result2 == scanRecord2
     }

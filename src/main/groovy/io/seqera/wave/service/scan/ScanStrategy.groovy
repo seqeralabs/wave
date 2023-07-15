@@ -5,7 +5,6 @@ import java.nio.file.Path
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.configuration.ScanConfig
-import io.seqera.wave.service.builder.BuildRequest
 /**
  * Implements ScanStrategy for Docker
  *
@@ -15,7 +14,7 @@ import io.seqera.wave.service.builder.BuildRequest
 @CompileStatic
 abstract class ScanStrategy {
 
-    abstract ScanResult scanContainer(BuildRequest buildRequest)
+    abstract ScanResult scanContainer(ScanRequest request)
 
     protected List<String> scanCommand(String targetImage, Path outputFile, ScanConfig config) {
         return List.of(

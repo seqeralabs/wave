@@ -9,10 +9,8 @@ import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.k8s.K8sService
 import io.seqera.wave.service.k8s.K8sServiceImpl
-import io.seqera.wave.tower.User
 import jakarta.inject.Inject
 /**
  *
@@ -44,29 +42,29 @@ class KubeScanStrategyTest extends Specification {
 
     def "request to scan a container with right selector"(){
         given:
-        def USER = new User(id:1, email: 'foo@user.com')
-        def PATH = Files.createTempDirectory('test')
-        def repo = 'docker.io/wave'
-        def cache = 'docker.io/cache'
+        def folder = Files.createTempDirectory('test')
 
         when:
-        def buildRequest = new BuildRequest('from foo', PATH, repo, null, null, USER, ContainerPlatform.of('amd64'),'{}', cache, "")
-        Files.createDirectories(buildRequest.workDir)
+        def request = new ScanRequest('100', 'abc', null, 'ubuntu', ContainerPlatform.of('amd64'), folder.resolve('foo'))
+        Files.createDirectories(request.workDir)
 
-        def scanResult = strategy.scanContainer(buildRequest)
+        def scanResult = strategy.scanContainer(request)
         then:
         scanResult
         and:
         1 * k8sService.scanContainer(_, _, _, _, _, _, [service:'wave-scan']) >> null
 
         when:
-        def buildRequest2 = new BuildRequest('from foo', PATH, repo, null, null, USER, ContainerPlatform.of('arm64'),'{}', cache, "")
-        Files.createDirectories(buildRequest.workDir)
+        def request2 = new ScanRequest('100', 'abc', null, 'ubuntu', ContainerPlatform.of('arm64'), folder.resolve('bar'))
+        Files.createDirectories(request.workDir)
 
-        def scanResult2 = strategy.scanContainer(buildRequest2)
+        def scanResult2 = strategy.scanContainer(request2)
         then:
         scanResult2
         and:
         1 * k8sService.scanContainer(_, _, _, _, _, _, [service:'wave-scan-arm64']) >> null
+
+        cleanup:
+        folder?.deleteDir()
     }
 }
