@@ -3,6 +3,7 @@ package io.seqera.wave.service.k8s
 import spock.lang.Specification
 
 import java.nio.file.Path
+import java.time.Duration
 
 import io.kubernetes.client.custom.Quantity
 import io.micronaut.context.ApplicationContext
@@ -388,7 +389,6 @@ class K8sServiceImplTest extends Specification {
         given:
         def PROPS = [
                 'wave.build.workspace': '/build/work',
-                'wave.scan.timeout': '10s',
                 'wave.build.k8s.namespace': 'my-ns',
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'build-claim',
@@ -398,6 +398,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
         def config = Mock(ScanConfig) {
             getCacheDirectory() >> Path.of('/build/work/.trivy')
+            getTimeout() >> Duration.ofSeconds(10)
         }
 
         when:
@@ -429,7 +430,6 @@ class K8sServiceImplTest extends Specification {
         and:
         result.spec.volumes.get(0).name == 'build-data'
         result.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
-
 
         cleanup:
         ctx.close()
