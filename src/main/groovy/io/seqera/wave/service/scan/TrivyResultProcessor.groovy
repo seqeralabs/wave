@@ -3,8 +3,6 @@ package io.seqera.wave.service.scan
 import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 import io.seqera.wave.exception.ScanRuntimeException
-import io.seqera.wave.service.scan.ScanVulnerability
-
 /**
  * Implements ScanStrategy for Docker
  *
@@ -12,12 +10,12 @@ import io.seqera.wave.service.scan.ScanVulnerability
  */
 @Slf4j
 class TrivyResultProcessor {
+
     static List<ScanVulnerability> process(String trivyResult){
-        JsonSlurper slurper = new JsonSlurper()
-        List<ScanVulnerability> vulnerabilities
+        final slurper = new JsonSlurper()
         try{
-            Map<String, Object> jsonMap = slurper.parseText(trivyResult)
-            vulnerabilities = jsonMap.Results.collect { result ->
+            final jsonMap = slurper.parseText(trivyResult) as Map
+            return jsonMap.Results.collect { result ->
                 result.Vulnerabilities.collect { vulnerability ->
                     new ScanVulnerability(
                             vulnerability.VulnerabilityID ?: "",
@@ -29,10 +27,9 @@ class TrivyResultProcessor {
                             vulnerability.PrimaryURL ?: "")
                 }
             }.flatten()
-        }catch(Exception e){
+        }
+        catch(Exception e){
             throw new ScanRuntimeException("Failed to parse the trivy result", e)
         }
-
-        return vulnerabilities
     }
 }

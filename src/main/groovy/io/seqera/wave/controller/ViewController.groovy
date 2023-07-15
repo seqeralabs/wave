@@ -109,8 +109,8 @@ class ViewController {
             binding.build_url = "$serverUrl/view/builds/${buildId}"
             binding.scan_time = formatTimestamp(result.startTime) ?: '-'
             binding.scan_duration = formatDuration(result.duration) ?: '-'
-            if (result.vulnerabilities != null && !result.vulnerabilities.isEmpty())
-                binding.vulnerabilities = result.vulnerabilities
+            if ( result.vulnerabilities )
+                binding.vulnerabilities = result.vulnerabilities.toSorted().reverse()
 
         }
         catch (NotFoundException e){
@@ -130,4 +130,5 @@ class ViewController {
         binding.put('server_url', serverUrl)
         return HttpResponse.<Map<String,Object>>ok(binding)
     }
+
 }

@@ -45,16 +45,12 @@
 
         <tr>
             <td colspan="2">
-                <h4>Security scan result</h4>
                 {{#if vulnerabilities.length}}
+                    <h4>Vulnerabilities</h4>
                     <style>
-                        .bordered-table {
-                            border-collapse: collapse;
-                        }
-
-                        .bordered-table, .bordered-table th, .bordered-table td {
-                            border: 1px solid black;
-                        }
+                        .bordered-table { border-collapse: collapse; }
+                        .bordered-table, .bordered-table th, .bordered-table td { border: 1px solid black; }
+                        .nowrap { white-space: nowrap; }
                     </style>
                     <table class="bordered-table" style='font-size: 0.8em'>
                         <thead>
@@ -70,12 +66,12 @@
                         <tbody>
                             {{#each vulnerabilities}}
                                 <tr>
-                                    <td>{{this.id}}</td>
+                                    <td class='nowrap'><a href="{{this.primaryUrl}}" target="_blank">{{this.id}}</a></td>
                                     <td>{{this.pkgName}}</td>
                                     <td>{{this.severity}}</td>
                                     <td>{{this.installedVersion}}</td>
                                     <td>{{this.fixedVersion}}</td>
-                                    <td>{{title}}<br/><a href="{{this.primaryUrl}}">{{this.primaryUrl}}</a></td>
+                                    <td>{{this.title}}<br/></td>
                                 </tr>
                             {{/each}}
                         </tbody>

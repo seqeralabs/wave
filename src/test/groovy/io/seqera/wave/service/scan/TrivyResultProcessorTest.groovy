@@ -27,6 +27,7 @@ class TrivyResultProcessorTest extends Specification {
                        "PkgID": "libc-bin@2.36-9",
                        "PkgName": "libc-bin",
                        "InstalledVersion": "2.36-9",
+                       "FixedVersion": "1.1.1n-0+deb11u5",
                        "Layer": {
                           "Digest": "sha256:faef57eae888cbe4a5613eca6741b5e48d768b83f6088858aee9a5a2834f8151",
                           "DiffID": "sha256:24839d45ca455f36659219281e0f2304520b92347eb536ad5cc7b4dbb8163588"
@@ -81,7 +82,7 @@ class TrivyResultProcessorTest extends Specification {
         vulnerability.title == "glibc: glob implementation can cause excessive CPU and memory consumption due to crafted glob expressions"
         vulnerability.pkgName == "libc-bin"
         vulnerability.installedVersion == "2.36-9"
-        vulnerability.fixedVersion == ""
+        vulnerability.fixedVersion == "1.1.1n-0+deb11u5"
         vulnerability.primaryUrl == "https://avd.aquasec.com/nvd/cve-2010-4756"
 
     }
