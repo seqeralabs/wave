@@ -271,7 +271,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def CVE3 = new ScanVulnerability('cve-3', 'x3', 'title3', 'package3', 'version3', 'fixed3', 'url3')
         def scanRecord = new WaveScanRecord(BUILD_ID, Instant.now(), Duration.ofSeconds(10), true, [CVE1, CVE2, CVE3 ])
         when:
-        persistence.saveContainerScanResult(BUILD_ID, scanRecord)
+        persistence.saveScanResult(BUILD_ID, scanRecord)
         then:
         def result = persistence.loadScanRecord(BUILD_ID)
         and:
@@ -286,7 +286,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def BUILD_ID2 = '102'
         def scanRecord2 = new WaveScanRecord(BUILD_ID2, Instant.now(), Duration.ofSeconds(20), true, [CVE1])
         // should save the same CVE into another build
-        persistence.saveContainerScanResult(BUILD_ID2, scanRecord2)
+        persistence.saveScanResult(BUILD_ID2, scanRecord2)
         then:
         def result2 = persistence.loadScanRecord(BUILD_ID2)
         and:

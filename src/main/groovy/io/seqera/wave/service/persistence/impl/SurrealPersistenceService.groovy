@@ -156,7 +156,7 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveContainerScanResult(String buildId, WaveScanRecord scanRecord) {
+    void saveScanResult(String buildId, WaveScanRecord scanRecord) {
         final vulnerabilities = scanRecord.vulnerabilities ?: List.<ScanVulnerability>of()
 
         // save all vulnerabilities

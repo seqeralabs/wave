@@ -63,26 +63,27 @@ interface PersistenceService {
     WaveContainerRecord loadContainerRequest(String token)
 
     /**
-     * Store a {@link WaveScanRecord} object in the Surreal wave_request table.
+     * Store a {@link WaveScanRecord} object in the Surreal wave_scan table.
      *
-     * @param buildId The request token associated with this request
+     * @param buildId The ID of the container build for which the scan has been created
      * @param data A {@link WaveScanRecord} object representing a Wave request record
      */
-    void saveContainerScanResult(String buildId, WaveScanRecord waveContainerScanRecord)
+    void saveScanResult(String buildId, WaveScanRecord scanRecord)
 
     /**
-     * Retrieve a {@link WaveScanRecord} object corresponding to the a specified request token
+     * Retrieve a {@link WaveScanRecord} object for the specified build ID
      *
-     * @param buildId The token for which recover the corresponding {@link WaveScanRecord} object
-     * @return The {@link WaveScanRecord} object associated with the corresponding token or {@code null} otherwise
+     * @param buildId The ID of the build for which load the scan record
+     * @return The {@link WaveScanRecord} object for the specified build ID or null otherwise
      */
     WaveScanRecord loadScanRecord(String buildId)
 
     /**
-     * Retrieve a {@link WaveScanRecord} object corresponding to the a specified request token
+     * Retrieve a {@link ScanResult} object for the specified build ID
      *
-     * @param buildId The token for which recover the corresponding {@link List<ScanVulnerability>} object
-     * @return The {@link @link List<ScanVulnerability>} object associated with the corresponding token or {@code null} otherwise
+     * @param buildId The ID of the build for which load the scan result
+     * @return The {@link ScanResult} object associated with the specified build ID or throws the exception {@link NotFoundException} otherwise
+     * @throws NotFoundException If the a record for the specified build ID cannot be found
      */
     default ScanResult loadScanResult(String buildId) {
         final scanRecord = loadScanRecord(buildId)
