@@ -62,13 +62,17 @@ interface PersistenceService {
      */
     WaveContainerRecord loadContainerRequest(String token)
 
+    /**
+     * Create a scan record, this signal that a container scan request has been created
+     *
+     * @param scanRecord Create a record with the object specified
+     */
     void createScanRecord(WaveScanRecord scanRecord)
 
     /**
      * Store a {@link WaveScanRecord} object in the Surreal wave_scan table.
      *
-     * @param scanId The ID of the container build for which the scan has been created
-     * @param data A {@link WaveScanRecord} object representing a Wave request record
+     * @param data A {@link WaveScanRecord} object representing the a container scan request
      */
     void updateScanRecord(WaveScanRecord scanRecord)
 
