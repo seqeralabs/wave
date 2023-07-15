@@ -21,8 +21,8 @@ import jakarta.inject.Inject
 @Property(name="wave.build.k8s.configPath",value="/home/kube.config")
 @Property(name="wave.build.k8s.storage.claimName",value="bar")
 @Property(name="wave.build.k8s.storage.mountPath",value="/build")
-@Property(name='wave.scan.k8s.node-selector[linux/amd64]',value="service=wave-scan")
-@Property(name='wave.scan.k8s.node-selector[linux/arm64]',value="service=wave-scan-arm64")
+@Property(name='wave.build.k8s.node-selector[linux/amd64]',value="service=wave-scan")
+@Property(name='wave.build.k8s.node-selector[linux/arm64]',value="service=wave-scan-arm64")
 class KubeScanStrategyTest extends Specification {
 
     @Inject

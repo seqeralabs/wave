@@ -34,7 +34,7 @@ import static java.nio.file.StandardOpenOption.WRITE
 @CompileStatic
 class KubeScanStrategy extends ScanStrategy {
 
-    @Property(name='wave.scan.k8s.node-selector')
+    @Property(name='wave.build.k8s.node-selector')
     @Nullable
     private Map<String, String> nodeSelectorMap
 
