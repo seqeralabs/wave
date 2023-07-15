@@ -65,9 +65,9 @@ class SurrealPersistenceService implements PersistenceService {
         if( ret3.status != "OK")
             throw new IllegalStateException("Unable to define SurrealDB table wave_scan - cause: $ret3")
         // create wave_scan table
-        final ret4 = surrealDb.sqlAsMap(authorization, "define table wave_scan_vul SCHEMALESS")
+        final ret4 = surrealDb.sqlAsMap(authorization, "define table wave_scan_vuln SCHEMALESS")
         if( ret4.status != "OK")
-            throw new IllegalStateException("Unable to define SurrealDB table wave_scan_vul - cause: $ret3")
+            throw new IllegalStateException("Unable to define SurrealDB table wave_scan_vuln - cause: $ret3")
 
     }
 
@@ -161,12 +161,12 @@ class SurrealPersistenceService implements PersistenceService {
 
         // save all vulnerabilities
         for( ScanVulnerability it : vulnerabilities ) {
-            surrealDb.updateScanVulnerability(authorization, it.id, it)
+            surrealDb.insertScanVulnerability(authorization, it.id, it)
         }
 
         // compose the list of ids
         final ids = vulnerabilities
-                .collect(it-> "wave_scan_vul:⟨$it.id⟩")
+                .collect(it-> "wave_scan_vuln:⟨$it.id⟩")
                 .join(', ')
 
         // create the scan record
