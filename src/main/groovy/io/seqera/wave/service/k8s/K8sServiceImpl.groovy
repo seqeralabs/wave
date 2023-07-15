@@ -80,9 +80,6 @@ class K8sServiceImpl implements K8sService {
     @Nullable
     private String requestsMemory
 
-    @Value('${wave.scan.timeout:5m}')
-    Duration scanTimeout
-
     @Inject
     private SpackConfig spackConfig
 
@@ -474,7 +471,7 @@ class K8sServiceImpl implements K8sService {
                 .withNewSpec()
                 .withNodeSelector(nodeSelector)
                 .withServiceAccount(serviceAccount)
-                .withActiveDeadlineSeconds( scanTimeout.toSeconds() )
+                .withActiveDeadlineSeconds( scanConfig.timeout.toSeconds() )
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
 
