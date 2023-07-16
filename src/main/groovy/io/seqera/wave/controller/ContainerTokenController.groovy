@@ -145,7 +145,7 @@ class ContainerTokenController {
         final data = makeRequestData(req, user, ip)
         final token = tokenService.computeToken(data)
         final target = targetImage(token.value, data.coordinates())
-        final build = !data.buildCached ? data.buildId : null
+        final build = data.buildNew ? data.buildId : null
         final resp = new SubmitContainerTokenResponse(token.value, target, token.expiration, data.containerImage, build)
         // persist request
         storeContainerRequest0(req, data, user, token, target, ip)
@@ -229,14 +229,14 @@ class ContainerTokenController {
         String targetContent
         String condaContent
         String buildId
-        boolean buildCached
+        boolean buildNew
         if( req.containerFile ) {
             final build = buildRequest(req, user, ip)
             targetImage = build.targetImage
             targetContent = build.dockerFile
             condaContent = build.condaFile
             buildId = build.id
-            buildCached = !build.uncached
+            buildNew = build.uncached
         }
         else if( req.containerImage ) {
             // normalize container image
@@ -245,7 +245,7 @@ class ContainerTokenController {
             targetContent = null
             condaContent = null
             buildId = null
-            buildCached = null
+            buildNew = null
         }
         else
             throw new IllegalStateException("Specify either 'containerImage' or 'containerFile' attribute")
@@ -264,7 +264,7 @@ class ContainerTokenController {
                 req.towerAccessToken,
                 req.towerEndpoint,
                 buildId,
-                buildCached )
+                buildNew )
     }
 
     protected String targetImage(String token, ContainerCoordinates container) {
