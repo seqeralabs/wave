@@ -219,7 +219,8 @@ class ContainerTokenController {
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
         if( req.freeze && !req.buildRepository )
             throw new BadRequestException("When freeze mode is enabled the target build repository must be specified - see 'wave.build.repository' setting")
-        // in freeze mode use the specified `containerImage` to force build with that image
+        // when 'freeze' is enabled, rewrite the request so that the container configuration specified
+        // in the request is included in the build container file instead of being processed via the augmentation process
         if( req.freeze ) {
             req = freezeService.freezeBuildRequest(req, user)
         }
