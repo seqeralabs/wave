@@ -25,7 +25,7 @@ public class ContainerConfig {
 
     public List<ContainerLayer> layers;
 
-    ContainerConfig() {
+    public ContainerConfig() {
         entrypoint = null;
         cmd = null;
         env = null;

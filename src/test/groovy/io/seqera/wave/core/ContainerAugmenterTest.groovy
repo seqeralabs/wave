@@ -11,6 +11,7 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import io.micronaut.context.annotation.Value
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.WaveDefault
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.auth.RegistryAuth
@@ -738,6 +739,7 @@ class ContainerAugmenterTest extends Specification {
         given:
         def REGISTRY = 'docker.io'
         def IMAGE = 'library/busybox'
+        def TAG = 'latest'
         def registry = lookupService.lookup(REGISTRY)
         def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
         and:
@@ -753,20 +755,65 @@ class ContainerAugmenterTest extends Specification {
                 .withStorage(storage)
                 .withClient(client)
                 .withPlatform('amd64')
-        and:
-        def headers = [
-                Accept: ['application/vnd.docker.distribution.manifest.v1+prettyjws',
-                         'application/json',
-                         'application/vnd.oci.image.manifest.v1+json',
-                         'application/vnd.docker.distribution.manifest.v2+json',
-                         'application/vnd.docker.distribution.manifest.list.v2+json',
-                         'application/vnd.oci.image.index.v1+json' ] ]
         when:
-        def digest = scanner.resolve(IMAGE, 'latest', headers)
+        def digest = scanner.resolve(IMAGE, TAG, WaveDefault.ACCEPT_HEADERS)
         then:
         digest
         and:
         storage.getManifest("$REGISTRY/v2/$IMAGE/manifests/${digest.target}")
+    }
+
+    def 'should fetch container manifest' () {
+        given:
+        def REGISTRY = 'docker.io'
+        def IMAGE = 'library/busybox'
+        def registry = lookupService.lookup(REGISTRY)
+        def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
+        and:
+
+        def client = new ProxyClient(httpClientConfig)
+                .withRoute(Mock(RoutePath))
+                .withImage(IMAGE)
+                .withRegistry(registry)
+                .withCredentials(creds)
+                .withLoginService(loginService)
+        and:
+        def scanner = new ContainerAugmenter()
+                .withClient(client)
+                .withPlatform('amd64')
+
+        when:
+        def manifest = scanner.getImageConfig(IMAGE, 'latest', WaveDefault.ACCEPT_HEADERS)
+        then:
+        manifest.architecture == 'amd64'
+        manifest.config.cmd == ['sh']
+    }
+
+    def 'should fetch container manifest for legacy image' () {
+        given:
+        def REGISTRY = 'quay.io'
+        def IMAGE = 'biocontainers/fastqc'
+        def TAG = '0.11.9--0'
+        def registry = lookupService.lookup(REGISTRY)
+        def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
+        and:
+
+        def client = new ProxyClient(httpClientConfig)
+                .withRoute(Mock(RoutePath))
+                .withImage(IMAGE)
+                .withRegistry(registry)
+                .withCredentials(creds)
+                .withLoginService(loginService)
+        and:
+        def scanner = new ContainerAugmenter()
+                .withClient(client)
+                .withPlatform('amd64')
+
+        when:
+        def manifest = scanner.getImageConfig(IMAGE, TAG, WaveDefault.ACCEPT_HEADERS)
+        then:
+        manifest.architecture == 'amd64'
+        manifest.config.cmd == ['/bin/sh']
     }
 
 }

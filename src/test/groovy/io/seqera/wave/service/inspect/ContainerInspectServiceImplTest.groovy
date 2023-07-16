@@ -1,8 +1,9 @@
-package io.seqera.wave.auth
+package io.seqera.wave.service.inspect
 
 import spock.lang.Specification
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.auth.RegistryCredentialsProvider
 import jakarta.inject.Inject
 
 /**
@@ -10,10 +11,10 @@ import jakarta.inject.Inject
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-class DockerAuthServiceTest extends Specification {
+class ContainerInspectServiceImplTest extends Specification {
 
     @Inject RegistryCredentialsProvider credentialsProvider
-    @Inject DockerAuthService service
+    @Inject ContainerInspectServiceImpl service
 
     def 'should create creds json file' () {
         given:
@@ -60,21 +61,78 @@ class DockerAuthServiceTest extends Specification {
     def 'should find repos' () {
 
         expect:
-        DockerAuthService.findRepositories() == [] as Set
+        ContainerInspectServiceImpl.findRepositories() == []
 
         and:
-        DockerAuthService.findRepositories('FROM ubuntu:latest')  == ['ubuntu:latest'] as Set
+        ContainerInspectServiceImpl.findRepositories('FROM ubuntu:latest')  == ['ubuntu:latest']
 
         and:
-        DockerAuthService.findRepositories('FROM --platform=amd64 quay.io/ubuntu:latest')  == ['quay.io/ubuntu:latest'] as Set
+        ContainerInspectServiceImpl.findRepositories('FROM --platform=amd64 quay.io/ubuntu:latest')  == ['quay.io/ubuntu:latest']
 
         and:
-        DockerAuthService.findRepositories('''
+        ContainerInspectServiceImpl.findRepositories('''
                 FROM gcr.io/kaniko-project/executor:latest AS knk
                 RUN this and that
                 FROM amazoncorretto:17.0.4
                 COPY --from=knk /kaniko/executor /kaniko/executor
-                ''') == ['gcr.io/kaniko-project/executor:latest', 'amazoncorretto:17.0.4'] as Set
+                ''') == ['gcr.io/kaniko-project/executor:latest', 'amazoncorretto:17.0.4']
 
+    }
+
+    def 'should fetch container entry point' () {
+        given:
+        def DOCKERFILE = 'FROM busybox'
+        when:
+        service.containerEntrypoint(DOCKERFILE, null, null, null, null)
+        then:
+        noExceptionThrown()
+    }
+
+    def 'should fetch container manifest for legacy image' () {
+        given:
+        def DOCKERFILE = 'FROM quay.io/biocontainers/fastqc:0.11.9--0'
+        when:
+        service.containerEntrypoint(DOCKERFILE, null, null, null, null)
+        then:
+        noExceptionThrown()
+    }
+
+    def 'should inspect containerfile entrypoint and repository' () {
+        when:
+        def DOCKERFILE = '''
+            FROM ubuntu:latest
+            RUN this 
+            RUN THAT
+            ENTRYPOINT this --that
+            '''
+        and:
+        def result = ContainerInspectServiceImpl.inspectItems(DOCKERFILE)
+        then:
+        // capture both the repository name and the explicity entrypoint
+        // the entrypoint is returned first because it has higher priority
+        result == [
+                new ContainerInspectServiceImpl.InspectEntrypoint(["this","--that"]),
+                new ContainerInspectServiceImpl.InspectRepository("ubuntu:latest")
+        ]
+
+        when:
+        DOCKERFILE = '''
+            FROM ubuntu:latest
+            RUN this 
+            RUN THAT
+            ENTRYPOINT this --that
+            
+            FROM debian:latest
+            RUN one --more
+            '''
+        and:
+        result = ContainerInspectServiceImpl.inspectItems(DOCKERFILE)
+        then:
+        // return only the repository name
+        // because as multi-stage build, the entries in the previous statement should not
+        // affect the final entrypoint
+        result == [
+                new ContainerInspectServiceImpl.InspectRepository("debian:latest")
+        ]
     }
 }

@@ -47,7 +47,7 @@ class KubeBuildStrategyTest extends Specification {
         def cache = 'docker.io/cache'
 
         when:
-        def req = new BuildRequest('from foo', PATH, repo, null, null, USER, ContainerPlatform.of('amd64'),'{}', cache, "")
+        def req = new BuildRequest('from foo', PATH, repo, null, null, USER, null, ContainerPlatform.of('amd64'),'{}', cache, "")
         Files.createDirectories(req.workDir)
 
         def resp = strategy.build(req)
@@ -57,7 +57,7 @@ class KubeBuildStrategyTest extends Specification {
         1 * k8sService.buildContainer(_, _, _, _, _, _, [service:'wave-build']) >> null
 
         when:
-        def req2 = new BuildRequest('from foo', PATH, repo, null, null, USER, ContainerPlatform.of('arm64'),'{}', cache, "")
+        def req2 = new BuildRequest('from foo', PATH, repo, null, null, USER, null, ContainerPlatform.of('arm64'),'{}', cache, "")
         Files.createDirectories(req2.workDir)
 
         def resp2 = strategy.build(req2)

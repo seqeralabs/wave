@@ -10,7 +10,7 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.server.util.HttpClientAddressResolver
-import io.seqera.wave.auth.DockerAuthService
+import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.UserService
@@ -47,7 +47,7 @@ class TestController {
     UserService userService
 
     @Inject
-    DockerAuthService dockerAuthService
+    ContainerInspectService dockerAuthService
 
     @Inject HttpClientAddressResolver addressResolver
 
@@ -85,6 +85,7 @@ class TestController {
                 null,
                 null,
                 user,
+                null,
                 ContainerPlatform.of(platform),
                 configJson,
                 cacheRepo,

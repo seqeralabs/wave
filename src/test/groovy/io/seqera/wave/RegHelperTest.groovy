@@ -123,4 +123,23 @@ class RegHelperTest extends Specification {
         'FROM --platform=xyz foo'           | 'foo'
         'FROM --platform=xyz foo as this'   | 'foo'
     }
+
+    def 'should parse docker entrypoint'() {
+        expect:
+        RegHelper.parseEntrypoint(LINE) == EXPECTED
+
+        where:
+        LINE                                    | EXPECTED
+        null                                    | null
+        'foo'                                   | null
+        and:
+        'ENTRYPOINT this --that'                | ['this', '--that']
+        'ENTRYPOINT  this --that '              | ['this', '--that']
+        and:
+        'ENTRYPOINT ["this", "--that"]'         | ['this', '--that']
+        'ENTRYPOINT  [ "this" ,  "--that" ] '   | ['this', '--that']
+        and:
+        'ENTRYPOINT ["this", "a b c"]'          | ['this', 'a b c']
+
+    }
 }

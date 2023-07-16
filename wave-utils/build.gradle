@@ -3,7 +3,9 @@ plugins {
 }
 
 dependencies {
+    implementation project(':wave-api')
     implementation 'com.google.guava:guava:31.1-jre'
+    implementation 'org.apache.commons:commons-compress:1.21'
 }
 
 group = 'io.seqera'

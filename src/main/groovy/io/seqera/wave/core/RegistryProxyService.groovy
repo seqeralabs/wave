@@ -4,16 +4,15 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.context.annotation.Context
-import io.micronaut.http.MediaType
 import io.micronaut.http.exceptions.HttpException
 import io.micronaut.retry.annotation.Retryable
+import io.seqera.wave.WaveDefault
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.model.ContainerCoordinates
-import io.seqera.wave.model.ContentType
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.service.CredentialsService
 import io.seqera.wave.service.persistence.PersistenceService
@@ -148,12 +147,7 @@ class RegistryProxyService {
         final coords = ContainerCoordinates.parse(image)
         final route = RoutePath.v2manifestPath(coords)
         final proxyClient = client(route)
-        final headers = Map.of(
-                'Accept', List.of(
-                ContentType.DOCKER_MANIFEST_V2_TYPE,
-                ContentType.DOCKER_MANIFEST_V1_JWS_TYPE,
-                MediaType.APPLICATION_JSON))
-        final resp = proxyClient.head(route.path, headers)
+        final resp = proxyClient.head(route.path, WaveDefault.ACCEPT_HEADERS)
         return resp.statusCode() == 200
     }
 

@@ -45,6 +45,7 @@ This page summarizes the API provided by the Wave service.
         cacheRepository: string,
         timestamp: string,
         fingerprint: string,
+        freeze: boolean,
         towerAccessToken: string,
         towerRefreshToken: string,
         towerEndpoint: string,
@@ -71,6 +72,7 @@ This page summarizes the API provided by the Wave service.
     | `cacheRepository`             | Container repository used to cache build layers `docker.io/user/my-cache` (optional). |
     | `timestamp`                   | Request submission timestap using ISO-8601. |
     | `fingerprint`                 | Request unique fingerprint. |
+    | `freeze`                      | The container provisioned will be stored in the specified repository in a permanently.                                         |
     | `towerEndpoint`               | Tower service endpoint from where container repositories credentials are retrieved (optional). Default `https://api.tower.nf`. |
     | `towerAccessToken`            | Access token of the user account granting the access to the Tower service specified via `towerEndpoint` (optional). |
     | `towerWorkspaceId`        | ID of the Tower workspace from where the container repositories credentials are retrieved (optional). When omitted the personal workspace is used. |

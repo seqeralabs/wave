@@ -11,6 +11,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.http.HttpStatus
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
+import io.seqera.wave.core.spec.ManifestSpec
 import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.storage.Storage
@@ -76,7 +77,7 @@ class ContainerAugmenter {
         return resolve(route.image, route.reference, headers)
     }
 
-    protected void checkResponseCode(HttpResponse<?> response, RoutePath route, boolean blob) {
+    protected void checkResponseCode(HttpResponse<?> response, ContainerPath route, boolean blob) {
         final code = response.statusCode()
         final repository = route.getTargetContainer()
         final String body = response.body()?.toString()
@@ -483,5 +484,38 @@ class ContainerAugmenter {
         final targetPath = "$client.registry.name/v2/$imageName/manifests/$newManifestDigest"
         storage.saveManifest(targetPath, newManifestJson, DOCKER_MANIFEST_V1_JWS_TYPE, newManifestDigest)
         return newManifestDigest
+    }
+
+    ManifestSpec getImageConfig(String imageName, String tag, Map<String,List<String>> headers) {
+        assert client, "Missing client"
+        assert platform, "Missing 'platform' parameter"
+
+        // resolve image tag to digest
+        final resp1 = client.head("/v2/$imageName/manifests/$tag", headers)
+        final digest = resp1.headers().firstValue('docker-content-digest').orElse(null)
+        log.trace "Config (1): image $imageName:$tag => digest=$digest"
+        checkResponseCode(resp1, client.route, false)
+
+        // get manifest list for digest
+        final resp2 = client.getString("/v2/$imageName/manifests/$digest", headers)
+        final type = resp2.headers().firstValue('content-type').orElse(null)
+        checkResponseCode(resp2, client.route, false)
+        final manifestsList = resp2.body()
+        log.trace "Config (2): image $imageName:$tag => type=$type; manifests list:\n${JsonOutput.prettyPrint(manifestsList)}"
+
+        if( type == DOCKER_MANIFEST_V1_JWS_TYPE ) {
+            return ManifestSpec.parseV1(manifestsList)
+        }
+
+        final manifestResult = findImageManifestAndDigest(manifestsList, imageName, tag, headers)
+        final configDigest = manifestResult.second
+
+        // fetch the image config
+        final resp5 = client.getString("/v2/$imageName/blobs/$configDigest", headers)
+        checkResponseCode(resp5, client.route, true)
+        final imageConfig = resp5.body()
+        log.trace "Config (4): image $imageName:$tag => image config=\n${JsonOutput.prettyPrint(imageConfig)}"
+
+        return ManifestSpec.parse(imageConfig)
     }
 }

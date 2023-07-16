@@ -15,7 +15,7 @@ import io.micronaut.http.annotation.Post
 import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
-import io.seqera.wave.auth.DockerAuthService
+import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
@@ -26,6 +26,7 @@ import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
+import io.seqera.wave.service.builder.FreezeService
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
@@ -86,7 +87,7 @@ class ContainerTokenController {
     ContainerBuildService buildService
 
     @Inject
-    DockerAuthService dockerAuthService
+    ContainerInspectService dockerAuthService
 
     @Inject
     RegistryProxyService registryProxyService
@@ -102,6 +103,8 @@ class ContainerTokenController {
 
     @Inject
     PairingChannel pairingChannel
+
+    @Inject FreezeService freezeService
 
     @PostConstruct
     private void init() {
@@ -142,7 +145,8 @@ class ContainerTokenController {
         final data = makeRequestData(req, user, ip)
         final token = tokenService.computeToken(data)
         final target = targetImage(token.value, data.coordinates())
-        final resp = new SubmitContainerTokenResponse(token.value, target, token.expiration)
+        final build = data.buildNew ? data.buildId : null
+        final resp = new SubmitContainerTokenResponse(token.value, target, token.expiration, data.containerImage, build)
         // persist request
         storeContainerRequest0(req, data, user, token, target, ip)
         // return response
@@ -173,6 +177,7 @@ class ContainerTokenController {
         final build = req.buildRepository ?: defaultBuildRepo
         final cache = req.cacheRepository ?: defaultCacheRepo
         final configJson = dockerAuthService.credentialsConfigJson(dockerContent, build, cache, user?.id, req.towerWorkspaceId, req.towerAccessToken, req.towerEndpoint)
+        final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
         // create a unique digest to identify the request
         return new BuildRequest(
@@ -182,6 +187,7 @@ class ContainerTokenController {
                 condaContent,
                 spackContent,
                 user,
+                containerConfig,
                 platform,
                 configJson,
                 cache,
@@ -205,19 +211,32 @@ class ContainerTokenController {
     }
 
     ContainerRequestData makeRequestData(SubmitContainerTokenRequest req, User user, String ip) {
+        if( !req.containerImage && !req.containerFile )
+            throw new BadRequestException("Specify either 'containerImage' or 'containerFile' attribute")
         if( req.containerImage && req.containerFile )
             throw new BadRequestException("Attributes 'containerImage' and 'containerFile' cannot be used in the same request")
-        if( req.containerImage?.contains('@sha256:') && req.containerConfig )
+        if( req.containerImage?.contains('@sha256:') && req.containerConfig && !req.freeze )
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
+        if( req.freeze && !req.buildRepository )
+            throw new BadRequestException("When freeze mode is enabled the target build repository must be specified - see 'wave.build.repository' setting")
+        // when 'freeze' is enabled, rewrite the request so that the container configuration specified
+        // in the request is included in the build container file instead of being processed via the augmentation process
+        if( req.freeze ) {
+            req = freezeService.freezeBuildRequest(req, user)
+        }
 
         String targetImage
         String targetContent
         String condaContent
+        String buildId
+        boolean buildNew
         if( req.containerFile ) {
             final build = buildRequest(req, user, ip)
             targetImage = build.targetImage
             targetContent = build.dockerFile
             condaContent = build.condaFile
+            buildId = build.id
+            buildNew = build.uncached
         }
         else if( req.containerImage ) {
             // normalize container image
@@ -225,11 +244,13 @@ class ContainerTokenController {
             targetImage = coords.getTargetContainer()
             targetContent = null
             condaContent = null
+            buildId = null
+            buildNew = null
         }
         else
-            throw new BadRequestException("Specify either 'containerImage' or 'containerFile' attribute")
+            throw new IllegalStateException("Specify either 'containerImage' or 'containerFile' attribute")
 
-        final data = new ContainerRequestData(
+        new ContainerRequestData(
                 user?.id,
                 req.towerWorkspaceId,
                 targetImage,
@@ -241,8 +262,9 @@ class ContainerTokenController {
                 // in the presence of a refresh token this is used just as a key to retrieve
                 // the actual authorization tokens from the store
                 req.towerAccessToken,
-                req.towerEndpoint )
-        return data
+                req.towerEndpoint,
+                buildId,
+                buildNew )
     }
 
     protected String targetImage(String token, ContainerCoordinates container) {
