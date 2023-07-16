@@ -21,7 +21,7 @@ import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
- * Compute Docker auth config json to authentication Kaniko build 
+ * Implements containers inspect service
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -59,6 +59,9 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
     @Inject
     private RegistryAuthService loginService
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     String credentialsConfigJson(String containerFile, String buildRepo, String cacheRepo, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint) {
         final repos = new HashSet(10)
@@ -131,6 +134,9 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
         return result
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     List<String> containerEntrypoint(String containerFile, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint) {
         final repos = inspectItems(containerFile)
