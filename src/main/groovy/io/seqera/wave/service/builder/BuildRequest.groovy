@@ -109,9 +109,9 @@ class BuildRequest {
     final String scanId
     
     /**
-     * Mark this request as a new build i.e. not cached 
+     * Mark this request as not cached
      */
-    volatile boolean isNew
+    volatile boolean uncached
 
     BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, User user, ContainerConfig containerConfig, ContainerPlatform platform, String configJson, String cacheRepo, String ip, String offsetId = null) {
         this.id = computeDigest(containerFile, condaFile, spackFile, platform, repo)

@@ -218,7 +218,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         final ret1 = BuildResult.create(request)
         if( buildStore.storeIfAbsent(request.targetImage, ret1) ) {
             // flag it as a new build
-            request.isNew = true
+            request.uncached = true
             // go ahead
             log.info "== Submit build request: $request"
             launchAsync(request)

@@ -236,7 +236,7 @@ class ContainerTokenController {
             targetContent = build.dockerFile
             condaContent = build.condaFile
             buildId = build.id
-            buildCached = !build.isNew
+            buildCached = !build.uncached
         }
         else if( req.containerImage ) {
             // normalize container image
