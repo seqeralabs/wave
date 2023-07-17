@@ -49,7 +49,7 @@ class KubeScanStrategy extends ScanStrategy {
 
     @Override
     ScanResult scanContainer(ScanRequest req) {
-        log.info("Launching container scan for buildId: ${req.id}")
+        log.info("Launching container scan for buildId: ${req.buildId} with scanId ${req.id}")
         final startTime = Instant.now()
 
         final podName = "scan-${req.id}"
