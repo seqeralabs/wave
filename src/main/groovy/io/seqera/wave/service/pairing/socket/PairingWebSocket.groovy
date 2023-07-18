@@ -8,6 +8,7 @@ import io.micronaut.websocket.annotation.OnClose
 import io.micronaut.websocket.annotation.OnMessage
 import io.micronaut.websocket.annotation.OnOpen
 import io.micronaut.websocket.annotation.ServerWebSocket
+import io.seqera.wave.service.license.LicenseConstants
 import io.seqera.wave.service.license.LicenseManServiceClient
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
@@ -40,7 +41,7 @@ class PairingWebSocket {
     @OnOpen
     void onOpen(String service, String token, String endpoint, WebSocketSession session) {
         log.debug "Opening pairing session - endpoint: ${endpoint} [sessionId: $session.id]"
-        if(licenseManServiceClient.checkToken(token,null).status.code != HttpStatus.OK.code){
+        if(licenseManServiceClient.checkToken(token, LicenseConstants.PRODUCT_NAME).status.code != HttpStatus.OK.code){
             log.debug "license is not valid, closing the session"
             session.close()
             return
