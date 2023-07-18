@@ -30,6 +30,13 @@ micronaut:
         paths: 'classpath:io/seqera/wave/assets'
         mapping: '/assets/**'
         enabled: true
+  http:
+    services:
+      licenseman:
+        url: "${lICENSEMAN_API_URL:`http://localhost:8080`}"
+  retry:
+    attempts: 3
+    delay: 5s
 ---
 wave:
   allowAnonymous: true

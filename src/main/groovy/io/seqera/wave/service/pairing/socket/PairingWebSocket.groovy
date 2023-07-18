@@ -2,11 +2,13 @@ package io.seqera.wave.service.pairing.socket
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.http.HttpStatus
 import io.micronaut.websocket.WebSocketSession
 import io.micronaut.websocket.annotation.OnClose
 import io.micronaut.websocket.annotation.OnMessage
 import io.micronaut.websocket.annotation.OnOpen
 import io.micronaut.websocket.annotation.ServerWebSocket
+import io.seqera.wave.service.license.LicenseManServiceClient
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
@@ -24,18 +26,25 @@ import static io.seqera.wave.util.LongRndKey.rndHex
 @ServerWebSocket("/pairing/{service}/token/{token}{?endpoint}")
 class PairingWebSocket {
 
-    private PairingChannel channel
-    private PairingService pairingService
+    private final PairingChannel channel
+    private final PairingService pairingService
+    private final LicenseManServiceClient licenseManServiceClient
 
-    PairingWebSocket(PairingChannel channel, PairingService pairingService) {
+
+    PairingWebSocket(PairingChannel channel, PairingService pairingService, LicenseManServiceClient licenseManServiceClient) {
         this.channel = channel
         this.pairingService = pairingService
+        this.licenseManServiceClient = licenseManServiceClient
     }
 
     @OnOpen
     void onOpen(String service, String token, String endpoint, WebSocketSession session) {
         log.debug "Opening pairing session - endpoint: ${endpoint} [sessionId: $session.id]"
-
+        if(licenseManServiceClient.checkToken(token,null).status.code != HttpStatus.OK.code){
+            log.debug "license is not valid, closing the session"
+            session.close()
+            return
+        }
         // Register the client and the sender callback that it's needed to deliver
         // the message to the remote client
         channel.registerClient(service, endpoint, session.id,(pairingMessage) -> {
