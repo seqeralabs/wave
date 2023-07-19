@@ -9,7 +9,7 @@
  * defined by the Mozilla Public License, v. 2.0.
  */
 
-package io.seqera.wave.service.mail
+package io.seqera.wave.service.mail.impl
 
 import java.time.Instant
 import java.util.concurrent.BlockingQueue
@@ -23,8 +23,10 @@ import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.runtime.server.event.ServerShutdownEvent
 import io.micronaut.runtime.server.event.ServerStartupEvent
 import io.seqera.wave.mail.Mail
+import io.seqera.wave.mail.MailProvider
 import io.seqera.wave.mail.Mailer
 import io.seqera.wave.mail.MailerConfig
+import io.seqera.wave.service.mail.MailSpooler
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
@@ -41,6 +43,9 @@ class MailSpoolerImpl implements MailSpooler {
 
     @Inject
     MailerConfig config
+
+    @Inject
+    MailProvider provider
 
     BlockingQueue<Mail> pendingMails
 
@@ -142,8 +147,8 @@ class MailSpoolerImpl implements MailSpooler {
 
     @EventListener
     void start(ServerStartupEvent event) {
-        log.info "+ Mail service started [${this.getClass().getSimpleName()}]"
-        mailer = new Mailer() .setConfig(config)
+        log.info "+ Mail service started [${this.getClass().getSimpleName()}]; provider=${provider.getClass().getSimpleName()}"
+        mailer = new Mailer().setConfig(config).setProvider(provider)
         thread = Thread.startDaemon('Mailer thread',this.&sendLoop)
     }
 

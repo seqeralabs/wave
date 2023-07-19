@@ -20,6 +20,7 @@ import javax.mail.internet.InternetAddress
 import javax.mail.internet.MimeMultipart
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.mail.impl.MailProviderImpl
 import org.subethamail.wiser.Wiser
 /**
  *
@@ -38,7 +39,8 @@ class MailerWithAttachmentTest extends Specification {
         server.start()
 
         MailerConfig config = new MailerConfig(smtp:[host: '127.0.0.1', port: PORT, user: USER, password: PASSWORD])
-        Mailer mailer = new Mailer(config: config)
+        MailProvider provider = new MailProviderImpl()
+        Mailer mailer = new Mailer(config: config, provider: provider)
 
         String TO = "receiver@gmail.com"
         String FROM = 'paolo@nextflow.io'

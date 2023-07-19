@@ -8,6 +8,7 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.service.mail.impl.MailServiceImpl
 import jakarta.inject.Inject
 /**
  *
