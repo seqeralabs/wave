@@ -33,6 +33,7 @@ class AwsMailProvider implements MailProvider {
         log.debug "+ Creating AWS SES mail provider"
     }
 
+    @Override
     void send(MimeMessage message, Mailer mailer) {
         //get mail client
         final client = AmazonSimpleEmailServiceClientBuilder
