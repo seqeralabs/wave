@@ -3,9 +3,6 @@ package io.seqera.wave.service.aws
 import java.nio.ByteBuffer
 import javax.mail.internet.MimeMessage
 
-import com.amazonaws.AmazonClientException
-import com.amazonaws.AmazonWebServiceClient
-import com.amazonaws.regions.InstanceMetadataRegionProvider
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailService
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClientBuilder
 import com.amazonaws.services.simpleemail.model.RawMessage
@@ -17,7 +14,6 @@ import io.micronaut.context.annotation.Requires
 import io.seqera.wave.mail.MailProvider
 import io.seqera.wave.mail.Mailer
 import jakarta.annotation.PostConstruct
-import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
  * Send a mime message via AWS SES raw API
