@@ -264,7 +264,8 @@ class ContainerTokenController {
                 req.towerAccessToken,
                 req.towerEndpoint,
                 buildId,
-                buildNew )
+                buildNew,
+                req.freeze )
     }
 
     protected String targetImage(String token, ContainerCoordinates container) {

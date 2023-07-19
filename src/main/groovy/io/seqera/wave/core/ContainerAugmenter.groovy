@@ -60,6 +60,7 @@ class ContainerAugmenter {
         return this
     }
 
+    @Deprecated
     ContainerAugmenter withContainerConfig(ContainerConfig containerConfig) {
         this.containerConfig = containerConfig
         final l = containerConfig?.layers ?: Collections.<ContainerLayer>emptyList()
@@ -72,7 +73,9 @@ class ContainerAugmenter {
         assert route, "Missing route"
         if( route.request?.platform )
             this.platform = route.request.platform
-        if( route.request?.containerConfig )
+        // note: do not propagate container config when "freeze" mode is enabled, because it has been already
+        // during the container build phase, and therefore it should be ignored by the augmenter
+        if( route.request?.containerConfig && !route.request.freeze )
             this.containerConfig = route.request.containerConfig
         return resolve(route.image, route.reference, headers)
     }
