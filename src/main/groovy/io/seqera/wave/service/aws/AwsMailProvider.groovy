@@ -3,7 +3,6 @@ package io.seqera.wave.service.aws
 import java.nio.ByteBuffer
 import javax.mail.internet.MimeMessage
 
-import com.amazonaws.services.simpleemail.AmazonSimpleEmailService
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClientBuilder
 import com.amazonaws.services.simpleemail.model.RawMessage
 import com.amazonaws.services.simpleemail.model.SendRawEmailRequest
@@ -29,26 +28,22 @@ import jakarta.inject.Singleton
 @Slf4j
 class AwsMailProvider implements MailProvider {
 
-    private AmazonSimpleEmailService amazonSimpleEmailService
-
-    AwsMailProvider() {
-        amazonSimpleEmailService = AmazonSimpleEmailServiceClientBuilder
-                .standard()
-                .build()
-    }
-
     @PostConstruct
     private void init() {
         log.debug "+ Creating AWS SES mail provider"
     }
 
     void send(MimeMessage message, Mailer mailer) {
+        //get mail client
+        final client = AmazonSimpleEmailServiceClientBuilder
+                .standard()
+                .build()
         // dump the message to a buffer
         final outputStream = new ByteArrayOutputStream()
         message.writeTo(outputStream)
         // send the email
         final rawMessage = new RawMessage(ByteBuffer.wrap(outputStream.toByteArray()))
-        final result = amazonSimpleEmailService.sendRawEmail(new SendRawEmailRequest(rawMessage));
+        final result = client.sendRawEmail(new SendRawEmailRequest(rawMessage));
         log.debug "Mail message sent: ${result}"
     }
 }
