@@ -69,13 +69,12 @@ class ContainerScanServiceImpl implements ContainerScanService {
 
     @Override
     WaveScanRecord getScanResult(String scanId) {
-        WaveScanRecord waveScanRecord = null
         try{
-            waveScanRecord = persistenceService.loadScanRecord(scanId)
+            return persistenceService.loadScanRecord(scanId)
         }catch (Throwable t){
-            log.error "Unable to load the scan results for scanId: ${scanId}",t
+            log.error "Unable to load the scan results for scanId: ${scanId}", t
+             return null
         }
-        return waveScanRecord
     }
 
     protected ScanResult launch(ScanRequest request) {
