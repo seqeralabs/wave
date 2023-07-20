@@ -68,8 +68,14 @@ class ContainerScanServiceImpl implements ContainerScanService {
     }
 
     @Override
-    WaveScanRecord getScanResult(String buildId) {
-        return persistenceService.loadScanRecord(buildId)
+    WaveScanRecord getScanResult(String scanId) {
+        WaveScanRecord waveScanRecord = null
+        try{
+            waveScanRecord = persistenceService.loadScanRecord(scanId)
+        }catch (Throwable t){
+            log.error "Unable to load the scan results for scanId: ${scanId}",t
+        }
+        return waveScanRecord
     }
 
     protected ScanResult launch(ScanRequest request) {
@@ -80,8 +86,8 @@ class ContainerScanServiceImpl implements ContainerScanService {
             //launch container scan
             scanResult = scanStrategy.scanContainer(request)
         }
-        catch (Exception e){
-            log.warn "Unable to launch the scan results for build : ${request.id}",e
+        catch (Throwable t){
+            log.error "Unable to launch the scan results for scanId : ${request.id}",t
         }
         finally{
             // cleanup build context
@@ -96,8 +102,8 @@ class ContainerScanServiceImpl implements ContainerScanService {
             //save scan results
             persistenceService.updateScanRecord(new WaveScanRecord(scanResult.id, scanResult))
         }
-        catch (Exception e){
-            log.warn "Unable to save results for scan: ${scanResult.id}",e
+        catch (Throwable t){
+            log.error "Unable to save results for scanId: ${scanResult.id}",t
         }
     }
 
