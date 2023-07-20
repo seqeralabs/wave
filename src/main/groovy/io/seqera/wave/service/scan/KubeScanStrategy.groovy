@@ -90,7 +90,7 @@ class KubeScanStrategy extends ScanStrategy {
             throw new BadRequestException("Unexpected scan failure: ${e.responseBody}", e)
         }
         catch (Exception e){
-            log.error("Error while scanning with id: ${req.id}, reason: ${e.getMessage()}", e)
+            log.error("Error while scanning with id: ${req.id}, reason: ${e.getMessage()}")
             return ScanResult.failure(req, startTime, null)
         }
         finally {
