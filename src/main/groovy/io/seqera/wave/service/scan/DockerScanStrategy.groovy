@@ -75,12 +75,11 @@ class DockerScanStrategy extends ScanStrategy {
             }
             else{
                 log.info("Container scan completed for buildId: ${req.id}")
-                def vulnerabilities = TrivyResultProcessor.process(reportFile.text)
-                return ScanResult.success(req, startTime,vulnerabilities)
+                return ScanResult.success(req, startTime,TrivyResultProcessor.process(reportFile.text))
             }
         }
         catch (Exception e){
-            log.warn("Container scan failed to scan container, reason: ${e.getMessage()}", e)
+            log.error("Container scan failed to scan container, reason: ${e.getMessage()}", e)
             return ScanResult.failure(req, startTime, null)
         }
     }

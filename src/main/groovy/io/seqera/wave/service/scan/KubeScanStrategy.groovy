@@ -78,8 +78,7 @@ class KubeScanStrategy extends ScanStrategy {
             final terminated = k8sService.waitPod(pod, scanConfig.timeout.toMillis())
             if( terminated ) {
                 log.info("Container scan completed for scanId: ${req.id}")
-                def vulnerabilities = TrivyResultProcessor.process(reportFile.text)
-                return ScanResult.success(req, startTime, vulnerabilities)
+                return ScanResult.success(req, startTime, TrivyResultProcessor.process(reportFile.text))
             }
             else{
                 final stdout = k8sService.logsPod(podName)
@@ -91,7 +90,7 @@ class KubeScanStrategy extends ScanStrategy {
             throw new BadRequestException("Unexpected scan failure: ${e.responseBody}", e)
         }
         catch (Exception e){
-            log.warn("Error while scanning with id: ${req.id}, reason: ${e.getMessage()}", e)
+            log.error("Error while scanning with id: ${req.id}, reason: ${e.getMessage()}", e)
             return ScanResult.failure(req, startTime, null)
         }
         finally {
