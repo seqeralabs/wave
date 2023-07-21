@@ -28,8 +28,8 @@ class TrivyResultProcessor {
                 }
             }.flatten()
         }
-        catch(Exception e){
-            throw new ScanRuntimeException("Failed to parse the trivy result because ${e.getMessage()}", e)
+        catch(Throwable e){
+            throw new ScanRuntimeException("Failed to parse the trivy result", e)
         }
     }
 }
