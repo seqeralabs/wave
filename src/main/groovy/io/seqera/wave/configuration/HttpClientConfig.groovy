@@ -7,6 +7,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.seqera.wave.util.Retryable
 import jakarta.inject.Singleton
 /**
  * Model  Http Client settings
@@ -16,7 +17,7 @@ import jakarta.inject.Singleton
 @CompileStatic
 @Singleton
 @Slf4j
-class HttpClientConfig {
+class HttpClientConfig implements Retryable.Config {
 
     @Value('${wave.httpclient.connectTimeout:20s}')
     Duration connectTimeout
@@ -34,9 +35,20 @@ class HttpClientConfig {
     @Value('${wave.httpclient.retry.multiplier:1.0}')
     float retryMultiplier
 
+    @Value('${wave.httpclient.retry.jitter:0.25}')
+    double retryJitter
+
     @PostConstruct
     private void init() {
         log.debug "Http client config: connectTimeout=$connectTimeout; retryAttempts=$retryAttempts; retryDelay=$retryDelay; retryMaxDelay=$retryMaxDelay; retryMultiplier=$retryMultiplier"
     }
+
+    Duration getDelay() { retryDelay }
+
+    Duration getMaxDelay() { retryMaxDelay }
+
+    int getMaxAttempts() { retryAttempts }
+
+    double getJitter() { retryJitter }
 
 }

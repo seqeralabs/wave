@@ -16,7 +16,8 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
-import io.seqera.wave.util.HttpRetryable
+import io.seqera.wave.configuration.HttpClientConfig
+import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -32,6 +33,9 @@ import static io.seqera.wave.WaveDefault.DOCKER_IO
 @Singleton
 @CompileStatic
 class RegistryAuthServiceImpl implements RegistryAuthService {
+
+    @Inject
+    private HttpClientConfig httpConfig
 
     @Canonical
     @ToString(includePackage = false, includeNames = true)
@@ -61,15 +65,13 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
 
     @Inject RegistryCredentialsFactory credentialsFactory
 
-    @Inject
-    private HttpRetryable httpRetryable
 
     @PostConstruct
     private void init() {
         this.httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NORMAL)
-                .connectTimeout(httpRetryable.config().connectTimeout)
+                .connectTimeout(httpConfig.connectTimeout)
                 .build()
     }
 
@@ -103,8 +105,12 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
                 .GET()
                 .header("Authorization", "Basic $basic")
                 .build()
+        // retry strategy
+        final retryable = Retryable
+                .<String>of(httpConfig)
+                .onRetry((event) -> log.warn("Unable to connect '$endpoint' - attempt: ${event.attemptCount}; cause [${event.lastFailure.class.name}]: ${event.lastFailure.message}"))
         // make the request
-        final response = httpRetryable.send(httpClient, request, HttpResponse.BodyHandlers.ofString())
+        final response = retryable.apply(()-> httpClient.send(request, HttpResponse.BodyHandlers.ofString()))
 
         if( response.statusCode() == 200 ) {
             log.debug "Container registry '$endpoint' login - response: ${StringUtils.trunc(response.body())}"
@@ -180,7 +186,12 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         final req = makeRequest(login, key.creds)
         log.trace "Token request=$req"
 
-        HttpResponse<String> resp = httpRetryable.send(httpClient, req, HttpResponse.BodyHandlers.ofString())
+        // retry strategy
+        final retryable = Retryable
+                .<String>of(httpConfig)
+                .onRetry((event) -> log.warn("Unable to connect '$login' - attempt: ${event.attemptCount}; cause [${event.lastFailure.class.name}]: ${event.lastFailure.message}"))
+        // submit http request
+        HttpResponse<String> resp = retryable.apply(()-> httpClient.send(req, HttpResponse.BodyHandlers.ofString()))
         final body = resp.body()
         if( resp.statusCode()==200 ) {
             final result = (Map) new JsonSlurper().parseText(body)
@@ -227,5 +238,6 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         final key = new CacheKey(image, auth, creds)
         cacheTokens.invalidate(key)
     }
+
 
 }

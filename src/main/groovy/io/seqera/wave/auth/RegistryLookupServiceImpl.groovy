@@ -11,7 +11,8 @@ import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.seqera.wave.util.HttpRetryable
+import io.seqera.wave.configuration.HttpClientConfig
+import io.seqera.wave.util.Retryable
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
@@ -29,21 +30,16 @@ import static io.seqera.wave.WaveDefault.DOCKER_REGISTRY_1
 class RegistryLookupServiceImpl implements RegistryLookupService {
 
     @Inject
-    private HttpRetryable httpRetryable
+    private HttpClientConfig httpConfig
 
     private HttpClient httpClient
 
     private CacheLoader<URI, RegistryAuth> loader = new CacheLoader<URI, RegistryAuth>() {
         @Override
         RegistryAuth load(URI endpoint) throws Exception {
-            RegistryAuth result = null
-            try {
-                result = lookup0(endpoint)
-            }
-            finally {
-                log.debug "Authority lookup for endpoint: '$endpoint' => $result"
-                return result
-            }
+            final result = lookup0(endpoint)
+            log.debug "Authority lookup for endpoint: '$endpoint' => $result"
+            return result
         }
     }
 
@@ -58,15 +54,18 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
         httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NORMAL)
-                .connectTimeout(httpRetryable.config().connectTimeout)
+                .connectTimeout(httpConfig.connectTimeout)
                 .build()
     }
 
-
     protected RegistryAuth lookup0(URI endpoint) {
         final request = HttpRequest.newBuilder() .uri(endpoint) .GET() .build()
-        // make the request
-        final response = httpRetryable.send(httpClient, request, HttpResponse.BodyHandlers.ofString())
+        // retry strategy
+        final retryable = Retryable
+                .<String>of(httpConfig)
+                .onRetry((event) -> log.warn("Unable to connect '$endpoint' - attempt: ${event.attemptCount} - cause [${event.lastFailure.class.name}]: ${event.lastFailure.message}"))
+        // submit the request
+        final response = retryable.apply(()-> httpClient.send(request, HttpResponse.BodyHandlers.ofString()))
         final code = response.statusCode()
         if( code == 401 ) {
             def authenticate = response.headers().firstValue('WWW-Authenticate').orElse(null)
