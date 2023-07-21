@@ -85,8 +85,8 @@ class ContainerScanServiceImpl implements ContainerScanService {
             //launch container scan
             scanResult = scanStrategy.scanContainer(request)
         }
-        catch (Throwable t){
-            log.error "Unable to launch the scan results for scanId : ${request.id}",t
+        catch (Throwable e){
+            log.warn "Unable to launch the scan results for scan id: ${request.id} - cause: ${e.message}", e
         }
         finally{
             // cleanup build context
