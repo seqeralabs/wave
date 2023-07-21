@@ -102,7 +102,7 @@ class ContainerScanServiceImpl implements ContainerScanService {
             persistenceService.updateScanRecord(new WaveScanRecord(scanResult.id, scanResult))
         }
         catch (Throwable t){
-            log.error "Unable to save results for scanId: ${scanResult.id}",t
+            log.error "Unable to save results for scan id: ${scanResult.id}", t
         }
     }
 
