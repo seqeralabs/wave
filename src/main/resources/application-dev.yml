@@ -9,12 +9,6 @@ wave:
 # the same as of tower
 mail:
   from: "${TOWER_CONTACT_EMAIL:wave-app+dev@seqera.io}"
-  smtp:
-    host: "${TOWER_SMTP_HOST:email-smtp.eu-west-1.amazonaws.com}"
-    port: "${TOWER_SMTP_PORT:587}"
-    auth: true
-    user: "${TOWER_SMTP_USER:`missing smtp user`}"
-    password: "${TOWER_SMTP_PASSWORD:`missing smtp password`}"
 ---
 datasources:
   default:
