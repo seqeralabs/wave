@@ -109,7 +109,7 @@ micronaut {
 //
 jib {
     from {
-        image = 'cr.seqera.io/public/nf-jdk:corretto-17.0.7-up2'
+        image = 'cr.seqera.io/public/nf-jdk:corretto-17.0.8'
         platforms {
             platform { architecture = 'amd64'; os = 'linux' }
         }
