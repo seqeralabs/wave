@@ -7,6 +7,7 @@ import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.service.builder.BuildEvent
@@ -23,6 +24,7 @@ import jakarta.inject.Singleton
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @Slf4j
+@Requires(property = 'wave.scan.enabled', value = 'true')
 @Singleton
 @CompileStatic
 class ContainerScanServiceImpl implements ContainerScanService {

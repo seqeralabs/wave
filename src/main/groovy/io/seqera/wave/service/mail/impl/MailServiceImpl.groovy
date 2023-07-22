@@ -81,7 +81,7 @@ class MailServiceImpl implements MailService {
         binding.build_spackfile = req.spackFile
         binding.put('build_logs', result.logs)
         binding.build_url = "$serverUrl/view/builds/${result.id}"
-        binding.scan_url = "$serverUrl/view/scans/${req.scanId}"
+        binding.scan_url = req.scanId ? "$serverUrl/view/scans/${req.scanId}" : null
         binding.scan_id = req.scanId
         binding.put('server_url', serverUrl)
         // result the main object

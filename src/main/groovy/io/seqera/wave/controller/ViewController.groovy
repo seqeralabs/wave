@@ -52,7 +52,7 @@ class ViewController {
         binding.build_condafile = result.condaFile
         binding.build_spackfile = result.spackFile
         binding.put('server_url', serverUrl)
-        binding.scan_url = "$serverUrl/view/scans/${result.scanId}"
+        binding.scan_url = result.scanId ? "$serverUrl/view/scans/${result.scanId}" : null
         binding.scan_id = result.scanId
         // result the main object
         return binding

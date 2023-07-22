@@ -1,5 +1,7 @@
 wave:
   debug: true
+  scan:
+    enabled: true
   build:
     workspace: 'build-workspace'
     spack:

@@ -17,6 +17,7 @@ import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.tower.User
+import io.seqera.wave.util.LongRndKey
 import jakarta.inject.Inject
 /**
  * Just for testing
@@ -49,7 +50,11 @@ class TestController {
     @Inject
     ContainerInspectService dockerAuthService
 
-    @Inject HttpClientAddressResolver addressResolver
+    @Inject
+    HttpClientAddressResolver addressResolver
+
+    @Value('${wave.scan.enabled:false}')
+    boolean scanEnabled
 
     @Get('/test-build')
     HttpResponse<String> testBuild(@Nullable String platform,
@@ -78,8 +83,9 @@ class TestController {
         final buildRepo = repo ?: defaultBuildRepo
         final cacheRepo = cache ?: defaultCacheRepo
         final configJson = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, cacheRepo, user?.id, workspaceId, accessToken, endpoint)
+        final scanId = scanEnabled ? LongRndKey.rndHex() : null
 
-        final req =  new BuildRequest( dockerFile,
+        final req = new BuildRequest( dockerFile,
                 Path.of(workspace),
                 buildRepo,
                 null,
@@ -89,7 +95,9 @@ class TestController {
                 ContainerPlatform.of(platform),
                 configJson,
                 cacheRepo,
-                ip)
+                scanId,
+                ip,
+                null)
 
         builderService.buildImage(req)
         return HttpResponse.ok(req.targetImage)

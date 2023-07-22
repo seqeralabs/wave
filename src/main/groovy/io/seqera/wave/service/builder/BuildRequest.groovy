@@ -10,7 +10,6 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
 import io.seqera.wave.util.DigestFunctions
-import io.seqera.wave.util.LongRndKey
 import static io.seqera.wave.util.StringUtils.trunc
 /**
  * Model a container builder result
@@ -113,7 +112,7 @@ class BuildRequest {
      */
     volatile boolean uncached
 
-    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, User user, ContainerConfig containerConfig, ContainerPlatform platform, String configJson, String cacheRepo, String ip, String offsetId = null) {
+    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, User user, ContainerConfig containerConfig, ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId) {
         this.id = computeDigest(containerFile, condaFile, spackFile, platform, repo)
         this.dockerFile = containerFile
         this.containerConfig = containerConfig
@@ -130,7 +129,7 @@ class BuildRequest {
         this.job = "${id}-${startTime.toEpochMilli().toString().md5()[-5..-1]}"
         this.ip = ip
         this.isSpackBuild = spackFile
-        this.scanId = LongRndKey.rndHex()
+        this.scanId = scanId
     }
 
     static private String computeDigest(String containerFile, String condaFile, String spackFile, ContainerPlatform platform, String repository) {

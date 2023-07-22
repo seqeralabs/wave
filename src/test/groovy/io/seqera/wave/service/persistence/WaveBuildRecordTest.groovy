@@ -31,7 +31,9 @@ class WaveBuildRecordTest extends Specification {
                 ContainerPlatform.of('amd64'),
                 '{auth}',
                 'docker.io/my/repo',
-                "1.2.3.4")
+                '12345',
+                "1.2.3.4",
+                null )
         final result = new BuildResult(request.id, -1, "ok", Instant.now(), Duration.ofSeconds(3))
         final event = new BuildEvent(request, result)
         final record = WaveBuildRecord.fromEvent(event)
