@@ -62,8 +62,8 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
         final request = HttpRequest.newBuilder() .uri(endpoint) .GET() .build()
         // retry strategy
         final retryable = Retryable
-                .<String>of(httpConfig)
-                .onRetry((event) -> log.warn("Unable to connect '$endpoint' - attempt: ${event.attemptCount} - cause [${event.lastFailure.class.name}]: ${event.lastFailure.message}"))
+                .of(httpConfig)
+                .onRetry((event) -> log.warn("Unable to connect '$endpoint' - attempt: ${event.attemptCount} - cause: ${event.lastFailure.message}"))
         // submit the request
         final response = retryable.apply(()-> httpClient.send(request, HttpResponse.BodyHandlers.ofString()))
         final code = response.statusCode()

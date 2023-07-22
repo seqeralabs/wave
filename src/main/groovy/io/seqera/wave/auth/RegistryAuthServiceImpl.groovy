@@ -107,8 +107,8 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
                 .build()
         // retry strategy
         final retryable = Retryable
-                .<String>of(httpConfig)
-                .onRetry((event) -> log.warn("Unable to connect '$endpoint' - attempt: ${event.attemptCount}; cause [${event.lastFailure.class.name}]: ${event.lastFailure.message}"))
+                .of(httpConfig)
+                .onRetry((event) -> log.warn("Unable to connect '$endpoint' - attempt: ${event.attemptCount}; cause: ${event.lastFailure.message}"))
         // make the request
         final response = retryable.apply(()-> httpClient.send(request, HttpResponse.BodyHandlers.ofString()))
 
@@ -188,8 +188,8 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
 
         // retry strategy
         final retryable = Retryable
-                .<String>of(httpConfig)
-                .onRetry((event) -> log.warn("Unable to connect '$login' - attempt: ${event.attemptCount}; cause [${event.lastFailure.class.name}]: ${event.lastFailure.message}"))
+                .of(httpConfig)
+                .onRetry((event) -> log.warn("Unable to connect '$login' - attempt: ${event.attemptCount}; cause: ${event.lastFailure.message}"))
         // submit http request
         HttpResponse<String> resp = retryable.apply(()-> httpClient.send(req, HttpResponse.BodyHandlers.ofString()))
         final body = resp.body()

@@ -20,7 +20,7 @@ import groovy.util.logging.Slf4j
  */
 @CompileStatic
 @Slf4j
-class Retryable<T> {
+class Retryable {
 
     interface Config {
         Duration getDelay()
@@ -41,25 +41,25 @@ class Retryable<T> {
 
     private Consumer<ExecutionAttemptedEvent<?>> retryEvent
 
-    Retryable<T> withConfig(Config config) {
+    Retryable withConfig(Config config) {
         this.config = config
         return this
     }
 
-    Retryable<T> withCondition(Predicate<? extends Throwable> cond) {
+    Retryable withCondition(Predicate<? extends Throwable> cond) {
         this.condition = cond
         return this
     }
 
-    Retryable<T> onRetry(Consumer<ExecutionAttemptedEvent<?>> event) {
+    Retryable onRetry(Consumer<ExecutionAttemptedEvent<?>> event) {
         this.retryEvent = event
         return this
     }
 
-    protected <T> RetryPolicy<T> retryPolicy() {
-        final listener = new EventListener<ExecutionAttemptedEvent<T>>() {
+    protected RetryPolicy retryPolicy() {
+        final listener = new EventListener<ExecutionAttemptedEvent>() {
             @Override
-            void accept(ExecutionAttemptedEvent<T> event) throws Throwable {
+            void accept(ExecutionAttemptedEvent event) throws Throwable {
                 retryEvent?.accept(event)
             }
         }
@@ -70,7 +70,7 @@ class Retryable<T> {
         final j = config.jitter ?: DEFAULT_JITTER
         final c = condition ?: DEFAULT_CONDITION
 
-        return RetryPolicy.<T>builder()
+        return RetryPolicy.builder()
                 .handleIf(c)
                 .withBackoff(d.toMillis(), m.toMillis(), ChronoUnit.MILLIS)
                 .withMaxAttempts(a)
@@ -84,7 +84,7 @@ class Retryable<T> {
         return Failsafe.with(policy).get(action)
     }
 
-    static <T> Retryable<T> of(Config config) {
-        new Retryable<T>().withConfig(config)
+    static Retryable of(Config config) {
+        new Retryable().withConfig(config)
     }
 }
