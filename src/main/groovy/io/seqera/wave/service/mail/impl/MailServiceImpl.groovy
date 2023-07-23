@@ -60,7 +60,7 @@ class MailServiceImpl implements MailService {
             spooler.sendMail(mail)
         }
         else {
-            log.debug "Missing email recipient from build request id=$build.id - user=$user"
+            log.debug "Missing email recipient from build id=$build.id - user=$user"
         }
     }
 

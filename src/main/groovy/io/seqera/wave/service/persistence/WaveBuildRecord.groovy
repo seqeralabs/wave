@@ -37,7 +37,7 @@ class WaveBuildRecord {
 
     static WaveBuildRecord fromEvent(BuildEvent event) {
         if( event.request.id != event.result.id )
-            throw new IllegalStateException("Build request Id must match result id")
+            throw new IllegalStateException("Build id must match the result id")
         return new WaveBuildRecord(
                 buildId: event.request.id,
                 // note: the string replacement is needed to a bug in the SurrealDb version 1.0.0-beta.8
