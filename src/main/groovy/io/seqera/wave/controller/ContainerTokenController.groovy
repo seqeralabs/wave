@@ -13,6 +13,8 @@ import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.Post
 import io.micronaut.http.server.util.HttpClientAddressResolver
+import io.micronaut.scheduling.TaskExecutors
+import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.service.inspect.ContainerInspectService
@@ -49,6 +51,7 @@ import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
 @Slf4j
 @CompileStatic
 @Controller("/")
+@ExecuteOn(TaskExecutors.IO)
 class ContainerTokenController {
 
     @Inject HttpClientAddressResolver addressResolver
