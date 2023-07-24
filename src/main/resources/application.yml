@@ -52,6 +52,10 @@ wave:
   scan:
     image:
       name: aquasec/trivy:0.43.0
+  db:
+    retry:
+      attempts: 3
+      delay: 10s
 ---
 jackson:
   serialization:

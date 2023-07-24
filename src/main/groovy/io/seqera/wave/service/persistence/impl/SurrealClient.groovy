@@ -8,6 +8,7 @@ import io.micronaut.http.annotation.Header
 import io.micronaut.http.annotation.Post
 import io.micronaut.http.annotation.Put
 import io.micronaut.http.client.annotation.Client
+import io.micronaut.retry.annotation.Retryable
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.service.persistence.WaveBuildRecord
@@ -25,6 +26,7 @@ import reactor.core.publisher.Flux
 @Header(name = "ns", value = '${surrealdb.ns}')
 @Header(name = "db", value = '${surrealdb.db}')
 @Client(value = '${surrealdb.url}')
+@Retryable(attempts = '${wave.db.retry.attempts:3}', delay = '${wave.db.retry.delay:10s}')
 interface SurrealClient {
 
     @Post("/sql")
