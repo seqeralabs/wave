@@ -1,4 +1,9 @@
 # Wave changelog
+v0.35.1 - 24 Jul 2023
+- Add @ExecuteOn(IO) to Token and Service controllers [e0c95a02]
+- Fix Build ID instead of Request ID [76e6124c]
+- Remove unused forceBuild option [621334df]
+
 v0.35.0 - 22 Jul 2023
 - Add containers freeze feature (#260) [a99f9427]
 - Add container build scan service [699ec5a3]
