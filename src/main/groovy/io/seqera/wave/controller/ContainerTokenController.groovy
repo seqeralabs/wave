@@ -203,11 +203,7 @@ class ContainerTokenController {
 
     protected BuildRequest buildRequest(SubmitContainerTokenRequest req, User user, String ip) {
         final build = makeBuildRequest(req, user, ip)
-        if( req.forceBuild )  {
-            log.debug "Build forced for container image '$build.targetImage'"
-            buildService.buildImage(build)
-        }
-        else if( !registryProxyService.isManifestPresent(build.targetImage) ) {
+        if( !registryProxyService.isManifestPresent(build.targetImage) ) {
             buildService.buildImage(build)
         }
         else {

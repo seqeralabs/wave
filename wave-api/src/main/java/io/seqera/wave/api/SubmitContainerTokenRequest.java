@@ -83,11 +83,6 @@ public class SubmitContainerTokenRequest implements Cloneable {
     public String fingerprint;
 
     /**
-     * Force a build even when a cached image already exists
-     */
-    public boolean forceBuild;
-
-    /**
      * Enable freeze mode that cause the container build to include
      * all {@link #containerConfig} dependencies
      */
@@ -124,8 +119,6 @@ public class SubmitContainerTokenRequest implements Cloneable {
                 copy.timestamp = (String)opts.get("timestamp");
             if( opts.containsKey("fingerprint") )
                 copy.fingerprint = (String)opts.get("fingerprint");
-            if( opts.containsKey("forceBuild") )
-                copy.forceBuild = (boolean)opts.get("forceBuild");
             if( opts.containsKey("freeze") )
                 copy.freeze = (boolean)opts.get("freeze");
             // done
