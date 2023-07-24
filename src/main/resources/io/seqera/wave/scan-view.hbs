@@ -17,115 +17,127 @@
 <div style="min-height: 60vh">
 {{#if scan_exist}}
     {{#if scan_completed}}
-    <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
-        <h4 style="margin-top:0; color: inherit;">
-            Scan completed
-        </h4>
-    </div>
-    <h3>Summary</h3>
+        {{#if isScanFailed}}
+                <div style="color: #3c763d; background-color: #d2686e; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+                    <h4 style="margin-top:0; color: inherit;">
+                        Scan Failed
+                    </h4>
+                </div>
+        {{else}}
+                <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+                    <h4 style="margin-top:0; color: inherit;">
+                        Scan completed
+                    </h4>
+                </div>
+        {{/if}}
+        <h3>Summary</h3>
 
-    <table cellpadding="4" >
-        <tr>
-            <td>Scan ID</td>
-            <td>{{scan_id}}</td>
-        </tr>
-        <tr>
-            <td>Build ID</td>
-            <td><a href="{{build_url}}">{{build_id}}</a></td>
-        </tr>
-        <tr>
-            <td>Status</td>
-            <td>{{scan_status}}</td>
-        </tr>
-        <tr>
-            <td>Created</td>
-            <td>{{scan_time}}</td>
-        </tr>
+        <table cellpadding="4" >
+            <tr>
+                <td>Scan ID</td>
+                <td>{{scan_id}}</td>
+            </tr>
+            <tr>
+                <td>Build ID</td>
+                <td><a href="{{build_url}}">{{build_id}}</a></td>
+            </tr>
+            {{#if isScanSucceeded}}
+            <tr>
+                <td>Status</td>
+                <td>{{scan_status}}</td>
+            </tr>
+            {{/if}}
+            <tr>
+                <td>Created</td>
+                <td>{{scan_time}}</td>
+            </tr>
 
-        <tr>
-            <td>Duration</td>
-            <td>{{scan_duration}}</td>
-        </tr>
+            <tr>
+                <td>Duration</td>
+                <td>{{scan_duration}}</td>
+            </tr>
 
-        <tr>
-            <td colspan="2">
-                {{#if vulnerabilities.length}}
-                    <h4>Vulnerabilities</h4>
-                    <style>
-                        .bordered-table { border-collapse: collapse; }
-                        .bordered-table, .bordered-table th, .bordered-table td { border: 1px solid black; padding: 4px; }
-                        .nowrap { white-space: nowrap; }
-                    </style>
-                    <table class="bordered-table" style='font-size: 0.8em'>
-                        <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Severity</th>
-                            <th>Library</th>
-                            <th>Version</th>
-                            <th>Fixed Version</th>
-                            <th>Title</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                            {{#each vulnerabilities}}
-                                <tr>
-                                    <td class='nowrap'><a href="{{this.primaryUrl}}" target="_blank">{{this.id}}</a></td>
-                                    <td>{{this.severity}}</td>
-                                    <td>{{this.pkgName}}</td>
-                                    <td>{{this.installedVersion}}</td>
-                                    <td>{{this.fixedVersion}}</td>
-                                    <td>{{this.title}}<br/></td>
-                                </tr>
-                            {{/each}}
-                        </tbody>
-                    </table>
-                {{else}}
-                   No vulnerabilities found
-                {{/if}}
-        </td>
-        </tr>
-    </table>
+            <tr>
+                <td colspan="2">
+                    {{#if vulnerabilities.length}}
+                        <h4>Vulnerabilities</h4>
+                        <style>
+                            .bordered-table { border-collapse: collapse; }
+                            .bordered-table, .bordered-table th, .bordered-table td { border: 1px solid black; padding: 4px; }
+                            .nowrap { white-space: nowrap; }
+                        </style>
+                        <table class="bordered-table" style='font-size: 0.8em'>
+                            <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Severity</th>
+                                <th>Library</th>
+                                <th>Version</th>
+                                <th>Fixed Version</th>
+                                <th>Title</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                                {{#each vulnerabilities}}
+                                    <tr>
+                                        <td class='nowrap'><a href="{{this.primaryUrl}}" target="_blank">{{this.id}}</a></td>
+                                        <td>{{this.severity}}</td>
+                                        <td>{{this.pkgName}}</td>
+                                        <td>{{this.installedVersion}}</td>
+                                        <td>{{this.fixedVersion}}</td>
+                                        <td>{{this.title}}<br/></td>
+                                    </tr>
+                                {{/each}}
+                            </tbody>
+                        </table>
+                    {{else}}
+                        {{#if isScanSucceeded}}
+                            No vulnerabilities found
+                        {{/if}}
+                    {{/if}}
+            </td>
+            </tr>
+        </table>
+        {{else}}
+        <style>
+        .lds-dual-ring {
+          display: inline-block;
+          width: 50px;
+          height: 30px;
+        }
+        .lds-dual-ring:after {
+          content: " ";
+          display: block;
+          width: 20px;
+          height: 20px;
+          margin: 8px;
+          border-radius: 50%;
+          border: 6px solid #3c763d;
+          border-color: #3c763d transparent #3c763d transparent;
+          animation: lds-dual-ring 1.2s linear infinite;
+        }
+        @keyframes lds-dual-ring {
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
+        }
+        </style>
+        <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+            <h4 style="margin-top:0; color: inherit; font-weight: normal">
+                <div class="lds-dual-ring"></div> Scan in progress
+            </h4>
+        </div>
+        {{/if}}
     {{else}}
-    <style>
-    .lds-dual-ring {
-      display: inline-block;
-      width: 50px;
-      height: 30px;
-    }
-    .lds-dual-ring:after {
-      content: " ";
-      display: block;
-      width: 20px;
-      height: 20px;
-      margin: 8px;
-      border-radius: 50%;
-      border: 6px solid #3c763d;
-      border-color: #3c763d transparent #3c763d transparent;
-      animation: lds-dual-ring 1.2s linear infinite;
-    }
-    @keyframes lds-dual-ring {
-      0% {
-        transform: rotate(0deg);
-      }
-      100% {
-        transform: rotate(360deg);
-      }
-    }
-    </style>
-    <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
-        <h4 style="margin-top:0; color: inherit; font-weight: normal">
-            <div class="lds-dual-ring"></div> Scan in progress
-        </h4>
-    </div>
+        <div style="color: black; background-color: #d3d3d3; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+            <h4 style="margin-top:0; font-weight: normal">
+                {{error_message}}
+            </h4>
+        </div>
     {{/if}}
-{{else}}
-    <div style="color: black; background-color: #d3d3d3; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
-        <h4 style="margin-top:0; font-weight: normal">
-            {{error_message}}
-        </h4>
-    </div>
-{{/if}}
 </div>
 <div class="footer" style="clear:both;width:100%;">
     <hr class="footer-hr" style="height:0;overflow:visible;margin-top:30px;border:0;border-top:1px solid #eee;color:#999999;font-size:12px;line-height:18px;margin-bottom:30px;">

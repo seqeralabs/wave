@@ -35,16 +35,20 @@ class AwsMailProvider implements MailProvider {
 
     @Override
     void send(MimeMessage message, Mailer mailer) {
-        //get mail client
-        final client = AmazonSimpleEmailServiceClientBuilder
-                .standard()
-                .build()
-        // dump the message to a buffer
-        final outputStream = new ByteArrayOutputStream()
-        message.writeTo(outputStream)
-        // send the email
-        final rawMessage = new RawMessage(ByteBuffer.wrap(outputStream.toByteArray()))
-        final result = client.sendRawEmail(new SendRawEmailRequest(rawMessage));
-        log.debug "Mail message sent: ${result}"
+        try {
+            //get mail client
+            final client = AmazonSimpleEmailServiceClientBuilder
+                    .standard()
+                    .build()
+            // dump the message to a buffer
+            final outputStream = new ByteArrayOutputStream()
+            message.writeTo(outputStream)
+            // send the email
+            final rawMessage = new RawMessage(ByteBuffer.wrap(outputStream.toByteArray()))
+            final result = client.sendRawEmail(new SendRawEmailRequest(rawMessage));
+            log.debug "Mail message sent: ${result}"
+        }catch (Exception e){
+            log.error "Error while sending email ${e.message?:e}"
+        }
     }
 }
