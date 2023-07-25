@@ -26,7 +26,12 @@ import reactor.core.publisher.Flux
 @Header(name = "ns", value = '${surrealdb.ns}')
 @Header(name = "db", value = '${surrealdb.db}')
 @Client(value = '${surrealdb.url}')
-@Retryable(attempts = '${wave.db.retry.attempts:3}', delay = '${wave.db.retry.delay:10s}')
+@Retryable(
+        delay = '${wave.surreal.retry.delay:1s}',
+        maxDelay = '${wave.surreal.retry.maxDelay:10s}',
+        attempts = '${wave.surreal.retry.attempts:3}',
+        multiplier = '${wave.surreal.retry.multiplier:1.5}',
+        predicate = RetryOnIOException )
 interface SurrealClient {
 
     @Post("/sql")
