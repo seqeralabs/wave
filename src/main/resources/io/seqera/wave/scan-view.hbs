@@ -17,7 +17,7 @@
 <div style="min-height: 60vh">
 {{#if scan_exist}}
     {{#if scan_completed}}
-        {{#if isScanFailed}}
+        {{#if scan_failed}}
                 <div style="color: #3c763d; background-color: #d2686e; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
                     <h4 style="margin-top:0; color: inherit;">
                         Scan Failed
@@ -41,7 +41,7 @@
                 <td>Build ID</td>
                 <td><a href="{{build_url}}">{{build_id}}</a></td>
             </tr>
-            {{#if isScanSucceeded}}
+            {{#if scan_succeeded}}
             <tr>
                 <td>Status</td>
                 <td>{{scan_status}}</td>
@@ -91,7 +91,7 @@
                             </tbody>
                         </table>
                     {{else}}
-                        {{#if isScanSucceeded}}
+                        {{#if scan_succeeded}}
                             No vulnerabilities found
                         {{/if}}
                     {{/if}}
