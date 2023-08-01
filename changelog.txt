@@ -1,4 +1,9 @@
 # Wave changelog
+v0.35.2 - 1 Aug 2023
+- Enable Netty metrics (#277) [79915ca8]
+- Add retry policy to Surreal DB client 276) [735b765e]
+- Fix build process resources [c2f109c9]
+
 v0.35.1 - 24 Jul 2023
 - Add @ExecuteOn(IO) to Token and Service controllers [e0c95a02]
 - Fix Build ID instead of Request ID [76e6124c]
