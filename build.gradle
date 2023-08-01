@@ -171,6 +171,7 @@ task buildInfo { doLast {
     f.parentFile.mkdirs()
     f.text = info
 } }
+buildInfo.dependsOn processResources
 compileGroovy.dependsOn buildInfo
 
 asciidoctorj {
