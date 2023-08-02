@@ -5,6 +5,8 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
+import io.micronaut.scheduling.TaskExecutors
+import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.views.View
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.service.persistence.PersistenceService
@@ -19,6 +21,7 @@ import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
  */
 @CompileStatic
 @Controller("/view")
+@ExecuteOn(TaskExecutors.IO)
 class ViewController {
 
     @Inject

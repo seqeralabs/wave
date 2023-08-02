@@ -46,6 +46,7 @@ import reactor.core.publisher.Mono
 @Slf4j
 @CompileStatic
 @Controller("/v2")
+@ExecuteOn(TaskExecutors.IO)
 class RegistryProxyController {
 
     @Inject HttpClientAddressResolver addressResolver
@@ -108,7 +109,6 @@ class RegistryProxyController {
         }
     }
 
-    @ExecuteOn(TaskExecutors.IO)
     @Get(uri="/{url:(.+)}", produces = "*/*")
     CompletableFuture<MutableHttpResponse<?>> handleGet(String url, HttpRequest httpRequest) {
         log.info "> Request [$httpRequest.method] $httpRequest.path"

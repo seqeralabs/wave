@@ -6,6 +6,8 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
+import io.micronaut.scheduling.TaskExecutors
+import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.persistence.WaveScanRecord
 
@@ -18,6 +20,7 @@ import io.seqera.wave.service.persistence.WaveScanRecord
 @CompileStatic
 @Requires(property = 'wave.scan.enabled', value = 'true')
 @Controller("/")
+@ExecuteOn(TaskExecutors.IO)
 class ContainerScanController {
     final ContainerScanService containerScanService
 
