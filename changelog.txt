@@ -1,4 +1,7 @@
 # Wave changelog
+v0.35.3 - 2 Aug 2023
+- Annotate controllers with @ExecuteOn(TaskExecutors.IO) [aef70407]
+
 v0.35.2 - 1 Aug 2023
 - Enable Netty metrics (#277) [79915ca8]
 - Add retry policy to Surreal DB client 276) [735b765e]
