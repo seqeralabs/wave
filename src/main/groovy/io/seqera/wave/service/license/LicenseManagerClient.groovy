@@ -8,7 +8,7 @@ import io.micronaut.http.client.annotation.Client
 import io.micronaut.retry.annotation.Retryable
 
 /**
- * Declare service for license manager
+ * Declare client for license manager
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
@@ -20,7 +20,7 @@ import io.micronaut.retry.annotation.Retryable
         maxDelay = '${license.retry.maxDelay:10s}',
         attempts = '${license.retry.attempts:3}',
         multiplier = '${license.retry.multiplier:1.5}')
-interface LicenseManServiceClient {
+interface LicenseManagerClient {
 
     @Get('/check?token={token}&product={product}')
     HttpResponse checkToken(String token, String product)

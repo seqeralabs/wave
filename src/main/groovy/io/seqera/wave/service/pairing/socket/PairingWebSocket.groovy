@@ -9,7 +9,7 @@ import io.micronaut.websocket.annotation.OnMessage
 import io.micronaut.websocket.annotation.OnOpen
 import io.micronaut.websocket.annotation.ServerWebSocket
 import io.seqera.wave.service.license.LicenseConstants
-import io.seqera.wave.service.license.LicenseManServiceClient
+import io.seqera.wave.service.license.LicenseManagerClient
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
@@ -29,19 +29,19 @@ class PairingWebSocket {
 
     private final PairingChannel channel
     private final PairingService pairingService
-    private final LicenseManServiceClient licenseManServiceClient
+    private final LicenseManagerClient licenseManagerClient
 
 
-    PairingWebSocket(PairingChannel channel, PairingService pairingService, LicenseManServiceClient licenseManServiceClient) {
+    PairingWebSocket(PairingChannel channel, PairingService pairingService, LicenseManagerClient licenseManServiceClient) {
         this.channel = channel
         this.pairingService = pairingService
-        this.licenseManServiceClient = licenseManServiceClient
+        this.licenseManagerClient = licenseManServiceClient
     }
 
     @OnOpen
     void onOpen(String service, String token, String endpoint, WebSocketSession session) {
         log.debug "Opening pairing session - endpoint: ${endpoint} [sessionId: $session.id]"
-        if(licenseManServiceClient.checkToken(token, LicenseConstants.PRODUCT_NAME).status.code != HttpStatus.OK.code){
+        if(licenseManagerClient.checkToken(token, LicenseConstants.PRODUCT_NAME).status.code != HttpStatus.OK.code){
             log.debug "license is not valid, closing the session"
             session.close()
             return
