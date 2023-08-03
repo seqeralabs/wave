@@ -42,7 +42,7 @@ class PairingWebSocket {
     void onOpen(String service, String token, String endpoint, WebSocketSession session) {
         log.debug "Opening pairing session - endpoint: ${endpoint} [sessionId: $session.id]"
         if(licenseManagerClient.checkToken(token, LicenseConstants.PRODUCT_NAME).status.code != HttpStatus.OK.code){
-            log.debug "license is not valid, closing the session"
+            log.debug "license is not valid, closing this session"
             session.close()
             return
         }

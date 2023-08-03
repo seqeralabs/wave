@@ -63,7 +63,7 @@ logger:
 ---
 license:
   server:
-    url: "${LICENSE_SERVER_URL:https://localhost:8000}"
+    url: "${LICENSE_SERVER_URL:`http://localhost:7070`}"
   retry:
     delay: 1s
     maxDelay: 10s
