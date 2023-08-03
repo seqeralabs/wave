@@ -10,7 +10,9 @@ import io.micronaut.retry.annotation.Retryable
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-@Client(id = "licenseman")
+@Requires(property = 'license.server.url')
+@Header(name = "User-Agent", value = "Wave service")
+@Client(value = '${license.server.url}')
 @Retryable
 interface LicenseManServiceClient {
 
