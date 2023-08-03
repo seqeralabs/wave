@@ -3,6 +3,7 @@ package io.seqera.wave.service.pairing.socket
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.http.HttpStatus
+import io.micronaut.websocket.CloseReason
 import io.micronaut.websocket.WebSocketSession
 import io.micronaut.websocket.annotation.OnClose
 import io.micronaut.websocket.annotation.OnMessage
@@ -43,7 +44,7 @@ class PairingWebSocket {
         log.debug "Opening pairing session - endpoint: ${endpoint} [sessionId: $session.id]"
         if(licenseManagerClient.checkToken(token, LicenseConstants.PRODUCT_NAME).status.code != HttpStatus.OK.code){
             log.debug "license is not valid, closing this session"
-            session.close()
+            session.close(CloseReason.POLICY_VIOLATION)
             return
         }
         // Register the client and the sender callback that it's needed to deliver
