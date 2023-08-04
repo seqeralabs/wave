@@ -74,7 +74,6 @@ dependencies {
     testImplementation "org.apache.commons:commons-compress:1.21"
     testImplementation("org.testcontainers:testcontainers")
     testImplementation("org.testcontainers:mysql:1.17.3")
-    testImplementation 'org.mock-server:mockserver-netty:5.15.0'
 
     // --
     implementation("ch.qos.logback:logback-classic:1.4.8")
