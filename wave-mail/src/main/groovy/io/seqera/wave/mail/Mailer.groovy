@@ -69,10 +69,15 @@ class Mailer {
      */
     private MailerConfig config = new MailerConfig()
 
-    private Map env = System.getenv()
+    private MailProvider provider
 
     Mailer setConfig(MailerConfig config) {
         this.config = config
+        return this
+    }
+
+    Mailer setProvider(MailProvider provider) {
+        this.provider = provider
         return this
     }
 
@@ -107,7 +112,7 @@ class Mailer {
     /**
      * @return The mail {@link Session} object given the current configuration
      */
-    protected Session getSession() {
+    Session getSession() {
         if( !session ) {
             session = Session.getInstance(createProps())
             if( config.debug != true )
@@ -127,14 +132,14 @@ class Mailer {
     /**
      * @return The SMTP host name or IP address
      */
-    protected String getHost() {
+    String getHost() {
         getConfig('host')
     }
 
     /**
      * @return The SMTP host port
      */
-    protected int getPort() {
+    int getPort() {
         def port = getConfig('port')
         port ? port as int : -1
     }
@@ -142,14 +147,14 @@ class Mailer {
     /**
      * @return The SMTP user name
      */
-    protected String getUser() {
+    String getUser() {
         getConfig('user')
     }
 
     /**
      * @return The SMTP user password
      */
-    protected String getPassword() {
+    String getPassword() {
         getConfig('password')
     }
 
@@ -158,26 +163,6 @@ class Mailer {
         def key = "smtp.${name}"
         def value = props.getProperty("mail.$key")
         return value
-    }
-
-    /**
-     * Send a email message by using the Java API
-     *
-     * @param message A {@link MimeMessage} object representing the email to send
-     */
-    protected void sendViaJavaMail(MimeMessage message) {
-        if( !message.getAllRecipients() )
-            throw new IllegalArgumentException("Missing mail message recipient")
-        
-        final transport = getSession().getTransport()
-        log.debug("Connecting to host=$host port=$port user=$user")
-        transport.connect(host, port as int, user, password)
-        try {
-            transport.sendMessage(message, message.getAllRecipients())
-        }
-        finally {
-            transport.close()
-        }
     }
 
     /**
@@ -332,9 +317,11 @@ class Mailer {
      * Send the mail given the provided config setting
      */
     void send(Mail mail) {
+        if( !provider ) throw new IllegalStateException("Missing mail provider")
+        if( !config ) throw  new IllegalStateException("Missing mail configuration")
         log.trace "Mailer config: $config -- mail: $mail"
-        def msg = createMimeMessage(mail)
-        sendViaJavaMail(msg)
+        final msg = createMimeMessage(mail)
+        provider.send(msg, this)
     }
 
     private String hide(String str, boolean canShow) {

@@ -7,6 +7,7 @@ import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.service.builder.BuildEvent
@@ -23,6 +24,7 @@ import jakarta.inject.Singleton
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @Slf4j
+@Requires(property = 'wave.scan.enabled', value = 'true')
 @Singleton
 @CompileStatic
 class ContainerScanServiceImpl implements ContainerScanService {
@@ -68,8 +70,13 @@ class ContainerScanServiceImpl implements ContainerScanService {
     }
 
     @Override
-    WaveScanRecord getScanResult(String buildId) {
-        return persistenceService.loadScanRecord(buildId)
+    WaveScanRecord getScanResult(String scanId) {
+        try{
+            return persistenceService.loadScanRecord(scanId)
+        }catch (Throwable t){
+            log.error "Unable to load the scan results for scanId: ${scanId}", t
+             return null
+        }
     }
 
     protected ScanResult launch(ScanRequest request) {
@@ -80,8 +87,8 @@ class ContainerScanServiceImpl implements ContainerScanService {
             //launch container scan
             scanResult = scanStrategy.scanContainer(request)
         }
-        catch (Exception e){
-            log.warn "Unable to launch the scan results for build : ${request.id}",e
+        catch (Throwable e){
+            log.warn "Unable to launch the scan results for scan id: ${request.id} - cause: ${e.message}", e
         }
         finally{
             // cleanup build context
@@ -96,8 +103,8 @@ class ContainerScanServiceImpl implements ContainerScanService {
             //save scan results
             persistenceService.updateScanRecord(new WaveScanRecord(scanResult.id, scanResult))
         }
-        catch (Exception e){
-            log.warn "Unable to save results for scan: ${scanResult.id}",e
+        catch (Throwable t){
+            log.error "Unable to save results for scan id: ${scanResult.id}", t
         }
     }
 

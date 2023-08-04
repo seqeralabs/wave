@@ -2,6 +2,7 @@ package io.seqera.wave.service.builder
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -112,7 +113,7 @@ class FreezeServiceImpl implements FreezeService {
             final target = contextDir.resolve(layerName(it))
             // copy the layer to the build context
             try (InputStream stream = ContentReaderFactory.of(it.location).openStream()) {
-                Files.copy(stream, target)
+                Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING)
             }
         }
     }

@@ -29,7 +29,7 @@
     <h3>Summary</h3>
     <table cellpadding="4" >
         <tr>
-            <td>Request ID</td>
+            <td>Build ID</td>
             <td>{{build_id}}</td>
         </tr>
 
@@ -62,12 +62,12 @@
             <td>Exit status</td>
             <td>{{build_exit_status}}</td>
         </tr>
-            {{#if scan_url}}
-                <tr>
-                    <td>Security</td>
-                    <td><a href="{{scan_url}}">Image scan report</a></td>
-                </tr>
-            {{/if}}
+    {{#if scan_url}}
+        <tr>
+            <td>Security</td>
+            <td><a href="{{scan_url}}">Image scan report</a></td>
+        </tr>
+    {{/if}}
     </table>
 
     <h3>Docker file</h3>

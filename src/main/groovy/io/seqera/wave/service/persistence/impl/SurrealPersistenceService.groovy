@@ -157,7 +157,7 @@ class SurrealPersistenceService implements PersistenceService {
 
     void createScanRecord(WaveScanRecord scanRecord) {
         final result = surrealDb.insertScanRecord(authorization, scanRecord.id, scanRecord)
-        log.debug "Scan create result=$result"
+        log.trace "Scan create result=$result"
     }
 
     @Override
@@ -183,7 +183,7 @@ class SurrealPersistenceService implements PersistenceService {
                                     vulnerabilities = ${ids ? "[$ids]" : "[]" } 
                                 """.stripIndent()
         final result = surrealDb.sqlAsMap(authorization, statement)
-        log.debug "Scan update result=$result"
+        log.trace "Scan update result=$result"
     }
 
     @Override

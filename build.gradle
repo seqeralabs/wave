@@ -65,6 +65,7 @@ dependencies {
     implementation("io.micronaut.aws:micronaut-aws-parameter-store")
     implementation "software.amazon.awssdk:ecr"
     implementation "software.amazon.awssdk:ecrpublic"
+    implementation 'com.amazonaws:aws-java-sdk-ses:1.12.42'
     // this sts dependency is require by micronaut-aws-parameter-store,
     // not directly used by the app, for this reason keeping `runtimeOnly`
     runtimeOnly "software.amazon.awssdk:sts"
@@ -109,7 +110,7 @@ micronaut {
 //
 jib {
     from {
-        image = 'cr.seqera.io/public/nf-jdk:corretto-17.0.7-up2'
+        image = 'cr.seqera.io/public/nf-jdk:corretto-17.0.8'
         platforms {
             platform { architecture = 'amd64'; os = 'linux' }
         }
@@ -171,6 +172,7 @@ task buildInfo { doLast {
     f.parentFile.mkdirs()
     f.text = info
 } }
+buildInfo.dependsOn processResources
 compileGroovy.dependsOn buildInfo
 
 asciidoctorj {

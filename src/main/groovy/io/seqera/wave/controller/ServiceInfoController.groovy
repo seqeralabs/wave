@@ -7,6 +7,8 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
+import io.micronaut.scheduling.TaskExecutors
+import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.api.ServiceInfo
 import io.seqera.wave.api.ServiceInfoResponse
 import io.seqera.wave.util.BuildInfo
@@ -17,6 +19,7 @@ import io.seqera.wave.util.BuildInfo
  */
 @Slf4j
 @Controller("/")
+@ExecuteOn(TaskExecutors.IO)
 class ServiceInfoController {
 
     @Value('${wave.landing.url}')

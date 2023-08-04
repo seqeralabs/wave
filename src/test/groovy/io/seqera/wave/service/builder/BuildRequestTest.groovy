@@ -21,7 +21,7 @@ class BuildRequestTest extends Specification {
         def repo = 'docker.io/wave'
         def cache = 'docker.io/cache'
         when:
-        def req = new BuildRequest(CONTENT, PATH, repo, null, null, USER, null, ContainerPlatform.of('amd64'), '{auth}', cache, "")
+        def req = new BuildRequest(CONTENT, PATH, repo, null, null, USER, null, ContainerPlatform.of('amd64'), '{auth}', cache, null, "", null)
         then:
         req.id == 'b89bf284c5e66424ec2829bf8945290e'
         req.workDir == PATH.resolve(req.id).toAbsolutePath()
@@ -40,13 +40,13 @@ class BuildRequestTest extends Specification {
         def repo = 'docker.io/wave'
         def cache = 'docker.io/cache'
         and:
-        def req1 = new BuildRequest('from foo', PATH, repo, null, null, USER, null, ContainerPlatform.of('amd64'),'{auth}', cache, "")
-        def req2 = new BuildRequest('from foo', PATH, repo, null, null, USER, null, ContainerPlatform.of('amd64'),'{auth}', cache, "")
-        def req3 = new BuildRequest('from bar', PATH, repo, null, null, USER, null, ContainerPlatform.of('amd64'),'{auth}', cache, "")
-        def req4 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.3', null, USER, null, ContainerPlatform.of('amd64'),'{auth}', cache, "")
-        def req5 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.3', null, USER, null, ContainerPlatform.of('amd64'),'{auth}', cache, "")
-        def req6 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.5', null, USER, null, ContainerPlatform.of('amd64'),'{auth}', cache, "")
-        def req7 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.5', null, USER, null, ContainerPlatform.of('amd64'),'{auth}', cache, "", "UTC+2")
+        def req1 = new BuildRequest('from foo', PATH, repo, null, null, USER, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
+        def req2 = new BuildRequest('from foo', PATH, repo, null, null, USER, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
+        def req3 = new BuildRequest('from bar', PATH, repo, null, null, USER, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
+        def req4 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.3', null, USER, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
+        def req5 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.3', null, USER, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
+        def req6 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.5', null, USER, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
+        def req7 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.5', null, USER, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", "UTC+2")
 
         expect:
         req1 == req2

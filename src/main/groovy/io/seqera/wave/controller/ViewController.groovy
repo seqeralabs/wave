@@ -5,6 +5,8 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
+import io.micronaut.scheduling.TaskExecutors
+import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.views.View
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.service.persistence.PersistenceService
@@ -19,6 +21,7 @@ import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
  */
 @CompileStatic
 @Controller("/view")
+@ExecuteOn(TaskExecutors.IO)
 class ViewController {
 
     @Inject
@@ -52,7 +55,7 @@ class ViewController {
         binding.build_condafile = result.condaFile
         binding.build_spackfile = result.spackFile
         binding.put('server_url', serverUrl)
-        binding.scan_url = "$serverUrl/view/scans/${result.scanId}"
+        binding.scan_url = result.scanId ? "$serverUrl/view/scans/${result.scanId}" : null
         binding.scan_id = result.scanId
         // result the main object
         return binding

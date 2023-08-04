@@ -22,6 +22,7 @@ import javax.mail.internet.MimeMessage
 import javax.mail.internet.MimeMultipart
 
 import groovy.util.logging.Slf4j
+import io.seqera.wave.mail.impl.MailProviderImpl
 import org.subethamail.wiser.Wiser
 import spock.util.environment.RestoreSystemProperties
 
@@ -87,7 +88,8 @@ class MailerTest extends Specification {
         server.start()
 
         MailerConfig config = new MailerConfig(smtp: [host: 'localhost', port: PORT, user: USER, password: PASSWORD])
-        Mailer mailer = new Mailer( config: config)
+        MailProvider provider = new MailProviderImpl()
+        Mailer mailer = new Mailer(config: config, provider: provider)
 
         String TO = "receiver@nextflow.io"
         String FROM = 'paolo@gmail.com'
@@ -197,7 +199,8 @@ class MailerTest extends Specification {
         server.start()
 
         MailerConfig config = new MailerConfig(to: 'override@to.com', smtp: [host: 'localhost', port: PORT, user: USER, password: PASSWORD])
-        Mailer mailer = new Mailer(config: config)
+        MailProvider provider = new MailProviderImpl()
+        Mailer mailer = new Mailer(config: config, provider: provider)
 
         String TO = "receiver@nextflow.io"
         String FROM = 'paolo@gmail.com'
@@ -232,14 +235,17 @@ class MailerTest extends Specification {
         Mailer mailer = Spy(Mailer)
         MimeMessage MSG = Mock(MimeMessage)
         Mail mail = new Mail()
+        and:
+        MailProvider provider = Mock(MailProviderImpl)
 
         when:
         mailer.config = new MailerConfig(smtp: [host:'foo.com'])
+        mailer.provider = provider
         mailer.send(mail)
 
         then:
         1 * mailer.createMimeMessage(mail) >> MSG
-        1 * mailer.sendViaJavaMail(MSG) >> null
+        1 * provider.send(MSG, mailer) >> null
     }
 
 

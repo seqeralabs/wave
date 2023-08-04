@@ -13,6 +13,8 @@ import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.Post
 import io.micronaut.http.server.util.HttpClientAddressResolver
+import io.micronaut.scheduling.TaskExecutors
+import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.service.inspect.ContainerInspectService
@@ -37,6 +39,7 @@ import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
+import io.seqera.wave.util.LongRndKey
 import jakarta.inject.Inject
 import static io.seqera.wave.WaveDefault.TOWER
 import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
@@ -48,6 +51,7 @@ import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
 @Slf4j
 @CompileStatic
 @Controller("/")
+@ExecuteOn(TaskExecutors.IO)
 class ContainerTokenController {
 
     @Inject HttpClientAddressResolver addressResolver
@@ -76,6 +80,9 @@ class ContainerTokenController {
 
     @Value('${wave.build.cache}')
     String defaultCacheRepo
+
+    @Value('${wave.scan.enabled:false}')
+    boolean scanEnabled
 
     /**
      * File system path there the dockerfile is save
@@ -179,6 +186,7 @@ class ContainerTokenController {
         final configJson = dockerAuthService.credentialsConfigJson(dockerContent, build, cache, user?.id, req.towerWorkspaceId, req.towerAccessToken, req.towerEndpoint)
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
+        final scanId = scanEnabled ? LongRndKey.rndHex() : null
         // create a unique digest to identify the request
         return new BuildRequest(
                 (spackContent ? prependBuilderTemplate(dockerContent) : dockerContent),
@@ -191,17 +199,14 @@ class ContainerTokenController {
                 platform,
                 configJson,
                 cache,
+                scanId,
                 ip,
-                offset )
+                offset)
     }
 
     protected BuildRequest buildRequest(SubmitContainerTokenRequest req, User user, String ip) {
         final build = makeBuildRequest(req, user, ip)
-        if( req.forceBuild )  {
-            log.debug "Build forced for container image '$build.targetImage'"
-            buildService.buildImage(build)
-        }
-        else if( !registryProxyService.isManifestPresent(build.targetImage) ) {
+        if( !registryProxyService.isManifestPresent(build.targetImage) ) {
             buildService.buildImage(build)
         }
         else {
@@ -264,7 +269,8 @@ class ContainerTokenController {
                 req.towerAccessToken,
                 req.towerEndpoint,
                 buildId,
-                buildNew )
+                buildNew,
+                req.freeze )
     }
 
     protected String targetImage(String token, ContainerCoordinates container) {

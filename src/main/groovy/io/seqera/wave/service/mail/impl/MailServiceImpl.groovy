@@ -1,4 +1,4 @@
-package io.seqera.wave.service.mail
+package io.seqera.wave.service.mail.impl
 
 
 import groovy.transform.CompileStatic
@@ -13,6 +13,8 @@ import io.seqera.wave.mail.MailerConfig
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.service.mail.MailService
+import io.seqera.wave.service.mail.MailSpooler
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.util.DataTimeUtils.formatDuration
@@ -58,7 +60,7 @@ class MailServiceImpl implements MailService {
             spooler.sendMail(mail)
         }
         else {
-            log.debug "Missing email recipient from build request id=$build.id - user=$user"
+            log.debug "Missing email recipient from build id=$build.id - user=$user"
         }
     }
 
@@ -79,7 +81,7 @@ class MailServiceImpl implements MailService {
         binding.build_spackfile = req.spackFile
         binding.put('build_logs', result.logs)
         binding.build_url = "$serverUrl/view/builds/${result.id}"
-        binding.scan_url = "$serverUrl/view/scans/${req.scanId}"
+        binding.scan_url = req.scanId ? "$serverUrl/view/scans/${req.scanId}" : null
         binding.scan_id = req.scanId
         binding.put('server_url', serverUrl)
         // result the main object

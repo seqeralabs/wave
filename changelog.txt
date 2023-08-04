@@ -1,4 +1,28 @@
 # Wave changelog
+v0.35.3 - 2 Aug 2023
+- Annotate controllers with @ExecuteOn(TaskExecutors.IO) [aef70407]
+
+v0.35.2 - 1 Aug 2023
+- Enable Netty metrics (#277) [79915ca8]
+- Add retry policy to Surreal DB client 276) [735b765e]
+- Fix build process resources [c2f109c9]
+
+v0.35.1 - 24 Jul 2023
+- Add @ExecuteOn(IO) to Token and Service controllers [e0c95a02]
+- Fix Build ID instead of Request ID [76e6124c]
+- Remove unused forceBuild option [621334df]
+
+v0.35.0 - 22 Jul 2023
+- Add containers freeze feature (#260) [a99f9427]
+- Add container build scan service [699ec5a3]
+- Add AWS SES Support in mail service (#267) [177c8943]
+- Fix Prevent config augmentation for freeze containers [da410819]
+- Fix HTTP client retry logic using with Failsafe [053e353e]
+- Fetch K8s logs on scan failure [cdcf5d81]
+- Make security scan an opt-in feature [dbaaddaf]
+- Remove deprecated checksum validation [eb092b32]
+- Bump nf-jdk:corretto-17.0.8 base image [88ee64b1]
+
 v0.34.3 - 13 Jul 2023
 - Fix Invalid size in container manifest [e2c4c536]
 - Fix parsing Dockerfile FROM statement [5104f8a6]

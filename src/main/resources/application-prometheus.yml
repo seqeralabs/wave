@@ -12,6 +12,13 @@ micronaut:
           percentiles: "0.95,0.99"
         client:
           percentiles: "0.95,0.99"
+      netty:
+        queues:
+          enabled: true
+        bytebuf-allocators:
+          enabled: true
+        channels:
+          enabled: true
 endpoints:
   prometheus:
     sensitive: false
