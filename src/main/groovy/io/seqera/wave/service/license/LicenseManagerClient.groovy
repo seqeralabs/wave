@@ -24,5 +24,5 @@ import io.micronaut.retry.annotation.Retryable
 interface LicenseManagerClient {
 
     @Get('/check')
-    HttpResponse checkToken(@QueryValue("token") String token, @QueryValue("product") String product)
+    HttpResponse<CheckTokenResponse> checkToken(@QueryValue("token") String token, @QueryValue("product") String product)
 }

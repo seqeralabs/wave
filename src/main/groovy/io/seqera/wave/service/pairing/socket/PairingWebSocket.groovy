@@ -1,7 +1,10 @@
 package io.seqera.wave.service.pairing.socket
 
+import java.time.Instant
+
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.websocket.CloseReason
 import io.micronaut.websocket.WebSocketSession
@@ -9,14 +12,18 @@ import io.micronaut.websocket.annotation.OnClose
 import io.micronaut.websocket.annotation.OnMessage
 import io.micronaut.websocket.annotation.OnOpen
 import io.micronaut.websocket.annotation.ServerWebSocket
-import io.seqera.wave.service.license.LicenseConstants
+import io.seqera.wave.service.license.CheckTokenResponse
+import io.seqera.wave.service.pairing.socket.msg.LicenseExpirationMessage
 import io.seqera.wave.service.license.LicenseManagerClient
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import io.seqera.wave.service.pairing.socket.msg.PairingResponse
 import jakarta.inject.Singleton
+
 import static io.seqera.wave.util.LongRndKey.rndHex
+import static io.seqera.wave.service.license.LicenseConstants.LICENSE_EXPIRATION_MESSAGE
+import static io.seqera.wave.service.license.LicenseConstants.PRODUCT_NAME
 /**
  * Implements Wave pairing websocket server
  *
@@ -42,10 +49,18 @@ class PairingWebSocket {
     @OnOpen
     void onOpen(String service, String token, String endpoint, WebSocketSession session) {
         log.debug "Opening pairing session - endpoint: ${endpoint} [sessionId: $session.id]"
-        if(licenseManagerClient.checkToken(token, LicenseConstants.PRODUCT_NAME).status.code != HttpStatus.OK.code){
+        HttpResponse<CheckTokenResponse> httpResponse = licenseManagerClient.checkToken(token, PRODUCT_NAME)
+        if(httpResponse.status.code != HttpStatus.OK.code){
             log.debug "license is not valid, closing this session"
             session.close(CloseReason.POLICY_VIOLATION)
             return
+        }else if(httpResponse.getBody().get().expiration.isBefore(Instant.now())) {
+            //Send a message if license has been expired
+            session.sendAsync(new LicenseExpirationMessage(
+                    msgId: rndHex(),
+                    message: LICENSE_EXPIRATION_MESSAGE,
+                    expiration: httpResponse.getBody().get().expiration
+            ))
         }
         // Register the client and the sender callback that it's needed to deliver
         // the message to the remote client
