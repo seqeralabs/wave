@@ -11,6 +11,7 @@ import io.micronaut.views.View
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
+import io.seqera.wave.service.scan.ScanResult
 import jakarta.inject.Inject
 import static io.seqera.wave.util.DataTimeUtils.formatDuration
 import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
@@ -105,10 +106,13 @@ class ViewController {
         final binding = new HashMap(10)
         try {
             final result = persistenceService.loadScanResult(scanId)
+            binding.should_refresh = !result.isCompleted()
             binding.scan_id = result.id
             binding.scan_exist = true
             binding.scan_completed = result.isCompleted()
             binding.scan_status = result.status
+            binding.scan_failed = result.status == ScanResult.FAILED
+            binding.scan_succeeded = result.status == ScanResult.SUCCEEDED
             binding.build_id = result.buildId
             binding.build_url = "$serverUrl/view/builds/${result.buildId}"
             binding.scan_time = formatTimestamp(result.startTime) ?: '-'
@@ -118,9 +122,10 @@ class ViewController {
 
         }
         catch (NotFoundException e){
-            binding.exist = false
-            binding.completed = true
+            binding.scan_exist = false
+            binding.scan_completed = true
             binding.error_message = e.getMessage()
+            binding.should_refresh = false
         }
 
         // return the response
