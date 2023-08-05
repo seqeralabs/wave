@@ -5,18 +5,29 @@ import spock.lang.Specification
 import java.time.Duration
 import java.time.Instant
 
-import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.annotation.Client
+import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.scan.ScanResult
 import io.seqera.wave.service.scan.ScanVulnerability
+import jakarta.inject.Inject
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @MicronautTest
 class ContainerScanControllerTest extends Specification {
+
+    @Inject
+    @Client("/")
+    HttpClient client
+
+    @Inject PersistenceService persistenceService
 
     def "should return 200 and WaveContainerScanRecord "() {
         given:
@@ -43,28 +54,26 @@ class ContainerScanControllerTest extends Specification {
                                                         duration,
                                                         'SUCCEEDED',
                                                         results))
-        def scanController = new ContainerScanController(containerScanService)
+        and:
+        persistenceService.createScanRecord(scanRecord)
 
         when:
-        def controllerResult = scanController.scanImage(buildId)
+        def req = HttpRequest.GET("/v1alpha1/scans/${scanRecord.id}")
+        def res = client.toBlocking().exchange(req, WaveScanRecord)
 
         then:
-        1*containerScanService.getScanResult(buildId) >> scanRecord
-        controllerResult.status == HttpResponse.ok().status
-        controllerResult.body.get() == scanRecord
+        res.body().id == scanRecord.id
+        res.body().buildId == scanRecord.buildId
     }
-    def "should return 404 and null"() {
-        given:
-        def containerScanService = Mock(ContainerScanService)
-        def buildId = "testbuildid"
-        containerScanService.getScanResult(buildId) >> null
-        def containerScanController = new ContainerScanController(containerScanService)
 
+
+    def "should return 404 and null"() {
         when:
-        def controllerResult = containerScanController.scanImage(buildId)
+        def req = HttpRequest.GET("/v1alpha1/scans/unknown")
+        def res = client.toBlocking().exchange(req, WaveScanRecord)
 
         then:
-        1*containerScanService.getScanResult(buildId)
-        controllerResult.status == HttpResponse.notFound().status
+        def e = thrown(HttpClientResponseException)
+        e.status.code == 404
     }
 }
