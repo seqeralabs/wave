@@ -4,7 +4,7 @@ Command line tool for Wave container provisioning service
 
 ### Summary 
 
-Wavelit allows augment existing container and build container on-the-fly so 
+Wavelit allows augmenting existing containers and building containers on-the-fly so
 that it can be used in your Docker (replace-with-your-own-fav-container-engine) workflow.
 
 ### Get started
@@ -23,7 +23,7 @@ that it can be used in your Docker (replace-with-your-own-fav-container-engine) 
     EOF
     ```
 
-2. Run it provising the container on-the-fly
+2. Run it provisioning the container on-the-fly
 
 
     ```bash
