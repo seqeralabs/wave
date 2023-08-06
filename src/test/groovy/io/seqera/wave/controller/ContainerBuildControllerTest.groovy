@@ -39,6 +39,7 @@ class ContainerBuildControllerTest extends Specification {
                 'some-spack-recipe',
                 null,
                 null,
+                null,
                 ContainerPlatform.of('amd64'),
                 '{auth}',
                 'docker.io/my/repo',

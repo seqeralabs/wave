@@ -6,6 +6,7 @@ import java.nio.file.StandardCopyOption
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.SubmitContainerTokenRequest
@@ -115,6 +116,14 @@ class FreezeServiceImpl implements FreezeService {
             try (InputStream stream = ContentReaderFactory.of(it.location).openStream()) {
                 Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING)
             }
+        }
+    }
+
+    static protected void saveBuildContext(BuildContext buildContext, Path contextDir) {
+        final target = contextDir.resolve("context.tar.gz")
+        // copy the layer to the build context
+        try (InputStream stream = ContentReaderFactory.of(buildContext.location).openStream()) {
+            Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING)
         }
     }
 }

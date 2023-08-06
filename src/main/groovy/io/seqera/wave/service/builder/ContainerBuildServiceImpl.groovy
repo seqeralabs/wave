@@ -151,6 +151,10 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             if( req.containerConfig ) {
                 saveLayersToContext(req.containerConfig, req.workDir)
             }
+            // save build context
+            if( req.buildContext ) {
+                saveBuildContext(req.buildContext, req.workDir)
+            }
             resp = buildStrategy.build(req)
             log.info "== Build completed with status=$resp.exitStatus; stdout: (see below)\n${indent(resp.logs)}"
             return resp
