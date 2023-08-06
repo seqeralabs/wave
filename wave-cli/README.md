@@ -35,17 +35,24 @@ that it can be used in your Docker (replace-with-your-own-fav-container-engine) 
 
 1. Install GraalVM 22.3.1 + Java 19 
 
+    ```bash
     sdk install java 22.3.1.r19-grl
-
+    ```
 
 2. Compile & run tests 
 
+    ```bash
     ./gradlew check
+    ```
 
 3. Native compile
 
+    ```bash
     ./gradlew app:nativeCompile
+    ```
 
-4. Run native binary 
+4. Run the native binary 
 
+    ```bash
     ./app/build/native/nativeCompile/wavelit --version
+    ```
