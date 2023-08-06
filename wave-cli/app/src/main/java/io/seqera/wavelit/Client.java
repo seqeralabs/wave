@@ -18,6 +18,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.function.Predicate;
 
 import dev.failsafe.Failsafe;
@@ -42,6 +43,17 @@ public class Client {
 
     private static final Logger log = LoggerFactory.getLogger(Client.class);
 
+    final static private String[] REQUEST_HEADERS =  new String[]{
+            "Content-Type","application/json",
+            "Accept","application/json",
+            "Accept","application/vnd.oci.image.index.v1+json",
+            "Accept","application/vnd.oci.image.manifest.v1+json",
+            "Accept","application/vnd.docker.distribution.manifest.v1+prettyjws",
+            "Accept","application/vnd.docker.distribution.manifest.v2+json",
+            "Accept","application/vnd.docker.distribution.manifest.list.v2+json" };
+
+    final static private List<Integer> SERVER_ERRORS = List.of(502,503,504);
+
     public static String DEFAULT_ENDPOINT = "https://wave.seqera.io";
 
     private HttpClient httpClient;
@@ -54,7 +66,7 @@ public class Client {
         this.httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NEVER)
-                .connectTimeout(Duration.ofSeconds(10))
+                .connectTimeout(Duration.ofSeconds(30))
                 .build();
     }
 
@@ -115,6 +127,43 @@ public class Client {
     }
 
     protected HttpResponse<String> httpSend(HttpRequest req)  {
-        return safeApply(() -> httpClient.send(req, HttpResponse.BodyHandlers.ofString()));
+        return safeApply(() -> {
+            HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
+            if( SERVER_ERRORS.contains(resp.statusCode())) {
+                // throws an IOException so that the condition is handled by the retry policy
+                throw new IOException("Unexpected server response code ${resp.statusCode()} - message: ${resp.body()}");
+            }
+            return resp;
+        });
     }
+
+
+    protected URI imageToManifestUri(String image) {
+        final int p = image.indexOf('/');
+        if( p==-1 ) throw new IllegalArgumentException("Invalid container name: "+image);
+        final String result = "https://" + image.substring(0,p) + "/v2" + image.substring(p).replace(":","/manifests/");
+        return URI.create(result);
+    }
+
+    protected void awaitImage(String image) {
+        final URI manifest = imageToManifestUri(image);
+        final HttpRequest req = HttpRequest.newBuilder()
+                .uri(manifest)
+                .headers(REQUEST_HEADERS)
+                .timeout(Duration.ofMinutes(5))
+                .GET()
+                .build();
+        final long begin = System.currentTimeMillis();
+        final HttpResponse<String> resp = httpSend(req);
+        final int code = resp.statusCode();
+        if( code>=200 && code<400 ) {
+            final long delta = System.currentTimeMillis()-begin;
+            log.debug("Wave container available in {} [{}] {}", delta, code, resp.body());
+        }
+        else {
+            String message = String.format("Unexpected response for '%s': [%d] %s", manifest, resp.statusCode(), resp.body());
+            throw new IllegalStateException(message);
+        }
+    }
+
 }

@@ -52,6 +52,12 @@ application {
     applicationDefaultJvmArgs = ["-agentlib:native-image-agent=config-merge-dir=conf/"]
 }
 
+run {
+    if( environment['JVM_OPTS'] ) {
+        jvmArgs(environment['JVM_OPTS'])
+    }
+}
+
 graalvmNative {
     binaries {
         main {

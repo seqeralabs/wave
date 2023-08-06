@@ -43,6 +43,7 @@ public class App implements Runnable {
     @Option(names = {"-c", "--containerfile"}, description = "Container file (i.e. Dockerfile) to be used to build the image")
     private String containerFile;
 
+    @Option(names = {"--tower-token"}, description = "Tower service access token")
     private String towerToken;
 
     @Option(names = {"--tower-endpoint"}, description = "Tower service endpoint")
@@ -59,6 +60,13 @@ public class App implements Runnable {
     @Option(names = {"--wave-endpoint"}, description = "Wave service endpoint (default: ${DEFAULT-VALUE})")
     private String waveEndpoint = Client.DEFAULT_ENDPOINT;
 
+    @Option(names = {"--freeze"}, description = "Request a container freeze")
+    private boolean freeze;
+
+
+    @Option(names = {"--await"}, description = "Await the container build to be available")
+    private boolean await;
+
     public static void main(String[] args) {
         try {
             CommandLine.run(new App(), args);
@@ -74,12 +82,30 @@ public class App implements Runnable {
         }
     }
 
+    protected void defaultArgs() {
+        if( isEmpty(towerEndpoint) && System.getenv().containsKey("TOWER_API_ENDPOINT") ) {
+            towerEndpoint = System.getenv("TOWER_API_ENDPOINT");
+        }
+        if( isEmpty(towerToken) && System.getenv().containsKey("TOWER_ACCESS_TOKEN") ) {
+            towerToken = System.getenv("TOWER_ACCESS_TOKEN");
+        }
+        if( towerWorkspaceId==null && System.getenv().containsKey("TOWER_WORKSPACE_ID") ) {
+            towerWorkspaceId = Long.valueOf(System.getenv("TOWER_WORKSPACE_ID"));
+        }
+    }
+
     protected void validateArgs() {
         if( !isEmpty(image) && !isEmpty(containerFile) )
             throw new IllegalCliArgumentException("Argument --image and --containerfile conflict each other - Specify an image name or a container file for the container to be provisioned");
 
         if( isEmpty(image) && isEmpty(containerFile) )
             throw new IllegalCliArgumentException("Provide either a image name or a container file for the Wave container to be provisioned");
+
+        if( freeze && isEmpty(buildRepository) )
+            throw new IllegalCliArgumentException("Specify the build repository where the freeze container will be pushed by using the --build-repo option");
+
+        if( isEmpty(towerToken) && !isEmpty(buildRepository) )
+            throw new IllegalCliArgumentException("Specify the Tower access token required to authenticate the access to the build repository either by using the --tower-token option or the TOWER_ACCESS_TOKEN environment variable");
     }
 
     protected Client client() {
@@ -96,19 +122,29 @@ public class App implements Runnable {
                 .withTowerAccessToken(towerToken)
                 .withTowerWorkspaceId(towerWorkspaceId)
                 .withTowerEndpoint(towerEndpoint)
+                .withFreezeMode(freeze)
                 ;
     }
 
     @Override
     public void run() {
+        // default Args
+        defaultArgs();
         // validate the command line args
         validateArgs();
         // create the wave request
         SubmitContainerTokenRequest request = createRequest();
+        // creat the client
+        final Client client = client();
         // submit it
-        SubmitContainerTokenResponse resp = client().submit(request);
+        SubmitContainerTokenResponse resp = client.submit(request);
+        // await build to be completed
+        if( await && !isEmpty(resp.buildId) )
+            client.awaitImage(resp.targetImage);
         // print the wave container name
-        System.out.println(resp.targetImage);
+        System.out.println( freeze
+                ? resp.containerImage
+                : resp.targetImage );
     }
 
     private String encodeBase64(String value) {
