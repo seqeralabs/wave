@@ -21,9 +21,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.Base64;
+import java.util.List;
 
+import io.seqera.wave.api.BuildContext;
+import io.seqera.wave.api.ContainerConfig;
+import io.seqera.wave.api.ContainerLayer;
 import io.seqera.wave.api.SubmitContainerTokenRequest;
 import io.seqera.wave.api.SubmitContainerTokenResponse;
+import io.seqera.wave.util.Packer;
 import io.seqera.wavelit.exception.IllegalCliArgumentException;
 import io.seqera.wavelit.util.CliVersionProvider;
 import picocli.CommandLine;
@@ -37,35 +42,50 @@ import static picocli.CommandLine.Option;
 @Command(name = "wavelit", description = "Wave command line tool", mixinStandardHelpOptions = true, versionProvider = CliVersionProvider.class)
 public class App implements Runnable {
 
-    @Option(names = {"-i", "--image"}, description = "Container image name to be provisioned")
+    private static final long _1MB = 1024 * 1024;
+
+    @Option(names = {"-i", "--image"}, description = "Container image name to be provisioned.")
     private String image;
 
-    @Option(names = {"-c", "--containerfile"}, description = "Container file (i.e. Dockerfile) to be used to build the image")
+    @Option(names = {"-c", "--containerfile"}, description = "Container file (i.e. Dockerfile) to be used to build the image.")
     private String containerFile;
 
-    @Option(names = {"--tower-token"}, description = "Tower service access token")
+    @Option(names = {"--tower-token"}, description = "Tower service access token.")
     private String towerToken;
 
-    @Option(names = {"--tower-endpoint"}, description = "Tower service endpoint")
-    private String towerEndpoint;
+    @Option(names = {"--tower-endpoint"}, description = "Tower service endpoint (default: ${DEFAULT-VALUE}).")
+    private String towerEndpoint = "https://api.tower.nf";
 
     private Long towerWorkspaceId;
 
-    @Option(names = {"--build-repo"}, description = "The container repository where image build by Wave will stored")
+    @Option(names = {"--build-repo"}, description = "The container repository where image build by Wave will stored.")
     private String buildRepository;
 
-    @Option(names = {"--cache-repo"}, description = "The container repository where image layer created by Wave will stored")
+    @Option(names = {"--cache-repo"}, description = "The container repository where image layer created by Wave will stored.")
     private String cacheRepository;
 
-    @Option(names = {"--wave-endpoint"}, description = "Wave service endpoint (default: ${DEFAULT-VALUE})")
+    @Option(names = {"--wave-endpoint"}, description = "Wave service endpoint (default: ${DEFAULT-VALUE}).")
     private String waveEndpoint = Client.DEFAULT_ENDPOINT;
 
-    @Option(names = {"--freeze"}, description = "Request a container freeze")
+    @Option(names = {"--freeze"}, description = "Request a container freeze.")
     private boolean freeze;
 
+    @Option(names = {"--platform"}, description = "Platform to be used for the container build e.g. linux/amd64, linux/arm64.")
+    private String platform;
 
-    @Option(names = {"--await"}, description = "Await the container build to be available")
+    @Option(names = {"--await"}, description = "Await the container build to be available.")
     private boolean await;
+
+    @Option(names = {"--context"}, description = "Directory path where the build context is stored.")
+    private String contextDir;
+
+
+    @Option(names = {"--layer"})
+    private List<String> layerDirs;
+
+    private BuildContext buildContext;
+
+    private ContainerConfig containerConfig;
 
     public static void main(String[] args) {
         try {
@@ -83,10 +103,17 @@ public class App implements Runnable {
     }
 
     protected void defaultArgs() {
-        if( isEmpty(towerEndpoint) && System.getenv().containsKey("TOWER_API_ENDPOINT") ) {
+        if( "null".equals(towerEndpoint) )  {
+            towerEndpoint = null;
+        }
+        else if( isEmpty(towerEndpoint) && System.getenv().containsKey("TOWER_API_ENDPOINT") ) {
             towerEndpoint = System.getenv("TOWER_API_ENDPOINT");
         }
-        if( isEmpty(towerToken) && System.getenv().containsKey("TOWER_ACCESS_TOKEN") ) {
+
+        if( "null".equals(towerToken) ) {
+            towerToken = null;
+        }
+        else if( isEmpty(towerToken) && System.getenv().containsKey("TOWER_ACCESS_TOKEN") ) {
             towerToken = System.getenv("TOWER_ACCESS_TOKEN");
         }
         if( towerWorkspaceId==null && System.getenv().containsKey("TOWER_WORKSPACE_ID") ) {
@@ -106,6 +133,19 @@ public class App implements Runnable {
 
         if( isEmpty(towerToken) && !isEmpty(buildRepository) )
             throw new IllegalCliArgumentException("Specify the Tower access token required to authenticate the access to the build repository either by using the --tower-token option or the TOWER_ACCESS_TOKEN environment variable");
+
+        if( !isEmpty(contextDir) ) {
+            // check that a container file has been provided
+            if( isEmpty(containerFile) )
+                throw new IllegalCliArgumentException("Container context directory is only allowed when a build container file is provided");
+            Path location = Path.of(contextDir);
+            // check it exist
+            if( !Files.exists(location) )
+                throw new IllegalCliArgumentException("Context path does not exists - offending value: " + contextDir);
+            // check it's a directory
+            if( !Files.isDirectory(location) )
+                throw new IllegalCliArgumentException("Context path is not a directory - offending value: " + contextDir);
+        }
     }
 
     protected Client client() {
@@ -116,9 +156,12 @@ public class App implements Runnable {
         return new SubmitContainerTokenRequest()
                 .withContainerImage(image)
                 .withContainerFile(encodeBase64(containerFile))
+                .withContainerPlatform(platform)
                 .withTimestamp(OffsetDateTime.now())
                 .withBuildRepository(buildRepository)
                 .withCacheRepository(cacheRepository)
+                .withBuildContext(buildContext)
+                .withContainerConfig(containerConfig)
                 .withTowerAccessToken(towerToken)
                 .withTowerWorkspaceId(towerWorkspaceId)
                 .withTowerEndpoint(towerEndpoint)
@@ -132,6 +175,9 @@ public class App implements Runnable {
         defaultArgs();
         // validate the command line args
         validateArgs();
+        // prepare the request
+        buildContext = prepareContext();
+        containerConfig = prepareConfig();
         // create the wave request
         SubmitContainerTokenRequest request = createRequest();
         // creat the client
@@ -167,5 +213,50 @@ public class App implements Runnable {
         catch (IOException e) {
             throw new IllegalCliArgumentException("Unable to read container file - reason: " + e.getMessage(), e);
         }
+    }
+
+    protected BuildContext prepareContext()  {
+        if( isEmpty(contextDir) )
+            return null;
+        BuildContext result = null;
+        try {
+            result = BuildContext.of(new Packer().layer(Path.of(contextDir)));
+        }
+        catch (IOException e) {
+            throw new RuntimeException("Unexpected error while preparing build context - cause: "+e.getMessage(), e);
+        }
+        if( result.gzipSize > 5*_1MB )
+            throw new RuntimeException("Build context cannot be bigger of 5 MiB");
+        return result;
+    }
+
+    protected ContainerConfig prepareConfig() {
+        final ContainerConfig result = new ContainerConfig();
+        if( layerDirs==null || layerDirs.size()==0 )
+            return null;
+
+        for( String it : layerDirs ) {
+            final Path loc = Path.of(it);
+            if( !Files.isDirectory(loc) ) throw new IllegalCliArgumentException("Not a valid container layer directory - offering path: "+loc);
+            ContainerLayer layer;
+            try {
+                result.layers.add( layer=new Packer().layer(loc) );
+            }
+            catch (IOException e ) {
+                throw new RuntimeException("Unexpected error while packing container layer at path: " + loc, e);
+            }
+            if( layer.gzipSize > _1MB )
+                throw new RuntimeException("Container layer cannot be bigger of 1 MiB - offending path: " + loc);
+        }
+        // check all size
+        long size = 0;
+        for(ContainerLayer it : result.layers ) {
+            size += it.gzipSize;
+        }
+        if( size>=10 * _1MB )
+            throw new RuntimeException("Compressed container layers cannot exceed 10 MiB");
+
+        // assign the result
+        return result;
     }
 }

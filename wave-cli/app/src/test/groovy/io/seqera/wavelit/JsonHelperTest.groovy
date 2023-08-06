@@ -26,12 +26,12 @@ class JsonHelperTest extends Specification {
         when:
         def json = JsonHelper.toJson(req)
         then:
-        json == '{"containerImage":"quay.io/nextflow/bash:latest","forceBuild":false}'
+        json == '{"containerImage":"quay.io/nextflow/bash:latest","freeze":false}'
     }
 
     def 'should decode request' () {
         given:
-        def REQ = '{"containerImage":"quay.io/nextflow/bash:latest","forceBuild":false}'
+        def REQ = '{"containerImage":"quay.io/nextflow/bash:latest","freeze":false}'
         when:
         def result = JsonHelper.fromJson(REQ, SubmitContainerTokenRequest)
         then:
