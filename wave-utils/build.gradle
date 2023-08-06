@@ -9,4 +9,4 @@ dependencies {
 }
 
 group = 'io.seqera'
-version = '0.1.0'
+version = rootProject.version
