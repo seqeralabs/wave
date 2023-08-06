@@ -123,6 +123,10 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"com.sun.crypto.provider.HmacCore$HmacSHA256",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
   "name":"com.sun.crypto.provider.TlsKeyMaterialGenerator",
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
@@ -136,6 +140,11 @@
 },
 {
   "name":"com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.seqera.wave.api.BuildContext",
+  "allDeclaredFields":true,
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
@@ -342,6 +351,11 @@
   "name":"picocli.CommandLine$AutoHelpMixin",
   "allDeclaredFields":true,
   "queryAllDeclaredMethods":true
+},
+{
+  "name":"sun.misc.Unsafe",
+  "fields":[{"name":"theUnsafe"}],
+  "methods":[{"name":"allocateInstance","parameterTypes":["java.lang.Class"] }]
 },
 {
   "name":"sun.security.pkcs12.PKCS12KeyStore",
