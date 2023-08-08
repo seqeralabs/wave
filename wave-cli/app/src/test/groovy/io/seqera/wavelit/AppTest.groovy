@@ -17,7 +17,7 @@ class AppTest extends Specification {
         new CommandLine(app).parseArgs(args)
 
         then:
-        app.entryPoint[0] == "entryPoint"
+        app.entrypoint == "entryPoint"
     }
 }
 

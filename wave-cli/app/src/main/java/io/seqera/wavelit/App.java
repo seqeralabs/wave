@@ -14,7 +14,6 @@
  */
 package io.seqera.wavelit;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -84,7 +83,7 @@ public class App implements Runnable {
     private List<String> layerDirs;
 
     @Option(names = {"--config-entrypoint"}, description = "Entrypoint for the container image name to be provisioned.")
-    private List<String> entryPoint;
+    private String entrypoint;
 
     private BuildContext buildContext;
 
@@ -259,10 +258,10 @@ public class App implements Runnable {
             throw new RuntimeException("Compressed container layers cannot exceed 10 MiB");
 
         //validate entrypoint
-        if(entryPoint == null && entryPoint.isEmpty()){
-            throw new IllegalCliArgumentException("Invalid entry point file: " + entryPoint);
+        if(entrypoint == null){
+            throw new IllegalCliArgumentException("Invalid entry point: " + entrypoint);
         }
-        result.entrypoint = entryPoint;
+        result.entrypoint = List.of(entrypoint);
 
         // assign the result
         return result;
