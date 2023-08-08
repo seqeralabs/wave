@@ -87,7 +87,10 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         // 0. default to 'docker.io' when the registry name is empty
         if( !registryName )
             registryName = DOCKER_IO
-
+        RepositoryInfo repositoryInfo = parseURI(registryName)
+        if(repositoryInfo.repository) {
+            registryName = repositoryInfo.registry
+        }
         // 1. look up the registry authorisation info for the given registry name
         final registry = lookupService.lookup(registryName)
         log.debug "Registry '$registryName' => auth: $registry"
@@ -99,7 +102,11 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         // 3. make a request against the authorization "realm" service using basic
         //    credentials to get the login token
         final basic =  "${creds.username}:${creds.password}".bytes.encodeBase64()
-        final endpoint = registry.auth.endpoint
+        def endpoint = registry.auth.endpoint
+        if(repositoryInfo.repository){
+            endpoint = new URI("${endpoint}&scope=repository:${repositoryInfo.repository}:pull")
+        }
+        log.info("endpoint "+endpoint.toString())
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(endpoint)
                 .GET()
@@ -239,5 +246,17 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         cacheTokens.invalidate(key)
     }
 
+    protected RepositoryInfo parseURI(String endpoint){
+        def pattern = /^(.*?:\/\/)?([^\/]+\/)?([^\/]+\/.*?)$/
+        def matcher = (endpoint =~ pattern)
 
+        RepositoryInfo repositoryInfo = new RepositoryInfo()
+        if (matcher.matches()) {
+            repositoryInfo.protocol = matcher.group(1) ?: "https://" // Default to HTTPS
+            repositoryInfo.registry = matcher.group(2)?.replaceAll("/", "") ?: DOCKER_IO
+            repositoryInfo.repository = matcher.group(3)
+        }
+
+        return repositoryInfo
+    }
 }
