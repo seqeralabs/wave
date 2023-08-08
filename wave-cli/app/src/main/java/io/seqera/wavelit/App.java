@@ -257,10 +257,6 @@ public class App implements Runnable {
         if( size>=10 * _1MB )
             throw new RuntimeException("Compressed container layers cannot exceed 10 MiB");
 
-        //validate entrypoint
-        if(entrypoint == null){
-            throw new IllegalCliArgumentException("Invalid entry point: " + entrypoint);
-        }
         result.entrypoint = List.of(entrypoint);
 
         // assign the result
