@@ -19,7 +19,7 @@ class RegistryLoginTest extends Specification{
     }
     void 'test valid login with repository'() {
         when:
-        def login = impl.login("docker.io/hrma017/dev","hrma017","dckr_pat_NtfDznNlQjarjit3df4L713undw")
+        def login = impl.login("https://docker.io/hrma017/dev","hrma017","dckr_pat_NtfDznNlQjarjit3df4L713undw")
         then:
         login
     }
@@ -28,5 +28,11 @@ class RegistryLoginTest extends Specification{
         def login = impl.login("docker.io/hrma017/dev","wavetest","dckr_pat_sShAQOWshE-y3SeE8wll774CWzM")
         then:
         !login
+    }
+    void 'test repository parser'(){
+        when:
+        def result = impl.parseURI("localhost")
+        then:
+        result.repository == null
     }
 }

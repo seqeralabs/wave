@@ -258,14 +258,20 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     }
 
     protected RepositoryInfo parseURI(String endpoint){
-        def pattern = /^(.*?:\/\/)?([^\/]+\/)?([^\/]+\/.*?)$/
-        def matcher = (endpoint =~ pattern)
-
         RepositoryInfo repositoryInfo = new RepositoryInfo()
-        if (matcher.matches()) {
-            repositoryInfo.protocol = matcher.group(1) ?: "https://" // Default to HTTPS
-            repositoryInfo.registry = matcher.group(2)?.replaceAll("/", "") ?: DOCKER_IO
-            repositoryInfo.repository = matcher.group(3)
+        if(endpoint.startsWith("https://")){
+            endpoint = endpoint.replace("https://","")
+        }else if(endpoint.startsWith("http://")){
+            endpoint = endpoint.replace("http://","")
+        }
+        def parts = endpoint.split("/")
+        if(parts.length>1){
+            repositoryInfo.registry = parts[0]
+            StringBuilder repo =new StringBuilder(parts[1])
+            for(int i =2;i<parts.length;i++){
+                repo.append("/"+parts[i])
+            }
+            repositoryInfo.repository = repo
         }
 
         return repositoryInfo
