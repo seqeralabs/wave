@@ -126,9 +126,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
             log.debug "Container registry '$endpoint' login - response: ${StringUtils.trunc(response.body())}"
 
             if(repositoryInfo.repository){
-                final result = (Map) new JsonSlurper().parseText(response.body())
-                String token = result.get('token') ?: result.get('access_token')
-                return loginToRepository(registry.host, repositoryInfo.repository, token)
+                return loginToRepository(registry.host, repositoryInfo.repository, parseToken(response.body()))
             }else{
                 return true
             }
@@ -211,10 +209,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         HttpResponse<String> resp = retryable.apply(()-> httpClient.send(req, HttpResponse.BodyHandlers.ofString()))
         final body = resp.body()
         if( resp.statusCode()==200 ) {
-            final result = (Map) new JsonSlurper().parseText(body)
-            // note: azure registry returns 'access_token'
-            // see also specs https://docs.docker.com/registry/spec/auth/token/#requesting-a-token
-            final token = result.get('token') ?: result.get('access_token')
+            final token = parseToken(body)
             if( token ) {
                 log.trace "Registry auth '$login' => token: ${StringUtils.redact(token)}"
                 return token
@@ -224,6 +219,12 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         throw new RegistryUnauthorizedAccessException("Unable to authorize request: $login", resp.statusCode(), body)
     }
 
+    String parseToken(String body){
+        final result = (Map) new JsonSlurper().parseText(body)
+        // note: azure registry returns 'access_token'
+        // see also specs https://docs.docker.com/registry/spec/auth/token/#requesting-a-token
+        return result.get('token') ?: result.get('access_token')
+    }
     String buildLoginUrl(URI realm, String image, String service){
         String result = "${realm}?scope=repository:${image}:pull"
         if(service) {
@@ -271,14 +272,19 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     }
 
     boolean loginToRepository(URI host, String repository, String token){
-        log.info(token)
+
+                URI endpoint = lookupService.registryEndpoint(host.toString())
+                final repositoryEndpoint = "$endpoint/${repository}/tags/list"
+
                 // Use the access token to access the repository
                 HttpRequest repositoryRequest = HttpRequest.newBuilder()
-                        .uri(URI.create("${host}/v2/${repository}/tags/list"))
+                        .uri(URI.create(repositoryEndpoint))
                         .GET()
                         .header("Authorization", "Bearer " + token)
                         .build();
-        log.info(repositoryRequest.toString())
+        final retryable = Retryable
+                .of(httpConfig)
+                .onRetry((event) -> log.warn("Unable to connect '$repositoryEndpoint' - attempt: ${event.attemptCount}; cause: ${event.lastFailure.message}"))
                 HttpResponse<String> repositoryResponse = httpClient.send(repositoryRequest, HttpResponse.BodyHandlers.ofString());
 
                 if (repositoryResponse.statusCode() == 200) {
@@ -286,7 +292,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
                     log.trace("Response: " + repositoryResponse.body());
                     return true
                 } else {
-                    log.info("Image API request failed with status " + repositoryResponse.statusCode());
+                    log.info("User does not have access to the repository " + repositoryResponse.statusCode());
                     return false
                 }
     }

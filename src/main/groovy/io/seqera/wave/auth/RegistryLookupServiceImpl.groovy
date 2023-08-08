@@ -106,7 +106,7 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
      * @param registry The registry name e.g. quay.io. When empty defaults to 'docker.io'
      * @return the corresponding registry endpoint uri
      */
-    protected URI registryEndpoint(String registry) {
+    URI registryEndpoint(String registry) {
         def result = registry ?: DOCKER_IO
         if( result==DOCKER_IO )
             result = DOCKER_REGISTRY_1
