@@ -196,6 +196,7 @@ class ContainerTokenController {
                 spackContent,
                 user,
                 containerConfig,
+                req.buildContext,
                 platform,
                 configJson,
                 cache,

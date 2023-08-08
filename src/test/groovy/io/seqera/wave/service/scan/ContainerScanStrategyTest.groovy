@@ -33,4 +33,30 @@ class ContainerScanStrategyTest extends Specification {
                      '/some/out.json',
                      targetImage]
     }
+
+    def "should return trivy command with severity"() {
+        given:
+        def targetImage = "respository/scantool"
+        def containerScanStrategy = Spy(ScanStrategy)
+        def outFile = Path.of('/some/out.json')
+        def config = Mock(ScanConfig) {
+            getTimeout() >> Duration.ofMinutes(100)
+            getSeverity() >> 'low,high'
+        }
+
+        when:
+        def command = containerScanStrategy.scanCommand(targetImage, outFile, config)
+        then:
+        command == [ '--quiet',
+                     'image',
+                     '--timeout',
+                     '100m',
+                     '--format',
+                     'json',
+                     '--output',
+                     '/some/out.json',
+                     '--severity',
+                     'low,high',
+                     targetImage]
+    }
 }

@@ -1,13 +1,13 @@
 <html>
 <head>
     <head>
-{{#unless scan_completed}}
+{{#if should_refresh}}
         <meta http-equiv="refresh" content="5">
-{{/unless}}
+{{/if}}
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="description" content="Wave container scan notification email">
+        <meta name="description" content="Wave container security scan">
         <title>Wave container scan notification</title>
     </head>
 <body>
@@ -17,11 +17,19 @@
 <div style="min-height: 60vh">
 {{#if scan_exist}}
     {{#if scan_completed}}
-    <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+    {{#if scan_failed}}
+    <div style="color: #e00404; background-color: #ffe4e2; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
         <h4 style="margin-top:0; color: inherit;">
-            Scan completed
+            Unable to complete the container security scan successfully
         </h4>
     </div>
+    {{else}}
+    <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+        <h4 style="margin-top:0; color: inherit;">
+            Container security scan completed
+        </h4>
+    </div>
+    {{/if}}
     <h3>Summary</h3>
 
     <table cellpadding="4" >
@@ -47,6 +55,7 @@
             <td>{{scan_duration}}</td>
         </tr>
 
+        {{#if scan_succeeded}}
         <tr>
             <td colspan="2">
                 {{#if vulnerabilities.length}}
@@ -85,8 +94,10 @@
                 {{/if}}
         </td>
         </tr>
+        {{/if}}
     </table>
     {{else}}
+    {{! scan is not completed, show a spinning icon }}
     <style>
     .lds-dual-ring {
       display: inline-block;
@@ -115,11 +126,12 @@
     </style>
     <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
         <h4 style="margin-top:0; color: inherit; font-weight: normal">
-            <div class="lds-dual-ring"></div> Scan in progress
+            <div class="lds-dual-ring"></div> Container security scan in progress
         </h4>
     </div>
     {{/if}}
 {{else}}
+{{! scan not exist, show an message using a grey box }}
     <div style="color: black; background-color: #d3d3d3; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
         <h4 style="margin-top:0; font-weight: normal">
             {{error_message}}

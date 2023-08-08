@@ -6,8 +6,11 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
+import io.micronaut.scheduling.TaskExecutors
+import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.service.scan.ContainerScanService
 import io.seqera.wave.service.persistence.WaveScanRecord
+import jakarta.inject.Inject
 
 /**
  * Implements a controller to receive get scan result of build images
@@ -18,14 +21,14 @@ import io.seqera.wave.service.persistence.WaveScanRecord
 @CompileStatic
 @Requires(property = 'wave.scan.enabled', value = 'true')
 @Controller("/")
+@ExecuteOn(TaskExecutors.IO)
 class ContainerScanController {
-    final ContainerScanService containerScanService
+    
+    @Inject
+    private ContainerScanService containerScanService
 
-    ContainerScanController(ContainerScanService ContainerScanService) {
-        this.containerScanService = ContainerScanService
-    }
 
-    @Get("/v1alpha1/scan/{scanId}")
+    @Get("/v1alpha1/scans/{scanId}")
     HttpResponse<WaveScanRecord> scanImage(String scanId){
         final record = containerScanService.getScanResult(scanId)
         return record

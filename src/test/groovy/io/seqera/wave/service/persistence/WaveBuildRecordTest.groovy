@@ -11,7 +11,6 @@ import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.util.JacksonHelper
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -26,6 +25,7 @@ class WaveBuildRecordTest extends Specification {
                 "buildrepo",
                 'conda::recipe',
                 'some-spack-recipe',
+                null,
                 null,
                 null,
                 ContainerPlatform.of('amd64'),

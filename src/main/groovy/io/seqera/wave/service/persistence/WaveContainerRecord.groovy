@@ -93,17 +93,45 @@ class WaveContainerRecord {
     final String ipAddress
 
     /**
-     * The resolved target container image
+     * The container image associated with this Wave container, it can be the container image
+     * as provide by the user, or a container image built by Wave
      */
     final String sourceImage
 
+    /**
+     * The container SHA256 digest of the container image associated with this request
+     */
     final String sourceDigest
 
+    /**
+     * The resulting Wave container image name
+     */
     final String waveImage
 
+    /**
+     * The resulting Wave container image digest
+     */
     final String waveDigest
 
+    /**
+     * The timestamp of the Wave container expiration
+     */
     final Instant expiration
+
+    /**
+     * The ID of the build if the Wave request triggered a container build, null otherwise
+     */
+    final String buildId
+
+    /**
+     * Whenever a new build was triggered for this Wave request, or the container was built by a previous request
+     */
+    final Boolean buildNew
+
+    /**
+     * Whenever the request is a Wave container freeze
+     */
+    final Boolean freeze
 
     WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequestData data, String waveImage, User user, String addr, Instant expiration) {
         this.user = user
@@ -124,6 +152,9 @@ class WaveContainerRecord {
         final ts = parseOffsetDateTime(request.timestamp)
         this.timestamp = ts?.toInstant()
         this.zoneId = ts?.getOffset()?.getId()
+        this.buildId = data.buildId
+        this.buildNew = data.buildId ? data.buildNew : null
+        this.freeze = data.buildId ? data.freeze : null
     }
 
     WaveContainerRecord(WaveContainerRecord that, String sourceDigest, String waveDigest) {
@@ -143,6 +174,9 @@ class WaveContainerRecord {
         this.sourceImage = that.sourceImage
         this.waveImage = that.waveImage
         this.expiration = that.expiration
+        this.buildId = that.buildId
+        this.buildNew = that.buildNew
+        this.freeze = that.freeze
         // -- digest part 
         this.sourceDigest = sourceDigest
         this.waveDigest = waveDigest

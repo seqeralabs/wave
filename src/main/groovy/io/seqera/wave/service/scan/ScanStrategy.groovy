@@ -17,15 +17,20 @@ abstract class ScanStrategy {
     abstract ScanResult scanContainer(ScanRequest request)
 
     protected List<String> scanCommand(String targetImage, Path outputFile, ScanConfig config) {
-        return List.of(
-                '--quiet',
+        def cmd = ['--quiet',
                 'image',
                 '--timeout',
                 "${config.timeout.toMinutes()}m".toString(),
                 '--format',
                 'json',
                 '--output',
-                outputFile.toString(),
-                targetImage)
+                outputFile.toString()]
+
+        if( config.severity ) {
+            cmd << '--severity'
+            cmd << config.severity
+        }
+        cmd << targetImage
+        return cmd
     }
 }

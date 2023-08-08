@@ -1,4 +1,24 @@
 # Wave changelog
+v0.36.0 - 6 Aug 2023
+- Add support for custom build context [6c262575]
+- Add build info to container response [1f2d3f56]
+- Add container build controller [362cf0ea]
+- Add severity attribute to scan config [63182663]
+- View templates cleanup [000155c3]
+- Scan API cleanup [0d00245e]
+- Improve scans endpoint [ca818468]
+- Improve scan page rendering [cce69fb4]
+- Add TimeoutException to Surreal retry policy [3d4141f7]
+- Add library publishing to CI build [4fb5988c]
+
+v0.35.3 - 2 Aug 2023
+- Annotate controllers with @ExecuteOn(TaskExecutors.IO) [aef70407]
+
+v0.35.2 - 1 Aug 2023
+- Enable Netty metrics (#277) [79915ca8]
+- Add retry policy to Surreal DB client 276) [735b765e]
+- Fix build process resources [c2f109c9]
+
 v0.35.1 - 24 Jul 2023
 - Add @ExecuteOn(IO) to Token and Service controllers [e0c95a02]
 - Fix Build ID instead of Request ID [76e6124c]

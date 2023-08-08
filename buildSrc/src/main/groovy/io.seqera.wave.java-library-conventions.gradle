@@ -57,7 +57,7 @@ publishing {
     repositories {
         maven {
             name = "SeqeraRepository"
-            url = uri("s3://maven.seqera.io/snapshots")
+            url = project.findProperty('publish_repo_url') ?: System.getenv('PUBLISH_REPO_URL') ?: "s3://maven.seqera.io/snapshots"
             credentials(AwsCredentials) {
                 accessKey = project.findProperty('aws_access_key_id') ?: System.getenv('AWS_ACCESS_KEY_ID')
                 secretKey = project.findProperty('aws_secret_access_key') ?: System.getenv('AWS_SECRET_ACCESS_KEY')

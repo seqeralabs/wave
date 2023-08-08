@@ -71,7 +71,7 @@ class DockerScanStrategy extends ScanStrategy {
             final exitCode = process.waitFor()
             if ( exitCode != 0 ) {
                 log.warn("Container scan failed to scan container, it exited with code: ${exitCode} - cause: ${process.text}")
-                return ScanResult.failure(req, startTime, null)
+                return ScanResult.failure(req, startTime)
             }
             else{
                 log.info("Container scan completed with id: ${req.id}")
@@ -80,7 +80,7 @@ class DockerScanStrategy extends ScanStrategy {
         }
         catch (Throwable e){
             log.error("Container scan failed to scan container - cause: ${e.getMessage()}", e)
-            return ScanResult.failure(req, startTime, null)
+            return ScanResult.failure(req, startTime)
         }
     }
 

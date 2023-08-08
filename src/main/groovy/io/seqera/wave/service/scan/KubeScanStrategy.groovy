@@ -83,7 +83,7 @@ class KubeScanStrategy extends ScanStrategy {
             else{
                 final stdout = k8sService.logsPod(podName)
                 log.info("Container scan failed for scan id: ${req.id} - stdout: $stdout")
-                return ScanResult.failure(req, startTime, null)
+                return ScanResult.failure(req, startTime)
             }
         }
         catch (ApiException e) {
@@ -91,7 +91,7 @@ class KubeScanStrategy extends ScanStrategy {
         }
         catch (Throwable e){
             log.error("Error while scanning with id: ${req.id} - cause: ${e.getMessage()}", e)
-            return ScanResult.failure(req, startTime, null)
+            return ScanResult.failure(req, startTime)
         }
         finally {
             cleanup(podName)

@@ -6,6 +6,7 @@ import java.time.OffsetDateTime
 
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
+import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
@@ -106,16 +107,22 @@ class BuildRequest {
      * The ID of the security scan triggered by this build 
      */
     final String scanId
+
+    /**
+     * Hold the build context for this container
+     */
+    final BuildContext buildContext
     
     /**
      * Mark this request as not cached
      */
     volatile boolean uncached
 
-    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, User user, ContainerConfig containerConfig, ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId) {
-        this.id = computeDigest(containerFile, condaFile, spackFile, platform, repo)
+    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, User user, ContainerConfig containerConfig, BuildContext buildContext, ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId) {
+        this.id = computeDigest(containerFile, condaFile, spackFile, platform, repo, buildContext)
         this.dockerFile = containerFile
         this.containerConfig = containerConfig
+        this.buildContext = buildContext
         this.condaFile = condaFile
         this.spackFile = spackFile
         this.targetImage = "${repo}:${id}"
@@ -132,13 +139,14 @@ class BuildRequest {
         this.scanId = scanId
     }
 
-    static private String computeDigest(String containerFile, String condaFile, String spackFile, ContainerPlatform platform, String repository) {
+    static private String computeDigest(String containerFile, String condaFile, String spackFile, ContainerPlatform platform, String repository, BuildContext buildContext) {
         final attrs = new LinkedHashMap<String,Object>(10)
         attrs.containerFile = containerFile
         attrs.condaFile = condaFile
         attrs.platform = platform
         attrs.repository = repository
         if( spackFile ) attrs.spackFile = spackFile
+        if( buildContext ) attrs.buildContext = buildContext.tarDigest
         return DigestFunctions.md5(attrs)
     }
 
