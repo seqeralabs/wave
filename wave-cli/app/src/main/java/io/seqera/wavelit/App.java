@@ -83,6 +83,9 @@ public class App implements Runnable {
     @Option(names = {"--layer"})
     private List<String> layerDirs;
 
+    @Option(names = {"--config-command"}, description = "Command to be executed in the target Wave container")
+    private String command;
+
     private BuildContext buildContext;
 
     private ContainerConfig containerConfig;
@@ -231,7 +234,7 @@ public class App implements Runnable {
     }
 
     protected ContainerConfig prepareConfig() {
-        final ContainerConfig result = new ContainerConfig();
+        final ContainerConfig config = new ContainerConfig();
         if( layerDirs==null || layerDirs.size()==0 )
             return null;
 
@@ -240,7 +243,7 @@ public class App implements Runnable {
             if( !Files.isDirectory(loc) ) throw new IllegalCliArgumentException("Not a valid container layer directory - offering path: "+loc);
             ContainerLayer layer;
             try {
-                result.layers.add( layer=new Packer().layer(loc) );
+                config.layers.add( layer=new Packer().layer(loc) );
             }
             catch (IOException e ) {
                 throw new RuntimeException("Unexpected error while packing container layer at path: " + loc, e);
@@ -250,13 +253,19 @@ public class App implements Runnable {
         }
         // check all size
         long size = 0;
-        for(ContainerLayer it : result.layers ) {
+        for(ContainerLayer it : config.layers ) {
             size += it.gzipSize;
         }
         if( size>=10 * _1MB )
             throw new RuntimeException("Compressed container layers cannot exceed 10 MiB");
 
+        //Validate command
+        if(command == ""){
+            throw new IllegalCliArgumentException("Not a valid container command");
+        }
+        config.cmd = List.of(command);
+
         // assign the result
-        return result;
+        return config;
     }
 }
