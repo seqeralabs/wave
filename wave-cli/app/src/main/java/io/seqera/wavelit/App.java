@@ -82,6 +82,9 @@ public class App implements Runnable {
     @Option(names = {"--layer"})
     private List<String> layerDirs;
 
+    @Option(names = {"--config-cmd"}, description = "Overwrite the default CMD (command) of the image.")
+    private String command;
+
     @Option(names = {"--config-entrypoint"}, description = "Overwrite the default ENTRYPOINT of the image.")
     private String entrypoint;
 
@@ -237,6 +240,12 @@ public class App implements Runnable {
         // add the entrypoint if specified
         if( entrypoint!=null )
             result.entrypoint = List.of(entrypoint);
+
+        // add the command if specified
+        if( command != null ){
+            if( "".equals(command) ) throw new IllegalCliArgumentException("The specified command is an empty string");
+            result.cmd = List.of(command);
+        }
 
         // add the layers to the resulting config if specified
         if( layerDirs!=null ) for( String it : layerDirs ) {
