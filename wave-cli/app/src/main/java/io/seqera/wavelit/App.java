@@ -234,9 +234,11 @@ public class App implements Runnable {
     protected ContainerConfig prepareConfig() {
         final ContainerConfig result = new ContainerConfig();
 
+        // add the entrypoint if specified
         if( entrypoint!=null )
             result.entrypoint = List.of(entrypoint);
 
+        // add the layers to the resulting config if specified
         if( layerDirs!=null ) for( String it : layerDirs ) {
             final Path loc = Path.of(it);
             if( !Files.isDirectory(loc) ) throw new IllegalCliArgumentException("Not a valid container layer directory - offering path: "+loc);
