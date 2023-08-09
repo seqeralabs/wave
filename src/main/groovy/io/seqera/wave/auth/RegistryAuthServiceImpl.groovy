@@ -107,14 +107,15 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         def endpoint = registry.auth.endpoint
 
         if(repositoryInfo.repository) {
-               endpoint = new URI("${endpoint}&scope=repository:${repositoryInfo.repository}:pull")
+            endpoint = new URI("${endpoint}&scope=repository:${repositoryInfo.repository}:pull")
         }
+
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(endpoint)
                 .GET()
                 .header("Authorization", "Basic $basic")
                 .build()
-        log.info("request "+request.toString())
+
         // retry strategy
         final retryable = Retryable
                 .of(httpConfig)
@@ -220,12 +221,18 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         throw new RegistryUnauthorizedAccessException("Unable to authorize request: $login", resp.statusCode(), body)
     }
 
+    /**
+     * Implements a parser to extract token
+     *
+     * @param body, body of HTTPResponse
+     */
     String parseToken(String body){
         final result = (Map) new JsonSlurper().parseText(body)
         // note: azure registry returns 'access_token'
         // see also specs https://docs.docker.com/registry/spec/auth/token/#requesting-a-token
         return result.get('token') ?: result.get('access_token')
     }
+
     String buildLoginUrl(URI realm, String image, String service){
         String result = "${realm}?scope=repository:${image}:pull"
         if(service) {
@@ -258,6 +265,11 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         cacheTokens.invalidate(key)
     }
 
+    /**
+     * Implements a parser to get registry and repository name from a URI
+     *
+     * @param endpoint, repository URL e.g. https://docker.io/hrma017/dev
+     */
     protected RepositoryInfo parseURI(String endpoint){
         RepositoryInfo repositoryInfo = new RepositoryInfo()
         if(endpoint.startsWith("https://")){
