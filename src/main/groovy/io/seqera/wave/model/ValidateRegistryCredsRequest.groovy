@@ -1,6 +1,5 @@
-package io.seqera.wave.controller
+package io.seqera.wave.model
 
-import javax.annotation.Nullable
 import javax.validation.constraints.NotBlank
 
 import io.micronaut.core.annotation.Introspected

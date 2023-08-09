@@ -35,4 +35,11 @@ class RegistryLoginTest extends Specification{
         then:
         result.repository == null
     }
+    void 'test repository parser'(){
+        when:
+        def result = impl.parseURI("https://docker.io/hrma017/dev")
+        then:
+        result.registry == "docker.io"
+        result.repository == "hrma017/dev"
+    }
 }

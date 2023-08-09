@@ -126,6 +126,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
             log.debug "Container registry '$endpoint' login - response: ${StringUtils.trunc(response.body())}"
 
             if(repositoryInfo.repository){
+                // 4. make a request to repository using bearer
                 return loginToRepository(registry.host, repositoryInfo.repository, parseToken(response.body()))
             }else{
                 return true
@@ -276,30 +277,37 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
 
         return repositoryInfo
     }
-
+    /**
+     * Implements container repository login
+     *
+     * @param host The repository host e.g. https://registry-1.docker.io
+     * @param repository is repository name e.g. org/image
+     * @param token, token in the response of registry login
+     */
     boolean loginToRepository(URI host, String repository, String token){
+        URI endpoint = lookupService.registryEndpoint(host.toString())
+        final repositoryEndpoint = "$endpoint/${repository}/tags/list"
 
-                URI endpoint = lookupService.registryEndpoint(host.toString())
-                final repositoryEndpoint = "$endpoint/${repository}/tags/list"
+        // Use the access token to access the repository
+        HttpRequest repositoryRequest = HttpRequest.newBuilder()
+                .uri(URI.create(repositoryEndpoint))
+                .GET()
+                .header("Authorization", "Bearer " + token)
+                .build();
 
-                // Use the access token to access the repository
-                HttpRequest repositoryRequest = HttpRequest.newBuilder()
-                        .uri(URI.create(repositoryEndpoint))
-                        .GET()
-                        .header("Authorization", "Bearer " + token)
-                        .build();
         final retryable = Retryable
                 .of(httpConfig)
                 .onRetry((event) -> log.warn("Unable to connect '$repositoryEndpoint' - attempt: ${event.attemptCount}; cause: ${event.lastFailure.message}"))
-                HttpResponse<String> repositoryResponse = httpClient.send(repositoryRequest, HttpResponse.BodyHandlers.ofString());
+        //make a request
+        HttpResponse<String> repositoryResponse = retryable.apply(()->httpClient.send(repositoryRequest, HttpResponse.BodyHandlers.ofString()));
 
-                if (repositoryResponse.statusCode() == 200) {
-                    log.info("User has access to the repository.");
-                    log.trace("Response: " + repositoryResponse.body());
-                    return true
-                } else {
-                    log.info("User does not have access to the repository " + repositoryResponse.statusCode());
-                    return false
-                }
+        if (repositoryResponse.statusCode() == 200) {
+            log.info("User has access to the repository.");
+            log.trace("Response: " + repositoryResponse.body());
+            return true
+        } else {
+            log.info("User does not have access to the repository " + repositoryResponse.statusCode());
+            return false
+        }
     }
 }
