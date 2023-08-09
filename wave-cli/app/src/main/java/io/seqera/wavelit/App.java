@@ -79,12 +79,14 @@ public class App implements Runnable {
     @Option(names = {"--context"}, description = "Directory path where the build context is stored.")
     private String contextDir;
 
-
     @Option(names = {"--layer"})
     private List<String> layerDirs;
 
-    @Option(names = {"--config-command"}, description = "Command to be executed in the target Wave container")
+    @Option(names = {"--config-cmd"}, description = "Overwrite the default CMD (command) of the image.")
     private String command;
+
+    @Option(names = {"--config-entrypoint"}, description = "Overwrite the default ENTRYPOINT of the image.")
+    private String entrypoint;
 
     private BuildContext buildContext;
 
@@ -168,8 +170,7 @@ public class App implements Runnable {
                 .withTowerAccessToken(towerToken)
                 .withTowerWorkspaceId(towerWorkspaceId)
                 .withTowerEndpoint(towerEndpoint)
-                .withFreezeMode(freeze)
-                ;
+                .withFreezeMode(freeze);
     }
 
     @Override
@@ -234,16 +235,25 @@ public class App implements Runnable {
     }
 
     protected ContainerConfig prepareConfig() {
-        final ContainerConfig config = new ContainerConfig();
-        if( layerDirs==null || layerDirs.size()==0 )
-            return null;
+        final ContainerConfig result = new ContainerConfig();
 
-        for( String it : layerDirs ) {
+        // add the entrypoint if specified
+        if( entrypoint!=null )
+            result.entrypoint = List.of(entrypoint);
+
+        // add the command if specified
+        if( command != null ){
+            if( "".equals(command) ) throw new IllegalCliArgumentException("The specified command is an empty string");
+            result.cmd = List.of(command);
+        }
+
+        // add the layers to the resulting config if specified
+        if( layerDirs!=null ) for( String it : layerDirs ) {
             final Path loc = Path.of(it);
             if( !Files.isDirectory(loc) ) throw new IllegalCliArgumentException("Not a valid container layer directory - offering path: "+loc);
             ContainerLayer layer;
             try {
-                config.layers.add( layer=new Packer().layer(loc) );
+                result.layers.add( layer=new Packer().layer(loc) );
             }
             catch (IOException e ) {
                 throw new RuntimeException("Unexpected error while packing container layer at path: " + loc, e);
@@ -253,19 +263,13 @@ public class App implements Runnable {
         }
         // check all size
         long size = 0;
-        for(ContainerLayer it : config.layers ) {
+        for(ContainerLayer it : result.layers ) {
             size += it.gzipSize;
         }
         if( size>=10 * _1MB )
             throw new RuntimeException("Compressed container layers cannot exceed 10 MiB");
 
-        //Validate command
-        if(command == ""){
-            throw new IllegalCliArgumentException("Not a valid container command");
-        }
-        config.cmd = List.of(command);
-
-        // assign the result
-        return config;
+        // return the result
+        return !result.empty() ? result : null;
     }
 }
