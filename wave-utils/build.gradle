@@ -4,7 +4,7 @@ plugins {
 
 dependencies {
     implementation project(':wave-api')
-    implementation 'com.google.guava:guava:31.1-jre'
+    implementation 'com.google.guava:guava:32.1.2-jre'
     implementation 'org.apache.commons:commons-compress:1.21'
 }
 
