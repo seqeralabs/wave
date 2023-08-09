@@ -9,7 +9,7 @@ class AppTest extends Specification {
     @Subject
     App app = new App()
 
-    def "test entry point parsing"() {
+    def "test valid entrypoint"() {
         given:
         String[] args = ["--config-entrypoint", "entryPoint"]
 
@@ -18,6 +18,17 @@ class AppTest extends Specification {
 
         then:
         app.entrypoint == "entryPoint"
+    }
+
+    def "test invalid entrypoint"() {
+        given:
+        String[] args = ["--config-entrypoint"]
+
+        when:
+        new CommandLine(app).parseArgs(args)
+
+        then:
+        thrown(CommandLine.MissingParameterException)
     }
 }
 
