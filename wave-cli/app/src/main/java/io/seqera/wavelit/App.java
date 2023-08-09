@@ -82,7 +82,7 @@ public class App implements Runnable {
     @Option(names = {"--layer"})
     private List<String> layerDirs;
 
-    @Option(names = {"--config-entrypoint"}, description = "Entrypoint for the container image name to be provisioned.")
+    @Option(names = {"--config-entrypoint"}, description = "Overwrite the default ENTRYPOINT of the image.")
     private String entrypoint;
 
     private BuildContext buildContext;
@@ -232,16 +232,17 @@ public class App implements Runnable {
     }
 
     protected ContainerConfig prepareConfig() {
-        final ContainerConfig config = new ContainerConfig();
-        if( layerDirs==null || layerDirs.size()==0 )
-            return null;
+        final ContainerConfig result = new ContainerConfig();
 
-        for( String it : layerDirs ) {
+        if( entrypoint!=null )
+            result.entrypoint = List.of(entrypoint);
+
+        if( layerDirs!=null ) for( String it : layerDirs ) {
             final Path loc = Path.of(it);
             if( !Files.isDirectory(loc) ) throw new IllegalCliArgumentException("Not a valid container layer directory - offering path: "+loc);
             ContainerLayer layer;
             try {
-                config.layers.add( layer=new Packer().layer(loc) );
+                result.layers.add( layer=new Packer().layer(loc) );
             }
             catch (IOException e ) {
                 throw new RuntimeException("Unexpected error while packing container layer at path: " + loc, e);
@@ -251,15 +252,13 @@ public class App implements Runnable {
         }
         // check all size
         long size = 0;
-        for(ContainerLayer it : config.layers ) {
+        for(ContainerLayer it : result.layers ) {
             size += it.gzipSize;
         }
         if( size>=10 * _1MB )
             throw new RuntimeException("Compressed container layers cannot exceed 10 MiB");
 
-        config.entrypoint = List.of(entrypoint);
-
-        // assign the result
-        return config;
+        // return the result
+        return !result.empty() ? result : null;
     }
 }
