@@ -177,10 +177,10 @@ class CredentialsServiceTest extends Specification {
         given:
         def svc = new CredentialServiceImpl()
         def containerRepository = "host.com/foo/bar"
-        def choices = [new CredentialsDescription(registry:"host.com"),
-                       new CredentialsDescription(registry:"host.com/foo"),
-                       new CredentialsDescription(registry:"host.com/foo/bar"),
-                       new CredentialsDescription(registry:"host.com/foo/bar/baz")]
+        def choices = [new CredentialsDescription(registry:"host.com",provider: 'container-reg'),
+                       new CredentialsDescription(registry:"host.com/foo",provider: 'container-reg'),
+                       new CredentialsDescription(registry:"host.com/foo/bar", provider:'container-reg'),
+                       new CredentialsDescription(registry:"host.com/foo/bar/baz",provider: 'container-reg')]
 
         when:
         def match = svc.findBestMatchingCreds(containerRepository, choices)
@@ -193,10 +193,10 @@ class CredentialsServiceTest extends Specification {
         given:
         def svc = new CredentialServiceImpl()
         def containerRepository = "host.com/foo/bar"
-        def choices = [new CredentialsDescription(registry:"host.com"),
-                       new CredentialsDescription(registry:"host.com/foo"),
-                       new CredentialsDescription(registry:"host.com/fooo"),
-                       new CredentialsDescription(registry:"host.com/foo/bar/baz")]
+        def choices = [new CredentialsDescription(registry:"host.com",provider: 'container-reg'),
+                       new CredentialsDescription(registry:"host.com/foo",provider: 'container-reg'),
+                       new CredentialsDescription(registry:"host.com/fooo", provider:'container-reg'),
+                       new CredentialsDescription(registry:"host.com/foo/bar/baz",provider: 'container-reg')]
 
         when:
         def match = svc.findBestMatchingCreds(containerRepository, choices)

@@ -80,20 +80,22 @@ class CredentialServiceImpl implements CredentialsService {
 
         for(int i =0; i<credsList.size(); i++){
             def cred = credsList[i]
-            String registry = cred.registry
+            if(cred.provider == 'container-reg') {
+                String registry = cred.registry
 
-            //if its an exact match
-            if(containerRepository.equalsIgnoreCase(registry)) {
-                return cred
-            }
+                //if its an exact match
+                if (containerRepository.equalsIgnoreCase(registry)) {
+                    return cred
+                }
 
-            //to check for partial match
-            if (containerRepository.startsWith(registry)) {
-                int partialMatchLength = registry.length()
+                //to check for partial match
+                if (containerRepository.startsWith(registry)) {
+                    int partialMatchLength = registry.length()
 
-                if (partialMatchLength > longestPartialMatch) {
-                    longestPartialMatch = partialMatchLength
-                    bestMatchIndex = i
+                    if (partialMatchLength > longestPartialMatch) {
+                        longestPartialMatch = partialMatchLength
+                        bestMatchIndex = i
+                    }
                 }
             }
         }
