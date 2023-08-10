@@ -173,6 +173,37 @@ class CredentialsServiceTest extends Specification {
         keys.password == 'you'
     }
 
+    def'should find the best registry match with exact match'(){
+        given:
+        def svc = new CredentialServiceImpl()
+        def containerRepository = "host.com/foo/bar"
+        def choices = [new CredentialsDescription(registry:"host.com"),
+                       new CredentialsDescription(registry:"host.com/foo"),
+                       new CredentialsDescription(registry:"host.com/foo/bar"),
+                       new CredentialsDescription(registry:"host.com/foo/bar/baz")]
+
+        when:
+        def match = svc.findBestMatchingCreds(containerRepository, choices)
+
+        then:
+        match.registry == "host.com/foo/bar"
+    }
+
+    def'should find the best registry match with partial match'(){
+        given:
+        def svc = new CredentialServiceImpl()
+        def containerRepository = "host.com/foo/bar"
+        def choices = [new CredentialsDescription(registry:"host.com"),
+                       new CredentialsDescription(registry:"host.com/foo"),
+                       new CredentialsDescription(registry:"host.com/fooo"),
+                       new CredentialsDescription(registry:"host.com/foo/bar/baz")]
+
+        when:
+        def match = svc.findBestMatchingCreds(containerRepository, choices)
+
+        then:
+        match.registry == "host.com/foo"
+    }
 
     private static GetCredentialsKeysResponse encryptedCredentialsFromTower(PublicKey key, String credentials) {
         return new GetCredentialsKeysResponse(keys: TEST_CIPHER.encrypt(key,credentials.getBytes()).encode())

@@ -6,6 +6,7 @@ import groovy.util.logging.Slf4j
 import io.seqera.tower.crypto.AsymmetricCipher
 import io.seqera.tower.crypto.EncryptedPacket
 import io.seqera.wave.service.pairing.PairingService
+import io.seqera.wave.tower.client.CredentialsDescription
 import io.seqera.wave.tower.client.TowerClient
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -57,9 +58,7 @@ class CredentialServiceImpl implements CredentialsService {
         //  This cannot be implemented at the moment since, in tower, container registry
         //  credentials are associated to the whole registry
         final matchingRegistryName = registryName ?: DOCKER_IO
-        final creds = all.find {
-            it.provider == 'container-reg'  && (it.registry ?: DOCKER_IO) == matchingRegistryName
-        }
+        final creds = findBestMatchingCreds(matchingRegistryName, all)
         if (!creds) {
             log.debug "No credentials matching criteria registryName=$registryName; userId=$userId; workspaceId=$workspaceId; endpoint=$towerEndpoint"
             return null
@@ -72,6 +71,33 @@ class CredentialServiceImpl implements CredentialsService {
         final privateKey = pairing.privateKey
         final credentials = decryptCredentials(privateKey, encryptedCredentials.keys)
         return parsePayload(credentials)
+    }
+
+    //Find best match for a registry name
+    CredentialsDescription findBestMatchingCreds(String containerRepository, List<CredentialsDescription> credsList) {
+        int bestMatchIndex = -1
+        int longestPartialMatch = 0
+
+        for(int i =0; i<credsList.size(); i++){
+            def cred = credsList[i]
+            String registry = cred.registry
+
+            //if its an exact match
+            if(containerRepository.equalsIgnoreCase(registry)) {
+                return cred
+            }
+
+            //to check for partial match
+            if (containerRepository.startsWith(registry)) {
+                int partialMatchLength = registry.length()
+
+                if (partialMatchLength > longestPartialMatch) {
+                    longestPartialMatch = partialMatchLength
+                    bestMatchIndex = i
+                }
+            }
+        }
+        return bestMatchIndex != -1?credsList[bestMatchIndex]:null
     }
 
     protected String decryptCredentials(byte[] encodedKey, String payload) {
