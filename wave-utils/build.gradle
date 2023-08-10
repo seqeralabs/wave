@@ -11,4 +11,4 @@ dependencies {
 }
 
 group = 'io.seqera'
-version = rootProject.version
+version = "${project.file('VERSION').text.trim()}"
