@@ -188,8 +188,8 @@ class ContainerBuildServiceTest extends Specification {
         1 * store.storeBuild(REQ.targetImage, RESPONSE, DURATION) >> null
         and:
         REQ.workDir.resolve('Dockerfile').text == new TemplateRenderer().render(dockerFile, [spack_cache_dir:'/mnt/cache', spack_key_file:'/mnt/secret'])
-        REQ.workDir.resolve('conda.yml').text == condaFile
-        REQ.workDir.resolve('spack.yaml').text == spackFile
+        REQ.workDir.resolve('context/conda.yml').text == condaFile
+        REQ.workDir.resolve('context/spack.yaml').text == spackFile
         and:
         result == RESPONSE
 

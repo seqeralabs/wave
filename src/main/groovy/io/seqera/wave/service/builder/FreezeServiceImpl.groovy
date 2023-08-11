@@ -13,6 +13,7 @@ import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.storage.reader.ContentReaderFactory
 import io.seqera.wave.tower.User
+import io.seqera.wave.util.TarUtils
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -120,10 +121,9 @@ class FreezeServiceImpl implements FreezeService {
     }
 
     static protected void saveBuildContext(BuildContext buildContext, Path contextDir) {
-        final target = contextDir.resolve("context.tar.gz")
         // copy the layer to the build context
         try (InputStream stream = ContentReaderFactory.of(buildContext.location).openStream()) {
-            Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING)
+            TarUtils.untarGzip(stream, contextDir)
         }
     }
 }

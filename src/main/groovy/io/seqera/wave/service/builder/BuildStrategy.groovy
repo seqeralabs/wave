@@ -28,15 +28,13 @@ abstract class BuildStrategy {
         result
                 << "--dockerfile"
                 << "$req.workDir/Dockerfile".toString()
+                << "--context"
+                << "$req.workDir/context".toString()
                 << "--destination"
                 << req.targetImage
                 << "--cache=true"
                 << "--custom-platform"
                 << req.platform.toString()
-
-        if( req.buildContext ) {
-            result << '--context' << "tar://$req.workDir/context.tar.gz".toString()
-        }
 
         if( req.cacheRepository ) {
             result << "--cache-repo" << req.cacheRepository

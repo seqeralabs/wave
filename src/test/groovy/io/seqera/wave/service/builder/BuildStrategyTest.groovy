@@ -28,6 +28,8 @@ class BuildStrategyTest extends Specification {
         cmd == [
                 '--dockerfile',
                 '/work/foo/40e8a6dba50e9b3b609a19c12420d3eb/Dockerfile',
+                '--context',
+                '/work/foo/40e8a6dba50e9b3b609a19c12420d3eb/context',
                 '--destination',
                 'quay.io/wave:40e8a6dba50e9b3b609a19c12420d3eb',
                 '--cache=true',
@@ -53,13 +55,13 @@ class BuildStrategyTest extends Specification {
         cmd == [
                 '--dockerfile',
                 '/work/foo/810cd2279583f9fbed652c4c1530b7e2/Dockerfile',
+                '--context',
+                '/work/foo/810cd2279583f9fbed652c4c1530b7e2/context',
                 '--destination',
                 'quay.io/wave:810cd2279583f9fbed652c4c1530b7e2',
                 '--cache=true',
                 '--custom-platform',
                 'linux/amd64',
-                '--context',
-                'tar:///work/foo/810cd2279583f9fbed652c4c1530b7e2/context.tar.gz',
                 '--cache-repo',
                 'reg.io/wave/build/cache',
         ]

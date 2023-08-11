@@ -9,6 +9,7 @@ import com.sun.net.httpserver.HttpHandler
 import com.sun.net.httpserver.HttpServer
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.SubmitContainerTokenRequest
@@ -249,5 +250,29 @@ class FreezeServiceImplTest extends Specification  {
             WORKDIR /work/dir
             ENV FOO=1 BAR=2
             '''.stripIndent()
+    }
+
+    def 'should untar build context' () {
+        given:
+        def folder = Files.createTempDirectory('test')
+        def source = folder.resolve('source')
+        def target = folder.resolve('target')
+        Files.createDirectory(source)
+        Files.createDirectory(target)
+        and:
+        source.resolve('foo.txt').text  = 'Foo'
+        source.resolve('bar.txt').text  = 'Bar'
+        and:
+        def layer = new Packer().layer(source)
+        def context = BuildContext.of(layer)
+
+        when:
+        FreezeServiceImpl.saveBuildContext(context, target)
+        then:
+        target.resolve('foo.txt').text == 'Foo'
+        target.resolve('bar.txt').text == 'Bar'
+
+        cleanup:
+        folder?.deleteDir()
     }
 }

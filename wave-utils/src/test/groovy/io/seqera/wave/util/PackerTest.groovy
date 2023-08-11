@@ -26,7 +26,7 @@ import spock.lang.Specification
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class PackerTest extends Specification implements TarHelper {
+class PackerTest extends Specification {
 
 
     def 'should tar bundle' () {
@@ -65,7 +65,7 @@ class PackerTest extends Specification implements TarHelper {
         def buffer = new ByteArrayOutputStream()
         packer.makeTar(rootPath, files, buffer)
         and:
-        untar( new ByteArrayInputStream(buffer.toByteArray()), result )
+        TarUtils.untar( new ByteArrayInputStream(buffer.toByteArray()), result )
         then:
         result.resolve('main.nf').text == rootPath.resolve('main.nf').text
         result.resolve('this/hola.txt').text == rootPath.resolve('this/hola.txt').text
@@ -86,8 +86,7 @@ class PackerTest extends Specification implements TarHelper {
         layer.gzipSize == 254
         and:
         def gzip = layer.location.replace('data:','').decodeBase64()
-        def tar = uncompress(gzip)
-        untar( new ByteArrayInputStream(tar), result2)
+        TarUtils.untarGzip( new ByteArrayInputStream(gzip), result2)
         and:
         result2.resolve('main.nf').text == rootPath.resolve('main.nf').text
         result2.resolve('this/hola.txt').text == rootPath.resolve('this/hola.txt').text
