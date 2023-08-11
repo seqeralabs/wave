@@ -30,12 +30,12 @@ public class SpackOpts {
     /**
      * Custom Dockerfile `RUN` commands that can be used to customise the target container
      */
-    public final List<String> commands;
+    public List<String> commands;
 
     /**
      * Spack packages that should be added to any Spack environment requested via Wave
      */
-    public final String basePackages;
+    public String basePackages;
 
     public SpackOpts() {
         this(Map.of());
@@ -45,4 +45,13 @@ public class SpackOpts {
         this.basePackages = opts.containsKey("basePackages") ? opts.get("basePackages").toString() : null;
     }
 
+    public SpackOpts withCommands(List<String> value) {
+        this.commands = value;
+        return this;
+    }
+
+    public SpackOpts withBasePackages(String value) {
+        this.basePackages = value;
+        return this;
+    }
 }
