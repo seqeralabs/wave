@@ -27,6 +27,8 @@ import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import io.seqera.wave.api.BuildContext;
 import io.seqera.wave.api.ContainerConfig;
 import io.seqera.wave.api.ContainerLayer;
@@ -38,6 +40,7 @@ import io.seqera.wave.util.DockerHelper;
 import io.seqera.wave.util.Packer;
 import io.seqera.wavelit.exception.IllegalCliArgumentException;
 import io.seqera.wavelit.util.CliVersionProvider;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import static io.seqera.wave.util.DockerHelper.addPackagesToSpackFile;
 import static io.seqera.wave.util.DockerHelper.spackPackagesToSpackFile;
@@ -121,6 +124,9 @@ public class App implements Runnable {
     @Option(names = {"--spack-run-command"}, description = "Dockerfile RUN commands used to build the container.")
     private List<String> spackRunCommands;
 
+    @Option(names = {"--log-level"}, description = "Set the application log level: OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL")
+    private String logLevel;
+
     private BuildContext buildContext;
 
     private ContainerConfig containerConfig;
@@ -137,6 +143,13 @@ public class App implements Runnable {
         catch (Throwable e) {
             e.printStackTrace(System.err);
             System.exit(1);
+        }
+    }
+
+    protected void setLogLevel() {
+        if( !isEmpty(logLevel) ) {
+            Logger root = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+            root.setLevel(Level.valueOf(logLevel));
         }
     }
 
@@ -243,6 +256,7 @@ public class App implements Runnable {
 
     @Override
     public void run() {
+        setLogLevel();
         // default Args
         defaultArgs();
         // validate the command line args
