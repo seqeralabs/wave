@@ -33,11 +33,14 @@ import io.seqera.wave.api.ContainerLayer;
 import io.seqera.wave.api.SubmitContainerTokenRequest;
 import io.seqera.wave.api.SubmitContainerTokenResponse;
 import io.seqera.wave.config.CondaOpts;
+import io.seqera.wave.config.SpackOpts;
 import io.seqera.wave.util.DockerHelper;
 import io.seqera.wave.util.Packer;
 import io.seqera.wavelit.exception.IllegalCliArgumentException;
 import io.seqera.wavelit.util.CliVersionProvider;
 import picocli.CommandLine;
+import static io.seqera.wave.util.DockerHelper.addPackagesToSpackFile;
+import static io.seqera.wave.util.DockerHelper.spackPackagesToSpackFile;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Option;
@@ -109,6 +112,15 @@ public class App implements Runnable {
     @Option(names = {"--conda-channels"}, description = "Conda channels used to build the container (default: ${DEFAULT-VALUE}).")
     private String condaChannels = "seqera,bioconda,conda-forge,defaults";
 
+    @Option(names = {"--spack-file"}, description = "A Spack file used to build the container.")
+    private String spackFile;
+
+    @Option(names = {"--spack-package"}, description = "One or more Spakc package used to build the container.")
+    private List<String> spackPackages;
+
+    @Option(names = {"--spack-run-command"}, description = "Dockerfile RUN commands used to build the container.")
+    private List<String> spackRunCommands;
+
     private BuildContext buildContext;
 
     private ContainerConfig containerConfig;
@@ -151,7 +163,7 @@ public class App implements Runnable {
         if( !isEmpty(image) && !isEmpty(containerFile) )
             throw new IllegalCliArgumentException("Argument --image and --containerfile conflict each other - Specify an image name or a container file for the container to be provisioned");
 
-        if( isEmpty(image) && isEmpty(containerFile) && isEmpty(condaFile) && condaPackages==null )
+        if( isEmpty(image) && isEmpty(containerFile) && isEmpty(condaFile) && condaPackages==null  && isEmpty(spackFile) && spackPackages ==null  )
             throw new IllegalCliArgumentException("Provide either a image name or a container file for the Wave container to be provisioned");
 
         if( freeze && isEmpty(buildRepository) )
@@ -160,6 +172,7 @@ public class App implements Runnable {
         if( isEmpty(towerToken) && !isEmpty(buildRepository) )
             throw new IllegalCliArgumentException("Specify the Tower access token required to authenticate the access to the build repository either by using the --tower-token option or the TOWER_ACCESS_TOKEN environment variable");
 
+        // -- check conda options
         if( !isEmpty(condaFile) && condaPackages!=null )
             throw new IllegalCliArgumentException("Option --conda-file and --conda-package conflict each other");
 
@@ -174,6 +187,22 @@ public class App implements Runnable {
 
         if( condaPackages!=null && !isEmpty(containerFile) )
             throw new IllegalCliArgumentException("Option --conda-package and --containerfile conflict each other");
+
+        // -- check spack options
+        if( !isEmpty(spackFile) && spackPackages!=null )
+            throw new IllegalCliArgumentException("Option --spack-file and --spack-package conflict each other");
+
+        if( !isEmpty(spackFile) && !isEmpty(image) )
+            throw new IllegalCliArgumentException("Option --spack-file and --image conflict each other");
+
+        if( !isEmpty(spackFile) && !isEmpty(containerFile) )
+            throw new IllegalCliArgumentException("Option --spack-file and --containerfile conflict each other");
+
+        if( spackPackages!=null && !isEmpty(image) )
+            throw new IllegalCliArgumentException("Option --spack-package and --image conflict each other");
+
+        if( spackPackages!=null && !isEmpty(containerFile) )
+            throw new IllegalCliArgumentException("Option --spack-package and --containerfile conflict each other");
 
 
         if( !isEmpty(contextDir) ) {
@@ -199,6 +228,7 @@ public class App implements Runnable {
                 .withContainerImage(image)
                 .withContainerFile(containerFileBase64())
                 .withCondaFile(condaFileBase64())
+                .withSpackFile(spackFileBase64())
                 .withContainerPlatform(platform)
                 .withTimestamp(OffsetDateTime.now())
                 .withBuildRepository(buildRepository)
@@ -334,6 +364,12 @@ public class App implements Runnable {
             return encodeStringBase64(result);
         }
 
+        if( !isEmpty(spackFile) || spackPackages!=null ) {
+            final SpackOpts opts = new SpackOpts() .withCommands(spackRunCommands);
+            final String result = DockerHelper.spackFileToDockerFile(opts);
+            return encodeStringBase64(result);
+        }
+
         return null;
     }
 
@@ -341,5 +377,19 @@ public class App implements Runnable {
         if( isEmpty(condaFile) )
             return null;
         return encodePathBase64(condaFile);
+    }
+
+    protected String spackFileBase64() {
+        if( !isEmpty(spackFile) ) {
+            // parse the attribute as a spack file path *and* append the base packages if any
+            return encodePathBase64(addPackagesToSpackFile(spackFile, new SpackOpts()).toString());
+        }
+        else if( spackPackages!=null && spackPackages.size()>0  ) {
+            // create a minimal spack file with package spec from user input
+            final String packages = spackPackages.stream().collect(Collectors.joining(" "));
+            return encodePathBase64(spackPackagesToSpackFile(packages, new SpackOpts()).toString());
+        }
+        else
+            return null;
     }
 }
