@@ -27,7 +27,7 @@ that it can be used in your Docker (replace-with-your-own-fav-container-engine) 
 
 
     ```bash
-    docker run --rm $(wavelit -c ./Dockerfile) cowsay "Hello world"
+    docker run --rm $(wavelit -f ./Dockerfile) cowsay "Hello world"
     ```
 
 

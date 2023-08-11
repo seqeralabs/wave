@@ -43,7 +43,7 @@ import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Option;
 
 /**
- * Wavelit entrypoint class
+ * Wavelit main class
  */
 @Command(name = "wavelit", description = "Wave command line tool", mixinStandardHelpOptions = true, versionProvider = CliVersionProvider.class)
 public class App implements Runnable {
@@ -53,7 +53,7 @@ public class App implements Runnable {
     @Option(names = {"-i", "--image"}, description = "Container image name to be provisioned.")
     private String image;
 
-    @Option(names = {"-c", "--containerfile"}, description = "Container file (i.e. Dockerfile) to be used to build the image.")
+    @Option(names = {"-f", "--containerfile"}, description = "Container file (i.e. Dockerfile) to be used to build the image.")
     private String containerFile;
 
     @Option(names = {"--tower-token"}, description = "Tower service access token.")
