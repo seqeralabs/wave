@@ -110,13 +110,15 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
         logged == VALID
 
         where:
-        USER           | PWD            | REGISTRY_URL                   | VALID
-        'test'         | 'test'         | 'localhost'                    | true
-        'nope'         | 'yepes'        | 'localhost'                    | false
-        dockerUsername | dockerPassword | "https://registry-1.docker.io" | true
-        'nope'         | 'yepes'        | "https://registry-1.docker.io" | false
-        quayUsername   | quayPassword   | "https://quay.io"              | true
-        'nope'         | 'yepes'        | "https://quay.io"              | false
+        USER           | PWD            | REGISTRY_URL                                          | VALID
+        'test'         | 'test'         | 'localhost'                                           | true
+        'nope'         | 'yepes'        | 'localhost'                                           | false
+        dockerUsername | dockerPassword | "https://registry-1.docker.io"                        | true
+        'nope'         | 'yepes'        | "https://registry-1.docker.io"                        | false
+        quayUsername   | quayPassword   | "https://quay.io"                                     | true
+        'nope'         | 'yepes'        | "https://quay.io"                                     | false
+        dockerUsername | dockerPassword | "https://registry-1.docker.io/pditommaso/wave-tests"  | true
+        dockerUsername | dockerPassword | "https://registry-1.docker.io/pditommaso"             | true
     }
 
     @Ignore
@@ -146,4 +148,18 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
         'localhost' | 'test' | null      | "localhost?scope=repository:test:pull"
     }
 
+    void 'test repository parser'(){
+        when:
+        def result = loginService.parseURI("localhost")
+        then:
+        result.repository == null
+    }
+
+    void 'test repository parser'(){
+        when:
+        def result = loginService.parseURI("https://docker.io/hrma017/dev")
+        then:
+        result.registry == "docker.io"
+        result.repository == "hrma017/dev"
+    }
 }
