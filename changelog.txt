@@ -1,4 +1,11 @@
 # Wave changelog
+v0.36.1 - 11 Aug 2023
+- Fix support for build context [96a32ef0]
+- Add toString method to ContainerTokenRequest [9e230004]
+- Add "with" methods to SpackOpts [56699cea]
+- Add Spack + Conda templating logic [90d42780]
+- bump guava@32.1.2 [88de2304]
+
 v0.36.0 - 6 Aug 2023
 - Add support for custom build context [6c262575]
 - Add build info to container response [1f2d3f56]
