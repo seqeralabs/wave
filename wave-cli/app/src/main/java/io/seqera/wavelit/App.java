@@ -53,6 +53,7 @@ import static picocli.CommandLine.Option;
  */
 @Command(name = "wavelit", description = "Wave command line tool", mixinStandardHelpOptions = true, versionProvider = CliVersionProvider.class)
 public class App implements Runnable {
+    private static final String DEFAULT_TOWER_ENDPOINT = "https://api.tower.nf";
 
     private static final long _1MB = 1024 * 1024;
 
@@ -65,8 +66,8 @@ public class App implements Runnable {
     @Option(names = {"--tower-token"}, description = "Tower service access token.")
     private String towerToken;
 
-    @Option(names = {"--tower-endpoint"}, description = "Tower service endpoint (default: ${DEFAULT-VALUE}).")
-    private String towerEndpoint = "https://api.tower.nf";
+    @Option(names = {"--tower-endpoint"}, description = "Tower service endpoint.")
+    private String towerEndpoint;
 
     private Long towerWorkspaceId;
 
@@ -76,8 +77,8 @@ public class App implements Runnable {
     @Option(names = {"--cache-repo"}, description = "The container repository where image layer created by Wave will stored.")
     private String cacheRepository;
 
-    @Option(names = {"--wave-endpoint"}, description = "Wave service endpoint (default: ${DEFAULT-VALUE}).")
-    private String waveEndpoint = Client.DEFAULT_ENDPOINT;
+    @Option(names = {"--wave-endpoint"}, description = "Wave service endpoint.")
+    private String waveEndpoint;
 
     @Option(names = {"--freeze"}, description = "Request a container freeze.")
     private boolean freeze;
@@ -160,6 +161,9 @@ public class App implements Runnable {
         else if( isEmpty(towerEndpoint) && System.getenv().containsKey("TOWER_API_ENDPOINT") ) {
             towerEndpoint = System.getenv("TOWER_API_ENDPOINT");
         }
+        else if( isEmpty(towerEndpoint) ) {
+            towerEndpoint = DEFAULT_TOWER_ENDPOINT;
+        }
 
         if( "null".equals(towerToken) ) {
             towerToken = null;
@@ -170,6 +174,14 @@ public class App implements Runnable {
         if( towerWorkspaceId==null && System.getenv().containsKey("TOWER_WORKSPACE_ID") ) {
             towerWorkspaceId = Long.valueOf(System.getenv("TOWER_WORKSPACE_ID"));
         }
+
+        if( isEmpty(waveEndpoint) && System.getenv().containsKey("WAVE_ENDPOINT") ) {
+            waveEndpoint = System.getenv("WAVE_ENDPOINT");
+        }
+        else if( isEmpty(waveEndpoint) ) {
+            waveEndpoint = Client.DEFAULT_ENDPOINT;
+        }
+
     }
 
     protected void validateArgs() {
