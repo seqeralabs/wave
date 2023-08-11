@@ -52,7 +52,7 @@ public class Client {
             "Accept","application/vnd.docker.distribution.manifest.v2+json",
             "Accept","application/vnd.docker.distribution.manifest.list.v2+json" };
 
-    final static private List<Integer> SERVER_ERRORS = List.of(502,503,504);
+    final static private List<Integer> SERVER_ERRORS = List.of(249,502,503,504);
 
     public static String DEFAULT_ENDPOINT = "https://wave.seqera.io";
 
