@@ -76,8 +76,6 @@ jobs:
         if: "contains(github.event.head_commit.message, '[release]')"
         run: |
           bash tag-and-push.sh
-          ./gradlew wave-api:publishMavenPublicationToSeqeraRepositoryRepository
-          ./gradlew wave-utils:publishMavenPublicationToSeqeraRepositoryRepository
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
           AWS_ACCESS_KEY_ID: ${{secrets.TOWER_CI_AWS_ACCESS}}
@@ -86,6 +84,16 @@ jobs:
           DOCKER_PAT: ${{ secrets.DOCKER_PAT }}
           QUAY_PAT: ${{ secrets.QUAY_PAT }}
           GITHUB_TOKEN: ${{ secrets.GH_SEQERA_TOKEN }}
+
+      - name: Publish
+        if: "contains(github.event.head_commit.message, '[publish]')"
+        run: |
+          bash publish.sh wave-api
+          bash publish.sh wave-utils
+        env:
+          GRADLE_OPTS: '-Dorg.gradle.daemon=false'
+          AWS_ACCESS_KEY_ID: ${{secrets.TOWER_CI_AWS_ACCESS}}
+          AWS_SECRET_ACCESS_KEY: ${{secrets.TOWER_CI_AWS_SECRET}}
           PUBLISH_REPO_URL: "s3://maven.seqera.io/releases"
 
       - name: Deploy to staging cluster
