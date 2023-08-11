@@ -88,6 +88,11 @@ public class SubmitContainerTokenRequest implements Cloneable {
      */
     public boolean freeze;
 
+    /**
+     * A layer holding the build context for this container request
+     */
+    public BuildContext buildContext;
+
     public SubmitContainerTokenRequest copyWith(Map opts) {
         try {
             final SubmitContainerTokenRequest copy = (SubmitContainerTokenRequest) this.clone();
@@ -121,6 +126,8 @@ public class SubmitContainerTokenRequest implements Cloneable {
                 copy.fingerprint = (String)opts.get("fingerprint");
             if( opts.containsKey("freeze") )
                 copy.freeze = (boolean)opts.get("freeze");
+            if( opts.containsKey("buildContext") )
+                copy.buildContext = (BuildContext) opts.get("buildContext");
             // done
             return copy;
         }
@@ -206,6 +213,11 @@ public class SubmitContainerTokenRequest implements Cloneable {
 
     public SubmitContainerTokenRequest withFreezeMode(boolean value) {
         this.freeze = value;
+        return this;
+    }
+
+    public SubmitContainerTokenRequest withBuildContext(BuildContext context) {
+        this.buildContext = context;
         return this;
     }
 }

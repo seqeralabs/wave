@@ -22,10 +22,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -99,6 +103,20 @@ public class Packer {
             compressed.flush();
         }
         return target;
+    }
+
+    public ContainerLayer layer(Path root) throws IOException {
+        final List<Path> files = new ArrayList<>();
+        Files.walkFileTree(root, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                files.add(file);
+                return FileVisitResult.CONTINUE;
+            }
+        });
+
+        Collections.sort(files);
+        return layer(root, files);
     }
 
     public ContainerLayer layer(Path root, List<Path> files) throws IOException {

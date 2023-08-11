@@ -2,6 +2,7 @@ package io.seqera.wave.service.persistence.impl
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.http.client.exceptions.ReadTimeoutException
 import io.micronaut.retry.annotation.RetryPredicate
 
 /**
@@ -14,7 +15,7 @@ import io.micronaut.retry.annotation.RetryPredicate
 class RetryOnIOException implements RetryPredicate {
     @Override
     boolean test(Throwable t) {
-        final result = t instanceof IOException || t.cause instanceof IOException
+        final result = t instanceof IOException || t.cause instanceof IOException || t instanceof ReadTimeoutException
         log.debug "Checking error retry for exception [retry=$result]: $t"
         return result
     }

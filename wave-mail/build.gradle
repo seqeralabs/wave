@@ -17,3 +17,4 @@ dependencies {
 }
 
 group = 'io.seqera'
+version = rootProject.version

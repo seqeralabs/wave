@@ -44,6 +44,10 @@ class ScanConfig {
     @Value('${wave.scan.timeout:10m}')
     private Duration timeout
 
+    @Value('${wave.scan.severity}')
+    @Nullable
+    private String severity
+
     String getScanImage() {
         return scanImage
     }
@@ -67,8 +71,12 @@ class ScanConfig {
         return timeout
     }
 
+    String getSeverity() {
+        return severity
+    }
+
     @PostConstruct
     private void init() {
-        log.debug("Scanner config: docker image name: ${scanImage}; cache directory: ${cacheDirectory}; timeout=${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}")
+        log.debug("Scanner config: docker image name: ${scanImage}; cache directory: ${cacheDirectory}; timeout=${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}; severity: $severity")
     }
 }

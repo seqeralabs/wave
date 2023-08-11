@@ -46,8 +46,8 @@ class ScanResult {
         return new ScanResult(request.id, request.buildId, startTime, Duration.between(startTime, Instant.now()), SUCCEEDED, vulnerabilities)
     }
 
-    static ScanResult failure(ScanRequest request, Instant startTime, List<ScanVulnerability> vulnerabilities){
-        return new ScanResult(request.id, request.buildId, startTime, Duration.between(startTime, Instant.now()), FAILED, vulnerabilities)
+    static ScanResult failure(ScanRequest request, Instant startTime){
+        return new ScanResult(request.id, request.buildId, startTime, Duration.between(startTime, Instant.now()), FAILED, List.of())
     }
 
     static ScanResult create(String scanId, String buildId, Instant startTime, Duration duration1, String status, List<ScanVulnerability> vulnerabilities){
