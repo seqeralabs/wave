@@ -220,5 +220,27 @@ public class SubmitContainerTokenRequest implements Cloneable {
         this.buildContext = context;
         return this;
     }
+
+    @Override
+    public String toString() {
+        return "SubmitContainerTokenRequest{" +
+                "towerAccessToken='" + towerAccessToken + '\'' +
+                ", towerRefreshToken='" + towerRefreshToken + '\'' +
+                ", towerEndpoint='" + towerEndpoint + '\'' +
+                ", towerWorkspaceId=" + towerWorkspaceId +
+                ", containerImage='" + containerImage + '\'' +
+                ", containerFile='" + containerFile + '\'' +
+                ", containerConfig=" + containerConfig +
+                ", condaFile='" + condaFile + '\'' +
+                ", spackFile='" + spackFile + '\'' +
+                ", containerPlatform='" + containerPlatform + '\'' +
+                ", buildRepository='" + buildRepository + '\'' +
+                ", cacheRepository='" + cacheRepository + '\'' +
+                ", timestamp='" + timestamp + '\'' +
+                ", fingerprint='" + fingerprint + '\'' +
+                ", freeze=" + freeze +
+                ", buildContext=" + buildContext +
+                '}';
+    }
 }
 
