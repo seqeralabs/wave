@@ -14,7 +14,13 @@
       "pattern":"\\Qlogback.xml\\E"
     }, 
     {
+      "pattern":"\\Qtemplates/conda/dockerfile-conda-file.txt\\E"
+    }, 
+    {
       "pattern":"\\Qtemplates/conda/dockerfile-conda-packages.txt\\E"
+    }, 
+    {
+      "pattern":"\\Qtemplates/spack/dockerfile-spack-file.txt\\E"
     }
   ]},
   "bundles":[]
