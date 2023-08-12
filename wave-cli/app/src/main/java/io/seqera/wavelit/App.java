@@ -39,8 +39,9 @@ import io.seqera.wave.config.SpackOpts;
 import io.seqera.wave.util.DockerHelper;
 import io.seqera.wave.util.Packer;
 import io.seqera.wavelit.exception.IllegalCliArgumentException;
-import io.seqera.wavelit.util.CliVersionProvider;
 import io.seqera.wavelit.json.JsonHelper;
+import io.seqera.wavelit.util.BuildInfo;
+import io.seqera.wavelit.util.CliVersionProvider;
 import io.seqera.wavelit.util.YamlHelper;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -53,84 +54,86 @@ import static picocli.CommandLine.Option;
 /**
  * Wavelit main class
  */
-@Command(name = "wavelit", description = "Wave command line tool", mixinStandardHelpOptions = true, versionProvider = CliVersionProvider.class)
+@Command(name = "wavelit", description = "Wave command line tool", mixinStandardHelpOptions = true, versionProvider = CliVersionProvider.class, usageHelpAutoWidth = true)
 public class App implements Runnable {
+
     private static final String DEFAULT_TOWER_ENDPOINT = "https://api.tower.nf";
 
     private static final long _1MB = 1024 * 1024;
 
-    @Option(names = {"-i", "--image"}, description = "Container image name to be provisioned.")
+    @Option(names = {"-i", "--image"}, paramLabel = "''", description = "Container image name to be provisioned e.g alpine:latest.")
     private String image;
 
-    @Option(names = {"-f", "--containerfile"}, description = "Container file (i.e. Dockerfile) to be used to build the image.")
+    @Option(names = {"-f", "--containerfile"}, paramLabel = "''", description = "Container file to be used to build the image e.g. ./Dockerfile.")
     private String containerFile;
 
-    @Option(names = {"--tower-token"}, description = "Tower service access token.")
+    @Option(names = {"--tower-token"}, paramLabel = "''", description = "Tower service access token.")
     private String towerToken;
 
-    @Option(names = {"--tower-endpoint"}, description = "Tower service endpoint.")
+    @Option(names = {"--tower-endpoint"}, paramLabel = "''", description = "Tower service endpoint e.g. https://api.tower.nf.")
     private String towerEndpoint;
 
+    @Option(names = {"--tower-workspace-id"}, paramLabel = "''", description = "Tower service workspace ID e.g. 1234567890.")
     private Long towerWorkspaceId;
 
-    @Option(names = {"--build-repo"}, description = "The container repository where image build by Wave will stored.")
+    @Option(names = {"--build-repo"}, paramLabel = "''", description = "The container repository where image build by Wave will stored e.g. docker.io/user/build.")
     private String buildRepository;
 
-    @Option(names = {"--cache-repo"}, description = "The container repository where image layer created by Wave will stored.")
+    @Option(names = {"--cache-repo"}, paramLabel = "''", description = "The container repository where image layer created by Wave will stored e.g. docker.io/user/cache.")
     private String cacheRepository;
 
-    @Option(names = {"--wave-endpoint"}, description = "Wave service endpoint.")
+    @Option(names = {"--wave-endpoint"}, paramLabel = "''", description = "Wave service endpoint e.g. https://wave.seqera.io.")
     private String waveEndpoint;
 
-    @Option(names = {"--freeze"}, description = "Request a container freeze.")
+    @Option(names = {"--freeze"}, paramLabel = "false",  description = "Request a container freeze.")
     private boolean freeze;
 
-    @Option(names = {"--platform"}, description = "Platform to be used for the container build e.g. linux/amd64, linux/arm64.")
+    @Option(names = {"--platform"}, paramLabel = "''", description = "Platform to be used for the container build. One of: linux/amd64, linux/arm64.")
     private String platform;
 
-    @Option(names = {"--await"}, description = "Await the container build to be available.")
+    @Option(names = {"--await"}, paramLabel = "false",  description = "Await the container build to be available.")
     private boolean await;
 
-    @Option(names = {"--context"}, description = "Directory path where the build context is stored.")
+    @Option(names = {"--context"}, paramLabel = "''",  description = "Directory path where the build context is stored e.g. /some/context/path.")
     private String contextDir;
 
-    @Option(names = {"--layer"})
+    @Option(names = {"--layer"}, paramLabel = "''", description = "Directory path where a layer content is stored e.g. /some/layer/path")
     private List<String> layerDirs;
 
-    @Option(names = {"--config-cmd"}, description = "Overwrite the default CMD (command) of the image.")
+    @Option(names = {"--config-cmd"}, paramLabel = "''", description = "Overwrite the default CMD (command) of the image.")
     private String command;
 
-    @Option(names = {"--config-entrypoint"}, description = "Overwrite the default ENTRYPOINT of the image.")
+    @Option(names = {"--config-entrypoint"}, paramLabel = "''", description = "Overwrite the default ENTRYPOINT of the image.")
     private String entrypoint;
 
-    @Option(names = {"--conda-file"}, description = "A Conda file used to build the container.")
+    @Option(names = {"--conda-file"}, paramLabel = "''", description = "A Conda file used to build the container e.g. /some/path/conda.yaml.")
     private String condaFile;
 
-    @Option(names = {"--conda-package"}, description = "One or more Conda package used to build the container.")
+    @Option(names = {"--conda-package"}, paramLabel = "''", description = "One or more Conda package used to build the container e.g. bioconda::samtools=1.17.")
     private List<String> condaPackages;
 
-    @Option(names = {"--conda-base-image"}, description = "Conda base image used to to build the container (default: ${DEFAULT-VALUE}).")
+    @Option(names = {"--conda-base-image"}, paramLabel = "''", description = "Conda base image used to to build the container (default: ${DEFAULT-VALUE}).")
     private String condaBaseImage = CondaOpts.DEFAULT_MAMBA_IMAGE;
 
-    @Option(names = {"--conda-run-command"}, description = "Dockerfile RUN commands used to build the container.")
+    @Option(names = {"--conda-run-command"}, paramLabel = "''", description = "Dockerfile RUN commands used to build the container.")
     private List<String> condaRunCommands;
 
-    @Option(names = {"--conda-channels"}, description = "Conda channels used to build the container (default: ${DEFAULT-VALUE}).")
+    @Option(names = {"--conda-channels"}, paramLabel = "''", description = "Conda channels used to build the container (default: ${DEFAULT-VALUE}).")
     private String condaChannels = "seqera,bioconda,conda-forge,defaults";
 
-    @Option(names = {"--spack-file"}, description = "A Spack file used to build the container.")
+    @Option(names = {"--spack-file"}, paramLabel = "''",  description = "A Spack file used to build the container e.g. /some/path/spack.yaml.")
     private String spackFile;
 
-    @Option(names = {"--spack-package"}, description = "One or more Spakc package used to build the container.")
+    @Option(names = {"--spack-package"}, paramLabel = "''", description = "One or more Spakc package used to build the container e.g. cowsay.")
     private List<String> spackPackages;
 
-    @Option(names = {"--spack-run-command"}, description = "Dockerfile RUN commands used to build the container.")
+    @Option(names = {"--spack-run-command"}, paramLabel = "''",  description = "Dockerfile RUN commands used to build the container.")
     private List<String> spackRunCommands;
 
-    @Option(names = {"--log-level"}, description = "Set the application log level: OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL")
+    @Option(names = {"--log-level"}, paramLabel = "''", description = "Set the application log level. One of: OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL")
     private String logLevel;
 
-    @Option(names = {"-o","--output"}, description = "Output format. One of: json, yaml")
+    @Option(names = {"-o","--output"}, paramLabel = "json|yaml",  description = "Output format. One of: json, yaml.")
     private String outputFormat;
 
     private BuildContext buildContext;
@@ -139,11 +142,21 @@ public class App implements Runnable {
 
     public static void main(String[] args) {
         try {
-            CommandLine.run(new App(), args);
+            final App app = new App();
+            final CommandLine cli = new CommandLine(app);
+            final CommandLine.ParseResult result = cli.parseArgs(args);
+            if( result.matchedArgs().size()==0 || result.isUsageHelpRequested() ) {
+                cli.usage(System.out);
+            }
+            else if( result.isVersionHelpRequested() ) {
+                System.out.println(BuildInfo.getFullVersion());
+            }
+            else {
+                app.run();
+            }
         }
-        catch (CommandLine.ExecutionException e) {
-            Throwable err = e.getCause()!=null ? e.getCause() : e;
-            System.err.println(err.getMessage());
+        catch (IllegalCliArgumentException e) {
+            System.err.println(e.getMessage());
             System.exit(1);
         }
         catch (Throwable e) {
@@ -238,6 +251,21 @@ public class App implements Runnable {
             final String msg = String.format("Invalid output format: '%s' - expected value: json, yaml", outputFormat);
             throw new IllegalCliArgumentException(msg);
         }
+
+        if( condaPackages!=null && spackPackages!=null )
+            throw new IllegalCliArgumentException("Option --conda-package and --spack-package conflict each other");
+
+        if( condaPackages!=null && !isEmpty(spackFile) )
+            throw new IllegalCliArgumentException("Option --conda-package and --spack-file conflict each other");
+
+        if( !isEmpty(condaFile) && spackPackages!=null )
+            throw new IllegalCliArgumentException("Option --conda-file and --spack-package conflict each other");
+
+        if( !isEmpty(condaFile) && !isEmpty(spackFile) )
+            throw new IllegalCliArgumentException("Option --conda-file and --spack-file conflict each other");
+
+        if( !isEmpty(contextDir) && isEmpty(containerFile) )
+            throw new IllegalCliArgumentException("Option --context requires the use of a container file");
 
         if( !isEmpty(contextDir) ) {
             // check that a container file has been provided

@@ -112,4 +112,23 @@ class AppTest extends Specification {
             '''.stripIndent(true)
     }
 
+    def 'should dump response to json' () {
+        given:
+        def app = new App()
+        String[] args = ["--output", "json"]
+        and:
+        def resp = new SubmitContainerTokenResponse(
+                containerToken: "12345",
+                targetImage: 'docker.io/some/repo',
+                containerImage: 'docker.io/some/container',
+                expiration: Instant.ofEpochMilli(1691839913),
+                buildId: '98765'
+        )
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        def result = app.dumpOutput(resp)
+        then:
+        result == '{"buildId":"98765","containerImage":"docker.io/some/container","containerToken":"12345","expiration":"1970-01-20T13:57:19.913Z","targetImage":"docker.io/some/repo"}'
+    }
 }
