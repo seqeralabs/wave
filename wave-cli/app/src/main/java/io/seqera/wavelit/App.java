@@ -40,6 +40,8 @@ import io.seqera.wave.util.DockerHelper;
 import io.seqera.wave.util.Packer;
 import io.seqera.wavelit.exception.IllegalCliArgumentException;
 import io.seqera.wavelit.util.CliVersionProvider;
+import io.seqera.wavelit.json.JsonHelper;
+import io.seqera.wavelit.util.YamlHelper;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import static io.seqera.wave.util.DockerHelper.addPackagesToSpackFile;
@@ -127,6 +129,9 @@ public class App implements Runnable {
 
     @Option(names = {"--log-level"}, description = "Set the application log level: OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL")
     private String logLevel;
+
+    @Option(names = {"-o","--output"}, description = "Output format. One of: json, yaml")
+    private String outputFormat;
 
     private BuildContext buildContext;
 
@@ -229,6 +234,10 @@ public class App implements Runnable {
         if( spackPackages!=null && !isEmpty(containerFile) )
             throw new IllegalCliArgumentException("Option --spack-package and --containerfile conflict each other");
 
+        if( !isEmpty(outputFormat) && !List.of("json","yaml").contains(outputFormat) ) {
+            final String msg = String.format("Invalid output format: '%s' - expected value: json, yaml", outputFormat);
+            throw new IllegalCliArgumentException(msg);
+        }
 
         if( !isEmpty(contextDir) ) {
             // check that a container file has been provided
@@ -286,9 +295,7 @@ public class App implements Runnable {
         if( await && !isEmpty(resp.buildId) )
             client.awaitImage(resp.targetImage);
         // print the wave container name
-        System.out.println( freeze
-                ? resp.containerImage
-                : resp.targetImage );
+        System.out.println(dumpOutput(resp));
     }
 
     private String encodePathBase64(String value) {
@@ -417,5 +424,20 @@ public class App implements Runnable {
         }
         else
             return null;
+    }
+
+    protected String dumpOutput(SubmitContainerTokenResponse resp) {
+        if( "yaml".equals(outputFormat) ) {
+            return YamlHelper.toYaml(resp);
+        }
+        if( "json".equals(outputFormat) ) {
+            return JsonHelper.toJson(resp);
+        }
+        if( outputFormat!=null )
+            throw new IllegalArgumentException("Unexpected output format: "+outputFormat);
+
+        return freeze
+                ? resp.containerImage
+                : resp.targetImage;
     }
 }

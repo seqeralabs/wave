@@ -9,7 +9,7 @@
  *  defined by the Mozilla Public License, v. 2.0.
  */
 
-package io.seqera.wavelit
+package io.seqera.wavelit.json
 
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wavelit.json.JsonHelper

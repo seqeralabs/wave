@@ -16,6 +16,10 @@ import java.io.IOException;
 import com.squareup.moshi.JsonAdapter;
 import com.squareup.moshi.Moshi;
 import io.seqera.wave.api.SubmitContainerTokenRequest;
+import io.seqera.wave.api.SubmitContainerTokenResponse;
+import io.seqera.wavelit.json.ByteArrayAdapter;
+import io.seqera.wavelit.json.DateTimeAdapter;
+import io.seqera.wavelit.json.PathAdapter;
 
 /**
  * Helper class to encode and decode JSON payloads
@@ -33,6 +37,11 @@ public class JsonHelper {
     public static String toJson(SubmitContainerTokenRequest request) {
         JsonAdapter<SubmitContainerTokenRequest> adapter = moshi.adapter(SubmitContainerTokenRequest.class);
         return adapter.toJson(request);
+    }
+
+    public static String toJson(SubmitContainerTokenResponse response) {
+        JsonAdapter<SubmitContainerTokenResponse> adapter = moshi.adapter(SubmitContainerTokenResponse.class);
+        return adapter.toJson(response);
     }
 
     public static <T> T fromJson(String json, Class<T> type) throws IOException {
