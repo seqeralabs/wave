@@ -167,7 +167,7 @@ public class App implements Runnable {
                 app.run();
             }
         }
-        catch (IllegalCliArgumentException e) {
+        catch (IllegalCliArgumentException | CommandLine.ParameterException e) {
             System.err.println(e.getMessage());
             System.exit(1);
         }
