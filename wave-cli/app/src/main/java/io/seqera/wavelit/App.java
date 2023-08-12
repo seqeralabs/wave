@@ -106,6 +106,9 @@ public class App implements Runnable {
     @Option(names = {"--config-entrypoint"}, paramLabel = "''", description = "Overwrite the default ENTRYPOINT of the image.")
     private String entrypoint;
 
+    @Option(names = {"--config-working-dir"}, paramLabel = "''", description = "Overwrite the default WORKDIR of the image e.g. /some/work/dir.")
+    private String workingDir;
+
     @Option(names = {"--conda-file"}, paramLabel = "''", description = "A Conda file used to build the container e.g. /some/path/conda.yaml.")
     private String condaFile;
 
@@ -380,8 +383,14 @@ public class App implements Runnable {
 
         // add the command if specified
         if( command != null ){
-            if( "".equals(command) ) throw new IllegalCliArgumentException("The specified command is an empty string");
+            if( "".equals(command.trim()) ) throw new IllegalCliArgumentException("The command cannot be an empty string");
             result.cmd = List.of(command);
+        }
+
+        //add the working directory if specified
+        if( workingDir != null ){
+            if( "".equals(workingDir.trim()) ) throw new IllegalCliArgumentException("The working directory cannot be empty string");
+            result.workingDir = workingDir;
         }
 
         // add the layers to the resulting config if specified
