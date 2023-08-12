@@ -165,6 +165,7 @@
 {
   "name":"io.seqera.wave.api.SubmitContainerTokenResponse",
   "allDeclaredFields":true,
+  "queryAllPublicMethods":true,
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
@@ -179,7 +180,10 @@
 {
   "name":"io.seqera.wavelit.json.DateTimeAdapter",
   "queryAllDeclaredMethods":true,
-  "methods":[{"name":"deserializeInstant","parameterTypes":["java.lang.String"] }]
+  "methods":[
+    {"name":"deserializeInstant","parameterTypes":["java.lang.String"] }, 
+    {"name":"serializeInstant","parameterTypes":["java.time.Instant"] }
+  ]
 },
 {
   "name":"io.seqera.wavelit.json.PathAdapter",
@@ -192,12 +196,16 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"java.beans.PropertyVetoException"
+},
+{
   "name":"java.io.FilePermission"
 },
 {
   "name":"java.lang.Object",
   "allDeclaredFields":true,
-  "queryAllDeclaredMethods":true
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicMethods":true
 },
 {
   "name":"java.lang.RuntimePermission"
