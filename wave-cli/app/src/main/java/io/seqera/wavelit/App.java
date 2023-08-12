@@ -51,6 +51,8 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Option;
 
+import static io.seqera.wavelit.util.Checkers.isEnvVar;
+
 /**
  * Wavelit main class
  */
@@ -99,6 +101,9 @@ public class App implements Runnable {
 
     @Option(names = {"--layer"}, paramLabel = "''", description = "Directory path where a layer content is stored e.g. /some/layer/path")
     private List<String> layerDirs;
+
+    @Option(names = {"--config-env"}, paramLabel = "''",  description = "Overwrite the environment of the image e.g. NAME=VALUE")
+    private List<String> environment;
 
     @Option(names = {"--config-cmd"}, paramLabel = "''", description = "Overwrite the default CMD (command) of the image.")
     private String command;
@@ -385,6 +390,14 @@ public class App implements Runnable {
         if( command != null ){
             if( "".equals(command.trim()) ) throw new IllegalCliArgumentException("The command cannot be an empty string");
             result.cmd = List.of(command);
+        }
+
+        //add environment variables if specified
+        if( environment!=null ) {
+            for( String it : environment ) {
+                if( !isEnvVar(it) ) throw new IllegalCliArgumentException("Invalid environment variable syntax - offending value: " + it);
+            }
+            result.env = environment;
         }
 
         //add the working directory if specified
