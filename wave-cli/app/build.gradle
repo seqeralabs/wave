@@ -37,6 +37,7 @@ dependencies {
     testImplementation ("org.objenesis:objenesis:3.2")
     testImplementation ("org.spockframework:spock-core:2.3-groovy-3.0") { exclude group: 'org.codehaus.groovy'; exclude group: 'net.bytebuddy' }
     testImplementation ('org.spockframework:spock-junit4:2.3-groovy-3.0') { exclude group: 'org.codehaus.groovy'; exclude group: 'net.bytebuddy' }
+    testImplementation 'com.github.tomakehurst:wiremock:2.27.2'
 }
 
 test {

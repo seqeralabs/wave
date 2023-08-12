@@ -17,6 +17,7 @@ import io.seqera.wavelit.exception.IllegalCliArgumentException
 import picocli.CommandLine
 import spock.lang.Specification
 /**
+ * Test App Conda prefixed options
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
