@@ -59,6 +59,7 @@ dependencies {
     implementation 'com.squareup.moshi:moshi:1.14.0'
     implementation 'com.squareup.moshi:moshi-adapters:1.14.0'
     implementation 'redis.clients:jedis:4.4.3'
+    implementation "io.github.resilience4j:resilience4j-ratelimiter:0.17.0"
     // caching deps
     implementation("io.micronaut.cache:micronaut-cache-core")
     implementation("io.micronaut.cache:micronaut-cache-caffeine")

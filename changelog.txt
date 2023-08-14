@@ -1,4 +1,8 @@
 # Wave changelog
+v0.37.0 - 14 Aug 2023
+- Add http requests rate limiter [74ecc399]
+- Fix artifact publishing [publish] [5f71c62e]
+
 v0.36.1 - 11 Aug 2023
 - Fix support for build context [96a32ef0]
 - Add toString method to ContainerTokenRequest [9e230004]
