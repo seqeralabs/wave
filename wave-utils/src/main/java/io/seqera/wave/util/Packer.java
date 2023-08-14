@@ -22,9 +22,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
@@ -33,7 +35,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import io.seqera.wave.api.ContainerLayer;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -119,11 +123,45 @@ public class Packer {
         return layer(root, files);
     }
 
+    public ContainerLayer layer(Path root, Set<String> ignorePatterns) throws IOException {
+        final List<Path> files = new ArrayList<>();
+        Files.walkFileTree(root, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                files.add(file);
+                return FileVisitResult.CONTINUE;
+            }
+        });
+
+        Collections.sort(files);
+        return layer(root, files, ignorePatterns);
+    }
+
     public ContainerLayer layer(Path root, List<Path> files) throws IOException {
         final Map<String,Path> entries = new HashMap<>();
         for( Path it : files )
             entries.put(root.relativize(it).toString(), it);
         return layer(entries);
+    }
+
+    public ContainerLayer layer(Path root, List<Path> files, Set<String> ignorePatterns) throws IOException {
+        final Map<String,Path> entries = new HashMap<>();
+
+        Set<PathMatcher> excludedMatchers = ignorePatterns.stream()
+                .map(pattern -> FileSystems.getDefault().getPathMatcher("glob:" + pattern))
+                .collect(Collectors.toSet());
+
+        for( Path it : files ){
+            Path relative = root.relativize(it);
+            if(!isExcluded(relative, excludedMatchers)){
+                entries.put(relative.toString(), it);
+            }
+        }
+        return layer(entries);
+    }
+
+    private static boolean isExcluded(Path path, Set<PathMatcher> excludedMatchers) {
+        return excludedMatchers.stream().anyMatch(matcher -> matcher.matches(path));
     }
 
     public ContainerLayer layer(Map<String,Path> entries) throws IOException {
