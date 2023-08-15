@@ -63,8 +63,6 @@ class RateLimiterFilter implements HttpServerFilter, FilterOrderProvider {
 
     private final SyncCache<AtomicRateLimiter> limiters
 
-    private int statusCode
-
     /**
      * Creates the rate limiter with the provided config
      *
@@ -76,7 +74,6 @@ class RateLimiterFilter implements HttpServerFilter, FilterOrderProvider {
         opts.validate()
 
         this.limiters = limiters
-        this.statusCode = opts.statusCode
         this.config = RateLimiterConfig.custom()
                 .limitRefreshPeriod(opts.limitRefreshPeriod)
                 .limitForPeriod(opts.limitForPeriod)
@@ -105,8 +102,12 @@ class RateLimiterFilter implements HttpServerFilter, FilterOrderProvider {
         }
         else {
             final metrics = limiter.getDetailedMetrics()
-            log.warn "Too many request for key: $key -- Wait ${TimeUnit.NANOSECONDS.toMillis(metrics.getNanosToWait())} millis issuing a new request"
-            return createOverLimitResponse(metrics);
+            // return a different status depending the request source
+            // requests starting with /v2 are originated by docker which is expecting 429 error code (too many request)
+            // other requests are originated by nextflow with is expecting 503 error code (slow down)
+            final httpStatus = request.path.startsWith('/v2') ? 429 : 503
+            log.warn "Too many request for IP: ${key}; request: $request - Wait ${TimeUnit.NANOSECONDS.toMillis(metrics.getNanosToWait())} millis issuing a new request"
+            return createOverLimitResponse(metrics, httpStatus)
         }
     }
 
@@ -122,7 +123,7 @@ class RateLimiterFilter implements HttpServerFilter, FilterOrderProvider {
         return limiters.get(key, AtomicRateLimiter, ()-> new AtomicRateLimiter(key, config) );
     }
 
-    private Publisher<MutableHttpResponse<?>> createOverLimitResponse(AtomicRateLimiterMetrics metrics) {
+    private Publisher<MutableHttpResponse<?>> createOverLimitResponse(AtomicRateLimiterMetrics metrics, int statusCode) {
         final secondsToWait = TimeUnit.NANOSECONDS.toSeconds(metrics.getNanosToWait())
 
         final message = "Maximum request rate exceeded - Wait ${secondsToWait}secs before issuing a new request"
