@@ -1,4 +1,7 @@
 # Wave changelog
+v0.37.1 - 15 Aug 2023
+- Improve http rate limiter 
+
 v0.37.0 - 14 Aug 2023
 - Add http requests rate limiter [74ecc399]
 - Fix artifact publishing [publish] [5f71c62e]
