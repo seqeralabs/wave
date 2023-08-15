@@ -1,6 +1,8 @@
 package io.seqera.wave.util
 
 import spock.lang.Specification
+import spock.lang.Unroll
+
 import java.nio.file.Path
 /**
  *
@@ -8,9 +10,10 @@ import java.nio.file.Path
  */
 class PathFilterTest extends Specification {
 
+    @Unroll
     def 'should filter the paths based on ignore patterns'(){
         given:
-        Set<String> ignorePatterns = ["*/ignore*","main.??","*/*/exclude*"]
+        Set<String> ignorePatterns = ["*/ignore*","main.??","*/*/exclude*", "*.md", "!README.md"]
         def pathFilter = new PathFilter(ignorePatterns)
 
         when:
@@ -28,6 +31,8 @@ class PathFilterTest extends Specification {
         'this/that/ciao.txt'    | true
         'main.nf'               | false
         'main.txt'              | true
+        'file.md'               | false
+        'README.md'             | true
     }
 
 }
