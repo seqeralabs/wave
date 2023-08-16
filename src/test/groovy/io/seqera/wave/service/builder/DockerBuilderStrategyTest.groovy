@@ -148,7 +148,7 @@ class DockerBuilderStrategyTest extends Specification {
                 'quay.io/singularity/singularity:v3.11.4',
                 'sh',
                 '-c',
-                'singularity build image.sif Containerfile && singularity push image.sif repo:17e58f4434c26104c2cf9f0eb8fbc16f'
+                'singularity build image.sif Containerfile && singularity push image.sif oras://repo:17e58f4434c26104c2cf9f0eb8fbc16f'
         ]
         
         cleanup:
