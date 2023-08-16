@@ -39,7 +39,7 @@ class FileUtils {
      * @return <code>true</code> if and only if the operation succeeded;
      *          <code>false</code> otherwise
      */
-    static boolean setLastModified(Path self, long time) {
+    public static boolean setLastModified(Path self, long time) {
         try {
             Files.setLastModifiedTime(self, FileTime.fromMillis(time));
             return true;
@@ -56,12 +56,12 @@ class FileUtils {
      * @param self The {@code Path} for which the permissions string
      * @return Unix permission as a string e.g. {@code rw-r--r--}
      */
-    static String getPermissions(Path self) throws IOException {
+    public static String getPermissions(Path self) throws IOException {
         Set<PosixFilePermission> perms = Files.getPosixFilePermissions(self);
         return PosixFilePermissions.toString(perms);
     }
 
-    static String getPermissions(File self) throws IOException {
+    public static String getPermissions(File self) throws IOException {
         Set<PosixFilePermission> perms = Files.getPosixFilePermissions(self.toPath());
         return PosixFilePermissions.toString(perms);
     }
@@ -77,7 +77,7 @@ class FileUtils {
      * @param group The group permissions using a octal numeric representation.
      * @param other The others permissions using a octal numeric representation.
      */
-    static boolean setPermissions( Path self, int owner, int group, int other ) {
+    public static boolean setPermissions( Path self, int owner, int group, int other ) {
         StringBuilder str = new StringBuilder();
         digitToPerm(owner, str);
         digitToPerm(group, str);
@@ -104,7 +104,7 @@ class FileUtils {
      * @param group The group permissions using a octal numeric representation.
      * @param other The others permissions using a octal numeric representation.
      */
-    static boolean setPermissions(File self, int owner, int group, int other ) {
+    public static boolean setPermissions(File self, int owner, int group, int other ) {
         return setPermissions(self.toPath(), owner, group, other);
     }
 
@@ -114,7 +114,7 @@ class FileUtils {
      * @param self The {@code Path} file for which set the permissions.
      * @param permissions The permissions string e.g. {@code rw-r--r--}. It must contain 9 letters.
      */
-    static boolean setPermissions( Path self, String permissions ) {
+    public static boolean setPermissions( Path self, String permissions ) {
         Set<PosixFilePermission> perms = PosixFilePermissions.fromString(permissions);
 
         try {
@@ -134,26 +134,26 @@ class FileUtils {
      * @param permissions The permissions string e.g. {@code rw-r--r--}. It must contain 9 letters.
      */
 
-    static boolean setPermissions( File self, String permissions ) {
+    public static boolean setPermissions( File self, String permissions ) {
         return setPermissions(self.toPath(),permissions);
     }
 
-    static int getPermissionsMode( File self ) throws IOException {
+    public static int getPermissionsMode( File self ) throws IOException {
         final Set<PosixFilePermission> perms = Files.getPosixFilePermissions(self.toPath());
         return toOctalFileMode(perms);
     }
 
-    static int getPermissionsMode( Path self ) throws IOException {
+    public static int getPermissionsMode( Path self ) throws IOException {
         final Set<PosixFilePermission> perms = Files.getPosixFilePermissions(self);
         return toOctalFileMode(perms);
     }
 
-    static void setPermissionsMode( File self, int mode ) throws IOException {
+    public static void setPermissionsMode( File self, int mode ) throws IOException {
         final Set<PosixFilePermission> perms = toPosixFilePermission(mode);
         Files.setPosixFilePermissions(self.toPath(), perms);
     }
 
-    static void setPermissionsMode( Path self, int mode ) throws IOException {
+    public static void setPermissionsMode( Path self, int mode ) throws IOException {
         final Set<PosixFilePermission> perms = toPosixFilePermission(mode);
         Files.setPosixFilePermissions(self, perms);
     }

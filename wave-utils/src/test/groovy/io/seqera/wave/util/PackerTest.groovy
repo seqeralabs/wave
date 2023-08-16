@@ -18,6 +18,7 @@
 package io.seqera.wave.util
 
 import java.nio.file.Files
+import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 import java.nio.file.attribute.FileTime
 
@@ -26,7 +27,7 @@ import spock.lang.Specification
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class PackerTest extends Specification implements TarHelper {
+class PackerTest extends Specification {
 
 
     def 'should tar bundle' () {
@@ -65,7 +66,7 @@ class PackerTest extends Specification implements TarHelper {
         def buffer = new ByteArrayOutputStream()
         packer.makeTar(rootPath, files, buffer)
         and:
-        untar( new ByteArrayInputStream(buffer.toByteArray()), result )
+        TarUtils.untar( new ByteArrayInputStream(buffer.toByteArray()), result )
         then:
         result.resolve('main.nf').text == rootPath.resolve('main.nf').text
         result.resolve('this/hola.txt').text == rootPath.resolve('this/hola.txt').text
@@ -86,8 +87,7 @@ class PackerTest extends Specification implements TarHelper {
         layer.gzipSize == 254
         and:
         def gzip = layer.location.replace('data:','').decodeBase64()
-        def tar = uncompress(gzip)
-        untar( new ByteArrayInputStream(tar), result2)
+        TarUtils.untarGzip( new ByteArrayInputStream(gzip), result2)
         and:
         result2.resolve('main.nf').text == rootPath.resolve('main.nf').text
         result2.resolve('this/hola.txt').text == rootPath.resolve('this/hola.txt').text
@@ -98,4 +98,74 @@ class PackerTest extends Specification implements TarHelper {
         folder?.deleteDir()
     }
 
+    def 'should ignore based on ignore patterns' () {
+        given:
+        def LAST_MODIFIED = FileTime.fromMillis(1_000_000_000_000)
+        def folder = Files.createTempDirectory('test')
+        and:
+        def result = folder.resolve('result')
+        and:
+        def rootPath = folder.resolve('bundle'); Files.createDirectories(rootPath)
+        rootPath.resolve('main.nf').text = "I'm the main file"
+        Files.createDirectories(rootPath.resolve('this/that'))
+        Files.createDirectories(rootPath.resolve('this/ignore'))
+        and:
+        Files.write(rootPath.resolve('this/hola.txt'), "Hola".bytes)
+        Files.write(rootPath.resolve('this/hello.txt'), "Hello".bytes)
+        Files.write(rootPath.resolve('this/that/ciao.txt'), "Ciao".bytes)
+        Files.write(rootPath.resolve('this/that/exclude.txt'), "Exclude".bytes)
+
+        and:
+        def files = new ArrayList<Path>()
+        files << rootPath.resolve('this/ignore')
+        files << rootPath.resolve('this/that/exclude.txt')
+        files << rootPath.resolve('this')
+        files << rootPath.resolve('this/hola.txt')
+        files << rootPath.resolve('this/hello.txt')
+        files << rootPath.resolve('this/that')
+        files << rootPath.resolve('this/that/ciao.txt')
+        files << rootPath.resolve('main.nf')
+        and:
+        for( Path it : files ) {
+            Files.setLastModifiedTime(it, LAST_MODIFIED)
+            final mode = Files.isDirectory(it) ? 0700 : 0600
+            FileUtils.setPermissionsMode(it, mode)
+        }
+        and:
+        Set<String> ignorePatterns = new ArrayList<>()
+        ignorePatterns.add("*/ignore*");
+        ignorePatterns.add("main.??")
+        ignorePatterns.add("*/*/exclude*")
+        and:
+        def packer = new Packer()
+
+        when:
+        def layer = packer.layer(rootPath, ignorePatterns)
+
+        then:
+        def gzip = layer.location.replace('data:','').decodeBase64()
+        TarUtils.untarGzip( new ByteArrayInputStream(gzip), result)
+        and:
+        result.resolve('this/hola.txt').text == rootPath.resolve('this/hola.txt').text
+        result.resolve('this/hello.txt').text == rootPath.resolve('this/hello.txt').text
+        result.resolve('this/that/ciao.txt').text == rootPath.resolve('this/that/ciao.txt').text
+
+        when:
+        result.resolve('main.nf').text
+        then:
+        thrown(NoSuchFileException)
+
+        when:
+        result.resolve('this/that/exclude.txt').text
+        then:
+        thrown(NoSuchFileException)
+
+        when:
+        result.resolve('this/ignore').size()
+        then:
+        thrown(NoSuchFileException)
+
+        cleanup:
+        folder?.deleteDir()
+    }
 }

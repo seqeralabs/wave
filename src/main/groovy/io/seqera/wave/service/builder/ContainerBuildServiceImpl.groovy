@@ -134,26 +134,29 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         try {
             // create the workdir path
             Files.createDirectories(req.workDir)
+            // create context dir
+            final context = req.workDir.resolve('context')
+            Files.createDirectory(context)
             // save the dockerfile
             final dockerFile = req.workDir.resolve('Dockerfile')
             Files.write(dockerFile, dockerFile0(req,spackConfig).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            // save build context
+            if( req.buildContext ) {
+                saveBuildContext(req.buildContext, context)
+            }
             // save the conda file
             if( req.condaFile ) {
-                final condaFile = req.workDir.resolve('conda.yml')
+                final condaFile = context.resolve('conda.yml')
                 Files.write(condaFile, req.condaFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             }
             // save the spack file
             if( req.spackFile ) {
-                final spackFile = req.workDir.resolve('spack.yaml')
+                final spackFile = context.resolve('spack.yaml')
                 Files.write(spackFile, req.spackFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             }
             // save layers provided via the container config
             if( req.containerConfig ) {
-                saveLayersToContext(req.containerConfig, req.workDir)
-            }
-            // save build context
-            if( req.buildContext ) {
-                saveBuildContext(req.buildContext, req.workDir)
+                saveLayersToContext(req.containerConfig, context)
             }
             resp = buildStrategy.build(req)
             log.info "== Build completed with status=$resp.exitStatus; stdout: (see below)\n${indent(resp.logs)}"

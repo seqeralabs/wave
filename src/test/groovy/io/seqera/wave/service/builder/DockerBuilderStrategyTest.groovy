@@ -90,6 +90,7 @@ class DockerBuilderStrategyTest extends Specification {
                 '--platform', 'linux/amd64',
                 'gcr.io/kaniko-project/executor:v1.12.1',
                 '--dockerfile', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f/Dockerfile',
+                '--context', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f/context',
                 '--destination', 'repo:17e58f4434c26104c2cf9f0eb8fbc16f',
                 '--cache=true',
                 '--custom-platform', 'linux/amd64',
@@ -105,14 +106,14 @@ class DockerBuilderStrategyTest extends Specification {
         def service = ctx.getBean(DockerBuildStrategy)
         and:
         def work = Path.of('/work/foo')
-        def creds = Path.of('/work/creds.json')
-        def cache = 'reg.io/wave/build/cache'
+        def cache    = 'reg.io/wave/build/cache'
         def req = new BuildRequest('from foo', work, 'repo', null, null, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "1.2.3.4", null)
         when:
         def cmd = service.launchCmd(req)
         then:
         cmd == [
                 '--dockerfile', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f/Dockerfile',
+                '--context', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f/context',
                 '--destination', 'repo:17e58f4434c26104c2cf9f0eb8fbc16f',
                 '--cache=true',
                 '--custom-platform', 'linux/amd64',

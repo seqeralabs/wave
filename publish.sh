@@ -20,6 +20,5 @@ aws s3api head-object --bucket $BUCKET --key $KEY &> /dev/null
 if [ $? -eq 0 ]; then
   echo "NOTE: Library $NAME-$VERSION already exist - skipping publishing"
 else
-## go ahead with the publishing
-echo ./gradlew $NAME:publishMavenPublicationToSeqeraRepositoryRepository
+  ./gradlew $NAME:publishMavenPublicationToSeqeraRepositoryRepository
 fi
