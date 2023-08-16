@@ -54,7 +54,9 @@ class ContainerScanServiceImpl implements ContainerScanService {
     @EventListener
     void onBuildEvent(BuildEvent event) {
         try {
-            scan(ScanRequest.fromBuild(event.request))
+            if( event.result.succeeded() ) {
+                scan(ScanRequest.fromBuild(event.request))
+            }
         }
         catch (Exception e) {
             log.warn "Unable to run the container scan - reason: ${e.message?:e}"
