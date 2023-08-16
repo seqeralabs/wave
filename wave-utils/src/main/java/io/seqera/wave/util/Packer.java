@@ -31,9 +31,9 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 
 import io.seqera.wave.api.ContainerLayer;
@@ -107,20 +107,10 @@ public class Packer {
     }
 
     public ContainerLayer layer(Path root) throws IOException {
-        final List<Path> files = new ArrayList<>();
-        Files.walkFileTree(root, new SimpleFileVisitor<>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                files.add(file);
-                return FileVisitResult.CONTINUE;
-            }
-        });
-
-        Collections.sort(files);
-        return layer(root, files);
+        return layer(root, Set.of());
     }
 
-    public ContainerLayer layer(Path root, LinkedHashSet<String> ignorePatterns) throws IOException {
+    public ContainerLayer layer(Path root, Set<String> ignorePatterns) throws IOException {
         final List<Path> files = new ArrayList<>();
         Files.walkFileTree(root, new SimpleFileVisitor<>() {
             @Override
@@ -135,13 +125,10 @@ public class Packer {
     }
 
     public ContainerLayer layer(Path root, List<Path> files) throws IOException {
-        final Map<String,Path> entries = new HashMap<>();
-        for( Path it : files )
-            entries.put(root.relativize(it).toString(), it);
-        return layer(entries);
+        return layer(root, files, Set.of());
     }
 
-    public ContainerLayer layer(Path root, List<Path> files, LinkedHashSet<String> ignorePatterns) throws IOException {
+    public ContainerLayer layer(Path root, List<Path> files, Set<String> ignorePatterns) throws IOException {
         final Map<String,Path> entries = new HashMap<>();
 
         DockerIgnorePathFilter pathFilter = new DockerIgnorePathFilter(ignorePatterns);

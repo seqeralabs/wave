@@ -5,7 +5,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -24,7 +23,7 @@ public class DockerIgnorePathFilter {
 
     Map<String, PathMatcher> mactherMap = new HashMap<>();
 
-    public DockerIgnorePathFilter(LinkedHashSet<String> patterns) {
+    public DockerIgnorePathFilter(Set<String> patterns) {
         this.patterns = patterns;
         FileSystem fileSystem = FileSystems.getDefault();
         for (String pattern : patterns){
@@ -41,7 +40,7 @@ public class DockerIgnorePathFilter {
 
         for (String pattern : patterns) {
             if (mactherMap.get(pattern).matches(path)) {
-                accepted = pattern.startsWith(EXCEPTION_PATTERN_MARKER
+                accepted = pattern.startsWith(EXCEPTION_PATTERN_MARKER);
             }
         }
 
