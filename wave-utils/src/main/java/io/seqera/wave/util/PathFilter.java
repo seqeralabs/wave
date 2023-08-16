@@ -39,11 +39,7 @@ public class PathFilter {
 
         for (String pattern : patterns) {
             if (mactherMap.get(pattern).matches(path)) {
-                if (pattern.startsWith(EXCEPTION_PATTERN_MARKER)) {
-                    accepted = true;
-                } else {
-                    accepted = false;
-                }
+                accepted = pattern.startsWith(EXCEPTION_PATTERN_MARKER
             }
         }
 
