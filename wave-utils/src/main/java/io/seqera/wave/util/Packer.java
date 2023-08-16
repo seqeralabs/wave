@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -120,7 +121,7 @@ public class Packer {
         return layer(root, files);
     }
 
-    public ContainerLayer layer(Path root, Set<String> ignorePatterns) throws IOException {
+    public ContainerLayer layer(Path root, LinkedHashSet<String> ignorePatterns) throws IOException {
         final List<Path> files = new ArrayList<>();
         Files.walkFileTree(root, new SimpleFileVisitor<>() {
             @Override
@@ -141,7 +142,7 @@ public class Packer {
         return layer(entries);
     }
 
-    public ContainerLayer layer(Path root, List<Path> files, Set<String> ignorePatterns) throws IOException {
+    public ContainerLayer layer(Path root, List<Path> files, LinkedHashSet<String> ignorePatterns) throws IOException {
         final Map<String,Path> entries = new HashMap<>();
 
         PathFilter pathFilter = new PathFilter(ignorePatterns);
