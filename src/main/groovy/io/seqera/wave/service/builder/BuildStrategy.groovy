@@ -3,6 +3,8 @@ package io.seqera.wave.service.builder
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
 
+import static io.seqera.wave.service.builder.BuildFormat.*
+
 /**
  * Defines an abstract container build strategy.
  *
@@ -24,10 +26,21 @@ abstract class BuildStrategy {
     }
 
     List<String> launchCmd(BuildRequest req) {
+        if( !req.format || req.format==DOCKER ) {
+            dockerLaunchCmd(req)
+        }
+        else if( req.format==SINGULARITY ) {
+            singularityLaunchCmd(req)
+        }
+        else
+            throw new IllegalStateException("Unknown build format: $req.format")
+    }
+
+    protected List<String> dockerLaunchCmd(BuildRequest req) {
         final result = new ArrayList(10)
         result
                 << "--dockerfile"
-                << "$req.workDir/Dockerfile".toString()
+                << "$req.workDir/Containerfile".toString()
                 << "--context"
                 << "$req.workDir/context".toString()
                 << "--destination"
@@ -46,4 +59,12 @@ abstract class BuildStrategy {
         return result
     }
 
+    protected List<String> singularityLaunchCmd(BuildRequest req) {
+        final result = new ArrayList(10)
+        result
+            << 'sh'
+            << '-c'
+            << "singularity build image.sif Containerfile && singularity push image.sif ${req.targetImage}".toString()
+        return result
+    }
 }

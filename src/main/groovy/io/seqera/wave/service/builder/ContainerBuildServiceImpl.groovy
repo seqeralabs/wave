@@ -1,5 +1,7 @@
 package io.seqera.wave.service.builder
 
+import java.nio.file.FileAlreadyExistsException
+
 import static FreezeServiceImpl.*
 import static io.seqera.wave.util.StringUtils.*
 import static java.nio.file.StandardOpenOption.*
@@ -136,9 +138,10 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             Files.createDirectories(req.workDir)
             // create context dir
             final context = req.workDir.resolve('context')
-            Files.createDirectory(context)
+            try { Files.createDirectory(context) }
+            catch (FileAlreadyExistsException e) { /* ignore it */ }
             // save the dockerfile
-            final dockerFile = req.workDir.resolve('Dockerfile')
+            final dockerFile = req.workDir.resolve('Containerfile')
             Files.write(dockerFile, dockerFile0(req,spackConfig).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             // save build context
             if( req.buildContext ) {

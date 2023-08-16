@@ -10,6 +10,7 @@ import java.security.SecureRandom
 import com.google.common.io.BaseEncoding
 import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
+import io.seqera.wave.model.ContainerCoordinates
 
 /**
  * Helper methods
@@ -117,7 +118,7 @@ class RegHelper {
     static String parseFromStatement(String line){
         if( !line )
             return null
-        if( !line.startsWith('FROM ') )
+        if( !line.startsWith('FROM ') && !line.toLowerCase().startsWith('from:' ))
             return null
         final tokens = line.tokenize(' ')
         if( tokens.size() < 2 )
@@ -144,5 +145,20 @@ class RegHelper {
             // parse syntax ENTRYPOINT command param1 param2
             return value.tokenize(' ')
         }
+    }
+
+    static String singularityRemoteFile(String repo)  {
+        final path = ContainerCoordinates.parse(repo)
+        """\
+        Active: SylabsCloud
+        Remotes:
+          SylabsCloud:
+            URI: cloud.sylabs.io
+            System: true
+            Exclusive: false
+        Credentials:
+        - URI: oras://${path.registry}
+          Insecure: false
+        """.stripIndent()
     }
 }

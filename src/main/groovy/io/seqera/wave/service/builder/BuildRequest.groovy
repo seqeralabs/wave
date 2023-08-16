@@ -112,13 +112,18 @@ class BuildRequest {
      * Hold the build context for this container
      */
     final BuildContext buildContext
+
+    /**
+     * The target build format, either Docker or Singularity
+     */
+    final BuildFormat format
     
     /**
      * Mark this request as not cached
      */
     volatile boolean uncached
 
-    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, User user, ContainerConfig containerConfig, BuildContext buildContext, ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId) {
+    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, BuildFormat format, User user, ContainerConfig containerConfig, BuildContext buildContext, ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId) {
         this.id = computeDigest(containerFile, condaFile, spackFile, platform, repo, buildContext)
         this.dockerFile = containerFile
         this.containerConfig = containerConfig
@@ -126,6 +131,7 @@ class BuildRequest {
         this.condaFile = condaFile
         this.spackFile = spackFile
         this.targetImage = "${repo}:${id}"
+        this.format = format
         this.user = user
         this.platform = platform
         this.configJson = configJson

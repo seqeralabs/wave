@@ -10,6 +10,7 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.server.util.HttpClientAddressResolver
+import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
@@ -90,6 +91,7 @@ class TestController {
                 buildRepo,
                 null,
                 null,
+                BuildFormat.DOCKER,
                 user,
                 null,
                 null,
