@@ -59,6 +59,7 @@ class PathFilterTest extends Specification {
         'file.md'               | false
         'README.md'             | false
     }
+
     @Unroll
     def 'should filter the paths based on ignore and exception patterns'(){
         given:
