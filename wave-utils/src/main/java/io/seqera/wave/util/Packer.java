@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 
 import io.seqera.wave.api.ContainerLayer;
@@ -106,6 +107,10 @@ public class Packer {
     }
 
     public ContainerLayer layer(Path root) throws IOException {
+        return layer(root, Set.of());
+    }
+
+    public ContainerLayer layer(Path root, Set<String> ignorePatterns) throws IOException {
         final List<Path> files = new ArrayList<>();
         Files.walkFileTree(root, new SimpleFileVisitor<>() {
             @Override
@@ -116,13 +121,23 @@ public class Packer {
         });
 
         Collections.sort(files);
-        return layer(root, files);
+        return layer(root, files, ignorePatterns);
     }
 
     public ContainerLayer layer(Path root, List<Path> files) throws IOException {
+        return layer(root, files, Set.of());
+    }
+
+    public ContainerLayer layer(Path root, List<Path> files, Set<String> ignorePatterns) throws IOException {
         final Map<String,Path> entries = new HashMap<>();
-        for( Path it : files )
-            entries.put(root.relativize(it).toString(), it);
+
+        DockerIgnorePathFilter pathFilter = new DockerIgnorePathFilter(ignorePatterns);
+        for( Path it : files ){
+            Path relative = root.relativize(it);
+            if(pathFilter.accept(relative)){
+                entries.put(relative.toString(), it);
+            }
+        }
         return layer(entries);
     }
 
