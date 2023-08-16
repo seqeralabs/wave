@@ -17,8 +17,6 @@ import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
-import io.seqera.wave.service.builder.BuildFormat
-import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
@@ -30,6 +28,7 @@ import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.builder.FreezeService
+import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
@@ -43,7 +42,10 @@ import io.seqera.wave.util.DataTimeUtils
 import io.seqera.wave.util.LongRndKey
 import jakarta.inject.Inject
 import static io.seqera.wave.WaveDefault.TOWER
+import static io.seqera.wave.service.builder.BuildFormat.DOCKER
+import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
+
 /**
  * Implement a controller to receive container token requests
  * 
@@ -185,14 +187,14 @@ class ContainerTokenController {
         final dockerContent = new String(req.containerFile.decodeBase64())
         final condaContent = req.condaFile ? new String(req.condaFile.decodeBase64()) : null as String
         final spackContent = req.spackFile ? new String(req.spackFile.decodeBase64()) : null as String
-        final format = req.format=='sif' ? BuildFormat.SINGULARITY : BuildFormat.DOCKER
+        final format = req.format=='sif' ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
         final build = req.buildRepository ?: defaultBuildRepo
         final cache = req.cacheRepository ?: defaultCacheRepo
         final configJson = dockerAuthService.credentialsConfigJson(dockerContent, build, cache, user?.id, req.towerWorkspaceId, req.towerAccessToken, req.towerEndpoint)
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
-        final scanId = scanEnabled ? LongRndKey.rndHex() : null
+        final scanId = scanEnabled && format==DOCKER ? LongRndKey.rndHex() : null
         // create a unique digest to identify the request
         return new BuildRequest(
                 (spackContent ? prependBuilderTemplate(dockerContent) : dockerContent),
