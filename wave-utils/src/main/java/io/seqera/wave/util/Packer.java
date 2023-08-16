@@ -144,7 +144,7 @@ public class Packer {
     public ContainerLayer layer(Path root, List<Path> files, LinkedHashSet<String> ignorePatterns) throws IOException {
         final Map<String,Path> entries = new HashMap<>();
 
-        PathFilter pathFilter = new PathFilter(ignorePatterns);
+        DockerIgnorePathFilter pathFilter = new DockerIgnorePathFilter(ignorePatterns);
         for( Path it : files ){
             Path relative = root.relativize(it);
             if(pathFilter.accept(relative)){

@@ -8,13 +8,13 @@ import java.nio.file.Path
  *
  * @author Munish Chouhan munish.chouhan@seqera.io
  */
-class PathFilterTest extends Specification {
+class DockerIgnorePathFilterTest extends Specification {
 
     @Unroll
     def 'should filter the paths based on ignore patterns'(){
         given:
         Set<String> ignorePatterns = ["*/ignore*","main.??","*/*/exclude*", "*.md", "!README.md"]
-        def pathFilter = new PathFilter(ignorePatterns)
+        def pathFilter = new DockerIgnorePathFilter(ignorePatterns)
 
         when:
         boolean accepted = pathFilter.accept(Path.of(PATH))
@@ -39,7 +39,7 @@ class PathFilterTest extends Specification {
     def 'should ignore everything'(){
         given:
         Set<String> ignorePatterns = ["**"]
-        def pathFilter = new PathFilter(ignorePatterns)
+        def pathFilter = new DockerIgnorePathFilter(ignorePatterns)
 
         when:
         boolean accepted = pathFilter.accept(Path.of(PATH))
@@ -64,7 +64,7 @@ class PathFilterTest extends Specification {
     def 'should filter the paths based on ignore and exception patterns'(){
         given:
         Set<String> ignorePatterns = ["*/ignore*","main.??","*/*/exclude*", "!README.md", "*.md"]
-        def pathFilter = new PathFilter(ignorePatterns)
+        def pathFilter = new DockerIgnorePathFilter(ignorePatterns)
 
         when:
         boolean accepted = pathFilter.accept(Path.of(PATH))

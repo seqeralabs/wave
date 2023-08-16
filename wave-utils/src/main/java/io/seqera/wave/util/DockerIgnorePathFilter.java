@@ -10,11 +10,13 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Utility class to filter paths
+ * Utility class to filter paths according docker ignore rules
+ *
+ * See https://docs.docker.com/engine/reference/builder/#dockerignore-file
  *
  * @author Munish Chouhan munish.chouhan@seqera.io
  */
-public class PathFilter {
+public class DockerIgnorePathFilter {
 
     private Set<String> patterns;
 
@@ -22,7 +24,7 @@ public class PathFilter {
 
     Map<String, PathMatcher> mactherMap = new HashMap<>();
 
-    public PathFilter(LinkedHashSet<String> patterns) {
+    public DockerIgnorePathFilter(LinkedHashSet<String> patterns) {
         this.patterns = patterns;
         FileSystem fileSystem = FileSystems.getDefault();
         for (String pattern : patterns){
