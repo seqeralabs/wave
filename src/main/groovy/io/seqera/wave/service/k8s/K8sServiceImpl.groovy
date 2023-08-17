@@ -375,7 +375,6 @@ class K8sServiceImpl implements K8sService {
             // use 'command' to override the entrypoint of the container
                     .withCommand(args)
                     .withNewSecurityContext().withPrivileged(true).endSecurityContext()
-                    .withWorkingDir(workDir.toString())
         }
         else {
             // use 'arg' to avoid overriding the entrypoint of the container set by kaniko

@@ -254,7 +254,7 @@ class K8sServiceImplTest extends Specification {
         result.spec.containers.get(0).volumeMounts.get(2).mountPath == '/build/work/xyz'
         result.spec.containers.get(0).volumeMounts.get(2).subPath == 'work/xyz'
         and:
-        result.spec.containers.get(0).getWorkingDir() == workDir.toString()
+        result.spec.containers.get(0).getWorkingDir() == null
         result.spec.containers.get(0).getSecurityContext().privileged
 
         and:

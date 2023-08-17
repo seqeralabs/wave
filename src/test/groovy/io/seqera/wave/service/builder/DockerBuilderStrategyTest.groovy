@@ -35,7 +35,6 @@ class DockerBuilderStrategyTest extends Specification {
         cmd == ['docker',
                 'run',
                 '--rm',
-                '-w', '/work/foo',
                 '-v', '/work/foo:/work/foo',
                 'gcr.io/kaniko-project/executor:v1.12.1']
 
@@ -45,7 +44,6 @@ class DockerBuilderStrategyTest extends Specification {
         cmd == ['docker',
                 'run',
                 '--rm',
-                '-w', '/work/foo',
                 '-v', '/work/foo:/work/foo',
                 '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
                 '--platform', 'linux/arm64',
@@ -57,7 +55,6 @@ class DockerBuilderStrategyTest extends Specification {
         cmd == ['docker',
                 'run',
                 '--rm',
-                '-w', '/work/foo',
                 '-v', '/work/foo:/work/foo',
                 '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
                 '-v', '/host/spack/key:/opt/spack/key:ro',
@@ -84,7 +81,6 @@ class DockerBuilderStrategyTest extends Specification {
         cmd == ['docker',
                 'run',
                 '--rm',
-                '-w', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f',
                 '-v', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f:/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f',
                 '-v', '/work/creds.json:/kaniko/.docker/config.json:ro',
                 '--platform', 'linux/amd64',
@@ -140,7 +136,6 @@ class DockerBuilderStrategyTest extends Specification {
                 '--rm',
                 '--privileged',
                 '--entrypoint', '',
-                '-w', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f',
                 '-v', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f:/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f',
                 '-v', '/work/creds.json:/root/.singularity/docker-config.json:ro',
                 '-v', '/work/singularity-remote.yaml:/root/.singularity/remote.yaml:ro',
@@ -148,7 +143,7 @@ class DockerBuilderStrategyTest extends Specification {
                 'quay.io/singularity/singularity:v3.11.4',
                 'sh',
                 '-c',
-                'singularity build image.sif Containerfile && singularity push image.sif oras://repo:17e58f4434c26104c2cf9f0eb8fbc16f'
+                'singularity build image.sif /work/foo/17e58f4434c26104c2cf9f0eb8fbc16f/Containerfile && singularity push image.sif oras://repo:17e58f4434c26104c2cf9f0eb8fbc16f'
         ]
         
         cleanup:

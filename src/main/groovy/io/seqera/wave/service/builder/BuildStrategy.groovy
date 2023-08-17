@@ -64,7 +64,7 @@ abstract class BuildStrategy {
         result
             << 'sh'
             << '-c'
-            << "singularity build image.sif Containerfile && singularity push image.sif oras://${req.targetImage}".toString()
+            << "singularity build image.sif ${req.workDir}/Containerfile && singularity push image.sif oras://${req.targetImage}".toString()
         return result
     }
 }
