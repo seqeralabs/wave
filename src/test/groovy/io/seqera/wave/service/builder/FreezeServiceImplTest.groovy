@@ -41,7 +41,7 @@ class FreezeServiceImplTest extends Specification  {
 
         when:
         def config = new ContainerConfig()
-        def result = FreezeServiceImpl.appendConfigToDockerFile('FROM foo', config)
+        def result = FreezeServiceImpl.appendConfigToDockerFile('FROM foo', new SubmitContainerTokenRequest(containerConfig: config))
         then:
         result == 'FROM foo'
 
@@ -56,7 +56,7 @@ class FreezeServiceImplTest extends Specification  {
                 cmd:['/this','--that'],
                 entrypoint: ['/my','--entry'],
                 layers: layers)
-        result = FreezeServiceImpl.appendConfigToDockerFile('FROM foo', config)
+        result = FreezeServiceImpl.appendConfigToDockerFile('FROM foo', new SubmitContainerTokenRequest(containerConfig: config))
         then:
         result == '''\
                 FROM foo
@@ -125,6 +125,30 @@ class FreezeServiceImplTest extends Specification  {
             # wave generated container file
             FROM ubuntu:latest
             ENV FOO=1 BAR=2
+            '''.stripIndent(true)
+    }
+
+    def 'should create build file given a container image for singularity' () {
+        when:
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true, format: 'sif')
+        def result = freezeService.createBuildFile(req, Mock(User))
+        then:
+        result == '''\
+            # wave generated container file
+            BootStrap: docker
+            From: ubuntu:latest
+            '''.stripIndent(true)
+
+        when:
+        req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true, format: 'sif', containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2']))
+        result = freezeService.createBuildFile(req, Mock(User))
+        then:
+        result == '''\
+            # wave generated container file
+            BootStrap: docker
+            From: ubuntu:latest
+            %environment
+              export FOO=1 BAR=2
             '''.stripIndent(true)
     }
 
@@ -274,5 +298,23 @@ class FreezeServiceImplTest extends Specification  {
 
         cleanup:
         folder?.deleteDir()
+    }
+
+    def 'should create containerfile' () {
+        when:
+        def result = FreezeServiceImpl.createContainerFile(new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest'))
+        then:
+        result == '''\
+            FROM ubuntu:latest
+            '''.stripIndent()
+
+
+        when:
+        result = FreezeServiceImpl.createContainerFile(new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', format: 'sif'))
+        then:
+        result == '''\
+            BootStrap: docker
+            From: ubuntu:latest
+            '''.stripIndent()
     }
 }

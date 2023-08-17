@@ -233,6 +233,10 @@ public class SubmitContainerTokenRequest implements Cloneable {
         return this;
     }
 
+    public boolean isSingularity() {
+         return "sif".equals(format);
+    }
+
     @Override
     public String toString() {
         return "SubmitContainerTokenRequest{" +

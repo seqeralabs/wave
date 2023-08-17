@@ -1,25 +1,27 @@
 package io.seqera.wave.service.builder
 
+import spock.lang.Requires
+import spock.lang.Specification
+
 import java.nio.file.Files
+import java.nio.file.Path
 import java.time.Duration
 
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
-import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.cleanup.CleanupStrategy
+import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.tower.User
 import io.seqera.wave.util.Packer
 import io.seqera.wave.util.SpackHelper
 import io.seqera.wave.util.TemplateRenderer
 import jakarta.inject.Inject
-import spock.lang.Requires
-import spock.lang.Specification
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -208,7 +210,7 @@ class ContainerBuildServiceTest extends Specification {
         def spack = Mock(SpackConfig)
 
         when:
-        def result = builder.dockerFile0(REQ, spack)
+        def result = builder.containerFile0(REQ, null, spack)
         then:
         0* spack.getCacheMountPath() >> null
         0* spack.getSecretMountPath() >> null
@@ -232,7 +234,7 @@ class ContainerBuildServiceTest extends Specification {
         def spack = Mock(SpackConfig)
 
         when:
-        def result = builder.dockerFile0(REQ, spack)
+        def result = builder.containerFile0(REQ, null, spack)
         then:
         1* spack.getCacheMountPath() >> '/mnt/cache'
         1* spack.getSecretMountPath() >> '/mnt/key'
@@ -248,6 +250,30 @@ class ContainerBuildServiceTest extends Specification {
         folder?.deleteDir()
     }
 
+    def 'should replace context path' () {
+        given:
+        def folder = Path.of('/some/work/dir')
+        def containerFile = '''\
+        BootStrap: docker
+        Format: ubuntu
+        %files
+          {{wave_context_dir}}/nf-1234/* /
+        '''.stripIndent()
+        and:
+        def builder = new ContainerBuildServiceImpl()
+        def REQ = new BuildRequest(containerFile, folder, 'box:latest', null, null, BuildFormat.SINGULARITY, Mock(User),null, null,  ContainerPlatform.of('amd64'), null, null, null, "", null)
+
+        when:
+        def result = builder.containerFile0(REQ, Path.of('/some/context/'), null)
+        then:
+        result == '''\
+        BootStrap: docker
+        Format: ubuntu
+        %files
+          /some/context/nf-1234/* /
+        '''.stripIndent()
+
+    }
     @Requires({System.getenv('DOCKER_USER') && System.getenv('DOCKER_PAT')})
     def 'should build & push container to docker.io with local layers' () {
         given:
