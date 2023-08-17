@@ -3,6 +3,7 @@ package io.seqera.wave.service.builder
 import spock.lang.Specification
 
 import java.nio.file.Files
+import java.nio.file.Path
 
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
@@ -13,6 +14,7 @@ import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.storage.reader.ContentReaderFactory
@@ -95,9 +97,11 @@ class FreezeServiceImplTest extends Specification  {
         HttpServer server = HttpServer.create(new InetSocketAddress(9901), 0);
         server.createContext("/", handler);
         server.start()
+        and:
+        def req = new BuildRequest('from foo', Path.of('/wsp'), null, null, null, BuildFormat.DOCKER, Mock(User), config, null, ContainerPlatform.of('amd64'),'{auth}', null, null, "127.0.0.1", null)
 
         when:
-        FreezeServiceImpl.saveLayersToContext(config, folder)
+        FreezeServiceImpl.saveLayersToContext(req, folder)
         then:
         Files.exists(folder.resolve("layer-${l1.gzipDigest.replace(/sha256:/,'')}.tar.gz"))
         Files.exists(folder.resolve("layer-${l2.gzipDigest.replace(/sha256:/,'')}.tar.gz"))
