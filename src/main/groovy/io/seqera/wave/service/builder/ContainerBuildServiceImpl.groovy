@@ -39,9 +39,6 @@ import jakarta.inject.Singleton
 @CompileStatic
 class ContainerBuildServiceImpl implements ContainerBuildService {
 
-    @Value('${wave.build.image}')
-    String buildImage
-
     @Value('${wave.build.timeout}')
     Duration buildTimeout
 

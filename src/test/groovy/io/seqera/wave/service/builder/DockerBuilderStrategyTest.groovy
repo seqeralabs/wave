@@ -30,7 +30,7 @@ class DockerBuilderStrategyTest extends Specification {
         and:
         def work = Path.of('/work/foo')
         when:
-        def cmd = service.kanikoWrapper(work, null, null, null)
+        def cmd = service.cmdForKaniko(work, null, null, null)
         then:
         cmd == ['docker',
                 'run',
@@ -40,7 +40,7 @@ class DockerBuilderStrategyTest extends Specification {
                 'gcr.io/kaniko-project/executor:v1.12.1']
 
         when:
-        cmd = service.kanikoWrapper(work, Path.of('/foo/creds.json'), null, ContainerPlatform.of('arm64'))
+        cmd = service.cmdForKaniko(work, Path.of('/foo/creds.json'), null, ContainerPlatform.of('arm64'))
         then:
         cmd == ['docker',
                 'run',
@@ -52,7 +52,7 @@ class DockerBuilderStrategyTest extends Specification {
                 'gcr.io/kaniko-project/executor:v1.12.1']
 
         when:
-        cmd = service.kanikoWrapper(work, Path.of('/foo/creds.json'), spackConfig, null)
+        cmd = service.cmdForKaniko(work, Path.of('/foo/creds.json'), spackConfig, null)
         then:
         cmd == ['docker',
                 'run',
@@ -143,7 +143,7 @@ class DockerBuilderStrategyTest extends Specification {
                 '-w', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f',
                 '-v', '/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f:/work/foo/17e58f4434c26104c2cf9f0eb8fbc16f',
                 '-v', '/work/creds.json:/root/.singularity/docker-config.json:ro',
-                '-v', '/work/remote.yaml:/root/.singularity/remote.yaml:ro',
+                '-v', '/work/singularity-remote.yaml:/root/.singularity/remote.yaml:ro',
                 '--platform', 'linux/amd64',
                 'quay.io/singularity/singularity:v3.11.4',
                 'sh',

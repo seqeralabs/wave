@@ -16,12 +16,18 @@ import io.micronaut.context.annotation.Value
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
+import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static io.seqera.wave.util.K8sHelper.getSelectorLabel
 import static java.nio.file.StandardOpenOption.CREATE
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import static java.nio.file.StandardOpenOption.WRITE
+import static java.nio.file.attribute.PosixFilePermission.OWNER_READ
+import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
+
+import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 /**
  * Build a container image using running a K8s job
  *
@@ -37,8 +43,11 @@ class KubeBuildStrategy extends BuildStrategy {
     @Inject
     K8sService k8sService
 
-    @Value('${wave.build.image}')
-    String buildImage
+    @Value('${wave.build.kaniko-image}')
+    String kanikoImage
+
+    @Value('${wave.build.singularity-image}')
+    String singularityImage
 
     @Value('${wave.build.timeout:5m}')
     Duration buildTimeout
@@ -62,8 +71,18 @@ class KubeBuildStrategy extends BuildStrategy {
             configFile = req.workDir.resolve('config.json')
             Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
         }
+        // save remote files for singularity
+        if( req.configJson && req.format==SINGULARITY ) {
+            final remoteFile = req.workDir.resolve('singularity-remote.yaml')
+            final content = RegHelper.singularityRemoteFile(req.targetImage)
+            Files.write(remoteFile, content.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            // set permissions 600 as required by Singularity
+            Files.setPosixFilePermissions(configFile, Set.of(OWNER_READ, OWNER_WRITE))
+            Files.setPosixFilePermissions(remoteFile, Set.of(OWNER_READ, OWNER_WRITE))
+        }
 
         try {
+            final buildImage = req.format==DOCKER ? kanikoImage : singularityImage
             final buildCmd = launchCmd(req)
             final name = podName(req)
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)

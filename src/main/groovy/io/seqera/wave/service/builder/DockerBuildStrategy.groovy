@@ -32,10 +32,10 @@ import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
 @CompileStatic
 class DockerBuildStrategy extends BuildStrategy {
 
-    @Value('${wave.build.kaniko-image:`gcr.io/kaniko-project/executor:v1.12.1`}')
+    @Value('${wave.build.kaniko-image}')
     String kanikoImage
 
-    @Value('${wave.build.singularity-image:`quay.io/singularity/singularity:v3.11.4`}')
+    @Value('${wave.build.singularity-image}')
     String singularityImage
 
     @Value('${wave.build.timeout}')
@@ -58,7 +58,7 @@ class DockerBuildStrategy extends BuildStrategy {
         }
         // save remote files for singularity
         if( req.configJson && req.format==SINGULARITY ) {
-            final remoteFile = req.workDir.resolve('remote.yaml')
+            final remoteFile = req.workDir.resolve('singularity-remote.yaml')
             final content = RegHelper.singularityRemoteFile(req.targetImage)
             Files.write(remoteFile, content.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             // set permissions 600 as required by Singularity
@@ -91,13 +91,13 @@ class DockerBuildStrategy extends BuildStrategy {
         final spack = req.isSpackBuild ? spackConfig : null
 
         final dockerCmd = !req.format || req.format==DOCKER
-                ? kanikoWrapper( req.workDir, credsFile, spack, req.platform)
-                : singularityWrapper( req.workDir, credsFile, spack, req.platform)
+                ? cmdForKaniko( req.workDir, credsFile, spack, req.platform)
+                : cmdForSingularity( req.workDir, credsFile, spack, req.platform)
 
         return dockerCmd + launchCmd(req)
     }
 
-    protected List<String> kanikoWrapper(Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform ) {
+    protected List<String> cmdForKaniko(Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform ) {
         final wrapper = ['docker',
                          'run',
                          '--rm',
@@ -128,7 +128,7 @@ class DockerBuildStrategy extends BuildStrategy {
         return wrapper
     }
 
-    protected List<String> singularityWrapper(Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform) {
+    protected List<String> cmdForSingularity(Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform) {
         final wrapper = ['docker',
                          'run',
                          '--rm',
@@ -142,7 +142,7 @@ class DockerBuildStrategy extends BuildStrategy {
             wrapper.add("$credsFile:/root/.singularity/docker-config.json:ro".toString())
             //
             wrapper.add('-v')
-            wrapper.add("${credsFile.resolveSibling('remote.yaml')}:/root/.singularity/remote.yaml:ro".toString())
+            wrapper.add("${credsFile.resolveSibling('singularity-remote.yaml')}:/root/.singularity/remote.yaml:ro".toString())
         }
 
         if( platform ) {
