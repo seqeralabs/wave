@@ -57,7 +57,11 @@ import static picocli.CommandLine.Option;
 /**
  * Wavelit main class
  */
-@Command(name = "wavelit", description = "Wave command line tool", mixinStandardHelpOptions = true, versionProvider = CliVersionProvider.class, usageHelpAutoWidth = true)
+@Command(name = "wavelit",
+        description = "Wave command line tool",
+        mixinStandardHelpOptions = true,
+        versionProvider = CliVersionProvider.class,
+        usageHelpAutoWidth = true)
 public class App implements Runnable {
 
     private static final String DEFAULT_TOWER_ENDPOINT = "https://api.tower.nf";
@@ -156,6 +160,13 @@ public class App implements Runnable {
         try {
             final App app = new App();
             final CommandLine cli = new CommandLine(app);
+
+            // add examples in help
+            cli
+                .getCommandSpec()
+                .usageMessage()
+                .footer(readExamples("usage-examples.txt"));
+
             final CommandLine.ParseResult result = cli.parseArgs(args);
             if( result.matchedArgs().size()==0 || result.isUsageHelpRequested() ) {
                 cli.usage(System.out);
@@ -174,6 +185,15 @@ public class App implements Runnable {
         catch (Throwable e) {
             e.printStackTrace(System.err);
             System.exit(1);
+        }
+    }
+
+    private static String readExamples(String exampleFile) {
+        try(InputStream stream = App.class.getResourceAsStream(exampleFile)) {
+            return new String(stream.readAllBytes());
+        }
+        catch (Exception e) {
+            throw new IllegalStateException("Unable to read usge examples", e);
         }
     }
 
