@@ -1,2 +1,2 @@
 args="${@:--h}"
-./gradlew run --args="$args"
+./gradlew run --rerun-tasks --args="$args"
