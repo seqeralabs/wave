@@ -49,6 +49,7 @@ class BuildRequestTest extends Specification {
         req.id == 'a3edc322cba1fecfebe895785e50220b'
         req.workDir == PATH.resolve(req.id).toAbsolutePath()
         req.targetImage == "docker.io/wave:${req.id}"
+        req.containerFile == CONTENT
         req.dockerFile == CONTENT
         req.user == USER
         req.configJson == '{auth}'

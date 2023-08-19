@@ -56,14 +56,14 @@ class ViewControllerTest extends Specification {
         def binding = controller.renderBuildView(record)
         then:
         binding.build_id == '12345'
-        binding.build_dockerfile == 'FROM foo'
+        binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
         binding.build_image == 'docker.io/some:image'
         binding.build_user == 'paolo (ip: 10.20.30.40)'
         binding.build_platform == 'linux/amd64'
         binding.build_exit_status == 0
         binding.build_platform == 'linux/amd64'
-        binding.build_dockerfile == 'FROM foo'
+        binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
         binding.build_spackfile == 'some-spack-recipe'
     }

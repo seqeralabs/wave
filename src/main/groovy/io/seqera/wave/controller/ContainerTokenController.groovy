@@ -251,7 +251,7 @@ class ContainerTokenController {
         if( req.containerFile ) {
             final build = buildRequest(req, user, ip)
             targetImage = build.targetImage
-            targetContent = build.dockerFile
+            targetContent = build.containerFile
             condaContent = build.condaFile
             buildId = build.id
             buildNew = build.uncached

@@ -113,6 +113,11 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     }
 
     protected String containerFile0(BuildRequest req, Path context, SpackConfig config) {
+        // add the context dir for singularity builds
+        final containerFile = req.format==BuildFormat.SINGULARITY
+                ? req.containerFile.replace('{{wave_context_dir}}', context.toString())
+                : req.containerFile
+
         // render the Spack template if needed
         if( req.isSpackBuild ) {
             final binding = new HashMap(2)
@@ -121,13 +126,10 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             binding.spack_arch = SpackHelper.toSpackArch(req.getPlatform())
             binding.spack_cache_dir = config.cacheMountPath
             binding.spack_key_file = config.secretMountPath
-            return new TemplateRenderer().render(req.dockerFile, binding)
-        }
-        if( req.format==BuildFormat.SINGULARITY ) {
-            return req.dockerFile.replace('{{wave_context_dir}}', context.toString())
+            return new TemplateRenderer().render(containerFile, binding)
         }
         else {
-            return req.dockerFile
+            return containerFile
         }
     }
 

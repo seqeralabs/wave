@@ -29,9 +29,9 @@ class BuildRequest {
     final String id
 
     /**
-     * The dockerfile content corresponding to this request
+     * The container file content corresponding to this request
      */
-    final String dockerFile
+    final String containerFile
 
     /**
      * The conda file recipe associated with this request
@@ -125,7 +125,7 @@ class BuildRequest {
 
     BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, BuildFormat format, User user, ContainerConfig containerConfig, BuildContext buildContext, ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId) {
         this.id = computeDigest(containerFile, condaFile, spackFile, platform, repo, buildContext)
-        this.dockerFile = containerFile
+        this.containerFile = containerFile
         this.containerConfig = containerConfig
         this.buildContext = buildContext
         this.condaFile = condaFile
@@ -158,15 +158,20 @@ class BuildRequest {
 
     @Override
     String toString() {
-        return "BuildRequest[id=$id; targetImage=$targetImage; user=$user; dockerFile=${trunc(dockerFile)}; condaFile=${trunc(condaFile)}; spackFile=${trunc(spackFile)}]"
+        return "BuildRequest[id=$id; targetImage=$targetImage; user=$user; dockerFile=${trunc(containerFile)}; condaFile=${trunc(condaFile)}; spackFile=${trunc(spackFile)}]"
     }
 
     String getId() {
         return id
     }
 
+    @Deprecated
     String getDockerFile() {
-        return dockerFile
+        return containerFile
+    }
+
+    String getContainerFile() {
+        return containerFile
     }
 
     String getCondaFile() {
