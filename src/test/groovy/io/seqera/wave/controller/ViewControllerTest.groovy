@@ -91,7 +91,7 @@ class ViewControllerTest extends Specification {
         then:
         response.body().contains(record1.buildId)
         and:
-        response.body().contains('Docker file')
+        response.body().contains('Container file')
         response.body().contains('FROM docker.io/test:foo')
         and:
         !response.body().contains('Conda file')
@@ -120,7 +120,7 @@ class ViewControllerTest extends Specification {
         then:
         response.body().contains(record1.buildId)
         and:
-        response.body().contains('Docker file')
+        response.body().contains('Container file')
         response.body().contains('-')
         and:
         response.body().contains('Conda file')
@@ -151,7 +151,7 @@ class ViewControllerTest extends Specification {
         then:
         response.body().contains(record1.buildId)
         and:
-        response.body().contains('Docker file')
+        response.body().contains('Container file')
         response.body().contains('-')
         and:
         !response.body().contains('Conda file')
