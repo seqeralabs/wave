@@ -132,6 +132,22 @@ public class DockerHelper {
     }
 
     static public String condaPackagesToDockerFile(String packages, List<String> condaChannels, CondaOpts opts) {
+        return condaPackagesTemplate0(
+                "/templates/conda/dockerfile-conda-packages.txt",
+                packages,
+                condaChannels,
+                opts);
+    }
+
+    static public String condaPackagesToSingularityFile(String packages, List<String> condaChannels, CondaOpts opts) {
+        return condaPackagesTemplate0(
+                "/templates/conda/singularityfile-conda-packages.txt",
+                packages,
+                condaChannels,
+                opts);
+    }
+
+    static protected String condaPackagesTemplate0(String template, String packages, List<String> condaChannels, CondaOpts opts) {
         final List<String> channels0 = condaChannels!=null ? condaChannels : List.of();
         final String channelsOpts = channels0.stream().map(it -> "-c "+it).collect(Collectors.joining(" "));
         final String image = opts.mambaImage;
@@ -144,18 +160,27 @@ public class DockerHelper {
         binding.put("target", target);
         binding.put("base_packages", mambaInstallBasePackage0(opts.basePackages));
 
-        final String result = renderTemplate0("/templates/conda/dockerfile-conda-packages.txt", binding) ;
-        return addCommands(result, opts.commands);
+        final String result = renderTemplate0(template, binding) ;
+        return addCommands(result, opts.commands, template.contains("/singularityfile"));
     }
 
+
     static public String condaFileToDockerFile(CondaOpts opts) {
+        return condaFileTemplate0("/templates/conda/dockerfile-conda-file.txt", opts);
+    }
+
+    static public String condaFileToSingularityFile(CondaOpts opts) {
+        return condaFileTemplate0("/templates/conda/singularityfile-conda-file.txt", opts);
+    }
+
+    static protected String condaFileTemplate0(String template, CondaOpts opts) {
         // create the binding map
         final Map<String,String> binding = new HashMap<>();
         binding.put("base_image", opts.mambaImage);
         binding.put("base_packages", mambaInstallBasePackage0(opts.basePackages));
 
-        final String result = renderTemplate0("/templates/conda/dockerfile-conda-file.txt", binding);
-        return addCommands(result, opts.commands);
+        final String result = renderTemplate0(template, binding, List.of("wave_context_dir"));
+        return addCommands(result, opts.commands, template.contains("/singularityfile"));
     }
 
     static private String renderTemplate0(String templatePath, Map<String,String> binding) {
@@ -183,10 +208,13 @@ public class DockerHelper {
                 : null;
     }
 
-    static private String addCommands(String result, List<String> commands) {
+    static private String addCommands(String result, List<String> commands, boolean singularity) {
         if( commands==null || commands.isEmpty() )
             return result;
+        if( singularity )
+            result += "%post\n";
         for( String cmd : commands ) {
+            if( singularity ) result += "    ";
             result += cmd + "\n";
         }
         return result;
@@ -253,4 +281,5 @@ public class DockerHelper {
             throw new IllegalArgumentException("The specific Spack environment file cannot be found: " + spackFile, e);
         }
     }
+
 }

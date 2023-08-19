@@ -93,6 +93,11 @@ public class SubmitContainerTokenRequest implements Cloneable {
      */
     public BuildContext buildContext;
 
+    /**
+     * Format of the target container build. Use `sif` for Singularity. default: docker/oci
+     */
+    public String format;
+
     public SubmitContainerTokenRequest copyWith(Map opts) {
         try {
             final SubmitContainerTokenRequest copy = (SubmitContainerTokenRequest) this.clone();
@@ -128,6 +133,8 @@ public class SubmitContainerTokenRequest implements Cloneable {
                 copy.freeze = (boolean)opts.get("freeze");
             if( opts.containsKey("buildContext") )
                 copy.buildContext = (BuildContext) opts.get("buildContext");
+            if( opts.containsKey("format") )
+                copy.format = (String) opts.get("format");
             // done
             return copy;
         }
@@ -221,6 +228,15 @@ public class SubmitContainerTokenRequest implements Cloneable {
         return this;
     }
 
+    public SubmitContainerTokenRequest withFormat(String value) {
+        this.format = value;
+        return this;
+    }
+
+    public boolean formatSingularity() {
+         return "sif".equals(format);
+    }
+
     @Override
     public String toString() {
         return "SubmitContainerTokenRequest{" +
@@ -240,6 +256,7 @@ public class SubmitContainerTokenRequest implements Cloneable {
                 ", fingerprint='" + fingerprint + '\'' +
                 ", freeze=" + freeze +
                 ", buildContext=" + buildContext +
+                ", type=" + format +
                 '}';
     }
 }

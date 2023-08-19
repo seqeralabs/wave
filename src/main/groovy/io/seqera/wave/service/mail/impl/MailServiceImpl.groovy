@@ -75,8 +75,9 @@ class MailServiceImpl implements MailService {
         binding.build_time = formatTimestamp(result.startTime, req.offsetId) ?: '-'
         binding.build_duration = formatDuration(result.duration) ?: '-'
         binding.build_image = req.targetImage
+        binding.build_format = req.format?.render() ?: 'Docker'
         binding.build_platform = req.platform
-        binding.build_dockerfile = req.dockerFile ?: '-'
+        binding.build_containerfile = req.containerFile ?: '-'
         binding.build_condafile = req.condaFile
         binding.build_spackfile = req.spackFile
         binding.put('build_logs', result.logs)

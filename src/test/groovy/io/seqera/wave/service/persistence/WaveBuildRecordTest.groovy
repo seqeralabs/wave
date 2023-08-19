@@ -8,6 +8,7 @@ import java.time.Instant
 
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.util.JacksonHelper
@@ -25,6 +26,7 @@ class WaveBuildRecordTest extends Specification {
                 "buildrepo",
                 'conda::recipe',
                 'some-spack-recipe',
+                BuildFormat.DOCKER,
                 null,
                 null,
                 null,

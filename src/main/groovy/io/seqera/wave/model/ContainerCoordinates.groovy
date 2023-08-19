@@ -3,6 +3,7 @@ package io.seqera.wave.model
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import io.seqera.wave.core.ContainerPath
+import io.seqera.wave.util.StringUtils
 import static io.seqera.wave.WaveDefault.DOCKER_IO
 /**
  * Model a container image coordinates
@@ -13,6 +14,7 @@ import static io.seqera.wave.WaveDefault.DOCKER_IO
 @CompileStatic
 class ContainerCoordinates implements ContainerPath {
 
+    final String scheme
     final String registry
     final String image
     final String reference
@@ -20,7 +22,8 @@ class ContainerCoordinates implements ContainerPath {
     String getRepository() { "$registry/$image" }
 
     String getTargetContainer() {
-        return registry + '/' + getImageAndTag()
+        final result = registry + '/' + getImageAndTag()
+        return scheme ? "$scheme://$result" : result
     }
 
     String getImageAndTag() {
@@ -30,6 +33,12 @@ class ContainerCoordinates implements ContainerPath {
     }
 
     static ContainerCoordinates parse(String path) {
+
+        final scheme = StringUtils.getUrlProtocol(path)
+        if( scheme ) {
+            if( scheme!='oras') throw new IllegalArgumentException("Invalid container scheme: '$scheme' - offending iamge: '$path'")
+            path = path.substring(7)
+        }
 
         final coordinates = path.tokenize('/')
 
@@ -61,7 +70,7 @@ class ContainerCoordinates implements ContainerPath {
         }
 
         final image = coordinates.join('/')
-        return new ContainerCoordinates(reg, image, ref)
+        return new ContainerCoordinates(scheme, reg, image, ref)
     }
 
     static boolean isValidRegistry(String name) {

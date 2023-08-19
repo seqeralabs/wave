@@ -1,0 +1,10 @@
+BootStrap: docker
+From: {{base_image}}
+%files
+    {{wave_context_dir}}/conda.yml /tmp/conda.yml
+%post
+    micromamba install -y -n base -f /tmp/conda.yml \
+    {{base_packages}}
+    && micromamba clean -a -y
+%environment
+    export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"

@@ -1,5 +1,8 @@
 package io.seqera.wave.service.builder
 
+import java.nio.file.FileAlreadyExistsException
+import java.nio.file.Path
+
 import static FreezeServiceImpl.*
 import static io.seqera.wave.util.StringUtils.*
 import static java.nio.file.StandardOpenOption.*
@@ -36,9 +39,6 @@ import jakarta.inject.Singleton
 @Singleton
 @CompileStatic
 class ContainerBuildServiceImpl implements ContainerBuildService {
-
-    @Value('${wave.build.image}')
-    String buildImage
 
     @Value('${wave.build.timeout}')
     Duration buildTimeout
@@ -112,7 +112,12 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 .awaitBuild(targetImage)
     }
 
-    protected String dockerFile0(BuildRequest req, SpackConfig config) {
+    protected String containerFile0(BuildRequest req, Path context, SpackConfig config) {
+        // add the context dir for singularity builds
+        final containerFile = req.formatSingularity()
+                ? req.containerFile.replace('{{wave_context_dir}}', context.toString())
+                : req.containerFile
+
         // render the Spack template if needed
         if( req.isSpackBuild ) {
             final binding = new HashMap(2)
@@ -121,10 +126,10 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             binding.spack_arch = SpackHelper.toSpackArch(req.getPlatform())
             binding.spack_cache_dir = config.cacheMountPath
             binding.spack_key_file = config.secretMountPath
-            return new TemplateRenderer().render(req.dockerFile, binding)
+            return new TemplateRenderer().render(containerFile, binding)
         }
         else {
-            return req.dockerFile
+            return containerFile
         }
     }
 
@@ -136,10 +141,11 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             Files.createDirectories(req.workDir)
             // create context dir
             final context = req.workDir.resolve('context')
-            Files.createDirectory(context)
+            try { Files.createDirectory(context) }
+            catch (FileAlreadyExistsException e) { /* ignore it */ }
             // save the dockerfile
-            final dockerFile = req.workDir.resolve('Dockerfile')
-            Files.write(dockerFile, dockerFile0(req,spackConfig).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            final containerFile = req.workDir.resolve('Containerfile')
+            Files.write(containerFile, containerFile0(req, context, spackConfig).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             // save build context
             if( req.buildContext ) {
                 saveBuildContext(req.buildContext, context)
@@ -156,7 +162,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             }
             // save layers provided via the container config
             if( req.containerConfig ) {
-                saveLayersToContext(req.containerConfig, context)
+                saveLayersToContext(req, context)
             }
             resp = buildStrategy.build(req)
             log.info "== Build completed with status=$resp.exitStatus; stdout: (see below)\n${indent(resp.logs)}"
