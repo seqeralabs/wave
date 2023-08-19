@@ -382,7 +382,6 @@ class DockerHelperTest extends Specification {
      * conda packages to singularity tests
      * *********************************************************************************/
 
-
     def 'should create singularity content from conda file' () {
         given:
         def CONDA_OPTS = new CondaOpts([basePackages: 'conda-forge::procps-ng'])
