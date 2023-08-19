@@ -25,7 +25,8 @@ class SubmitContainerTokenRequestTest extends Specification {
                 cacheRepository: 'a12',
                 timestamp: 'a13',
                 fingerprint: 'a14',
-                freeze: true
+                freeze: true,
+                format: 'sif'
         )
 
         when:
@@ -46,6 +47,7 @@ class SubmitContainerTokenRequestTest extends Specification {
         copy.timestamp == req.timestamp
         copy.fingerprint == req.fingerprint
         copy.freeze == req.freeze
+        copy.format == req.format
 
 
         when:
@@ -64,7 +66,8 @@ class SubmitContainerTokenRequestTest extends Specification {
                 cacheRepository: 'b12',
                 timestamp: 'b13',
                 fingerprint: 'b14',
-                freeze: false
+                freeze: false,
+                format: 'foo'
         )
         then:
         other.towerAccessToken == 'b1'
@@ -82,6 +85,7 @@ class SubmitContainerTokenRequestTest extends Specification {
         other.timestamp == 'b13'
         other.fingerprint == 'b14'
         other.freeze == false
+        other.format == 'foo'
     }
 
 }

@@ -49,7 +49,7 @@ class FutureContainerBuildServiceTest extends Specification {
         RUN echo $EXIT_CODE > hello.txt
         """.stripIndent()
         and:
-        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, null, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', cacheRepo, null, "", null)
+        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', cacheRepo, null, "", null)
 
         when:
         exitCode = EXIT_CODE

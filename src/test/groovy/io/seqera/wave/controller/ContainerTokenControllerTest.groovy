@@ -57,7 +57,6 @@ class ContainerTokenControllerTest extends Specification {
         data.containerConfig == cfg
         data.platform == ContainerPlatform.of('arm64')
 
-
         when:
         req = new SubmitContainerTokenRequest()
         controller.makeRequestData(req, new User(id: 100),"")
@@ -168,7 +167,7 @@ class ContainerTokenControllerTest extends Specification {
         def build = controller.makeBuildRequest(submit, null,"")
         then:
         build.id == '21159a79b614be796103c7b752fdfbf0'
-        build.dockerFile == 'FROM foo'
+        build.containerFile == 'FROM foo'
         build.targetImage == 'wave/build:21159a79b614be796103c7b752fdfbf0'
         build.workDir == Path.of('/some/wsp').resolve(build.id)
         build.platform == ContainerPlatform.of('amd64')
@@ -178,7 +177,7 @@ class ContainerTokenControllerTest extends Specification {
         build = controller.makeBuildRequest(submit, null, null)
         then:
         build.id == '21159a79b614be796103c7b752fdfbf0'
-        build.dockerFile == 'FROM foo'
+        build.containerFile == 'FROM foo'
         build.targetImage == 'wave/build:21159a79b614be796103c7b752fdfbf0'
         build.workDir == Path.of('/some/wsp').resolve(build.id)
         build.platform == ContainerPlatform.of('amd64')
@@ -189,7 +188,7 @@ class ContainerTokenControllerTest extends Specification {
         build = controller.makeBuildRequest(submit, null, "")
         then:
         build.id == '7d6b54efe23408c0938290a9ae49cf21'
-        build.dockerFile == 'FROM foo'
+        build.containerFile == 'FROM foo'
         build.targetImage == 'wave/build:7d6b54efe23408c0938290a9ae49cf21'
         build.workDir == Path.of('/some/wsp').resolve(build.id)
         build.platform == ContainerPlatform.of('arm64')
@@ -199,7 +198,7 @@ class ContainerTokenControllerTest extends Specification {
         build = controller.makeBuildRequest(submit, null, "")
         then:
         build.id == '0c7eebc2fdbfd514ff4d80c28d08dff8'
-        build.dockerFile == 'FROM foo'
+        build.containerFile == 'FROM foo'
         build.condaFile == 'some::conda-recipe'
         build.targetImage == 'wave/build:0c7eebc2fdbfd514ff4d80c28d08dff8'
         build.workDir == Path.of('/some/wsp').resolve(build.id)
@@ -210,8 +209,8 @@ class ContainerTokenControllerTest extends Specification {
         build = controller.makeBuildRequest(submit, null, "")
         then:
         build.id == '23ef4010a60670510393f5ae7414eb84'
-        build.dockerFile.endsWith('\nFROM foo')
-        build.dockerFile.startsWith('# Builder image\n') 
+        build.containerFile.endsWith('\nFROM foo')
+        build.containerFile.startsWith('# Builder image\n') 
         build.condaFile == null
         build.spackFile == 'some::spack-recipe'
         build.targetImage == 'wave/build:23ef4010a60670510393f5ae7414eb84'

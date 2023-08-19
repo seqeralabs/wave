@@ -13,6 +13,7 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.ContainerDigestPair
+import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.BuildEvent
@@ -81,7 +82,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         HttpClient httpClient = HttpClient.create(new URL(surrealDbURL))
         SurrealPersistenceService storage = applicationContext.getBean(SurrealPersistenceService)
         BuildRequest request = new BuildRequest(dockerFile,
-                Path.of("."), "buildrepo", condaFile, null, null, null, null,
+                Path.of("."), "buildrepo", condaFile, null, BuildFormat.DOCKER,null, null, null,
                 ContainerPlatform.of('amd64'),'{auth}', null, null, "127.0.0.1", null)
         BuildResult result = new BuildResult(request.id, -1, "ok", Instant.now(), Duration.ofSeconds(3))
         BuildEvent event = new BuildEvent(request, result)
@@ -139,7 +140,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def storage = applicationContext.getBean(SurrealPersistenceService)
         storage.initializeDb()
         final service = applicationContext.getBean(SurrealPersistenceService)
-        BuildRequest request = new BuildRequest("test", Path.of("."), "test", "test", null, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', "test", null, "127.0.0.1", null)
+        BuildRequest request = new BuildRequest("test", Path.of("."), "test", "test", null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', "test", null, "127.0.0.1", null)
         BuildResult result = new BuildResult(request.id, 0, "content", Instant.now(), Duration.ofSeconds(1))
         BuildEvent event = new BuildEvent(request, result)
 
@@ -164,7 +165,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         given:
         surrealContainer.stop()
         final service = applicationContext.getBean(SurrealPersistenceService)
-        BuildRequest request = new BuildRequest("test", Path.of("."), "test", "test", null, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', "test", null, "127.0.0.1", null)
+        BuildRequest request = new BuildRequest("test", Path.of("."), "test", "test", null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', "test", null, "127.0.0.1", null)
         BuildResult result = new BuildResult(request.id, 0, "content", Instant.now(), Duration.ofSeconds(1))
         BuildEvent event = new BuildEvent(request, result)
 
@@ -184,6 +185,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 "buildrepo",
                 'conda::recipe',
                 null,
+                BuildFormat.DOCKER,
                 null,
                 null,
                 null,

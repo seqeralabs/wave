@@ -28,7 +28,7 @@ class MailServiceImplTest extends Specification {
         when:
         def mail = service.buildCompletionMail(request, result, recipient)
         then:
-        1* request.getDockerFile() >> 'from foo';
+        1* request.getContainerFile() >> 'from foo';
         1* request.getTargetImage() >> 'wave/build:xyz'
         1* request.getPlatform() >> ContainerPlatform.DEFAULT
         1* request.getCondaFile() >> null

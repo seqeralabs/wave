@@ -7,15 +7,13 @@ import java.nio.file.Files
 
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Value
-import io.seqera.wave.api.ContainerLayer
-import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.configuration.RateLimiterConfig
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.SlowDownException
+import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildServiceImpl
 import io.seqera.wave.tower.User
-
-
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  *
@@ -52,7 +50,7 @@ class BuildServiceRateLimitTest extends Specification{
         RUN echo hi > hello.txt
         """.stripIndent()
         and:
-        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, null, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', cacheRepo, null, "127.0.0.1", null)
+        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', cacheRepo, null, "127.0.0.1", null)
 
         when:
         (0..configuration.build.authenticated.max).each {
@@ -74,7 +72,7 @@ class BuildServiceRateLimitTest extends Specification{
         RUN echo hi > hello.txt
         """.stripIndent()
         and:
-        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, null, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', cacheRepo, null, "127.0.0.1", null)
+        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', cacheRepo, null, "127.0.0.1", null)
 
         when:
         (0..configuration.build.anonymous.max).each {
