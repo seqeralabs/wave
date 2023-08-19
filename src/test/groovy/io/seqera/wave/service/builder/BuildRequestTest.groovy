@@ -99,7 +99,6 @@ class BuildRequestTest extends Specification {
         def PATH = Path.of('somewhere')
         def BUILD_REPO = 'docker.io/wave'
         def CACHE_REPO = 'docker.io/cache'
-        def SCAN_ID = '123456'
         def IP_ADDR = '10.20.30.40'
         def OFFSET = '+2'
         def CONFIG = new ContainerConfig(env: ['FOO=1'])
