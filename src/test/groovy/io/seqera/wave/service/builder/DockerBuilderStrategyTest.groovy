@@ -140,7 +140,7 @@ class DockerBuilderStrategyTest extends Specification {
                 '-v', '/work/creds.json:/root/.singularity/docker-config.json:ro',
                 '-v', '/work/singularity-remote.yaml:/root/.singularity/remote.yaml:ro',
                 '--platform', 'linux/amd64',
-                'quay.io/singularity/singularity:v3.11.4',
+                'quay.io/singularity/singularity:v3.11.4-slim',
                 'sh',
                 '-c',
                 'singularity build image.sif /work/foo/17e58f4434c26104c2cf9f0eb8fbc16f/Containerfile && singularity push image.sif oras://repo:17e58f4434c26104c2cf9f0eb8fbc16f'
