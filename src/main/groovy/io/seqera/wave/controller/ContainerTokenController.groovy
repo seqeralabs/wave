@@ -156,7 +156,7 @@ class ContainerTokenController {
         final token = tokenService.computeToken(data)
         final target = targetImage(token.value, data.coordinates())
         final build = data.buildNew ? data.buildId : null
-        final repo = req.format=='sif' ? "oras://"+data.containerImage : data.containerImage
+        final repo = req.isSingularity() ? "oras://"+data.containerImage : data.containerImage
         final resp = new SubmitContainerTokenResponse(token.value, target, token.expiration, repo, build)
         // persist request
         storeContainerRequest0(req, data, user, token, target, ip)
@@ -181,13 +181,13 @@ class ContainerTokenController {
             throw new BadRequestException("Missing build repository attribute")
         if( !defaultCacheRepo )
             throw new BadRequestException("Missing build cache repository attribute")
-        if( req.format=='sif' && req.spackFile )
+        if( req.isSingularity() && req.spackFile )
             throw new BadRequestException("Spack based build is not supported when using Singularity image format")
 
         final dockerContent = new String(req.containerFile.decodeBase64())
         final condaContent = req.condaFile ? new String(req.condaFile.decodeBase64()) : null as String
         final spackContent = req.spackFile ? new String(req.spackFile.decodeBase64()) : null as String
-        final format = req.format=='sif' ? SINGULARITY : DOCKER
+        final format = req.isSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
         final build = req.buildRepository ?: defaultBuildRepo
         final cache = req.cacheRepository ?: defaultCacheRepo
@@ -234,7 +234,7 @@ class ContainerTokenController {
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
         if( req.freeze && !req.buildRepository )
             throw new BadRequestException("When freeze mode is enabled the target build repository must be specified - see 'wave.build.repository' setting")
-        if( req.format=='sif' && !req.freeze )
+        if( req.isSingularity() && !req.freeze )
             throw new BadRequestException("Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting")
 
         // when 'freeze' is enabled, rewrite the request so that the container configuration specified

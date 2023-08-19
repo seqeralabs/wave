@@ -57,7 +57,6 @@ class ContainerTokenControllerTest extends Specification {
         data.containerConfig == cfg
         data.platform == ContainerPlatform.of('arm64')
 
-
         when:
         req = new SubmitContainerTokenRequest()
         controller.makeRequestData(req, new User(id: 100),"")
