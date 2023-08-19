@@ -58,7 +58,7 @@ class FreezeServiceImpl implements FreezeService {
         // get the container manifest
         final entry = inspectService.containerEntrypoint(containerFile, user?.id, req.towerWorkspaceId, req.towerAccessToken, req.towerEndpoint)
         if( entry ) {
-            if( req.isSingularity() ) {
+            if( req.formatSingularity() ) {
                 return containerFile + "%environment\n  export WAVE_ENTRY_CHAIN=\"${entry.join(' ')}\"\n"
             } else {
                 return containerFile + "ENV WAVE_ENTRY_CHAIN=\"${entry.join(' ')}\"\n"
@@ -85,7 +85,7 @@ class FreezeServiceImpl implements FreezeService {
     }
 
     static protected String createContainerFile(SubmitContainerTokenRequest req) {
-        if( req.isSingularity() ) {
+        if( req.formatSingularity() ) {
             return """\
             BootStrap: docker
             From: ${req.containerImage}
@@ -102,7 +102,7 @@ class FreezeServiceImpl implements FreezeService {
         if( !req.containerConfig )
             return containerFile
 
-        def result = req.isSingularity()
+        def result = req.formatSingularity()
                 ? appendSingularityConfig0(req.containerConfig)
                 : appendDockerConfig0(req.containerConfig)
 

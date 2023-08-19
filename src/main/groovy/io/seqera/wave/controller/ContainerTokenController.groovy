@@ -180,13 +180,13 @@ class ContainerTokenController {
             throw new BadRequestException("Missing build repository attribute")
         if( !defaultCacheRepo )
             throw new BadRequestException("Missing build cache repository attribute")
-        if( req.isSingularity() && req.spackFile )
+        if( req.formatSingularity() && req.spackFile )
             throw new BadRequestException("Spack based build is not supported when using Singularity image format")
 
         final dockerContent = new String(req.containerFile.decodeBase64())
         final condaContent = req.condaFile ? new String(req.condaFile.decodeBase64()) : null as String
         final spackContent = req.spackFile ? new String(req.spackFile.decodeBase64()) : null as String
-        final format = req.isSingularity() ? SINGULARITY : DOCKER
+        final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
         final build = req.buildRepository ?: defaultBuildRepo
         final cache = req.cacheRepository ?: defaultCacheRepo
@@ -233,7 +233,7 @@ class ContainerTokenController {
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
         if( req.freeze && !req.buildRepository )
             throw new BadRequestException("When freeze mode is enabled the target build repository must be specified - see 'wave.build.repository' setting")
-        if( req.isSingularity() && !req.freeze )
+        if( req.formatSingularity() && !req.freeze )
             throw new BadRequestException("Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting")
 
         // when 'freeze' is enabled, rewrite the request so that the container configuration specified
