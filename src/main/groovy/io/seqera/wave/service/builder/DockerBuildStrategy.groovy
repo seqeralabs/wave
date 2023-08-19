@@ -145,6 +145,7 @@ class DockerBuildStrategy extends BuildStrategy {
             wrapper.add(platform.toString())
         }
 
-        wrapper << singularityImage
+        wrapper.add(singularityImage)
+        return wrapper
     }
 }
