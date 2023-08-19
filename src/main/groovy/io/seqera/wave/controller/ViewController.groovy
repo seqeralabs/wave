@@ -51,6 +51,7 @@ class ViewController {
         binding.build_time = formatTimestamp(result.startTime, result.offsetId) ?: '-'
         binding.build_duration = formatDuration(result.duration) ?: '-'
         binding.build_image = result.targetImage
+        binding.build_format = result.format?.render() ?: 'Docker'
         binding.build_platform = result.platform
         binding.build_containerfile = result.dockerFile ?: '-'
         binding.build_condafile = result.condaFile

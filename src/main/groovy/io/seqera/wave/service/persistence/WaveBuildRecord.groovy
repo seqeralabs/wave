@@ -7,6 +7,7 @@ import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.builder.BuildFormat
 
 /**
  * A collection of request and response properties to be stored
@@ -34,6 +35,7 @@ class WaveBuildRecord {
     int exitStatus
     String platform
     String scanId
+    BuildFormat format
 
     static WaveBuildRecord fromEvent(BuildEvent event) {
         if( event.request.id != event.result.id )
@@ -55,7 +57,8 @@ class WaveBuildRecord {
                 exitStatus: event.result.exitStatus,
                 platform: event.request.platform,
                 offsetId: event.request.offsetId,
-                scanId: event.request.scanId
+                scanId: event.request.scanId,
+                format: event.request.format
         )
     }
 }

@@ -66,6 +66,7 @@ class ViewControllerTest extends Specification {
         binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
         binding.build_spackfile == 'some-spack-recipe'
+        binding.build_format == 'Docker'
     }
 
     def 'should render a build page' () {

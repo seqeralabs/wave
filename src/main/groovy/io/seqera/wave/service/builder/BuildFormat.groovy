@@ -8,4 +8,8 @@ package io.seqera.wave.service.builder
 enum BuildFormat {
     DOCKER,
     SINGULARITY
+
+    String render() {
+        this.toString().toLowerCase().capitalize()
+    }
 }
