@@ -1,9 +1,0 @@
-BootStrap: docker
-From: {{base_image}}
-%post
-    micromamba install -y -n base {{channel_opts}} \
-    {{target}} \
-    {{base_packages}}
-    && micromamba clean -a -y
-%environment
-    export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
