@@ -6,10 +6,10 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.runtime.event.annotation.EventListener
-import io.seqera.wave.mail.Mail
-import io.seqera.wave.mail.MailAttachment
-import io.seqera.wave.mail.MailHelper
-import io.seqera.wave.mail.MailerConfig
+import io.seqera.mail.Mail
+import io.seqera.mail.MailAttachment
+import io.seqera.mail.MailHelper
+import io.seqera.mail.MailerConfig
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
