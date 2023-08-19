@@ -148,7 +148,8 @@ class RegHelper {
     }
 
     static String singularityRemoteFile(String repo)  {
-        final path = ContainerCoordinates.parse(repo)
+        assert repo.startsWith('oras://')
+        final coords = ContainerCoordinates.parse(repo)
         """\
         Active: SylabsCloud
         Remotes:
@@ -157,7 +158,7 @@ class RegHelper {
             System: true
             Exclusive: false
         Credentials:
-        - URI: oras://${path.registry}
+        - URI: ${coords.scheme}://${coords.registry}
           Insecure: false
         """.stripIndent()
     }

@@ -15,7 +15,7 @@ import io.seqera.wave.tower.User
  */
 class BuildRequestTest extends Specification {
 
-    def 'should create build request'() {
+    def 'should create docker build request'() {
         given:
         def USER = new User(id:1, email: 'foo@user.com')
         def CONTENT = 'FROM foo'
@@ -90,6 +90,57 @@ class BuildRequestTest extends Specification {
         req.spackFile == 'some spack content'
         and:
         req.isSpackBuild
+    }
+
+    def 'should create singularity build request'() {
+        given:
+        def USER = new User(id:1, email: 'foo@user.com')
+        def CONTENT = 'From: foo'
+        def PATH = Path.of('somewhere')
+        def BUILD_REPO = 'docker.io/wave'
+        def CACHE_REPO = 'docker.io/cache'
+        def SCAN_ID = '123456'
+        def IP_ADDR = '10.20.30.40'
+        def OFFSET = '+2'
+        def CONFIG = new ContainerConfig(env: ['FOO=1'])
+        def CONTEXT = Mock(BuildContext)
+
+        when:
+        def req = new BuildRequest(
+                CONTENT,
+                PATH,
+                BUILD_REPO,
+                null,
+                null,
+                BuildFormat.SINGULARITY,
+                USER,
+                CONFIG,
+                CONTEXT,
+                ContainerPlatform.of('amd64'),
+                '{auth}',
+                CACHE_REPO,
+                null,
+                IP_ADDR,
+                OFFSET)
+        then:
+        req.id == 'b888a49c90211559a851bb07b7a7a016'
+        req.workDir == PATH.resolve(req.id).toAbsolutePath()
+        req.targetImage == "oras://docker.io/wave:${req.id}"
+        req.containerFile == CONTENT
+        req.user == USER
+        req.configJson == '{auth}'
+        req.job =~ /b888a49c90211559a851bb07b7a7a016-[a-z0-9]+/
+        req.cacheRepository == CACHE_REPO
+        req.format == BuildFormat.SINGULARITY
+        req.platform == ContainerPlatform.of('amd64')
+        req.configJson == '{auth}'
+        req.ip == IP_ADDR
+        req.offsetId == OFFSET
+        req.containerConfig == CONFIG
+        req.buildContext == CONTEXT
+        and:
+        !req.isSpackBuild
+
     }
 
     def 'should check equals and hash code'() {

@@ -12,6 +12,9 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
 import io.seqera.wave.util.DigestFunctions
 import static io.seqera.wave.util.StringUtils.trunc
+
+import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
+
 /**
  * Model a container builder result
  *
@@ -130,7 +133,7 @@ class BuildRequest {
         this.buildContext = buildContext
         this.condaFile = condaFile
         this.spackFile = spackFile
-        this.targetImage = "${repo}:${id}"
+        this.targetImage = format==SINGULARITY ? "oras://${repo}:${id}" : "${repo}:${id}"
         this.format = format
         this.user = user
         this.platform = platform

@@ -156,8 +156,7 @@ class ContainerTokenController {
         final token = tokenService.computeToken(data)
         final target = targetImage(token.value, data.coordinates())
         final build = data.buildNew ? data.buildId : null
-        final repo = req.isSingularity() ? "oras://"+data.containerImage : data.containerImage
-        final resp = new SubmitContainerTokenResponse(token.value, target, token.expiration, repo, build)
+        final resp = new SubmitContainerTokenResponse(token.value, target, token.expiration, data.containerImage, build)
         // persist request
         storeContainerRequest0(req, data, user, token, target, ip)
         // return response

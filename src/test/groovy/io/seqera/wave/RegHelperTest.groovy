@@ -151,7 +151,7 @@ class RegHelperTest extends Specification {
     def 'should create singularity remote ymal file' () {
 
         when:
-        def ret = RegHelper.singularityRemoteFile('quay.io/user/foo:latest')
+        def ret = RegHelper.singularityRemoteFile('oras://quay.io/user/foo:latest')
         then:
         ret == '''\
             Active: SylabsCloud
