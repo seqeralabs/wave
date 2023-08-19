@@ -14,6 +14,7 @@ import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.storage.reader.ContentReaderFactory
 import io.seqera.wave.tower.User
+import io.seqera.wave.util.Escape
 import io.seqera.wave.util.TarUtils
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -42,14 +43,14 @@ class FreezeServiceImpl implements FreezeService {
             def containerFile = "# wave generated container file\n"
             containerFile += createContainerFile(req)
             containerFile = appendEntrypoint(containerFile, req, user)
-            return appendConfigToDockerFile(containerFile, req)
+            return appendConfigToContainerFile(containerFile, req)
         }
         // append the container config to the provided build container file
         else if( !req.containerImage && req.containerFile && req.containerConfig ) {
             def containerFile = new String(req.containerFile.decodeBase64()) + '\n'
             containerFile += "# wave generated container file\n"
             containerFile = appendEntrypoint(containerFile, req, user)
-            return appendConfigToDockerFile(containerFile, req)
+            return appendConfigToContainerFile(containerFile, req)
         }
 
         // nothing to do
@@ -98,7 +99,7 @@ class FreezeServiceImpl implements FreezeService {
         }
     }
 
-    static protected String appendConfigToDockerFile(final String containerFile, SubmitContainerTokenRequest req) {
+    static protected String appendConfigToContainerFile(final String containerFile, SubmitContainerTokenRequest req) {
         assert containerFile, "Argument containerFile cannot empty"
 
         if( !req.containerConfig )
@@ -133,11 +134,6 @@ class FreezeServiceImpl implements FreezeService {
             }
         }
 
-        // add work dir
-        if( containerConfig.workingDir ) {
-            // not supported
-        }
-
         // add ENV
         if( containerConfig.env ) {
             result += '%environment\n'
@@ -145,12 +141,12 @@ class FreezeServiceImpl implements FreezeService {
         }
         // add ENTRY
         if( containerConfig.entrypoint ) {
-            // not supported
+            result += '%runscript\n'
+            result += "  ${Escape.cli(containerConfig.entrypoint)}\n"
         }
-        // add CMD
-        if( containerConfig.cmd ) {
-            // not supported 
-        }
+
+        // config work dir is not supported
+        // config command is not supported
 
         return result
     }

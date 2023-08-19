@@ -43,7 +43,7 @@ class FreezeServiceImplTest extends Specification  {
 
         when:
         def config = new ContainerConfig()
-        def result = FreezeServiceImpl.appendConfigToDockerFile('FROM foo', new SubmitContainerTokenRequest(containerConfig: config))
+        def result = FreezeServiceImpl.appendConfigToContainerFile('FROM foo', new SubmitContainerTokenRequest(containerConfig: config))
         then:
         result == 'FROM foo'
 
@@ -58,7 +58,7 @@ class FreezeServiceImplTest extends Specification  {
                 cmd:['/this','--that'],
                 entrypoint: ['/my','--entry'],
                 layers: layers)
-        result = FreezeServiceImpl.appendConfigToDockerFile('FROM foo', new SubmitContainerTokenRequest(containerConfig: config))
+        result = FreezeServiceImpl.appendConfigToContainerFile('FROM foo', new SubmitContainerTokenRequest(containerConfig: config))
         then:
         result == '''\
                 FROM foo
@@ -142,20 +142,30 @@ class FreezeServiceImplTest extends Specification  {
             BootStrap: docker
             From: ubuntu:latest
             '''.stripIndent(true)
+    }
 
+    def 'should create build file given a container image and config for singularity ' () {
         when:
-        req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true, format: 'sif', containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2']))
-        result = freezeService.createBuildFile(req, Mock(User))
+        def l1 = new ContainerLayer('/some/loc', 'digest1')
+        def l2 = new ContainerLayer('/other/loc', 'digest2')
+        def config = new ContainerConfig(env:['FOO=1', 'BAR=2'], entrypoint: ['bash', '--this', '--that'], layers: [l1, l2])
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true, format: 'sif', containerConfig: config)
+        def result = freezeService.createBuildFile(req, Mock(User))
         then:
         result == '''\
             # wave generated container file
             BootStrap: docker
             From: ubuntu:latest
+            %files
+              {{wave_context_dir}}/layer-digest1/* /
+              {{wave_context_dir}}/layer-digest2/* /
             %environment
               export FOO=1 BAR=2
+            %runscript
+              bash --this --that
             '''.stripIndent(true)
-    }
 
+    }
     def 'should create build file given a container file' () {
         given:
         def ENCODED = 'FROM foo\nRUN this\n'.bytes.encodeBase64().toString()
