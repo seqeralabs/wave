@@ -13,7 +13,7 @@ import io.seqera.wave.tower.User
 import io.seqera.wave.util.DigestFunctions
 import static io.seqera.wave.util.StringUtils.trunc
 
-import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
+import static io.seqera.wave.service.builder.BuildFormat.*
 
 /**
  * Model a container builder result
@@ -223,5 +223,13 @@ class BuildRequest {
 
     String getOffsetId() {
         return offsetId
+    }
+
+    boolean formatDocker() {
+        !format || format==DOCKER
+    }
+
+    boolean formatSingularity() {
+        format==SINGULARITY
     }
 }

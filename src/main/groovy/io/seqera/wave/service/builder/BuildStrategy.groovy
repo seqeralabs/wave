@@ -2,9 +2,6 @@ package io.seqera.wave.service.builder
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
-
-import static io.seqera.wave.service.builder.BuildFormat.*
-
 /**
  * Defines an abstract container build strategy.
  *
@@ -26,10 +23,10 @@ abstract class BuildStrategy {
     }
 
     List<String> launchCmd(BuildRequest req) {
-        if( !req.format || req.format==DOCKER ) {
+        if(req.formatDocker()) {
             dockerLaunchCmd(req)
         }
-        else if( req.format==SINGULARITY ) {
+        else if(req.formatSingularity()) {
             singularityLaunchCmd(req)
         }
         else

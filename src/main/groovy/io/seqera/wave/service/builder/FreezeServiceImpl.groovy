@@ -18,9 +18,6 @@ import io.seqera.wave.util.Escape
 import io.seqera.wave.util.TarUtils
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
-import static io.seqera.wave.service.builder.BuildFormat.*
-
 /**
  * Implements helper methods to handle container build context
  *
@@ -178,10 +175,10 @@ class FreezeServiceImpl implements FreezeService {
     }
 
     static protected void saveLayersToContext(BuildRequest req, Path contextDir) {
-        if( req.format==DOCKER ) {
+        if(req.formatDocker()) {
             saveLayersToDockerContext0(req.containerConfig, contextDir)
         }
-        else if( req.format==SINGULARITY ) {
+        else if(req.formatSingularity()) {
             saveLayersToSingularityContext0(req.containerConfig, contextDir)
         }
         else

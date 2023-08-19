@@ -114,7 +114,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     protected String containerFile0(BuildRequest req, Path context, SpackConfig config) {
         // add the context dir for singularity builds
-        final containerFile = req.format==BuildFormat.SINGULARITY
+        final containerFile = req.formatSingularity()
                 ? req.containerFile.replace('{{wave_context_dir}}', context.toString())
                 : req.containerFile
 

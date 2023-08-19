@@ -14,14 +14,11 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import static io.seqera.wave.service.builder.BuildFormat.DOCKER
-import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static java.nio.file.StandardOpenOption.CREATE
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import static java.nio.file.StandardOpenOption.WRITE
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
-
 /**
  *  Build a container image using a Docker CLI tool
  *
@@ -57,7 +54,7 @@ class DockerBuildStrategy extends BuildStrategy {
             Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
         }
         // save remote files for singularity
-        if( req.configJson && req.format==SINGULARITY ) {
+        if( req.configJson && req.formatSingularity()) {
             final remoteFile = req.workDir.resolve('singularity-remote.yaml')
             final content = RegHelper.singularityRemoteFile(req.targetImage)
             Files.write(remoteFile, content.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
@@ -90,7 +87,7 @@ class DockerBuildStrategy extends BuildStrategy {
     protected List<String> buildCmd(BuildRequest req, Path credsFile) {
         final spack = req.isSpackBuild ? spackConfig : null
 
-        final dockerCmd = !req.format || req.format==DOCKER
+        final dockerCmd = req.formatDocker()
                 ? cmdForKaniko( req.workDir, credsFile, spack, req.platform)
                 : cmdForSingularity( req.workDir, credsFile, spack, req.platform)
 
