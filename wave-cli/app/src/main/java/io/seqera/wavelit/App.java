@@ -40,9 +40,11 @@ import io.seqera.wave.config.CondaOpts;
 import io.seqera.wave.config.SpackOpts;
 import io.seqera.wave.util.DockerHelper;
 import io.seqera.wave.util.Packer;
+import io.seqera.wavelit.exception.BadClientResponseException;
 import io.seqera.wavelit.exception.IllegalCliArgumentException;
 import io.seqera.wavelit.json.JsonHelper;
 import io.seqera.wavelit.util.BuildInfo;
+import io.seqera.wavelit.util.Checkers;
 import io.seqera.wavelit.util.CliVersionProvider;
 import io.seqera.wavelit.util.YamlHelper;
 import org.slf4j.LoggerFactory;
@@ -53,6 +55,8 @@ import static io.seqera.wavelit.util.Checkers.isEnvVar;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Option;
+
+import static io.seqera.wave.util.DockerHelper.*;
 
 /**
  * Wavelit main class
@@ -152,6 +156,9 @@ public class App implements Runnable {
     @Option(names = {"-o","--output"}, paramLabel = "json|yaml",  description = "Output format. One of: json, yaml.")
     private String outputFormat;
 
+    @Option(names = {"-s","--singularity"}, paramLabel = "false", description = "Enable Singularity build (experimental)")
+    private boolean singularity;
+
     private BuildContext buildContext;
 
     private ContainerConfig containerConfig;
@@ -178,7 +185,7 @@ public class App implements Runnable {
                 app.run();
             }
         }
-        catch (IllegalCliArgumentException | CommandLine.ParameterException e) {
+        catch (IllegalCliArgumentException | CommandLine.ParameterException | BadClientResponseException e) {
             System.err.println(e.getMessage());
             System.exit(1);
         }
@@ -299,6 +306,9 @@ public class App implements Runnable {
         if( !isEmpty(contextDir) && isEmpty(containerFile) )
             throw new IllegalCliArgumentException("Option --context requires the use of a container file");
 
+        if( singularity && !freeze )
+            throw new IllegalCliArgumentException("Singularity build requires enabling freeze mode");
+
         if( !isEmpty(contextDir) ) {
             // check that a container file has been provided
             if( isEmpty(containerFile) )
@@ -332,6 +342,7 @@ public class App implements Runnable {
                 .withTowerAccessToken(towerToken)
                 .withTowerWorkspaceId(towerWorkspaceId)
                 .withTowerEndpoint(towerEndpoint)
+                .withFormat( singularity ? "sif" : null )
                 .withFreezeMode(freeze);
     }
 
@@ -473,10 +484,20 @@ public class App implements Runnable {
             final CondaOpts opts = new CondaOpts()
                     .withMambaImage(condaBaseImage)
                     .withCommands(condaRunCommands);
-            final String result = condaPackages!=null
-                    ? DockerHelper.condaPackagesToDockerFile(condaPackages.stream().collect(Collectors.joining(" ")), Arrays.asList(condaChannels.split(",")), opts)
-                    : DockerHelper.condaFileToDockerFile(opts);
-            return encodeStringBase64(result);
+            if( !Checkers.isEmpty(condaPackages) ) {
+                final String packages0 = condaPackages.stream().collect(Collectors.joining(" "));
+                final List<String> channels0 = Arrays.asList(condaChannels.split(","));
+                final String result = singularity
+                        ? condaPackagesToSingularityFile(packages0, channels0, opts)
+                        : condaPackagesToDockerFile(packages0, channels0, opts);
+                return encodeStringBase64(result);
+            }
+            else {
+                final String result = singularity
+                        ? condaFileToSingularityFile(opts)
+                        : condaFileToDockerFile(opts);
+                return encodeStringBase64(result);
+            }
         }
 
         if( !isEmpty(spackFile) || spackPackages!=null ) {

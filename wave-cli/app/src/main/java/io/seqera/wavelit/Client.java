@@ -29,6 +29,7 @@ import dev.failsafe.function.CheckedSupplier;
 import io.seqera.wave.api.SubmitContainerTokenRequest;
 import io.seqera.wave.api.SubmitContainerTokenResponse;
 import io.seqera.wavelit.config.RetryOpts;
+import io.seqera.wavelit.exception.BadClientResponseException;
 import io.seqera.wavelit.json.JsonHelper;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -87,7 +88,7 @@ public class Client {
                 return JsonHelper.fromJson(resp.body(), SubmitContainerTokenResponse.class);
             else {
                 String msg = String.format("Wave invalid response: [%s] %s", resp.statusCode(), resp.body());
-                throw new IllegalStateException(msg);
+                throw new BadClientResponseException(msg);
             }
         }
         catch (IOException e) {

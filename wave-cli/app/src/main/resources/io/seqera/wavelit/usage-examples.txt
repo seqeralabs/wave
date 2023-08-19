@@ -6,17 +6,23 @@ Examples:
   # Build a container with Dockerfile
   wavelit -f Dockerfile --context build-context-dir/
 
-  # Build a Conda multi-packages container
+  # Build a container based on Conda packages
   wavelit --conda-package bamtools=2.5.2 --conda-package samtools=1.17
 
-  # Build a Conda based container using arm64 architecture
+  # Build a container based on Conda packages using arm64 architecture
   wavelit --conda-package fastp --platform linux/arm64
 
-  # Build a Conda based container using a prefix.dev served lock file
+  # Build a container based on Conda lock file served via prefix.dev service
   wavelit --conda-package https://prefix.dev//envs/pditommaso/rnaseq-nf/y8g8ax6a4srv/conda-lock.yml
 
-  # Build a Spack based container
+  # Build a container based on Spack packages
   wavelit --spack-package cowsay
 
-  # Build a container getting persistent image name
+  # Build a container getting a persistent image name
   wavelit -i alpine --freeze --build-repo docker.io/user/repo --tower-token <YOUR TOKEN>
+
+  # Build a Singularity container and push it to an OCI registry
+  wavelit -f Singularityfile --singularity --freeze --build-repo docker.io/user/repo
+
+  # Build a Singularity container based on Conda packages
+  wavelit --conda-package bamtools=2.5.2 --singularity --freeze --build-repo docker.io/user/repo
