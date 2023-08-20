@@ -1,9 +1,10 @@
 package io.seqera.wavelit
 
-
+import java.nio.file.Files
 import java.time.Instant
 
 import io.seqera.wave.api.SubmitContainerTokenResponse
+import io.seqera.wave.util.TarUtils
 import picocli.CommandLine
 import spock.lang.Specification
 
@@ -73,4 +74,41 @@ class AppTest extends Specification {
         result == '{"buildId":"98765","containerImage":"docker.io/some/container","containerToken":"12345","expiration":"1970-01-20T13:57:19.913Z","targetImage":"docker.io/some/repo"}'
     }
 
+    def 'should prepare context' () {
+        given:
+        def folder = Files.createTempDirectory('test')
+        def source = Files.createDirectory(folder.resolve('source'))
+        def target = Files.createDirectory(folder.resolve('target'))
+        folder.resolve('source/.dockerignore').text = '''\
+        **.txt
+        !README.txt
+        '''
+        and:
+        source.resolve('hola.txt').text = 'Hola'
+        source.resolve('ciao.txt').text = 'Ciao'
+        source.resolve('script.sh').text = 'echo Hello'
+        source.resolve('README.txt').text = 'Do this and that'
+        and:
+        def app = new App()
+        String[] args = ["--context", source.toString()]
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        def layer = app.prepareContext()
+        then:
+        noExceptionThrown()
+
+        when:
+        def gzip = layer.location.replace('data:','').decodeBase64()
+        TarUtils.untarGzip( new ByteArrayInputStream(gzip), target)
+        then:
+        target.resolve('script.sh').text == 'echo Hello'
+        target.resolve('README.txt').text == 'Do this and that'
+        and:
+        !Files.exists(target.resolve('hola.txt'))
+        !Files.exists(target.resolve('ciao.txt'))
+
+        cleanup:
+        folder?.deleteDir()
+    }
 }

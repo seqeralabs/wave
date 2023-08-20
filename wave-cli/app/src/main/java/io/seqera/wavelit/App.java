@@ -20,13 +20,9 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
+import java.nio.file.*;
 import java.time.OffsetDateTime;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import ch.qos.logback.classic.Level;
@@ -39,6 +35,7 @@ import io.seqera.wave.api.SubmitContainerTokenResponse;
 import io.seqera.wave.config.CondaOpts;
 import io.seqera.wave.config.SpackOpts;
 import io.seqera.wave.util.DockerHelper;
+import io.seqera.wave.util.DockerIgnoreFilter;
 import io.seqera.wave.util.Packer;
 import io.seqera.wavelit.exception.BadClientResponseException;
 import io.seqera.wavelit.exception.IllegalCliArgumentException;
@@ -68,6 +65,9 @@ import static io.seqera.wave.util.DockerHelper.*;
         usageHelpAutoWidth = true)
 public class App implements Runnable {
 
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(App.class);
+
+    private static final boolean isWindows = System.getProperty("os.name").toLowerCase().contains("windows");
     private static final String DEFAULT_TOWER_ENDPOINT = "https://api.tower.nf";
 
     private static final long _1MB = 1024 * 1024;
@@ -404,9 +404,18 @@ public class App implements Runnable {
     protected BuildContext prepareContext()  {
         if( isEmpty(contextDir) )
             return null;
-        BuildContext result = null;
+        BuildContext result;
         try {
-            result = BuildContext.of(new Packer().layer(Path.of(contextDir)));
+            if( isWindows )
+                log.warn("Build context file permission may not be honoured when using Windows OS");
+
+            //check for .dockerignore file in context directory
+            final Path dockerIgnorePath = Path.of(contextDir).resolve(".dockerignore");
+            final DockerIgnoreFilter filter = Files.exists(dockerIgnorePath)
+                    ? DockerIgnoreFilter.fromFile(dockerIgnorePath)
+                    : null;
+            final Packer packer = new Packer().withFilter(filter);
+            result = BuildContext.of(packer.layer(Path.of(contextDir)));
         }
         catch (IOException e) {
             throw new RuntimeException("Unexpected error while preparing build context - cause: "+e.getMessage(), e);
