@@ -17,4 +17,4 @@ rootProject.name = 'wavelit'
 include('app')
 
 // enable for local development
-//includeBuild("${System.getProperty('user.home')}/nf-tower-stack/wave")
+// includeBuild("../libseqera")
