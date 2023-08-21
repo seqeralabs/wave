@@ -10,8 +10,8 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.mail.MailProvider
-import io.seqera.wave.mail.Mailer
+import io.seqera.mail.MailProvider
+import io.seqera.mail.Mailer
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Singleton
 /**

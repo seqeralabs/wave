@@ -3,15 +3,18 @@ package io.seqera.wave.service.builder
 import spock.lang.Specification
 
 import java.nio.file.Files
+import java.nio.file.Path
 
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
 import com.sun.net.httpserver.HttpServer
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.storage.reader.ContentReaderFactory
@@ -40,7 +43,7 @@ class FreezeServiceImplTest extends Specification  {
 
         when:
         def config = new ContainerConfig()
-        def result = FreezeServiceImpl.appendConfigToDockerFile('FROM foo', config)
+        def result = FreezeServiceImpl.appendConfigToContainerFile('FROM foo', new SubmitContainerTokenRequest(containerConfig: config))
         then:
         result == 'FROM foo'
 
@@ -55,7 +58,7 @@ class FreezeServiceImplTest extends Specification  {
                 cmd:['/this','--that'],
                 entrypoint: ['/my','--entry'],
                 layers: layers)
-        result = FreezeServiceImpl.appendConfigToDockerFile('FROM foo', config)
+        result = FreezeServiceImpl.appendConfigToContainerFile('FROM foo', new SubmitContainerTokenRequest(containerConfig: config))
         then:
         result == '''\
                 FROM foo
@@ -94,9 +97,11 @@ class FreezeServiceImplTest extends Specification  {
         HttpServer server = HttpServer.create(new InetSocketAddress(9901), 0);
         server.createContext("/", handler);
         server.start()
+        and:
+        def req = new BuildRequest('from foo', Path.of('/wsp'), null, null, null, BuildFormat.DOCKER, Mock(User), config, null, ContainerPlatform.of('amd64'),'{auth}', null, null, "127.0.0.1", null)
 
         when:
-        FreezeServiceImpl.saveLayersToContext(config, folder)
+        FreezeServiceImpl.saveLayersToContext(req, folder)
         then:
         Files.exists(folder.resolve("layer-${l1.gzipDigest.replace(/sha256:/,'')}.tar.gz"))
         Files.exists(folder.resolve("layer-${l2.gzipDigest.replace(/sha256:/,'')}.tar.gz"))
@@ -127,6 +132,40 @@ class FreezeServiceImplTest extends Specification  {
             '''.stripIndent(true)
     }
 
+    def 'should create build file given a container image for singularity' () {
+        when:
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true, format: 'sif')
+        def result = freezeService.createBuildFile(req, Mock(User))
+        then:
+        result == '''\
+            # wave generated container file
+            BootStrap: docker
+            From: ubuntu:latest
+            '''.stripIndent(true)
+    }
+
+    def 'should create build file given a container image and config for singularity ' () {
+        when:
+        def l1 = new ContainerLayer('/some/loc', 'digest1')
+        def l2 = new ContainerLayer('/other/loc', 'digest2')
+        def config = new ContainerConfig(env:['FOO=1', 'BAR=2'], entrypoint: ['bash', '--this', '--that'], layers: [l1, l2])
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true, format: 'sif', containerConfig: config)
+        def result = freezeService.createBuildFile(req, Mock(User))
+        then:
+        result == '''\
+            # wave generated container file
+            BootStrap: docker
+            From: ubuntu:latest
+            %files
+              {{wave_context_dir}}/layer-digest1/* /
+              {{wave_context_dir}}/layer-digest2/* /
+            %environment
+              export FOO=1 BAR=2
+            %runscript
+              bash --this --that
+            '''.stripIndent(true)
+
+    }
     def 'should create build file given a container file' () {
         given:
         def ENCODED = 'FROM foo\nRUN this\n'.bytes.encodeBase64().toString()
@@ -248,6 +287,48 @@ class FreezeServiceImplTest extends Specification  {
             ENV WAVE_ENTRY_CHAIN="/some/entry.sh"
             WORKDIR /work/dir
             ENV FOO=1 BAR=2
+            '''.stripIndent()
+    }
+
+    def 'should untar build context' () {
+        given:
+        def folder = Files.createTempDirectory('test')
+        def source = folder.resolve('source')
+        def target = folder.resolve('target')
+        Files.createDirectory(source)
+        Files.createDirectory(target)
+        and:
+        source.resolve('foo.txt').text  = 'Foo'
+        source.resolve('bar.txt').text  = 'Bar'
+        and:
+        def layer = new Packer().layer(source)
+        def context = BuildContext.of(layer)
+
+        when:
+        FreezeServiceImpl.saveBuildContext(context, target)
+        then:
+        target.resolve('foo.txt').text == 'Foo'
+        target.resolve('bar.txt').text == 'Bar'
+
+        cleanup:
+        folder?.deleteDir()
+    }
+
+    def 'should create containerfile' () {
+        when:
+        def result = FreezeServiceImpl.createContainerFile(new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest'))
+        then:
+        result == '''\
+            FROM ubuntu:latest
+            '''.stripIndent()
+
+
+        when:
+        result = FreezeServiceImpl.createContainerFile(new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', format: 'sif'))
+        then:
+        result == '''\
+            BootStrap: docker
+            From: ubuntu:latest
             '''.stripIndent()
     }
 }

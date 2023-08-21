@@ -12,6 +12,7 @@ import io.micronaut.http.client.annotation.Client
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.persistence.PersistenceService
@@ -37,6 +38,7 @@ class ContainerBuildControllerTest extends Specification {
                 "buildrepo",
                 'conda::recipe',
                 'some-spack-recipe',
+                BuildFormat.DOCKER,
                 null,
                 null,
                 null,

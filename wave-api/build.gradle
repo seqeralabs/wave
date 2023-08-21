@@ -1,6 +1,0 @@
-plugins {
-    id 'io.seqera.wave.java-library-conventions'
-}
-
-group = 'io.seqera'
-version = "${project.file('VERSION').text.trim()}"

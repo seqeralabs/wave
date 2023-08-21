@@ -22,10 +22,10 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.runtime.server.event.ServerShutdownEvent
 import io.micronaut.runtime.server.event.ServerStartupEvent
-import io.seqera.wave.mail.Mail
-import io.seqera.wave.mail.MailProvider
-import io.seqera.wave.mail.Mailer
-import io.seqera.wave.mail.MailerConfig
+import io.seqera.mail.Mail
+import io.seqera.mail.MailProvider
+import io.seqera.mail.Mailer
+import io.seqera.mail.MailerConfig
 import io.seqera.wave.service.mail.MailSpooler
 import jakarta.inject.Inject
 import jakarta.inject.Singleton

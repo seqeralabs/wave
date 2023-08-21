@@ -9,18 +9,31 @@
  * defined by the Mozilla Public License, v. 2.0.
  */
 
-package io.seqera.wave.service.mail
+package io.seqera.wave.filter
+
+
+import java.time.Duration
 
 import groovy.transform.CompileStatic
-import io.seqera.mail.Mail
+import io.micronaut.context.annotation.ConfigurationProperties
 /**
- * Implements a Mail delivery service
+ * Rate limiter config options
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-interface MailSpooler {
+@ConfigurationProperties("rate-limit.httpRequest")
+class RateLimiterOptions {
 
-    void sendMail(Mail mail)
+    Duration timeoutDuration
 
+    Duration limitRefreshPeriod
+
+    Integer limitForPeriod
+
+    int statusCode
+
+    void validate() {
+        assert limitForPeriod>0, "Rate-limiter limitForPeriod must be greater than zero"
+    }
 }

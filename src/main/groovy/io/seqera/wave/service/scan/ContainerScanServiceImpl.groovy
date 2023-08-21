@@ -18,6 +18,9 @@ import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.util.ThreadPoolBuilder
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+
+import static io.seqera.wave.service.builder.BuildFormat.DOCKER
+
 /**
  * Implements ContainerScanService
  *
@@ -54,7 +57,9 @@ class ContainerScanServiceImpl implements ContainerScanService {
     @EventListener
     void onBuildEvent(BuildEvent event) {
         try {
-            scan(ScanRequest.fromBuild(event.request))
+            if( event.result.succeeded() && event.request.format == DOCKER ) {
+                scan(ScanRequest.fromBuild(event.request))
+            }
         }
         catch (Exception e) {
             log.warn "Unable to run the container scan - reason: ${e.message?:e}"

@@ -9,18 +9,26 @@
  * defined by the Mozilla Public License, v. 2.0.
  */
 
-package io.seqera.wave.service.mail
+package io.seqera.wave.exchange
 
 import groovy.transform.CompileStatic
-import io.seqera.mail.Mail
+import groovy.transform.TupleConstructor
+
 /**
- * Implements a Mail delivery service
+ * Generic error response
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-interface MailSpooler {
+@TupleConstructor
+final class ErrorResponse {
+    String message
 
-    void sendMail(Mail mail)
+    ErrorResponse(String message) {
+        this.message = message
+    }
 
+    static String of(String message) {
+        new ErrorResponse(message)
+    }
 }
