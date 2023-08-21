@@ -17,7 +17,6 @@ import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
-import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
@@ -29,6 +28,7 @@ import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.builder.FreezeService
+import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
@@ -42,7 +42,10 @@ import io.seqera.wave.util.DataTimeUtils
 import io.seqera.wave.util.LongRndKey
 import jakarta.inject.Inject
 import static io.seqera.wave.WaveDefault.TOWER
+import static io.seqera.wave.service.builder.BuildFormat.DOCKER
+import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
+
 /**
  * Implement a controller to receive container token requests
  * 
@@ -177,16 +180,20 @@ class ContainerTokenController {
             throw new BadRequestException("Missing build repository attribute")
         if( !defaultCacheRepo )
             throw new BadRequestException("Missing build cache repository attribute")
+        if( req.formatSingularity() && req.spackFile )
+            throw new BadRequestException("Spack based build is not supported when using Singularity image format")
+
         final dockerContent = new String(req.containerFile.decodeBase64())
         final condaContent = req.condaFile ? new String(req.condaFile.decodeBase64()) : null as String
         final spackContent = req.spackFile ? new String(req.spackFile.decodeBase64()) : null as String
+        final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
         final build = req.buildRepository ?: defaultBuildRepo
         final cache = req.cacheRepository ?: defaultCacheRepo
         final configJson = dockerAuthService.credentialsConfigJson(dockerContent, build, cache, user?.id, req.towerWorkspaceId, req.towerAccessToken, req.towerEndpoint)
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
-        final scanId = scanEnabled ? LongRndKey.rndHex() : null
+        final scanId = scanEnabled && format==DOCKER ? LongRndKey.rndHex() : null
         // create a unique digest to identify the request
         return new BuildRequest(
                 (spackContent ? prependBuilderTemplate(dockerContent) : dockerContent),
@@ -194,6 +201,7 @@ class ContainerTokenController {
                 build,
                 condaContent,
                 spackContent,
+                format,
                 user,
                 containerConfig,
                 req.buildContext,
@@ -225,6 +233,9 @@ class ContainerTokenController {
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
         if( req.freeze && !req.buildRepository )
             throw new BadRequestException("When freeze mode is enabled the target build repository must be specified - see 'wave.build.repository' setting")
+        if( req.formatSingularity() && !req.freeze )
+            throw new BadRequestException("Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting")
+
         // when 'freeze' is enabled, rewrite the request so that the container configuration specified
         // in the request is included in the build container file instead of being processed via the augmentation process
         if( req.freeze ) {
@@ -239,7 +250,7 @@ class ContainerTokenController {
         if( req.containerFile ) {
             final build = buildRequest(req, user, ip)
             targetImage = build.targetImage
-            targetContent = build.dockerFile
+            targetContent = build.containerFile
             condaContent = build.condaFile
             buildId = build.id
             buildNew = build.uncached

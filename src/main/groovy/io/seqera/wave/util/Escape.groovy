@@ -27,7 +27,7 @@ import groovy.transform.CompileStatic
 @CompileStatic
 class Escape {
 
-    private static List<String> SPECIAL_CHARS = ["'", '"', ' ', '(', ')', '\\', '!', '&', '|', '<', '>', '`', ':']
+    private static List<String> SPECIAL_CHARS = ["'", '"', ' ', '(', ')', '\\', '!', '&', '|', '<', '>', '`', ':', ';']
 
     private static List<String> VAR_CHARS = ['$', "'", '"', '(', ')', '\\', '&', '|', '<', '>', '`']
 
@@ -71,7 +71,11 @@ class Escape {
     }
 
     static String cli(String[] args) {
-        args.collect { cli(it) }.join(' ')
+        args.collect(it -> cli(it)).join(' ')
+    }
+
+    static String cli(List<String> args) {
+        args.collect(it -> cli(it)).join(' ')
     }
 
     static String cli(String arg) {

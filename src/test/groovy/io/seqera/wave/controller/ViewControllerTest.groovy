@@ -56,16 +56,17 @@ class ViewControllerTest extends Specification {
         def binding = controller.renderBuildView(record)
         then:
         binding.build_id == '12345'
-        binding.build_dockerfile == 'FROM foo'
+        binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
         binding.build_image == 'docker.io/some:image'
         binding.build_user == 'paolo (ip: 10.20.30.40)'
         binding.build_platform == 'linux/amd64'
         binding.build_exit_status == 0
         binding.build_platform == 'linux/amd64'
-        binding.build_dockerfile == 'FROM foo'
+        binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
         binding.build_spackfile == 'some-spack-recipe'
+        binding.build_format == 'Docker'
     }
 
     def 'should render a build page' () {
@@ -90,7 +91,7 @@ class ViewControllerTest extends Specification {
         then:
         response.body().contains(record1.buildId)
         and:
-        response.body().contains('Docker file')
+        response.body().contains('Container file')
         response.body().contains('FROM docker.io/test:foo')
         and:
         !response.body().contains('Conda file')
@@ -119,7 +120,7 @@ class ViewControllerTest extends Specification {
         then:
         response.body().contains(record1.buildId)
         and:
-        response.body().contains('Docker file')
+        response.body().contains('Container file')
         response.body().contains('-')
         and:
         response.body().contains('Conda file')
@@ -150,7 +151,7 @@ class ViewControllerTest extends Specification {
         then:
         response.body().contains(record1.buildId)
         and:
-        response.body().contains('Docker file')
+        response.body().contains('Container file')
         response.body().contains('-')
         and:
         !response.body().contains('Conda file')

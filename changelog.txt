@@ -1,4 +1,17 @@
 # Wave changelog
+v0.38.0 - 19 Aug 2023
+- Add support for build for Singularity images (#282) [258183d2]
+- Add Support for handling .dockerignore patterns added in wave-util (#281) [4dd89b93]
+- Add jaxb-api runtime deps [71f2cfbc]
+- Fix Perform scan only on successful build [1673d2d0]
+- Fix Use root user in Wave container based on micromamba [704fc4ed]
+- Remove test controller [dac67291]
+- Refactor submodules [b0fc36a9]
+- Bump singularity:v3.11.4-slim dep [8430b010]
+- Bump wave-utils@0.5.0 [75f792af]
+- Bump wave-api@0.4.0 [1f7ef5fc]
+- Bump wave-api@0.3.2 [540e4602]
+
 v0.37.1 - 15 Aug 2023
 - Improve http rate limiter 
 

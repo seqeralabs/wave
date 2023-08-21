@@ -6,10 +6,10 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.runtime.event.annotation.EventListener
-import io.seqera.wave.mail.Mail
-import io.seqera.wave.mail.MailAttachment
-import io.seqera.wave.mail.MailHelper
-import io.seqera.wave.mail.MailerConfig
+import io.seqera.mail.Mail
+import io.seqera.mail.MailAttachment
+import io.seqera.mail.MailHelper
+import io.seqera.mail.MailerConfig
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
@@ -75,8 +75,9 @@ class MailServiceImpl implements MailService {
         binding.build_time = formatTimestamp(result.startTime, req.offsetId) ?: '-'
         binding.build_duration = formatDuration(result.duration) ?: '-'
         binding.build_image = req.targetImage
+        binding.build_format = req.format?.render() ?: 'Docker'
         binding.build_platform = req.platform
-        binding.build_dockerfile = req.dockerFile ?: '-'
+        binding.build_containerfile = req.containerFile ?: '-'
         binding.build_condafile = req.condaFile
         binding.build_spackfile = req.spackFile
         binding.put('build_logs', result.logs)

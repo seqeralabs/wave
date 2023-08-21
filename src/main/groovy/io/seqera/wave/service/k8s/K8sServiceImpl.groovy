@@ -9,6 +9,7 @@ import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.custom.Quantity
+import io.kubernetes.client.openapi.models.V1ContainerBuilder
 import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1DeleteOptions
 import io.kubernetes.client.openapi.models.V1HostPathVolumeSource
@@ -244,15 +245,13 @@ class K8sServiceImpl implements K8sService {
      *
      * @return A {@link V1VolumeMount} representing the docker config
      */
-    protected V1VolumeMount mountDockerConfig(Path workDir, String storageMountPath, String mountPath) {
-        assert workDir, "K8s mount build storage is mandatory"
-
-        final rel = Path.of(storageMountPath).relativize(workDir).toString()
-        final String config = rel ? "$rel/config.json" : 'config.json'
+    protected V1VolumeMount mountHostPath(Path filePath, String storageMountPath, String mountPath) {
+        final rel = Path.of(storageMountPath).relativize(filePath).toString()
+        if( !rel ) throw new IllegalStateException("Mount relative path cannot be empty")
         return new V1VolumeMount()
                 .name('build-data')
                 .mountPath(mountPath)
-                .subPath(config)
+                .subPath(rel)
                 .readOnly(true)
     }
 
@@ -311,7 +310,10 @@ class K8sServiceImpl implements K8sService {
                 .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
-    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector) {
+    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, SpackConfig spackConfig, Map<String,String> nodeSelector) {
+
+        // dirty dependency to avoid introducing another parameter
+        final singularity = containerImage.contains('singularity')
 
         // required volumes
         final mounts = new ArrayList<V1VolumeMount>(5)
@@ -320,8 +322,15 @@ class K8sServiceImpl implements K8sService {
         final volumes = new ArrayList<V1Volume>(5)
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
-        if( creds ){
-            mounts.add(0, mountDockerConfig(workDir, storageMountPath, '/kaniko/.docker/config.json'))
+        if( credsFile ){
+            if( !singularity ) {
+                mounts.add(0, mountHostPath(credsFile, storageMountPath, '/kaniko/.docker/config.json'))
+            }
+            else {
+                final remoteFile = credsFile.resolveSibling('singularity-remote.yaml')
+                mounts.add(0, mountHostPath(credsFile, storageMountPath, '/root/.singularity/docker-config.json'))
+                mounts.add(1, mountHostPath(remoteFile, storageMountPath, '/root/.singularity/remote.yaml'))
+            }
         }
 
         if( spackConfig ) {
@@ -354,15 +363,26 @@ class K8sServiceImpl implements K8sService {
         if( requestsMemory )
             requests.putRequestsItem('memory', new Quantity(requestsMemory))
 
-        //container section
-        spec.addNewContainer()
+        // container section
+        final container = new V1ContainerBuilder()
                 .withName(name)
                 .withImage(containerImage)
-                .withArgs(args)
                 .withVolumeMounts(mounts)
                 .withResources(requests)
-            .endContainer()
-            .endSpec()
+
+        if( singularity ) {
+            container
+            // use 'command' to override the entrypoint of the container
+                    .withCommand(args)
+                    .withNewSecurityContext().withPrivileged(true).endSecurityContext()
+        }
+        else {
+            // use 'arg' to avoid overriding the entrypoint of the container set by kaniko
+            container.withArgs(args)
+        }
+
+        // spec section
+        spec.withContainers(container.build()).endSpec()
 
         builder.build()
     }
@@ -444,7 +464,7 @@ class K8sServiceImpl implements K8sService {
                 .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
-    V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
+    V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig, Map<String,String> nodeSelector) {
 
         final mounts = new ArrayList<V1VolumeMount>(5)
         mounts.add(mountBuildStorage(workDir, storageMountPath, false))
@@ -453,8 +473,8 @@ class K8sServiceImpl implements K8sService {
         final volumes = new ArrayList<V1Volume>(5)
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
-        if( creds ){
-            mounts.add(0, mountDockerConfig(workDir, storageMountPath, Trivy.CONFIG_MOUNT_PATH))
+        if( credsFile ){
+            mounts.add(0, mountHostPath(credsFile, storageMountPath, Trivy.CONFIG_MOUNT_PATH))
         }
 
         V1PodBuilder builder = new V1PodBuilder()

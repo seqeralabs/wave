@@ -111,7 +111,7 @@ class RegHelperTest extends Specification {
     }
 
     @Unroll
-    def 'should parse docker from statement' () {
+    def 'should parse docker from statement #LINE' () {
         expect:
         RegHelper.parseFromStatement(LINE) == EXPECT
 
@@ -122,6 +122,11 @@ class RegHelperTest extends Specification {
         'FROM  foo '                        | 'foo'
         'FROM --platform=xyz foo'           | 'foo'
         'FROM --platform=xyz foo as this'   | 'foo'
+        and:
+        // allow singularity file syntax
+        'From: foo'                         | 'foo'
+        'from: foo'                         | 'foo'
+        'from foo'                          | null
     }
 
     def 'should parse docker entrypoint'() {
@@ -141,5 +146,23 @@ class RegHelperTest extends Specification {
         and:
         'ENTRYPOINT ["this", "a b c"]'          | ['this', 'a b c']
 
+    }
+
+    def 'should create singularity remote ymal file' () {
+
+        when:
+        def ret = RegHelper.singularityRemoteFile('oras://quay.io/user/foo:latest')
+        then:
+        ret == '''\
+            Active: SylabsCloud
+            Remotes:
+              SylabsCloud:
+                URI: cloud.sylabs.io
+                System: true
+                Exclusive: false
+            Credentials:
+            - URI: oras://quay.io
+              Insecure: false
+            '''.stripIndent(true)
     }
 }
