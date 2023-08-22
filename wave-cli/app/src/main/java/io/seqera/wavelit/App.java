@@ -475,7 +475,8 @@ public class App implements Runnable {
         // check all size
         long size = 0;
         for(ContainerLayer it : result.layers ) {
-            size += it.gzipSize;
+            if( it.location.startsWith("data:"))
+                size += it.gzipSize;
         }
         if( size>=10 * _1MB )
             throw new RuntimeException("Compressed container layers cannot exceed 10 MiB");
