@@ -24,10 +24,10 @@
     }, 
     {
       "pattern":"\\Qtemplates/conda/singularityfile-conda-file.txt\\E"
-    },
+    }, 
     {
       "pattern":"\\Qtemplates/conda/singularityfile-conda-packages.txt\\E"
-    },
+    }, 
     {
       "pattern":"\\Qtemplates/spack/dockerfile-spack-file.txt\\E"
     }
