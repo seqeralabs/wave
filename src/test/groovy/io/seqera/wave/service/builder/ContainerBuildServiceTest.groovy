@@ -164,15 +164,14 @@ class ContainerBuildServiceTest extends Specification {
                 '''.stripIndent()
         and:
         def condaFile = '''
-                this is
-                the conda
-                recipe
+                dependencies:
+                  - salmon=1.6.0
                 '''
         and:
         def spackFile = '''
-                this is
-                the spack
-                build file
+                spack:
+                  specs: [bwa@0.7.15, salmon@1.1.1]
+                  concretizer: {unify: true, reuse: false}
                 '''
         and:
         def spackConfig = new SpackConfig(cacheMountPath: '/mnt/cache', secretMountPath: '/mnt/secret')

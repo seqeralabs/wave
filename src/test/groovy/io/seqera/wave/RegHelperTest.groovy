@@ -5,6 +5,7 @@ import spock.lang.Unroll
 
 import java.util.concurrent.CompletableFuture
 
+import com.google.common.hash.Hashing
 import groovy.util.logging.Slf4j
 import io.seqera.wave.test.ManifestConst
 import io.seqera.wave.util.RegHelper
@@ -164,5 +165,76 @@ class RegHelperTest extends Specification {
             - URI: oras://quay.io
               Insecure: false
             '''.stripIndent(true)
+    }
+
+    def 'should find conda name with named recipe' () {
+        given:
+        def CONDA = '''\
+            name: rnaseq-nf
+            channels:
+              - defaults
+              - bioconda
+              - conda-forge
+            dependencies:
+              # Default bismark
+              - salmon=1.6.0
+              - fastqc=0.11.9
+              - multiqc=1.11
+            '''.stripIndent(true)
+
+        expect:
+        RegHelper.guessCondaRecipeName(CONDA) == 'rnaseq-nf'
+    }
+
+    def 'should find conda name with anonymous recipe' () {
+        given:
+        def CONDA = '''\
+            channels:
+              - defaults
+              - bioconda
+              - conda-forge
+            dependencies:
+              # Default bismark
+              - salmon=1.6.0
+              - fastqc=0.11.9
+              - bioconda::multiqc=1.11
+            '''.stripIndent(true)
+
+        expect:
+        RegHelper.guessCondaRecipeName(CONDA) == 'salmon-1.6.0_fastqc-0.11.9_multiqc-1.11'
+    }
+
+    def 'should find spack recipe names from spack yaml file' () {
+        def SPACK = '''\
+            spack:
+              specs: [bwa@0.7.15, salmon@1.1.1, nano@1.0 x=one]
+              concretizer: {unify: true, reuse: false}
+            '''.stripIndent(true)
+
+        expect:
+        RegHelper.guessSpackRecipeName(SPACK) == 'bwa-0.7.15_salmon-1.1.1_nano-1.0'
+    }
+
+
+    def 'should compute sip hash' () {
+        given:
+        def map = [foo: 'one', bar: 'two']
+
+        expect:
+        RegHelper.sipHash(map) == '28e758ec870964c8'
+        and:
+        RegHelper.sipHash(map) == Hashing
+                .sipHash24()
+                .newHasher()
+                    .putUnencodedChars('foo')
+                        .putUnencodedChars(Character.toString(0x1C))
+                        .putUnencodedChars('one')
+                        .putUnencodedChars(Character.toString(0x1E))
+                    .putUnencodedChars('bar')
+                        .putUnencodedChars(Character.toString(0x1C))
+                        .putUnencodedChars('two')
+                        .putUnencodedChars(Character.toString(0x1E))
+                .hash()
+                .toString()
     }
 }

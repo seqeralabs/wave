@@ -10,10 +10,13 @@ import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
-import io.seqera.wave.util.DigestFunctions
+import io.seqera.wave.util.RegHelper
+import static io.seqera.wave.service.builder.BuildFormat.DOCKER
+import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static io.seqera.wave.util.StringUtils.trunc
 
-import static io.seqera.wave.service.builder.BuildFormat.*
+import static io.seqera.wave.util.RegHelper.guessCondaRecipeName
+import static io.seqera.wave.util.RegHelper.guessSpackRecipeName
 
 /**
  * Model a container builder result
@@ -133,7 +136,7 @@ class BuildRequest {
         this.buildContext = buildContext
         this.condaFile = condaFile
         this.spackFile = spackFile
-        this.targetImage = format==SINGULARITY ? "oras://${repo}:${id}" : "${repo}:${id}"
+        this.targetImage = makeTarget(format, repo, id, condaFile, spackFile)
         this.format = format
         this.user = user
         this.platform = platform
@@ -148,15 +151,29 @@ class BuildRequest {
         this.scanId = scanId
     }
 
+    static private String makeTarget(BuildFormat format, String repo, String id, String condaFile, String spackFile) {
+        def condaName
+        def spackName
+        def tag = id
+        if( condaFile && (condaName=guessCondaRecipeName(condaFile)) ) {
+            tag = "$condaName--$id"
+        }
+        else if( spackFile && (spackName=guessSpackRecipeName(condaFile)) ) {
+            tag = "$spackName--$id"
+        }
+
+        format==SINGULARITY ? "oras://${repo}:${tag}" : "${repo}:${tag}"
+    }
+
     static private String computeDigest(String containerFile, String condaFile, String spackFile, ContainerPlatform platform, String repository, BuildContext buildContext) {
-        final attrs = new LinkedHashMap<String,Object>(10)
+        final attrs = new LinkedHashMap<String,String>(10)
         attrs.containerFile = containerFile
         attrs.condaFile = condaFile
-        attrs.platform = platform
+        attrs.platform = platform?.toString()
         attrs.repository = repository
         if( spackFile ) attrs.spackFile = spackFile
         if( buildContext ) attrs.buildContext = buildContext.tarDigest
-        return DigestFunctions.md5(attrs)
+        return RegHelper.sipHash(attrs)
     }
 
     @Override
