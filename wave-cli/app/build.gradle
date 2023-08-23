@@ -1,12 +1,12 @@
 plugins {
     id 'io.seqera.wavelit.java-application-conventions'
     id 'groovy'
-    id 'org.graalvm.buildtools.native' version '0.9.22'
+    id 'org.graalvm.buildtools.native' version '0.9.24'
 }
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(19)
+        languageVersion = JavaLanguageVersion.of(20)
     }
 }
 
@@ -68,7 +68,7 @@ graalvmNative {
             mainClass = 'io.seqera.wavelit.App'
             configurationFileDirectories.from(file('conf'))
             javaLauncher = javaToolchains.launcherFor {
-                languageVersion = JavaLanguageVersion.of(19)
+                languageVersion = JavaLanguageVersion.of(20)
             }
             buildArgs.add('--enable-url-protocols=https')
         }

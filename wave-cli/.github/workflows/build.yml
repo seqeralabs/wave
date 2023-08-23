@@ -19,8 +19,7 @@ jobs:
 
       - uses: graalvm/setup-graalvm@v1
         with:
-          version: '22.3.1'
-          java-version: '19'
+          java-version: '20'
           components: 'native-image'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           native-image-job-reports: 'true'
@@ -63,7 +62,7 @@ jobs:
       - name: Setup Java for JReleaser
         uses: actions/setup-java@v3
         with:
-          java-version: 19
+          java-version: '20'
           distribution: 'adopt'
 
       - name: Version

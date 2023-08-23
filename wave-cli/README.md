@@ -104,11 +104,17 @@ docker run $(wavelit --spack-package cowsay) sh -c 'cowsay Hello world!'
 
 ### Development
 
-1. Install GraalVM 22.3.1 + Java 19 
+1. Install GraalVM-Java 20.0.2
 
     ```bash
-    sdk install java 22.3.1.r19-grl
+    sdk install java 20.0.2-graal
     ```
+
+    or if it's already installed
+
+   ```bash
+   sdk use java 20.0.2-graal
+   ```
 
 2. Compile & run tests 
 
