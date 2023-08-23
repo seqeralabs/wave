@@ -158,7 +158,7 @@ class BuildRequest {
         if( condaFile && (condaName=guessCondaRecipeName(condaFile)) ) {
             tag = "$condaName--$id"
         }
-        else if( spackFile && (spackName=guessSpackRecipeName(condaFile)) ) {
+        else if( spackFile && (spackName=guessSpackRecipeName(spackFile)) ) {
             tag = "$spackName--$id"
         }
 

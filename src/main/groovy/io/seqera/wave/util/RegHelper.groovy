@@ -166,10 +166,10 @@ class RegHelper {
         """.stripIndent()
     }
 
-    static final private UTF8 = Charset.forName('UTF-8')
-
 
     static String guessCondaRecipeName(String condaFileContent) {
+        if( !condaFileContent )
+            return null
         try {
             final yaml = (Map)new Yaml().load(condaFileContent)
             if( yaml.name )
@@ -196,6 +196,8 @@ class RegHelper {
 
 
     static String guessSpackRecipeName(String spackFileContent) {
+        if( !spackFileContent )
+            return null
         try {
             final yaml = new Yaml().load(spackFileContent) as Map
             final spack = yaml.spack as Map

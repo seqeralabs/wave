@@ -183,6 +183,7 @@ class RegHelperTest extends Specification {
             '''.stripIndent(true)
 
         expect:
+        RegHelper.guessCondaRecipeName(null) == null
         RegHelper.guessCondaRecipeName(CONDA) == 'rnaseq-nf'
     }
 
@@ -212,6 +213,7 @@ class RegHelperTest extends Specification {
             '''.stripIndent(true)
 
         expect:
+        RegHelper.guessSpackRecipeName(null) == null
         RegHelper.guessSpackRecipeName(SPACK) == 'bwa-0.7.15_salmon-1.1.1_nano-1.0'
     }
 
