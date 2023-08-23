@@ -39,7 +39,6 @@ wave:
       credentials : ${GOOGLECR_KEYS:test}
   build:
     workspace: 'build-workspace'
-    repo: 'quay.io/org/name'
     spack:
       cacheDirectory: "spack-cache"
   scan:
