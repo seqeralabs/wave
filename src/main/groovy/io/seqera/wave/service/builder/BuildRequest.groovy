@@ -3,6 +3,7 @@ package io.seqera.wave.service.builder
 import java.nio.file.Path
 import java.time.Instant
 import java.time.OffsetDateTime
+import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
@@ -13,11 +14,9 @@ import io.seqera.wave.tower.User
 import io.seqera.wave.util.RegHelper
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
-import static io.seqera.wave.util.StringUtils.trunc
-
 import static io.seqera.wave.util.RegHelper.guessCondaRecipeName
 import static io.seqera.wave.util.RegHelper.guessSpackRecipeName
-
+import static io.seqera.wave.util.StringUtils.trunc
 /**
  * Model a container builder result
  *
@@ -151,18 +150,50 @@ class BuildRequest {
         this.scanId = scanId
     }
 
-    static private String makeTarget(BuildFormat format, String repo, String id, String condaFile, String spackFile) {
-        def condaName
-        def spackName
+    static protected String makeTarget(BuildFormat format, String repo, String id, @Nullable String condaFile, @Nullable String spackFile) {
+        assert id, "Argument 'id' cannot be null or empty"
+        assert repo, "Argument 'repo' cannot be null or empty"
+        assert format, "Argument 'format' cannot be null"
+
+        String prefix
         def tag = id
-        if( condaFile && (condaName=guessCondaRecipeName(condaFile)) ) {
-            tag = "$condaName--$id"
+        if( condaFile && (prefix=guessCondaRecipeName(condaFile)) ) {
+            tag = "${normaliseTag(prefix)}--${id}"
         }
-        else if( spackFile && (spackName=guessSpackRecipeName(spackFile)) ) {
-            tag = "$spackName--$id"
+        else if( spackFile && (prefix=guessSpackRecipeName(spackFile)) ) {
+            tag = "${normaliseTag(prefix)}--${id}"
         }
 
         format==SINGULARITY ? "oras://${repo}:${tag}" : "${repo}:${tag}"
+    }
+
+    static protected String normaliseTag(String tag, int maxLength=80) {
+        assert maxLength>0, "Argument maxLength cannot be less or equals to zero"
+        if( !tag )
+            return null
+        // docker tag only allows [a-z0-9.-_]
+        tag = tag.replaceAll(/[^a-zA-Z0-9_.-]/,'')
+        // only allow max 100 chars
+        if( tag.length()>maxLength ) {
+            // try to tokenize splitting by `_`
+            def result = ''
+            def parts = tag.tokenize('_')
+            for( String it : parts ) {
+                if( result )
+                    result += '_'
+                result += it
+                if( result.size()>maxLength )
+                    break
+            }
+            tag = result
+        }
+        // still too long, trunc it
+        if( tag.length()>maxLength ) {
+            tag = tag.substring(0,maxLength)
+        }
+        // remove trailing or leading special chars
+        tag = tag.replaceAll(/^(\W|_)+|(\W|_)+$/,'')
+        return tag ?: null
     }
 
     static private String computeDigest(String containerFile, String condaFile, String spackFile, ContainerPlatform platform, String repository, BuildContext buildContext) {

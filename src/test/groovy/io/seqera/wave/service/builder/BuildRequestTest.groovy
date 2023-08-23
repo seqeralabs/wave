@@ -1,6 +1,7 @@
 package io.seqera.wave.service.builder
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.nio.file.Path
 import java.time.OffsetDateTime
@@ -219,6 +220,55 @@ class BuildRequestTest extends Specification {
         and:
         req1.offsetId == OffsetDateTime.now().offset.id
         req7.offsetId == 'UTC+2'
+    }
+
+    def 'should make request target' () {
+        expect:
+        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', '12345', null, null)
+                == 'quay.io/org/name:12345'
+        and:
+        BuildRequest.makeTarget(BuildFormat.SINGULARITY, 'quay.io/org/name', '12345', null, null)
+                == 'oras://quay.io/org/name:12345'
+
+        and:
+        def conda = '''\
+        dependencies:
+        - salmon=1.2.3
+        '''
+        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', '12345', conda, null)
+                == 'quay.io/org/name:salmon-1.2.3--12345'
+
+        and:
+        def spack = '''\
+         spack:
+            specs: [bwa@0.7.15]
+        '''
+        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', '12345', null, spack)
+                == 'quay.io/org/name:bwa-0.7.15--12345'
+
+    }
+
+    @Unroll
+    def 'should normalise tag' () {
+        expect:
+        BuildRequest.normaliseTag(TAG,12)  == EXPECTED
+        where:
+        TAG                     | EXPECTED
+        null                    | null
+        ''                      | null
+        and:
+        'foo'                   | 'foo'
+        'FOO123'                | 'FOO123'
+        'aa-bb_cc.dd'           | 'aa-bb_cc.dd'
+        and:
+        'one(two)three'         | 'onetwothree'
+        '12345_67890_12345'     | '12345_67890'
+        '123456789012345_1'     | '123456789012'
+        and:
+        'aa__'                  | 'aa'
+        'aa..--__'              | 'aa'
+        '..--__bb'              | 'bb'
+        '._-xyz._-'             | 'xyz'
     }
 
 }
