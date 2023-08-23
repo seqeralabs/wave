@@ -37,6 +37,8 @@ class WaveBuildRecord {
     String scanId
     BuildFormat format
 
+    boolean succeeded() { exitStatus==0 }
+
     static WaveBuildRecord fromEvent(BuildEvent event) {
         if( event.request.id != event.result.id )
             throw new IllegalStateException("Build id must match the result id")
