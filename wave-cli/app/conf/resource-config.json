@@ -1,36 +1,33 @@
 {
   "resources":{
-  "includes":[
-    {
-      "pattern":"\\QMETA-INF/build-info.properties\\E"
-    }, 
-    {
-      "pattern":"\\QMETA-INF/services/ch.qos.logback.classic.spi.Configurator\\E"
-    }, 
-    {
-      "pattern":"\\QMETA-INF/services/org.slf4j.spi.SLF4JServiceProvider\\E"
-    }, 
-    {
-      "pattern":"\\Qio/seqera/wavelit/usage-examples.txt\\E"
-    }, 
-    {
-      "pattern":"\\Qlogback.xml\\E"
-    }, 
-    {
-      "pattern":"\\Qtemplates/conda/dockerfile-conda-file.txt\\E"
-    }, 
-    {
-      "pattern":"\\Qtemplates/conda/dockerfile-conda-packages.txt\\E"
-    }, 
-    {
-      "pattern":"\\Qtemplates/conda/singularityfile-conda-file.txt\\E"
-    }, 
-    {
-      "pattern":"\\Qtemplates/conda/singularityfile-conda-packages.txt\\E"
-    }, 
-    {
-      "pattern":"\\Qtemplates/spack/dockerfile-spack-file.txt\\E"
-    }
-  ]},
+  "includes":[{
+    "pattern":"\\QMETA-INF/build-info.properties\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/ch.qos.logback.classic.spi.Configurator\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.slf4j.spi.SLF4JServiceProvider\\E"
+  }, {
+    "pattern":"\\Qio/seqera/wavelit/usage-examples.txt\\E"
+  }, {
+    "pattern":"\\Qlogback.xml\\E"
+  }, {
+    "pattern":"\\Qtemplates/conda/dockerfile-conda-file.txt\\E"
+  }, {
+    "pattern":"\\Qtemplates/conda/dockerfile-conda-packages.txt\\E"
+  }, {
+    "pattern":"\\Qtemplates/conda/singularityfile-conda-file.txt\\E"
+  }, {
+    "pattern":"\\Qtemplates/conda/singularityfile-conda-packages.txt\\E"
+  }, {
+    "pattern":"\\Qtemplates/spack/dockerfile-spack-file.txt\\E"
+  }, {
+    "pattern":"java.base:\\Qjdk/internal/icu/impl/data/icudt72b/nfc.nrm\\E"
+  }, {
+    "pattern":"java.base:\\Qjdk/internal/icu/impl/data/icudt72b/nfkc.nrm\\E"
+  }, {
+    "pattern":"java.base:\\Qjdk/internal/icu/impl/data/icudt72b/uprops.icu\\E"
+  }, {
+    "pattern":"java.base:\\Qsun/net/idn/uidna.spp\\E"
+  }]},
   "bundles":[]
 }
