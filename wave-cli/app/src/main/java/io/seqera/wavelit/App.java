@@ -159,6 +159,9 @@ public class App implements Runnable {
     @Option(names = {"-s","--singularity"}, paramLabel = "false", description = "Enable Singularity build (experimental)")
     private boolean singularity;
 
+    @Option(names = {"--dry-run"}, paramLabel = "false", description = "Simulate a request switching off the build container images")
+    private boolean dryRun;
+
     private BuildContext buildContext;
 
     private ContainerConfig containerConfig;
@@ -321,6 +324,10 @@ public class App implements Runnable {
             if( !Files.isDirectory(location) )
                 throw new IllegalCliArgumentException("Context path is not a directory - offending value: " + contextDir);
         }
+
+        if( dryRun && await)
+            throw new IllegalCliArgumentException("Options --dry-run and --await conflicts each other");
+
     }
 
     protected Client client() {
@@ -343,7 +350,9 @@ public class App implements Runnable {
                 .withTowerWorkspaceId(towerWorkspaceId)
                 .withTowerEndpoint(towerEndpoint)
                 .withFormat( singularity ? "sif" : null )
-                .withFreezeMode(freeze);
+                .withFreezeMode(freeze)
+                .withDryRun(dryRun)
+                ;
     }
 
     @Override

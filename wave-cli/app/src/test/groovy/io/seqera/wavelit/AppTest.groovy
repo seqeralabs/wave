@@ -16,6 +16,7 @@ import java.time.Instant
 
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.util.TarUtils
+import io.seqera.wavelit.exception.IllegalCliArgumentException
 import picocli.CommandLine
 import spock.lang.Specification
 
@@ -121,5 +122,32 @@ class AppTest extends Specification {
 
         cleanup:
         folder?.deleteDir()
+    }
+
+    def 'should enable dry run mode' () {
+        given:
+        def app = new App()
+        String[] args = ["--dry-run"]
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        and:
+        def req = app.createRequest()
+        then:
+        req.dryRun
+    }
+
+    def 'should not allow dry-run and await' () {
+        given:
+        def app = new App()
+        String[] args = ["-i", "ubuntu:latest","--dry-run", '--await']
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        and:
+        app.validateArgs()
+        then:
+        def e = thrown(IllegalCliArgumentException)
+        e.message == 'Options --dry-run and --await conflicts each other'
     }
 }
