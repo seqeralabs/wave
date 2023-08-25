@@ -8,10 +8,12 @@ import io.micronaut.http.annotation.Header
 import io.micronaut.http.annotation.Post
 import io.micronaut.http.annotation.Put
 import io.micronaut.http.client.annotation.Client
+import io.micronaut.retry.annotation.Retryable
+import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import reactor.core.publisher.Flux
-
 /**
  * Declarative http client for SurrealDB
  *
@@ -24,6 +26,12 @@ import reactor.core.publisher.Flux
 @Header(name = "ns", value = '${surrealdb.ns}')
 @Header(name = "db", value = '${surrealdb.db}')
 @Client(value = '${surrealdb.url}')
+@Retryable(
+        delay = '${wave.surreal.retry.delay:1s}',
+        maxDelay = '${wave.surreal.retry.maxDelay:10s}',
+        attempts = '${wave.surreal.retry.attempts:3}',
+        multiplier = '${wave.surreal.retry.multiplier:1.5}',
+        predicate = RetryOnIOException )
 interface SurrealClient {
 
     @Post("/sql")
@@ -49,5 +57,11 @@ interface SurrealClient {
 
     @Put('/key/wave_request/{token}')
     Flux<Map<String, Object>> updateContainerRequestAsync(@Header String authorization, String token, @Body WaveContainerRecord body)
+
+    @Post('/key/wave_scan/{id}')
+    Map<String,Object> insertScanRecord(@Header String authorization, String id, @Body WaveScanRecord body)
+
+    @Post('/key/wave_scan_vuln/{id}')
+    Map<String, Object> insertScanVulnerability(@Header String authorization, String id, @Body ScanVulnerability scanVulnerability)
 
 }

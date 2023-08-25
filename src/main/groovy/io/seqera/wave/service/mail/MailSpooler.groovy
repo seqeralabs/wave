@@ -12,7 +12,7 @@
 package io.seqera.wave.service.mail
 
 import groovy.transform.CompileStatic
-import io.seqera.wave.mail.Mail
+import io.seqera.mail.Mail
 /**
  * Implements a Mail delivery service
  *

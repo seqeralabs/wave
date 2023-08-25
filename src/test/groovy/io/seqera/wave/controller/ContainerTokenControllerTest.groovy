@@ -1,7 +1,5 @@
 package io.seqera.wave.controller
 
-import spock.lang.Specification
-
 import java.nio.file.Path
 
 import io.micronaut.http.HttpRequest
@@ -12,18 +10,21 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
-import io.seqera.wave.auth.DockerAuthService
+import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.exchange.DescribeWaveContainerResponse
+import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
+import io.seqera.wave.service.builder.FreezeService
 import io.seqera.wave.service.pairing.PairingRecord
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
+import spock.lang.Specification
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -56,7 +57,6 @@ class ContainerTokenControllerTest extends Specification {
         data.containerConfig == cfg
         data.platform == ContainerPlatform.of('arm64')
 
-
         when:
         req = new SubmitContainerTokenRequest()
         controller.makeRequestData(req, new User(id: 100),"")
@@ -71,6 +71,28 @@ class ContainerTokenControllerTest extends Specification {
 
     }
 
+    def 'should create request data with freeze mode' () {
+        given:
+        def freeze = Mock(FreezeService)
+        and:
+        def controller = Spy(new ContainerTokenController(freezeService: freeze))
+        and:
+        def BUILD = Mock(BuildRequest) {
+            getTargetImage() >> 'docker.io/repo/ubuntu:latest'
+        }
+        and:
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true, buildRepository: 'docker.io/foo/bar')
+
+        when:
+        def data = controller.makeRequestData(req, null, "")
+        then:
+        1 * freeze.freezeBuildRequest(req, _) >> req.copyWith(containerFile: 'FROM ubuntu:latest')
+        1 * controller.buildRequest(_,_,_) >> BUILD
+        and:
+        data.containerImage == 'docker.io/repo/ubuntu:latest'
+
+    }
+
     String encode(String str) {
         str.bytes.encodeBase64().toString()
     }
@@ -82,7 +104,7 @@ class ContainerTokenControllerTest extends Specification {
     def 'should make a build request' () {
         given:
         def builder = Mock(ContainerBuildService)
-        def dockerAuth = Mock(DockerAuthService)
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
         def proxyRegistry = Mock(RegistryProxyService)
         def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry,
                 workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
@@ -110,7 +132,7 @@ class ContainerTokenControllerTest extends Specification {
     def 'should not run a build request if manifest is present' () {
         given:
         def builder = Mock(ContainerBuildService)
-        def dockerAuth = Mock(DockerAuthService)
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
         def proxyRegistry = Mock(RegistryProxyService)
         def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry,
                 workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
@@ -135,9 +157,39 @@ class ContainerTokenControllerTest extends Specification {
         data.platform.toString() == 'linux/arm64'
     }
 
+    def 'should not run a build request when dry-run is specified' () {
+        given:
+        def builder = Mock(ContainerBuildService)
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def proxyRegistry = Mock(RegistryProxyService)
+        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry,
+                workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
+        def DOCKER = 'FROM foo'
+        def user = new User(id: 100)
+        def cfg = new ContainerConfig()
+        def req = new SubmitContainerTokenRequest(
+                containerFile: encode(DOCKER),
+                containerPlatform: 'arm64',
+                containerConfig: cfg,
+                dryRun: true
+        )
+
+        when:
+        def data = controller.makeRequestData(req, user, "")
+        then:
+        0 * proxyRegistry.isManifestPresent(_) >> null
+        0 * builder.buildImage(_) >> null
+        and:
+        data.containerFile == 'FROM foo'
+        data.userId == 100
+        data.containerImage ==  'wave/build:7d6b54efe23408c0938290a9ae49cf21'
+        data.containerConfig == cfg
+        data.platform.toString() == 'linux/arm64'
+    }
+
     def 'should create build request' () {
         given:
-        def dockerAuth = Mock(DockerAuthService)
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
         def controller = new ContainerTokenController(dockerAuthService: dockerAuth, workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
 
         when:
@@ -145,7 +197,7 @@ class ContainerTokenControllerTest extends Specification {
         def build = controller.makeBuildRequest(submit, null,"")
         then:
         build.id == '21159a79b614be796103c7b752fdfbf0'
-        build.dockerFile == 'FROM foo'
+        build.containerFile == 'FROM foo'
         build.targetImage == 'wave/build:21159a79b614be796103c7b752fdfbf0'
         build.workDir == Path.of('/some/wsp').resolve(build.id)
         build.platform == ContainerPlatform.of('amd64')
@@ -155,7 +207,7 @@ class ContainerTokenControllerTest extends Specification {
         build = controller.makeBuildRequest(submit, null, null)
         then:
         build.id == '21159a79b614be796103c7b752fdfbf0'
-        build.dockerFile == 'FROM foo'
+        build.containerFile == 'FROM foo'
         build.targetImage == 'wave/build:21159a79b614be796103c7b752fdfbf0'
         build.workDir == Path.of('/some/wsp').resolve(build.id)
         build.platform == ContainerPlatform.of('amd64')
@@ -166,7 +218,7 @@ class ContainerTokenControllerTest extends Specification {
         build = controller.makeBuildRequest(submit, null, "")
         then:
         build.id == '7d6b54efe23408c0938290a9ae49cf21'
-        build.dockerFile == 'FROM foo'
+        build.containerFile == 'FROM foo'
         build.targetImage == 'wave/build:7d6b54efe23408c0938290a9ae49cf21'
         build.workDir == Path.of('/some/wsp').resolve(build.id)
         build.platform == ContainerPlatform.of('arm64')
@@ -176,7 +228,7 @@ class ContainerTokenControllerTest extends Specification {
         build = controller.makeBuildRequest(submit, null, "")
         then:
         build.id == '0c7eebc2fdbfd514ff4d80c28d08dff8'
-        build.dockerFile == 'FROM foo'
+        build.containerFile == 'FROM foo'
         build.condaFile == 'some::conda-recipe'
         build.targetImage == 'wave/build:0c7eebc2fdbfd514ff4d80c28d08dff8'
         build.workDir == Path.of('/some/wsp').resolve(build.id)
@@ -187,8 +239,8 @@ class ContainerTokenControllerTest extends Specification {
         build = controller.makeBuildRequest(submit, null, "")
         then:
         build.id == '23ef4010a60670510393f5ae7414eb84'
-        build.dockerFile.endsWith('\nFROM foo')
-        build.dockerFile.startsWith('# Builder image\n') 
+        build.containerFile.endsWith('\nFROM foo')
+        build.containerFile.startsWith('# Builder image\n') 
         build.condaFile == null
         build.spackFile == 'some::spack-recipe'
         build.targetImage == 'wave/build:23ef4010a60670510393f5ae7414eb84'

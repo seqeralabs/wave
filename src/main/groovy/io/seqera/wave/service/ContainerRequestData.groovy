@@ -24,6 +24,9 @@ class ContainerRequestData {
     final ContainerPlatform platform
     final String towerToken
     final String towerEndpoint
+    final String buildId
+    final Boolean buildNew
+    final Boolean freeze
 
     ContainerCoordinates coordinates() { ContainerCoordinates.parse(containerImage) }
 

@@ -11,13 +11,14 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 import static java.nio.file.StandardOpenOption.CREATE
-import static java.nio.file.StandardOpenOption.WRITE
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
-
+import static java.nio.file.StandardOpenOption.WRITE
+import static java.nio.file.attribute.PosixFilePermission.OWNER_READ
+import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
 /**
  *  Build a container image using a Docker CLI tool
  *
@@ -28,13 +29,16 @@ import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 @CompileStatic
 class DockerBuildStrategy extends BuildStrategy {
 
-    @Value('${wave.build.image}')
-    String buildImage
+    @Value('${wave.build.kaniko-image}')
+    String kanikoImage
+
+    @Value('${wave.build.singularity-image}')
+    String singularityImage
 
     @Value('${wave.build.timeout}')
     Duration buildTimeout
 
-    @Value('${wave.debug}')
+    @Value('${wave.debug:false}')
     Boolean debug
 
     @Inject
@@ -44,9 +48,19 @@ class DockerBuildStrategy extends BuildStrategy {
     BuildResult build(BuildRequest req) {
 
         Path configFile = null
+        // save docker config for creds
         if( req.configJson ) {
             configFile = req.workDir.resolve('config.json')
             Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+        }
+        // save remote files for singularity
+        if( req.configJson && req.formatSingularity()) {
+            final remoteFile = req.workDir.resolve('singularity-remote.yaml')
+            final content = RegHelper.singularityRemoteFile(req.targetImage)
+            Files.write(remoteFile, content.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            // set permissions 600 as required by Singularity
+            Files.setPosixFilePermissions(configFile, Set.of(OWNER_READ, OWNER_WRITE))
+            Files.setPosixFilePermissions(remoteFile, Set.of(OWNER_READ, OWNER_WRITE))
         }
 
         // command the docker build command
@@ -71,19 +85,19 @@ class DockerBuildStrategy extends BuildStrategy {
     }
 
     protected List<String> buildCmd(BuildRequest req, Path credsFile) {
-        final dockerCmd = dockerWrapper(
-                                            req.workDir,
-                                            credsFile,
-                                            req.isSpackBuild ? spackConfig : null,
-                                            req.platform)
+        final spack = req.isSpackBuild ? spackConfig : null
+
+        final dockerCmd = req.formatDocker()
+                ? cmdForKaniko( req.workDir, credsFile, spack, req.platform)
+                : cmdForSingularity( req.workDir, credsFile, spack, req.platform)
+
         return dockerCmd + launchCmd(req)
     }
 
-    protected List<String> dockerWrapper(Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform ) {
+    protected List<String> cmdForKaniko(Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform ) {
         final wrapper = ['docker',
                          'run',
                          '--rm',
-                         '-w', workDir.toString(),
                          '-v', "$workDir:$workDir".toString()]
 
         if( credsFile ) {
@@ -105,9 +119,33 @@ class DockerBuildStrategy extends BuildStrategy {
             wrapper.add(platform.toString())
         }
         // the container image to be used t
-        wrapper.add( buildImage )
+        wrapper.add( kanikoImage )
         // return it
         return wrapper
     }
 
+    protected List<String> cmdForSingularity(Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform) {
+        final wrapper = ['docker',
+                         'run',
+                         '--rm',
+                         '--privileged',
+                         "--entrypoint", '',
+                         '-v', "$workDir:$workDir".toString()]
+
+        if( credsFile ) {
+            wrapper.add('-v')
+            wrapper.add("$credsFile:/root/.singularity/docker-config.json:ro".toString())
+            //
+            wrapper.add('-v')
+            wrapper.add("${credsFile.resolveSibling('singularity-remote.yaml')}:/root/.singularity/remote.yaml:ro".toString())
+        }
+
+        if( platform ) {
+            wrapper.add('--platform')
+            wrapper.add(platform.toString())
+        }
+
+        wrapper.add(singularityImage)
+        return wrapper
+    }
 }

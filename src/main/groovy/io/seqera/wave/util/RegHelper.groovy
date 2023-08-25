@@ -10,6 +10,7 @@ import java.security.SecureRandom
 import com.google.common.io.BaseEncoding
 import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
+import io.seqera.wave.model.ContainerCoordinates
 
 /**
  * Helper methods
@@ -112,5 +113,53 @@ class RegHelper {
         while( result.size()<64 )
             result = '0'+result
         return result
+    }
+
+    static String parseFromStatement(String line){
+        if( !line )
+            return null
+        if( !line.startsWith('FROM ') && !line.toLowerCase().startsWith('from:' ))
+            return null
+        final tokens = line.tokenize(' ')
+        if( tokens.size() < 2 )
+            return null
+        if ( tokens[1].startsWith('--platform=') )
+            return tokens[2]
+        else
+            return tokens[1]
+    }
+
+    static List<String> parseEntrypoint(String line) {
+        if( !line )
+            return null
+        if( !line.startsWith('ENTRYPOINT '))
+            return null
+        final value = line.substring(10).trim()
+        if( value.startsWith('[') && value.endsWith(']') ) {
+            // parse syntax as ["executable", "param1", "param2"]
+           return value.substring(1, value.length()-1)
+                   .tokenize(',')
+                   .collect(it-> it.trim().replaceAll(/^"(.*)"$/,'$1'))
+        }
+        else {
+            // parse syntax ENTRYPOINT command param1 param2
+            return value.tokenize(' ')
+        }
+    }
+
+    static String singularityRemoteFile(String repo)  {
+        assert repo.startsWith('oras://')
+        final coords = ContainerCoordinates.parse(repo)
+        """\
+        Active: SylabsCloud
+        Remotes:
+          SylabsCloud:
+            URI: cloud.sylabs.io
+            System: true
+            Exclusive: false
+        Credentials:
+        - URI: ${coords.scheme}://${coords.registry}
+          Insecure: false
+        """.stripIndent()
     }
 }

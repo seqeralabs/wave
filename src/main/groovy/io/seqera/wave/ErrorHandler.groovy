@@ -12,7 +12,6 @@ import io.seqera.wave.exception.BuildTimeoutException
 import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.exception.ForbiddenException
 import io.seqera.wave.exception.HttpResponseException
-import io.seqera.wave.exception.MismatchChecksumException
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.exception.UnauthorizedException
@@ -28,7 +27,7 @@ import jakarta.inject.Singleton
 @Singleton
 class ErrorHandler {
 
-    @Value('${wave.debug}')
+    @Value('${wave.debug:false}')
     private Boolean debug
 
     def <T> HttpResponse<T> handle(HttpRequest httpRequest, Throwable t, BiFunction<String,String,T> responseFactory) {
@@ -41,7 +40,6 @@ class ErrorHandler {
             // render the message for logging
             def render = msg
             if( request ) render += " - Request: ${request}"
-            if( t instanceof MismatchChecksumException ) render += " - DigestStore: ${t.digestStore}"
             if( !debug ) {
                 log.warn(render)
             }
@@ -58,7 +56,6 @@ class ErrorHandler {
             // render the message for logging
             def render = msg
             if( request ) render += " - Request: ${request}"
-            if( t instanceof MismatchChecksumException ) render += " - DigestStore: ${t.digestStore}"
             log.error(render, t)
         }
 

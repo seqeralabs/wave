@@ -11,6 +11,7 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import io.micronaut.context.annotation.Value
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.WaveDefault
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.auth.RegistryAuth
@@ -191,16 +192,16 @@ class ContainerAugmenterTest extends Specification {
                 .withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
 
         when:
-        def digest = scanner.updateImageManifest(IMAGE, MANIFEST, NEW_CONFIG_DIGEST, NEW_CONFIG_SIZE, false)
+        def result = scanner.updateImageManifest(IMAGE, MANIFEST, NEW_CONFIG_DIGEST, NEW_CONFIG_SIZE, false)
 
         then:
         // the cache contains the update image manifest json
-        def entry = storage.getManifest("$REGISTRY/v2/$IMAGE/manifests/$digest").get()
+        def entry = storage.getManifest("$REGISTRY/v2/$IMAGE/manifests/$result.v1").get()
         def manifest = new String(entry.bytes)
         def json = new JsonSlurper().parseText(manifest)
         and:
         entry.mediaType == ContentType.DOCKER_MANIFEST_V2_TYPE
-        entry.digest == digest
+        entry.digest == result.v1
         and:
         // a new layer is added to the manifest
         json.layers.size() == 2
@@ -223,10 +224,37 @@ class ContainerAugmenterTest extends Specification {
 
     def 'should update manifests list' () {
         given:
+        def MANIFEST = '''
+            {
+               "manifests":[
+                  {
+                     "digest":"sha256:f54a58bc1aac5ea1a25d796ae155dc228b3f0e11d046ae276b39c4bf2f13d8c4",
+                     "mediaType":"application\\/vnd.docker.distribution.manifest.v2+json",
+                     "platform":{
+                        "architecture":"amd64",
+                        "os":"linux"
+                     },
+                     "size":525
+                  },
+                  {
+                     "digest":"sha256:01433e86a06b752f228e3c17394169a5e21a0995f153268a9b36a16d4f2b2184",
+                     "mediaType":"application\\/vnd.docker.distribution.manifest.v2+json",
+                     "platform":{
+                        "architecture":"arm64",
+                        "os":"linux"
+                     },
+                     "size":626
+                  }
+               ],
+               "mediaType":"application\\/vnd.docker.distribution.manifest.list.v2+json",
+               "schemaVersion":2
+            }
+            '''.stripIndent(true)
+        and:
         def IMAGE = 'hello-world'
-        def MANIFEST = ManifestConst.MANIFEST_LIST_CONTENT
         def DIGEST = 'sha256:f54a58bc1aac5ea1a25d796ae155dc228b3f0e11d046ae276b39c4bf2f13d8c4'
         def NEW_DIGEST = RegHelper.digest('foo')
+        def NEW_SIZE = 123
         def REGISTRY = 'docker.io'
         and:
         unpackLayer()
@@ -240,7 +268,7 @@ class ContainerAugmenterTest extends Specification {
                 .withContainerConfig(ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath)))
 
         when:
-        def digest = scanner.updateImageIndex(IMAGE, MANIFEST, DIGEST, NEW_DIGEST, false)
+        def digest = scanner.updateImageIndex(IMAGE, MANIFEST, DIGEST, NEW_DIGEST, NEW_SIZE, false)
 
         then:
         def entry = storage.getManifest("$REGISTRY/v2/$IMAGE/manifests/$digest").get()
@@ -249,7 +277,17 @@ class ContainerAugmenterTest extends Specification {
         entry.mediaType == ContentType.DOCKER_IMAGE_INDEX_V2
         entry.digest == digest
         and:
-        manifest == MANIFEST.replace(DIGEST, NEW_DIGEST)
+        with(new JsonSlurper().parseText(manifest) as Map) {
+            manifests[0].digest == NEW_DIGEST
+            manifests[0].size == NEW_SIZE
+            manifests[0].mediaType == 'application/vnd.docker.distribution.manifest.v2+json'
+            manifests[0].platform == [architecture: 'amd64', os: 'linux']
+            and:
+            manifests[1].digest == 'sha256:01433e86a06b752f228e3c17394169a5e21a0995f153268a9b36a16d4f2b2184'
+            manifests[1].size == 626
+            manifests[1].mediaType == 'application/vnd.docker.distribution.manifest.v2+json'
+            manifests[1].platform == [architecture: 'arm64', os: 'linux']
+        }
 
         cleanup:
         folder?.toFile()?.deleteDir()
@@ -701,6 +739,7 @@ class ContainerAugmenterTest extends Specification {
         given:
         def REGISTRY = 'docker.io'
         def IMAGE = 'library/busybox'
+        def TAG = 'latest'
         def registry = lookupService.lookup(REGISTRY)
         def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
         and:
@@ -716,20 +755,65 @@ class ContainerAugmenterTest extends Specification {
                 .withStorage(storage)
                 .withClient(client)
                 .withPlatform('amd64')
-        and:
-        def headers = [
-                Accept: ['application/vnd.docker.distribution.manifest.v1+prettyjws',
-                         'application/json',
-                         'application/vnd.oci.image.manifest.v1+json',
-                         'application/vnd.docker.distribution.manifest.v2+json',
-                         'application/vnd.docker.distribution.manifest.list.v2+json',
-                         'application/vnd.oci.image.index.v1+json' ] ]
         when:
-        def digest = scanner.resolve(IMAGE, 'latest', headers)
+        def digest = scanner.resolve(IMAGE, TAG, WaveDefault.ACCEPT_HEADERS)
         then:
         digest
         and:
         storage.getManifest("$REGISTRY/v2/$IMAGE/manifests/${digest.target}")
+    }
+
+    def 'should fetch container manifest' () {
+        given:
+        def REGISTRY = 'docker.io'
+        def IMAGE = 'library/busybox'
+        def registry = lookupService.lookup(REGISTRY)
+        def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
+        and:
+
+        def client = new ProxyClient(httpClientConfig)
+                .withRoute(Mock(RoutePath))
+                .withImage(IMAGE)
+                .withRegistry(registry)
+                .withCredentials(creds)
+                .withLoginService(loginService)
+        and:
+        def scanner = new ContainerAugmenter()
+                .withClient(client)
+                .withPlatform('amd64')
+
+        when:
+        def manifest = scanner.getImageConfig(IMAGE, 'latest', WaveDefault.ACCEPT_HEADERS)
+        then:
+        manifest.architecture == 'amd64'
+        manifest.config.cmd == ['sh']
+    }
+
+    def 'should fetch container manifest for legacy image' () {
+        given:
+        def REGISTRY = 'quay.io'
+        def IMAGE = 'biocontainers/fastqc'
+        def TAG = '0.11.9--0'
+        def registry = lookupService.lookup(REGISTRY)
+        def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
+        and:
+
+        def client = new ProxyClient(httpClientConfig)
+                .withRoute(Mock(RoutePath))
+                .withImage(IMAGE)
+                .withRegistry(registry)
+                .withCredentials(creds)
+                .withLoginService(loginService)
+        and:
+        def scanner = new ContainerAugmenter()
+                .withClient(client)
+                .withPlatform('amd64')
+
+        when:
+        def manifest = scanner.getImageConfig(IMAGE, TAG, WaveDefault.ACCEPT_HEADERS)
+        then:
+        manifest.architecture == 'amd64'
+        manifest.config.cmd == ['/bin/sh']
     }
 
 }

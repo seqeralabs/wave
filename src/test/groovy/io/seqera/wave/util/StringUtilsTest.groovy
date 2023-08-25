@@ -35,4 +35,21 @@ class StringUtilsTest extends Specification {
         null        | 'gitzabc:xyz'
         null        | '/a/bc/'
     }
+
+    @Unroll
+    def 'should strip surreal prefix' () {
+        expect:
+        StringUtils.surrealId(ID) == EXPECTED
+
+        where:
+        ID                  | EXPECTED
+        null                | null
+        'foo'               | 'foo'
+        and:
+        'foo:100'           | '100'
+        'foo-bar:1-2-3'     | '1-2-3'
+        and:
+        'foo:⟨100⟩'         | '100'
+        'foo-bar:⟨1-2-3⟩'   | '1-2-3'
+    }
 }

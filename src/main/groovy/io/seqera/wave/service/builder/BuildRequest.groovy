@@ -6,10 +6,15 @@ import java.time.OffsetDateTime
 
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
+import io.seqera.wave.api.BuildContext
+import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
 import io.seqera.wave.util.DigestFunctions
 import static io.seqera.wave.util.StringUtils.trunc
+
+import static io.seqera.wave.service.builder.BuildFormat.*
+
 /**
  * Model a container builder result
  *
@@ -27,9 +32,9 @@ class BuildRequest {
     final String id
 
     /**
-     * The dockerfile content corresponding to this request
+     * The container file content corresponding to this request
      */
-    final String dockerFile
+    final String containerFile
 
     /**
      * The conda file recipe associated with this request
@@ -91,14 +96,45 @@ class BuildRequest {
      */
     final String offsetId
 
+    /**
+     * The associated {@link ContainerConfig} instance
+     */
+    final ContainerConfig containerConfig
+
+    /**
+     * Whenever is a spack build
+     */
     final boolean isSpackBuild
 
-    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, User user, ContainerPlatform platform, String configJson, String cacheRepo, String ip, String offsetId = null) {
-        this.id = computeDigest(containerFile, condaFile, spackFile, platform, repo)
-        this.dockerFile = containerFile
+    /** 
+     * The ID of the security scan triggered by this build 
+     */
+    final String scanId
+
+    /**
+     * Hold the build context for this container
+     */
+    final BuildContext buildContext
+
+    /**
+     * The target build format, either Docker or Singularity
+     */
+    final BuildFormat format
+    
+    /**
+     * Mark this request as not cached
+     */
+    volatile boolean uncached
+
+    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, BuildFormat format, User user, ContainerConfig containerConfig, BuildContext buildContext, ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId) {
+        this.id = computeDigest(containerFile, condaFile, spackFile, platform, repo, buildContext)
+        this.containerFile = containerFile
+        this.containerConfig = containerConfig
+        this.buildContext = buildContext
         this.condaFile = condaFile
         this.spackFile = spackFile
-        this.targetImage = "${repo}:${id}"
+        this.targetImage = format==SINGULARITY ? "oras://${repo}:${id}" : "${repo}:${id}"
+        this.format = format
         this.user = user
         this.platform = platform
         this.configJson = configJson
@@ -109,29 +145,36 @@ class BuildRequest {
         this.job = "${id}-${startTime.toEpochMilli().toString().md5()[-5..-1]}"
         this.ip = ip
         this.isSpackBuild = spackFile
+        this.scanId = scanId
     }
 
-    static private String computeDigest(String containerFile, String condaFile, String spackFile, ContainerPlatform platform, String repository) {
+    static private String computeDigest(String containerFile, String condaFile, String spackFile, ContainerPlatform platform, String repository, BuildContext buildContext) {
         final attrs = new LinkedHashMap<String,Object>(10)
         attrs.containerFile = containerFile
         attrs.condaFile = condaFile
         attrs.platform = platform
         attrs.repository = repository
         if( spackFile ) attrs.spackFile = spackFile
+        if( buildContext ) attrs.buildContext = buildContext.tarDigest
         return DigestFunctions.md5(attrs)
     }
 
     @Override
     String toString() {
-        return "BuildRequest[id=$id; targetImage=$targetImage; user=$user; dockerFile=${trunc(dockerFile)}; condaFile=${trunc(condaFile)}; spackFile=${trunc(spackFile)}]"
+        return "BuildRequest[id=$id; targetImage=$targetImage; user=$user; dockerFile=${trunc(containerFile)}; condaFile=${trunc(condaFile)}; spackFile=${trunc(spackFile)}]"
     }
 
     String getId() {
         return id
     }
 
+    @Deprecated
     String getDockerFile() {
-        return dockerFile
+        return containerFile
+    }
+
+    String getContainerFile() {
+        return containerFile
     }
 
     String getCondaFile() {
@@ -180,5 +223,13 @@ class BuildRequest {
 
     String getOffsetId() {
         return offsetId
+    }
+
+    boolean formatDocker() {
+        !format || format==DOCKER
+    }
+
+    boolean formatSingularity() {
+        format==SINGULARITY
     }
 }

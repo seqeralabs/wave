@@ -8,6 +8,7 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.service.mail.impl.MailServiceImpl
 import jakarta.inject.Inject
 /**
  *
@@ -27,7 +28,7 @@ class MailServiceImplTest extends Specification {
         when:
         def mail = service.buildCompletionMail(request, result, recipient)
         then:
-        1* request.getDockerFile() >> 'from foo';
+        1* request.getContainerFile() >> 'from foo';
         1* request.getTargetImage() >> 'wave/build:xyz'
         1* request.getPlatform() >> ContainerPlatform.DEFAULT
         1* request.getCondaFile() >> null

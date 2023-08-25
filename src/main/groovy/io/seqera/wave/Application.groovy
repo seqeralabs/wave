@@ -1,5 +1,8 @@
 package io.seqera.wave
 
+import java.nio.file.Files
+import java.nio.file.Path
+
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.runtime.Micronaut
@@ -24,22 +27,18 @@ class Application {
                 .start();
     }
 
-
     static void setupConfig() {
         // config file
-        def configFile = 'config.yml'
+        def configFile = Path.of('config.yml').toAbsolutePath()
         if( System.getenv('WAVE_CONFIG_FILE') ) {
-            configFile = System.getenv('WAVE_CONFIG_FILE')
+            configFile = Path.of(System.getenv('WAVE_CONFIG_FILE')).toAbsolutePath()
             log.info "Detected WAVE_CONFIG_FILE variable: ${configFile}"
         }
-        System.setProperty('micronaut.config.files', "classpath:application.yml,file:$configFile")
-
-        // detected layer path
-        if( System.getenv('WAVE_LAYER_PATH') ) {
-            def layerPath = System.getenv('WAVE_LAYER_PATH')
-            log.info "Detected WAVE_LAYER_PATH variable: ${layerPath}"
-            System.setProperty('wave.layerPath', layerPath)
+        else {
+            log.info "Default config file: ${configFile}"
         }
-
+        if( !Files.exists(configFile) )
+            throw new IllegalArgumentException("Config file does not exist or cannot be accessed: $configFile")
+        System.setProperty('micronaut.config.files', "classpath:application.yml,file:$configFile")
     }
 }

@@ -1,4 +1,93 @@
 # Wave changelog
+v0.39.0 - 24 Aug 2023 
+- Add support for dryRun build requests [cd1bf750]
+- Fix Do not show scan link on build failure [9e1dfb77]
+- Fix Cannot cast object to null error [20362389]
+- Use lib-mail@1.0.0 [b66217a3]
+- Bump wave-api@0.5.0
+- Bump wave-utils@0.6.2 [9d740b42]
+- Bump MN 3.10.1 [0c49f9b6]
+
+v0.38.0 - 19 Aug 2023
+- Add support for build for Singularity images (#282) [258183d2]
+- Add Support for handling .dockerignore patterns added in wave-util (#281) [4dd89b93]
+- Add jaxb-api runtime deps [71f2cfbc]
+- Fix Perform scan only on successful build [1673d2d0]
+- Fix Use root user in Wave container based on micromamba [704fc4ed]
+- Remove test controller [dac67291]
+- Refactor submodules [b0fc36a9]
+- Bump singularity:v3.11.4-slim dep [8430b010]
+- Bump wave-utils@0.5.0 [75f792af]
+- Bump wave-api@0.4.0 [1f7ef5fc]
+- Bump wave-api@0.3.2 [540e4602]
+
+v0.37.1 - 15 Aug 2023
+- Improve http rate limiter 
+
+v0.37.0 - 14 Aug 2023
+- Add http requests rate limiter [74ecc399]
+- Fix artifact publishing [publish] [5f71c62e]
+
+v0.36.1 - 11 Aug 2023
+- Fix support for build context [96a32ef0]
+- Add toString method to ContainerTokenRequest [9e230004]
+- Add "with" methods to SpackOpts [56699cea]
+- Add Spack + Conda templating logic [90d42780]
+- bump guava@32.1.2 [88de2304]
+
+v0.36.0 - 6 Aug 2023
+- Add support for custom build context [6c262575]
+- Add build info to container response [1f2d3f56]
+- Add container build controller [362cf0ea]
+- Add severity attribute to scan config [63182663]
+- View templates cleanup [000155c3]
+- Scan API cleanup [0d00245e]
+- Improve scans endpoint [ca818468]
+- Improve scan page rendering [cce69fb4]
+- Add TimeoutException to Surreal retry policy [3d4141f7]
+- Add library publishing to CI build [4fb5988c]
+
+v0.35.3 - 2 Aug 2023
+- Annotate controllers with @ExecuteOn(TaskExecutors.IO) [aef70407]
+
+v0.35.2 - 1 Aug 2023
+- Enable Netty metrics (#277) [79915ca8]
+- Add retry policy to Surreal DB client 276) [735b765e]
+- Fix build process resources [c2f109c9]
+
+v0.35.1 - 24 Jul 2023
+- Add @ExecuteOn(IO) to Token and Service controllers [e0c95a02]
+- Fix Build ID instead of Request ID [76e6124c]
+- Remove unused forceBuild option [621334df]
+
+v0.35.0 - 22 Jul 2023
+- Add containers freeze feature (#260) [a99f9427]
+- Add container build scan service [699ec5a3]
+- Add AWS SES Support in mail service (#267) [177c8943]
+- Fix Prevent config augmentation for freeze containers [da410819]
+- Fix HTTP client retry logic using with Failsafe [053e353e]
+- Fetch K8s logs on scan failure [cdcf5d81]
+- Make security scan an opt-in feature [dbaaddaf]
+- Remove deprecated checksum validation [eb092b32]
+- Bump nf-jdk:corretto-17.0.8 base image [88ee64b1]
+
+v0.34.3 - 13 Jul 2023
+- Fix Invalid size in container manifest [e2c4c536]
+- Fix parsing Dockerfile FROM statement [5104f8a6]
+- Bump Kaniko 1.12.1 [4a13d77e]
+- Bump MN 3.9.4 [2b314592]
+
+v0.34.2 - 2 Jul 2023
+- Fix config resolution [b6f06bc3]
+- Bump base image nf-jdk:corretto-17.0.7-up2 [70425710]
+
+v0.34.1 - 2 Jul 2023 
+- K8s build improvements [9ea63642]
+- Update dependencies to fix CVEs (#250) [e5e3d0e8]
+- Remove unsupported WAVE_LAYER_PATH [a5f5fda1]
+- Fix failing test [434ab374]
+- Bump nf-jdk:corretto-17.0.7-up1 as base image [0e93bfaa]
+
 v0.34.0 - 15 Jun 2023
 - Add support for binary cache for Spack builds (#249) [b2c66af4]
 - Fix ContainerConfig toString method [bebd78f2]

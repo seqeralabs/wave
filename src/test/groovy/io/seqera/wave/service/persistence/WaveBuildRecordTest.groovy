@@ -8,10 +8,10 @@ import java.time.Instant
 
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.util.JacksonHelper
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -26,11 +26,16 @@ class WaveBuildRecordTest extends Specification {
                 "buildrepo",
                 'conda::recipe',
                 'some-spack-recipe',
+                BuildFormat.DOCKER,
+                null,
+                null,
                 null,
                 ContainerPlatform.of('amd64'),
                 '{auth}',
                 'docker.io/my/repo',
-                "1.2.3.4")
+                '12345',
+                "1.2.3.4",
+                null )
         final result = new BuildResult(request.id, -1, "ok", Instant.now(), Duration.ofSeconds(3))
         final event = new BuildEvent(request, result)
         final record = WaveBuildRecord.fromEvent(event)

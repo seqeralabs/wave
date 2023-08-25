@@ -9,6 +9,7 @@ import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.custom.Quantity
+import io.kubernetes.client.openapi.models.V1ContainerBuilder
 import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1DeleteOptions
 import io.kubernetes.client.openapi.models.V1HostPathVolumeSource
@@ -23,11 +24,12 @@ import io.kubernetes.client.openapi.models.V1VolumeMount
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.scan.Trivy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 /**
  * implements the support for Kubernetes cluster
  *
@@ -90,7 +92,7 @@ class K8sServiceImpl implements K8sService {
      */
     @PostConstruct
     private void init() {
-        log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; node-selector=$nodeSelectorMap; buildTimeout=$buildTimeout; cpus=$requestsCpu; memory=$requestsMemory"
+        log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; node-selector=$nodeSelectorMap; buildTimeout=$buildTimeout; cpus=$requestsCpu; memory=$requestsMemory; buildWorkspace=$buildWorkspace; storageClaimName=$storageClaimName; storageMountPath=$storageMountPath; "
         if( storageClaimName && !storageMountPath )
             throw new IllegalArgumentException("Missing 'wave.build.k8s.storage.mountPath' configuration attribute")
         if( storageMountPath ) {
@@ -141,11 +143,11 @@ class K8sServiceImpl implements K8sService {
                 .endSpec()
                 .endTemplate()
                 .endSpec()
-                .build();
+                .build()
 
         return k8sClient
                 .batchV1Api()
-                .createNamespacedJob(namespace, body, null, null, null)
+                .createNamespacedJob(namespace, body, null, null, null,null)
     }
 
     /**
@@ -201,13 +203,13 @@ class K8sServiceImpl implements K8sService {
      * @param storageMountPath
      * @return A {@link V1VolumeMount} representing the mount path for the build config
      */
-    protected V1VolumeMount mountBuildStorage(Path workDir, @Nullable String storageMountPath) {
+    protected V1VolumeMount mountBuildStorage(Path workDir, String storageMountPath, boolean readOnly) {
         assert workDir, "K8s mount build storage is mandatory"
 
         final vol = new V1VolumeMount()
                 .name('build-data')
                 .mountPath(workDir.toString())
-                .readOnly(true)
+                .readOnly(readOnly)
 
         if( storageMountPath ) {
             // check sub-path
@@ -225,7 +227,7 @@ class K8sServiceImpl implements K8sService {
      * @param claimName The claim name of the corresponding storage
      * @return An instance of {@link V1Volume} representing the build storage volume
      */
-    protected V1Volume volumeBuildStorage(String mountPath, String claimName) {
+    protected V1Volume volumeBuildStorage(String mountPath, @Nullable String claimName) {
         final vol= new V1Volume()
                 .name('build-data')
         if( claimName ) {
@@ -239,23 +241,21 @@ class K8sServiceImpl implements K8sService {
     }
 
     /**
-     * Defines the volume mount for the Kaniko docker config
+     * Defines the volume mount for the  docker config
      *
-     * @return A {@link V1VolumeMount} representing the docker config for kaniko
+     * @return A {@link V1VolumeMount} representing the docker config
      */
-    protected V1VolumeMount mountDockerConfig(Path workDir, @Nullable String storageMountPath) {
-        assert workDir, "K8s mount build storage is mandatory"
-
-        final rel = Path.of(storageMountPath).relativize(workDir).toString()
-        final String config = rel ? "$rel/config.json" : 'config.json'
+    protected V1VolumeMount mountHostPath(Path filePath, String storageMountPath, String mountPath) {
+        final rel = Path.of(storageMountPath).relativize(filePath).toString()
+        if( !rel ) throw new IllegalStateException("Mount relative path cannot be empty")
         return new V1VolumeMount()
                 .name('build-data')
-                .mountPath('/kaniko/.docker/config.json')
-                .subPath(config)
+                .mountPath(mountPath)
+                .subPath(rel)
                 .readOnly(true)
     }
 
-    protected V1VolumeMount mountSpackCacheDir(Path spackCacheDir, @Nullable String storageMountPath, String containerPath) {
+    protected V1VolumeMount mountSpackCacheDir(Path spackCacheDir, String storageMountPath, String containerPath) {
         final rel = Path.of(storageMountPath).relativize(spackCacheDir).toString()
         if( !rel || rel.startsWith('../') )
             throw new IllegalArgumentException("Spack cacheDirectory '$spackCacheDir' must be a sub-directory of storage path '$storageMountPath'")
@@ -265,7 +265,7 @@ class K8sServiceImpl implements K8sService {
                 .subPath(rel)
     }
 
-    protected V1VolumeMount mountSpackSecretFile(Path secretFile, @Nullable String storageMountPath, String containerPath) {
+    protected V1VolumeMount mountSpackSecretFile(Path secretFile, String storageMountPath, String containerPath) {
         final rel = Path.of(storageMountPath).relativize(secretFile).toString()
         if( !rel || rel.startsWith('../') )
             throw new IllegalArgumentException("Spack secretKeyFile '$secretFile' must be a sub-directory of storage path '$storageMountPath'")
@@ -273,6 +273,16 @@ class K8sServiceImpl implements K8sService {
                 .name('build-data')
                 .readOnly(true)
                 .mountPath(containerPath)
+                .subPath(rel)
+    }
+
+    protected V1VolumeMount mountScanCacheDir(Path scanCacheDir, String storageMountPath) {
+        final rel = Path.of(storageMountPath).relativize(scanCacheDir).toString()
+        if( !rel || rel.startsWith('../') )
+            throw new IllegalArgumentException("Container scan cacheDirectory '$scanCacheDir' must be a sub-directory of storage path '$storageMountPath'")
+        return new V1VolumeMount()
+                .name('build-data')
+                .mountPath( Trivy.CACHE_MOUNT_PATH )
                 .subPath(rel)
     }
 
@@ -293,7 +303,6 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Pod} description the submitted pod
      */
     @Override
-    @CompileDynamic
     V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector) {
         final spec = buildSpec(name, containerImage, args, workDir, creds, spackConfig, nodeSelector)
         return k8sClient
@@ -301,17 +310,27 @@ class K8sServiceImpl implements K8sService {
                 .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
-    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector) {
+    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, SpackConfig spackConfig, Map<String,String> nodeSelector) {
+
+        // dirty dependency to avoid introducing another parameter
+        final singularity = containerImage.contains('singularity')
 
         // required volumes
         final mounts = new ArrayList<V1VolumeMount>(5)
-        mounts.add(mountBuildStorage(workDir, storageMountPath))
+        mounts.add(mountBuildStorage(workDir, storageMountPath, true))
 
         final volumes = new ArrayList<V1Volume>(5)
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
-        if( creds ){
-            mounts.add(0, mountDockerConfig(workDir, storageMountPath))
+        if( credsFile ){
+            if( !singularity ) {
+                mounts.add(0, mountHostPath(credsFile, storageMountPath, '/kaniko/.docker/config.json'))
+            }
+            else {
+                final remoteFile = credsFile.resolveSibling('singularity-remote.yaml')
+                mounts.add(0, mountHostPath(credsFile, storageMountPath, '/root/.singularity/docker-config.json'))
+                mounts.add(1, mountHostPath(remoteFile, storageMountPath, '/root/.singularity/remote.yaml'))
+            }
         }
 
         if( spackConfig ) {
@@ -344,15 +363,26 @@ class K8sServiceImpl implements K8sService {
         if( requestsMemory )
             requests.putRequestsItem('memory', new Quantity(requestsMemory))
 
-        //container section
-        spec.addNewContainer()
+        // container section
+        final container = new V1ContainerBuilder()
                 .withName(name)
                 .withImage(containerImage)
-                .withArgs(args)
                 .withVolumeMounts(mounts)
                 .withResources(requests)
-            .endContainer()
-            .endSpec()
+
+        if( singularity ) {
+            container
+            // use 'command' to override the entrypoint of the container
+                    .withCommand(args)
+                    .withNewSecurityContext().withPrivileged(true).endSecurityContext()
+        }
+        else {
+            // use 'arg' to avoid overriding the entrypoint of the container set by kaniko
+            container.withArgs(args)
+        }
+
+        // spec section
+        spec.withContainers(container.build()).endSpec()
 
         builder.build()
     }
@@ -424,5 +454,64 @@ class K8sServiceImpl implements K8sService {
         k8sClient
                 .coreV1Api()
                 .deleteNamespacedPod(name, namespace, (String)null, (String)null, (Integer)null, (Boolean)null, (String)null, (V1DeleteOptions)null)
+    }
+
+    @Override
+    V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
+        final spec = scanSpec(name, containerImage, args, workDir, creds, scanConfig, nodeSelector)
+        return k8sClient
+                .coreV1Api()
+                .createNamespacedPod(namespace, spec, null, null, null,null)
+    }
+
+    V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig, Map<String,String> nodeSelector) {
+
+        final mounts = new ArrayList<V1VolumeMount>(5)
+        mounts.add(mountBuildStorage(workDir, storageMountPath, false))
+        mounts.add(mountScanCacheDir(scanConfig.cacheDirectory, storageMountPath))
+
+        final volumes = new ArrayList<V1Volume>(5)
+        volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
+
+        if( credsFile ){
+            mounts.add(0, mountHostPath(credsFile, storageMountPath, Trivy.CONFIG_MOUNT_PATH))
+        }
+
+        V1PodBuilder builder = new V1PodBuilder()
+
+        //metadata section
+        builder.withNewMetadata()
+                .withNamespace(namespace)
+                .withName(name)
+                .addToLabels(labels)
+                .endMetadata()
+
+        //spec section
+        def spec = builder
+                .withNewSpec()
+                .withNodeSelector(nodeSelector)
+                .withServiceAccount(serviceAccount)
+                .withActiveDeadlineSeconds( scanConfig.timeout.toSeconds() )
+                .withRestartPolicy("Never")
+                .addAllToVolumes(volumes)
+
+
+        final requests = new V1ResourceRequirements()
+        if( scanConfig.requestsCpu )
+            requests.putRequestsItem('cpu', new Quantity(scanConfig.requestsCpu))
+        if( scanConfig.requestsMemory )
+            requests.putRequestsItem('memory', new Quantity(scanConfig.requestsMemory))
+
+        //container section
+        spec.addNewContainer()
+                .withName(name)
+                .withImage(containerImage)
+                .withArgs(args)
+                .withVolumeMounts(mounts)
+                .withResources(requests)
+                .endContainer()
+                .endSpec()
+
+        builder.build()
     }
 }

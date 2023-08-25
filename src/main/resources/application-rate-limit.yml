@@ -1,3 +1,4 @@
+---
 rate-limit:
   build:
     anonymous: 10/1h
@@ -5,3 +6,14 @@ rate-limit:
   pull:
     anonymous: 100/1h
     authenticated: 100/1m
+  httpRequest:
+    timeout-duration : 500ms
+    limit-refresh-period : 1s
+    limit-for-period : 100
+    status-code : 429
+---
+micronaut:
+  caches:
+    rate-limiter:
+      expire-after-access: 10m
+...

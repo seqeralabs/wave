@@ -1,6 +1,7 @@
 package io.seqera.wave
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.util.concurrent.CompletableFuture
 
@@ -109,4 +110,59 @@ class RegHelperTest extends Specification {
         true
     }
 
+    @Unroll
+    def 'should parse docker from statement #LINE' () {
+        expect:
+        RegHelper.parseFromStatement(LINE) == EXPECT
+
+        where:
+        LINE                                | EXPECT
+        null                                | null
+        'FROM foo'                          | 'foo'
+        'FROM  foo '                        | 'foo'
+        'FROM --platform=xyz foo'           | 'foo'
+        'FROM --platform=xyz foo as this'   | 'foo'
+        and:
+        // allow singularity file syntax
+        'From: foo'                         | 'foo'
+        'from: foo'                         | 'foo'
+        'from foo'                          | null
+    }
+
+    def 'should parse docker entrypoint'() {
+        expect:
+        RegHelper.parseEntrypoint(LINE) == EXPECTED
+
+        where:
+        LINE                                    | EXPECTED
+        null                                    | null
+        'foo'                                   | null
+        and:
+        'ENTRYPOINT this --that'                | ['this', '--that']
+        'ENTRYPOINT  this --that '              | ['this', '--that']
+        and:
+        'ENTRYPOINT ["this", "--that"]'         | ['this', '--that']
+        'ENTRYPOINT  [ "this" ,  "--that" ] '   | ['this', '--that']
+        and:
+        'ENTRYPOINT ["this", "a b c"]'          | ['this', 'a b c']
+
+    }
+
+    def 'should create singularity remote ymal file' () {
+
+        when:
+        def ret = RegHelper.singularityRemoteFile('oras://quay.io/user/foo:latest')
+        then:
+        ret == '''\
+            Active: SylabsCloud
+            Remotes:
+              SylabsCloud:
+                URI: cloud.sylabs.io
+                System: true
+                Exclusive: false
+            Credentials:
+            - URI: oras://quay.io
+              Insecure: false
+            '''.stripIndent(true)
+    }
 }

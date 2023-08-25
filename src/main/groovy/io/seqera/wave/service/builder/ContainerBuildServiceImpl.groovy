@@ -1,11 +1,18 @@
 package io.seqera.wave.service.builder
 
+import java.nio.file.FileAlreadyExistsException
+import java.nio.file.Path
+
+import static FreezeServiceImpl.*
+import static io.seqera.wave.util.StringUtils.*
+import static java.nio.file.StandardOpenOption.*
+
+import javax.annotation.Nullable
+import javax.annotation.PostConstruct
 import java.nio.file.Files
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
-import javax.annotation.Nullable
-import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -17,15 +24,12 @@ import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
+import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.util.SpackHelper
 import io.seqera.wave.util.TemplateRenderer
 import io.seqera.wave.util.ThreadPoolBuilder
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import static io.seqera.wave.util.StringUtils.indent
-import static java.nio.file.StandardOpenOption.CREATE
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
-import static java.nio.file.StandardOpenOption.WRITE
 /**
  * Implements container build service
  *
@@ -36,13 +40,6 @@ import static java.nio.file.StandardOpenOption.WRITE
 @CompileStatic
 class ContainerBuildServiceImpl implements ContainerBuildService {
 
-    @Value('${wave.debug}')
-    @Nullable
-    Boolean debugMode
-
-    @Value('${wave.build.image}')
-    String buildImage
-
     @Value('${wave.build.timeout}')
     Duration buildTimeout
 
@@ -51,10 +48,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     @Value('${wave.build.status.delay}')
     private Duration statusDelay
-
-    @Value('${wave.build.cleanup}')
-    @Nullable
-    String cleanup
 
     @Inject
     ApplicationEventPublisher<BuildEvent> eventPublisher
@@ -82,6 +75,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     @Inject
     private SpackConfig spackConfig
+
+    @Inject CleanupStrategy cleanup
 
     @PostConstruct
     void init() {
@@ -117,7 +112,13 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 .awaitBuild(targetImage)
     }
 
-    protected String dockerFile0(BuildRequest req, SpackConfig config) {
+    protected String containerFile0(BuildRequest req, Path context, SpackConfig config) {
+        // add the context dir for singularity builds
+        final containerFile = req.formatSingularity()
+                ? req.containerFile.replace('{{wave_context_dir}}', context.toString())
+                : req.containerFile
+
+        // render the Spack template if needed
         if( req.isSpackBuild ) {
             final binding = new HashMap(2)
             binding.spack_builder_image = config.builderImage
@@ -125,10 +126,11 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             binding.spack_arch = SpackHelper.toSpackArch(req.getPlatform())
             binding.spack_cache_dir = config.cacheMountPath
             binding.spack_key_file = config.secretMountPath
-            return new TemplateRenderer().render(req.dockerFile, binding)
+            return new TemplateRenderer().render(containerFile, binding)
         }
-        else
-            return req.dockerFile
+        else {
+            return containerFile
+        }
     }
 
     protected BuildResult launch(BuildRequest req) {
@@ -137,20 +139,31 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         try {
             // create the workdir path
             Files.createDirectories(req.workDir)
+            // create context dir
+            final context = req.workDir.resolve('context')
+            try { Files.createDirectory(context) }
+            catch (FileAlreadyExistsException e) { /* ignore it */ }
             // save the dockerfile
-            final dockerFile = req.workDir.resolve('Dockerfile')
-            Files.write(dockerFile, dockerFile0(req,spackConfig).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            final containerFile = req.workDir.resolve('Containerfile')
+            Files.write(containerFile, containerFile0(req, context, spackConfig).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            // save build context
+            if( req.buildContext ) {
+                saveBuildContext(req.buildContext, context)
+            }
             // save the conda file
             if( req.condaFile ) {
-                final condaFile = req.workDir.resolve('conda.yml')
+                final condaFile = context.resolve('conda.yml')
                 Files.write(condaFile, req.condaFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             }
             // save the spack file
             if( req.spackFile ) {
-                final spackFile = req.workDir.resolve('spack.yaml')
+                final spackFile = context.resolve('spack.yaml')
                 Files.write(spackFile, req.spackFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             }
-
+            // save layers provided via the container config
+            if( req.containerConfig ) {
+                saveLayersToContext(req, context)
+            }
             resp = buildStrategy.build(req)
             log.info "== Build completed with status=$resp.exitStatus; stdout: (see below)\n${indent(resp.logs)}"
             return resp
@@ -169,24 +182,11 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             // update build status store
             buildStore.storeBuild(req.targetImage, resp, ttl)
             // cleanup build context
-            if( shouldCleanup(resp) )
+            if( cleanup.shouldCleanup(resp) )
                 buildStrategy.cleanup(req)
         }
     }
 
-    protected boolean shouldCleanup(BuildResult result) {
-        if( cleanup==null )
-            return !debugMode
-        if( cleanup == 'true' )
-            return true
-        if( cleanup == 'false' )
-            return false
-        if( cleanup.toLowerCase() == 'onsuccess' ) {
-            return result?.exitStatus==0
-        }
-        log.debug "Invalid cleanup value: '$cleanup'"
-        return true
-    }
 
     protected CompletableFuture<BuildResult> launchAsync(BuildRequest request) {
         // check the build rate limit
@@ -230,6 +230,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         // this returns true if and only if such container image was not set yet
         final ret1 = BuildResult.create(request)
         if( buildStore.storeIfAbsent(request.targetImage, ret1) ) {
+            // flag it as a new build
+            request.uncached = true
             // go ahead
             log.info "== Submit build request: $request"
             launchAsync(request)
@@ -245,5 +247,4 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         // invalid state
         throw new IllegalStateException("Unable to determine build status for '$request.targetImage'")
     }
-
 }

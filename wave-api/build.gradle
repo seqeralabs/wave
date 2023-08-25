@@ -1,5 +1,0 @@
-plugins {
-    id 'io.seqera.wave.java-library-conventions'
-}
-
-version '0.1.0'

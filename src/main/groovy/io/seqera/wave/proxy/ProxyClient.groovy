@@ -18,7 +18,7 @@ import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryInfo
 import io.seqera.wave.configuration.HttpClientConfig
-import io.seqera.wave.core.RoutePath
+import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.util.RegHelper
 /**
  *
@@ -41,18 +41,18 @@ class ProxyClient {
     private RegistryCredentials credentials
     private HttpClient httpClient
     private RegistryAuthService loginService
-    private RoutePath route
+    private ContainerPath route
 
     ProxyClient(HttpClientConfig config) {
         init(config)
     }
 
-    RoutePath getRoute() { route }
+    ContainerPath getRoute() { route }
 
     RegistryInfo getRegistry() { registry }
 
-    ProxyClient withRoute(RoutePath path) {
-        this.route = path
+    ProxyClient withRoute(ContainerPath route) {
+        this.route = route
         return this
     }
 
@@ -117,7 +117,7 @@ class ProxyClient {
     }
 
 
-    private static final List<String> SKIP_HEADERS = ['host', 'connection', 'authorization']
+    private static final List<String> SKIP_HEADERS = ['host', 'connection', 'authorization', 'content-length']
 
     private void copyHeaders(Map<String,List<String>> headers, HttpRequest.Builder builder) {
         if( !headers )

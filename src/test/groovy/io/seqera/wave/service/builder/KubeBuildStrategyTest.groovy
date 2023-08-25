@@ -8,7 +8,6 @@ import io.micronaut.context.annotation.Property
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
 import io.seqera.wave.service.k8s.K8sServiceImpl
 import io.seqera.wave.tower.User
@@ -38,31 +37,6 @@ class KubeBuildStrategyTest extends Specification {
         Mock(K8sService)
     }
 
-    def 'should get platform selector' () {
-        expect:
-        strategy.getSelectorLabel(ContainerPlatform.of(PLATFORM), SELECTORS) == EXPECTED
-
-        where:
-        PLATFORM        | SELECTORS                                             | EXPECTED
-        'amd64'         | ['amd64': 'foo=1', 'arm64': 'bar=2']                  | ['foo': '1']
-        'arm64'         | ['amd64': 'foo=1', 'arm64': 'bar=2']                  | ['bar': '2']
-        and:
-        'amd64'         | ['linux/amd64': 'foo=1', 'linux/arm64': 'bar=2']      | ['foo': '1']
-        'x86_64'        | ['linux/amd64': 'foo=1', 'linux/arm64': 'bar=2']      | ['foo': '1']
-        'arm64'         | ['linux/amd64': 'foo=1', 'linux/arm64': 'bar=2']      | ['bar': '2']
-        
-    }
-
-    def 'should check unmatched platform' () {
-        expect:
-        strategy.getSelectorLabel(ContainerPlatform.of('amd64'), [:]) == [:]
-
-        when:
-        strategy.getSelectorLabel(ContainerPlatform.of('amd64'), [arm64:'x=1'])
-        then:
-        def err = thrown(BadRequestException)
-        err.message == "Unsupported container platform 'linux/amd64'"
-    }
 
     def "request to build a container with right selector"(){
         given:
@@ -72,7 +46,7 @@ class KubeBuildStrategyTest extends Specification {
         def cache = 'docker.io/cache'
 
         when:
-        def req = new BuildRequest('from foo', PATH, repo, null, null, USER, ContainerPlatform.of('amd64'),'{}', cache, "")
+        def req = new BuildRequest('from foo', PATH, repo, null, null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('amd64'),'{}', cache, null, "", null)
         Files.createDirectories(req.workDir)
 
         def resp = strategy.build(req)
@@ -82,7 +56,7 @@ class KubeBuildStrategyTest extends Specification {
         1 * k8sService.buildContainer(_, _, _, _, _, _, [service:'wave-build']) >> null
 
         when:
-        def req2 = new BuildRequest('from foo', PATH, repo, null, null, USER, ContainerPlatform.of('arm64'),'{}', cache, "")
+        def req2 = new BuildRequest('from foo', PATH, repo, null, null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('arm64'),'{}', cache, null, "", null)
         Files.createDirectories(req2.workDir)
 
         def resp2 = strategy.build(req2)

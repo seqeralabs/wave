@@ -11,6 +11,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.http.HttpStatus
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
+import io.seqera.wave.core.spec.ManifestSpec
 import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.storage.Storage
@@ -59,6 +60,7 @@ class ContainerAugmenter {
         return this
     }
 
+    @Deprecated
     ContainerAugmenter withContainerConfig(ContainerConfig containerConfig) {
         this.containerConfig = containerConfig
         final l = containerConfig?.layers ?: Collections.<ContainerLayer>emptyList()
@@ -71,12 +73,14 @@ class ContainerAugmenter {
         assert route, "Missing route"
         if( route.request?.platform )
             this.platform = route.request.platform
-        if( route.request?.containerConfig )
+        // note: do not propagate container config when "freeze" mode is enabled, because it has been already
+        // during the container build phase, and therefore it should be ignored by the augmenter
+        if( route.request?.containerConfig && !route.request.freeze )
             this.containerConfig = route.request.containerConfig
         return resolve(route.image, route.reference, headers)
     }
 
-    protected void checkResponseCode(HttpResponse<?> response, RoutePath route, boolean blob) {
+    protected void checkResponseCode(HttpResponse<?> response, ContainerPath route, boolean blob) {
         final code = response.statusCode()
         final repository = route.getTargetContainer()
         final String body = response.body()?.toString()
@@ -107,7 +111,7 @@ class ContainerAugmenter {
         // resolve image tag to digest
         final resp1 = client.head("/v2/$imageName/manifests/$tag", headers)
         final digest = resp1.headers().firstValue('docker-content-digest').orElse(null)
-        log.trace "Resolve (1): image $imageName:$tag => digest=$digest"
+        log.trace "Resolve (1): image $imageName:$tag => digest=$digest; reponse code=${resp1.statusCode()}"
         checkResponseCode(resp1, client.route, false)
 
         // get manifest list for digest
@@ -144,10 +148,10 @@ class ContainerAugmenter {
         }
 
         final manifestResult = findImageManifestAndDigest(manifestsList, imageName, tag, headers)
-        final imageManifest = manifestResult.first
-        final configDigest = manifestResult.second
-        final targetDigest = manifestResult.third
-        final oci = manifestResult.fourth
+        final imageManifest = manifestResult.v1
+        final configDigest = manifestResult.v2
+        final targetDigest = manifestResult.v3
+        final oci = manifestResult.v4
 
         // fetch the image config
         final resp5 = client.getString("/v2/$imageName/blobs/$configDigest", headers)
@@ -163,7 +167,9 @@ class ContainerAugmenter {
 
         // update the image manifest adding a new layer
         // returns the updated image manifest digest
-        final newManifestDigest = updateImageManifest(imageName, imageManifest, newConfigDigest, newConfigJson.size(), oci)
+        final newManifestResult = updateImageManifest(imageName, imageManifest, newConfigDigest, newConfigJson.size(), oci)
+        final newManifestDigest = newManifestResult.v1
+        final newManifestSize = newManifestResult.v2
         log.trace "Resolve (7) ==> new image digest: $newManifestDigest"
 
         if( !targetDigest ) {
@@ -172,7 +178,7 @@ class ContainerAugmenter {
         else {
             // update the manifests list with the new digest
             // returns the manifests list digest
-            final newListDigest = updateImageIndex(imageName, manifestsList, targetDigest, newManifestDigest, oci)
+            final newListDigest = updateImageIndex(imageName, manifestsList, targetDigest, newManifestDigest, newManifestSize, oci)
             log.trace "Resolve (8) ==> new list digest: $newListDigest"
             return new ContainerDigestPair(digest, newListDigest)
         }
@@ -211,8 +217,17 @@ class ContainerAugmenter {
 
     }
 
-    protected String updateImageIndex(String imageName, String manifestsList, String targetDigest, String newDigest, boolean oci) {
-        final updated = manifestsList.replace(targetDigest, newDigest)
+    protected String updateImageIndex(String imageName, String manifestsList, String targetDigest, String newDigest, Integer newSize, boolean oci) {
+        final json = new JsonSlurper().parseText(manifestsList) as Map
+        final list = json.manifests as List<Map>
+        final entry = list.find( it -> it.digest==targetDigest )
+        if( !entry )
+            throw new IllegalStateException("Missing manifest entry for digest: $targetDigest")
+        // update the target entry digest and size
+        entry.digest = newDigest
+        entry.size = newSize
+        // serialize to json again  
+        final updated = JsonOutput.toJson(json)
         final result = RegHelper.digest(updated)
         final type = oci ? OCI_IMAGE_INDEX_V1 : DOCKER_IMAGE_INDEX_V2
         // make sure the manifest was updated
@@ -271,7 +286,7 @@ class ContainerAugmenter {
         return json.config.digest
     }
 
-    protected String updateImageManifest(String imageName, String imageManifest, String newImageConfigDigest, newImageConfigSize, boolean oci) {
+    protected Tuple2<String,Integer> updateImageManifest(String imageName, String imageManifest, String newImageConfigDigest, newImageConfigSize, boolean oci) {
 
         // turn the json string into a json map
         // and append the new layer
@@ -296,10 +311,11 @@ class ContainerAugmenter {
         final digest = RegHelper.digest(newManifest)
         final path = "$client.registry.name/v2/$imageName/manifests/$digest"
         final type = oci ? OCI_IMAGE_MANIFEST_V1 : DOCKER_MANIFEST_V2_TYPE
+        final size = newManifest.size()
         storage.saveManifest(path, newManifest, type, digest)
 
         // return the updated image manifest digest
-        return digest
+        return new Tuple2<String, Integer>(digest, size)
     }
 
     protected String getFirst(value) {
@@ -471,5 +487,38 @@ class ContainerAugmenter {
         final targetPath = "$client.registry.name/v2/$imageName/manifests/$newManifestDigest"
         storage.saveManifest(targetPath, newManifestJson, DOCKER_MANIFEST_V1_JWS_TYPE, newManifestDigest)
         return newManifestDigest
+    }
+
+    ManifestSpec getImageConfig(String imageName, String tag, Map<String,List<String>> headers) {
+        assert client, "Missing client"
+        assert platform, "Missing 'platform' parameter"
+
+        // resolve image tag to digest
+        final resp1 = client.head("/v2/$imageName/manifests/$tag", headers)
+        final digest = resp1.headers().firstValue('docker-content-digest').orElse(null)
+        log.trace "Config (1): image $imageName:$tag => digest=$digest"
+        checkResponseCode(resp1, client.route, false)
+
+        // get manifest list for digest
+        final resp2 = client.getString("/v2/$imageName/manifests/$digest", headers)
+        final type = resp2.headers().firstValue('content-type').orElse(null)
+        checkResponseCode(resp2, client.route, false)
+        final manifestsList = resp2.body()
+        log.trace "Config (2): image $imageName:$tag => type=$type; manifests list:\n${JsonOutput.prettyPrint(manifestsList)}"
+
+        if( type == DOCKER_MANIFEST_V1_JWS_TYPE ) {
+            return ManifestSpec.parseV1(manifestsList)
+        }
+
+        final manifestResult = findImageManifestAndDigest(manifestsList, imageName, tag, headers)
+        final configDigest = manifestResult.second
+
+        // fetch the image config
+        final resp5 = client.getString("/v2/$imageName/blobs/$configDigest", headers)
+        checkResponseCode(resp5, client.route, true)
+        final imageConfig = resp5.body()
+        log.trace "Config (4): image $imageName:$tag => image config=\n${JsonOutput.prettyPrint(imageConfig)}"
+
+        return ManifestSpec.parse(imageConfig)
     }
 }

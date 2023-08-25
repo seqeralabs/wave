@@ -1,0 +1,154 @@
+<html>
+<head>
+    <head>
+{{#if should_refresh}}
+        <meta http-equiv="refresh" content="5">
+{{/if}}
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="Wave container security scan">
+        <title>Wave container scan notification</title>
+    </head>
+<body>
+<div style="font-family:'-apple-system', BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; padding: 30px; max-width: 800px; margin: 0 auto;">
+
+    <h1>Wave container security scan</h1>
+<div style="min-height: 60vh">
+{{#if scan_exist}}
+    {{#if scan_completed}}
+    {{#if scan_failed}}
+    <div style="color: #e00404; background-color: #ffe4e2; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+        <h4 style="margin-top:0; color: inherit;">
+            Unable to complete the container security scan successfully
+        </h4>
+    </div>
+    {{else}}
+    <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+        <h4 style="margin-top:0; color: inherit;">
+            Container security scan completed
+        </h4>
+    </div>
+    {{/if}}
+    <h3>Summary</h3>
+
+    <table cellpadding="4" >
+        <tr>
+            <td>Scan ID</td>
+            <td>{{scan_id}}</td>
+        </tr>
+        <tr>
+            <td>Build ID</td>
+            <td><a href="{{build_url}}">{{build_id}}</a></td>
+        </tr>
+        <tr>
+            <td>Status</td>
+            <td>{{scan_status}}</td>
+        </tr>
+        <tr>
+            <td>Created</td>
+            <td>{{scan_time}}</td>
+        </tr>
+
+        <tr>
+            <td>Duration</td>
+            <td>{{scan_duration}}</td>
+        </tr>
+
+        {{#if scan_succeeded}}
+        <tr>
+            <td colspan="2">
+                {{#if vulnerabilities.length}}
+                    <h4>Vulnerabilities</h4>
+                    <style>
+                        .bordered-table { border-collapse: collapse; }
+                        .bordered-table, .bordered-table th, .bordered-table td { border: 1px solid black; padding: 4px; }
+                        .nowrap { white-space: nowrap; }
+                    </style>
+                    <table class="bordered-table" style='font-size: 0.8em'>
+                        <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Severity</th>
+                            <th>Library</th>
+                            <th>Version</th>
+                            <th>Fixed Version</th>
+                            <th>Title</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                            {{#each vulnerabilities}}
+                                <tr>
+                                    <td class='nowrap'><a href="{{this.primaryUrl}}" target="_blank">{{this.id}}</a></td>
+                                    <td>{{this.severity}}</td>
+                                    <td>{{this.pkgName}}</td>
+                                    <td>{{this.installedVersion}}</td>
+                                    <td>{{this.fixedVersion}}</td>
+                                    <td>{{this.title}}<br/></td>
+                                </tr>
+                            {{/each}}
+                        </tbody>
+                    </table>
+                {{else}}
+                   No vulnerabilities found
+                {{/if}}
+        </td>
+        </tr>
+        {{/if}}
+    </table>
+    {{else}}
+    {{! scan is not completed, show a spinning icon }}
+    <style>
+    .lds-dual-ring {
+      display: inline-block;
+      width: 50px;
+      height: 30px;
+    }
+    .lds-dual-ring:after {
+      content: " ";
+      display: block;
+      width: 20px;
+      height: 20px;
+      margin: 8px;
+      border-radius: 50%;
+      border: 6px solid #3c763d;
+      border-color: #3c763d transparent #3c763d transparent;
+      animation: lds-dual-ring 1.2s linear infinite;
+    }
+    @keyframes lds-dual-ring {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+    </style>
+    <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+        <h4 style="margin-top:0; color: inherit; font-weight: normal">
+            <div class="lds-dual-ring"></div> Container security scan in progress
+        </h4>
+    </div>
+    {{/if}}
+{{else}}
+{{! scan not exist, show an message using a grey box }}
+    <div style="color: black; background-color: #d3d3d3; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+        <h4 style="margin-top:0; font-weight: normal">
+            {{error_message}}
+        </h4>
+    </div>
+{{/if}}
+</div>
+<div class="footer" style="clear:both;width:100%;">
+    <hr class="footer-hr" style="height:0;overflow:visible;margin-top:30px;border:0;border-top:1px solid #eee;color:#999999;font-size:12px;line-height:18px;margin-bottom:30px;">
+    <img style="float:right" src="/assets/seqera-logo.png">
+    <p class="footer-text" style="font-family:'-apple-system', BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';font-weight:normal;margin:0;margin-bottom:15px;color:#999999;font-size:12px;line-height:18px;">
+        <a href="{{server_url}}">{{server_url}}</a><br>
+        Seqera Labs<br>
+        Carrer de Marià Aguiló, 28<br>
+        08005 Barcelona<br>
+    </p>
+</div>
+</div>
+</body>
+</html>

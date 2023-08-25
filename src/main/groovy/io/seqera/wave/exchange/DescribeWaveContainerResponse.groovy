@@ -52,6 +52,9 @@ class DescribeWaveContainerResponse {
         final String condaFile
         final String buildRepository
         final String cacheRepository
+        final String buildId
+        final Boolean buildNew
+        final Boolean freeze
 
         BuildInfo() {}
 
@@ -60,6 +63,9 @@ class DescribeWaveContainerResponse {
             this.condaFile = data.condaFile
             this.buildRepository = data.buildRepository
             this.cacheRepository = data.cacheRepository
+            this.buildId = data.buildId
+            this.buildNew = data.buildNew
+            this.freeze = data.freeze
         }
     }
 

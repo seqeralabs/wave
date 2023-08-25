@@ -1,5 +1,6 @@
 rootProject.name="wave"
 
-include('wave-api')
-include('wave-utils')
-include('wave-mail')
+// only for development
+// clone https://github.com/seqeralabs/libseqera
+// in a sibling directory and include the build below
+//includeBuild('../libseqera')

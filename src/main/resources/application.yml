@@ -32,13 +32,12 @@ micronaut:
         enabled: true
 ---
 wave:
-  debug: false
   allowAnonymous: true
   server:
       url: "${WAVE_SERVER_URL:`http://localhost:9090`}"
   build:
-    image: "gcr.io/kaniko-project/executor:v1.9.1"
-    workspace: 'build-workspace'
+    kaniko-image: "gcr.io/kaniko-project/executor:v1.12.1"
+    singularity-image: "quay.io/singularity/singularity:v3.11.4-slim"
     repo: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/dev"
     cache: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/cache"
     # note changing this should be matching the micronaut.server.idle-timeout (see above)
@@ -51,6 +50,9 @@ wave:
       delay: '500ms'
       attempts: 5
       multiplier: '1.75'
+  scan:
+    image:
+      name: aquasec/trivy:0.43.0
 ---
 jackson:
   serialization:
@@ -59,4 +61,12 @@ jackson:
 logger:
   levels:
     io.seqera: "DEBUG"
+    io.micronaut.retry.intercept.RecoveryInterceptor: "OFF"
+#   ^^^^^^^^^^^^^^^^^^^^^
+#   Disable logs of `RecoveryInterceptor`, as they have been found to be noisy.
+#   Declarative `io.micronaut.http.client.annotation.@Client`s are annotated with `io.micronaut.retry.annotation@Recoverable`
+#   and throw an exception on every error response by default. `RecoveryInterceptor` ends up logging those exceptions
+#   even if they are handled and no actual recovery/fallback logic gets to take place.
+#   TODO remove once the project is updated to Micronaut 4.x, as @Client won't be annotated with @Recoverable anymore
+#   See https://github.com/micronaut-projects/micronaut-core/issues/3719; https://github.com/micronaut-projects/micronaut-core/pull/8235
 ...

@@ -4,7 +4,7 @@
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="description" content="Wave container build notification email">
+        <meta name="description" content="Wave container build data">
         <title>Wave container build notification</title>
     </head>
 <body>
@@ -29,7 +29,7 @@
     <h3>Summary</h3>
     <table cellpadding="4" >
         <tr>
-            <td>Request ID</td>
+            <td>Build ID</td>
             <td>{{build_id}}</td>
         </tr>
 
@@ -41,6 +41,11 @@
         <tr>
             <td>Container image</td>
             <td>{{build_image}}</td>
+        </tr>
+
+        <tr>
+            <td>Image format</td>
+            <td>{{build_format}}</td>
         </tr>
 
         <tr>
@@ -62,10 +67,16 @@
             <td>Exit status</td>
             <td>{{build_exit_status}}</td>
         </tr>
+    {{#if scan_url}}
+        <tr>
+            <td>Security</td>
+            <td><a href="{{scan_url}}">Image scan report</a></td>
+        </tr>
+    {{/if}}
     </table>
 
-    <h3>Docker file</h3>
-    <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{build_dockerfile}}</pre>
+    <h3>Container file</h3>
+    <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{build_containerfile}}</pre>
 
     {{#if build_condafile}}
     <h3>Conda file</h3>

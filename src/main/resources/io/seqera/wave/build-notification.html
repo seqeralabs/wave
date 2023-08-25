@@ -30,7 +30,7 @@
     <h3>Summary</h3>
     <table cellpadding="4" >
         <tr>
-            <td>Request ID</td>
+            <td>Build ID</td>
             <td><a href="${build_url}">${build_id}</a></td>
         </tr>
 
@@ -42,6 +42,11 @@
         <tr>
             <td>Container image</td>
             <td>${build_image}</td>
+        </tr>
+
+        <tr>
+            <td>Image format</td>
+            <td>${build_format}</td>
         </tr>
 
         <tr>
@@ -63,10 +68,17 @@
         <td>Exit status</td>
         <td>${build_exit_status}</td>
         </tr>
+
+        <% if (scan_url) { %>
+        <tr>
+        <td>Security</td>
+        <td><a href="${scan_url}">Image scan report</a></td>
+        </tr>
+        <% } %>
     </table>
 
-    <h3>Dockerfile</h3>
-    <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">${build_dockerfile}</pre>
+    <h3>Container file</h3>
+    <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">${build_containerfile}</pre>
 
     <% if (build_condafile) { %>
     <h3>Conda file</h3>

@@ -8,7 +8,6 @@ import javax.annotation.Nullable
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micrometer.core.instrument.MeterRegistry
-import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpMethod
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
@@ -32,7 +31,6 @@ import io.seqera.wave.core.RegistryProxyService.DelegateResponse
 import io.seqera.wave.core.RouteHandler
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.exception.DockerRegistryException
-import io.seqera.wave.exception.MismatchChecksumException
 import io.seqera.wave.exchange.RegistryErrorResponse
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
@@ -43,7 +41,6 @@ import jakarta.inject.Inject
 import org.apache.commons.io.IOUtils
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Mono
-import static io.seqera.wave.util.RegHelper.digest
 /**
  * Implement a registry proxy controller that forward registry pull requests to the target service
  *
@@ -53,6 +50,7 @@ import static io.seqera.wave.util.RegHelper.digest
 @Slf4j
 @CompileStatic
 @Controller("/v2")
+@ExecuteOn(TaskExecutors.IO)
 class RegistryProxyController {
 
     @Inject HttpClientAddressResolver addressResolver
@@ -62,9 +60,6 @@ class RegistryProxyController {
     @Inject ContainerBuildService containerBuildService
     @Inject @Nullable RateLimiterService rateLimiterService
     @Inject ErrorHandler errorHandler
-
-    @Value('${wave.debugChecksum:false}')
-    boolean debugChecksum
 
     @Inject
     MeterRegistry meterRegistry
@@ -118,7 +113,6 @@ class RegistryProxyController {
         }
     }
 
-    @ExecuteOn(TaskExecutors.IO)
     @Get(uri="/{url:(.+)}", produces = "*/*")
     CompletableFuture<MutableHttpResponse<?>> handleGet(String url, HttpRequest httpRequest) {
         log.info "> Request [$httpRequest.method] $httpRequest.path"
@@ -159,12 +153,12 @@ class RegistryProxyController {
 
         if( route.manifest ) {
             if ( !route.digest ) {
-                def entry = manifestForPath(route, httpRequest)
+                final entry = manifestForPath(route, httpRequest)
                 if (entry) {
                     return fromCache(entry)
                 }
             } else {
-                def entry = storage.getManifest(route.getTargetPath())
+                final entry = storage.getManifest(route.getTargetPath())
                 if (entry.present) {
                     return fromCache(entry.get())
                 }
@@ -172,7 +166,7 @@ class RegistryProxyController {
         }
 
         if( route.blob ) {
-            def entry = storage.getBlob(route.getTargetPath())
+            final entry = storage.getBlob(route.getTargetPath())
             if (entry.present) {
                 log.info "Blob found in the cache: $route.path"
                 return fromCache(entry.get())
@@ -255,12 +249,7 @@ class RegistryProxyController {
     }
 
     MutableHttpResponse<?> fromCache(DigestStore entry) {
-        // validate checksum
-        String d0
         final resp = entry.bytes
-        if( debugChecksum && entry.digest!=(d0=digest(resp)) ) {
-            throw new MismatchChecksumException("Digest checksum mismatch - expected=${entry.digest}; computed=$d0", entry)
-        }
         // compose response
         Map<CharSequence, CharSequence> headers = Map.of(
                         "Content-Length", resp.length.toString(),
@@ -285,7 +274,7 @@ class RegistryProxyController {
     MutableHttpResponse<?> fromDelegateResponse(final DelegateResponse response){
 
         final Long len = response.headers
-                .find {it.key.toLowerCase()=='content-length'}?.value?.first() as long ?: null
+                .find {it.key.toLowerCase()=='content-length'}?.value?.first() as Long ?: null
 
         Flowable bodyReader = Flowable.create({ emitter ->
             try {
