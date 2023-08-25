@@ -215,6 +215,10 @@ class ContainerTokenController {
 
     protected BuildRequest buildRequest(SubmitContainerTokenRequest req, User user, String ip) {
         final build = makeBuildRequest(req, user, ip)
+        if( req.dryRun ) {
+            log.debug "== Dry-run build request: $build"
+            return build
+        }
         if( !registryProxyService.isManifestPresent(build.targetImage) ) {
             buildService.buildImage(build)
         }
