@@ -1,4 +1,13 @@
 # Wave changelog
+v0.39.0 - 24 Aug 2023 
+- Add support for dryRun build requests [cd1bf750]
+- Fix Do not show scan link on build failure [9e1dfb77]
+- Fix Cannot cast object to null error [20362389]
+- Use lib-mail@1.0.0 [b66217a3]
+- Bump wave-api@0.5.0
+- Bump wave-utils@0.6.2 [9d740b42]
+- Bump MN 3.10.1 [0c49f9b6]
+
 v0.38.0 - 19 Aug 2023
 - Add support for build for Singularity images (#282) [258183d2]
 - Add Support for handling .dockerignore patterns added in wave-util (#281) [4dd89b93]

@@ -270,7 +270,7 @@ class RegistryProxyController {
     MutableHttpResponse<?> fromDelegateResponse(final DelegateResponse response){
 
         final Long len = response.headers
-                .find {it.key.toLowerCase()=='content-length'}?.value?.first() as long ?: null
+                .find {it.key.toLowerCase()=='content-length'}?.value?.first() as Long ?: null
 
         final streamedFile =  len
                     ?  new StreamedFile(response.body, MediaType.APPLICATION_OCTET_STREAM_TYPE, Instant.now().toEpochMilli(), len)

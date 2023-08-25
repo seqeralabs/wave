@@ -157,6 +157,36 @@ class ContainerTokenControllerTest extends Specification {
         data.platform.toString() == 'linux/arm64'
     }
 
+    def 'should not run a build request when dry-run is specified' () {
+        given:
+        def builder = Mock(ContainerBuildService)
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def proxyRegistry = Mock(RegistryProxyService)
+        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry,
+                workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
+        def DOCKER = 'FROM foo'
+        def user = new User(id: 100)
+        def cfg = new ContainerConfig()
+        def req = new SubmitContainerTokenRequest(
+                containerFile: encode(DOCKER),
+                containerPlatform: 'arm64',
+                containerConfig: cfg,
+                dryRun: true
+        )
+
+        when:
+        def data = controller.makeRequestData(req, user, "")
+        then:
+        0 * proxyRegistry.isManifestPresent(_) >> null
+        0 * builder.buildImage(_) >> null
+        and:
+        data.containerFile == 'FROM foo'
+        data.userId == 100
+        data.containerImage ==  'wave/build:7d6b54efe23408c0938290a9ae49cf21'
+        data.containerConfig == cfg
+        data.platform.toString() == 'linux/arm64'
+    }
+
     def 'should create build request' () {
         given:
         def dockerAuth = Mock(ContainerInspectServiceImpl)
