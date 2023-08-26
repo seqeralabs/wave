@@ -1,10 +1,10 @@
 
 Examples:
   # Augment a container image with the content of a local directory
-  wavelit -i alpine --layer new-layer-dir/
+  wavelit -i alpine --layer layer-dir/
 
   # Build a container with Dockerfile
-  wavelit -f Dockerfile --context build-context-dir/
+  wavelit -f Dockerfile --context context-dir/
 
   # Build a container based on Conda packages
   wavelit --conda-package bamtools=2.5.2 --conda-package samtools=1.17
@@ -13,7 +13,7 @@ Examples:
   wavelit --conda-package fastp --platform linux/arm64
 
   # Build a container based on Conda lock file served via prefix.dev service
-  wavelit --conda-package https://prefix.dev//envs/pditommaso/rnaseq-nf/y8g8ax6a4srv/conda-lock.yml
+  wavelit --conda-package https://prefix.dev/envs/pditommaso/wave/conda-lock.yml
 
   # Build a container based on Spack packages
   wavelit --spack-package cowsay
