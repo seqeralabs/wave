@@ -182,7 +182,7 @@ class ContainerTokenControllerTest extends Specification {
         and:
         data.containerFile == 'FROM foo'
         data.userId == 100
-        data.containerImage ==  'wave/build:7d6b54efe23408c0938290a9ae49cf21'
+        data.containerImage ==  'wave/build:be9ee6ac1eeff4b5'
         data.containerConfig == cfg
         data.platform.toString() == 'linux/arm64'
     }
