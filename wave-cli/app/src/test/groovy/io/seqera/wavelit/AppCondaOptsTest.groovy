@@ -90,9 +90,16 @@ class AppCondaOptsTest extends Specification {
 
     def 'should create docker file from conda file' () {
         given:
+        def CONDA_RECIPE = '''
+            name: my-recipe
+            dependencies: 
+            - one=1.0
+            - two:2.0
+            '''.stripIndent(true)
+        and:
         def folder = Files.createTempDirectory('test')
         def condaFile = folder.resolve('conda.yml');
-        condaFile.text = 'MY CONDA FILE'
+        condaFile.text = CONDA_RECIPE
         and:
         def app = new App()
         String[] args = ["--conda-file", condaFile.toString()]
@@ -110,7 +117,7 @@ class AppCondaOptsTest extends Specification {
                 USER root
                 '''.stripIndent()
         and:
-        new String(req.condaFile.decodeBase64()) == 'MY CONDA FILE'
+        new String(req.condaFile.decodeBase64()) == CONDA_RECIPE
 
         cleanup:
         folder?.deleteDir()
@@ -129,9 +136,38 @@ class AppCondaOptsTest extends Specification {
         then:
         new String(req.containerFile.decodeBase64()) == '''\
                 FROM mambaorg/micromamba:1.4.9
+                COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
+                RUN micromamba install -y -n base -f /tmp/conda.yml \\
+                    && micromamba clean -a -y
+                USER root
+                '''.stripIndent()
+        and:
+        new String(req.condaFile.decodeBase64()) == '''\
+        channels:
+        - seqera
+        - bioconda
+        - conda-forge
+        - defaults
+        dependencies:
+        - foo
+        '''.stripIndent(true)
+    }
+
+    def 'should create docker env from conda lock file' () {
+        given:
+        def app = new App()
+        String[] args = ["--conda-package", "https://host.com/file-lock.yml"]
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        and:
+        def req = app.createRequest()
+        then:
+        new String(req.containerFile.decodeBase64()) == '''\
+                FROM mambaorg/micromamba:1.4.9
                 RUN \\
                     micromamba install -y -n base -c seqera -c bioconda -c conda-forge -c defaults \\
-                    foo \\
+                    -f https://host.com/file-lock.yml \\
                     && micromamba clean -a -y
                 USER root
                 '''.stripIndent()
@@ -159,9 +195,8 @@ class AppCondaOptsTest extends Specification {
         then:
         new String(req.containerFile.decodeBase64()) == '''\
                 FROM my/mamba:latest
-                RUN \\
-                    micromamba install -y -n base -c alpha -c beta \\
-                    foo bar \\
+                COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
+                RUN micromamba install -y -n base -f /tmp/conda.yml \\
                     && micromamba clean -a -y
                 USER root
                 RUN one
@@ -169,7 +204,14 @@ class AppCondaOptsTest extends Specification {
                 '''.stripIndent()
 
         and:
-        req.condaFile == null
+        new String(req.condaFile.decodeBase64()) == '''\
+            channels:
+            - alpha
+            - beta
+            dependencies:
+            - foo
+            - bar
+            '''.stripIndent(true)
     }
 
 
@@ -191,9 +233,9 @@ class AppCondaOptsTest extends Specification {
                 BootStrap: docker
                 From: mambaorg/micromamba:1.4.9
                 %files
-                    {{wave_context_dir}}/conda.yml /tmp/conda.yml
+                    {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
-                    micromamba install -y -n base -f /tmp/conda.yml \\
+                    micromamba install -y -n base -f /scratch/conda.yml \\
                     && micromamba clean -a -y
                 %environment
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
@@ -219,15 +261,24 @@ class AppCondaOptsTest extends Specification {
         new String(req.containerFile.decodeBase64()) == '''\
                 BootStrap: docker
                 From: mambaorg/micromamba:1.4.9
+                %files
+                    {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
-                    micromamba install -y -n base -c seqera -c bioconda -c conda-forge -c defaults \\
-                    foo \\
+                    micromamba install -y -n base -f /scratch/conda.yml \\
                     && micromamba clean -a -y
                 %environment
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
                 '''.stripIndent()
         and:
-        req.condaFile == null
+        new String(req.condaFile.decodeBase64()) == '''\
+                channels:
+                - seqera
+                - bioconda
+                - conda-forge
+                - defaults
+                dependencies:
+                - foo
+                '''.stripIndent(true)
     }
 
     def 'should create singularity file from conda package and custom options' () {
@@ -251,19 +302,83 @@ class AppCondaOptsTest extends Specification {
         new String(req.containerFile.decodeBase64()) == '''\
                 BootStrap: docker
                 From: my/mamba:latest
+                %files
+                    {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
-                    micromamba install -y -n base -c alpha -c beta \\
-                    foo bar \\
+                    micromamba install -y -n base -f /scratch/conda.yml \\
                     && micromamba clean -a -y
                 %environment
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
                 %post
                     RUN one
                     RUN two
-                '''.stripIndent()
+                '''.stripIndent(true)
 
+        and:
+        new String(req.condaFile.decodeBase64()) == '''\
+                channels:
+                - alpha
+                - beta
+                dependencies:
+                - foo
+                - bar
+                '''.stripIndent(true)
+    }
+
+    def 'should create singularity file from conda lock file' () {
+        given:
+        def app = new App()
+        String[] args = ["--conda-package", "https://host.com/file-lock.yml", '--singularity']
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        and:
+        def req = app.createRequest()
+        then:
+        new String(req.containerFile.decodeBase64()) == '''\
+            BootStrap: docker
+            From: mambaorg/micromamba:1.4.9
+            %post
+                micromamba install -y -n base -c seqera -c bioconda -c conda-forge -c defaults \\
+                -f https://host.com/file-lock.yml \\
+                && micromamba clean -a -y
+            %environment
+                export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                '''.stripIndent()
         and:
         req.condaFile == null
     }
 
+
+    def 'should get conda lock file' () {
+        expect:
+        new App(condaPackages: ['https://foo.com/lock.yml'])
+                .condaLock() == 'https://foo.com/lock.yml'
+
+        and:
+        new App(condaPackages: ['foo', 'bar'])
+                .condaLock() == null
+
+        and:
+        new App(condaPackages: null)
+                .condaLock() == null
+
+        when:
+        new App(condaPackages: ['foo', 'http://foo.com']) .condaLock()
+        then:
+        thrown(IllegalCliArgumentException)
+    }
+
+
+    def 'should get conda channels' () {
+        expect:
+        new App(condaChannels: null)
+                .condaChannels() == null
+
+        new App(condaChannels: 'foo , bar')
+                .condaChannels() == ['foo','bar']
+
+        new App(condaChannels: 'foo bar')
+                .condaChannels() == ['foo','bar']
+    }
 }

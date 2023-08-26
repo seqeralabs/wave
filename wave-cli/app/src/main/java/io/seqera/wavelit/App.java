@@ -20,9 +20,14 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import ch.qos.logback.classic.Level;
@@ -41,19 +46,22 @@ import io.seqera.wavelit.exception.BadClientResponseException;
 import io.seqera.wavelit.exception.IllegalCliArgumentException;
 import io.seqera.wavelit.json.JsonHelper;
 import io.seqera.wavelit.util.BuildInfo;
-import io.seqera.wavelit.util.Checkers;
 import io.seqera.wavelit.util.CliVersionProvider;
 import io.seqera.wavelit.util.YamlHelper;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import static io.seqera.wave.util.DockerHelper.addPackagesToSpackFile;
+import static io.seqera.wave.util.DockerHelper.condaFileFromPackages;
+import static io.seqera.wave.util.DockerHelper.condaFileFromPath;
+import static io.seqera.wave.util.DockerHelper.condaFileToDockerFile;
+import static io.seqera.wave.util.DockerHelper.condaFileToSingularityFile;
+import static io.seqera.wave.util.DockerHelper.condaPackagesToDockerFile;
+import static io.seqera.wave.util.DockerHelper.condaPackagesToSingularityFile;
 import static io.seqera.wave.util.DockerHelper.spackPackagesToSpackFile;
+import static io.seqera.wavelit.util.Checkers.isEmpty;
 import static io.seqera.wavelit.util.Checkers.isEnvVar;
-import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Option;
-
-import static io.seqera.wave.util.DockerHelper.*;
 
 /**
  * Wavelit main class
@@ -494,29 +502,30 @@ public class App implements Runnable {
         return !result.empty() ? result : null;
     }
 
+    private CondaOpts condaOpts() {
+        return new CondaOpts()
+                .withMambaImage(condaBaseImage)
+                .withCommands(condaRunCommands);
+    }
+
     protected String containerFileBase64() {
         if( !isEmpty(containerFile) ) {
             return encodePathBase64(containerFile);
         }
 
-        if( !isEmpty(condaFile) || condaPackages!=null ) {
-            final CondaOpts opts = new CondaOpts()
-                    .withMambaImage(condaBaseImage)
-                    .withCommands(condaRunCommands);
-            if( !Checkers.isEmpty(condaPackages) ) {
-                final String packages0 = condaPackages.stream().collect(Collectors.joining(" "));
-                final List<String> channels0 = Arrays.asList(condaChannels.split(","));
-                final String result = singularity
-                        ? condaPackagesToSingularityFile(packages0, channels0, opts)
-                        : condaPackagesToDockerFile(packages0, channels0, opts);
-                return encodeStringBase64(result);
+        if (!isEmpty(condaFile) || !isEmpty(condaPackages)) {
+            String result;
+            final String lock = condaLock();
+            if (!isEmpty(lock)) {
+                result = singularity
+                        ? condaPackagesToSingularityFile(lock, condaChannels(), condaOpts())
+                        : condaPackagesToDockerFile(lock, condaChannels(), condaOpts());
+            } else {
+                result = singularity
+                        ? condaFileToSingularityFile(condaOpts())
+                        : condaFileToDockerFile(condaOpts());
             }
-            else {
-                final String result = singularity
-                        ? condaFileToSingularityFile(opts)
-                        : condaFileToDockerFile(opts);
-                return encodeStringBase64(result);
-            }
+            return encodeStringBase64(result);
         }
 
         if( !isEmpty(spackFile) || spackPackages!=null ) {
@@ -529,9 +538,20 @@ public class App implements Runnable {
     }
 
     protected String condaFileBase64() {
-        if( isEmpty(condaFile) )
+        if (!isEmpty(condaFile)) {
+            // parse the attribute as a conda file path *and* append the base packages if any
+            // note 'channel' is null, because they are expected to be provided in the conda file
+            final Path path = condaFileFromPath(condaFile, null, condaOpts());
+            return path != null ? encodePathBase64(path.toString()) : null;
+        }
+        else if (!isEmpty(condaPackages) && isEmpty(condaLock())) {
+            // create a minimal conda file with package spec from user input
+            final String packages = condaPackages.stream().collect(Collectors.joining(" "));
+            final Path path = condaFileFromPackages(packages, condaChannels(), condaOpts());
+            return path != null ? encodePathBase64(path.toString()) : null;
+        }
+        else
             return null;
-        return encodePathBase64(condaFile);
     }
 
     protected String spackFileBase64() {
@@ -583,4 +603,28 @@ public class App implements Runnable {
         }
     }
 
+    protected List<String> condaChannels() {
+        if( condaChannels==null )
+            return null;
+        // parse channels
+        return Arrays.stream(condaChannels.split("[, ]"))
+                .map(String::trim)
+                .filter(it -> !isEmpty(it))
+                .collect(Collectors.toList());
+    }
+
+    protected String condaLock() {
+        if( isEmpty(condaPackages) )
+            return null;
+        Optional<String> result = condaPackages
+                .stream()
+                .filter(it->it.startsWith("http://") || it.startsWith("https://"))
+                .findFirst();
+        if( !result.isPresent() )
+            return null;
+        if( condaPackages.size()!=1 ) {
+            throw new IllegalCliArgumentException("No more than one Conda lock remote file can be specified at the same time");
+        }
+        return result.get();
+    }
 }
