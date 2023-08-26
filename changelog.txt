@@ -1,4 +1,8 @@
 # Wave changelog
+v0.40.0 -  26 Aug 2023 
+- Improve naming of build containers [ffd8785f]
+- Add cacheable annotation to RegistryCredentialsProviderImpl [9ebff597]
+
 v0.39.0 - 24 Aug 2023 
 - Add support for dryRun build requests [cd1bf750]
 - Fix Do not show scan link on build failure [9e1dfb77]
