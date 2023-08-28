@@ -180,8 +180,6 @@ class ContainerTokenController {
             throw new BadRequestException("Missing build repository attribute")
         if( !defaultCacheRepo )
             throw new BadRequestException("Missing build cache repository attribute")
-        if( req.formatSingularity() && req.spackFile )
-            throw new BadRequestException("Spack based build is not supported when using Singularity image format")
 
         final dockerContent = new String(req.containerFile.decodeBase64())
         final condaContent = req.condaFile ? new String(req.condaFile.decodeBase64()) : null as String
