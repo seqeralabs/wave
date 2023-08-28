@@ -6,7 +6,6 @@ import spock.lang.Specification
 import java.nio.file.Files
 
 import io.micronaut.context.ApplicationContext
-import io.micronaut.context.annotation.Value
 import io.seqera.wave.configuration.RateLimiterConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.SlowDownException
@@ -19,8 +18,12 @@ import io.seqera.wave.tower.User
  *
  */
 class BuildServiceRateLimitTest extends Specification{
-    @Value('${wave.build.repo}') String buildRepo
-    @Value('${wave.build.cache}') String cacheRepo
+
+    @Shared
+    String buildRepo = 'quay.io/repo/name'
+
+    @Shared
+    String cacheRepo = 'quay.io/cache/name'
 
     @Shared
     ApplicationContext applicationContext
