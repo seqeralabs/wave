@@ -1,6 +1,7 @@
 package io.seqera.wave.service.builder
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.nio.file.Path
 import java.time.OffsetDateTime
@@ -33,7 +34,7 @@ class BuildRequestTest extends Specification {
                 CONTENT,
                 PATH,
                 BUILD_REPO,
-                'some conda content',
+                null,
                 null,
                 BuildFormat.DOCKER,
                 USER,
@@ -46,17 +47,16 @@ class BuildRequestTest extends Specification {
                 IP_ADDR,
                 OFFSET)
         then:
-        req.id == 'a3edc322cba1fecfebe895785e50220b'
+        req.id == '181ec22b26ae6d04'
         req.workDir == PATH.resolve(req.id).toAbsolutePath()
         req.targetImage == "docker.io/wave:${req.id}"
         req.containerFile == CONTENT
-        req.dockerFile == CONTENT
         req.user == USER
         req.configJson == '{auth}'
-        req.job =~ /a3edc322cba1fecfebe895785e50220b-[a-z0-9]+/
+        req.job =~ /181ec22b26ae6d04-[a-z0-9]+/
         req.cacheRepository == CACHE_REPO
         req.format == BuildFormat.DOCKER
-        req.condaFile == 'some conda content'
+        req.condaFile == null
         req.spackFile == null
         req.platform == ContainerPlatform.of('amd64')
         req.configJson == '{auth}'
@@ -68,13 +68,19 @@ class BuildRequestTest extends Specification {
         and:
         !req.isSpackBuild
 
+        // ==== provide a Conda recipe ====
         when:
+        def CONDA_RECIPE = '''\
+                dependencies:
+                    - samtools=1.0
+                '''
+        and:
         req = new BuildRequest(
                 CONTENT,
                 PATH,
                 BUILD_REPO,
+                CONDA_RECIPE,
                 null,
-                'some spack content',
                 BuildFormat.DOCKER,
                 USER,
                 CONFIG,
@@ -86,8 +92,41 @@ class BuildRequestTest extends Specification {
                 IP_ADDR,
                 OFFSET)
         then:
-        req.id == '95b2d920006f0c41029b697ffffc2d8e'
-        req.spackFile == 'some spack content'
+        req.id == '8026e3a63b5c863f'
+        req.targetImage == 'docker.io/wave:samtools-1.0--8026e3a63b5c863f'
+        req.condaFile == CONDA_RECIPE
+        req.spackFile == null
+        and:
+        !req.isSpackBuild
+
+        // ===== spack content ====
+        def SPACK_RECIPE = '''\
+            spack:
+              specs: [bwa@0.7.15]
+            '''
+        and:
+        when:
+        req = new BuildRequest(
+                CONTENT,
+                PATH,
+                BUILD_REPO,
+                null,
+                SPACK_RECIPE,
+                BuildFormat.DOCKER,
+                USER,
+                CONFIG,
+                CONTEXT,
+                ContainerPlatform.of('amd64'),
+                '{auth}',
+                CACHE_REPO,
+                SCAN_ID,
+                IP_ADDR,
+                OFFSET)
+        then:
+        req.id == '8726782b1d9bb8fb'
+        req.targetImage == 'docker.io/wave:bwa-0.7.15--8726782b1d9bb8fb'
+        req.spackFile == SPACK_RECIPE
+        req.condaFile == null
         and:
         req.isSpackBuild
     }
@@ -122,13 +161,13 @@ class BuildRequestTest extends Specification {
                 IP_ADDR,
                 OFFSET)
         then:
-        req.id == 'b888a49c90211559a851bb07b7a7a016'
+        req.id == 'd78ba9cb01188668'
         req.workDir == PATH.resolve(req.id).toAbsolutePath()
         req.targetImage == "oras://docker.io/wave:${req.id}"
         req.containerFile == CONTENT
         req.user == USER
         req.configJson == '{auth}'
-        req.job =~ /b888a49c90211559a851bb07b7a7a016-[a-z0-9]+/
+        req.job =~ /d78ba9cb01188668-[a-z0-9]+/
         req.cacheRepository == CACHE_REPO
         req.format == BuildFormat.SINGULARITY
         req.platform == ContainerPlatform.of('amd64')
@@ -181,6 +220,55 @@ class BuildRequestTest extends Specification {
         and:
         req1.offsetId == OffsetDateTime.now().offset.id
         req7.offsetId == 'UTC+2'
+    }
+
+    def 'should make request target' () {
+        expect:
+        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', '12345', null, null)
+                == 'quay.io/org/name:12345'
+        and:
+        BuildRequest.makeTarget(BuildFormat.SINGULARITY, 'quay.io/org/name', '12345', null, null)
+                == 'oras://quay.io/org/name:12345'
+
+        and:
+        def conda = '''\
+        dependencies:
+        - salmon=1.2.3
+        '''
+        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', '12345', conda, null)
+                == 'quay.io/org/name:salmon-1.2.3--12345'
+
+        and:
+        def spack = '''\
+         spack:
+            specs: [bwa@0.7.15]
+        '''
+        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', '12345', null, spack)
+                == 'quay.io/org/name:bwa-0.7.15--12345'
+
+    }
+
+    @Unroll
+    def 'should normalise tag' () {
+        expect:
+        BuildRequest.normaliseTag(TAG,12)  == EXPECTED
+        where:
+        TAG                     | EXPECTED
+        null                    | null
+        ''                      | null
+        and:
+        'foo'                   | 'foo'
+        'FOO123'                | 'FOO123'
+        'aa-bb_cc.dd'           | 'aa-bb_cc.dd'
+        and:
+        'one(two)three'         | 'onetwothree'
+        '12345_67890_12345'     | '12345_67890'
+        '123456789012345_1'     | '123456789012'
+        and:
+        'aa__'                  | 'aa'
+        'aa..--__'              | 'aa'
+        '..--__bb'              | 'bb'
+        '._-xyz._-'             | 'xyz'
     }
 
 }
