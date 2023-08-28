@@ -7,17 +7,20 @@ import java.nio.file.Path
 import java.security.MessageDigest
 import java.security.SecureRandom
 
+import com.google.common.hash.Hashing
 import com.google.common.io.BaseEncoding
 import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.seqera.wave.model.ContainerCoordinates
-
+import org.yaml.snakeyaml.Yaml
 /**
  * Helper methods
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
+@Slf4j
 class RegHelper {
 
     final private static char PADDING = '_' as char
@@ -161,5 +164,78 @@ class RegHelper {
         - URI: ${coords.scheme}://${coords.registry}
           Insecure: false
         """.stripIndent()
+    }
+
+
+    static String guessCondaRecipeName(String condaFileContent) {
+        if( !condaFileContent )
+            return null
+        try {
+            final yaml = (Map)new Yaml().load(condaFileContent)
+            if( yaml.name )
+                return yaml.name
+            if( yaml.dependencies instanceof List ) {
+                final LinkedHashSet<String> result = new LinkedHashSet()
+                for( String it : yaml.dependencies ) {
+                    final int p=it.indexOf('::')
+                    if( p!=-1 )
+                        it = it.substring(p+2)
+                    it = it.replace('=','-')
+                    if( it )
+                        result.add(it)
+                }
+                return result.join('_')
+            }
+            return null
+        }
+        catch (Exception e) {
+            log.warn "Unable to infer conda recipe name - cause: ${e.message}", e
+            return null
+        }
+    }
+
+
+    static String guessSpackRecipeName(String spackFileContent) {
+        if( !spackFileContent )
+            return null
+        try {
+            final yaml = new Yaml().load(spackFileContent) as Map
+            final spack = yaml.spack as Map
+            if( spack.specs instanceof List ) {
+                final LinkedHashSet<String> result = new LinkedHashSet()
+                for( String it : spack.specs ) {
+                    final p = it.indexOf(' ')
+                    // remove everything after the first blank because they are supposed package directives
+                    if( p!=-1 )
+                        it = it.substring(0,p)
+                    // replaces '@' version separator with `'`
+                    it = it.replace('@','-')
+                    if( it )
+                        result.add(it)
+                }
+                return result.join('_')
+            }
+            return null
+        }
+        catch (Exception e) {
+            log.warn "Unable to infer spack recipe name - cause: ${e.message}", e
+            return null
+        }
+    }
+
+    static String sipHash(LinkedHashMap<String,String> values) {
+        if( values == null )
+            throw new IllegalArgumentException("Missing argument for sipHash method")
+
+        final hasher = Hashing.sipHash24().newHasher()
+        for( Map.Entry<String,String> entry : values.entrySet() ) {
+            hasher.putUnencodedChars(entry.key)
+            hasher.putUnencodedChars(Character.toString(0x1C))
+            if( entry.value!=null )
+                hasher.putUnencodedChars(entry.value)
+            hasher.putUnencodedChars(Character.toString(0x1E))
+        }
+
+        return hasher.hash().toString()
     }
 }
