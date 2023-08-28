@@ -98,7 +98,7 @@ class FreezeServiceImplTest extends Specification  {
         server.createContext("/", handler);
         server.start()
         and:
-        def req = new BuildRequest('from foo', Path.of('/wsp'), null, null, null, BuildFormat.DOCKER, Mock(User), config, null, ContainerPlatform.of('amd64'),'{auth}', null, null, "127.0.0.1", null)
+        def req = new BuildRequest('from foo', Path.of('/wsp'), 'quay.io/org/name', null, null, BuildFormat.DOCKER, Mock(User), config, null, ContainerPlatform.of('amd64'),'{auth}', null, null, "127.0.0.1", null)
 
         when:
         FreezeServiceImpl.saveLayersToContext(req, folder)
