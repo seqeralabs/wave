@@ -1,6 +1,7 @@
 package io.seqera.wave.util
 
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.builder.BuildFormat
 
 /**
  * Helper class for Spack package manager
@@ -9,14 +10,22 @@ import io.seqera.wave.core.ContainerPlatform
  */
 class SpackHelper {
 
-    static String builderTemplate() {
+    static String builderDockerTemplate() {
         SpackHelper.class
                 .getResourceAsStream('/io/seqera/wave/spack/spack-builder-containerfile.txt')
                 .getText()
     }
 
-    static String prependBuilderTemplate(String dockerContent) {
-        return builderTemplate() + dockerContent
+    static String builderSingularityTemplate() {
+        SpackHelper.class
+                .getResourceAsStream('/io/seqera/wave/spack/spack-builder-singularityfile.txt')
+                .getText()
+    }
+    static String prependBuilderTemplate(String dockerContent, BuildFormat buildFormat) {
+        if(buildFormat == BuildFormat.SINGULARITY){
+            return builderSingularityTemplate() + dockerContent
+        }
+        return builderDockerTemplate() + dockerContent
     }
 
     static String toSpackArch(ContainerPlatform platform) {

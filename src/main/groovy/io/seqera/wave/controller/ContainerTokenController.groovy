@@ -194,7 +194,7 @@ class ContainerTokenController {
         final scanId = scanEnabled && format==DOCKER ? LongRndKey.rndHex() : null
         // create a unique digest to identify the request
         return new BuildRequest(
-                (spackContent ? prependBuilderTemplate(dockerContent) : dockerContent),
+                (spackContent ? prependBuilderTemplate(dockerContent,format) : dockerContent),
                 Path.of(workspace),
                 build,
                 condaContent,

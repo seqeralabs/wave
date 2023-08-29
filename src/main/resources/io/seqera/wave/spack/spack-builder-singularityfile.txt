@@ -1,0 +1,49 @@
+Bootstrap: docker
+From: {{spack_builder_image}}
+Stage: build
+
+%post
+    # Install dependencies
+    apt-get update && \
+    apt-get install -y build-essential wget # Add any other dependencies you need
+
+    # Copy spack.yaml and modify it
+    mkdir -p /opt/spack-env
+    cp /path/to/spack.yaml /opt/spack-env/spack.yaml
+    sed -i -e 's;compilers:;compilers::;' \
+           -e 's;^ *flags: *{};    flags:\n      cflags: -O3\n      cxxflags: -O3\n      fflags: -O3;' \
+           /root/.spack/linux/compilers.yaml
+
+    # Set up Spack environment
+    cd /opt/spack-env
+    spack env activate .
+    spack config add config:install_tree:/opt/software
+    spack config add concretizer:unify:true
+    spack config add concretizer:reuse:false
+    spack config add packages:all:target:[{{spack_arch}}]
+    echo -e "\
+      view: /opt/view \n\
+    " >> /opt/spack-env/spack.yaml
+
+    # Install packages, clean afterwards, finally strip binaries
+    spack gpg trust {{spack_key_file}}
+    spack mirror add seqera-spack {{spack_cache_dir}}
+    spack mirror add binary_mirror  https://binaries.spack.io/releases/v0.20
+    spack buildcache keys --install --trust
+    spack env activate .
+    spack concretize -f
+    spack install --fail-fast
+    spack gc -y
+    find -L /opt/._view/* -type f -exec readlink -f '{}' \; | \
+        xargs file -i | \
+        grep 'charset=binary' | \
+        grep 'x-executable\|x-archive\|x-sharedlib' | \
+        awk -F: '{print $1}' | xargs strip -s
+
+    # Set up environment variables
+    spack env activate --sh -d . >> /opt/spack-env/z10_spack_environment.sh
+    original_view=$( cd /opt ; ls -1d ._view/* )
+    sed -i "s;/view/;/$original_view/;" /opt/spack-env/z10_spack_environment.sh
+    echo "# Needed for Perl applications" >>/opt/spack-env/z10_spack_environment.sh
+    echo "export PERL5LIB=\$(eval ls -d /opt/._view/*/lib/5.*):\$PERL5LIB" >>/opt/spack-env/z10_spack_environment.sh
+    rm -rf /opt/view
