@@ -5,9 +5,9 @@ Stage: build
 %post
     # Install dependencies
     apt-get update && \
-    apt-get install -y build-essential wget # Add any other dependencies you need
+    apt-get install -y build-essential wget
 
-    # Copy spack.yaml and modify it
+    # Copy and modify spack.yaml
     mkdir -p /opt/spack-env
     cp /path/to/spack.yaml /opt/spack-env/spack.yaml
     sed -i -e 's;compilers:;compilers::;' \
@@ -25,7 +25,7 @@ Stage: build
       view: /opt/view \n\
     " >> /opt/spack-env/spack.yaml
 
-    # Install packages, clean afterwards, finally strip binaries
+    # Install packages, clean afterward, finally strip binaries
     spack gpg trust {{spack_key_file}}
     spack mirror add seqera-spack {{spack_cache_dir}}
     spack mirror add binary_mirror  https://binaries.spack.io/releases/v0.20
