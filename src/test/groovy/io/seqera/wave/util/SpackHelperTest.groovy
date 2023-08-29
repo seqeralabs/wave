@@ -3,6 +3,7 @@ package io.seqera.wave.util
 import spock.lang.Specification
 
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.builder.BuildFormat
 
 /**
  *
@@ -12,13 +13,13 @@ class SpackHelperTest extends Specification {
 
     def 'should load builder template' () {
         expect:
-        SpackHelper.builderTemplate().startsWith('# Builder image')
+        SpackHelper.builderDockerTemplate().startsWith('# Builder image')
     }
 
     def 'should prepend builder template' () {
         expect:
-        SpackHelper.prependBuilderTemplate('foo').startsWith('# Builder image')
-        SpackHelper.prependBuilderTemplate('foo').endsWith('\nfoo')
+        SpackHelper.prependBuilderTemplate('foo', BuildFormat.DOCKER).startsWith('# Builder image')
+        SpackHelper.prependBuilderTemplate('foo', BuildFormat.SINGULARITY).endsWith('\nfoo')
     }
 
     def 'should map platform to spack arch' () {

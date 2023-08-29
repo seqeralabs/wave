@@ -226,7 +226,7 @@ class ContainerBuildServiceTest extends Specification {
         def folder = Files.createTempDirectory('test')
         def builder = new ContainerBuildServiceImpl()
         and:
-        def dockerFile = SpackHelper.builderTemplate()
+        def dockerFile = SpackHelper.builderDockerTemplate()
         def spackFile = 'some spack packages'
         def REQ = new BuildRequest(dockerFile, folder, 'box:latest', null, spackFile, BuildFormat.DOCKER, Mock(User),null, null,  ContainerPlatform.of('amd64'), null, null, null, "", null)
         and:
@@ -241,6 +241,36 @@ class ContainerBuildServiceTest extends Specification {
         1* spack.getRunnerImage() >> 'ubuntu:22.04'
         and:
         result.contains('FROM spack-builder:2.0 as builder')
+        result.contains('spack config add packages:all:target:[x86_64]')
+        result.contains('spack mirror add seqera-spack /mnt/cache')
+        result.contains('spack gpg trust /mnt/key')
+
+        cleanup:
+        folder?.deleteDir()
+    }
+
+    def 'should resolve singularity file with spack config' () {
+        given:
+        def folder = Files.createTempDirectory('test')
+        def builder = new ContainerBuildServiceImpl()
+        and:
+        def dockerFile = SpackHelper.builderSingularityTemplate()
+        def spackFile = 'some spack packages'
+        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', null, spackFile, BuildFormat.DOCKER, Mock(User),null, null,  ContainerPlatform.of('amd64'), null, null, null, "", null)
+        and:
+        def spack = Mock(SpackConfig)
+
+        when:
+        def result = builder.containerFile0(REQ, null, spack)
+        then:
+        1* spack.getCacheMountPath() >> '/mnt/cache'
+        1* spack.getSecretMountPath() >> '/mnt/key'
+        1* spack.getBuilderImage() >> 'spack-builder:2.0'
+        1* spack.getRunnerImage() >> 'ubuntu:22.04'
+        and:
+        result.contains('Bootstrap: docker\n' +
+                'From: spack-builder:2.0\n' +
+                'Stage: build')
         result.contains('spack config add packages:all:target:[x86_64]')
         result.contains('spack mirror add seqera-spack /mnt/cache')
         result.contains('spack gpg trust /mnt/key')
