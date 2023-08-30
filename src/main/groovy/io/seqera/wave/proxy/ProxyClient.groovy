@@ -17,7 +17,6 @@ import io.micronaut.http.server.exceptions.InternalServerException
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryInfo
-import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.util.RegHelper
 /**
@@ -43,8 +42,10 @@ class ProxyClient {
     private RegistryAuthService loginService
     private ContainerPath route
 
-    ProxyClient(HttpClientConfig config) {
-        init(config)
+    ProxyClient(HttpClient httpClient) {
+        if( httpClient.followRedirects()!= HttpClient.Redirect.NEVER )
+            throw new IllegalStateException("HttpClient instance should not follow redirected because they are directly managed by the proxy")
+        this.httpClient = httpClient
     }
 
     ContainerPath getRoute() { route }
@@ -74,14 +75,6 @@ class ProxyClient {
     ProxyClient withCredentials(RegistryCredentials credentials) {
         this.credentials = credentials
         return this
-    }
-
-    private void init(HttpClientConfig config) {
-        this.httpClient = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
-                .followRedirects(HttpClient.Redirect.NEVER)
-                .connectTimeout(config.connectTimeout)
-                .build()
     }
 
     private URI makeUri(String path) {

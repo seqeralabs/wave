@@ -1,5 +1,7 @@
 package io.seqera.wave.service.inspect
 
+import java.net.http.HttpClient
+
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.PackageScope
@@ -10,7 +12,6 @@ import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
-import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.ContainerAugmenter
 import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.core.RegistryProxyService
@@ -19,6 +20,7 @@ import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 /**
  * Implements containers inspect service
@@ -54,7 +56,8 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
     private RegistryProxyService proxyService
 
     @Inject
-    private HttpClientConfig httpClientConfig
+    @Named("never-redirects")
+    private HttpClient httpClient
 
     @Inject
     private RegistryAuthService loginService
@@ -176,7 +179,7 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
 
     private ProxyClient client0(ContainerPath route, RegistryCredentials creds) {
         final registry = lookupService.lookup(route.registry)
-        new ProxyClient(httpClientConfig)
+        new ProxyClient(httpClient)
                 .withRoute(route)
                 .withImage(route.image)
                 .withRegistry(registry)

@@ -1,5 +1,7 @@
 package io.seqera.wave.core
 
+import java.net.http.HttpClient
+
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.cache.annotation.Cacheable
@@ -11,7 +13,6 @@ import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
-import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.service.CredentialsService
@@ -19,6 +20,7 @@ import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 import static io.seqera.wave.proxy.ProxyClient.REDIRECT_CODES
 /**
@@ -54,7 +56,8 @@ class RegistryProxyService {
     private RegistryAuthService loginService
 
     @Inject
-    private HttpClientConfig httpClientConfig
+    @Named("never-redirects")
+    private HttpClient httpClient
 
     @Inject
     private PersistenceService persistenceService
@@ -68,7 +71,7 @@ class RegistryProxyService {
     private ProxyClient client(RoutePath route) {
         final registry = registryLookup.lookup(route.registry)
         final creds = getCredentials(route)
-        new ProxyClient(httpClientConfig)
+        new ProxyClient(httpClient)
                 .withRoute(route)
                 .withImage(route.image)
                 .withRegistry(registry)
