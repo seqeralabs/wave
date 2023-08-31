@@ -1,5 +1,8 @@
 # Wave changelog
-v0.40.0 -  26 Aug 2023 
+v0.40.1 - 30 Aug 2023 
+- Use HttpClient factory to create singleton instances [464c6b67]
+
+v0.40.0 - 26 Aug 2023 
 - Improve naming of build containers [ffd8785f]
 - Add cacheable annotation to RegistryCredentialsProviderImpl [9ebff597]
 
