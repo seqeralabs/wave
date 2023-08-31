@@ -200,6 +200,10 @@ class ProxyClient {
             traceResponse(response)
             return response
         }
+        catch (IOException e) {
+            // just re-throw it so that it's managed by the retry policy
+            throw e
+        }
         catch (Exception e) {
             throw new InternalServerException("Unexpected error on HTTP GET request '$uri'", e)
         }

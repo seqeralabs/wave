@@ -1,4 +1,7 @@
 # Wave changelog
+v0.40.2 - 31 Aug 2023
+- Fix IOException should be managed by a HTTP retry policy [383e5e98]
+
 v0.40.1 - 30 Aug 2023 
 - Use HttpClient factory to create singleton instances [464c6b67]
 
