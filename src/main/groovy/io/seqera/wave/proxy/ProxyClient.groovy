@@ -217,7 +217,7 @@ class ProxyClient {
         final listener = new EventListener<ExecutionAttemptedEvent>() {
             @Override
             void accept(ExecutionAttemptedEvent e) throws Throwable {
-                log.error("${errMessage} – Attempt: ${e.attemptCount}; Cause: ${e.lastFailure.message ?: e.lastFailure}")
+                log.error("${errMessage} – attempt: ${e.attemptCount}; cause: ${e.lastFailure.message ?: e.lastFailure}")
             }
         }
 
