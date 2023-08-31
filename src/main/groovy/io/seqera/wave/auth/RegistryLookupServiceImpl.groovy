@@ -4,7 +4,6 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.concurrent.TimeUnit
-import javax.annotation.PostConstruct
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
@@ -14,6 +13,7 @@ import groovy.util.logging.Slf4j
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.util.Retryable
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
 import static io.seqera.wave.WaveDefault.DOCKER_REGISTRY_1
@@ -32,6 +32,8 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
     @Inject
     private HttpClientConfig httpConfig
 
+    @Inject
+    @Named("follow-redirects")
     private HttpClient httpClient
 
     private CacheLoader<URI, RegistryAuth> loader = new CacheLoader<URI, RegistryAuth>() {
@@ -49,14 +51,6 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
                 .expireAfterAccess(1, TimeUnit.HOURS)
                 .build(loader)
 
-    @PostConstruct
-    private init() {
-        httpClient = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .connectTimeout(httpConfig.connectTimeout)
-                .build()
-    }
 
     protected RegistryAuth lookup0(URI endpoint) {
         final request = HttpRequest.newBuilder() .uri(endpoint) .GET() .build()

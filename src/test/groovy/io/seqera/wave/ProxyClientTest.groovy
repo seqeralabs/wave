@@ -4,15 +4,18 @@ import spock.lang.Requires
 import spock.lang.Shared
 import spock.lang.Specification
 
+import java.net.http.HttpClient
+
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.auth.RegistryAuth
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
-import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.proxy.ProxyClient
 import jakarta.inject.Inject
+import jakarta.inject.Named
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -27,7 +30,7 @@ class ProxyClientTest extends Specification {
     @Inject RegistryLookupService lookupService
     @Inject RegistryAuthService loginService
     @Inject RegistryCredentialsProvider credentialsProvider
-    @Inject HttpClientConfig config
+    @Inject @Named("never-redirects") HttpClient httpClient
 
     def 'should call target manifests on docker.io' () {
         given:
@@ -36,7 +39,7 @@ class ProxyClientTest extends Specification {
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
         and:
-        def proxy = new ProxyClient(config)
+        def proxy = new ProxyClient(httpClient)
                 .withImage(IMAGE)
                 .withRegistry(registry)
                 .withLoginService(loginService)
@@ -55,7 +58,7 @@ class ProxyClientTest extends Specification {
         def IMAGE = 'library/hello-world'
         def registry = lookupService.lookup(REG)
         and:
-        def proxy = new ProxyClient(config)
+        def proxy = new ProxyClient(httpClient)
                 .withImage(IMAGE)
                 .withRegistry(registry)
                 .withLoginService(loginService)
@@ -74,7 +77,7 @@ class ProxyClientTest extends Specification {
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
         and:
-        def proxy = new ProxyClient(config)
+        def proxy = new ProxyClient(httpClient)
                 .withImage(IMAGE)
                 .withRegistry(registry)
                 .withLoginService(loginService)
@@ -94,7 +97,7 @@ class ProxyClientTest extends Specification {
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
         and:
-        def proxy = new ProxyClient(config)
+        def proxy = new ProxyClient(httpClient)
                 .withImage(IMAGE)
                 .withRegistry(registry)
                 .withLoginService(loginService)
@@ -127,7 +130,7 @@ class ProxyClientTest extends Specification {
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
         and:
-        def proxy = new ProxyClient(config)
+        def proxy = new ProxyClient(httpClient)
                 .withImage(IMAGE)
                 .withRegistry(registry)
                 .withLoginService(loginService)
@@ -147,7 +150,7 @@ class ProxyClientTest extends Specification {
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
         and:
-        def proxy = new ProxyClient(config)
+        def proxy = new ProxyClient(httpClient)
                 .withImage(IMAGE)
                 .withRegistry(registry)
                 .withLoginService(loginService)
@@ -208,7 +211,7 @@ class ProxyClientTest extends Specification {
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
         and:
-        def proxy = new ProxyClient(config)
+        def proxy = new ProxyClient(httpClient)
                 .withImage(IMAGE)
                 .withRegistry(registry)
                 .withLoginService(loginService)
