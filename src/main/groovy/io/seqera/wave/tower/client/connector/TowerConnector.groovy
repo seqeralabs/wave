@@ -110,7 +110,7 @@ abstract class TowerConnector {
                     if( retryable && attempt.canAttempt() ) {
                         final delay = attempt.delay()
                         final exec = CompletableFuture.delayedExecutor(delay.toMillis(), TimeUnit.MILLISECONDS)
-                        log.debug "Unable to connect '$endpoint' - cause: ${err.message ?: err}; attempt=${attempt.current()}; await=${delay}; msgId=${msgId}"
+                        log.debug "Unable to connect '$endpoint' - cause: ${err.message ?: err}; attempt: ${attempt.current()}; await: ${delay}; msgId: ${msgId}"
                         return CompletableFuture.supplyAsync(()->sendAsync0(endpoint, uri, authorization, type, attempt.current()+1), exec)
                                 .thenCompose(Function.identity());
                     }
