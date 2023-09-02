@@ -49,7 +49,7 @@ class AppCondaOptsTest extends Specification {
         thrown(IllegalCliArgumentException)
     }
 
-    def 'should fail when passing both conda file and conmtainer file' () {
+    def 'should fail when passing both conda file and container file' () {
         given:
         def app = new App()
         String[] args = ["--conda-file", "foo", "--containerfile", "bar"]
@@ -75,7 +75,7 @@ class AppCondaOptsTest extends Specification {
         thrown(IllegalCliArgumentException)
     }
 
-    def 'should fail when passing both conda package and conmtainer file' () {
+    def 'should fail when passing both conda package and container file' () {
         given:
         def app = new App()
         String[] args = ["--conda-package", "foo", "--containerfile", "bar"]
