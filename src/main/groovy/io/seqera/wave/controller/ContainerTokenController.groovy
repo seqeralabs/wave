@@ -181,20 +181,20 @@ class ContainerTokenController {
         if( !defaultCacheRepo )
             throw new BadRequestException("Missing build cache repository attribute")
 
-        final dockerContent = new String(req.containerFile.decodeBase64())
+        final containerSpec = new String(req.containerFile.decodeBase64())
         final condaContent = req.condaFile ? new String(req.condaFile.decodeBase64()) : null as String
         final spackContent = req.spackFile ? new String(req.spackFile.decodeBase64()) : null as String
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
         final build = req.buildRepository ?: defaultBuildRepo
         final cache = req.cacheRepository ?: defaultCacheRepo
-        final configJson = dockerAuthService.credentialsConfigJson(dockerContent, build, cache, user?.id, req.towerWorkspaceId, req.towerAccessToken, req.towerEndpoint)
+        final configJson = dockerAuthService.credentialsConfigJson(containerSpec, build, cache, user?.id, req.towerWorkspaceId, req.towerAccessToken, req.towerEndpoint)
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
         final scanId = scanEnabled && format==DOCKER ? LongRndKey.rndHex() : null
         // create a unique digest to identify the request
         return new BuildRequest(
-                (spackContent ? prependBuilderTemplate(dockerContent,format) : dockerContent),
+                (spackContent ? prependBuilderTemplate(containerSpec,format) : containerSpec),
                 Path.of(workspace),
                 build,
                 condaContent,

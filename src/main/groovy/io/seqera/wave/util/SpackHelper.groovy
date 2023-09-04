@@ -21,11 +21,16 @@ class SpackHelper {
                 .getResourceAsStream('/io/seqera/wave/spack/spack-builder-singularityfile.txt')
                 .getText()
     }
+
     static String prependBuilderTemplate(String dockerContent, BuildFormat buildFormat) {
         if(buildFormat == BuildFormat.SINGULARITY){
             return builderSingularityTemplate() + dockerContent
         }
-        return builderDockerTemplate() + dockerContent
+        else if( buildFormat == BuildFormat.DOCKER ) {
+            return builderDockerTemplate() + dockerContent
+        }
+        else
+            throw new IllegalStateException("Unexpected build format: $buildFormat")
     }
 
     static String toSpackArch(ContainerPlatform platform) {
