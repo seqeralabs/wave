@@ -2,14 +2,15 @@ Bootstrap: docker
 From: {{spack_builder_image}}
 Stage: build
 
+%files
+    {{wave_context_dir}}/spack.yaml /opt/spack-env/spack.yaml
+
 %post
     # Install dependencies
     apt-get update && \
     apt-get install -y build-essential wget
 
     # Copy and modify spack.yaml
-    mkdir -p /opt/spack-env
-    cp {{wave_context_dir}}/spack.yaml /opt/spack-env/spack.yaml
     sed -i -e 's;compilers:;compilers::;' \
            -e 's;^ *flags: *{};    flags:\n      cflags: -O3\n      cxxflags: -O3\n      fflags: -O3;' \
            /root/.spack/linux/compilers.yaml
