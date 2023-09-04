@@ -1,6 +1,7 @@
 # Launch backend server
 [ "$WAVE_JVM_OPTS" ] && echo "Detected WAVE_JVM_OPTS=$WAVE_JVM_OPTS"
 exec java \
+  --enable-preview \
   -Dfile.encoding=UTF-8 \
   -Dcom.sun.security.enableAIAcaIssuers=true \
   --add-opens java.base/java.lang=ALL-UNNAMED \
