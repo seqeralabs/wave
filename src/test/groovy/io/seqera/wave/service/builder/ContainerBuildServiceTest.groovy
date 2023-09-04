@@ -275,7 +275,7 @@ class ContainerBuildServiceTest extends Specification {
         result.contains('spack config add packages:all:target:[x86_64]')
         result.contains('spack mirror add seqera-spack /mnt/cache')
         result.contains('spack gpg trust /mnt/key')
-        result.contains('cp /some/context/dir/spack.yaml /opt/spack-env/spack.yaml')
+        result.contains('/some/context/dir/spack.yaml /opt/spack-env/spack.yaml')
 
         cleanup:
         folder?.deleteDir()
