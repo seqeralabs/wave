@@ -27,7 +27,6 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.MutableHttpResponse
 import io.micronaut.http.annotation.Filter
-import io.micronaut.http.filter.FilterOrderProvider
 import io.micronaut.http.filter.HttpServerFilter
 import io.micronaut.http.filter.ServerFilterChain
 import io.seqera.wave.exchange.ErrorResponse
@@ -55,7 +54,7 @@ import reactor.core.publisher.Flux
 @Filter("/**")
 @Requires(property = 'rate-limit.httpRequest')
 @Context
-class RateLimiterFilter implements HttpServerFilter, FilterOrderProvider {
+class RateLimiterFilter implements HttpServerFilter {
 
     public final static int ORDER = -50;
 
