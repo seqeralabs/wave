@@ -81,7 +81,7 @@ class BuildStrategyTest extends Specification {
         cmd == [
                 "sh",
                 "-c",
-                "singularity build -B /work/foo/c168dba125e28777/context:/work/foo/c168dba125e28777/context image.sif /work/foo/c168dba125e28777/Containerfile  && singularity push image.sif oras://quay.io/wave:c168dba125e28777"
+                "singularity build -B /work/foo/c168dba125e28777/context:/work/foo/c168dba125e28777/context image.sif /work/foo/c168dba125e28777/Containerfile && singularity push image.sif oras://quay.io/wave:c168dba125e28777"
             ]
     }
 
