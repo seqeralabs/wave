@@ -9,7 +9,7 @@ Stage: build
 
     # Copy and modify spack.yaml
     mkdir -p /opt/spack-env
-    cp /path/to/spack.yaml /opt/spack-env/spack.yaml
+    cp {{wave_context_dir}}/spack.yaml /opt/spack-env/spack.yaml
     sed -i -e 's;compilers:;compilers::;' \
            -e 's;^ *flags: *{};    flags:\n      cflags: -O3\n      cxxflags: -O3\n      fflags: -O3;' \
            /root/.spack/linux/compilers.yaml
