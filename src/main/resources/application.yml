@@ -53,6 +53,9 @@ wave:
   scan:
     image:
       name: aquasec/trivy:0.43.0
+  thread:
+    virtual:
+      enable: true
 ---
 jackson:
   serialization:
