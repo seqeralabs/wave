@@ -16,6 +16,7 @@ Stage: build
            /root/.spack/linux/compilers.yaml
 
     # Set up Spack environment
+    export PATH:/opt/spack/bin:$PATH
     cd /opt/spack-env
     spack env activate .
     spack config add config:install_tree:/opt/software
