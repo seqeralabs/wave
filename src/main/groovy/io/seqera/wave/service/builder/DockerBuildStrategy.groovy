@@ -138,7 +138,7 @@ class DockerBuildStrategy extends BuildStrategy {
 
         if(spackConfig.secretMountPath){
             wrapper.add('-v')
-            wrapper.add("$spackConfig.secretMountPath:$spackConfig.secretMountPath")
+            wrapper.add("$spackConfig.secretMountPath:$spackConfig.secretMountPath".toString())
         }
 
             wrapper.add('-v')
