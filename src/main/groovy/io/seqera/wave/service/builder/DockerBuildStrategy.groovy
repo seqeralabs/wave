@@ -135,7 +135,12 @@ class DockerBuildStrategy extends BuildStrategy {
         if( credsFile ) {
             wrapper.add('-v')
             wrapper.add("$credsFile:/root/.singularity/docker-config.json:ro".toString())
-            //
+
+        if(spackConfig.secretMountPath){
+            wrapper.add('-v')
+            wrapper.add("$spackConfig.secretMountPath:$spackConfig.secretMountPath")
+        }
+
             wrapper.add('-v')
             wrapper.add("${credsFile.resolveSibling('singularity-remote.yaml')}:/root/.singularity/remote.yaml:ro".toString())
         }

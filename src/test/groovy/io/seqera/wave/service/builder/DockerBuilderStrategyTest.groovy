@@ -138,6 +138,7 @@ class DockerBuilderStrategyTest extends Specification {
                 '--entrypoint', '',
                 '-v', '/work/foo/89fb83ce6ec8627b:/work/foo/89fb83ce6ec8627b',
                 '-v', '/work/creds.json:/root/.singularity/docker-config.json:ro',
+                '-v', '/opt/spack/key:/opt/spack/key',
                 '-v', '/work/singularity-remote.yaml:/root/.singularity/remote.yaml:ro',
                 '--platform', 'linux/amd64',
                 'quay.io/singularity/singularity:v3.11.4-slim',
