@@ -4,7 +4,7 @@ Stage: build
 
 %files
     {{wave_context_dir}}/spack.yaml /opt/spack-env/spack.yaml
-
+    {{spack_key_file}} {{spack_key_file}}
 %post
     # Install dependencies
     apt-get update && \
