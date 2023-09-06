@@ -39,7 +39,6 @@ import io.seqera.wave.api.SubmitContainerTokenRequest;
 import io.seqera.wave.api.SubmitContainerTokenResponse;
 import io.seqera.wave.config.CondaOpts;
 import io.seqera.wave.config.SpackOpts;
-import io.seqera.wave.util.DockerHelper;
 import io.seqera.wave.util.DockerIgnoreFilter;
 import io.seqera.wave.util.Packer;
 import io.seqera.wavelit.exception.BadClientResponseException;
@@ -57,6 +56,8 @@ import static io.seqera.wave.util.DockerHelper.condaFileToDockerFile;
 import static io.seqera.wave.util.DockerHelper.condaFileToSingularityFile;
 import static io.seqera.wave.util.DockerHelper.condaPackagesToDockerFile;
 import static io.seqera.wave.util.DockerHelper.condaPackagesToSingularityFile;
+import static io.seqera.wave.util.DockerHelper.spackFileToDockerFile;
+import static io.seqera.wave.util.DockerHelper.spackFileToSingularityFile;
 import static io.seqera.wave.util.DockerHelper.spackPackagesToSpackFile;
 import static io.seqera.wavelit.util.Checkers.isEmpty;
 import static io.seqera.wavelit.util.Checkers.isEnvVar;
@@ -530,7 +531,9 @@ public class App implements Runnable {
 
         if( !isEmpty(spackFile) || spackPackages!=null ) {
             final SpackOpts opts = new SpackOpts() .withCommands(spackRunCommands);
-            final String result = DockerHelper.spackFileToDockerFile(opts);
+            final String result = singularity
+                        ? spackFileToSingularityFile(opts)
+                        : spackFileToDockerFile(opts);
             return encodeStringBase64(result);
         }
 

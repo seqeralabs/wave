@@ -128,7 +128,10 @@ class AppSpackOptsTest extends Specification {
         and:
         def req = app.createRequest()
         then:
-        new String(req.containerFile.decodeBase64()).startsWith("# Runner image")
+        def spec = new String(req.containerFile.decodeBase64()).tokenize('\n')
+        spec[0] == '# Runner image'
+        spec[1] == 'FROM {{spack_runner_image}}'
+        spec[2] == 'COPY --from=builder /opt/spack-env /opt/spack-env'
 
         and:
         new String(req.spackFile.decodeBase64()) == '''\
@@ -146,7 +149,6 @@ class AppSpackOptsTest extends Specification {
                 "--spack-package", "bar",
                 "--spack-run-command", "RUN one",
                 "--spack-run-command", "RUN two",
-
         ]
 
         when:
@@ -162,6 +164,29 @@ class AppSpackOptsTest extends Specification {
         new String(req.spackFile.decodeBase64()) == '''\
                 spack:
                   specs: [foo, bar]
+                  concretizer: {unify: true, reuse: false}
+                '''.stripIndent(true)
+    }
+
+    def 'should create container file from spack package with singularity' () {
+        given:
+        def app = new App()
+        String[] args = ["--spack-package", "foo", "--singularity"]
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        and:
+        def req = app.createRequest()
+        then:
+        def spec = new String(req.containerFile.decodeBase64()).tokenize('\n')
+        spec[0] == 'Bootstrap: docker'
+        spec[1] == 'From: {{spack_runner_image}}'
+        spec[2] == 'stage: final'
+
+        and:
+        new String(req.spackFile.decodeBase64()) == '''\
+                spack:
+                  specs: [foo]
                   concretizer: {unify: true, reuse: false}
                 '''.stripIndent(true)
     }
