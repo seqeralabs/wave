@@ -2,7 +2,6 @@ package io.seqera.wave.auth
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.service.CredentialsService
@@ -44,7 +43,6 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
      *      if not credentials can be found
      */
     @Override
-    @Cacheable('cache-1min')
     RegistryCredentials getDefaultCredentials(String registry) {
         return getDefaultCredentials0(registry)
     }
@@ -78,7 +76,6 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
      *      if not credentials can be found
      */
     @Override
-    @Cacheable('20-sec')
     RegistryCredentials getUserCredentials(ContainerPath container, Long userId, Long workspaceId, String towerToken, String towerEndpoint) {
         if( !userId )
             throw new IllegalArgumentException("Missing required parameter userId -- Unable to retrieve credentials for container repository '$container'")
