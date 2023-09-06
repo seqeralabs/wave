@@ -48,5 +48,5 @@ Stage: build
     original_view=$( cd /opt ; ls -1d ._view/* )
     sed -i "s;/view/;/$original_view/;" /opt/spack-env/z10_spack_environment.sh
     echo "# Needed for Perl applications" >>/opt/spack-env/z10_spack_environment.sh
-    echo "export PERL5LIB=\$(eval ls -d /opt/._view/*/lib/5.*):\$PERL5LIB" >>/opt/spack-env/z10_spack_environment.sh
+    echo "export PERL5LIB=$(set +f; ls -d /opt/._view/*/lib/5.*):\$PERL5LIB" >>/opt/spack-env/z10_spack_environment.sh
     rm -rf /opt/view
