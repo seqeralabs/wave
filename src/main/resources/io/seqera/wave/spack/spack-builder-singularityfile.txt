@@ -16,7 +16,6 @@ Stage: build
     # Set up Spack environment
     export PATH=/opt/spack/bin:$PATH
     cd /opt/spack-env
-    #spack env create sifenv /opt/spack-env/spack.yaml
     spack env activate  --sh .
     spack config add config:install_tree:/opt/software
     spack config add concretizer:unify:true
