@@ -151,6 +151,15 @@ class DockerBuildStrategy extends BuildStrategy {
             wrapper.add("${credsFile.resolveSibling('singularity-remote.yaml')}:/root/.singularity/remote.yaml:ro".toString())
         }
 
+        if( spackConfig ) {
+            // secret file
+            wrapper.add('-v')
+            wrapper.add("${spackConfig.secretKeyFile}:${spackConfig.secretMountPath}:ro".toString())
+            // cache directory
+            wrapper.add('-v')
+            wrapper.add("${spackConfig.cacheDirectory}:${spackConfig.cacheMountPath}:rw".toString())
+        }
+
         if( platform ) {
             wrapper.add('--platform')
             wrapper.add(platform.toString())

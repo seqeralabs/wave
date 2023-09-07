@@ -133,12 +133,20 @@ class DockerBuilderStrategyTest extends Specification {
 
     def 'should get singularity build command' () {
         given:
-        def ctx = ApplicationContext.run()
+        def props = [
+                'wave.build.spack.cacheDirectory':'/host/spack/cache',
+                'wave.build.spack.cacheMountPath':'/opt/spack/cache',
+                'wave.build.spack.secretKeyFile':'/host/spack/key',
+                'wave.build.spack.secretMountPath':'/opt/spack/key'  ]
+        def ctx = ApplicationContext.run(props)
         def service = ctx.getBean(DockerBuildStrategy)
+        SpackConfig spackConfig = ctx.getBean(SpackConfig)
+        service.setSpackConfig(spackConfig)
         and:
         def work = Path.of('/work/foo')
         def creds = Path.of('/work/creds.json')
-        def req = new BuildRequest('from foo', work, 'repo', null, null, BuildFormat.SINGULARITY, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', null, null, "1.2.3.4", null)
+        def spackFile = '/work/spack.yaml'
+        def req = new BuildRequest('from foo', work, 'repo', null, spackFile, BuildFormat.SINGULARITY, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', null, null, "1.2.3.4", null)
         when:
         def cmd = service.buildCmd(req, creds)
         then:
@@ -147,14 +155,16 @@ class DockerBuilderStrategyTest extends Specification {
                 '--rm',
                 '--privileged',
                 '--entrypoint', '',
-                '-v', '/work/foo/89fb83ce6ec8627b:/work/foo/89fb83ce6ec8627b',
+                '-v', '/work/foo/d4869cc39b8d7d55:/work/foo/d4869cc39b8d7d55',
                 '-v', '/work/creds.json:/root/.singularity/docker-config.json:ro',
                 '-v', '/work/singularity-remote.yaml:/root/.singularity/remote.yaml:ro',
+                '-v', '/host/spack/key:/opt/spack/key:ro',
+                '-v', '/host/spack/cache:/opt/spack/cache:rw',
                 '--platform', 'linux/amd64',
                 'quay.io/singularity/singularity:v3.11.4-slim',
                 'sh',
                 '-c',
-                'singularity build image.sif /work/foo/89fb83ce6ec8627b/Containerfile && singularity push image.sif oras://repo:89fb83ce6ec8627b'
+                'singularity build image.sif /work/foo/d4869cc39b8d7d55/Containerfile && singularity push image.sif oras://repo:d4869cc39b8d7d55'
         ]
         
         cleanup:
