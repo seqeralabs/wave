@@ -7,9 +7,6 @@ Stage: build
     {{spack_key_file}} {{spack_key_file}}
 
 %post
-    # Install dependencies
-    apt-get update && \
-    apt-get install -y build-essential wget
 
     # Copy and modify spack.yaml
     sed -i -e 's;compilers:;compilers::;' \
@@ -19,8 +16,8 @@ Stage: build
     # Set up Spack environment
     export PATH=/opt/spack/bin:$PATH
     cd /opt/spack-env
-    . /opt/spack/share/spack/setup-env.sh
-    spack env activate .
+    #spack env create sifenv /opt/spack-env/spack.yaml
+    spack env activate  --sh .
     spack config add config:install_tree:/opt/software
     spack config add concretizer:unify:true
     spack config add concretizer:reuse:false
@@ -28,14 +25,13 @@ Stage: build
     echo "  view: /opt/view\n">> /opt/spack-env/spack.yaml
 
     # Install packages, clean afterward, finally strip binaries
-    cd /opt/spack-env
     spack gpg trust {{spack_key_file}}
     spack mirror add seqera-spack {{spack_cache_dir}}
     spack mirror add binary_mirror  https://binaries.spack.io/releases/v0.20
     spack buildcache keys --install --trust
-    spack env activate .
-    spack concretize -f
-    spack install --fail-fast
+    spack env activate --sh .
+    spack -e . concretize -f
+    spack --env . install
     spack gc -y
     find -L /opt/._view/* -type f -exec readlink -f '{}' \; | \
         xargs file -i | \
