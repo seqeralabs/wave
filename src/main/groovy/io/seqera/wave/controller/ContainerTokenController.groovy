@@ -1,3 +1,14 @@
+/*
+ *  Copyright (c) 2023, Seqera Labs.
+ *
+ *  This Source Code Form is subject to the terms of the Mozilla Public
+ *  License, v. 2.0. If a copy of the MPL was not distributed with this
+ *  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ *  This Source Code Form is "Incompatible With Secondary Licenses", as
+ *  defined by the Mozilla Public License, v. 2.0.
+ */
+
 package io.seqera.wave.controller
 
 import java.nio.file.Path
@@ -180,23 +191,21 @@ class ContainerTokenController {
             throw new BadRequestException("Missing build repository attribute")
         if( !defaultCacheRepo )
             throw new BadRequestException("Missing build cache repository attribute")
-        if( req.formatSingularity() && req.spackFile )
-            throw new BadRequestException("Spack based build is not supported when using Singularity image format")
 
-        final dockerContent = new String(req.containerFile.decodeBase64())
+        final containerSpec = new String(req.containerFile.decodeBase64())
         final condaContent = req.condaFile ? new String(req.condaFile.decodeBase64()) : null as String
         final spackContent = req.spackFile ? new String(req.spackFile.decodeBase64()) : null as String
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
         final build = req.buildRepository ?: defaultBuildRepo
         final cache = req.cacheRepository ?: defaultCacheRepo
-        final configJson = dockerAuthService.credentialsConfigJson(dockerContent, build, cache, user?.id, req.towerWorkspaceId, req.towerAccessToken, req.towerEndpoint)
+        final configJson = dockerAuthService.credentialsConfigJson(containerSpec, build, cache, user?.id, req.towerWorkspaceId, req.towerAccessToken, req.towerEndpoint)
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
         final scanId = scanEnabled && format==DOCKER ? LongRndKey.rndHex() : null
         // create a unique digest to identify the request
         return new BuildRequest(
-                (spackContent ? prependBuilderTemplate(dockerContent) : dockerContent),
+                (spackContent ? prependBuilderTemplate(containerSpec,format) : containerSpec),
                 Path.of(workspace),
                 build,
                 condaContent,

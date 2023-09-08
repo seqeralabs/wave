@@ -1,3 +1,14 @@
+/*
+ *  Copyright (c) 2023, Seqera Labs.
+ *
+ *  This Source Code Form is subject to the terms of the Mozilla Public
+ *  License, v. 2.0. If a copy of the MPL was not distributed with this
+ *  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ *  This Source Code Form is "Incompatible With Secondary Licenses", as
+ *  defined by the Mozilla Public License, v. 2.0.
+ */
+
 package io.seqera.wave.tower.client.connector
 
 import java.time.Duration
@@ -110,7 +121,7 @@ abstract class TowerConnector {
                     if( retryable && attempt.canAttempt() ) {
                         final delay = attempt.delay()
                         final exec = CompletableFuture.delayedExecutor(delay.toMillis(), TimeUnit.MILLISECONDS)
-                        log.debug "Unable to connect '$endpoint' - cause: ${err.message ?: err}; attempt=${attempt.current()}; await=${delay}; msgId=${msgId}"
+                        log.debug "Unable to connect '$endpoint' - cause: ${err.message ?: err}; attempt: ${attempt.current()}; await: ${delay}; msgId: ${msgId}"
                         return CompletableFuture.supplyAsync(()->sendAsync0(endpoint, uri, authorization, type, attempt.current()+1), exec)
                                 .thenCompose(Function.identity());
                     }

@@ -1,8 +1,20 @@
+/*
+ *  Copyright (c) 2023, Seqera Labs.
+ *
+ *  This Source Code Form is subject to the terms of the Mozilla Public
+ *  License, v. 2.0. If a copy of the MPL was not distributed with this
+ *  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ *  This Source Code Form is "Incompatible With Secondary Licenses", as
+ *  defined by the Mozilla Public License, v. 2.0.
+ */
+
 package io.seqera.wave.util
 
 import spock.lang.Specification
 
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.builder.BuildFormat
 
 /**
  *
@@ -12,13 +24,13 @@ class SpackHelperTest extends Specification {
 
     def 'should load builder template' () {
         expect:
-        SpackHelper.builderTemplate().startsWith('# Builder image')
+        SpackHelper.builderDockerTemplate().startsWith('# Builder image')
     }
 
     def 'should prepend builder template' () {
         expect:
-        SpackHelper.prependBuilderTemplate('foo').startsWith('# Builder image')
-        SpackHelper.prependBuilderTemplate('foo').endsWith('\nfoo')
+        SpackHelper.prependBuilderTemplate('foo', BuildFormat.DOCKER).startsWith('# Builder image')
+        SpackHelper.prependBuilderTemplate('foo', BuildFormat.SINGULARITY).endsWith('\nfoo')
     }
 
     def 'should map platform to spack arch' () {
