@@ -1,12 +1,12 @@
 /*
- * Copyright (c) 2019-2020, Seqera Labs.
+ *  Copyright (c) 2023, Seqera Labs.
  *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *  This Source Code Form is subject to the terms of the Mozilla Public
+ *  License, v. 2.0. If a copy of the MPL was not distributed with this
+ *  file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * This Source Code Form is "Incompatible With Secondary Licenses", as
- * defined by the Mozilla Public License, v. 2.0.
+ *  This Source Code Form is "Incompatible With Secondary Licenses", as
+ *  defined by the Mozilla Public License, v. 2.0.
  */
 
 package io.seqera.wave.filter
@@ -27,7 +27,6 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.MutableHttpResponse
 import io.micronaut.http.annotation.Filter
-import io.micronaut.http.filter.FilterOrderProvider
 import io.micronaut.http.filter.HttpServerFilter
 import io.micronaut.http.filter.ServerFilterChain
 import io.seqera.wave.exchange.ErrorResponse
@@ -55,7 +54,7 @@ import reactor.core.publisher.Flux
 @Filter("/**")
 @Requires(property = 'rate-limit.httpRequest')
 @Context
-class RateLimiterFilter implements HttpServerFilter, FilterOrderProvider {
+class RateLimiterFilter implements HttpServerFilter {
 
     public final static int ORDER = -50;
 
