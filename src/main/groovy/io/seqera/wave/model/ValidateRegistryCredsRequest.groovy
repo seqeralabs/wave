@@ -9,7 +9,7 @@
  *  defined by the Mozilla Public License, v. 2.0.
  */
 
-package io.seqera.wave.controllersssss
+package io.seqera.wave.controller
 
 import javax.validation.constraints.NotBlank
 
