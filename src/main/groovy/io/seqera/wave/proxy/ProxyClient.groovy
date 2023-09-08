@@ -1,3 +1,14 @@
+/*
+ *  Copyright (c) 2023, Seqera Labs.
+ *
+ *  This Source Code Form is subject to the terms of the Mozilla Public
+ *  License, v. 2.0. If a copy of the MPL was not distributed with this
+ *  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ *  This Source Code Form is "Incompatible With Secondary Licenses", as
+ *  defined by the Mozilla Public License, v. 2.0.
+ */
+
 package io.seqera.wave.proxy
 
 import java.net.http.HttpClient
@@ -200,6 +211,10 @@ class ProxyClient {
             traceResponse(response)
             return response
         }
+        catch (IOException e) {
+            // just re-throw it so that it's managed by the retry policy
+            throw e
+        }
         catch (Exception e) {
             throw new InternalServerException("Unexpected error on HTTP GET request '$uri'", e)
         }
@@ -213,7 +228,7 @@ class ProxyClient {
         final listener = new EventListener<ExecutionAttemptedEvent>() {
             @Override
             void accept(ExecutionAttemptedEvent e) throws Throwable {
-                log.error("${errMessage} – Attempt: ${e.attemptCount}; Cause: ${e.lastFailure.message ?: e.lastFailure}")
+                log.error("${errMessage} – attempt: ${e.attemptCount}; cause: ${e.lastFailure.message ?: e.lastFailure}")
             }
         }
 

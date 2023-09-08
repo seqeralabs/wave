@@ -1,4 +1,12 @@
 # Wave changelog
+v0.40.3 - 2 Sep 2023
+- Normalise err messages [2c0884c4]
+- Bump wave-utils@0.7.2 [6924139e]
+- Bump corretto-17.0.8-jemalloc as base image [f73309b4]
+
+v0.40.2 - 31 Aug 2023
+- Fix IOException should be managed by a HTTP retry policy [383e5e98]
+
 v0.40.1 - 30 Aug 2023 
 - Use HttpClient factory to create singleton instances [464c6b67]
 
