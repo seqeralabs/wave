@@ -15,6 +15,8 @@ that it can be used in your Docker (replace-with-your-own-fav-container-engine) 
 - Build container images on-demand starting one or more [Spack](https://spack.io/) packages;
 - Build container images for a specified target platform (currently `linux/amd64` and `linux/arm64`);
 - Push and cache built containers to a user provider container repository;
+- Build Singularity native containers both using a Singularity spec file, Conda package(s) and Spack package(s)
+- Push Singularity native container images to OCI compliant registries
 
 ### Get started
 
@@ -101,6 +103,11 @@ docker run --platform linux/arm64 $(wavelit --conda-package fastp --platform lin
 docker run $(wavelit --spack-package cowsay) sh -c 'cowsay Hello world!'
 ```
 
+### Build a Singularity container using a Conda package and pushing to a OCI registry 
+
+```bash
+singularity exec $(wavelit --singularity --conda-package bamtools=2.5.2 --build-repo docker.io/user/repo --freeze --await) bamtools --version
+```
 
 ### Development
 
