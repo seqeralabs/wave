@@ -31,6 +31,7 @@ Stage: build
     spack env activate --sh .
     spack -e . concretize -f
     spack --env . install
+    spack buildcache push -r {{spack_cache_dir}}
     spack gc -y
     find -L /opt/._view/* -type f -exec readlink -f '{}' \; | \
         xargs file -i | \
