@@ -31,18 +31,11 @@ import jakarta.inject.Singleton
 class SpackConfig {
 
     /**
-     * The host path where where Spack cached binaries are stored
+     * The s3 bucket where Spack cached binaries are stored
      */
     @Nullable
-    @Value('${wave.build.spack.cacheDirectory}')
-    private String cacheDirectory
-
-    /**
-     * The container mount path where Spack cached binaries are stored
-     */
-    @Nullable
-    @Value('${wave.build.spack.cacheMountPath}')
-    private String cacheMountPath
+    @Value('${wave.build.spack.cacheS3Bucket}')
+    private String cacheS3Bucket
 
     /**
      * The host path where the GPG key required by the Spack "buildcache" is located
@@ -70,16 +63,10 @@ class SpackConfig {
     @Value('${wave.build.spack.runnerImage:`ubuntu:22.04`}')
     private String runnerImage
 
-    Path getCacheDirectory() {
-        if( !cacheDirectory )
-            throw new IllegalStateException("Missing Spack cacheDirectory configuration setting")
-        return Path.of(cacheDirectory).toAbsolutePath().normalize()
-    }
-
-    String getCacheMountPath() {
-        if( !cacheMountPath )
+    String getCacheS3Bucket() {
+        if( !cacheS3Bucket )
             throw new IllegalStateException("Missing Spack cacheMountPath configuration setting")
-        return cacheMountPath
+        return cacheS3Bucket
     }
 
     Path getSecretKeyFile() {

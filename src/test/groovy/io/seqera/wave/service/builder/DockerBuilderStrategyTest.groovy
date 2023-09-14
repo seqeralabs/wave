@@ -69,7 +69,6 @@ class DockerBuilderStrategyTest extends Specification {
                 '-v', '/work/foo:/work/foo',
                 '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
                 '-v', '/host/spack/key:/opt/spack/key:ro',
-                '-v', '/host/spack/cache:/opt/spack/cache:rw',
                 'gcr.io/kaniko-project/executor:v1.12.1']
 
 
@@ -159,7 +158,6 @@ class DockerBuilderStrategyTest extends Specification {
                 '-v', '/work/creds.json:/root/.singularity/docker-config.json:ro',
                 '-v', '/work/singularity-remote.yaml:/root/.singularity/remote.yaml:ro',
                 '-v', '/host/spack/key:/opt/spack/key:ro',
-                '-v', '/host/spack/cache:/opt/spack/cache:rw',
                 '--platform', 'linux/amd64',
                 'quay.io/singularity/singularity:v3.11.4-slim',
                 'sh',

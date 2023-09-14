@@ -345,7 +345,6 @@ class K8sServiceImpl implements K8sService {
         }
 
         if( spackConfig ) {
-            mounts.add(mountSpackCacheDir(spackConfig.cacheDirectory, storageMountPath, spackConfig.cacheMountPath))
             mounts.add(mountSpackSecretFile(spackConfig.secretKeyFile, storageMountPath, spackConfig.secretMountPath))
         }
 
