@@ -11,6 +11,9 @@
 
 package io.seqera.wave.storage;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
 
 /**
@@ -21,5 +24,9 @@ public interface DigestStore extends Serializable {
     byte[] getBytes();
     String getMediaType();
     String getDigest();
+    Integer getSize();
 
+    default InputStream openStream() throws IOException {
+        return new ByteArrayInputStream(getBytes());
+    }
 }

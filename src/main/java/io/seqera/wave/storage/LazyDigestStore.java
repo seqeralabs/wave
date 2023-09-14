@@ -12,6 +12,7 @@
 package io.seqera.wave.storage;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 import io.seqera.wave.storage.reader.ContentReader;
 
@@ -25,11 +26,13 @@ public class LazyDigestStore implements DigestStore{
     final private String mediaType;
     final private String digest;
     final private ContentReader contentReader;
+    final private Integer size;
 
-    public LazyDigestStore(ContentReader content, String mediaType, String digest) {
+    public LazyDigestStore(ContentReader content, String mediaType, String digest, int size) {
         this.contentReader = content;
         this.mediaType = mediaType;
         this.digest = digest;
+        this.size = size;
     }
 
     @Override
@@ -43,6 +46,11 @@ public class LazyDigestStore implements DigestStore{
     }
 
     @Override
+    public InputStream openStream() throws IOException {
+        return contentReader.openStream();
+    }
+
+    @Override
     public String getMediaType() {
         return mediaType;
     }
@@ -52,7 +60,11 @@ public class LazyDigestStore implements DigestStore{
         return digest;
     }
 
+    public Integer getSize() {
+        return size;
+    }
+
     public String toString() {
-        return String.format("LazyDigestStore(mediaType=%s; digest=%s; reader=%s)", mediaType, digest, contentReader.toString());
+        return String.format("LazyDigestStore(mediaType=%s; digest=%s; size=%d; reader=%s)", mediaType, digest, size, contentReader.toString());
     }
 }

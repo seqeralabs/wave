@@ -260,7 +260,7 @@ class ContainerAugmenter {
         final size = layer.gzipSize
         final String path = "$client.registry.name/v2/$image/blobs/$digest"
         final content = ContentReaderFactory.of(location)
-        storage.saveBlob(path, content, type, digest)
+        storage.saveBlob(path, content, type, digest, size)
 
         final result = new LinkedHashMap(10)
         result."mediaType" = type
