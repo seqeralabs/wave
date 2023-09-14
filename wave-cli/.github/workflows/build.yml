@@ -14,6 +14,9 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: macos-latest
+            codesign: true
     steps:
       - uses: actions/checkout@v3
 
@@ -37,6 +40,34 @@ jobs:
         with:
           name: nativeCompile-${{ matrix.os }}
           path: ./app/build/native/nativeCompile
+
+      - name: Codesign binary
+        if: ${{ matrix.codesign  && contains(github.event.head_commit.message, '[release]') && github.event.ref=='refs/heads/master'}}
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+          MACOS_CERTIFICATE_NAME: ${{ secrets.MACOS_CERTIFICATE_NAME }}
+          MACOS_CI_KEYCHAIN_PWD: ${{ secrets.MACOS_CI_KEYCHAIN_PWD }}
+        run: |
+          echo $MACOS_CERTIFICATE | base64 --decode > certificate.p12
+          security create-keychain -p "$MACOS_CI_KEYCHAIN_PWD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$MACOS_CI_KEYCHAIN_PWD" build.keychain
+          security import certificate.p12 -k build.keychain -P "$MACOS_CERTIFICATE_PWD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$MACOS_CI_KEYCHAIN_PWD" build.keychain
+          /usr/bin/codesign --force -s "$MACOS_CERTIFICATE_NAME" --options runtime ./app/build/native/nativeCompile/wavelit -v
+
+      - name: Notarize binary
+        if: ${{ matrix.codesign && contains(github.event.head_commit.message, '[release]') && github.event.ref=='refs/heads/master'}}
+        env:
+          MACOS_AC_API_CERT: ${{ secrets.MACOS_AC_API_CERT }}
+          MACOS_AC_API_ISSUER_ID: ${{ secrets.MACOS_AC_API_ISSUER_ID }}
+          MACOS_AC_API_KEY_ID: ${{ secrets.MACOS_AC_API_KEY_ID }}
+        run: |
+          echo $MACOS_AC_API_CERT | base64 --decode > AuthKey.p8
+          xcrun notarytool store-credentials "notarytool-profile" -k AuthKey.p8 -d "$MACOS_AC_API_KEY_ID" -i "$MACOS_AC_API_ISSUER_ID"
+          ditto -c -k --keepParent "./app/build/native/nativeCompile/wavelit" "notarization.zip"
+          xcrun notarytool submit "notarization.zip" --keychain-profile "notarytool-profile" --wait
 
       - name: Publish tests report
         if: failure()
