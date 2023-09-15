@@ -25,7 +25,7 @@ class DigestStoreEncoderTest extends Specification {
         given:
         def CONTENT = 'Hello world!'
         and:
-        def store = new ZippedDigestStore(CONTENT.bytes, 'text', 'sha256:122345567890')
+        def store = new ZippedDigestStore(CONTENT.bytes, 'text', 'sha256:122345567890', 1000)
 
         when:
         def encoded = DigestStoreEncoder.encode(store)
@@ -36,7 +36,7 @@ class DigestStoreEncoderTest extends Specification {
         decoded.bytes == CONTENT.bytes
         decoded.digest == 'sha256:122345567890'
         decoded.mediaType == 'text'
-
+        decoded.size == 1000
     }
 
     def 'should encode and decode lazy digest store' () {
@@ -45,7 +45,7 @@ class DigestStoreEncoderTest extends Specification {
         def data = new DataContentReader(CONTENT.bytes.encodeBase64().toString())
 
         and:
-        def store = new LazyDigestStore(data, 'text', 'sha256:122345567890')
+        def store = new LazyDigestStore(data, 'text', 'sha256:122345567890', 2000)
 
         when:
         def encoded = DigestStoreEncoder.encode(store)
@@ -56,6 +56,7 @@ class DigestStoreEncoderTest extends Specification {
         decode.bytes == CONTENT.bytes
         decode.digest == 'sha256:122345567890'
         decode.mediaType == 'text'
+        decode.size == 2000
 
     }
 }
