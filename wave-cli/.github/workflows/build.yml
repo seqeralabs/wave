@@ -35,12 +35,6 @@ jobs:
         run: |
           ./gradlew app:nativeCompile
 
-      - name: Upload binary
-        uses: actions/upload-artifact@v3
-        with:
-          name: nativeCompile-${{ matrix.os }}
-          path: ./app/build/native/nativeCompile
-
       - name: Codesign binary
         if: ${{ matrix.codesign  && contains(github.event.head_commit.message, '[release]') && github.event.ref=='refs/heads/master'}}
         env:
@@ -68,6 +62,12 @@ jobs:
           xcrun notarytool store-credentials "notarytool-profile" -k AuthKey.p8 -d "$MACOS_AC_API_KEY_ID" -i "$MACOS_AC_API_ISSUER_ID"
           ditto -c -k --keepParent "./app/build/native/nativeCompile/wavelit" "notarization.zip"
           xcrun notarytool submit "notarization.zip" --keychain-profile "notarytool-profile" --wait
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: nativeCompile-${{ matrix.os }}
+          path: ./app/build/native/nativeCompile
 
       - name: Publish tests report
         if: failure()
