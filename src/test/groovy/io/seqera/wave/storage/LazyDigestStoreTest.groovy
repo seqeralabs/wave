@@ -13,7 +13,6 @@ package io.seqera.wave.storage
 
 import spock.lang.Specification
 
-import io.seqera.wave.storage.LazyDigestStore
 import io.seqera.wave.storage.reader.DataContentReader
 /**
  *
@@ -28,12 +27,12 @@ class LazyDigestStoreTest extends Specification {
         def data = new DataContentReader(CONTENT.bytes.encodeBase64().toString())
 
         when:
-        def digest = new LazyDigestStore(data, 'text', 'sha256:122345567890')
+        def digest = new LazyDigestStore(data, 'text', 'sha256:122345567890', 1000)
         then:
         digest.bytes == CONTENT.bytes
         digest.digest == 'sha256:122345567890'
         digest.mediaType == 'text'
-
+        digest.size == 1000
     }
 
 }

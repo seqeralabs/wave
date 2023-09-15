@@ -108,6 +108,10 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
                     String getDigest() {
                         return 'Hi'
                     }
+
+                    Integer getSize() {
+                        return 100
+                    }
                 })
             }
         }
