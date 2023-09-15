@@ -95,7 +95,7 @@ class MoshiEncodingStrategyTest extends Specification {
         given:
         def encoder = new MoshiEncodeStrategy<DigestStore>() { }
         and:
-        def data = new LazyDigestStore(new DataContentReader('FOO'.bytes.encodeBase64().toString()), 'media', '12345')
+        def data = new LazyDigestStore(new DataContentReader('FOO'.bytes.encodeBase64().toString()), 'media', '12345', 1000)
 
         when:
         def json = encoder.encode(data)
@@ -109,6 +109,7 @@ class MoshiEncodingStrategyTest extends Specification {
         copy.bytes == data.bytes
         copy.digest == data.digest
         copy.mediaType == data.mediaType
+        copy.size == 1000
     }
 
     def 'should encode and decode gzip content reader' () {
@@ -118,7 +119,8 @@ class MoshiEncodingStrategyTest extends Specification {
         def data = new LazyDigestStore(
                 GzipContentReader.fromPlainString('Hello world'),
                 'text/json',
-                '12345')
+                '12345',
+                2000 )
 
         when:
         def json = encoder.encode(data)
@@ -132,6 +134,7 @@ class MoshiEncodingStrategyTest extends Specification {
         copy.bytes == data.bytes
         copy.digest == data.digest
         copy.mediaType == data.mediaType
+        copy.size == data.size
     }
 
     def 'should encode and decode zipped digest store' () {
@@ -139,7 +142,7 @@ class MoshiEncodingStrategyTest extends Specification {
         def DATA = 'Hello wold!'
         def encoder = new MoshiEncodeStrategy<DigestStore>() { }
         and:
-        def data = new ZippedDigestStore(DATA.bytes, 'my/media', '12345')
+        def data = new ZippedDigestStore(DATA.bytes, 'my/media', '12345', 2000)
 
         when:
         def json = encoder.encode(data)
@@ -153,6 +156,7 @@ class MoshiEncodingStrategyTest extends Specification {
         copy.bytes == data.bytes
         copy.digest == data.digest
         copy.mediaType == data.mediaType
+        copy.size == data.size
         and:
         new String(copy.bytes) == DATA
     }

@@ -27,10 +27,13 @@ public class ZippedDigestStore implements DigestStore{
     final private String mediaType;
     final private String digest;
 
-    public ZippedDigestStore(byte[] bytes, String mediaType, String digest) {
+    final Integer size;
+
+    public ZippedDigestStore(byte[] bytes, String mediaType, String digest, int size) {
         this.bytes = ZipUtils.compress(bytes);
         this.mediaType = mediaType;
         this.digest = digest;
+        this.size = size;
     }
 
     public byte[] getBytes() {
@@ -45,7 +48,11 @@ public class ZippedDigestStore implements DigestStore{
         return digest;
     }
 
+    public Integer getSize() {
+        return size;
+    }
+
     public String toString() {
-        return String.format("ZippedDigestStore(mediaType=%s; digest=%s; bytesBase64=%s)", mediaType, digest, new String(Base64.getEncoder().encode(bytes)));
+        return String.format("ZippedDigestStore(mediaType=%s; digest=%s; size=%d; bytesBase64=%s)", mediaType, digest, size, new String(Base64.getEncoder().encode(bytes)));
     }
 }
