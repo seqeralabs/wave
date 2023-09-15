@@ -260,14 +260,30 @@ class RegistryProxyController {
     }
 
     MutableHttpResponse<?> fromCache(DigestStore entry) {
-        final resp = entry.bytes
-        // compose response
+        // compose the response
+        def resp
+        def size = entry.size
+        // if the size is not available, read all bytes
+        // this should only be needed until all cached DigestStore entries - without a size attribute - are evicted
+        // after the transitory period, it should be assumed size is always not null and this snippet can be removed
+        if( size == null ) {
+            resp = entry.getBytes()
+            size = resp.size()
+            log.debug "Missing digest-store size - reading all bytes - size=$size"
+        }
+        else {
+            log.debug "Using digest-store stream - size=$size"
+            resp = entry.openStream()
+        }
+
+
         Map<CharSequence, CharSequence> headers = Map.of(
-                        "Content-Length", resp.length.toString(),
+                        "Content-Length", String.valueOf(size),
                         "Content-Type", entry.mediaType,
                         "docker-content-digest", entry.digest,
                         "etag", entry.digest,
                         "docker-distribution-api-version", "registry/2.0") as Map<CharSequence, CharSequence>
+
         HttpResponse
                 .ok(resp)
                 .headers(headers)
