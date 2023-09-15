@@ -62,7 +62,8 @@ class ManifestCacheStore extends AbstractCacheStore<DigestStore> implements Stor
     @Override
     DigestStore saveManifest(String path, String manifest, String type, String digest) {
         log.trace "Save Manifest [size: ${manifest.size()}] ==> $path"
-        final result = new ZippedDigestStore(manifest.getBytes(), type, digest);
+        final bytes = manifest.getBytes()
+        final result = new ZippedDigestStore(bytes, type, digest, bytes.length);
         this.put(path, result)
         return result;
     }
@@ -83,15 +84,15 @@ class ManifestCacheStore extends AbstractCacheStore<DigestStore> implements Stor
     @Override
     DigestStore saveBlob(String path, byte[] content, String type, String digest) {
         log.trace "Save Blob [size: ${content.size()}] ==> $path"
-        final result = new ZippedDigestStore(content, type, digest)
+        final result = new ZippedDigestStore(content, type, digest, content.length)
         this.put(path, result)
         return result
     }
 
     @Override
-    DigestStore saveBlob(String path, ContentReader content, String type, String digest) {
+    DigestStore saveBlob(String path, ContentReader content, String type, String digest, int size) {
         log.trace "Save Blob ==> $path"
-        final result = new LazyDigestStore(content, type, digest)
+        final result = new LazyDigestStore(content, type, digest, size)
         this.put(path, result)
         return result
     }

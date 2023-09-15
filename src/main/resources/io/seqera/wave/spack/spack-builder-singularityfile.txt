@@ -16,7 +16,6 @@ Stage: build
     # Set up Spack environment
     export PATH=/opt/spack/bin:$PATH
     cd /opt/spack-env
-    spack env activate  --sh .
     spack config add config:install_tree:/opt/software
     spack config add concretizer:unify:true
     spack config add concretizer:reuse:false
@@ -28,7 +27,6 @@ Stage: build
     spack mirror add seqera-spack {{spack_cache_dir}}
     spack mirror add binary_mirror  https://binaries.spack.io/releases/v0.20
     spack buildcache keys --install --trust
-    spack env activate --sh .
     spack -e . concretize -f
     spack --env . install
     spack gc -y
