@@ -11,7 +11,6 @@
 
 package io.seqera.wave.storage
 
-import io.seqera.wave.storage.ZippedDigestStore
 import spock.lang.Specification
 /**
  *
@@ -24,12 +23,12 @@ class ZippedDigestStoreTest extends Specification {
         def CONTENT = 'Hello world!'
 
         when:
-        def digest = new ZippedDigestStore(CONTENT.bytes, 'text', 'sha256:122345567890')
+        def digest = new ZippedDigestStore(CONTENT.bytes, 'text', 'sha256:122345567890', 3000)
         then:
         digest.bytes == CONTENT.bytes
         digest.digest == 'sha256:122345567890'
         digest.mediaType == 'text'
-
+        digest.size == 3000
     }
 
 }
