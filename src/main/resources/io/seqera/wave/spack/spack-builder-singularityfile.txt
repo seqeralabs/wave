@@ -7,7 +7,6 @@ Stage: build
     {{spack_key_file}} {{spack_key_file}}
 
 %post
-
     # Copy and modify spack.yaml
     sed -i -e 's;compilers:;compilers::;' \
            -e 's;^ *flags: *{};    flags:\n      cflags: -O3\n      cxxflags: -O3\n      fflags: -O3;' \

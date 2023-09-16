@@ -285,8 +285,6 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'build-claim',
                 'wave.build.k8s.storage.mountPath': '/build',
-                'wave.build.spack.cacheDirectory':'/build/host/spack/cache',
-                'wave.build.spack.cacheMountPath':'/opt/container/spack/cache',
                 'wave.build.spack.secretKeyFile':'/build/host/spack/key',
                 'wave.build.spack.secretMountPath':'/opt/container/spack/key'
         ]

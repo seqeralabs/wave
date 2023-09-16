@@ -30,8 +30,6 @@ class DockerBuilderStrategyTest extends Specification {
     def 'should get docker command' () {
         given:
         def props = [
-                'wave.build.spack.cacheDirectory':'/host/spack/cache',
-                'wave.build.spack.cacheMountPath':'/opt/spack/cache',
                 'wave.build.spack.secretKeyFile':'/host/spack/key',
                 'wave.build.spack.secretMountPath':'/opt/spack/key'  ]
         def ctx = ApplicationContext.run(props)
@@ -133,8 +131,6 @@ class DockerBuilderStrategyTest extends Specification {
     def 'should get singularity build command' () {
         given:
         def props = [
-                'wave.build.spack.cacheDirectory':'/host/spack/cache',
-                'wave.build.spack.cacheMountPath':'/opt/spack/cache',
                 'wave.build.spack.secretKeyFile':'/host/spack/key',
                 'wave.build.spack.secretMountPath':'/opt/spack/key'  ]
         def ctx = ApplicationContext.run(props)
