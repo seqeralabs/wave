@@ -23,7 +23,7 @@ class SpackHelper {
 
     static String builderDockerTemplate() {
         SpackHelper.class
-                .getResourceAsStream('/io/seqera/wave/spack/spack-builder-containerfile.txt')
+                .getResourceAsStream('/io/seqera/wave/spack/spack-builder-dockerfile.txt')
                 .getText()
     }
 
