@@ -1,4 +1,16 @@
 # Wave changelog
+v0.41.1 - 14 Sep 2023
+- Add Stream of digest payload to avoid OOM [15dc58a2]
+- removed unwanted lines (#293) [3bc90a1a]
+
+v0.41.0 - 7 Sep 2023
+- Bump wave-utils@0.7.4 [7ecd1008]
+- Add support for Spack packages to Singularity builds (#288) [955a7448]
+- Bump MPL 2.0 license [8f4677d4]
+- Revert "Add cacheable annotation to RegistryCredentialsProviderImpl" [db983345]
+- Improve build logging [e11a222d]
+- Remove deprecated use FilterOrderProvider [08d8e2e8]
+
 v0.40.3 - 2 Sep 2023
 - Normalise err messages [2c0884c4]
 - Bump wave-utils@0.7.2 [6924139e]
