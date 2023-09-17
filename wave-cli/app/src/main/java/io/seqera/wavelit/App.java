@@ -436,10 +436,10 @@ public class App implements Runnable {
             result = BuildContext.of(packer.layer(Path.of(contextDir)));
         }
         catch (IOException e) {
-            throw new RuntimeException("Unexpected error while preparing build context - cause: "+e.getMessage(), e);
+            throw new IllegalCliArgumentException("Unexpected error while preparing build context - cause: "+e.getMessage(), e);
         }
         if( result.gzipSize > 5*_1MB )
-            throw new RuntimeException("Build context cannot be bigger of 5 MiB");
+            throw new IllegalCliArgumentException("Build context cannot be bigger of 5 MiB");
         return result;
     }
 
