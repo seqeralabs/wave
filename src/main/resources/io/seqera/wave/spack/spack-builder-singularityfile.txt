@@ -22,7 +22,7 @@ Stage: build
     echo "  view: /opt/view\n">> /opt/spack-env/spack.yaml
 
     # Install packages, clean afterward, finally strip binaries
-    fingerprint="$(spack gpg trust {{spack_key_file}} 2>/dev/null| sed -nr "s/^gpg: key ([0-9A-F]{16}): secret key imported$/\1/p")"
+    fingerprint="$(spack gpg trust {{spack_key_file}} 2>&1| sed -nr "s/^gpg: key ([0-9A-F]{16}): secret key imported$/\1/p")"
     spack mirror add seqera-spack {{spack_cache_s3}}
     spack mirror add binary_mirror  https://binaries.spack.io/releases/v0.20
     spack buildcache keys --install --trust

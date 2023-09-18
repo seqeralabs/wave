@@ -254,7 +254,7 @@ class ContainerBuildServiceTest extends Specification {
         result.contains('FROM spack-builder:2.0 as builder')
         result.contains('spack config add packages:all:target:[x86_64]')
         result.contains('spack mirror add seqera-spack s3://bucket/cache')
-        result.contains('fingerprint="$(spack gpg trust /mnt/key |& sed -nr \'s/^gpg: key ([0-9A-F]{16}): secret key imported$/\\1/p\')"')
+        result.contains('fingerprint="$(spack gpg trust /mnt/key 2>&1| sed -nr "s/^gpg: key ([0-9A-F]{16}): secret key imported$/\\1/p")"')
 
         cleanup:
         folder?.deleteDir()
@@ -285,7 +285,7 @@ class ContainerBuildServiceTest extends Specification {
                 'Stage: build')
         result.contains('spack config add packages:all:target:[x86_64]')
         result.contains('spack mirror add seqera-spack s3://bucket/cache')
-        result.contains('fingerprint="$(spack gpg trust /mnt/key 2>/dev/null| sed -nr "s/^gpg: key ([0-9A-F]{16}): secret key imported$/\\1/p")"')
+        result.contains('fingerprint="$(spack gpg trust /mnt/key 2>&1| sed -nr "s/^gpg: key ([0-9A-F]{16}): secret key imported$/\\1/p")"')
         result.contains('/some/context/dir/spack.yaml /opt/spack-env/spack.yaml')
 
         cleanup:
