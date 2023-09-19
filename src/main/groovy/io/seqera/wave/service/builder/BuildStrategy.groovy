@@ -66,11 +66,16 @@ abstract class BuildStrategy {
         }
 
         if(req.spackFile){
-            result << '--build-arg AWS_STS_REGIONAL_ENDPOINTS="$AWS_STS_REGIONAL_ENDPOINTS"'
-            result << '--build-arg AWS_DEFAULT_REGION="$AWS_DEFAULT_REGION"'
-            result << '--build-arg AWS_REGION="$AWS_REGION"'
-            result << '--build-arg AWS_ROLE_ARN="$AWS_ROLE_ARN"'
-            result << '--build-arg AWS_WEB_IDENTITY_TOKEN_FILE="$AWS_WEB_IDENTITY_TOKEN_FILE"'
+            result << '--build-arg'
+            result << 'AWS_STS_REGIONAL_ENDPOINTS="$AWS_STS_REGIONAL_ENDPOINTS"'
+            result << '--build-arg'
+            result << 'AWS_DEFAULT_REGION="$AWS_DEFAULT_REGION"'
+            result << '--build-arg'
+            result << 'AWS_REGION="$AWS_REGION"'
+            result << '--build-arg'
+            result << 'AWS_ROLE_ARN="$AWS_ROLE_ARN"'
+            result << '--build-arg'
+            result << 'AWS_WEB_IDENTITY_TOKEN_FILE="$AWS_WEB_IDENTITY_TOKEN_FILE"'
         }
 
         return result
