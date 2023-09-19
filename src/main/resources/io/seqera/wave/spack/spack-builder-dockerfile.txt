@@ -28,7 +28,7 @@ RUN mkdir -p /opt/spack-env \
 
 # Install packages, clean afterwards, finally strip binaries
 RUN cd /opt/spack-env \
-&& fingerprint="$(spack gpg trust {{spack_key_file}} 2>&1| sed -nr "s/^gpg: key ([0-9A-F]{16}): secret key imported$/\1/p")" \
+&& fingerprint="$(spack gpg trust {{spack_key_file}} 2>&1  | tee /dev/stderr | sed -nr "s/^gpg: key ([0-9A-F]{16}): secret key imported$/\1/p")" \
 && spack mirror add seqera-spack {{spack_cache_s3}} \
 && spack mirror add binary_mirror  https://binaries.spack.io/releases/v0.20 \
 && spack buildcache keys --install --trust \
