@@ -2,6 +2,17 @@
 FROM {{spack_builder_image}} as builder
 COPY spack.yaml /opt/spack-env/spack.yaml
 
+# Assume the values from the environment
+ARG AWS_STS_REGIONAL_ENDPOINTS
+ARG AWS_DEFAULT_REGION
+ARG AWS_REGION
+ARG AWS_ROLE_ARN
+ARG AWS_WEB_IDENTITY_TOKEN_FILE
+
+# Copy the content of the AWS IAM role token from the kaniko env into the build space of the spack image
+RUN mkdir -p $(dirname $AWS_WEB_IDENTITY_TOKEN_FILE)
+COPY $AWS_WEB_IDENTITY_TOKEN_FILE $AWS_WEB_IDENTITY_TOKEN_FILE
+
 RUN mkdir -p /opt/spack-env \
 &&  sed -i -e 's;compilers:;compilers::;' \
          -e 's;^ *flags: *{};    flags:\n      cflags: -O3\n      cxxflags: -O3\n      fflags: -O3;' \
