@@ -249,12 +249,12 @@ class ContainerTokenControllerTest extends Specification {
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), spackFile: encode('some::spack-recipe'), containerPlatform: 'arm64')
         build = controller.makeBuildRequest(submit, null, "")
         then:
-        build.id == '00d63fcb0f958d15'
+        build.id == 'f829e85946071e85'
         build.containerFile.endsWith('\nFROM foo')
         build.containerFile.startsWith('# Builder image\n')
         build.condaFile == null
         build.spackFile == 'some::spack-recipe'
-        build.targetImage == 'wave/build:00d63fcb0f958d15'
+        build.targetImage == 'wave/build:f829e85946071e85'
         build.workDir == Path.of('/some/wsp').resolve(build.id)
         build.platform == ContainerPlatform.of('arm64')
     }
