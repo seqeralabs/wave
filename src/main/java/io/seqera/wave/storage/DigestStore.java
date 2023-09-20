@@ -26,7 +26,9 @@ public interface DigestStore extends Serializable {
     String getDigest();
     Integer getSize();
 
+    @Deprecated
     default InputStream openStream() throws IOException {
         return new ByteArrayInputStream(getBytes());
     }
+
 }
