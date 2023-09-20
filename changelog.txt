@@ -1,4 +1,7 @@
 # Wave changelog
+v0.41.2 - 20 Sep 2023 
+- Add digest-store cache to prevent network roundtrip [58893c8d]
+
 v0.41.1 - 14 Sep 2023
 - Add Stream of digest payload to avoid OOM [15dc58a2]
 - removed unwanted lines (#293) [3bc90a1a]
