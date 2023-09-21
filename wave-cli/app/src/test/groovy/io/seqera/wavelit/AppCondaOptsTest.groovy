@@ -113,6 +113,7 @@ class AppCondaOptsTest extends Specification {
                 FROM mambaorg/micromamba:1.4.9
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
                 RUN micromamba install -y -n base -f /tmp/conda.yml \\
+                    && micromamba install -y -n base conda-forge::procps-ng \\
                     && micromamba clean -a -y
                 USER root
                 '''.stripIndent()
@@ -138,6 +139,7 @@ class AppCondaOptsTest extends Specification {
                 FROM mambaorg/micromamba:1.4.9
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
                 RUN micromamba install -y -n base -f /tmp/conda.yml \\
+                    && micromamba install -y -n base conda-forge::procps-ng \\   
                     && micromamba clean -a -y
                 USER root
                 '''.stripIndent()
@@ -166,8 +168,8 @@ class AppCondaOptsTest extends Specification {
         new String(req.containerFile.decodeBase64()) == '''\
                 FROM mambaorg/micromamba:1.4.9
                 RUN \\
-                    micromamba install -y -n base -c seqera -c bioconda -c conda-forge -c defaults \\
-                    -f https://host.com/file-lock.yml \\
+                    micromamba install -y -n base -c seqera -c bioconda -c conda-forge -c defaults -f https://host.com/file-lock.yml \\
+                    && micromamba install -y -n base conda-forge::procps-ng \\
                     && micromamba clean -a -y
                 USER root
                 '''.stripIndent()
@@ -197,6 +199,7 @@ class AppCondaOptsTest extends Specification {
                 FROM my/mamba:latest
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
                 RUN micromamba install -y -n base -f /tmp/conda.yml \\
+                    && micromamba install -y -n base conda-forge::procps-ng \\
                     && micromamba clean -a -y
                 USER root
                 RUN one
@@ -235,8 +238,9 @@ class AppCondaOptsTest extends Specification {
                 %files
                     {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
-                    micromamba install -y -n base -f /scratch/conda.yml \\
-                    && micromamba clean -a -y
+                    micromamba install -y -n base -f /scratch/conda.yml
+                    micromamba install -y -n base conda-forge::procps-ng
+                    micromamba clean -a -y
                 %environment
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
                 '''.stripIndent()
@@ -264,8 +268,9 @@ class AppCondaOptsTest extends Specification {
                 %files
                     {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
-                    micromamba install -y -n base -f /scratch/conda.yml \\
-                    && micromamba clean -a -y
+                    micromamba install -y -n base -f /scratch/conda.yml
+                    micromamba install -y -n base conda-forge::procps-ng
+                    micromamba clean -a -y
                 %environment
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
                 '''.stripIndent()
@@ -305,8 +310,9 @@ class AppCondaOptsTest extends Specification {
                 %files
                     {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
-                    micromamba install -y -n base -f /scratch/conda.yml \\
-                    && micromamba clean -a -y
+                    micromamba install -y -n base -f /scratch/conda.yml
+                    micromamba install -y -n base conda-forge::procps-ng
+                    micromamba clean -a -y
                 %environment
                     export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
                 %post
@@ -339,9 +345,9 @@ class AppCondaOptsTest extends Specification {
             BootStrap: docker
             From: mambaorg/micromamba:1.4.9
             %post
-                micromamba install -y -n base -c seqera -c bioconda -c conda-forge -c defaults \\
-                -f https://host.com/file-lock.yml \\
-                && micromamba clean -a -y
+                micromamba install -y -n base -c seqera -c bioconda -c conda-forge -c defaults -f https://host.com/file-lock.yml
+                micromamba install -y -n base conda-forge::procps-ng
+                micromamba clean -a -y
             %environment
                 export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
                 '''.stripIndent()
