@@ -96,10 +96,10 @@ public class App implements Runnable {
     @Option(names = {"--tower-workspace-id"}, paramLabel = "''", description = "Tower service workspace ID e.g. 1234567890.")
     private Long towerWorkspaceId;
 
-    @Option(names = {"--build-repo"}, paramLabel = "''", description = "The container repository where image build by Wave will stored e.g. docker.io/user/build.")
+    @Option(names = {"--build-repo", "--build-repository"}, paramLabel = "''", description = "The container repository where image build by Wave will stored e.g. docker.io/user/build.")
     private String buildRepository;
 
-    @Option(names = {"--cache-repo"}, paramLabel = "''", description = "The container repository where image layer created by Wave will stored e.g. docker.io/user/cache.")
+    @Option(names = {"--cache-repo", "--cache-repository"}, paramLabel = "''", description = "The container repository where image layer created by Wave will stored e.g. docker.io/user/cache.")
     private String cacheRepository;
 
     @Option(names = {"--wave-endpoint"}, paramLabel = "''", description = "Wave service endpoint e.g. https://wave.seqera.io.")
