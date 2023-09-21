@@ -112,7 +112,7 @@ class RegistryProxyController {
         new CacheLoader<DigestKey, byte[]>() {
             @Override
             byte[] load(DigestKey key) throws Exception {
-                log.debug("Loading digest-store=${key.target}")
+                log.debug("Loading digest-store=${key}")
                 return retryable.apply(() -> key.getAllBytes())
             }
         }

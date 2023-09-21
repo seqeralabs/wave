@@ -40,6 +40,8 @@ public class HttpContentReader implements ContentReader {
         return new URL(url).openStream();
     }
 
+    public String getUrl() { return url; }
+
     @Override
     public String toString() {
         return String.format("HttpContentReader(%s)",url);
