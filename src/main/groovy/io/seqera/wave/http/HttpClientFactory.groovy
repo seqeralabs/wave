@@ -35,34 +35,34 @@ class HttpClientFactory {
     @Inject
     HttpClientConfig httpConfig
 
-    @Value("wave.thread.virtual.enable")
+    @Value("wave.virtualThreads.enabled")
     boolean useVirtualThread
 
     @Singleton
     @Named("follow-redirects")
     HttpClient followRedirectsHttpClient() {
-        final builder = HttpClient.newBuilder()
+        final client = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .connectTimeout(httpConfig.connectTimeout)
         // use virtual threads executor if enabled
         if(useVirtualThread){
-            builder.executor(Executors.newVirtualThreadPerTaskExecutor())
+            client.executor(Executors.newVirtualThreadPerTaskExecutor())
         }
-        builder.build()
+        return client.build()
     }
 
     @Singleton
     @Named("never-redirects")
     HttpClient neverRedirectsHttpClient() {
-        final builder = HttpClient.newBuilder()
+        final client = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NEVER)
                 .connectTimeout(httpConfig.connectTimeout)
         // use virtual threads executor if enabled
         if(useVirtualThread){
-            builder.executor(Executors.newVirtualThreadPerTaskExecutor())
+            client.executor(Executors.newVirtualThreadPerTaskExecutor())
         }
-        builder.build()
+        return client.build()
     }
 }
