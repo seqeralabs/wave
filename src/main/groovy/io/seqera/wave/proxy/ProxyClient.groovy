@@ -43,8 +43,10 @@ class ProxyClient {
 
     public static final int[] REDIRECT_CODES = [301, 302, 307, 308]
 
+    static private final List<Integer> SERVER_ERRORS = [429,502,503,504]
+
     private static final long RETRY_MAX_DELAY_MILLIS = 30_000
-    private static final int RETRY_MAX_ATTEMPTS = 5
+    private static final int RETRY_MAX_ATTEMPTS = 8
 
     private String image
     private RegistryInfo registry
@@ -140,7 +142,12 @@ class ProxyClient {
         final supplier = new CheckedSupplier<HttpResponse<T>>() {
             @Override
             HttpResponse<T> get() throws Throwable {
-                return get0(origin, headers, handler, followRedirect)
+                final resp = get0(origin, headers, handler, followRedirect)
+                if( resp.statusCode() in SERVER_ERRORS) {
+                    // throws an IOException so that the condition is handled by the retry policy
+                    throw new IOException("Unexpected server response code ${resp.statusCode()} for request ${origin} - message: ${resp.body()}")
+                }
+                return resp
             }
         }
         return Failsafe.with(policy).get(supplier)
@@ -234,7 +241,7 @@ class ProxyClient {
 
         return RetryPolicy.builder()
                 .handle(IOException, SocketException.class)
-                .withBackoff(50, RETRY_MAX_DELAY_MILLIS, ChronoUnit.MILLIS)
+                .withBackoff(250, RETRY_MAX_DELAY_MILLIS, ChronoUnit.MILLIS)
                 .withMaxAttempts(RETRY_MAX_ATTEMPTS)
                 .onRetry(listener)
                 .build()
@@ -245,7 +252,12 @@ class ProxyClient {
         final supplier = new CheckedSupplier<HttpResponse<Void>>() {
             @Override
             HttpResponse<Void> get() throws Throwable {
-                return head0(uri,headers)
+                final resp = head0(uri,headers)
+                if( resp.statusCode() in SERVER_ERRORS) {
+                    // throws an IOException so that the condition is handled by the retry policy
+                    throw new IOException("Unexpected server response code ${resp.statusCode()} for request ${uri} - message: ${resp.body()}")
+                }
+                return resp
             }
         }
         return Failsafe.with(policy).get(supplier)
