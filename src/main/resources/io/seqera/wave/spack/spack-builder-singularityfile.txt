@@ -2,11 +2,24 @@ Bootstrap: docker
 From: {{spack_builder_image}}
 Stage: build
 
+%setup
+cat <<EOF > ${SINGULARITY_ROOTFS}/aws-env.sh
+export AWS_STS_REGIONAL_ENDPOINTS=${AWS_STS_REGIONAL_ENDPOINTS}
+export AWS_REGION=${AWS_REGION}
+export AWS_DEFAULT_REGION=${AWS_REGION}
+export AWS_ROLE_ARN=${AWS_ROLE_ARN}
+export AWS_WEB_IDENTITY_TOKEN_FILE=${AWS_WEB_IDENTITY_TOKEN_FILE}
+EOF
+
 %files
     {{wave_context_dir}}/spack.yaml /opt/spack-env/spack.yaml
     {{spack_key_file}} {{spack_key_file}}
-
+    /var/run/secrets /var/run/secrets
+    
 %post
+    # import AWS environment
+    . /aws-env.sh
+
     # Copy and modify spack.yaml
     sed -i -e 's;compilers:;compilers::;' \
            -e 's;^ *flags: *{};    flags:\n      cflags: -O3\n      cxxflags: -O3\n      fflags: -O3;' \
@@ -22,13 +35,14 @@ Stage: build
     echo "  view: /opt/view\n">> /opt/spack-env/spack.yaml
 
     # Install packages, clean afterward, finally strip binaries
-    fingerprint="$(spack gpg trust {{spack_key_file}} 2>&1| tee /dev/stderr| sed -nr "s/^gpg: key ([0-9A-F]{16}): secret key imported$/\1/p")"
+    fingerprint="$(spack gpg trust {{spack_key_file}} 2>&1 | tee /dev/stderr | sed -nr "s/^gpg: key ([0-9A-F]{16}): secret key imported$/\1/p")"
     spack mirror add seqera-spack {{spack_cache_s3}}
     spack mirror add binary_mirror  https://binaries.spack.io/releases/v0.20
     spack buildcache keys --install --trust
-    spack -e . concretize -f
-    spack --env . install
-    spack -e . buildcache push --allow-root --key "$fingerprint" {{spack_cache_s3}}
+    eval `spack env activate --sh .`
+    spack concretize -f
+    spack install --fail-fast
+    spack buildcache push --allow-root --key "$fingerprint" {{spack_cache_s3}} 
     spack gc -y
     find -L /opt/._view/* -type f -exec readlink -f '{}' \; | \
         xargs file -i | \
