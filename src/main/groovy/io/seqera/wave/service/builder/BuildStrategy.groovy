@@ -71,6 +71,8 @@ abstract class BuildStrategy {
             result << "--build-arg"
             result << 'AWS_REGION=$(AWS_REGION)'
             result << "--build-arg"
+            result << 'AWS_DEFAULT_REGION=$(AWS_DEFAULT_REGION)'
+            result << "--build-arg"
             result << 'AWS_ROLE_ARN=$(AWS_ROLE_ARN)'
             result << "--build-arg"
             result << 'AWS_WEB_IDENTITY_TOKEN_FILE=$(AWS_WEB_IDENTITY_TOKEN_FILE)'

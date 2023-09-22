@@ -65,7 +65,7 @@ class SpackConfig {
 
     String getCacheS3Bucket() {
         if( !cacheS3Bucket )
-            throw new IllegalStateException("Missing Spack cacheMountPath configuration setting")
+            throw new IllegalStateException("Missing Spack cacheS3Bucket configuration setting")
         return cacheS3Bucket
     }
 
