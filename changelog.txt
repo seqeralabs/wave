@@ -1,4 +1,8 @@
 # Wave changelog
+v0.41.4 - 23 Sep 2023
+- Add virtual thread executor for httpclient factory (#290) [2305f776]
+- Bump Kaniko v1.16.0 [72312d5b]
+
 v0.41.3 - 22 Sep 2023 
 - Improve retry policy for proxy target server errors [598ca832]
 
