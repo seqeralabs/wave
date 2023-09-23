@@ -26,7 +26,6 @@ public class ZippedDigestStore implements DigestStore{
     final private byte[] bytes;
     final private String mediaType;
     final private String digest;
-
     final Integer size;
 
     public ZippedDigestStore(byte[] bytes, String mediaType, String digest, int size) {
@@ -54,5 +53,10 @@ public class ZippedDigestStore implements DigestStore{
 
     public String toString() {
         return String.format("ZippedDigestStore(mediaType=%s; digest=%s; size=%d; bytesBase64=%s)", mediaType, digest, size, new String(Base64.getEncoder().encode(bytes)));
+    }
+
+    @Override
+    public String toLogString() {
+        return String.format("ZippedDigestStore(digest=%s; size=%d; mediaType=%s; bytes=<omitted>)", digest, size, mediaType);
     }
 }

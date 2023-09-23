@@ -35,4 +35,9 @@ public class DataContentReader implements ContentReader{
     public String toString() {
         return String.format("DataContentReader(%s)",data);
     }
+
+    @Override
+    public String toLogString() {
+        return "data=base64+encoded+string";
+    }
 }

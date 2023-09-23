@@ -48,4 +48,9 @@ public class GzipContentReader implements ContentReader {
     public String toString() {
         return String.format("GzipContentReader(%s)",new String(Base64.getEncoder().encode(data)));
     }
+
+    @Override
+    public String toLogString() {
+        return "gzip=base64+encoded+string";
+    }
 }

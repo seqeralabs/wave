@@ -53,11 +53,6 @@ public class DigestKey {
 
     @Override
     public String toString() {
-        return String.format("DigestKey[digest=%s; size=%d; content=%s, type=%s]",
-                target.getDigest(),
-                target.getSize(),
-                target.getMediaType(),
-                target.getClass().getSimpleName()
-        );
+        return String.format("DigestKey[%s]", target.toLogString());
     }
 }

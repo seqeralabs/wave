@@ -32,4 +32,9 @@ public class PathContentReader implements ContentReader {
     public byte[] readAllBytes() throws IOException {
         return Files.readAllBytes(path);
     }
+
+    @Override
+    public String toLogString() {
+        return String.format("path=%s", path.toString());
+    }
 }

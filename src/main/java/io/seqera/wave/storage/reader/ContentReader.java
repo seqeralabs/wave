@@ -29,4 +29,7 @@ public interface ContentReader extends Serializable {
         return new ByteArrayInputStream(readAllBytes());
     }
 
+    default String toLogString() {
+        return toString();
+    }
 }

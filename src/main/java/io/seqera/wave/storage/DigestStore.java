@@ -31,4 +31,7 @@ public interface DigestStore extends Serializable {
         return new ByteArrayInputStream(getBytes());
     }
 
+    default String toLogString() {
+        return toString();
+    }
 }

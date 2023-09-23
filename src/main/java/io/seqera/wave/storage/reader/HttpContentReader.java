@@ -46,4 +46,9 @@ public class HttpContentReader implements ContentReader {
     public String toString() {
         return String.format("HttpContentReader(%s)",url);
     }
+
+    @Override
+    public String toLogString() {
+        return String.format("location=%s", url);
+    }
 }
