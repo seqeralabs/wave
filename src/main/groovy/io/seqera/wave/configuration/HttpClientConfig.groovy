@@ -54,7 +54,7 @@ class HttpClientConfig implements Retryable.Config {
 
     @PostConstruct
     private void init() {
-        log.debug "Http client config: virtualThreads=${virtualThreadsPool}; connectTimeout=$connectTimeout; retryAttempts=$retryAttempts; retryDelay=$retryDelay; retryMaxDelay=$retryMaxDelay; retryMultiplier=$retryMultiplier"
+        log.info "Http client config: virtualThreads=${virtualThreadsPool}; connectTimeout=$connectTimeout; retryAttempts=$retryAttempts; retryDelay=$retryDelay; retryMaxDelay=$retryMaxDelay; retryMultiplier=$retryMultiplier"
     }
 
     Duration getDelay() { retryDelay }
