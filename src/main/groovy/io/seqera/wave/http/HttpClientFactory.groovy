@@ -12,6 +12,7 @@
 package io.seqera.wave.http
 
 import java.net.http.HttpClient
+import java.util.concurrent.Executors
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -36,20 +37,28 @@ class HttpClientFactory {
     @Singleton
     @Named("follow-redirects")
     HttpClient followRedirectsHttpClient() {
-        HttpClient.newBuilder()
+        final client = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .connectTimeout(httpConfig.connectTimeout)
-                .build()
+        // use virtual threads executor if enabled
+        if( httpConfig.virtualThreadsPool() ) {
+            client.executor(Executors.newVirtualThreadPerTaskExecutor())
+        }
+        return client.build()
     }
 
     @Singleton
     @Named("never-redirects")
     HttpClient neverRedirectsHttpClient() {
-        HttpClient.newBuilder()
+        final client = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NEVER)
                 .connectTimeout(httpConfig.connectTimeout)
-                .build()
+        // use virtual threads executor if enabled
+        if( httpConfig.virtualThreadsPool() ) {
+            client.executor(Executors.newVirtualThreadPerTaskExecutor())
+        }
+        return client.build()
     }
 }
