@@ -17,7 +17,6 @@ import java.util.concurrent.Executors
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Factory
-import io.micronaut.context.annotation.Value
 import io.seqera.wave.configuration.HttpClientConfig
 import jakarta.inject.Inject
 import jakarta.inject.Named
@@ -35,9 +34,6 @@ class HttpClientFactory {
     @Inject
     HttpClientConfig httpConfig
 
-    @Value("wave.virtualThreads.enabled")
-    boolean useVirtualThread
-
     @Singleton
     @Named("follow-redirects")
     HttpClient followRedirectsHttpClient() {
@@ -46,7 +42,7 @@ class HttpClientFactory {
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .connectTimeout(httpConfig.connectTimeout)
         // use virtual threads executor if enabled
-        if(useVirtualThread){
+        if( httpConfig.virtualThreadsPool() ) {
             client.executor(Executors.newVirtualThreadPerTaskExecutor())
         }
         return client.build()
@@ -60,7 +56,7 @@ class HttpClientFactory {
                 .followRedirects(HttpClient.Redirect.NEVER)
                 .connectTimeout(httpConfig.connectTimeout)
         // use virtual threads executor if enabled
-        if(useVirtualThread){
+        if( httpConfig.virtualThreadsPool() ) {
             client.executor(Executors.newVirtualThreadPerTaskExecutor())
         }
         return client.build()
