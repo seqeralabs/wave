@@ -47,7 +47,7 @@ class DockerBuilderStrategyTest extends Specification {
                 'run',
                 '--rm',
                 '-v', '/work/foo:/work/foo',
-                'gcr.io/kaniko-project/executor:v1.12.1']
+                'gcr.io/kaniko-project/executor:v1.16.0']
 
         when:
         cmd = service.cmdForKaniko(work, Path.of('/foo/creds.json'), null, ContainerPlatform.of('arm64'))
@@ -58,7 +58,7 @@ class DockerBuilderStrategyTest extends Specification {
                 '-v', '/work/foo:/work/foo',
                 '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
                 '--platform', 'linux/arm64',
-                'gcr.io/kaniko-project/executor:v1.12.1']
+                'gcr.io/kaniko-project/executor:v1.16.0']
 
         when:
         cmd = service.cmdForKaniko(work, Path.of('/foo/creds.json'), spackConfig, null)
@@ -70,7 +70,7 @@ class DockerBuilderStrategyTest extends Specification {
                 '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
                 '-v', '/host/spack/key:/opt/spack/key:ro',
                 '-v', '/host/spack/cache:/opt/spack/cache:rw',
-                'gcr.io/kaniko-project/executor:v1.12.1']
+                'gcr.io/kaniko-project/executor:v1.16.0']
 
 
         cleanup:
@@ -95,7 +95,7 @@ class DockerBuilderStrategyTest extends Specification {
                 '-v', '/work/foo/89fb83ce6ec8627b:/work/foo/89fb83ce6ec8627b',
                 '-v', '/work/creds.json:/kaniko/.docker/config.json:ro',
                 '--platform', 'linux/amd64',
-                'gcr.io/kaniko-project/executor:v1.12.1',
+                'gcr.io/kaniko-project/executor:v1.16.0',
                 '--dockerfile', '/work/foo/89fb83ce6ec8627b/Containerfile',
                 '--context', '/work/foo/89fb83ce6ec8627b/context',
                 '--destination', 'repo:89fb83ce6ec8627b',
