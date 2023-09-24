@@ -9,14 +9,14 @@ that it can be used in your Docker (replace-with-your-own-fav-container-engine) 
 
 ### Features
 
-- Dynamically add one or more container layers to existing images;
-- Build container images on-demand for a given container file (aka Dockerfile);
-- Build container images on-demand starting one or more [Conda](https://conda.io/) packages;
-- Build container images on-demand starting one or more [Spack](https://spack.io/) packages;
-- Build container images for a specified target platform (currently `linux/amd64` and `linux/arm64`);
-- Push and cache built containers to a user provider container repository;
-- Build Singularity native containers both using a Singularity spec file, Conda package(s) and Spack package(s)
-- Push Singularity native container images to OCI compliant registries
+* Build container images on-demand for a given container file (aka Dockerfile);
+* Build container images on-demand based on one or more [Conda](https://conda.io/) packages;
+* Build container images on-demand based on one or more [Spack](https://spack.io/)  packages;
+* Build container images for a specified target platform (currently linux/amd64 and linux/arm64);
+* Push and cache built containers to a user-provided container repository;
+* Build Singularity native containers both using a Singularity spec file, Conda package(s) and Spack package(s);
+* Push Singularity native container images to OCI-compliant registries;
+  
 
 ### Get started
 
