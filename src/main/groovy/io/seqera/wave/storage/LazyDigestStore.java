@@ -12,7 +12,6 @@
 package io.seqera.wave.storage;
 
 import java.io.IOException;
-import java.io.InputStream;
 
 import io.seqera.wave.storage.reader.ContentReader;
 
@@ -36,18 +35,13 @@ public class LazyDigestStore implements DigestStore{
     }
 
     @Override
-    public byte[] getBytes() {
+    public byte[] getBytes() throws InterruptedException {
         try {
             return contentReader !=null ? contentReader.readAllBytes() : null;
         }
         catch (IOException e) {
             throw new IllegalStateException("Unable to load digest content at path: "+ contentReader, e);
         }
-    }
-
-    @Override
-    public InputStream openStream() throws IOException {
-        return contentReader.openStream();
     }
 
     @Override

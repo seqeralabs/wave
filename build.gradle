@@ -147,7 +147,8 @@ jib {
 
 run{
     def envs = findProperty('micronautEnvs')
-    def args = ["-Dmicronaut.environments=$envs"]
+    // note: "--enable-preview" is required to use virtual threads on Java 19 and 20
+    def args = ["-Dmicronaut.environments=$envs","--enable-preview"]
     if( environment['JVM_OPTS'] ) args.add(environment['JVM_OPTS'])
     jvmArgs args
     systemProperties 'DOCKER_USER': project.findProperty('DOCKER_USER') ?: environment['DOCKER_USER'],

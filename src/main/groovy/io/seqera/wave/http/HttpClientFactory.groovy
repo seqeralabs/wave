@@ -12,6 +12,7 @@
 package io.seqera.wave.http
 
 import java.net.http.HttpClient
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 import groovy.transform.CompileStatic
@@ -31,34 +32,46 @@ import jakarta.inject.Singleton
 @CompileStatic
 class HttpClientFactory {
 
+    static private ExecutorService virtualThreadsExecutor = Executors.newVirtualThreadPerTaskExecutor()
+
+    static private HttpClient INSTANCE
+
+    static private final Integer hold = Integer.valueOf(0)
+
     @Inject
     HttpClientConfig httpConfig
 
     @Singleton
     @Named("follow-redirects")
     HttpClient followRedirectsHttpClient() {
-        final client = HttpClient.newBuilder()
+        return HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .connectTimeout(httpConfig.connectTimeout)
-        // use virtual threads executor if enabled
-        if( httpConfig.virtualThreadsPool() ) {
-            client.executor(Executors.newVirtualThreadPerTaskExecutor())
-        }
-        return client.build()
+                .executor(virtualThreadsExecutor)
+                .build()
     }
 
     @Singleton
     @Named("never-redirects")
     HttpClient neverRedirectsHttpClient() {
-        final client = HttpClient.newBuilder()
+        return HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NEVER)
                 .connectTimeout(httpConfig.connectTimeout)
-        // use virtual threads executor if enabled
-        if( httpConfig.virtualThreadsPool() ) {
-            client.executor(Executors.newVirtualThreadPerTaskExecutor())
+                .executor(virtualThreadsExecutor)
+                .build()
+    }
+
+    static HttpClient newHttpClient() {
+        if( INSTANCE ) return INSTANCE
+        synchronized (hold) {
+            if( INSTANCE ) return INSTANCE
+            return INSTANCE = HttpClient.newBuilder()
+                    .version(HttpClient.Version.HTTP_1_1)
+                    .followRedirects(HttpClient.Redirect.NORMAL)
+                    .executor(virtualThreadsExecutor)
+                    .build()
         }
-        return client.build()
     }
 }

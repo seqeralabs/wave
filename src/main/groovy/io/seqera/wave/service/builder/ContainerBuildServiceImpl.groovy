@@ -12,35 +12,45 @@
 package io.seqera.wave.service.builder
 
 import java.nio.file.FileAlreadyExistsException
-import java.nio.file.Path
-
-import static FreezeServiceImpl.*
-import static io.seqera.wave.util.StringUtils.*
-import static java.nio.file.StandardOpenOption.*
-
-import javax.annotation.Nullable
-import javax.annotation.PostConstruct
 import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
+import javax.annotation.Nullable
+import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.annotation.Value
 import io.micronaut.context.event.ApplicationEventPublisher
+import io.seqera.wave.api.BuildContext
+import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.cleanup.CleanupStrategy
+import io.seqera.wave.storage.reader.ContentReaderFactory
+import io.seqera.wave.storage.reader.HttpServerRetryableErrorException
+import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.SpackHelper
+import io.seqera.wave.util.TarUtils
 import io.seqera.wave.util.TemplateRenderer
 import io.seqera.wave.util.ThreadPoolBuilder
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+import static io.seqera.wave.util.RegHelper.layerDir
+import static io.seqera.wave.util.RegHelper.layerName
+import static io.seqera.wave.util.StringUtils.indent
+import static java.nio.file.StandardOpenOption.CREATE
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
+import static java.nio.file.StandardOpenOption.WRITE
+
 /**
  * Implements container build service
  *
@@ -86,6 +96,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     @Inject
     private SpackConfig spackConfig
+
+    @Inject
+    private HttpClientConfig httpClientConfig
 
     @Inject CleanupStrategy cleanup
 
@@ -257,5 +270,67 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         }
         // invalid state
         throw new IllegalStateException("Unable to determine build status for '$request.targetImage'")
+    }
+
+    protected void saveLayersToContext(BuildRequest req, Path contextDir) {
+        if(req.formatDocker()) {
+            saveLayersToDockerContext0(req.containerConfig, contextDir)
+        }
+        else if(req.formatSingularity()) {
+            saveLayersToSingularityContext0(req.containerConfig, contextDir)
+        }
+        else
+            throw new IllegalArgumentException("Unknown container format: $req.format")
+    }
+
+    protected void saveLayersToDockerContext0(ContainerConfig config, Path contextDir) {
+        final layers = config.layers
+        for(int i=0; i<layers.size(); i++) {
+            final it = layers[i]
+            final target = contextDir.resolve(layerName(it))
+            final retryable = retry0("Unable to copy '${it.location}' to docker context '${contextDir}'")
+            // copy the layer to the build context
+            retryable.apply(()-> {
+                try (InputStream stream = ContentReaderFactory.of(it.location).openStream()) {
+                    Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING)
+                }
+            })
+        }
+    }
+
+    protected void saveLayersToSingularityContext0(ContainerConfig config, Path contextDir) {
+        final layers = config.layers
+        for(int i=0; i<layers.size(); i++) {
+            final it = layers[i]
+            final target = contextDir.resolve(layerDir(it))
+            try { Files.createDirectory(target) }
+            catch (FileAlreadyExistsException e) { /* ignore */ }
+            // retry strategy
+            final retryable = retry0("Unable to copy '${it.location} to singularity context '${contextDir}'")
+            // copy the layer to the build context
+            retryable.apply(()-> {
+                try (InputStream stream = ContentReaderFactory.of(it.location).openStream()) {
+                    TarUtils.untarGzip(stream, target)
+                }
+            })
+        }
+    }
+
+    protected void saveBuildContext(BuildContext buildContext, Path contextDir) {
+        // retry strategy
+        final retryable = retry0("Unable to copy '${buildContext.location} to build context '${contextDir}'")
+        // copy the layer to the build context
+        retryable.apply(()-> {
+            try (InputStream stream = ContentReaderFactory.of(buildContext.location).openStream()) {
+                TarUtils.untarGzip(stream, contextDir)
+            }
+        })
+    }
+
+    private Retryable retry0(String message) {
+        Retryable
+                .of(httpClientConfig)
+                .withCondition((Throwable t) -> t instanceof SocketException || t instanceof HttpServerRetryableErrorException)
+                .onRetry((event)-> log.warn("$message - attempt: ${event.attemptCount}; cause: ${event.lastFailure.message}"))
     }
 }

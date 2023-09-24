@@ -13,24 +13,14 @@ package io.seqera.wave.service.builder
 
 import spock.lang.Specification
 
-import java.nio.file.Files
-import java.nio.file.Path
-
-import com.sun.net.httpserver.HttpExchange
-import com.sun.net.httpserver.HttpHandler
-import com.sun.net.httpserver.HttpServer
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.SubmitContainerTokenRequest
-import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
-import io.seqera.wave.storage.reader.ContentReaderFactory
 import io.seqera.wave.tower.User
-import io.seqera.wave.util.Packer
 import jakarta.inject.Inject
 /**
  *
@@ -81,45 +71,6 @@ class FreezeServiceImplTest extends Specification  {
                 ENTRYPOINT ["/my", "--entry"]
                 CMD ["/this", "--that"]
                 '''.stripIndent()
-    }
-
-    def 'should save layers to context dir' () {
-        given:
-        def folder = Files.createTempDirectory('test')
-        def file1 = folder.resolve('file1'); file1.text = "I'm file one"
-        def file2 = folder.resolve('file2'); file2.text = "I'm file two"
-        and:
-        def cl = new Packer().layer(folder, [file1])
-        def l1 = new ContainerLayer(location: "http://localhost:9901/some.tag.gz", tarDigest: cl.tarDigest, gzipDigest: cl.gzipDigest, gzipSize: cl.gzipSize)
-        and:
-        def l2 = new Packer().layer(folder, [file2])
-        def config = new ContainerConfig(layers: [l1,l2])
-
-        and:
-        HttpHandler handler = { HttpExchange exchange ->
-            def body = ContentReaderFactory.of(cl.location).readAllBytes()
-            exchange.getResponseHeaders().add("Content-Type", "application/tar+gzip")
-            exchange.sendResponseHeaders(200, body.size())
-            exchange.getResponseBody() << body
-            exchange.getResponseBody().close()
-
-        }
-        and:
-        HttpServer server = HttpServer.create(new InetSocketAddress(9901), 0);
-        server.createContext("/", handler);
-        server.start()
-        and:
-        def req = new BuildRequest('from foo', Path.of('/wsp'), 'quay.io/org/name', null, null, BuildFormat.DOCKER, Mock(User), config, null, ContainerPlatform.of('amd64'),'{auth}', null, null, "127.0.0.1", null)
-
-        when:
-        FreezeServiceImpl.saveLayersToContext(req, folder)
-        then:
-        Files.exists(folder.resolve("layer-${l1.gzipDigest.replace(/sha256:/,'')}.tar.gz"))
-        Files.exists(folder.resolve("layer-${l2.gzipDigest.replace(/sha256:/,'')}.tar.gz"))
-
-        cleanup:
-        folder?.deleteDir()
-        server?.stop(0)
     }
 
     def 'should create build file given a container image' () {
@@ -299,30 +250,6 @@ class FreezeServiceImplTest extends Specification  {
             WORKDIR /work/dir
             ENV FOO=1 BAR=2
             '''.stripIndent()
-    }
-
-    def 'should untar build context' () {
-        given:
-        def folder = Files.createTempDirectory('test')
-        def source = folder.resolve('source')
-        def target = folder.resolve('target')
-        Files.createDirectory(source)
-        Files.createDirectory(target)
-        and:
-        source.resolve('foo.txt').text  = 'Foo'
-        source.resolve('bar.txt').text  = 'Bar'
-        and:
-        def layer = new Packer().layer(source)
-        def context = BuildContext.of(layer)
-
-        when:
-        FreezeServiceImpl.saveBuildContext(context, target)
-        then:
-        target.resolve('foo.txt').text == 'Foo'
-        target.resolve('bar.txt').text == 'Bar'
-
-        cleanup:
-        folder?.deleteDir()
     }
 
     def 'should create containerfile' () {

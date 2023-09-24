@@ -33,7 +33,7 @@ import io.seqera.wave.storage.Storage
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
-import static io.seqera.wave.proxy.ProxyClient.REDIRECT_CODES
+import static io.seqera.wave.WaveDefault.HTTP_REDIRECT_CODES
 /**
  * Proxy service that forwards incoming container request
  * to the target repository, resolving credentials and augmentation
@@ -129,7 +129,7 @@ class RegistryProxyService {
         ProxyClient proxyClient = client(route)
         final resp1 = proxyClient.getStream(route.path, headers, false)
         final redirect = resp1.headers().firstValue('Location').orElse(null)
-        if( redirect && resp1.statusCode() in REDIRECT_CODES ) {
+        if( redirect && resp1.statusCode() in HTTP_REDIRECT_CODES ) {
             // the redirect location can be a relative path i.e. without hostname
             // therefore resolve it against the target registry hostname
             final target = proxyClient.registry.host.resolve(redirect).toString()

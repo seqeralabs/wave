@@ -9,25 +9,19 @@
  *  defined by the Mozilla Public License, v. 2.0.
  */
 
-package io.seqera.wave.storage.reader;
+package io.seqera.wave.storage;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.Serializable;
 
 /**
- * Generic interface to read layer content
- *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-public interface ContentReader extends Serializable {
+public interface DigestStore extends Serializable {
 
-    byte[] readAllBytes() throws IOException;
-
-    default InputStream openStream() throws IOException {
-        return new ByteArrayInputStream(readAllBytes());
-    }
+    byte[] getBytes() throws InterruptedException;
+    String getMediaType();
+    String getDigest();
+    Integer getSize();
 
     default String toLogString() {
         return toString();

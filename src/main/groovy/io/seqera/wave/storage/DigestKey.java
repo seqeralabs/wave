@@ -30,7 +30,7 @@ public class DigestKey {
         return new DigestKey(store);
     }
 
-    public byte[] getAllBytes() {
+    public byte[] readAllBytes() throws InterruptedException {
         return target.getBytes();
     }
 

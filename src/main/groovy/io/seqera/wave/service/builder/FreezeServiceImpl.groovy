@@ -11,24 +11,17 @@
 
 package io.seqera.wave.service.builder
 
-import java.nio.file.FileAlreadyExistsException
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.StandardCopyOption
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
-import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.service.inspect.ContainerInspectService
-import io.seqera.wave.storage.reader.ContentReaderFactory
 import io.seqera.wave.tower.User
 import io.seqera.wave.util.Escape
-import io.seqera.wave.util.TarUtils
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+import static io.seqera.wave.util.RegHelper.layerDir
+import static io.seqera.wave.util.RegHelper.layerName
 /**
  * Implements helper methods to handle container build context
  *
@@ -85,14 +78,6 @@ class FreezeServiceImpl implements FreezeService {
         return containerFile
                 ? req.copyWith(containerFile: containerFile.bytes.encodeBase64().toString())
                 : req
-    }
-
-    static private String layerName(ContainerLayer layer) {
-        return "layer-${layer.gzipDigest.replace(/sha256:/,'')}.tar.gz"
-    }
-
-    static private String layerDir(ContainerLayer layer) {
-        return layerName(layer).replace(/.tar.gz/,'')
     }
 
     static protected String createContainerFile(SubmitContainerTokenRequest req) {
@@ -185,47 +170,4 @@ class FreezeServiceImpl implements FreezeService {
         return result
     }
 
-    static protected void saveLayersToContext(BuildRequest req, Path contextDir) {
-        if(req.formatDocker()) {
-            saveLayersToDockerContext0(req.containerConfig, contextDir)
-        }
-        else if(req.formatSingularity()) {
-            saveLayersToSingularityContext0(req.containerConfig, contextDir)
-        }
-        else
-            throw new IllegalArgumentException("Unknown container format: $req.format")
-    }
-
-    static protected void saveLayersToDockerContext0(ContainerConfig config, Path contextDir) {
-        final layers = config.layers
-        for(int i=0; i<layers.size(); i++) {
-            final it = layers[i]
-            final target = contextDir.resolve(layerName(it))
-            // copy the layer to the build context
-            try (InputStream stream = ContentReaderFactory.of(it.location).openStream()) {
-                Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING)
-            }
-        }
-    }
-
-    static protected void saveLayersToSingularityContext0(ContainerConfig config, Path contextDir) {
-        final layers = config.layers
-        for(int i=0; i<layers.size(); i++) {
-            final it = layers[i]
-            final target = contextDir.resolve(layerDir(it))
-            try { Files.createDirectory(target) }
-            catch (FileAlreadyExistsException e) { /* ignore */ }
-            // copy the layer to the build context
-            try (InputStream stream = ContentReaderFactory.of(it.location).openStream()) {
-                TarUtils.untarGzip(stream, target)
-            }
-        }
-    }
-
-    static protected void saveBuildContext(BuildContext buildContext, Path contextDir) {
-        // copy the layer to the build context
-        try (InputStream stream = ContentReaderFactory.of(buildContext.location).openStream()) {
-            TarUtils.untarGzip(stream, contextDir)
-        }
-    }
 }

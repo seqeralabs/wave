@@ -23,6 +23,7 @@ import com.google.common.io.BaseEncoding
 import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.model.ContainerCoordinates
 import org.yaml.snakeyaml.Yaml
 /**
@@ -249,4 +250,13 @@ class RegHelper {
 
         return hasher.hash().toString()
     }
+
+    static String layerName(ContainerLayer layer) {
+        return "layer-${layer.gzipDigest.replace(/sha256:/,'')}.tar.gz"
+    }
+
+    static String layerDir(ContainerLayer layer) {
+        return layerName(layer).replace(/.tar.gz/,'')
+    }
+
 }
