@@ -1,253 +1,104 @@
-# Wave registry
+# Wave containers provisioning service
 
-Ephemeral container registry that injects custom payloads during an arbitrary image pull.
+### Summary
+Wave allows provisioning container images on-demand removing the need
+to build and upload them manually to a container registry.
 
-The main goal is to have a custom registry server to append a layer into any Linux
-container including a FUSE driver to access a S3 bucket.
+Containers provisioned by Wave can be both disposable, i.e. ephemeral containers only
+accessible for a short period of time, and regular long-term registry-persisted container
+images.
 
-## How it works
+### Features
 
-This project acts like a proxy server in between the Docker client, putting an
-arbitrary container image and the target registry i.e. docker.io hosting the
-image to be downloaded.
+* Authenticate the access to remote container registries;
+* Augment container images i.e. dynamically add one or more container layers to existing images;
+* Build container images on-demand for a given container file (aka Dockerfile);
+* Build container images on-demand based on one or more Conda packages;
+* Build container images on-demand based on one or more Spack packages;
+* Build container images for a specified target platform (currently linux/amd64 and linux/arm64);
+* Push and cache built containers to a user-provided container repository;
+* Build Singularity native containers both using a Singularity spec file, Conda package(s) and Spack package(s);
+* Push Singularity native container images to OCI-compliant registries;
 
-When an image is pulled, the proxy server forwards the request to the target registry,
-fetches the image manifest, and appends a new layer to the layer configuration.
-This provides the FUSE client required access to the AWS S3 storage.
 
-It also changes the entry point of the container setting the script [entry.sh](.layer/opt/fusion/entry.sh)
-which takes care to automatically mount FusionFS in the container when the env variable
-`$NXF_FUSION_BUCKETS` is defined. It mounts
-the path `/fusion/s3`, and then any S3 bucket is available as `/fusion/s3/<bucket_name>`.
+### How it works
 
-## Get started
+Container provisioning requests are submitted via the endpoint `POST /container-token` specifying the target
+container image or container file. The endpoint return the container name provisioned by Wave that can be accessed
+by a regular Docker client or any other container client compliant via [Docker registry v2 API](https://docs.docker.com/registry/spec/api/).
 
-1.  Clone this repo and change into the project root.
+When a disposable container is requested, Wave acts as a proxy server between the Docker client and the target container
+registry. It instruments the container manifest, adding on-demand the new layers specified in the user submitted request.
+Then the *pull* flow is managed by Docker client as in any other container, the base image layers are downloaded from the
+container registry where the image is stored, while the instrumented layers are downloaded via the Wave service.
 
-2.  Assemble a container layer using this command:
+
+### Requirements
+
+* Java 19 or later
+* Linux or macOS
+* Docker engine (for development)
+* Kubernetes cluster (for production)
+
+### Get started
+
+1.  Clone the Wave repository from GitHub:
 
     ```bash
-    make clean all
+    git clone https://github.com/seqeralabs/wave && cd wave
     ```
 
-3.  Prepare a new layer (this creates a new `pack` directory with the layer to inject)
+2. Define one of more of those environment variable pairs depending the target registry you need to access:
 
     ```bash
-    make pack
+    export DOCKER_USER="<Docker registry user name>"
+    export DOCKER_PAT="<Docker registry access token or password>"
+    export QUAY_USER="<Quay.io registry user name or password>"
+    export QUAY_PAT="<Quay.io registry access token>"
+    export AWS_ACCESS_KEY_ID="<AWS ECR registry access key>"
+    export AWS_SECRET_ACCESS_KEY="<AWS ECR registry secret key>"
+    export AZURECR_USER="<Azure registry user name>"
+    export AZURECR_PAT="<Azure registry access token or password>"
     ```
 
-4.  To create a `dev` configuration, copy `config.yml` into `src/main/resources/application-dev.yml`
-    and set the user/pwd for at least 1 registry.
-
-5.  Compile and run the registry service:
+3.  Setup a [local tunnel](https://github.com/localtunnel/localtunnel) to make the Wave service accessible to the Docker client (only needed if you are running on macOS):
 
     ```bash
+    npx localtunnel --port 9090
+    ```
+
+    Then configure in your environment the following variable using the domain name return by Local tunnel, e.g.
+
+    ```bash
+    export WAVE_SERVER_URL="https://sweet-nights-report.loca.lt"
+    ```
+
+4. Run the service in your computer:
+
+    ```
     bash run.sh
     ```
 
-6.  Use the reverse proxy service to expose the registry with public name, e.g.
+4.  Submit a container request to the Wave service using the `curl` tool
 
     ```bash
-    ngrok http 9090 -subdomain reg
+    curl \
+        -H "Content-Type: application/json" \
+        -X POST $WAVE_SERVER_URL/container-token \
+        -d '{"containerImage":"ubuntu:latest"}' \
+        | jq -r .targetImage
     ```
 
-    > **Note**
-    > To use the service without ngrok, you can access the local server using `docker pull localhost:9090/library/busybox`.
-
-7.  Pull a container using the docker client:
+5. Pull the container image using the name returned in the previous command, for example
 
     ```bash
-    docker pull reg.ngrok.io/library/busybox
+    docker pull sweet-nights-report.loca.lt/wt/617e7da1b37a/library/ubuntu:latest
     ```
 
-    > **Note**
-    > Replace the registry name `reg.ngrok.io` with the name used in step 6.
 
-8.  The pulled image contains the files from the appended layer. Check image contents using this command:
-
-    ```bash
-    docker run \
-        --rm \
-        --platform linux/amd64 \
-        reg.ngrok.io/library/busybox \
-        cat foo.txt
-    ```
-
-9.  List the content of a bucket using `ls`:
-
-    ```bash
-    docker run \
-        --rm \
-        --platform linux/amd64 \
-        -e AWS_REGION=eu-west-1 \
-        -e AWS_ACCESS_KEY_ID \
-        -e AWS_SECRET_ACCESS_KEY \
-        -e NXF_FUSION_BUCKETS=nextflow-ci \
-        --cap-add SYS_ADMIN \
-        --device /dev/fuse  \
-        reg.ngrok.io/library/busybox \
-        ls -la /fusion/s3/nextflow-ci
-    ```
-
-### K8s one-liners
-
-```bash
-kubectl run busybox \
-    --image reg.staging-tower.xyz/library/busybox \
-    --image-pull-policy Always \
-    --restart Never \
-    --attach=true \
-    cat foo.txt
-```
-
-```bash
-kubectl run busybox \
-    --env "AWS_REGION=eu-west-1" \
-    --env "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" \
-    --env "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" \
-    --env "NXF_FUSION_BUCKETS=nextflow-ci" \
-    --privileged \
-    --image reg.staging-tower.xyz/library/busybox \
-    --restart Never \
-    --attach=true \
-    -- \
-    ls -la /fusion/s3/nextflow-ci
-```
-
-### Credentials validation
-
-```bash
-curl \
-    -H "Content-Type: application/json" \
-    -X POST http://localhost:9090/validate-creds \
-    -d '{"userName":"<USERNAME>", "password":"PASSWORD", "registry": "docker.io"}'
-```
-
-### Container token
-
-Acquire a container token:
-
-```bash
-curl \
-    -H "Content-Type: application/json" \
-    -X POST http://localhost:9090/container-token \
-    -d '{"containerImage":"quay.io/nextflow/bash:latest", "towerAccessToken":"eyJ0aWQiOiAxfS40ZGE4ZDBmMTQ3YzliMWJkOGVkMDNlYjY1ZWRiZmU1OWQxZjEyZGU3", "towerWorkspaceId": null}'
-```
-
-Example payload:
-
-```bash
-cat <<EOT > container-request.json
-{
-  "containerImage":"quay.io/nextflow/bash:latest",
-  "containerConfig": {
-    "layers": [
-      {
-        "location": "https://s3.eu-west-1.amazonaws.com/nf-tower.dev/wave-layer.tar.gzip",
-        "gzipDigest": "sha256:e9d6f29eecde29c12f0d32a1bc81aa9f4fcb76f8d813b8f1a37e8af5ee6b7657",
-        "gzipSize": 13219265,
-        "tarDigest": "sha256:2648cf125a9a4c4c5c9a2d3799b3a57983b5297442d7995746273c615bc4e316"
-      }
-    ]
-  }
-}
-EOT
-```
-
-Example request:
-
-```bash
-curl \
-    -H "Content-Type: application/json" \
-    -X POST https://reg.staging-tower.xyz/container-token \
-    -d @container-request.json
-```
-
-Example response:
-
-```json
-{
-    "containerToken": "bbc389039bf0",
-    "targetImage": "reg.staging-tower.xyz/wt/bbc389039bf0/nextflow/bash:latest"
-}
-```
-
-Example container run using the resulting token:
-
-```bash
-docker run \
-    --rm \
-    --platform linux/amd64 \
-    reg.staging-tower.xyz/wt/<TOKEN>/nextflow/bash:latest \
-    cat foo.txt
-```
-
-## EC2 profile
-
-To run the application using the AWS ParameterStore configuration, you need to activate the `ec2` profile.
-
-In `dev`, run this command:
-
-```bash
-./gradlew run -Penvs=dev,h2,mail,ec2
-```
-
-In `prod`, profiles are activated via `MICRONAUT_ENVIRONMENTS` (i.e. `MICRONAUT_ENVIRONMENTS=mysql,mail,ec2`)
-
-## Surrealdb
-
-Use statistics are stored in a SurrealDB database (if the Micronaut environment `surrealdb` is provided)
-
-```bash
-DATA="INFO FOR DB;"
-
-curl --request POST \
-    --header "Accept: application/json" \
-    --header "NS:seqera" \
-    --header "DB:wave" \
-    --user "root:root" --data "${DATA}" \
-    http://surrealdb:8000/sql
-```
-
-```json
-[{ "time": "46.215µs", "status": "OK", "result": { "dl": {}, "dt": {}, "sc": {}, "tb": {} } }]
-```
-
-After a build we can request statistics
-
-```bash
-curl --request GET \
-    --header "Accept: application/json" \
-    --header "NS:seqera" \
-    --header "DB:wave" \
-    --user "root:root" \
-    http://surrealdb:8000/key/build_wave
-```
-
-```json
-[
-   {
-      "time":"86.91µs",
-      "status":"OK",
-      "result":[
-         {
-            "dockerFile":"FROM docker.io/ubuntu\n\tRUN echo \"Look ma' building on the fly at Wed Oct 26 12:43:52 CEST 2022\" > /hello.txt\n   ",
-            "duration":"10.356435285",
-            "exitStatus":0,
-            "id":"build_wave:jkihg4lqpy4b42s3hpr8",
-            ....
-```
-
-Count all Wave requests
-
-```
-curl --request POST \
-    --header "Accept: application/json" \
-    --header "NS:seqera" \
-    --header "DB:wave" \
-    --user 'root:root' --data "select count() from wave_request group by all;" \
-    http://surrealdb:8000/sql
-```
+> **Note**
+> You can use the [Wavelit](https://github.com/seqeralabs/wavelit) command line tool instead of `curl` to interact with
+> the Wave service and submit more complex requests.
 
 ## Debugging
 
@@ -255,71 +106,4 @@ curl --request POST \
 
     ```bash
     '-Djdk.httpclient.HttpClient.log=requests,headers'
-    ```
-
-### Test local K8s build
-
-To test the image build with a local K8s cluster use the following setting:
-
-```yaml
-wave:
-    debug: true
-    build:
-        workspace: "/<YOUR_HOME>/wave/build-workspace"
-        k8s:
-            configPath: "${HOME}/.kube/config"
-            context: "docker-desktop"
-            namespace: "wave-local"
-            storage:
-                mountPath: "/<YOUR_HOME>/wave/build-workspace"
-```
-
-Replace in the above setting the `context` and `namespace` with the ones in the local K8s cluster.
-
-## Skaffold, develop in kubernetes
-
-1. Install k3d and skaffold
-
-2. Create a registry
-
-    ```bash
-    k3d registry create registry.localhost --port 5000
-    ```
-
-3. Create a cluster
-
-    ```bash
-    k3d cluster create  -p "8081:80@loadbalancer" --registry-use k3d-registry.localhost:5000 --registry-config k8s/dev/registries.yml
-    ```
-
-4. Configure the cluster
-
-    ```bash
-    kubectl label node k3d-k3s-default-server-0 service=wave-build
-    ```
-
-5. Apply all required infra
-
-    ```bash
-    kubectl apply -f k8s/dev/accounts-k3d.yml
-    kubectl apply -f k8s/dev/volumes-k3d.yml
-    kubectl apply -f k8s/dev/redis-k3d.yml
-    kubectl apply -f k8s/dev/surrealdb-k3d.yml
-    ```
-
-6. Configure skaffold to trust in our local registry:
-    ```bash
-    skaffold config set --global insecure-registries localhost:5000
-    ```
-7. Create a config and set your credentials:
-    ```bash
-    cp k8s/dev/config-k3d-example.yml k8s/dev/config-k3d.yml
-    ```
-8. Run skaffold:
-    ```bash
-    skaffold dev --default-repo localhost:5000
-    ```
-9. Or debug skaffold:
-    ```
-    skaffold debug --default-repo localhost:5000
     ```
