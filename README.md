@@ -1,7 +1,7 @@
-# Wave containers provisioning service
+# Wave containers
 
 ### Summary
-Wave allows provisioning container images on-demand removing the need
+Wave allows provisioning container images on-demand, removing the need
 to build and upload them manually to a container registry.
 
 Containers provisioned by Wave can be both disposable, i.e. ephemeral containers only
