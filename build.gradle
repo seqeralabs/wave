@@ -6,8 +6,14 @@ plugins {
     id 'io.seqera.wave.groovy-application-conventions'
     id "com.github.johnrengelman.shadow" version "7.1.1"
     id "io.micronaut.minimal.application" version "3.7.0"
-    id "com.google.cloud.tools.jib" version "3.2.1"
+    id "com.google.cloud.tools.jib" version "3.4.0"
     id 'org.asciidoctor.jvm.convert' version '3.3.2'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(19)
+    }
 }
 
 String gitVersion() {
@@ -111,7 +117,7 @@ micronaut {
 //
 jib {
     from {
-        image = 'cr.seqera.io/public/nf-jdk:corretto-17.0.8-jemalloc'
+        image = 'cr.seqera.io/public/nf-jdk:corretto-21.0.0-jemalloc'
         platforms {
             platform { architecture = 'amd64'; os = 'linux' }
         }
@@ -141,7 +147,8 @@ jib {
 
 run{
     def envs = findProperty('micronautEnvs')
-    def args = ["-Dmicronaut.environments=$envs"]
+    // note: "--enable-preview" is required to use virtual threads on Java 19 and 20
+    def args = ["-Dmicronaut.environments=$envs","--enable-preview"]
     if( environment['JVM_OPTS'] ) args.add(environment['JVM_OPTS'])
     jvmArgs args
     systemProperties 'DOCKER_USER': project.findProperty('DOCKER_USER') ?: environment['DOCKER_USER'],
