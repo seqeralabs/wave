@@ -38,18 +38,11 @@ import jakarta.inject.Singleton
 class SpackConfig {
 
     /**
-     * The host path where where Spack cached binaries are stored
+     * The s3 bucket where Spack cached binaries are stored
      */
     @Nullable
-    @Value('${wave.build.spack.cacheDirectory}')
-    private String cacheDirectory
-
-    /**
-     * The container mount path where Spack cached binaries are stored
-     */
-    @Nullable
-    @Value('${wave.build.spack.cacheMountPath}')
-    private String cacheMountPath
+    @Value('${wave.build.spack.cacheBucket}')
+    private String cacheBucket
 
     /**
      * The host path where the GPG key required by the Spack "buildcache" is located
@@ -77,27 +70,21 @@ class SpackConfig {
     @Value('${wave.build.spack.runnerImage:`ubuntu:22.04`}')
     private String runnerImage
 
-    Path getCacheDirectory() {
-        if( !cacheDirectory )
-            throw new IllegalStateException("Missing Spack cacheDirectory configuration setting")
-        return Path.of(cacheDirectory).toAbsolutePath().normalize()
-    }
-
-    String getCacheMountPath() {
-        if( !cacheMountPath )
-            throw new IllegalStateException("Missing Spack cacheMountPath configuration setting")
-        return cacheMountPath
+    String getCacheBucket() {
+        if( !cacheBucket )
+            throw new IllegalStateException("Missing Spack 'cacheBucket' configuration setting")
+        return cacheBucket
     }
 
     Path getSecretKeyFile() {
         if( !secretKeyFile )
-            throw new IllegalStateException("Missing Spack secretKeyFile configuration setting")
+            throw new IllegalStateException("Missing Spack 'secretKeyFile' configuration setting")
         return Path.of(secretKeyFile).toAbsolutePath().normalize()
     }
 
     String getSecretMountPath() {
         if( !secretMountPath )
-            throw new IllegalStateException("Missing Spack secretMountPath configuration setting")
+            throw new IllegalStateException("Missing Spack 'secretMountPath' configuration setting")
         return secretMountPath
     }
 
