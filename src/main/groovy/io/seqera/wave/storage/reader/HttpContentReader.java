@@ -53,11 +53,11 @@ public class HttpContentReader implements ContentReader {
     @Override
     public InputStream openStream() throws IOException, InterruptedException {
         final HttpClient client = HttpClientFactory.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).build();
+        HttpRequest request = HttpRequest.newBuilder().GET().uri(URI.create(url)).build();
         HttpResponse<InputStream> resp = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
         if( HTTP_SERVER_ERRORS.contains(resp.statusCode()) ) {
             final String err = IOUtils.toString(resp.body(), Charset.defaultCharset());
-            final String msg = String.format("Unexpected server response code %d for request %s - message: %s", resp.statusCode(), url, err);
+            final String msg = String.format("Unexpected server response code %d for stream 'GET %s' - message: %s", resp.statusCode(), url, err);
             throw new HttpServerRetryableErrorException(msg);
         }
         return resp.body();
