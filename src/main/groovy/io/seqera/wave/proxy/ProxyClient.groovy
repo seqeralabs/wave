@@ -151,7 +151,7 @@ class ProxyClient {
                 final resp = get0(origin, headers, handler, followRedirect)
                 if( resp.statusCode() in HTTP_SERVER_ERRORS) {
                     // throws an IOException so that the condition is handled by the retry policy
-                    throw new IOException("Unexpected server response code ${resp.statusCode()} for request ${origin} - message: ${resp.body()}")
+                    throw new IOException("Unexpected server response code ${resp.statusCode()} for request 'GET ${origin}' - message: ${resp.body()}")
                 }
                 return resp
             }
@@ -261,7 +261,7 @@ class ProxyClient {
                 final resp = head0(uri,headers)
                 if( resp.statusCode() in HTTP_SERVER_ERRORS) {
                     // throws an IOException so that the condition is handled by the retry policy
-                    throw new IOException("Unexpected server response code ${resp.statusCode()} for request ${uri} - message: ${resp.body()}")
+                    throw new IOException("Unexpected server response code ${resp.statusCode()} for request 'HEAD ${uri}' - message: ${resp.body()}")
                 }
                 return resp
             }
