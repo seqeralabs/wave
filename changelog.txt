@@ -1,4 +1,11 @@
 # Wave changelog
+v0.41.5 - 25 Sep 2023
+- Improve stability of HTTP requests handling [4989de69]
+- Improve err logging [eb74437d] [7bbbc5e8]
+- Change http config log level [e63039b3]
+- Bump AGPL 3.0 copyright notice [027dc618]
+- Bump jib plugin 3.4.0 [7447f22c]
+
 v0.41.4 - 23 Sep 2023
 - Add virtual thread executor for httpclient factory (#290) [2305f776]
 - Bump Kaniko v1.16.0 [72312d5b]
