@@ -33,10 +33,9 @@ RUN cd /opt/spack-env \
 && spack mirror add seqera-spack {{spack_cache_s3}} \
 && spack mirror add binary_mirror  https://binaries.spack.io/releases/v0.20 \
 && spack buildcache keys --install --trust \
-&& eval `spack env activate --sh .` \
-&& spack concretize -f \
-&& spack install --fail-fast \
-&& spack buildcache push --allow-root --key "$fingerprint" {{spack_cache_s3}} \
+&& spack -e . concretize -f \
+&& spack --env . install \
+&& spack -e . buildcache push --allow-root --key "$fingerprint" {{spack_cache_s3}} \
 && spack gc -y \
 && find -L /opt/._view/* -type f -exec readlink -f '{}' \; | \
     xargs file -i | \
@@ -51,3 +50,4 @@ RUN cd /opt/spack-env && \
     echo "# Needed for Perl applications" >>/opt/spack-env/z10_spack_environment.sh && \
     echo "export PERL5LIB=$(eval ls -d /opt/._view/*/lib/5.*):$PERL5LIB" >>/opt/spack-env/z10_spack_environment.sh && \
     rm -rf /opt/view
+

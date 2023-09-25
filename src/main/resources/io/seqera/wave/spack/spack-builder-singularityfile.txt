@@ -39,10 +39,9 @@ EOF
     spack mirror add seqera-spack {{spack_cache_s3}}
     spack mirror add binary_mirror  https://binaries.spack.io/releases/v0.20
     spack buildcache keys --install --trust
-    eval `spack env activate --sh .`
-    spack concretize -f
-    spack install --fail-fast
-    spack buildcache push --allow-root --key "$fingerprint" {{spack_cache_s3}} 
+    spack -e . concretize -f
+    spack --env . install
+    spack -e . buildcache push --allow-root --key "$fingerprint" {{spack_cache_s3}}
     spack gc -y
     find -L /opt/._view/* -type f -exec readlink -f '{}' \; | \
         xargs file -i | \
