@@ -41,8 +41,8 @@ class SpackConfig {
      * The s3 bucket where Spack cached binaries are stored
      */
     @Nullable
-    @Value('${wave.build.spack.cacheS3Bucket}')
-    private String cacheS3Bucket
+    @Value('${wave.build.spack.cacheBucket}')
+    private String cacheBucket
 
     /**
      * The host path where the GPG key required by the Spack "buildcache" is located
@@ -70,21 +70,21 @@ class SpackConfig {
     @Value('${wave.build.spack.runnerImage:`ubuntu:22.04`}')
     private String runnerImage
 
-    String getCacheS3Bucket() {
-        if( !cacheS3Bucket )
-            throw new IllegalStateException("Missing Spack cacheS3Bucket configuration setting")
-        return cacheS3Bucket
+    String getCacheBucket() {
+        if( !cacheBucket )
+            throw new IllegalStateException("Missing Spack 'cacheBucket' configuration setting")
+        return cacheBucket
     }
 
     Path getSecretKeyFile() {
         if( !secretKeyFile )
-            throw new IllegalStateException("Missing Spack secretKeyFile configuration setting")
+            throw new IllegalStateException("Missing Spack 'secretKeyFile' configuration setting")
         return Path.of(secretKeyFile).toAbsolutePath().normalize()
     }
 
     String getSecretMountPath() {
         if( !secretMountPath )
-            throw new IllegalStateException("Missing Spack secretMountPath configuration setting")
+            throw new IllegalStateException("Missing Spack 'secretMountPath' configuration setting")
         return secretMountPath
     }
 
