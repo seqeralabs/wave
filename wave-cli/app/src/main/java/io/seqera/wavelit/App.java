@@ -544,13 +544,13 @@ public class App implements Runnable {
         if (!isEmpty(condaFile)) {
             // parse the attribute as a conda file path *and* append the base packages if any
             // note 'channel' is null, because they are expected to be provided in the conda file
-            final Path path = condaFileFromPath(condaFile, null, condaOpts());
+            final Path path = condaFileFromPath(condaFile, null);
             return path != null ? encodePathBase64(path.toString()) : null;
         }
         else if (!isEmpty(condaPackages) && isEmpty(condaLock())) {
             // create a minimal conda file with package spec from user input
             final String packages = condaPackages.stream().collect(Collectors.joining(" "));
-            final Path path = condaFileFromPackages(packages, condaChannels(), condaOpts());
+            final Path path = condaFileFromPackages(packages, condaChannels());
             return path != null ? encodePathBase64(path.toString()) : null;
         }
         else
