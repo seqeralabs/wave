@@ -25,6 +25,7 @@ import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
+import io.seqera.wave.service.log.LogService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import jakarta.inject.Inject
@@ -43,12 +44,23 @@ class ContainerBuildController {
     @Inject
     private PersistenceService persistenceService
 
+    @Inject
+    LogService logService
+
     @Get("/v1alpha1/builds/{buildId}")
     HttpResponse<WaveBuildRecord> getBuildRecord(String buildId){
         final record = persistenceService.loadBuild(buildId)
         return record
                 ? HttpResponse.ok(record)
                 : HttpResponse.<WaveBuildRecord>notFound()
+    }
+
+    @Get("/v1alpha1/builds/{buildId}/logs")
+    HttpResponse<String> getBuildLog(String buildId){
+        final log = logService.fetchLog(buildId)
+        return log
+                ? HttpResponse.ok(log)
+                : HttpResponse.<String>notFound()
     }
 
 }

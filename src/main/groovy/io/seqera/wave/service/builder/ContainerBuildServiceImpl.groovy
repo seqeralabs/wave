@@ -42,6 +42,7 @@ import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.cleanup.CleanupStrategy
+import io.seqera.wave.service.log.LogService
 import io.seqera.wave.storage.reader.ContentReaderFactory
 import io.seqera.wave.storage.reader.HttpServerRetryableErrorException
 import io.seqera.wave.util.Retryable
@@ -108,6 +109,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     private HttpClientConfig httpClientConfig
 
     @Inject CleanupStrategy cleanup
+
+    @Inject
+    private LogService logService
 
     @PostConstruct
     void init() {
@@ -212,6 +216,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                     : statusDuration
             // update build status store
             buildStore.storeBuild(req.targetImage, resp, ttl)
+            //store logs
+            if(resp.logs)
+                logService.storeLog(resp.id, resp.logs)
             // cleanup build context
             if( cleanup.shouldCleanup(resp) )
                 buildStrategy.cleanup(req)
