@@ -19,59 +19,45 @@
 package io.seqera.wave.http
 
 import java.net.http.HttpClient
+import java.time.Duration
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Bean
-import io.micronaut.context.annotation.Factory
-import io.seqera.wave.configuration.HttpClientConfig
-import jakarta.inject.Inject
-import jakarta.inject.Named
 /**
  * Java HttpClient factory
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Factory
 @Slf4j
 @CompileStatic
 class HttpClientFactory {
 
     static private ExecutorService virtualThreadsExecutor = Executors.newVirtualThreadPerTaskExecutor()
 
-    static private HttpClient INSTANCE
+    static private Duration timeout = Duration.ofSeconds(20)
 
-    static private final Integer hold = Integer.valueOf(0)
-
-    @Inject
-    HttpClientConfig httpConfig
-
-    @Bean
-    @Named("follow-redirects")
-    HttpClient followRedirectsHttpClient() {
+    static HttpClient followRedirectsHttpClient() {
         return HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NORMAL)
-                .connectTimeout(httpConfig.connectTimeout)
+                .connectTimeout(timeout)
                 .executor(virtualThreadsExecutor)
                 .build()
     }
 
-    @Bean
-    @Named("never-redirects")
-    HttpClient neverRedirectsHttpClient() {
+    static HttpClient neverRedirectsHttpClient() {
         return HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NEVER)
-                .connectTimeout(httpConfig.connectTimeout)
+                .connectTimeout(timeout)
                 .executor(virtualThreadsExecutor)
                 .build()
     }
 
     static HttpClient newHttpClient() {
-        return INSTANCE = HttpClient.newBuilder()
+        return HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .executor(virtualThreadsExecutor)

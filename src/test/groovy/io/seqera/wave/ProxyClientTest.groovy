@@ -22,18 +22,15 @@ import spock.lang.Requires
 import spock.lang.Shared
 import spock.lang.Specification
 
-import java.net.http.HttpClient
-
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.auth.RegistryAuth
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.proxy.ProxyClient
 import jakarta.inject.Inject
-import jakarta.inject.Named
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -48,7 +45,6 @@ class ProxyClientTest extends Specification {
     @Inject RegistryLookupService lookupService
     @Inject RegistryAuthService loginService
     @Inject RegistryCredentialsProvider credentialsProvider
-    @Inject @Named("never-redirects") HttpClient httpClient
 
     def 'should call target manifests on docker.io' () {
         given:
@@ -56,6 +52,7 @@ class ProxyClientTest extends Specification {
         def IMAGE = 'library/hello-world'
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
+        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
         def proxy = new ProxyClient(httpClient)
                 .withImage(IMAGE)
@@ -75,6 +72,7 @@ class ProxyClientTest extends Specification {
         def REG = 'docker.io'
         def IMAGE = 'library/hello-world'
         def registry = lookupService.lookup(REG)
+        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
         def proxy = new ProxyClient(httpClient)
                 .withImage(IMAGE)
@@ -94,6 +92,7 @@ class ProxyClientTest extends Specification {
         def IMAGE = 'biocontainers/fastqc'
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
+        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
         def proxy = new ProxyClient(httpClient)
                 .withImage(IMAGE)
@@ -114,6 +113,7 @@ class ProxyClientTest extends Specification {
         def IMAGE = 'biocontainers/fastqc'
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
+        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
         def proxy = new ProxyClient(httpClient)
                 .withImage(IMAGE)
@@ -147,6 +147,7 @@ class ProxyClientTest extends Specification {
         def REG = '195996028523.dkr.ecr.eu-west-1.amazonaws.com'
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
+        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
         def proxy = new ProxyClient(httpClient)
                 .withImage(IMAGE)
@@ -167,6 +168,7 @@ class ProxyClientTest extends Specification {
         def REG = 'public.ecr.aws'
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
+        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
         def proxy = new ProxyClient(httpClient)
                 .withImage(IMAGE)
@@ -228,6 +230,7 @@ class ProxyClientTest extends Specification {
         def REG = 'europe-southwest1-docker.pkg.dev'
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
+        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
         def proxy = new ProxyClient(httpClient)
                 .withImage(IMAGE)
