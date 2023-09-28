@@ -155,7 +155,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             binding.spack_builder_image = config.builderImage
             binding.spack_runner_image = config.runnerImage
             binding.spack_arch = SpackHelper.toSpackArch(req.getPlatform())
-            binding.spack_cache_dir = config.cacheMountPath
+            binding.spack_cache_bucket = config.cacheBucket
             binding.spack_key_file = config.secretMountPath
             return new TemplateRenderer().render(containerFile, binding)
         }
