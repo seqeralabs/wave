@@ -24,11 +24,11 @@ import java.util.concurrent.Executors
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Bean
 import io.micronaut.context.annotation.Factory
 import io.seqera.wave.configuration.HttpClientConfig
 import jakarta.inject.Inject
 import jakarta.inject.Named
-import jakarta.inject.Singleton
 /**
  * Java HttpClient factory
  *
@@ -48,7 +48,7 @@ class HttpClientFactory {
     @Inject
     HttpClientConfig httpConfig
 
-    @Singleton
+    @Bean
     @Named("follow-redirects")
     HttpClient followRedirectsHttpClient() {
         return HttpClient.newBuilder()
@@ -59,7 +59,7 @@ class HttpClientFactory {
                 .build()
     }
 
-    @Singleton
+    @Bean
     @Named("never-redirects")
     HttpClient neverRedirectsHttpClient() {
         return HttpClient.newBuilder()
@@ -71,14 +71,10 @@ class HttpClientFactory {
     }
 
     static HttpClient newHttpClient() {
-        if( INSTANCE ) return INSTANCE
-        synchronized (hold) {
-            if( INSTANCE ) return INSTANCE
-            return INSTANCE = HttpClient.newBuilder()
-                    .version(HttpClient.Version.HTTP_1_1)
-                    .followRedirects(HttpClient.Redirect.NORMAL)
-                    .executor(virtualThreadsExecutor)
-                    .build()
-        }
+        return INSTANCE = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .executor(virtualThreadsExecutor)
+                .build()
     }
 }
