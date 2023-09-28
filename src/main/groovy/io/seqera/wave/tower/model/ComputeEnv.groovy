@@ -16,14 +16,9 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service
-/**
- * Declare operations to access container registry credentials from Tower
- *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
- */
-interface CredentialsService {
+package io.seqera.wave.tower.model
 
-    ContainerRegistryKeys findRegistryCreds(String registryName, Long userId, Long workspaceId, String towerToken, String towerEndpoint, String workflowId)
-
+class ComputeEnv {
+    String credentialsId
+    String platform
 }

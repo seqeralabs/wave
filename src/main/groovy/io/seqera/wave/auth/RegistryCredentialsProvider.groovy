@@ -61,6 +61,6 @@ interface RegistryCredentialsProvider {
      *      A {@link RegistryCredentials} object holding the credentials for the specified container or {@code null}
      *      if not credentials can be found
      */
-    RegistryCredentials getUserCredentials(ContainerPath container, Long userId, Long workspaceId, String towerToken, String towerEndpoint)
+    RegistryCredentials getUserCredentials(ContainerPath container, Long userId, Long workspaceId, String towerToken, String towerEndpoint, String workflowId)
 
 }

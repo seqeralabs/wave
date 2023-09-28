@@ -84,17 +84,17 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
      * {@inheritDoc}
      */
     @Override
-    String credentialsConfigJson(String containerFile, String buildRepo, String cacheRepo, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint) {
+    String credentialsConfigJson(String containerFile, String buildRepo, String cacheRepo, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint, @Nullable String workflowId) {
         final repos = new HashSet(10)
         repos.addAll(findRepositories(containerFile))
         if( buildRepo )
             repos.add(buildRepo)
         if( cacheRepo )
             repos.add(cacheRepo)
-        return credsJson(repos, userId, workspaceId, towerToken, towerEndpoint)
+        return credsJson(repos, userId, workspaceId, towerToken, towerEndpoint, workflowId)
     }
 
-    protected String credsJson(Set<String> repositories, Long userId, Long workspaceId, String towerToken, String towerEndpoint) {
+    protected String credsJson(Set<String> repositories, Long userId, Long workspaceId, String towerToken, String towerEndpoint, String workflowId) {
         final hosts = new HashSet()
         final result = new StringBuilder()
         for( String repo : repositories ) {
@@ -107,7 +107,7 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
             }
             final creds = !userId
                     ? credentialsProvider.getDefaultCredentials(path)
-                    : credentialsProvider.getUserCredentials(path, userId, workspaceId, towerToken, towerEndpoint)
+                    : credentialsProvider.getUserCredentials(path, userId, workspaceId, towerToken, towerEndpoint, workflowId)
             log.debug "Build credentials for repository: $repo => $creds"
             if( !creds ) {
                 // skip this host because there are no credentials
@@ -159,7 +159,7 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
      * {@inheritDoc}
      */
     @Override
-    List<String> containerEntrypoint(String containerFile, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint) {
+    List<String> containerEntrypoint(String containerFile, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint, @Nullable String workflowId) {
         final repos = inspectItems(containerFile)
         if( !repos )
             return null
@@ -179,7 +179,7 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
 
                 final creds = !userId
                         ? credentialsProvider.getDefaultCredentials(path)
-                        : credentialsProvider.getUserCredentials(path, userId, workspaceId, towerToken, towerEndpoint)
+                        : credentialsProvider.getUserCredentials(path, userId, workspaceId, towerToken, towerEndpoint, workflowId)
                 log.debug "Config credentials for repository: ${item.getImage()} => $creds"
 
                 final entry = fetchManifest0(path, creds).config?.entrypoint

@@ -48,7 +48,7 @@ interface ContainerInspectService {
      * @return
      *      A string holding the docker config JSON file for the given repositories
      */
-    String credentialsConfigJson(String containerFile, String buildRepo, String cacheRepo, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint)
+    String credentialsConfigJson(String containerFile, String buildRepo, String cacheRepo, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint, @Nullable String workflowId)
 
     /**
      * Infer the entrypoint of the container build for the given container file ie. Dockerfile.
@@ -70,6 +70,6 @@ interface ContainerInspectService {
      *      The container entrypoint model as list of string representing the command to be executed or {@code null}
      *      if not entrypoint is defined
      */
-    List<String> containerEntrypoint(String containerFile, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint)
+    List<String> containerEntrypoint(String containerFile, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint, @Nullable String workflowId)
 
 }

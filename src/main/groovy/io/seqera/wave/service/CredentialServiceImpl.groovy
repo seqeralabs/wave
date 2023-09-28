@@ -24,7 +24,9 @@ import groovy.util.logging.Slf4j
 import io.seqera.tower.crypto.AsymmetricCipher
 import io.seqera.tower.crypto.EncryptedPacket
 import io.seqera.wave.service.pairing.PairingService
+import io.seqera.wave.tower.client.CredentialsDescription
 import io.seqera.wave.tower.client.TowerClient
+import io.seqera.wave.tower.model.ComputeEnv
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
@@ -45,7 +47,7 @@ class CredentialServiceImpl implements CredentialsService {
     private PairingService keyService
 
     @Override
-    ContainerRegistryKeys findRegistryCreds(String registryName, Long userId, Long workspaceId, String towerToken, String towerEndpoint) {
+    ContainerRegistryKeys findRegistryCreds(String registryName, Long userId, Long workspaceId, String towerToken, String towerEndpoint, String workflowId) {
         if (!userId)
             throw new IllegalArgumentException("Missing userId parameter")
         if (!towerToken)
@@ -75,12 +77,24 @@ class CredentialServiceImpl implements CredentialsService {
         //  This cannot be implemented at the moment since, in tower, container registry
         //  credentials are associated to the whole registry
         final matchingRegistryName = registryName ?: DOCKER_IO
-        final creds = all.find {
+        def creds = all.find {
             it.provider == 'container-reg'  && (it.registry ?: DOCKER_IO) == matchingRegistryName
         }
         if (!creds) {
             log.debug "No credentials matching criteria registryName=$registryName; userId=$userId; workspaceId=$workspaceId; endpoint=$towerEndpoint"
-            return null
+            final describeWorkflowLaunchResponse = towerClient.fetchWorkflowlaunchInfo(towerEndpoint,towerToken,workflowId)
+            if(describeWorkflowLaunchResponse) {
+                final workflowLaunchResponse = describeWorkflowLaunchResponse.get()
+                ComputeEnv computeEnv = workflowLaunchResponse.launch.computeEnv
+                if (computeEnv.platform == 'aws-batch' || computeEnv.platform == 'google-batch') {
+                    creds = new CredentialsDescription(
+                            id: computeEnv.credentialsId
+                    )
+                }
+            }else {
+                log.debug"No credentials matching criteria workflowId=$workflowId"
+                return null
+            }
         }
 
         // log for debugging purposes

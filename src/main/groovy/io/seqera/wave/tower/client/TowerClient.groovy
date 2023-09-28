@@ -18,6 +18,8 @@
 
 package io.seqera.wave.tower.client
 
+import io.seqera.wave.tower.model.DescribeWorkflowLaunchResponse
+
 import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
@@ -120,6 +122,14 @@ class TowerClient {
             throw new IllegalArgumentException("Endpoint should start with HTTP or HTTPS protocol — offending value: '$endpoint'")
 
         StringUtils.removeEnd(endpoint, "/")
+    }
+
+    CompletableFuture<DescribeWorkflowLaunchResponse> fetchWorkflowlaunchInfo(String towerEndpoint, String authorization, String workflowId){
+        def uri = workflowlaunchInfoEndpoint(towerEndpoint,workflowId)
+        return getAsync(uri, towerEndpoint, authorization,DescribeWorkflowLaunchResponse.class)
+    }
+    protected static URI workflowlaunchInfoEndpoint(String towerEndpoint, String workflowId) {
+        return URI.create("${checkEndpoint(towerEndpoint)}/workflow/${workflowId}/launch")
     }
 
 }
