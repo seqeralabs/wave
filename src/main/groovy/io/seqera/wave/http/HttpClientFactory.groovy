@@ -1,25 +1,34 @@
 /*
- *  Copyright (c) 2023, Seqera Labs.
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2023, Seqera Labs
  *
- *  This Source Code Form is subject to the terms of the Mozilla Public
- *  License, v. 2.0. If a copy of the MPL was not distributed with this
- *  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- *  This Source Code Form is "Incompatible With Secondary Licenses", as
- *  defined by the Mozilla Public License, v. 2.0.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io.seqera.wave.http
 
 import java.net.http.HttpClient
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Bean
 import io.micronaut.context.annotation.Factory
 import io.seqera.wave.configuration.HttpClientConfig
 import jakarta.inject.Inject
 import jakarta.inject.Named
-import jakarta.inject.Singleton
 /**
  * Java HttpClient factory
  *
@@ -30,26 +39,42 @@ import jakarta.inject.Singleton
 @CompileStatic
 class HttpClientFactory {
 
+    static private ExecutorService virtualThreadsExecutor = Executors.newVirtualThreadPerTaskExecutor()
+
+    static private HttpClient INSTANCE
+
+    static private final Integer hold = Integer.valueOf(0)
+
     @Inject
     HttpClientConfig httpConfig
 
-    @Singleton
+    @Bean
     @Named("follow-redirects")
     HttpClient followRedirectsHttpClient() {
-        HttpClient.newBuilder()
+        return HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .connectTimeout(httpConfig.connectTimeout)
+                .executor(virtualThreadsExecutor)
                 .build()
     }
 
-    @Singleton
+    @Bean
     @Named("never-redirects")
     HttpClient neverRedirectsHttpClient() {
-        HttpClient.newBuilder()
+        return HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NEVER)
                 .connectTimeout(httpConfig.connectTimeout)
+                .executor(virtualThreadsExecutor)
+                .build()
+    }
+
+    static HttpClient newHttpClient() {
+        return INSTANCE = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .executor(virtualThreadsExecutor)
                 .build()
     }
 }

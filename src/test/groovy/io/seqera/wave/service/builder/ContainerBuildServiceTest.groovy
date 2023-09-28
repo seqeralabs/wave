@@ -1,12 +1,19 @@
 /*
- *  Copyright (c) 2023, Seqera Labs.
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2023, Seqera Labs
  *
- *  This Source Code Form is subject to the terms of the Mozilla Public
- *  License, v. 2.0. If a copy of the MPL was not distributed with this
- *  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- *  This Source Code Form is "Incompatible With Secondary Licenses", as
- *  defined by the Mozilla Public License, v. 2.0.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io.seqera.wave.service.builder
@@ -18,16 +25,23 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
 
+import com.sun.net.httpserver.HttpExchange
+import com.sun.net.httpserver.HttpHandler
+import com.sun.net.httpserver.HttpServer
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
+import io.seqera.wave.storage.reader.ContentReaderFactory
 import io.seqera.wave.tower.User
 import io.seqera.wave.util.Packer
 import io.seqera.wave.util.SpackHelper
@@ -49,6 +63,7 @@ class ContainerBuildServiceTest extends Specification {
     @Value('${wave.build.repo}') String buildRepo
     @Value('${wave.build.cache}') String cacheRepo
 
+    @Inject HttpClientConfig httpClientConfig
 
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
     def 'should build & push container to aws' () {
@@ -350,6 +365,75 @@ class ContainerBuildServiceTest extends Specification {
 
         cleanup:
         folder?.deleteDir()
+    }
+
+
+    def 'should untar build context' () {
+        given:
+        def folder = Files.createTempDirectory('test')
+        def source = folder.resolve('source')
+        def target = folder.resolve('target')
+        Files.createDirectory(source)
+        Files.createDirectory(target)
+        and:
+        source.resolve('foo.txt').text  = 'Foo'
+        source.resolve('bar.txt').text  = 'Bar'
+        and:
+        def layer = new Packer().layer(source)
+        def context = BuildContext.of(layer)
+        and:
+        def service = new ContainerBuildServiceImpl(httpClientConfig: httpClientConfig)
+
+        when:
+        service.saveBuildContext(context, target)
+        then:
+        target.resolve('foo.txt').text == 'Foo'
+        target.resolve('bar.txt').text == 'Bar'
+
+        cleanup:
+        folder?.deleteDir()
+    }
+
+
+    def 'should save layers to context dir' () {
+        given:
+        def folder = Files.createTempDirectory('test')
+        def file1 = folder.resolve('file1'); file1.text = "I'm file one"
+        def file2 = folder.resolve('file2'); file2.text = "I'm file two"
+        and:
+        def cl = new Packer().layer(folder, [file1])
+        def l1 = new ContainerLayer(location: "http://localhost:9901/some.tag.gz", tarDigest: cl.tarDigest, gzipDigest: cl.gzipDigest, gzipSize: cl.gzipSize)
+        and:
+        def l2 = new Packer().layer(folder, [file2])
+        def config = new ContainerConfig(layers: [l1,l2])
+
+        and:
+        HttpHandler handler = { HttpExchange exchange ->
+            def body = ContentReaderFactory.of(cl.location).readAllBytes()
+            exchange.getResponseHeaders().add("Content-Type", "application/tar+gzip")
+            exchange.sendResponseHeaders(200, body.size())
+            exchange.getResponseBody() << body
+            exchange.getResponseBody().close()
+
+        }
+        and:
+        HttpServer server = HttpServer.create(new InetSocketAddress(9901), 0);
+        server.createContext("/", handler);
+        server.start()
+        and:
+        def req = new BuildRequest('from foo', Path.of('/wsp'), 'quay.io/org/name', null, null, BuildFormat.DOCKER, Mock(User), config, null, ContainerPlatform.of('amd64'),'{auth}', null, null, "127.0.0.1", null)
+        and:
+        def service = new ContainerBuildServiceImpl(httpClientConfig: httpClientConfig)
+
+        when:
+        service.saveLayersToContext(req, folder)
+        then:
+        Files.exists(folder.resolve("layer-${l1.gzipDigest.replace(/sha256:/,'')}.tar.gz"))
+        Files.exists(folder.resolve("layer-${l2.gzipDigest.replace(/sha256:/,'')}.tar.gz"))
+
+        cleanup:
+        folder?.deleteDir()
+        server?.stop(0)
     }
 
 }

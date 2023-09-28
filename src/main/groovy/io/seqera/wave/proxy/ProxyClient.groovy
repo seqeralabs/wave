@@ -1,12 +1,19 @@
 /*
- *  Copyright (c) 2023, Seqera Labs.
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2023, Seqera Labs
  *
- *  This Source Code Form is subject to the terms of the Mozilla Public
- *  License, v. 2.0. If a copy of the MPL was not distributed with this
- *  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- *  This Source Code Form is "Incompatible With Secondary Licenses", as
- *  defined by the Mozilla Public License, v. 2.0.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io.seqera.wave.proxy
@@ -30,6 +37,9 @@ import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryInfo
 import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.util.RegHelper
+import static io.seqera.wave.WaveDefault.HTTP_REDIRECT_CODES
+import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
+
 /**
  *
  * https://www.baeldung.com/java-9-http-client
@@ -41,10 +51,8 @@ import io.seqera.wave.util.RegHelper
 @CompileStatic
 class ProxyClient {
 
-    public static final int[] REDIRECT_CODES = [301, 302, 307, 308]
-
     private static final long RETRY_MAX_DELAY_MILLIS = 30_000
-    private static final int RETRY_MAX_ATTEMPTS = 5
+    private static final int RETRY_MAX_ATTEMPTS = 8
 
     private String image
     private RegistryInfo registry
@@ -140,7 +148,12 @@ class ProxyClient {
         final supplier = new CheckedSupplier<HttpResponse<T>>() {
             @Override
             HttpResponse<T> get() throws Throwable {
-                return get0(origin, headers, handler, followRedirect)
+                final resp = get0(origin, headers, handler, followRedirect)
+                if( resp.statusCode() in HTTP_SERVER_ERRORS) {
+                    // throws an IOException so that the condition is handled by the retry policy
+                    throw new IOException("Unexpected server response code ${resp.statusCode()} for request 'GET ${origin}' - message: ${resp.body()}")
+                }
+                return resp
             }
         }
         return Failsafe.with(policy).get(supplier)
@@ -168,7 +181,7 @@ class ProxyClient {
                 loginService.invalidateAuthorization(image, registry.auth, credentials)
                 continue
             }
-            if( result.statusCode() in REDIRECT_CODES && followRedirect ) {
+            if( result.statusCode() in HTTP_REDIRECT_CODES && followRedirect ) {
                 final redirect = result.headers().firstValue('location').orElse(null)
                 log.trace "Redirecting (${++redirectCount}) $target ==> $redirect ${RegHelper.dumpHeaders(result.headers())}"
                 if( !redirect ) {
@@ -234,7 +247,7 @@ class ProxyClient {
 
         return RetryPolicy.builder()
                 .handle(IOException, SocketException.class)
-                .withBackoff(50, RETRY_MAX_DELAY_MILLIS, ChronoUnit.MILLIS)
+                .withBackoff(250, RETRY_MAX_DELAY_MILLIS, ChronoUnit.MILLIS)
                 .withMaxAttempts(RETRY_MAX_ATTEMPTS)
                 .onRetry(listener)
                 .build()
@@ -245,7 +258,12 @@ class ProxyClient {
         final supplier = new CheckedSupplier<HttpResponse<Void>>() {
             @Override
             HttpResponse<Void> get() throws Throwable {
-                return head0(uri,headers)
+                final resp = head0(uri,headers)
+                if( resp.statusCode() in HTTP_SERVER_ERRORS) {
+                    // throws an IOException so that the condition is handled by the retry policy
+                    throw new IOException("Unexpected server response code ${resp.statusCode()} for request 'HEAD ${uri}' - message: ${resp.body()}")
+                }
+                return resp
             }
         }
         return Failsafe.with(policy).get(supplier)

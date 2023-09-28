@@ -1,12 +1,19 @@
 /*
- *  Copyright (c) 2023, Seqera Labs.
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2023, Seqera Labs
  *
- *  This Source Code Form is subject to the terms of the Mozilla Public
- *  License, v. 2.0. If a copy of the MPL was not distributed with this
- *  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- *  This Source Code Form is "Incompatible With Secondary Licenses", as
- *  defined by the Mozilla Public License, v. 2.0.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io.seqera.wave.controller
@@ -16,9 +23,14 @@ import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
 import javax.annotation.Nullable
 
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
+import com.google.common.cache.LoadingCache
+import com.google.common.cache.Weigher
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micrometer.core.instrument.MeterRegistry
+import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpMethod
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
@@ -34,6 +46,7 @@ import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.ErrorHandler
+import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RegistryProxyService.DelegateResponse
 import io.seqera.wave.core.RouteHandler
@@ -43,8 +56,11 @@ import io.seqera.wave.exchange.RegistryErrorResponse
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.builder.ContainerBuildService
+import io.seqera.wave.storage.DigestKey
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
+import io.seqera.wave.util.Retryable
+import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Mono
@@ -68,8 +84,47 @@ class RegistryProxyController {
     @Inject @Nullable RateLimiterService rateLimiterService
     @Inject ErrorHandler errorHandler
 
-    @Inject
-    MeterRegistry meterRegistry
+    @Inject MeterRegistry meterRegistry
+    @Inject HttpClientConfig httpConfig
+
+    @Value('${wave.cache.digestStore.maxWeightMb:350}')
+    int cacheMaxWeightMb
+
+    private static final int _1MB = 1024*1024
+
+    private LoadingCache<DigestKey,byte[]> digestsCache
+
+    @PostConstruct
+    private void init() {
+        log.debug "Creating proxy controller - cacheMaxWeightMb=$cacheMaxWeightMb"
+        // initialize the cache builder
+        digestsCache = CacheBuilder
+                .newBuilder()
+                .maximumWeight(cacheMaxWeightMb  * _1MB)
+                .weigher(new Weigher<DigestKey, byte[]>() {
+                    @Override
+                    int weigh(DigestKey key, byte[] value) {
+                        return value.length
+                    }
+                })
+                .build(digestKeyCacheLoader())
+    }
+
+    private CacheLoader<DigestKey, byte[]> digestKeyCacheLoader() {
+        // create the retry logic on error
+        final retryable = Retryable
+                .of(httpConfig)
+                .onRetry((event) -> log.warn("Unable to load digest-store - attempt: ${event.attemptCount}; cause: ${event.lastFailure.message}"))
+        // load all bytes, this can invoke a remote http request
+        new CacheLoader<DigestKey, byte[]>() {
+            @Override
+            byte[] load(DigestKey key) throws Exception {
+                log.debug("Loading digest-store=${key}")
+                return retryable.apply(() -> key.readAllBytes())
+            }
+        }
+    }
+
 
     @Error
     HttpResponse<RegistryErrorResponse> handleError(HttpRequest request, Throwable t) {
@@ -256,22 +311,9 @@ class RegistryProxyController {
     }
 
     MutableHttpResponse<?> fromCache(DigestStore entry) {
-        // compose the response
-        def resp
-        def size = entry.size
-        // if the size is not available, read all bytes
-        // this should only be needed until all cached DigestStore entries - without a size attribute - are evicted
-        // after the transitory period, it should be assumed size is always not null and this snippet can be removed
-        if( size == null ) {
-            resp = entry.getBytes()
-            size = resp.size()
-            log.debug "Missing digest-store size - reading all bytes - size=$size"
-        }
-        else {
-            log.debug "Using digest-store stream - size=$size"
-            resp = entry.openStream()
-        }
 
+        final size = entry.size
+        final resp = digestsCache.get( DigestKey.of(entry) )
 
         Map<CharSequence, CharSequence> headers = Map.of(
                         "Content-Length", String.valueOf(size),

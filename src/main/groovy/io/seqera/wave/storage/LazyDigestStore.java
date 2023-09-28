@@ -1,18 +1,24 @@
 /*
- *  Copyright (c) 2023, Seqera Labs.
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2023, Seqera Labs
  *
- *  This Source Code Form is subject to the terms of the Mozilla Public
- *  License, v. 2.0. If a copy of the MPL was not distributed with this
- *  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- *  This Source Code Form is "Incompatible With Secondary Licenses", as
- *  defined by the Mozilla Public License, v. 2.0.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io.seqera.wave.storage;
 
 import java.io.IOException;
-import java.io.InputStream;
 
 import io.seqera.wave.storage.reader.ContentReader;
 
@@ -36,18 +42,13 @@ public class LazyDigestStore implements DigestStore{
     }
 
     @Override
-    public byte[] getBytes() {
+    public byte[] getBytes() throws InterruptedException {
         try {
             return contentReader !=null ? contentReader.readAllBytes() : null;
         }
         catch (IOException e) {
             throw new IllegalStateException("Unable to load digest content at path: "+ contentReader, e);
         }
-    }
-
-    @Override
-    public InputStream openStream() throws IOException {
-        return contentReader.openStream();
     }
 
     @Override
@@ -66,5 +67,10 @@ public class LazyDigestStore implements DigestStore{
 
     public String toString() {
         return String.format("LazyDigestStore(mediaType=%s; digest=%s; size=%d; reader=%s)", mediaType, digest, size, contentReader.toString());
+    }
+
+    @Override
+    public String toLogString() {
+        return String.format("LazyDigestStore(digest=%s; size=%d; mediaType=%s; reader=%s)", digest, size, mediaType, contentReader.toLogString());
     }
 }

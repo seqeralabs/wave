@@ -1,12 +1,19 @@
 /*
- *  Copyright (c) 2023, Seqera Labs.
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2023, Seqera Labs
  *
- *  This Source Code Form is subject to the terms of the Mozilla Public
- *  License, v. 2.0. If a copy of the MPL was not distributed with this
- *  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- *  This Source Code Form is "Incompatible With Secondary Licenses", as
- *  defined by the Mozilla Public License, v. 2.0.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io.seqera.wave.service.builder
@@ -47,7 +54,7 @@ class DockerBuilderStrategyTest extends Specification {
                 'run',
                 '--rm',
                 '-v', '/work/foo:/work/foo',
-                'gcr.io/kaniko-project/executor:v1.12.1']
+                'gcr.io/kaniko-project/executor:v1.16.0']
 
         when:
         cmd = service.cmdForKaniko(work, Path.of('/foo/creds.json'), null, ContainerPlatform.of('arm64'))
@@ -58,7 +65,7 @@ class DockerBuilderStrategyTest extends Specification {
                 '-v', '/work/foo:/work/foo',
                 '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
                 '--platform', 'linux/arm64',
-                'gcr.io/kaniko-project/executor:v1.12.1']
+                'gcr.io/kaniko-project/executor:v1.16.0']
 
         when:
         cmd = service.cmdForKaniko(work, Path.of('/foo/creds.json'), spackConfig, null)
@@ -70,7 +77,7 @@ class DockerBuilderStrategyTest extends Specification {
                 '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
                 '-v', '/host/spack/key:/opt/spack/key:ro',
                 '-v', '/host/spack/cache:/opt/spack/cache:rw',
-                'gcr.io/kaniko-project/executor:v1.12.1']
+                'gcr.io/kaniko-project/executor:v1.16.0']
 
 
         cleanup:
@@ -95,7 +102,7 @@ class DockerBuilderStrategyTest extends Specification {
                 '-v', '/work/foo/89fb83ce6ec8627b:/work/foo/89fb83ce6ec8627b',
                 '-v', '/work/creds.json:/kaniko/.docker/config.json:ro',
                 '--platform', 'linux/amd64',
-                'gcr.io/kaniko-project/executor:v1.12.1',
+                'gcr.io/kaniko-project/executor:v1.16.0',
                 '--dockerfile', '/work/foo/89fb83ce6ec8627b/Containerfile',
                 '--context', '/work/foo/89fb83ce6ec8627b/context',
                 '--destination', 'repo:89fb83ce6ec8627b',
