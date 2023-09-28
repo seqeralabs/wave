@@ -60,7 +60,7 @@ class BuildLogServiceImpl implements LogService{
             }
         }
         catch (Exception e) {
-            log.warn "Unable to run the container scan - reason: ${e.message?:e}"
+            log.warn "Unable to store build logs - reason: ${e.message?:e}"
         }
     }
 
