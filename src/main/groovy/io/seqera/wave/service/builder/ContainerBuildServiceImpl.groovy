@@ -216,9 +216,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                     : statusDuration
             // update build status store
             buildStore.storeBuild(req.targetImage, resp, ttl)
-            //store logs
-            if(resp.logs)
-                logService.storeLog(resp.id, resp.logs)
             // cleanup build context
             if( cleanup.shouldCleanup(resp) )
                 buildStrategy.cleanup(req)

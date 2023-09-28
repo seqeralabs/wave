@@ -25,6 +25,8 @@ import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.request.UploadRequest
 import io.micronaut.objectstorage.response.UploadResponse
+import io.micronaut.runtime.event.annotation.EventListener
+import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.log.LogService
 import io.seqera.wave.service.persistence.PersistenceService
 import jakarta.inject.Inject
@@ -48,6 +50,19 @@ class BuildLogServiceImpl implements LogService{
 
     @Inject
     PersistenceService persistenceService
+
+    @EventListener
+    void onBuildEvent(BuildEvent event) {
+        try {
+            if( event.result.succeeded() ) {
+                String key = storeLog(event.result.id, event.result.logs)
+                log.info "logs has been stored for buildId: ${event.result.id} with key: ${key}"
+            }
+        }
+        catch (Exception e) {
+            log.warn "Unable to run the container scan - reason: ${e.message?:e}"
+        }
+    }
 
     @Override
     String storeLog(String buildId, String log){
