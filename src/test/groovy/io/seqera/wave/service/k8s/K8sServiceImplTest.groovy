@@ -292,8 +292,6 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'build-claim',
                 'wave.build.k8s.storage.mountPath': '/build',
-                'wave.build.spack.cacheDirectory':'/build/host/spack/cache',
-                'wave.build.spack.cacheMountPath':'/opt/container/spack/cache',
                 'wave.build.spack.secretKeyFile':'/build/host/spack/key',
                 'wave.build.spack.secretMountPath':'/opt/container/spack/key'
         ]
@@ -313,21 +311,16 @@ class K8sServiceImplTest extends Specification {
         result.spec.containers.get(0).image == 'my-image:latest'
         result.spec.containers.get(0).args ==  ['this','that']
         and:
-        result.spec.containers.get(0).volumeMounts.size() == 3
+        result.spec.containers.get(0).volumeMounts.size() == 2
         and:
         result.spec.containers.get(0).volumeMounts.get(0).name == 'build-data'
         result.spec.containers.get(0).volumeMounts.get(0).mountPath == '/build/work/xyz'
         result.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz'
         and:
         result.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
-        result.spec.containers.get(0).volumeMounts.get(1).mountPath == '/opt/container/spack/cache'
-        result.spec.containers.get(0).volumeMounts.get(1).subPath == 'host/spack/cache'
-        !result.spec.containers.get(0).volumeMounts.get(1).readOnly
-        and:
-        result.spec.containers.get(0).volumeMounts.get(2).name == 'build-data'
-        result.spec.containers.get(0).volumeMounts.get(2).mountPath == '/opt/container/spack/key'
-        result.spec.containers.get(0).volumeMounts.get(2).subPath == 'host/spack/key'
-        result.spec.containers.get(0).volumeMounts.get(2).readOnly
+        result.spec.containers.get(0).volumeMounts.get(1).mountPath == '/opt/container/spack/key'
+        result.spec.containers.get(0).volumeMounts.get(1).subPath == 'host/spack/key'
+        result.spec.containers.get(0).volumeMounts.get(1).readOnly
 
         and:
         result.spec.volumes.get(0).name == 'build-data'

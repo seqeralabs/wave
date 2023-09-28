@@ -127,9 +127,6 @@ class DockerBuildStrategy extends BuildStrategy {
             // secret file
             wrapper.add('-v')
             wrapper.add("${spackConfig.secretKeyFile}:${spackConfig.secretMountPath}:ro".toString())
-            // cache directory
-            wrapper.add('-v')
-            wrapper.add("${spackConfig.cacheDirectory}:${spackConfig.cacheMountPath}:rw".toString())
         }
 
         if( platform ) {
@@ -162,9 +159,6 @@ class DockerBuildStrategy extends BuildStrategy {
             // secret file
             wrapper.add('-v')
             wrapper.add("${spackConfig.secretKeyFile}:${spackConfig.secretMountPath}:ro".toString())
-            // cache directory
-            wrapper.add('-v')
-            wrapper.add("${spackConfig.cacheDirectory}:${spackConfig.cacheMountPath}:rw".toString())
         }
 
         if( platform ) {

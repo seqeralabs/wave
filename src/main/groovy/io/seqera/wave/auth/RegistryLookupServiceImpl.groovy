@@ -18,7 +18,7 @@
 
 package io.seqera.wave.auth
 
-import java.net.http.HttpClient
+
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.concurrent.TimeUnit
@@ -29,9 +29,9 @@ import com.google.common.cache.LoadingCache
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.configuration.HttpClientConfig
+import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.util.Retryable
 import jakarta.inject.Inject
-import jakarta.inject.Named
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
 import static io.seqera.wave.WaveDefault.DOCKER_REGISTRY_1
@@ -50,9 +50,6 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
     @Inject
     private HttpClientConfig httpConfig
 
-    @Inject
-    @Named("follow-redirects")
-    private HttpClient httpClient
 
     private CacheLoader<URI, RegistryAuth> loader = new CacheLoader<URI, RegistryAuth>() {
         @Override
@@ -71,6 +68,7 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
 
 
     protected RegistryAuth lookup0(URI endpoint) {
+        final httpClient = HttpClientFactory.followRedirectsHttpClient()
         final request = HttpRequest.newBuilder() .uri(endpoint) .GET() .build()
         // retry strategy
         final retryable = Retryable
