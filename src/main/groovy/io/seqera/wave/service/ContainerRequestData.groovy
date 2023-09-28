@@ -45,12 +45,13 @@ class ContainerRequestData {
     final String buildId
     final Boolean buildNew
     final Boolean freeze
+    final String workflowId
 
     ContainerCoordinates coordinates() { ContainerCoordinates.parse(containerImage) }
 
     @Override
     String toString() {
-        return "ContainerRequestData[userId=$userId; workspaceId=$workspaceId; containerImage=$containerImage; containerFile=${trunc(containerFile)}; condaFile=${trunc(condaFile)}; containerConfig=${containerConfig}]"
+        return "ContainerRequestData[userId=$userId; workspaceId=$workspaceId; containerImage=$containerImage; containerFile=${trunc(containerFile)}; condaFile=${trunc(condaFile)}; containerConfig=${containerConfig}; workflowId=${workflowId}]"
     }
 
 }

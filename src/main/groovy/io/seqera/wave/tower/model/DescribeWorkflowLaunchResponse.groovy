@@ -16,14 +16,22 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service
+package io.seqera.wave.tower.model
+
+import groovy.transform.CompileStatic
 /**
- * Declare operations to access container registry credentials from Tower
+ * Model the response of workflow launch describe request
  *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-interface CredentialsService {
+@CompileStatic
+class DescribeWorkflowLaunchResponse {
 
-    ContainerRegistryKeys findRegistryCreds(String registryName, Long userId, Long workspaceId, String towerToken, String towerEndpoint, String workflowId)
+    WorkflowLaunchResponse launch
 
+    DescribeWorkflowLaunchResponse() {}
+
+    DescribeWorkflowLaunchResponse(WorkflowLaunchResponse launch) {
+        this.launch = launch
+    }
 }

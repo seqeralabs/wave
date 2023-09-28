@@ -94,7 +94,7 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
      *      if not credentials can be found
      */
     @Override
-    RegistryCredentials getUserCredentials(ContainerPath container, Long userId, Long workspaceId, String towerToken, String towerEndpoint) {
+    RegistryCredentials getUserCredentials(ContainerPath container, Long userId, Long workspaceId, String towerToken, String towerEndpoint, String workflowId) {
         if( !userId )
             throw new IllegalArgumentException("Missing required parameter userId -- Unable to retrieve credentials for container repository '$container'")
 
@@ -102,11 +102,11 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
         if( container.repository==defaultBuildRepository || container.repository==defaultCacheRepository )
             return getDefaultCredentials(container.registry)
 
-        return getUserCredentials0(container.registry, userId, workspaceId, towerToken, towerEndpoint)
+        return getUserCredentials0(container.registry, userId, workspaceId, towerToken, towerEndpoint, workflowId)
     }
 
-    protected RegistryCredentials getUserCredentials0(String registry, Long userId, Long workspaceId, String towerToken, String towerEndpoint) {
-        final keys = credentialsService.findRegistryCreds(registry, userId, workspaceId, towerToken, towerEndpoint)
+    protected RegistryCredentials getUserCredentials0(String registry, Long userId, Long workspaceId, String towerToken, String towerEndpoint, String workflowId) {
+        final keys = credentialsService.findRegistryCreds(registry, userId, workspaceId, towerToken, towerEndpoint, workflowId)
         final result = keys
                 ? credentialsFactory.create(registry, keys.userName, keys.password)
                 // create a missing credentials class with a unique key (the access token) because even when

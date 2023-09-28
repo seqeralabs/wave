@@ -75,7 +75,7 @@ class ContainerBuildServiceTest extends Specification {
         RUN echo Hello > hello.txt
         '''.stripIndent()
         and:
-        def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, cacheRepo, null, null,null,null)
+        def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, cacheRepo, null, null,null,null,null)
         def REQ = new BuildRequest(dockerFile, folder, buildRepo, null, null, BuildFormat.DOCKER,Mock(User), null, null, ContainerPlatform.of('amd64'), cfg, cacheRepo, null, "", null)
 
         when:
@@ -104,7 +104,7 @@ class ContainerBuildServiceTest extends Specification {
         and:
         buildRepo = "docker.io/pditommaso/wave-tests"
         and:
-        def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, null, null,null,null)
+        def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, null, null,null,null,null)
         def REQ = new BuildRequest(dockerFile, folder, buildRepo, null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),cfg, null, null, null, null)
 
         when:
@@ -132,7 +132,7 @@ class ContainerBuildServiceTest extends Specification {
         '''.stripIndent()
         and:
         buildRepo = "quay.io/pditommaso/wave-tests"
-        def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, null, null, null, null)
+        def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, null, null, null, null, null)
         def REQ = new BuildRequest(dockerFile, folder, buildRepo, null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),cfg, null, null, "", null)
 
         when:
@@ -160,7 +160,7 @@ class ContainerBuildServiceTest extends Specification {
         '''.stripIndent()
         and:
         buildRepo = "seqeralabs.azurecr.io/wave-tests"
-        def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, null, null, null, null)
+        def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, null, null, null, null, null)
         def REQ = new BuildRequest(dockerFile, folder, buildRepo, null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),cfg, null, null, "", null)
 
         when:
@@ -350,7 +350,7 @@ class ContainerBuildServiceTest extends Specification {
         and:
         buildRepo = "docker.io/pditommaso/wave-tests"
         and:
-        def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, null, null,null,null)
+        def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, null, null,null,null,null)
         def REQ = new BuildRequest(dockerFile, context, buildRepo, null, null, BuildFormat.DOCKER, Mock(User), containerConfig, null, ContainerPlatform.of('amd64'),cfg, null, null, null, null)
 
         when:

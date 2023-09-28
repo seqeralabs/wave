@@ -104,15 +104,16 @@ class RegistryCredentialsProviderTest extends Specification {
         def WORKSPACE_ID = 200
         def TOWER_TOKEN = "token"
         def TOWER_ENDPOINT = "localhost:8080"
+        def WORKFLOW_ID = "id123"
         and:
         def credentialService = Mock(CredentialsService)
         def credentialsFactory = new RegistryCredentialsFactoryImpl(awsEcrService: Mock(AwsEcrService))
         def provider = Spy(new RegistryCredentialsProviderImpl(credentialsFactory: credentialsFactory, credentialsService: credentialService))
 
         when:
-        def result = provider.getUserCredentials0(REGISTRY, USER_ID, WORKSPACE_ID, TOWER_TOKEN, TOWER_ENDPOINT)
+        def result = provider.getUserCredentials0(REGISTRY, USER_ID, WORKSPACE_ID, TOWER_TOKEN, TOWER_ENDPOINT, WORKFLOW_ID)
         then:
-        1 * credentialService.findRegistryCreds(REGISTRY, USER_ID, WORKSPACE_ID, TOWER_TOKEN, TOWER_ENDPOINT) >> new ContainerRegistryKeys(userName:'usr1',password:'pwd2',registry:REGISTRY)
+        1 * credentialService.findRegistryCreds(REGISTRY, USER_ID, WORKSPACE_ID, TOWER_TOKEN, TOWER_ENDPOINT, WORKFLOW_ID) >> new ContainerRegistryKeys(userName:'usr1',password:'pwd2',registry:REGISTRY)
         and:
         result.getUsername() == 'usr1'
         result.getPassword() == 'pwd2'

@@ -174,7 +174,7 @@ class FreezeServiceImplTest extends Specification  {
         def req = new SubmitContainerTokenRequest(containerImage: 'hello-world:latest', freeze: true)
         def result = freezeService.freezeBuildRequest(req, Mock(User))
         then:
-        1* authService.containerEntrypoint(_,_,_,_,_) >> null
+        1* authService.containerEntrypoint(_,_,_,_,_,_) >> null
         and:
         new String(result.containerFile.decodeBase64()) == '''\
             # wave generated container file
@@ -185,7 +185,7 @@ class FreezeServiceImplTest extends Specification  {
         req = new SubmitContainerTokenRequest(containerImage: 'hello-world:latest', freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2']))
         result = freezeService.freezeBuildRequest(req, Mock(User))
         then:
-        1* authService.containerEntrypoint(_,_,_,_,_) >> null
+        1* authService.containerEntrypoint(_,_,_,_,_,_) >> null
         and:
         new String(result.containerFile.decodeBase64()) == '''\
             # wave generated container file
@@ -197,7 +197,7 @@ class FreezeServiceImplTest extends Specification  {
         req = new SubmitContainerTokenRequest(containerImage: 'hello-world:latest', freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2']))
         result = freezeService.freezeBuildRequest(req, Mock(User))
         then:
-        1* authService.containerEntrypoint(_,_,_,_,_) >> ['/foo/entry.sh']
+        1* authService.containerEntrypoint(_,_,_,_,_,_) >> ['/foo/entry.sh']
         and:
         new String(result.containerFile.decodeBase64()) == '''\
             # wave generated container file
@@ -217,7 +217,7 @@ class FreezeServiceImplTest extends Specification  {
         def req = new SubmitContainerTokenRequest(containerFile: ENCODED, freeze: true)
         def result = freezeService.freezeBuildRequest(req, Mock(User))
         then:
-        0* authService.containerEntrypoint(_,_,_,_,_) >> null
+        0* authService.containerEntrypoint(_,_,_,_,_,_) >> null
         and:
         result.containerFile == req.containerFile
 
@@ -227,7 +227,7 @@ class FreezeServiceImplTest extends Specification  {
         req = new SubmitContainerTokenRequest(containerFile: ENCODED, freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2'], workingDir: '/work/dir'))
         result = freezeService.freezeBuildRequest(req, Mock(User))
         then:
-        1* authService.containerEntrypoint(_,_,_,_,_) >> null
+        1* authService.containerEntrypoint(_,_,_,_,_,_) >> null
         and:
         // nothing to do here =>  returns null
         new String(result.containerFile.decodeBase64()) == '''\
@@ -245,7 +245,7 @@ class FreezeServiceImplTest extends Specification  {
         req = new SubmitContainerTokenRequest(containerFile: ENCODED, freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2'], workingDir: '/work/dir'))
         result = freezeService.freezeBuildRequest(req, Mock(User))
         then:
-        1 * authService.containerEntrypoint(_,_,_,_,_) >> ['/some/entry.sh']
+        1 * authService.containerEntrypoint(_,_,_,_,_,_) >> ['/some/entry.sh']
         and:
         // nothing to do here =>  returns null
         new String(result.containerFile.decodeBase64()) == '''\
