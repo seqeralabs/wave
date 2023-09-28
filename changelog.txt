@@ -1,4 +1,7 @@
 # Wave changelog
+v0.41.6 - 28 Sep 2023 
+- Do not cache http client across requests [62c86530]
+
 v0.41.5 - 25 Sep 2023
 - Improve stability of HTTP requests handling [4989de69]
 - Improve err logging [eb74437d] [7bbbc5e8]
