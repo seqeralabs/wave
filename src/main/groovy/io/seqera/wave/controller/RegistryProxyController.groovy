@@ -113,8 +113,8 @@ class RegistryProxyController {
     private CacheLoader<DigestKey, byte[]> digestKeyCacheLoader() {
         // create the retry logic on error
         final retryable = Retryable
-                .of(httpConfig)
-                .onRetry((event) -> log.warn("Unable to load digest-store - attempt: ${event.attemptCount}; cause: ${event.lastFailure.message}"))
+                .<byte[]>of(httpConfig)
+                .onRetry((event) -> log.warn("Unable to load digest-store - event: $event"))
         // load all bytes, this can invoke a remote http request
         new CacheLoader<DigestKey, byte[]>() {
             @Override

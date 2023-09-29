@@ -18,7 +18,6 @@
 
 package io.seqera.wave.auth
 
-
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.concurrent.ExecutionException
@@ -41,7 +40,6 @@ import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
 import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
-
 /**
  * Implement Docker authentication & login service
  *
@@ -117,17 +115,11 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
                 .build()
         // retry strategy
         final retryable = Retryable
-                .of(httpConfig)
-                .onRetry((event) -> log.warn("Unable to connect '$endpoint' - attempt: ${event.attemptCount}; cause: ${event.lastFailure.message}"))
+                .<HttpResponse<String>>of(httpConfig)
+                .retryIf( (response) -> response.statusCode() in HTTP_SERVER_ERRORS)
+                .onRetry((event) -> log.warn("Unable to connect '$endpoint' - event: $event}"))
         // make the request
-        final response = retryable.apply(()-> {
-            final resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
-            if( resp.statusCode() in HTTP_SERVER_ERRORS) {
-                // throws an IOException so that the condition is handled by the retry policy
-                throw new IOException("[#3] Unexpected server response code ${resp.statusCode()} for request 'GET ${request}' - message: ${resp.body()}")
-            }
-            return resp
-        })
+        final response = retryable.apply(()-> httpClient.send(request, HttpResponse.BodyHandlers.ofString()))
         // check the response
         if( response.statusCode() == 200 ) {
             log.debug "Container registry '$endpoint' login - response: ${StringUtils.trunc(response.body())}"
@@ -206,17 +198,11 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
 
         // retry strategy
         final retryable = Retryable
-                .of(httpConfig)
-                .onRetry((event) -> log.warn("Unable to connect '$login' - attempt: ${event.attemptCount}; cause: ${event.lastFailure.message}"))
+                .<HttpResponse<String>>of(httpConfig)
+                .retryIf( (response) -> ((HttpResponse)response).statusCode() in HTTP_SERVER_ERRORS )
+                .onRetry((event) -> log.warn("Unable to connect '$login' - event: $event"))
         // submit http request
-        final response = retryable.apply(()-> {
-            final resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString())
-            if( resp.statusCode() in HTTP_SERVER_ERRORS) {
-                // throws an IOException so that the condition is handled by the retry policy
-                throw new IOException("[#4] Unexpected server response code ${resp.statusCode()} for request 'GET ${req}' - message: ${resp.body()}")
-            }
-            return resp
-        })
+        final response = retryable.apply(()-> httpClient.send(req, HttpResponse.BodyHandlers.ofString()))
         // check the response
         final body = response.body()
         if( response.statusCode()==200 ) {

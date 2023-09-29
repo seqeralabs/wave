@@ -22,24 +22,19 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.net.http.HttpResponse.BodyHandler
-import java.time.temporal.ChronoUnit
 
-import dev.failsafe.Failsafe
-import dev.failsafe.RetryPolicy
-import dev.failsafe.event.EventListener
-import dev.failsafe.event.ExecutionAttemptedEvent
-import dev.failsafe.function.CheckedSupplier
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.http.server.exceptions.InternalServerException
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryInfo
+import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.util.RegHelper
+import io.seqera.wave.util.Retryable
 import static io.seqera.wave.WaveDefault.HTTP_REDIRECT_CODES
-import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
-
+import static io.seqera.wave.WaveDefault.HTTP_RETRYABLE_ERRORS
 /**
  *
  * https://www.baeldung.com/java-9-http-client
@@ -60,11 +55,13 @@ class ProxyClient {
     private HttpClient httpClient
     private RegistryAuthService loginService
     private ContainerPath route
+    private HttpClientConfig httpConfig
 
-    ProxyClient(HttpClient httpClient) {
+    ProxyClient(HttpClient httpClient, HttpClientConfig httpConfig) {
         if( httpClient.followRedirects()!= HttpClient.Redirect.NEVER )
             throw new IllegalStateException("HttpClient instance should not follow redirected because they are directly managed by the proxy")
         this.httpClient = httpClient
+        this.httpConfig = httpConfig
     }
 
     ContainerPath getRoute() { route }
@@ -144,19 +141,12 @@ class ProxyClient {
     }
 
     def <T> HttpResponse<T> get(URI origin, Map<String,List<String>> headers, BodyHandler<T> handler, boolean followRedirect) {
-        final policy = retryPolicy("Failure on GET request: $origin")
-        final supplier = new CheckedSupplier<HttpResponse<T>>() {
-            @Override
-            HttpResponse<T> get() throws Throwable {
-                final resp = get0(origin, headers, handler, followRedirect)
-                if( resp.statusCode() in HTTP_SERVER_ERRORS) {
-                    // throws an IOException so that the condition is handled by the retry policy
-                    throw new IOException("[#1] Unexpected server response code ${resp.statusCode()} for request 'GET ${origin}' - message: ${resp.body()}")
-                }
-                return resp
-            }
-        }
-        return Failsafe.with(policy).get(supplier)
+        final retryable = Retryable
+                .<HttpResponse<T>>of(httpConfig)
+                .retryIf((resp) -> resp.statusCode() in HTTP_RETRYABLE_ERRORS)
+                .onRetry((event) -> "Failure on GET request: $origin - event: $event")
+        // carry out the request
+        return retryable.apply(()-> get0(origin, headers, handler, followRedirect))
     }
 
     def <T> HttpResponse<T> get0(URI origin, Map<String,List<String>> headers, BodyHandler<T> handler, boolean followRedirect) {
@@ -237,36 +227,14 @@ class ProxyClient {
         return head(makeUri(path), headers)
     }
 
-    private RetryPolicy retryPolicy(String errMessage) {
-        final listener = new EventListener<ExecutionAttemptedEvent>() {
-            @Override
-            void accept(ExecutionAttemptedEvent e) throws Throwable {
-                log.error("${errMessage} – attempt: ${e.attemptCount}; cause: ${e.lastFailure.message ?: e.lastFailure}")
-            }
-        }
-
-        return RetryPolicy.builder()
-                .handle(IOException, SocketException.class)
-                .withBackoff(250, RETRY_MAX_DELAY_MILLIS, ChronoUnit.MILLIS)
-                .withMaxAttempts(RETRY_MAX_ATTEMPTS)
-                .onRetry(listener)
-                .build()
-    }
 
     HttpResponse<Void> head(URI uri, Map<String,List<String>> headers) {
-        final policy = retryPolicy("Failure on HEAD request: $uri")
-        final supplier = new CheckedSupplier<HttpResponse<Void>>() {
-            @Override
-            HttpResponse<Void> get() throws Throwable {
-                final resp = head0(uri,headers)
-                if( resp.statusCode() in HTTP_SERVER_ERRORS) {
-                    // throws an IOException so that the condition is handled by the retry policy
-                    throw new IOException("[#2] Unexpected server response code ${resp.statusCode()} for request 'HEAD ${uri}' - message: ${resp.body()}")
-                }
-                return resp
-            }
-        }
-        return Failsafe.with(policy).get(supplier)
+        final retryable = Retryable
+                .<HttpResponse<Void>>of(httpConfig)
+                .retryIf((resp) -> resp.statusCode() in HTTP_RETRYABLE_ERRORS)
+                .onRetry((event) -> "Failure on HEAD request: $uri - event: $event")
+        // carry out the request
+        return retryable.apply(()-> head0(uri,headers))
     }
 
     HttpResponse<Void> head0(URI uri, Map<String,List<String>> headers) {

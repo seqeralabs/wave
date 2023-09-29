@@ -18,7 +18,6 @@
 
 package io.seqera.wave.auth
 
-
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.concurrent.TimeUnit
@@ -36,7 +35,6 @@ import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
 import static io.seqera.wave.WaveDefault.DOCKER_REGISTRY_1
 import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
-
 /**
  * Lookup service for container registry. The role of this component
  * is to registry the retrieve the registry authentication realm
@@ -74,17 +72,11 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
         final request = HttpRequest.newBuilder() .uri(endpoint) .GET() .build()
         // retry strategy
         final retryable = Retryable
-                .of(httpConfig)
-                .onRetry((event) -> log.warn("Unable to connect '$endpoint' - attempt: ${event.attemptCount} - cause: ${event.lastFailure.message}"))
+                .<HttpResponse<String>>of(httpConfig)
+                .retryIf((response) -> response.statusCode() in HTTP_SERVER_ERRORS)
+                .onRetry((event) -> log.warn("Unable to connect '$endpoint' - event: $event"))
         // submit the request
-        final response = retryable.apply(()-> {
-            final resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
-            if( resp.statusCode() in HTTP_SERVER_ERRORS) {
-                // throws an IOException so that the condition is handled by the retry policy
-                throw new IOException("[#5] Unexpected server response code ${resp.statusCode()} for request 'GET ${request}' - message: ${resp.body()}")
-            }
-            return resp
-        })
+        final response = retryable.apply(()-> httpClient.send(request, HttpResponse.BodyHandlers.ofString()))
         // check response
         final code = response.statusCode()
         if( code == 401 ) {

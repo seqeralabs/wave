@@ -25,9 +25,12 @@ import java.util.function.Predicate
 
 import dev.failsafe.Failsafe
 import dev.failsafe.RetryPolicy
+import dev.failsafe.RetryPolicyBuilder
 import dev.failsafe.event.EventListener
 import dev.failsafe.event.ExecutionAttemptedEvent
+import dev.failsafe.event.ExecutionCompletedEvent
 import dev.failsafe.function.CheckedSupplier
+import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 
@@ -38,13 +41,25 @@ import groovy.util.logging.Slf4j
  */
 @CompileStatic
 @Slf4j
-class Retryable {
+class Retryable<R> {
 
     interface Config {
         Duration getDelay()
         Duration getMaxDelay()
         int getMaxAttempts()
         double getJitter()
+    }
+
+    @Canonical
+    static class Event<R> {
+        String event
+        int attempt
+        R result
+        Throwable failure
+
+        String toString() {
+            "$event[attempt=$attempt; failure=${failure?.message}; result=${result}]"
+        }
     }
 
     static final private Duration DEFAULT_DELAY = Duration.ofMillis(500)
@@ -57,28 +72,42 @@ class Retryable {
 
     private Predicate<? extends Throwable> condition
 
-    private Consumer<ExecutionAttemptedEvent<?>> retryEvent
+    private Consumer<Event> retryEvent
 
-    Retryable withConfig(Config config) {
+    private Predicate<R> handleResult
+
+    Retryable<R> withConfig(Config config) {
         this.config = config
         return this
     }
 
-    Retryable withCondition(Predicate<? extends Throwable> cond) {
+    Retryable<R> retryCondition(Predicate<? extends Throwable> cond) {
         this.condition = cond
         return this
     }
 
-    Retryable onRetry(Consumer<ExecutionAttemptedEvent<?>> event) {
+    Retryable<R> retryIf(Predicate<R> predicate) {
+        this.handleResult = predicate
+        return this
+    }
+
+    Retryable<R> onRetry(Consumer<Event> event) {
         this.retryEvent = event
         return this
     }
 
     protected RetryPolicy retryPolicy() {
-        final listener = new EventListener<ExecutionAttemptedEvent>() {
+        final attempt = new EventListener<ExecutionAttemptedEvent<R>>() {
             @Override
             void accept(ExecutionAttemptedEvent event) throws Throwable {
-                retryEvent?.accept(event)
+                retryEvent?.accept(new Event("Retry", event.attemptCount, event.lastResult, event.lastFailure))
+            }
+        }
+
+        final failure = new EventListener<ExecutionCompletedEvent<R>>() {
+            @Override
+            void accept(ExecutionCompletedEvent event) throws Throwable {
+                retryEvent?.accept(new Event("Failure", event.attemptCount, event.result, event.failure))
             }
         }
 
@@ -88,21 +117,24 @@ class Retryable {
         final j = config.jitter ?: DEFAULT_JITTER
         final c = condition ?: DEFAULT_CONDITION
 
-        return RetryPolicy.builder()
+        final RetryPolicyBuilder<R> policy = RetryPolicy.<R>builder()
                 .handleIf(c)
                 .withBackoff(d.toMillis(), m.toMillis(), ChronoUnit.MILLIS)
                 .withMaxAttempts(a)
                 .withJitter(j)
-                .onRetry(listener)
-                .build()
+                .onRetry(attempt)
+                .onFailure(failure)
+        if( handleResult!=null )
+            policy.handleResultIf(handleResult)
+        return policy.build()
     }
 
-    <T> T apply(CheckedSupplier<T> action) {
+    R apply(CheckedSupplier<R> action) {
         final policy = retryPolicy()
         return Failsafe.with(policy).get(action)
     }
 
-    static Retryable of(Config config) {
-        new Retryable().withConfig(config)
+    static <T> Retryable<T> of(Config config) {
+        new Retryable<T>().withConfig(config)
     }
 }

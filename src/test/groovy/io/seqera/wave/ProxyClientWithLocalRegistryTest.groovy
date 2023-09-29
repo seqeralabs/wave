@@ -26,6 +26,7 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.test.DockerRegistryContainer
@@ -45,6 +46,8 @@ class ProxyClientWithLocalRegistryTest extends Specification implements DockerRe
     @Inject RegistryAuthService loginService
     @Inject RegistryCredentialsProvider credentialsProvider
 
+    @Inject HttpClientConfig httpConfig
+
     def setupSpec() {
         initRegistryContainer(applicationContext)
     }
@@ -54,7 +57,7 @@ class ProxyClientWithLocalRegistryTest extends Specification implements DockerRe
         def IMAGE = 'library/hello-world'
         and:
         def httpClient = HttpClientFactory.neverRedirectsHttpClient()
-        def proxy = new ProxyClient(httpClient)
+        def proxy = new ProxyClient(httpClient, httpConfig)
                 .withImage(IMAGE)
                 .withRegistry(getLocalTestRegistryInfo())
                 .withLoginService(loginService)
