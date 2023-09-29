@@ -22,7 +22,10 @@ import java.net.http.HttpClient
 import java.time.Duration
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
+import com.google.common.cache.Cache
+import com.google.common.cache.CacheBuilder
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 /**
@@ -38,7 +41,23 @@ class HttpClientFactory {
 
     static private Duration timeout = Duration.ofSeconds(20)
 
+    static private Cache<String, HttpClient> cache = CacheBuilder.newBuilder()
+            .expireAfterAccess(10, TimeUnit.MINUTES)
+            .build();
+
     static HttpClient followRedirectsHttpClient() {
+        cache.get('followRedirectsHttpClient', ()-> followRedirectsHttpClient0())
+    }
+
+    static HttpClient neverRedirectsHttpClient() {
+        cache.get('neverRedirectsHttpClient', ()-> neverRedirectsHttpClient0())
+    }
+
+    static HttpClient newHttpClient() {
+        return followRedirectsHttpClient()
+    }
+
+    static private HttpClient followRedirectsHttpClient0() {
         return HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NORMAL)
@@ -47,19 +66,11 @@ class HttpClientFactory {
                 .build()
     }
 
-    static HttpClient neverRedirectsHttpClient() {
+    static private HttpClient neverRedirectsHttpClient0() {
         return HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NEVER)
                 .connectTimeout(timeout)
-                .executor(virtualThreadsExecutor)
-                .build()
-    }
-
-    static HttpClient newHttpClient() {
-        return HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
-                .followRedirects(HttpClient.Redirect.NORMAL)
                 .executor(virtualThreadsExecutor)
                 .build()
     }
