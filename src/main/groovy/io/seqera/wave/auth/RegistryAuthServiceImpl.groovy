@@ -18,7 +18,7 @@
 
 package io.seqera.wave.auth
 
-import java.net.http.HttpClient
+
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.concurrent.ExecutionException
@@ -34,10 +34,10 @@ import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.wave.configuration.HttpClientConfig
+import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
-import jakarta.inject.Named
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
 /**
@@ -77,10 +77,6 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
                     .build(loader)
 
     @Inject
-    @Named("follow-redirects")
-    private HttpClient httpClient
-
-    @Inject
     private RegistryLookupService lookupService
 
     @Inject RegistryCredentialsFactory credentialsFactory
@@ -95,6 +91,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
      * @return {@code true} if the login was successful or {@code false} otherwise
      */
     boolean login(String registryName, String username, String password) {
+        final httpClient = HttpClientFactory.followRedirectsHttpClient()
         // 0. default to 'docker.io' when the registry name is empty
         if( !registryName )
             registryName = DOCKER_IO
@@ -193,6 +190,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
      * @return The resulting bearer token to authorise a pull request
      */
     protected String getToken0(CacheKey key) {
+        final httpClient = HttpClientFactory.followRedirectsHttpClient()
         final login = buildLoginUrl(key.auth.realm, key.image, key.auth.service)
         final req = makeRequest(login, key.creds)
         log.trace "Token request=$req"

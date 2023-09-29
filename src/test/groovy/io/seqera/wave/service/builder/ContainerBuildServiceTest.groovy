@@ -186,7 +186,7 @@ class ContainerBuildServiceTest extends Specification {
         def dockerFile = '''
                 FROM busybox
                 RUN echo Hello > hello.txt
-                RUN {{spack_cache_dir}} {{spack_key_file}}
+                RUN {{spack_cache_bucket}} {{spack_key_file}}
                 '''.stripIndent()
         and:
         def condaFile = '''
@@ -200,7 +200,7 @@ class ContainerBuildServiceTest extends Specification {
                   concretizer: {unify: true, reuse: false}
                 '''
         and:
-        def spackConfig = new SpackConfig(cacheMountPath: '/mnt/cache', secretMountPath: '/mnt/secret')
+        def spackConfig = new SpackConfig(cacheBucket: 's3://bucket/cache', secretMountPath: '/mnt/secret')
         def REQ = new BuildRequest(dockerFile, folder, 'box:latest', condaFile, spackFile, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'), cfg, null, null, "", null)
         and:
         def store = Mock(BuildStore)
@@ -214,7 +214,7 @@ class ContainerBuildServiceTest extends Specification {
         1 * strategy.build(REQ) >> RESPONSE
         1 * store.storeBuild(REQ.targetImage, RESPONSE, DURATION) >> null
         and:
-        REQ.workDir.resolve('Containerfile').text == new TemplateRenderer().render(dockerFile, [spack_cache_dir:'/mnt/cache', spack_key_file:'/mnt/secret'])
+        REQ.workDir.resolve('Containerfile').text == new TemplateRenderer().render(dockerFile, [spack_cache_bucket:'s3://bucket/cache', spack_key_file:'/mnt/secret'])
         REQ.workDir.resolve('context/conda.yml').text == condaFile
         REQ.workDir.resolve('context/spack.yaml').text == spackFile
         and:
@@ -261,15 +261,15 @@ class ContainerBuildServiceTest extends Specification {
         when:
         def result = builder.containerFile0(REQ, null, spack)
         then:
-        1* spack.getCacheMountPath() >> '/mnt/cache'
+        1* spack.getCacheBucket() >> 's3://bucket/cache'
         1* spack.getSecretMountPath() >> '/mnt/key'
         1* spack.getBuilderImage() >> 'spack-builder:2.0'
         1* spack.getRunnerImage() >> 'ubuntu:22.04'
         and:
         result.contains('FROM spack-builder:2.0 as builder')
         result.contains('spack config add packages:all:target:[x86_64]')
-        result.contains('spack mirror add seqera-spack /mnt/cache')
-        result.contains('spack gpg trust /mnt/key')
+        result.contains('spack mirror add seqera-spack s3://bucket/cache')
+        result.contains('fingerprint="$(spack gpg trust /mnt/key 2>&1 | tee /dev/stderr | sed -nr "s/^gpg: key ([0-9A-F]{16}): secret key imported$/\\1/p")"')
 
         cleanup:
         folder?.deleteDir()
@@ -290,7 +290,7 @@ class ContainerBuildServiceTest extends Specification {
         when:
         def result = builder.containerFile0(REQ, context, spack)
         then:
-        1* spack.getCacheMountPath() >> '/mnt/cache'
+        1* spack.getCacheBucket() >> 's3://bucket/cache'
         1* spack.getSecretMountPath() >> '/mnt/key'
         1* spack.getBuilderImage() >> 'spack-builder:2.0'
         1* spack.getRunnerImage() >> 'ubuntu:22.04'
@@ -299,8 +299,8 @@ class ContainerBuildServiceTest extends Specification {
                 'From: spack-builder:2.0\n' +
                 'Stage: build')
         result.contains('spack config add packages:all:target:[x86_64]')
-        result.contains('spack mirror add seqera-spack /mnt/cache')
-        result.contains('spack gpg trust /mnt/key')
+        result.contains('spack mirror add seqera-spack s3://bucket/cache')
+        result.contains('fingerprint="$(spack gpg trust /mnt/key 2>&1 | tee /dev/stderr | sed -nr "s/^gpg: key ([0-9A-F]{16}): secret key imported$/\\1/p")"')
         result.contains('/some/context/dir/spack.yaml /opt/spack-env/spack.yaml')
 
         cleanup:
