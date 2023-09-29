@@ -35,6 +35,8 @@ import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
 import static io.seqera.wave.WaveDefault.DOCKER_REGISTRY_1
+import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
+
 /**
  * Lookup service for container registry. The role of this component
  * is to registry the retrieve the registry authentication realm
@@ -75,7 +77,15 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
                 .of(httpConfig)
                 .onRetry((event) -> log.warn("Unable to connect '$endpoint' - attempt: ${event.attemptCount} - cause: ${event.lastFailure.message}"))
         // submit the request
-        final response = retryable.apply(()-> httpClient.send(request, HttpResponse.BodyHandlers.ofString()))
+        final response = retryable.apply(()-> {
+            final resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
+            if( resp.statusCode() in HTTP_SERVER_ERRORS) {
+                // throws an IOException so that the condition is handled by the retry policy
+                throw new IOException("[#5] Unexpected server response code ${resp.statusCode()} for request 'GET ${request}' - message: ${resp.body()}")
+            }
+            return resp
+        })
+        // check response
         final code = response.statusCode()
         if( code == 401 ) {
             def authenticate = response.headers().firstValue('WWW-Authenticate').orElse(null)

@@ -40,6 +40,8 @@ import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
+import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
+
 /**
  * Implement Docker authentication & login service
  *
@@ -118,8 +120,15 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
                 .of(httpConfig)
                 .onRetry((event) -> log.warn("Unable to connect '$endpoint' - attempt: ${event.attemptCount}; cause: ${event.lastFailure.message}"))
         // make the request
-        final response = retryable.apply(()-> httpClient.send(request, HttpResponse.BodyHandlers.ofString()))
-
+        final response = retryable.apply(()-> {
+            final resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
+            if( resp.statusCode() in HTTP_SERVER_ERRORS) {
+                // throws an IOException so that the condition is handled by the retry policy
+                throw new IOException("[#3] Unexpected server response code ${resp.statusCode()} for request 'GET ${request}' - message: ${resp.body()}")
+            }
+            return resp
+        })
+        // check the response
         if( response.statusCode() == 200 ) {
             log.debug "Container registry '$endpoint' login - response: ${StringUtils.trunc(response.body())}"
             return true
@@ -200,9 +209,17 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
                 .of(httpConfig)
                 .onRetry((event) -> log.warn("Unable to connect '$login' - attempt: ${event.attemptCount}; cause: ${event.lastFailure.message}"))
         // submit http request
-        HttpResponse<String> resp = retryable.apply(()-> httpClient.send(req, HttpResponse.BodyHandlers.ofString()))
-        final body = resp.body()
-        if( resp.statusCode()==200 ) {
+        final response = retryable.apply(()-> {
+            final resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString())
+            if( resp.statusCode() in HTTP_SERVER_ERRORS) {
+                // throws an IOException so that the condition is handled by the retry policy
+                throw new IOException("[#4] Unexpected server response code ${resp.statusCode()} for request 'GET ${req}' - message: ${resp.body()}")
+            }
+            return resp
+        })
+        // check the response
+        final body = response.body()
+        if( response.statusCode()==200 ) {
             final result = (Map) new JsonSlurper().parseText(body)
             // note: azure registry returns 'access_token'
             // see also specs https://docs.docker.com/registry/spec/auth/token/#requesting-a-token
@@ -213,7 +230,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
             }
         }
 
-        throw new RegistryUnauthorizedAccessException("Unable to authorize request: $login", resp.statusCode(), body)
+        throw new RegistryUnauthorizedAccessException("Unable to authorize request: $login", response.statusCode(), body)
     }
 
     String buildLoginUrl(URI realm, String image, String service){

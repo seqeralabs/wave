@@ -57,7 +57,7 @@ public class HttpContentReader implements ContentReader {
         HttpResponse<InputStream> resp = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
         if( HTTP_SERVER_ERRORS.contains(resp.statusCode()) ) {
             final String err = IOUtils.toString(resp.body(), Charset.defaultCharset());
-            final String msg = String.format("Unexpected server response code %d for stream 'GET %s' - message: %s", resp.statusCode(), url, err);
+            final String msg = String.format("[#6] Unexpected server response code %d for request 'GET %s' - message: %s", resp.statusCode(), url, err);
             throw new HttpServerRetryableErrorException(msg);
         }
         return resp.body();
