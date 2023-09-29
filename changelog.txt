@@ -1,4 +1,10 @@
 # Wave changelog
+v0.41.8 - 29 Sep 2023
+- Improve caching of HttpClient [679bd320]
+- Improve http error retryable policy [c03b734d]
+- Improve http client error handling [9f3a7db5]
+- Bump kubernetes client to 18.0.1 and commons-compress to 1.24.0 (#298) [2b84bb20]
+
 v0.41.7 - 28 Sep 2023
 - Improve http client instance per request handling [616c1072]
 
