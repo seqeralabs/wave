@@ -30,6 +30,11 @@ micronaut:
         paths: 'classpath:io/seqera/wave/assets'
         mapping: '/assets/**'
         enabled: true
+  object-storage:
+    aws:
+      build-logs:
+        bucket: build-logs
+        enabled: true
 ---
 wave:
   allowAnonymous: true
