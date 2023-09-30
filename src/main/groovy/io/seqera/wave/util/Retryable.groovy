@@ -18,6 +18,7 @@
 
 package io.seqera.wave.util
 
+import java.net.http.HttpResponse
 import java.time.Duration
 import java.time.temporal.ChronoUnit
 import java.util.function.Consumer
@@ -97,14 +98,18 @@ class Retryable<R> {
     }
 
     protected RetryPolicy retryPolicy() {
-        final attempt = new EventListener<ExecutionAttemptedEvent<R>>() {
+        final retry0 = new EventListener<ExecutionAttemptedEvent<R>>() {
             @Override
             void accept(ExecutionAttemptedEvent event) throws Throwable {
                 retryEvent?.accept(new Event("Retry", event.attemptCount, event.lastResult, event.lastFailure))
+                // close the http response
+                if( event.lastResult instanceof HttpResponse<?> ) {
+                    RegHelper.closeResponse((HttpResponse<?>) event.lastResult)
+                }
             }
         }
 
-        final failure = new EventListener<ExecutionCompletedEvent<R>>() {
+        final failure0 = new EventListener<ExecutionCompletedEvent<R>>() {
             @Override
             void accept(ExecutionCompletedEvent event) throws Throwable {
                 retryEvent?.accept(new Event("Failure", event.attemptCount, event.result, event.failure))
@@ -122,8 +127,8 @@ class Retryable<R> {
                 .withBackoff(d.toMillis(), m.toMillis(), ChronoUnit.MILLIS)
                 .withMaxAttempts(a)
                 .withJitter(j)
-                .onRetry(attempt)
-                .onFailure(failure)
+                .onRetry(retry0)
+                .onFailure(failure0)
         if( handleResult!=null )
             policy.handleResultIf(handleResult)
         return policy.build()

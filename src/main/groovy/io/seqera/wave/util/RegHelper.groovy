@@ -19,6 +19,7 @@
 package io.seqera.wave.util
 
 import java.net.http.HttpHeaders
+import java.net.http.HttpResponse
 import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Path
@@ -266,4 +267,17 @@ class RegHelper {
         return layerName(layer).replace(/.tar.gz/,'')
     }
 
+    static void closeResponse(HttpResponse<?> response) {
+        log.debug "Closing HttpClient response: $response"
+        try {
+            // close the httpclient response to prevent leaks
+            // https://bugs.openjdk.org/browse/JDK-8308364
+            final b0 = response.body()
+            if( b0 instanceof Closeable )
+                b0.close()
+        }
+        catch (Throwable e) {
+            log.debug "Unexpected error while closing http response - cause: ${e.message}", e
+        }
+    }
 }

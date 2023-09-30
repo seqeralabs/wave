@@ -120,9 +120,10 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
                 .onRetry((event) -> log.warn("Unable to connect '$endpoint' - event: $event}"))
         // make the request
         final response = retryable.apply(()-> httpClient.send(request, HttpResponse.BodyHandlers.ofString()))
+        final body = response.body()
         // check the response
         if( response.statusCode() == 200 ) {
-            log.debug "Container registry '$endpoint' login - response: ${StringUtils.trunc(response.body())}"
+            log.debug "Container registry '$endpoint' login - response: ${StringUtils.trunc(body)}"
             return true
         }
         else {

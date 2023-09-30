@@ -18,7 +18,7 @@
 
 package io.seqera.wave.controller
 
-import java.time.Instant
+
 import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
 import javax.annotation.Nullable
@@ -35,16 +35,17 @@ import io.micronaut.http.HttpMethod
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
-import io.micronaut.http.MediaType
 import io.micronaut.http.MutableHttpHeaders
 import io.micronaut.http.MutableHttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Error
 import io.micronaut.http.annotation.Get
-import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
+import io.reactivex.rxjava3.core.BackpressureStrategy
+import io.reactivex.rxjava3.core.Flowable
+import io.reactivex.rxjava3.schedulers.Schedulers
 import io.seqera.wave.ErrorHandler
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.RegistryProxyService
@@ -124,7 +125,6 @@ class RegistryProxyController {
             }
         }
     }
-
 
     @Error
     HttpResponse<RegistryErrorResponse> handleError(HttpRequest request, Throwable t) {
@@ -338,17 +338,30 @@ class RegistryProxyController {
 
     MutableHttpResponse<?> fromDelegateResponse(final DelegateResponse response){
 
-        final Long len = response.headers
+        final Long contentLength = response.headers
                 .find {it.key.toLowerCase()=='content-length'}?.value?.first() as Long ?: null
 
-        final streamedFile =  len
-                    ?  new StreamedFile(response.body, MediaType.APPLICATION_OCTET_STREAM_TYPE, Instant.now().toEpochMilli(), len)
-                    :  new StreamedFile(response.body, MediaType.APPLICATION_OCTET_STREAM_TYPE)
+        Flowable bodyReader = Flowable.create({ emitter ->
+            try (final stream = response.body) {
+                final buffer = new byte[32 * 1024]
+                int len
+                while ((len=stream.read(buffer)) != -1) {
+                    emitter.onNext(Arrays.copyOf(buffer, len));
+                }
+                emitter.onComplete()
+            }
+            catch (Throwable e) {
+                emitter.onError(e);
+            }
+        }, BackpressureStrategy.BUFFER).subscribeOn(Schedulers.io())
 
+        final override = contentLength!=null
+                        ? Map.<String, String>of('content-length', String.valueOf(contentLength))
+                        : Map.<String, String>of()
         HttpResponse
                 .status(HttpStatus.valueOf(response.statusCode))
-                .body(streamedFile)
-                .headers(toMutableHeaders(response.headers))
+                .body(bodyReader)
+                .headers(toMutableHeaders(response.headers, override))
     }
 
     MutableHttpResponse<?> fromManifestResponse(DelegateResponse resp) {

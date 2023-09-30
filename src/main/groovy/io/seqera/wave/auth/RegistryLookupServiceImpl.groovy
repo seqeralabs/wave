@@ -77,6 +77,7 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
                 .onRetry((event) -> log.warn("Unable to connect '$endpoint' - event: $event"))
         // submit the request
         final response = retryable.apply(()-> httpClient.send(request, HttpResponse.BodyHandlers.ofString()))
+        final body = response.body()
         // check response
         final code = response.statusCode()
         if( code == 401 ) {
@@ -92,7 +93,7 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
             return new RegistryAuth(endpoint)
         }
         else {
-            throw new IllegalArgumentException("Request '$endpoint' unexpected response code: $code; message: ${response.body()} ")
+            throw new IllegalArgumentException("Request '$endpoint' unexpected response code: $code; message: ${body} ")
         }
     }
 

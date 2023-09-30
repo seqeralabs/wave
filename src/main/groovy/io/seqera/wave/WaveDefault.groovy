@@ -39,7 +39,7 @@ interface WaveDefault {
                     'application/vnd.docker.distribution.manifest.list.v2+json' ) )
 
 
-    final public static int[] HTTP_REDIRECT_CODES = [301, 302, 307, 308]
+    final public static int[] HTTP_REDIRECT_CODES = [301, 302, 303, 307, 308]
 
     final public static List<Integer> HTTP_SERVER_ERRORS = [502, 503, 504]
 
