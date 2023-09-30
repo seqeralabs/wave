@@ -26,6 +26,8 @@ import java.util.concurrent.TimeUnit
 
 import com.google.common.cache.Cache
 import com.google.common.cache.CacheBuilder
+import com.google.common.cache.RemovalListener
+import com.google.common.cache.RemovalNotification
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 /**
@@ -43,6 +45,7 @@ class HttpClientFactory {
 
     static private Cache<String, HttpClient> cache = CacheBuilder.newBuilder()
             .expireAfterAccess(10, TimeUnit.MINUTES)
+            .removalListener(listener0())
             .build();
 
     static HttpClient followRedirectsHttpClient() {
@@ -58,20 +61,44 @@ class HttpClientFactory {
     }
 
     static private HttpClient followRedirectsHttpClient0() {
-        return HttpClient.newBuilder()
+        final result = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .connectTimeout(timeout)
                 .executor(virtualThreadsExecutor)
                 .build()
+        log.info "Creating new followRedirectsHttpClient: $result"
+        return result
     }
 
     static private HttpClient neverRedirectsHttpClient0() {
-        return HttpClient.newBuilder()
+        final result = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NEVER)
                 .connectTimeout(timeout)
                 .executor(virtualThreadsExecutor)
                 .build()
+        log.info "Creating new neverRedirectsHttpClient: $result"
+        return result
+    }
+
+    static private RemovalListener<String,HttpClient> listener0 () {
+        new RemovalListener<String, HttpClient>() {
+            @Override
+            void onRemoval(RemovalNotification<String, HttpClient> notification) {
+                final client = notification.value
+                log.info "Evicting HttpClient: ${client}"
+                // note: HttpClient implements AutoClosable as of Java 21
+                // https://docs.oracle.com/en/java/javase/21/docs/api/java.net.http/java/net/http/HttpClient.html
+                if (client instanceof AutoCloseable) {
+                    try {
+                        client.close()
+                    }
+                    catch (Throwable e) {
+                        log.debug("Unexpected error while closing HttpClient: ${client}", e)
+                    }
+                }
+            }
+        }
     }
 }
