@@ -1,4 +1,9 @@
 # Wave changelog
+v0.41.9 - 30 Sep 2023 
+- Improve response handling and binary download [bdc73943]
+- Improve HttpClientFactory logging and eviction [1eda4c69]
+- Bump commons-compress:1.24.0 [fb74a6e0]
+
 v0.41.8 - 29 Sep 2023
 - Improve caching of HttpClient [679bd320]
 - Improve http error retryable policy [c03b734d]
