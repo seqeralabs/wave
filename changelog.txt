@@ -1,4 +1,8 @@
 # Wave changelog
+v0.41.11 - 1 Oct 2023
+- Rollback to Java 17 [32cc9529]
+- Use Fixed thread pool for Http client [41225446]
+
 v0.41.10 - 1 Oct 2023
 - Add ping endpoint for testing [f97e7140]
 - Fix use of HttpClient in HttpTowerConnector [dc633b11]
