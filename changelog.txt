@@ -1,4 +1,9 @@
 # Wave changelog
+v0.41.10 - 1 Oct 2023
+- Add ping endpoint for testing [f97e7140]
+- Fix use of HttpClient in HttpTowerConnector [dc633b11]
+- Revert use of StreamedFile for blob download [80ee4ed0]
+
 v0.41.9 - 30 Sep 2023 
 - Improve response handling and binary download [bdc73943]
 - Improve HttpClientFactory logging and eviction [1eda4c69]
