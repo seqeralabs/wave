@@ -35,7 +35,7 @@ import io.seqera.wave.util.CustomThreadFactory
 @CompileStatic
 class HttpClientFactory {
 
-    static private ExecutorService fixedThreadPool = Executors.newFixedThreadPool(64, new CustomThreadFactory("HttpClientThread"))
+    static private ExecutorService threadPool = Executors.newCachedThreadPool(new CustomThreadFactory("HttpClientThread"))
 
     static private Duration timeout = Duration.ofSeconds(20)
 
@@ -77,7 +77,7 @@ class HttpClientFactory {
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .connectTimeout(timeout)
-                .executor(fixedThreadPool)
+                .executor(threadPool)
                 .build()
         log.debug "Creating new followRedirectsHttpClient: $result"
         return result
@@ -88,7 +88,7 @@ class HttpClientFactory {
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NEVER)
                 .connectTimeout(timeout)
-                .executor(fixedThreadPool)
+                .executor(threadPool)
                 .build()
         log.debug "Creating new neverRedirectsHttpClient: $result"
         return result
