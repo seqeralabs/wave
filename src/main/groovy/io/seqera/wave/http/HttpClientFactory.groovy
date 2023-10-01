@@ -22,14 +22,10 @@ import java.net.http.HttpClient
 import java.time.Duration
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 
-import com.google.common.cache.Cache
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.RemovalListener
-import com.google.common.cache.RemovalNotification
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.wave.util.CustomThreadFactory
 /**
  * Java HttpClient factory
  *
@@ -39,21 +35,37 @@ import groovy.util.logging.Slf4j
 @CompileStatic
 class HttpClientFactory {
 
-    static private ExecutorService virtualThreadsExecutor = Executors.newVirtualThreadPerTaskExecutor()
+    static private ExecutorService fixedThreadPool = Executors.newFixedThreadPool(64, new CustomThreadFactory("HttpClientThread"))
 
     static private Duration timeout = Duration.ofSeconds(20)
 
-    static private Cache<String, HttpClient> cache = CacheBuilder.newBuilder()
-            .expireAfterAccess(10, TimeUnit.MINUTES)
-            .removalListener(listener0())
-            .build();
+    static private final Object l1 = new Object()
+
+    static private final Object l2 = new Object()
+
+    private static HttpClient client1
+
+    private static HttpClient client2
+
 
     static HttpClient followRedirectsHttpClient() {
-        cache.get('followRedirectsHttpClient', ()-> followRedirectsHttpClient0())
+        if( client1!=null )
+            return client1
+        synchronized (l1) {
+            if( client1!=null )
+                return client1
+            return client1=followRedirectsHttpClient0()
+        }
     }
 
     static HttpClient neverRedirectsHttpClient() {
-        cache.get('neverRedirectsHttpClient', ()-> neverRedirectsHttpClient0())
+        if( client2!=null )
+            return client2
+        synchronized (l2) {
+            if( client2!=null )
+                return client2
+            return client2=neverRedirectsHttpClient0()
+        }
     }
 
     static HttpClient newHttpClient() {
@@ -65,9 +77,9 @@ class HttpClientFactory {
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .connectTimeout(timeout)
-                .executor(virtualThreadsExecutor)
+                .executor(fixedThreadPool)
                 .build()
-        log.info "Creating new followRedirectsHttpClient: $result"
+        log.debug "Creating new followRedirectsHttpClient: $result"
         return result
     }
 
@@ -76,29 +88,10 @@ class HttpClientFactory {
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NEVER)
                 .connectTimeout(timeout)
-                .executor(virtualThreadsExecutor)
+                .executor(fixedThreadPool)
                 .build()
-        log.info "Creating new neverRedirectsHttpClient: $result"
+        log.debug "Creating new neverRedirectsHttpClient: $result"
         return result
     }
 
-    static private RemovalListener<String,HttpClient> listener0 () {
-        new RemovalListener<String, HttpClient>() {
-            @Override
-            void onRemoval(RemovalNotification<String, HttpClient> notification) {
-                final client = notification.value
-                log.info "Evicting HttpClient: ${client}"
-                // note: HttpClient implements AutoClosable as of Java 21
-                // https://docs.oracle.com/en/java/javase/21/docs/api/java.net.http/java/net/http/HttpClient.html
-                if (client instanceof AutoCloseable) {
-                    try {
-                        client.close()
-                    }
-                    catch (Throwable e) {
-                        log.debug("Unexpected error while closing HttpClient: ${client}", e)
-                    }
-                }
-            }
-        }
-    }
 }
