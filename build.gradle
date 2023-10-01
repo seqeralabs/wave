@@ -116,7 +116,7 @@ micronaut {
 //
 jib {
     from {
-        image = 'cr.seqera.io/public/nf-jdk:corretto-21.0.0-jemalloc'
+        image = 'cr.seqera.io/public/nf-jdk:corretto-17.0.8-jemalloc'
         platforms {
             platform { architecture = 'amd64'; os = 'linux' }
         }
