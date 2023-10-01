@@ -48,7 +48,6 @@ dependencies {
     implementation("io.micronaut.groovy:micronaut-runtime-groovy")
     implementation("jakarta.annotation:jakarta.annotation-api")
     implementation("io.micronaut:micronaut-validation")
-    implementation("io.micronaut.rxjava3:micronaut-rxjava3")
     implementation "org.codehaus.groovy:groovy-json"
     implementation "org.codehaus.groovy:groovy-nio"
     implementation 'com.google.guava:guava:32.1.2-jre'
