@@ -1,4 +1,7 @@
 # Wave changelog
+v0.41.12 - 1 Oct 2023 
+- Use cached thread pool for http client [af32e6b5]
+
 v0.41.11 - 1 Oct 2023
 - Rollback to Java 17 [32cc9529]
 - Use Fixed thread pool for Http client [41225446]
