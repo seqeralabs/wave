@@ -268,7 +268,7 @@ class RegHelper {
     }
 
     static void closeResponse(HttpResponse<?> response) {
-        log.debug "Closing HttpClient response: $response"
+        log.trace "Closing HttpClient response: $response"
         try {
             // close the httpclient response to prevent leaks
             // https://bugs.openjdk.org/browse/JDK-8308364
