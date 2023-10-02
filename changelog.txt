@@ -1,4 +1,7 @@
 # Wave changelog
+v0.41.13 - 2 Oct 2023
+- Add TimedInputStream [f31cf56f]
+
 v0.41.12 - 1 Oct 2023 
 - Use cached thread pool for http client [af32e6b5]
 
