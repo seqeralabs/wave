@@ -60,6 +60,7 @@ import io.seqera.wave.storage.DigestKey
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.util.Retryable
+import io.seqera.wave.util.TimedInputStream
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import org.reactivestreams.Publisher
@@ -340,9 +341,10 @@ class RegistryProxyController {
         final Long len = response.headers
                 .find {it.key.toLowerCase()=='content-length'}?.value?.first() as Long ?: null
 
+        final wrap = new TimedInputStream(response.body, httpConfig.getReadTimeout())
         final streamedFile =  len
-                ?  new StreamedFile(response.body, MediaType.APPLICATION_OCTET_STREAM_TYPE, Instant.now().toEpochMilli(), len)
-                :  new StreamedFile(response.body, MediaType.APPLICATION_OCTET_STREAM_TYPE)
+                ?  new StreamedFile(wrap, MediaType.APPLICATION_OCTET_STREAM_TYPE, Instant.now().toEpochMilli(), len)
+                :  new StreamedFile(wrap, MediaType.APPLICATION_OCTET_STREAM_TYPE)
 
         HttpResponse
                 .status(HttpStatus.valueOf(response.statusCode))
