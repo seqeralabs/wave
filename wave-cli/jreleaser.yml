@@ -82,6 +82,9 @@ distributions:
       - path: "nativeCompile-macos-latest/wavelit"
         transform: "{{distributionName}}-{{projectEffectiveVersion}}-osx-x86_64"
         platform: osx-x86_64
+      - path: "nativeCompile-macos-latest-xlarge/wavelit"
+        transform: "{{distributionName}}-{{projectEffectiveVersion}}-osx-arm64"
+        platform: osx-arm64
       - path: "nativeCompile-windows-latest/wavelit.exe"
         transform: "{{distributionName}}-{{projectEffectiveVersion}}-windows-x86_64.exe"
         platform: windows-x86_64

@@ -13,9 +13,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, macos-latest-xlarge, windows-latest]
         include:
           - os: macos-latest
+            codesign: true
+          - os: macos-latest-xlarge
             codesign: true
     steps:
       - uses: actions/checkout@v3
