@@ -153,7 +153,7 @@ public class App implements Runnable {
     @Option(names = {"--spack-file"}, paramLabel = "''",  description = "A Spack file used to build the container e.g. /some/path/spack.yaml.")
     private String spackFile;
 
-    @Option(names = {"--spack-package"}, paramLabel = "''", description = "One or more Spakc package used to build the container e.g. cowsay.")
+    @Option(names = {"--spack-package"}, paramLabel = "''", description = "One or more Spack package used to build the container e.g. cowsay.")
     private List<String> spackPackages;
 
     @Option(names = {"--spack-run-command"}, paramLabel = "''",  description = "Dockerfile RUN commands used to build the container.")
