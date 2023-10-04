@@ -61,6 +61,7 @@ class ValidationServiceTest extends Specification {
 
         where:
         CONTAINER                   | EXPECTED
+        null                        | null
         'foo'                       | null
         'foo:latest'                | null
         'library/foo:latest'        | null
@@ -72,4 +73,26 @@ class ValidationServiceTest extends Specification {
         'http://quay.io/foo:latest'  | 'Invalid container repository name — offending value: http://quay.io/foo:latest'
         'http://quay.io/foo:latest'  | 'Invalid container repository name — offending value: http://quay.io/foo:latest'
     }
+
+    @Unroll
+    def 'should check build repo' () {
+        expect:
+        validationService.checkBuildRepository(CONTAINER, TYPE)==EXPECTED
+
+        where:
+        CONTAINER                   | TYPE  | EXPECTED
+        null                        | false | null
+        'foo.com'                   | false | null
+        'http://foo.com'            | false | 'Container build repository should not include any protocol prefix - offending value: http://foo.com'
+        'foo.com/ubuntu'            | false | null
+        'foo.com/ubuntu:latest'     | false | 'Container build repository should not include any tag suffix - offending value: foo.com/ubuntu:latest'
+        and:
+        null                        | true | null
+        'foo.com'                   | true | null
+        'http://foo.com'            | true | 'Container build cache repository should not include any protocol prefix - offending value: http://foo.com'
+        'foo.com/ubuntu'            | true | null
+        'foo.com/ubuntu:latest'     | true | 'Container build cache repository should not include any tag suffix - offending value: foo.com/ubuntu:latest'
+
+    }
+
 }

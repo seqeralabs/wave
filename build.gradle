@@ -54,7 +54,7 @@ dependencies {
     implementation 'dev.failsafe:failsafe:3.1.0'
     implementation('io.projectreactor:reactor-core')
     implementation("io.seqera:tower-crypto:22.4.0-watson") { transitive = false }  // to be replaced with 22.4.0 once released
-    implementation 'org.apache.commons:commons-compress:1.21'
+    implementation 'org.apache.commons:commons-compress:1.24.0'
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'io.kubernetes:client-java:18.0.1'
     implementation 'io.kubernetes:client-java-api-fluent:18.0.1'
@@ -79,7 +79,6 @@ dependencies {
 
     runtimeOnly("io.netty:netty-tcnative-boringssl-static:2.0.0.Final")
     runtimeOnly("javax.xml.bind:jaxb-api:2.3.1")
-    testImplementation "org.apache.commons:commons-compress:1.24.0"
     testImplementation("org.testcontainers:testcontainers")
     testImplementation("org.testcontainers:mysql:1.17.3")
 
@@ -117,7 +116,7 @@ micronaut {
 //
 jib {
     from {
-        image = 'cr.seqera.io/public/nf-jdk:corretto-21.0.0-jemalloc'
+        image = 'cr.seqera.io/public/nf-jdk:corretto-17.0.8-jemalloc'
         platforms {
             platform { architecture = 'amd64'; os = 'linux' }
         }

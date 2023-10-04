@@ -99,6 +99,11 @@ class RateLimiterFilter implements HttpServerFilter {
     }
 
     private Publisher<MutableHttpResponse<?>> limit0(HttpRequest<?> request, ServerFilterChain chain) {
+        if( request.path.startsWith('/ping') ) {
+            // ignore rate limit for ping endpoint
+            return chain.proceed(request)
+        }
+
         final key = getKey(request);
         final limiter = getLimiter(key);
 

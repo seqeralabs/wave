@@ -25,6 +25,7 @@ import java.util.concurrent.Executors
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.wave.util.CustomThreadFactory
 /**
  * Java HttpClient factory
  *
@@ -34,33 +35,63 @@ import groovy.util.logging.Slf4j
 @CompileStatic
 class HttpClientFactory {
 
-    static private ExecutorService virtualThreadsExecutor = Executors.newVirtualThreadPerTaskExecutor()
+    static private ExecutorService threadPool = Executors.newCachedThreadPool(new CustomThreadFactory("HttpClientThread"))
 
     static private Duration timeout = Duration.ofSeconds(20)
 
+    static private final Object l1 = new Object()
+
+    static private final Object l2 = new Object()
+
+    private static HttpClient client1
+
+    private static HttpClient client2
+
+
     static HttpClient followRedirectsHttpClient() {
-        return HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .connectTimeout(timeout)
-                .executor(virtualThreadsExecutor)
-                .build()
+        if( client1!=null )
+            return client1
+        synchronized (l1) {
+            if( client1!=null )
+                return client1
+            return client1=followRedirectsHttpClient0()
+        }
     }
 
     static HttpClient neverRedirectsHttpClient() {
-        return HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
-                .followRedirects(HttpClient.Redirect.NEVER)
-                .connectTimeout(timeout)
-                .executor(virtualThreadsExecutor)
-                .build()
+        if( client2!=null )
+            return client2
+        synchronized (l2) {
+            if( client2!=null )
+                return client2
+            return client2=neverRedirectsHttpClient0()
+        }
     }
 
     static HttpClient newHttpClient() {
-        return HttpClient.newBuilder()
+        return followRedirectsHttpClient()
+    }
+
+    static private HttpClient followRedirectsHttpClient0() {
+        final result = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NORMAL)
-                .executor(virtualThreadsExecutor)
+                .connectTimeout(timeout)
+                .executor(threadPool)
                 .build()
+        log.debug "Creating new followRedirectsHttpClient: $result"
+        return result
     }
+
+    static private HttpClient neverRedirectsHttpClient0() {
+        final result = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .followRedirects(HttpClient.Redirect.NEVER)
+                .connectTimeout(timeout)
+                .executor(threadPool)
+                .build()
+        log.debug "Creating new neverRedirectsHttpClient: $result"
+        return result
+    }
+
 }
