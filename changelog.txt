@@ -1,4 +1,13 @@
 # Wave changelog
+v0.42.0 - 4 Oct 2023 
+- Add support for Spack binary cache [41877a92]
+- Add support for S3 hosted Spack binary cache (#294) [82682b63]
+- Add known error handling to ProxyClient [8cdd5593]
+- Add status 500 to HTTP retriable errors [81763eb8]
+- Deprecate HTTP-based pairing controller [522700f0]
+- Decrease log verbosity [bd420be3]
+- Improve request validation [8cab3cc0]
+
 v0.41.13 - 2 Oct 2023
 - Add TimedInputStream [f31cf56f]
 
