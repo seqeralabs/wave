@@ -18,7 +18,7 @@
 
 package io.seqera.wave.tower.client.connector
 
-import java.net.http.HttpClient
+
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.concurrent.CompletableFuture
@@ -46,14 +46,9 @@ class HttpTowerConnector extends TowerConnector {
     @Inject
     private HttpClientConfig config
 
-    private HttpClient client
-
-    {
-        this.client = HttpClientFactory.neverRedirectsHttpClient()
-    }
-
     @Override
     CompletableFuture<ProxyHttpResponse> sendAsync(String endpoint, ProxyHttpRequest request) {
+        final client = HttpClientFactory.neverRedirectsHttpClient()
         client
             .sendAsync(buildHttpRequest(request), HttpResponse.BodyHandlers.ofString())
             .thenApply( (resp)-> {

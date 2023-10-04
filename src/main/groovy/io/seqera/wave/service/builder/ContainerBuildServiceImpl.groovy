@@ -305,6 +305,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 try (InputStream stream = ContentReaderFactory.of(it.location).openStream()) {
                     Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING)
                 }
+                return
             })
         }
     }
@@ -323,6 +324,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 try (InputStream stream = ContentReaderFactory.of(it.location).openStream()) {
                     TarUtils.untarGzip(stream, target)
                 }
+                return
             })
         }
     }
@@ -335,13 +337,14 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             try (InputStream stream = ContentReaderFactory.of(buildContext.location).openStream()) {
                 TarUtils.untarGzip(stream, contextDir)
             }
+            return
         })
     }
 
-    private Retryable retry0(String message) {
+    private Retryable<Void> retry0(String message) {
         Retryable
-                .of(httpClientConfig)
-                .withCondition((Throwable t) -> t instanceof SocketException || t instanceof HttpServerRetryableErrorException)
-                .onRetry((event)-> log.warn("$message - attempt: ${event.attemptCount}; cause: ${event.lastFailure.message}"))
+                .<Void>of(httpClientConfig)
+                .retryCondition((Throwable t) -> t instanceof SocketException || t instanceof HttpServerRetryableErrorException)
+                .onRetry((event)-> log.warn("$message - event: $event"))
     }
 }
