@@ -6,6 +6,10 @@ wave:
     workspace: 'build-workspace'
     spack:
       cacheDirectory: 'spack-cache'
+    logs:
+      enabled: true
+      bucket: 'nextflow-ci'
+      prefix: 'wave-build/logs'
 ---
 # uses TOWER_xxx variable because the dev environment is expected to be
 # the same as of tower

@@ -16,14 +16,28 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.log
+package io.seqera.wave.service.logs
+
+import spock.lang.Specification
+import spock.lang.Unroll
 
 /**
- * Service to manage logs
  *
- * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface LogService {
-    String storeLog(String buildId, String log)
-    String fetchLog(String build)
+class BuildLogsServiceTest extends Specification {
+
+    @Unroll
+    def 'should make log key name' () {
+        expect:
+        new BuildLogServiceImpl(prefix: PREFIX).logKey(BUILD) == EXPECTED
+
+        where:
+        PREFIX          | BUILD         | EXPECTED
+        null            | null          | null
+        null            | '123'         | '123.log'
+        'foo'           | '123'         | 'foo/123.log'
+        '/foo/bar/'     | '123'         | 'foo/bar/123.log'
+    }
+
 }

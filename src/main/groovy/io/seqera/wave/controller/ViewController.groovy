@@ -27,6 +27,7 @@ import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.views.View
 import io.seqera.wave.exception.NotFoundException
+import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.scan.ScanResult
@@ -49,6 +50,8 @@ class ViewController {
 
     @Inject
     private PersistenceService persistenceService
+
+    @Inject BuildLogService buildLogService
 
     @View("build-view")
     @Get('/builds/{buildId}')
@@ -77,6 +80,7 @@ class ViewController {
         binding.put('server_url', serverUrl)
         binding.scan_url = result.scanId && result.succeeded() ? "$serverUrl/view/scans/${result.scanId}" : null
         binding.scan_id = result.scanId
+        binding.build_logs = buildLogService.fetchLogString(result.buildId)
         // result the main object
         return binding
       }

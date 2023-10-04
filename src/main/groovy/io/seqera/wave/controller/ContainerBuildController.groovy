@@ -23,9 +23,10 @@ import groovy.util.logging.Slf4j
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
+import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
-import io.seqera.wave.service.log.LogService
+import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import jakarta.inject.Inject
@@ -45,7 +46,7 @@ class ContainerBuildController {
     private PersistenceService persistenceService
 
     @Inject
-    LogService logService
+    BuildLogService logService
 
     @Get("/v1alpha1/builds/{buildId}")
     HttpResponse<WaveBuildRecord> getBuildRecord(String buildId){
@@ -55,12 +56,13 @@ class ContainerBuildController {
                 : HttpResponse.<WaveBuildRecord>notFound()
     }
 
+    // TODO consider adding response mimetype
     @Get("/v1alpha1/builds/{buildId}/logs")
-    HttpResponse<String> getBuildLog(String buildId){
-        final log = logService.fetchLog(buildId)
-        return log
-                ? HttpResponse.ok(log)
-                : HttpResponse.<String>notFound()
+    HttpResponse<StreamedFile> getBuildLog(String buildId){
+        final logs = logService.fetchLogStream(buildId)
+        return logs
+                ? HttpResponse.ok(logs)
+                : HttpResponse.<StreamedFile>notFound()
     }
 
 }
