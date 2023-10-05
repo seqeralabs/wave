@@ -28,6 +28,9 @@ import java.nio.file.Paths
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import io.micronaut.context.annotation.Value
+import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.HttpClientConfiguration
+import io.micronaut.http.client.annotation.Client
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.WaveDefault
 import io.seqera.wave.api.ContainerConfig
@@ -39,12 +42,15 @@ import io.seqera.wave.auth.RegistryInfo
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContentType
+import io.seqera.wave.proxy.HttpProxyClient
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.test.ManifestConst
 import io.seqera.wave.util.ContainerConfigFactory
 import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
+import jakarta.inject.Named
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -72,6 +78,12 @@ class ContainerAugmenterTest extends Specification {
     @Inject RegistryAuthService loginService
     @Inject RegistryLookupService lookupService
     @Inject RegistryCredentialsProvider credentialsProvider
+    @Inject
+    @Client("/")
+    private HttpClient httpClient
+
+    @Inject
+    private HttpClientConfiguration httpClientConfiguration
 
     def 'should set layer paths' () {
         given:
@@ -157,7 +169,7 @@ class ContainerAugmenterTest extends Specification {
         unpackLayer()
 
         def info = new RegistryInfo(REGISTRY, new URI('http://docker.io'), Mock(RegistryAuth))
-        def client = Mock(ProxyClient) { getRegistry()>>info }
+        def client = Mock(HttpProxyClient) { getRegistry()>>info }
         def config = ContainerConfigFactory.instance.from(Paths.get(layerJson.absolutePath))
         def scanner = new ContainerAugmenter()
                             .withStorage(storage)
@@ -202,7 +214,7 @@ class ContainerAugmenterTest extends Specification {
 
         and:
         def info = new RegistryInfo(REGISTRY, new URI('http://docker.io'), Mock(RegistryAuth))
-        def client = Mock(ProxyClient) { getRegistry()>>info }
+        def client = Mock(HttpProxyClient) { getRegistry()>>info }
         def scanner = new ContainerAugmenter()
                 .withStorage(storage)
                 .withClient(client)
@@ -278,7 +290,7 @@ class ContainerAugmenterTest extends Specification {
 
         and:
         def info = new RegistryInfo(REGISTRY, new URI('http://docker.io'), Mock(RegistryAuth))
-        def client = Mock(ProxyClient) { getRegistry()>>info }
+        def client = Mock(HttpProxyClient) { getRegistry()>>info }
         def scanner = new ContainerAugmenter()
                 .withStorage(storage)
                 .withClient(client)
@@ -424,7 +436,7 @@ class ContainerAugmenterTest extends Specification {
 
         and:
         def info = new RegistryInfo(REGISTRY, new URI('http://docker.io'), Mock(RegistryAuth))
-        def client = Mock(ProxyClient) { getRegistry()>>info }
+        def client = Mock(HttpProxyClient) { getRegistry()>>info }
         def scanner = new ContainerAugmenter()
                 .withStorage(storage)
                 .withClient(client)
@@ -498,7 +510,7 @@ class ContainerAugmenterTest extends Specification {
 
         and:
         def info = new RegistryInfo(REGISTRY, new URI('http://docker.io'), Mock(RegistryAuth))
-        def client = Mock(ProxyClient) { getRegistry()>>info }
+        def client = Mock(HttpProxyClient) { getRegistry()>>info }
         def scanner = new ContainerAugmenter()
                 .withStorage(storage)
                 .withClient(client)
@@ -734,7 +746,7 @@ class ContainerAugmenterTest extends Specification {
         and:
 
         def info = new RegistryInfo(REGISTRY, new URI('http://docker.io'), Mock(RegistryAuth))
-        def client = Mock(ProxyClient) { getRegistry()>>info }
+        def client = Mock(HttpProxyClient) { getRegistry()>>info }
         def scanner = new ContainerAugmenter()
                 .withStorage(storage)
                 .withClient(client)
@@ -759,10 +771,9 @@ class ContainerAugmenterTest extends Specification {
         def TAG = 'latest'
         def registry = lookupService.lookup(REGISTRY)
         def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
-        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
 
-        def client = new ProxyClient(httpClient)
+        def client = new HttpProxyClient(httpClient, httpClientConfiguration)
                 .withRoute(Mock(RoutePath))
                 .withImage(IMAGE)
                 .withRegistry(registry)
@@ -787,10 +798,9 @@ class ContainerAugmenterTest extends Specification {
         def IMAGE = 'library/busybox'
         def registry = lookupService.lookup(REGISTRY)
         def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
-        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
 
-        def client = new ProxyClient(httpClient)
+        def client = new HttpProxyClient(httpClient, httpClientConfiguration)
                 .withRoute(Mock(RoutePath))
                 .withImage(IMAGE)
                 .withRegistry(registry)
@@ -815,10 +825,9 @@ class ContainerAugmenterTest extends Specification {
         def TAG = '0.11.9--0'
         def registry = lookupService.lookup(REGISTRY)
         def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
-        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
 
-        def client = new ProxyClient(httpClient)
+        def client = new HttpProxyClient(httpClient, httpClientConfiguration)
                 .withRoute(Mock(RoutePath))
                 .withImage(IMAGE)
                 .withRegistry(registry)

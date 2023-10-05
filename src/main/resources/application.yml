@@ -30,6 +30,12 @@ micronaut:
         paths: 'classpath:io/seqera/wave/assets'
         mapping: '/assets/**'
         enabled: true
+  http:
+    client:
+        follow-redirects: false
+        read-timeout: 10s
+        connect-timeout: 20s
+        max-connections: 100
 ---
 wave:
   allowAnonymous: true

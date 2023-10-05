@@ -24,6 +24,9 @@ import groovy.transform.CompileStatic
 import groovy.transform.PackageScope
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Nullable
+import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.HttpClientConfiguration
+import io.micronaut.http.client.annotation.Client
 import io.seqera.wave.WaveDefault
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
@@ -33,11 +36,12 @@ import io.seqera.wave.core.ContainerAugmenter
 import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.spec.ManifestSpec
-import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
+import io.seqera.wave.proxy.HttpProxyClient
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 /**
  * Implements containers inspect service
@@ -75,6 +79,13 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
 
     @Inject
     private RegistryAuthService loginService
+
+    @Inject
+    @Client
+    private HttpClient httpClient
+
+    @Inject
+    private HttpClientConfiguration httpClientConfiguration
 
     /**
      * {@inheritDoc}
@@ -191,10 +202,9 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
         return null
     }
 
-    private ProxyClient client0(ContainerPath route, RegistryCredentials creds) {
+    private HttpProxyClient client0(ContainerPath route, RegistryCredentials creds) {
         final registry = lookupService.lookup(route.registry)
-        final httpClient = HttpClientFactory.neverRedirectsHttpClient()
-        new ProxyClient(httpClient)
+        new HttpProxyClient(httpClient, httpClientConfiguration)
                 .withRoute(route)
                 .withImage(route.image)
                 .withRegistry(registry)

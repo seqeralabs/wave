@@ -1,0 +1,323 @@
+/*
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2023, Seqera Labs
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package io.seqera.wave.proxy
+
+import io.micronaut.http.HttpMethod
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.MutableHttpRequest
+import io.micronaut.core.type.Argument
+import java.time.temporal.ChronoUnit
+
+import dev.failsafe.Failsafe
+import dev.failsafe.RetryPolicy
+import dev.failsafe.event.EventListener
+import dev.failsafe.event.ExecutionAttemptedEvent
+import dev.failsafe.function.CheckedSupplier
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
+import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.HttpClientConfiguration
+import io.micronaut.http.server.exceptions.InternalServerException
+import io.seqera.wave.auth.RegistryAuthService
+import io.seqera.wave.auth.RegistryCredentials
+import io.seqera.wave.auth.RegistryInfo
+import io.seqera.wave.core.ContainerPath
+import io.seqera.wave.util.RegHelper
+import static io.seqera.wave.WaveDefault.HTTP_REDIRECT_CODES
+import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
+
+/**
+ *
+ * https://www.baeldung.com/java-9-http-client
+ * https://openjdk.java.net/groups/net/httpclient/recipes.html
+ *
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ */
+@Slf4j
+@CompileStatic
+class HttpProxyClient {
+
+    private static final long RETRY_MAX_DELAY_MILLIS = 30_000
+    private static final int RETRY_MAX_ATTEMPTS = 8
+
+    private HttpClient httpClient
+    private HttpClientConfiguration httpClientConfiguration
+
+    private String image
+    private RegistryInfo registry
+    private RegistryCredentials credentials
+    private RegistryAuthService loginService
+    private ContainerPath route
+
+    HttpProxyClient(HttpClient httpClient, HttpClientConfiguration httpClientConfiguration) {
+        if(httpClientConfiguration.followRedirects == HttpClientConfiguration.DEFAULT_FOLLOW_REDIRECTS)
+        {
+            throw new IllegalStateException("HttpClient instance should not follow redirect because they are directly managed by the proxy")
+        }
+        this.httpClient = httpClient
+        this.httpClientConfiguration = httpClientConfiguration
+    }
+
+    ContainerPath getRoute() { route }
+
+    RegistryInfo getRegistry() { registry }
+
+    HttpProxyClient withRoute(ContainerPath route) {
+        this.route = route
+        return this
+    }
+
+    HttpProxyClient withImage(String image) {
+        this.image = image
+        return this
+    }
+
+    HttpProxyClient withRegistry(RegistryInfo registry) {
+        this.registry = registry
+        return this
+    }
+
+    HttpProxyClient withLoginService(RegistryAuthService loginService) {
+        this.loginService = loginService
+        return this
+    }
+
+    HttpProxyClient withCredentials(RegistryCredentials credentials) {
+        this.credentials = credentials
+        return this
+    }
+
+    private URI makeUri(String path) {
+        assert path.startsWith('/'), "Request past should start with a slash character — offending path: $path"
+        URI.create(registry.host.toString() + path)
+    }
+
+    HttpResponse<String> getString(String path, Map<String,List<String>> headers=null, boolean followRedirect=true) {
+        try {
+            return get( makeUri(path), headers, String.class, followRedirect )
+        }
+        catch (ClientResponseException e) {
+            return HttpResponse
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(e.message);
+        }
+    }
+
+    HttpResponse<InputStream> getStream(String path, Map<String,List<String>> headers=null, boolean followRedirect=true) {
+        try {
+            return get( makeUri(path), headers, InputStream.class, followRedirect )
+        }
+        catch (HttpClientResponseException e) {
+            return HttpErrResponse.forStream(e.message, e.request)
+        }
+    }
+
+    HttpResponse<byte[]> getBytes(String path, Map<String,List<String>> headers=null, boolean followRedirect=true) {
+        try {
+            return get( makeUri(path), headers, byte[].class, followRedirect )
+        }
+        catch (HttpClientResponseException e) {
+            return HttpErrResponse.forByteArray(e.message, e.request)
+        }
+    }
+
+    def <T> HttpResponse<T> get(URI origin, Map<String,List<String>> headers, Class<T> bodyType, boolean followRedirect) {
+        final policy = retryPolicy("Failure on GET request: $origin")
+        final supplier = new CheckedSupplier<HttpResponse<T>>() {
+            @Override
+            HttpResponse<T> get() throws Throwable {
+                final response = get0(origin, headers, bodyType, followRedirect)
+                if( response.status.code in HTTP_SERVER_ERRORS) {
+                    // throws an IOException so that the condition is handled by the retry policy
+                    throw new IOException("Unexpected server response code ${response.status.code} for request 'GET ${origin}' - message: ${response.body}")
+                }
+                return response
+            }
+        }
+        return Failsafe.with(policy).get(supplier)
+    }
+
+    def <T> HttpResponse<T> get0(URI origin, Map<String,List<String>> headers, Class<T> bodyType, boolean followRedirect) {
+        final host = origin.getHost()
+        final visited = new HashSet<URI>(10)
+        def target = origin
+        int redirectCount = 0
+        int authRetry = 0
+        while( true ) {
+            // add authorization header ONLY when the target host
+            // is different from the origin host, otherwise it can
+            // cause an error when the redirection target uses a different
+            // auth mechanism e.g. signed url
+            // https://github.com/rkt/rkt/issues/2266#issuecomment-211326020
+            final authorize = host == target.getHost()
+            final request = HttpRequest.create(HttpMethod.GET,target.toString())
+            final result = get1(target, headers, bodyType, authorize, request)
+            // add to visited URL
+            visited.add(target)
+            // check the result code
+            if( result.status.code==401 && (authRetry++)<2 && host==target.host && registry.auth.isRefreshable() ) {
+                // clear the token to force refreshing it
+                loginService.invalidateAuthorization(image, registry.auth, credentials)
+                continue
+            }
+            if( result.status.code in HTTP_REDIRECT_CODES && followRedirect ) {
+                final redirect = result.header('location')?:null
+                log.trace "Redirecting (${++redirectCount}) $target ==> $redirect ${RegHelper.dumpHeaders(result.headers.asMap())}"
+                if( !redirect ) {
+                    final msg = "Missing `Location` header for request URI '$target' ― origin request '$origin'"
+                    throw new HttpClientResponseException(msg, request)
+                }
+                // the redirect location can be a relative path i.e. without hostname
+                // therefore resolve it against the target registry hostname
+                target = registry.host.resolve(redirect)
+                if( target in visited ) {
+                    final msg = "Redirect location already visited: $redirect ― origin request '$origin'"
+                    throw new HttpClientResponseException(msg, request)
+                }
+                if( visited.size()>=10 ) {
+                    final msg = "Redirect location already visited: $redirect ― origin request '$origin'"
+                    throw new HttpClientResponseException(msg, request)
+                }
+                // go head with with the redirection
+                continue
+            }
+            return result
+        }
+
+    }
+
+    private <T> HttpResponse<T> get1(URI uri, Map<String,List<String>> headers, Class<T> bodyType, boolean authorize, MutableHttpRequest request) {
+        try{
+            copyHeaders(headers, request)
+            if( authorize ) {
+                // add authorisation header
+                final header = loginService.getAuthorization(image, registry.auth, credentials)
+                if( header )
+                    request.header("Authorization", header)
+            }
+            // send it
+            HttpResponse<T> response = httpClient.toBlocking().exchange(request, Argument.of(bodyType))
+            traceResponse(request, response)
+            return response
+        }
+        catch (IOException e) {
+            // just re-throw it so that it's managed by the retry policy
+            throw e
+        }
+        catch (Exception e) {
+            throw new InternalServerException("Unexpected error on HTTP GET request '$uri'", e)
+        }
+    }
+
+    HttpResponse<Void> head(String path, Map<String,List<String>> headers=null) {
+        return head(makeUri(path), headers)
+    }
+
+    private RetryPolicy retryPolicy(String errMessage) {
+        final listener = new EventListener<ExecutionAttemptedEvent>() {
+            @Override
+            void accept(ExecutionAttemptedEvent e) throws Throwable {
+                log.error("${errMessage} – attempt: ${e.attemptCount}; cause: ${e.lastFailure.message ?: e.lastFailure}")
+            }
+        }
+
+        return RetryPolicy.builder()
+                .handle(IOException, SocketException.class)
+                .withBackoff(250, RETRY_MAX_DELAY_MILLIS, ChronoUnit.MILLIS)
+                .withMaxAttempts(RETRY_MAX_ATTEMPTS)
+                .onRetry(listener)
+                .build()
+    }
+
+    HttpResponse<Void> head(URI uri, Map<String,List<String>> headers) {
+        final policy = retryPolicy("Failure on HEAD request: $uri")
+        final supplier = new CheckedSupplier<HttpResponse<Void>>() {
+            @Override
+            HttpResponse<Void> get() throws Throwable {
+                final response = head0(uri,headers)
+                if( response.status.code in HTTP_SERVER_ERRORS) {
+                    // throws an IOException so that the condition is handled by the retry policy
+                    throw new IOException("Unexpected server response code ${response.status.code} for request 'HEAD ${uri}' - message: ${response.body}")
+                }
+                return response
+            }
+        }
+        return Failsafe.with(policy).get(supplier)
+    }
+
+    HttpResponse<Void> head0(URI uri, Map<String,List<String>> headers) {
+
+        def result = head1(uri, headers)
+        if( result.status.code==401 && registry.auth.isRefreshable() ) {
+            // clear the token to force refreshing it
+            loginService.invalidateAuthorization(image, registry.auth, credentials)
+            result = head1(uri, headers)
+        }
+        return result
+    }
+
+    HttpResponse<Void> head1(URI uri, Map<String,List<String>> headers) {
+        // A HEAD request is a GET request without a message body
+        // https://zetcode.com/java/httpclient/
+        final request = HttpRequest.create(HttpMethod.HEAD, uri.toString())
+        // copy headers
+        copyHeaders(headers, request)
+        // add authorisation header
+        final header = loginService.getAuthorization(image, registry.auth, credentials)
+        if( header )
+            request.header("Authorization", header)
+        // send it
+        HttpResponse<Void> response = httpClient.toBlocking().exchange(request, Argument.of(Void))
+        traceResponse(request, response)
+        return response
+    }
+
+    private static final List<String> SKIP_HEADERS = ['host', 'connection', 'authorization', 'content-length']
+
+    private void copyHeaders(Map<String,List<String>> headers, MutableHttpRequest<Object> request) {
+        if( !headers )
+            return
+
+        for( Map.Entry<String,List<String>> entry : headers )  {
+            if( entry.key.toString().toLowerCase() in SKIP_HEADERS )
+                continue
+            for(String val : entry.value)
+                request.header(entry.key, val)
+        }
+    }
+
+    private void traceResponse(HttpRequest request, HttpResponse response) {
+        // dump response
+        if( !log.isTraceEnabled() || !response )
+            return
+        final trace = new StringBuilder()
+        trace.append("= ${request.methodName ?: ''} [${response.status.code}] ${request.uri}\n")
+        trace.append('- request headers:\n')
+        for( Map.Entry<String,List<String>> entry : response.headers.asMap() ) {
+            trace.append("> ${entry.key}=${entry.value?.join(',')}\n")
+        }
+        trace.append('- response headers:\n')
+        for( Map.Entry<String,List<String>> entry : response.headers.asMap()  ) {
+            trace.append("< ${entry.key}=${entry.value?.join(',')}\n")
+        }
+        log.trace(trace.toString())
+    }
+}

@@ -23,6 +23,9 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.context.annotation.Context
+import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.HttpClientConfiguration
+import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.exceptions.HttpException
 import io.micronaut.retry.annotation.Retryable
 import io.seqera.wave.WaveDefault
@@ -30,14 +33,14 @@ import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
-import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
-import io.seqera.wave.proxy.ProxyClient
+import io.seqera.wave.proxy.HttpProxyClient
 import io.seqera.wave.service.CredentialsService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.HTTP_REDIRECT_CODES
 /**
@@ -75,17 +78,23 @@ class RegistryProxyService {
     @Inject
     private PersistenceService persistenceService
 
-    private ContainerAugmenter scanner(ProxyClient proxyClient) {
+    @Inject
+    @Client
+    private HttpClient httpClient
+
+    @Inject
+    private HttpClientConfiguration httpClientConfiguration
+
+    private ContainerAugmenter scanner(HttpProxyClient proxyClient) {
         return new ContainerAugmenter()
                 .withStorage(storage)
                 .withClient(proxyClient)
     }
 
-    private ProxyClient client(RoutePath route) {
-        final httpClient = HttpClientFactory.neverRedirectsHttpClient()
+    private HttpProxyClient client(RoutePath route) {
         final registry = registryLookup.lookup(route.registry)
         final creds = getCredentials(route)
-        new ProxyClient(httpClient)
+        new HttpProxyClient(httpClient, httpClientConfiguration)
                 .withRoute(route)
                 .withImage(route.image)
                 .withRegistry(registry)
@@ -103,7 +112,7 @@ class RegistryProxyService {
     }
 
     DigestStore handleManifest(RoutePath route, Map<String,List<String>> headers){
-        ProxyClient proxyClient = client(route)
+        HttpProxyClient proxyClient = client(route)
 
         final digest = scanner(proxyClient).resolve(route, headers)
         if( digest == null )
@@ -129,22 +138,22 @@ class RegistryProxyService {
     }
 
     DelegateResponse handleRequest(RoutePath route, Map<String,List<String>> headers){
-        ProxyClient proxyClient = client(route)
+        HttpProxyClient proxyClient = client(route)
         final resp1 = proxyClient.getStream(route.path, headers, false)
-        final redirect = resp1.headers().firstValue('Location').orElse(null)
-        if( redirect && resp1.statusCode() in HTTP_REDIRECT_CODES ) {
+        final String redirect = resp1.header('Location')?:null
+        if( redirect && resp1.status.code in HTTP_REDIRECT_CODES ) {
             // the redirect location can be a relative path i.e. without hostname
             // therefore resolve it against the target registry hostname
             final target = proxyClient.registry.host.resolve(redirect).toString()
             return new DelegateResponse(
                     location: target,
-                    statusCode: resp1.statusCode(),
-                    headers:resp1.headers().map())
+                    statusCode: resp1.status.code,
+                    headers:resp1.headers.asMap())
         }
         
         new DelegateResponse(
-                statusCode: resp1.statusCode(),
-                headers: resp1.headers().map(),
+                statusCode: resp1.status.code,
+                headers:resp1.headers.asMap(),
                 body: resp1.body() )
     }
 
@@ -165,7 +174,7 @@ class RegistryProxyService {
         final route = RoutePath.v2manifestPath(coords)
         final proxyClient = client(route)
         final resp = proxyClient.head(route.path, WaveDefault.ACCEPT_HEADERS)
-        return resp.statusCode() == 200
+        return resp.status.code == 200
     }
 
     static class DelegateResponse {
