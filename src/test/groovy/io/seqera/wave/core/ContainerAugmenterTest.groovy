@@ -40,6 +40,7 @@ import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryInfo
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContentType
 import io.seqera.wave.proxy.HttpProxyClient
@@ -84,6 +85,8 @@ class ContainerAugmenterTest extends Specification {
 
     @Inject
     private HttpClientConfiguration httpClientConfiguration
+
+    @Inject HttpClientConfig httpConfig
 
     def 'should set layer paths' () {
         given:
@@ -772,7 +775,6 @@ class ContainerAugmenterTest extends Specification {
         def registry = lookupService.lookup(REGISTRY)
         def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
         and:
-
         def client = new HttpProxyClient(httpClient, httpClientConfiguration)
                 .withRoute(Mock(RoutePath))
                 .withImage(IMAGE)
@@ -799,7 +801,6 @@ class ContainerAugmenterTest extends Specification {
         def registry = lookupService.lookup(REGISTRY)
         def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
         and:
-
         def client = new HttpProxyClient(httpClient, httpClientConfiguration)
                 .withRoute(Mock(RoutePath))
                 .withImage(IMAGE)
@@ -826,7 +827,6 @@ class ContainerAugmenterTest extends Specification {
         def registry = lookupService.lookup(REGISTRY)
         def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
         and:
-
         def client = new HttpProxyClient(httpClient, httpClientConfiguration)
                 .withRoute(Mock(RoutePath))
                 .withImage(IMAGE)

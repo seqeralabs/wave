@@ -18,7 +18,6 @@
 
 package io.seqera.wave.auth
 
-
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.concurrent.TimeUnit
@@ -35,6 +34,7 @@ import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
 import static io.seqera.wave.WaveDefault.DOCKER_REGISTRY_1
+import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
 /**
  * Lookup service for container registry. The role of this component
  * is to registry the retrieve the registry authentication realm
@@ -72,10 +72,13 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
         final request = HttpRequest.newBuilder() .uri(endpoint) .GET() .build()
         // retry strategy
         final retryable = Retryable
-                .of(httpConfig)
-                .onRetry((event) -> log.warn("Unable to connect '$endpoint' - attempt: ${event.attemptCount} - cause: ${event.lastFailure.message}"))
+                .<HttpResponse<String>>of(httpConfig)
+                .retryIf((response) -> response.statusCode() in HTTP_SERVER_ERRORS)
+                .onRetry((event) -> log.warn("Unable to connect '$endpoint' - event: $event"))
         // submit the request
         final response = retryable.apply(()-> httpClient.send(request, HttpResponse.BodyHandlers.ofString()))
+        final body = response.body()
+        // check response
         final code = response.statusCode()
         if( code == 401 ) {
             def authenticate = response.headers().firstValue('WWW-Authenticate').orElse(null)
@@ -90,7 +93,7 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
             return new RegistryAuth(endpoint)
         }
         else {
-            throw new IllegalArgumentException("Request '$endpoint' unexpected response code: $code; message: ${response.body()} ")
+            throw new IllegalArgumentException("Request '$endpoint' unexpected response code: $code; message: ${body} ")
         }
     }
 

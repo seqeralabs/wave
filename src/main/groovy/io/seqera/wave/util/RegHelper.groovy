@@ -18,7 +18,6 @@
 
 package io.seqera.wave.util
 
-import java.net.http.HttpHeaders
 import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Path
@@ -30,6 +29,8 @@ import com.google.common.io.BaseEncoding
 import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.http.HttpHeaders
+import io.micronaut.http.HttpResponse
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.model.ContainerCoordinates
 import org.yaml.snakeyaml.Yaml
@@ -106,9 +107,12 @@ class RegHelper {
     }
 
     static String dumpHeaders(HttpHeaders headers) {
-        return dumpHeaders(headers.map())
+        return dumpHeaders(headers.asMap())
     }
 
+    static String dumpHeaders(java.net.http.HttpHeaders headers) {
+        return dumpHeaders(headers.map())
+    }
     static String dumpHeaders(Map<String, List<String>> headers) {
         def result = new StringBuilder()
         for( Map.Entry<String,List<String>> entry : headers )  {
@@ -266,4 +270,29 @@ class RegHelper {
         return layerName(layer).replace(/.tar.gz/,'')
     }
 
+    static void closeResponse(HttpResponse<?> response) {
+        log.trace "Closing HttpClient response: $response"
+        try {
+            final b0 = response.body()
+            if( b0 instanceof Closeable )
+                b0.close()
+        }
+        catch (Throwable e) {
+            log.debug "Unexpected error while closing http response - cause: ${e.message}", e
+        }
+    }
+
+    static void closeResponse(java.net.http.HttpResponse <?> response) {
+        log.trace "Closing HttpClient response: $response"
+        try {
+            // close the httpclient response to prevent leaks
+            // https://bugs.openjdk.org/browse/JDK-8308364
+            final b0 = response.body()
+            if( b0 instanceof Closeable )
+                b0.close()
+        }
+        catch (Throwable e) {
+            log.debug "Unexpected error while closing http response - cause: ${e.message}", e
+        }
+    }
 }

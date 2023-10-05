@@ -50,6 +50,11 @@ class ServiceInfoController {
         HttpResponse.ok(new ServiceInfoResponse(info))
     }
 
+    @Get('/ping')
+    HttpResponse<ServiceInfoResponse> ping() {
+        HttpResponse.ok()
+    }
+
     @Get("/")
     HttpResponse landing() {
         return landingUrl

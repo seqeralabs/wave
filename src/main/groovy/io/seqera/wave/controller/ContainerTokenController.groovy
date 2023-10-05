@@ -333,10 +333,15 @@ class ContainerTokenController {
                 throw new BadRequestException("Missing pairing record for Tower endpoint '$req.towerEndpoint'")
         }
 
-        if( req.containerImage ) {
-            final msg = validationService.checkContainerName(req.containerImage)
-            if( msg )
-                throw new BadRequestException(msg)
-        }
+        String msg
+        // check valid image name
+        msg = validationService.checkContainerName(req.containerImage)
+        if( msg ) throw new BadRequestException(msg)
+        // check build repo
+        msg = validationService.checkBuildRepository(req.buildRepository, false)
+        if( msg ) throw new BadRequestException(msg)
+        // check cache repository
+        msg = validationService.checkBuildRepository(req.cacheRepository, true)
+        if( msg ) throw new BadRequestException(msg)
     }
 }

@@ -29,4 +29,6 @@ interface ValidationService {
 
     String checkContainerName(String name)
 
+    String checkBuildRepository(String repo, boolean cache)
+
 }
