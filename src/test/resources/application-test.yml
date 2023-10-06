@@ -7,6 +7,10 @@ micronaut:
     json:
       additionalTypes:
         - application/vnd.docker.distribution.manifest.list.v2+json
+  object-storage :
+    local :
+      default :
+        enabled : true
 ---
 datasources:
   default:
@@ -41,9 +45,10 @@ wave:
     workspace: 'build-workspace'
     spack:
       cacheDirectory: "spack-cache"
-    logs:
-      enabled: true
-      bucket: "bucket-build-logs"
+    logs :
+      enabled : true
+      bucket : 'nextflow-ci'
+      prefix : 'wave-build/logs'
   scan:
     enabled: true
 ---
