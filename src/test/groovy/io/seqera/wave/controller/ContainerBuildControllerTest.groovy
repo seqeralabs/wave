@@ -28,7 +28,6 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.server.types.files.StreamedFile
-import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildEvent
@@ -88,14 +87,14 @@ class ContainerBuildControllerTest extends Specification {
     def 'should get container build log' () {
         given:
         final buildId = 'testbuildid1234'
-
         buildLogService.storeLog(buildId, "test build log")
+
         when:
         def req = HttpRequest.GET("/v1alpha1/builds/${buildId}/logs")
         def res = client.toBlocking().exchange(req, StreamedFile)
 
         then:
-        res.body
+        res.code() == 200
     }
 
 }

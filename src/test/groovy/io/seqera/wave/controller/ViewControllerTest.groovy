@@ -31,6 +31,7 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerRecord
@@ -51,9 +52,12 @@ class ViewControllerTest extends Specification {
     @Inject
     PersistenceService persistenceService
 
+    @Inject
+    BuildLogService buildLogService
+
     def 'should render build page' () {
         given:
-        def controller = new ViewController(serverUrl: 'http://foo.com')
+        def controller = new ViewController(serverUrl: 'http://foo.com', buildLogService: buildLogService)
         and:
         def record = new WaveBuildRecord(
                 buildId: '12345',
@@ -70,6 +74,7 @@ class ViewControllerTest extends Specification {
                 duration: Duration.ofMinutes(1),
                 exitStatus: 0,
                 platform: 'linux/amd64' )
+        buildLogService.storeLog('12345', 'build log content')
         when:
         def binding = controller.renderBuildView(record)
         then:
