@@ -41,6 +41,9 @@ wave:
     workspace: 'build-workspace'
     spack:
       cacheDirectory: "spack-cache"
+    logs:
+      enabled: true
+      bucket: "bucket-build-logs"
   scan:
     enabled: true
 ---
