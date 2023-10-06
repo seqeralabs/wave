@@ -1,0 +1,17 @@
+---
+wave:
+  build:
+    logs:
+      enabled: true
+      bucket: "$PWD/build-workspace"
+      prefix: 'wave-build/logs'
+---
+# unfortunately "local" object storage requires min Java 17
+# keeping this only for reference
+micronaut:
+  object-storage:
+    local:
+      build-logs:
+        enabled: ${wave.build.logs.enabled}
+        path: "${wave.build.logs.bucket}"
+...

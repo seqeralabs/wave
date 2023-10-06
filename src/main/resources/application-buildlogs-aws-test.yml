@@ -1,0 +1,8 @@
+---
+micronaut:
+  object-storage:
+    aws:
+      build-logs:
+        enabled: ${wave.build.logs.enabled:false}
+        bucket: "${wave.build.logs.bucket}"
+...

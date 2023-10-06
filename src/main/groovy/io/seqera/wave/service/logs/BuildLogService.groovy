@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.logs
 
+import groovy.transform.Canonical
 import io.micronaut.http.server.types.files.StreamedFile
 
 /**
@@ -27,9 +28,15 @@ import io.micronaut.http.server.types.files.StreamedFile
  */
 interface BuildLogService {
 
+    @Canonical
+    class BuildLog {
+        String data
+        boolean truncated
+    }
+
     void storeLog(String buildId, String log)
 
     StreamedFile fetchLogStream(String buildId)
 
-    String fetchLogString(String buildId)
+    BuildLog fetchLogString(String buildId)
 }

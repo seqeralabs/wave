@@ -80,7 +80,10 @@ class ViewController {
         binding.put('server_url', serverUrl)
         binding.scan_url = result.scanId && result.succeeded() ? "$serverUrl/view/scans/${result.scanId}" : null
         binding.scan_id = result.scanId
-        binding.build_logs = buildLogService.fetchLogString(result.buildId)
+        final buildLog = buildLogService.fetchLogString(result.buildId)
+        binding.build_logs = buildLog?.data
+        binding.build_logs_truncated = buildLog?.truncated
+        binding.build_logs_url = "$serverUrl/v1alpha1/builds/${result.buildId}/logs"
         // result the main object
         return binding
       }

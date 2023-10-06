@@ -19,7 +19,6 @@
 package io.seqera.wave.service.logs
 
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutorService
 import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
@@ -33,13 +32,11 @@ import io.micronaut.objectstorage.request.UploadRequest
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.persistence.PersistenceService
-import io.seqera.wave.util.ThreadPoolBuilder
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 import org.apache.commons.io.input.BoundedInputStream
-
 /**
  * Implements Service  to manage logs from an Object store
  *
@@ -68,12 +65,9 @@ class BuildLogServiceImpl implements BuildLogService {
     @Value('${wave.build.logs.maxLength:100000}')
     private long maxLength
 
-    private ExecutorService executor
-
     @PostConstruct
     private void init() {
         log.info "Creating Build log service bucket=$bucket; prefix=$prefix"
-        executor = ThreadPoolBuilder.io(10, 10, 100, 'build-log-manager')
     }
 
     protected String logKey(String buildId) {
@@ -87,26 +81,22 @@ class BuildLogServiceImpl implements BuildLogService {
 
     @EventListener
     void onBuildEvent(BuildEvent event) {
-        final buildId = event.result.id
-        try {
-            if( event.result.succeeded() ) {
-                storeLog(buildId, event.result.logs)
-            }
-        }
-        catch (Exception e) {
-            log.warn "Unable to store logs for buildId: $buildId  - reason: ${e.message}", e
+        if( event.result.succeeded() ) {
+            final buildId = event.result.id
+            CompletableFuture.supplyAsync(()-> storeLog(buildId, event.result.logs))
         }
     }
 
     @Override
     void storeLog(String buildId, String content){
-        CompletableFuture.supplyAsync(() -> store(buildId, content), executor)
-    }
-
-    protected void store(String buildId, String content){
-        log.debug "Storing logs for buildId: $buildId"
-        final uploadRequest = UploadRequest.fromBytes(content.getBytes(), logKey(buildId))
-        objectStorageOperations.upload(uploadRequest)
+        try {
+            log.debug "Storing logs for buildId: $buildId"
+            final uploadRequest = UploadRequest.fromBytes(content.getBytes(), logKey(buildId))
+            objectStorageOperations.upload(uploadRequest)
+        }
+        catch (Exception e) {
+            log.warn "Unable to store logs for buildId: $buildId  - reason: ${e.message}", e
+        }
     }
 
     @Override
@@ -116,10 +106,11 @@ class BuildLogServiceImpl implements BuildLogService {
     }
 
     @Override
-    String fetchLogString(String buildId) {
+    BuildLog fetchLogString(String buildId) {
         final result = fetchLogStream(buildId)
         if( !result )
             return null
-        return new BoundedInputStream(result.getInputStream(), maxLength).getText()
+        final logs = new BoundedInputStream(result.getInputStream(), maxLength).getText()
+        return new BuildLog(logs, logs.length()>=maxLength)
     }
 }

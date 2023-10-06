@@ -58,7 +58,6 @@ class ContainerBuildController {
                 : HttpResponse.<WaveBuildRecord>notFound()
     }
 
-    // TODO consider adding response mimetype
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     @Get(value="/v1alpha1/builds/{buildId}/logs")
     HttpResponse<StreamedFile> getBuildLog(String buildId){
