@@ -18,6 +18,8 @@
 
 package io.seqera.wave.service.logs
 
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
@@ -31,6 +33,7 @@ import io.micronaut.objectstorage.request.UploadRequest
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.util.ThreadPoolBuilder
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
@@ -65,9 +68,12 @@ class BuildLogServiceImpl implements BuildLogService {
     @Value('${wave.build.logs.maxLength:100000}')
     private long maxLength
 
+    private ExecutorService executor
+
     @PostConstruct
     private void init() {
         log.info "Creating Build log service bucket=$bucket; prefix=$prefix"
+        executor = ThreadPoolBuilder.io(10, 10, 100, 'build-log-manager')
     }
 
     protected String logKey(String buildId) {
@@ -94,8 +100,11 @@ class BuildLogServiceImpl implements BuildLogService {
 
     @Override
     void storeLog(String buildId, String content){
+        CompletableFuture.supplyAsync(() -> store(buildId, content), executor)
+    }
+
+    protected void store(String buildId, String content){
         log.debug "Storing logs for buildId: $buildId"
-        // consider if this should be made async
         final uploadRequest = UploadRequest.fromBytes(content.getBytes(), logKey(buildId))
         objectStorageOperations.upload(uploadRequest)
     }

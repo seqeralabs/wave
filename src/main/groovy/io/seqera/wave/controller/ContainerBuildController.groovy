@@ -24,6 +24,7 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
+import io.micronaut.http.annotation.Produces
 import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
@@ -58,12 +59,12 @@ class ContainerBuildController {
     }
 
     // TODO consider adding response mimetype
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
     @Get(value="/v1alpha1/builds/{buildId}/logs")
     HttpResponse<StreamedFile> getBuildLog(String buildId){
         final logs = logService.fetchLogStream(buildId)
         return logs
                 ? HttpResponse.ok(logs)
-                .contentType(MediaType.APPLICATION_OCTET_STREAM_TYPE)
                 : HttpResponse.<StreamedFile>notFound()
     }
 
