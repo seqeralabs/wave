@@ -7,10 +7,10 @@ micronaut:
     json:
       additionalTypes:
         - application/vnd.docker.distribution.manifest.list.v2+json
-  object-storage :
-    local :
-      default :
-        enabled : true
+  object-storage:
+    aws:
+      build-logs:
+        bucket: "test-build-logs-bucket"
 ---
 datasources:
   default:

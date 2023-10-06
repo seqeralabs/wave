@@ -2,7 +2,6 @@
 wave:
   build:
     logs:
-      enabled: true
       bucket: "$PWD/build-workspace"
       prefix: 'wave-build/logs'
 ---
@@ -12,6 +11,6 @@ micronaut:
   object-storage:
     local:
       build-logs:
-        enabled: ${wave.build.logs.enabled}
+        enabled: true
         path: "${wave.build.logs.bucket}"
 ...

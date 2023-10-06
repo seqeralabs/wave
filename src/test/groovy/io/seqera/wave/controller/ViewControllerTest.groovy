@@ -26,24 +26,31 @@ import java.time.Instant
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
+import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.logs.BuildLogService
-import io.seqera.wave.service.persistence.WaveBuildRecord
+import io.seqera.wave.service.logs.BuildLogServiceImpl
 import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
 class ViewControllerTest extends Specification {
+
+    @MockBean(BuildLogServiceImpl)
+    BuildLogService logsService() {
+        Mock(BuildLogService)
+    }
+
 
     @Inject
     @Client("/")
@@ -74,10 +81,11 @@ class ViewControllerTest extends Specification {
                 duration: Duration.ofMinutes(1),
                 exitStatus: 0,
                 platform: 'linux/amd64' )
-        buildLogService.storeLog('12345', 'build log content')
         when:
         def binding = controller.renderBuildView(record)
         then:
+        1 * buildLogService.fetchLogString('12345') >> new BuildLogService.BuildLog('log content', false)
+        and:
         binding.build_id == '12345'
         binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
@@ -90,12 +98,15 @@ class ViewControllerTest extends Specification {
         binding.build_condafile == 'conda::foo'
         binding.build_spackfile == 'some-spack-recipe'
         binding.build_format == 'Docker'
+        binding.build_logs == 'log content'
+        binding.build_logs_truncated == false
+        binding.build_logs_url == 'http://foo.com/v1alpha1/builds/12345/logs'
     }
 
     def 'should render a build page' () {
         given:
         def record1 = new WaveBuildRecord(
-                buildId: 'test',
+                buildId: '112233',
                 dockerFile: 'FROM docker.io/test:foo',
                 targetImage: 'test',
                 userName: 'test',
