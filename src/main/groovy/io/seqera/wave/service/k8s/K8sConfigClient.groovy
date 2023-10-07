@@ -18,7 +18,7 @@
 
 package io.seqera.wave.service.k8s
 
-import javax.annotation.Nullable
+import io.micronaut.core.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.transform.Memoized

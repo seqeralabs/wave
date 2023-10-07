@@ -25,7 +25,7 @@ import java.nio.file.StandardCopyOption
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
-import javax.annotation.Nullable
+import io.micronaut.core.annotation.Nullable
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic

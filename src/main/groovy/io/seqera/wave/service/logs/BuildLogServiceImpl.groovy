@@ -19,7 +19,7 @@
 package io.seqera.wave.service.logs
 
 import java.util.concurrent.CompletableFuture
-import javax.annotation.Nullable
+import io.micronaut.core.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j

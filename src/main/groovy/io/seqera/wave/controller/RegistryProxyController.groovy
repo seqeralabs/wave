@@ -21,7 +21,7 @@ package io.seqera.wave.controller
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
-import javax.annotation.Nullable
+import io.micronaut.core.annotation.Nullable
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
