@@ -10,12 +10,6 @@ plugins {
     id 'org.asciidoctor.jvm.convert' version '3.3.2'
 }
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(19)
-    }
-}
-
 String gitVersion() {
     def p = new ProcessBuilder() .command('sh','-c','git rev-parse --short HEAD') .start()
     def r = p.waitFor()
