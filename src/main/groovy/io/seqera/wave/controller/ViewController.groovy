@@ -87,9 +87,9 @@ class ViewController {
         // configure build logs when available
         if( buildLogService ) {
             final buildLog = buildLogService.fetchLogString(result.buildId)
-            binding.build_logs = buildLog?.data
-            binding.build_logs_truncated = buildLog?.truncated
-            binding.build_logs_url = "$serverUrl/v1alpha1/builds/${result.buildId}/logs"
+            binding.build_log_data = buildLog?.data
+            binding.build_log_truncated = buildLog?.truncated
+            binding.build_log_url = "$serverUrl/v1alpha1/builds/${result.buildId}/logs"
         }
         // result the main object
         return binding

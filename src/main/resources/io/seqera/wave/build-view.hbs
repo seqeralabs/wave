@@ -88,11 +88,11 @@
     <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{build_spackfile}}</pre>
     {{/if}}
 
-    {{#if build_logs}}
+    {{#if build_log_data}}
     <h3>Build logs</h3>
-    <pre style="white-space: pre-wrap; overflow-x: auto; overflow-y: auto; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{build_logs}}</pre>
-      {{#if build_logs_truncated}}
-      <a href="{{build_logs_url}}" download>Click here to download the complete build log</a>
+    <pre style="white-space: pre-wrap; overflow-x: auto; overflow-y: auto; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{build_log_data}}</pre>
+      {{#if build_log_truncated}}
+      <a href="{{build_log_url}}" download>Click here to download the complete build log</a>
       {{/if}}
     {{/if}}
 

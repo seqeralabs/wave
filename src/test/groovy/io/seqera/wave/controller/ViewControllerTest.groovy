@@ -98,9 +98,9 @@ class ViewControllerTest extends Specification {
         binding.build_condafile == 'conda::foo'
         binding.build_spackfile == 'some-spack-recipe'
         binding.build_format == 'Docker'
-        binding.build_logs == 'log content'
-        binding.build_logs_truncated == false
-        binding.build_logs_url == 'http://foo.com/v1alpha1/builds/12345/logs'
+        binding.build_log_data == 'log content'
+        binding.build_log_truncated == false
+        binding.build_log_url == 'http://foo.com/v1alpha1/builds/12345/logs'
     }
 
     def 'should render a build page' () {

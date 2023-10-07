@@ -60,7 +60,7 @@ class ContainerBuildController {
                 : HttpResponse.<WaveBuildRecord>notFound()
     }
 
-    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    @Produces(MediaType.TEXT_PLAIN)
     @Get(value="/v1alpha1/builds/{buildId}/logs")
     HttpResponse<StreamedFile> getBuildLog(String buildId){
         if( logService==null )

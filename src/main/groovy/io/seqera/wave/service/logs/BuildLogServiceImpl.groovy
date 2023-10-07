@@ -67,7 +67,7 @@ class BuildLogServiceImpl implements BuildLogService {
 
     @PostConstruct
     private void init() {
-        log.info "Creating Build log service bucket=$bucket; prefix=$prefix"
+        log.info "Creating Build log service bucket=$bucket; prefix=$prefix; maxLength: ${maxLength}"
     }
 
     protected String logKey(String buildId) {
