@@ -57,7 +57,6 @@ import static io.seqera.wave.util.StringUtils.indent
 import static java.nio.file.StandardOpenOption.CREATE
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import static java.nio.file.StandardOpenOption.WRITE
-
 /**
  * Implements container build service
  *

@@ -25,14 +25,19 @@ import java.time.Duration
 import java.time.Instant
 
 import io.micronaut.http.HttpRequest
+import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
+import io.micronaut.http.server.types.files.StreamedFile
+import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.service.logs.BuildLogService
+import io.seqera.wave.service.logs.BuildLogServiceImpl
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import jakarta.inject.Inject
@@ -42,11 +47,20 @@ import jakarta.inject.Inject
  */
 @MicronautTest
 class ContainerBuildControllerTest extends Specification {
+
+    @MockBean(BuildLogServiceImpl)
+    BuildLogService logsService() {
+        Mock(BuildLogService)
+    }
+
+
     @Inject
     @Client("/")
     HttpClient client
 
     @Inject PersistenceService persistenceService
+
+    @Inject BuildLogService buildLogService
 
     def 'should get container build record' () {
         given:
@@ -71,12 +85,30 @@ class ContainerBuildControllerTest extends Specification {
         final entry = WaveBuildRecord.fromEvent(event)
         and:
         persistenceService.saveBuild(entry)
-
         when:
         def req = HttpRequest.GET("/v1alpha1/builds/${build.id}")
         def res = client.toBlocking().exchange(req, WaveBuildRecord)
 
         then:
         res.body().buildId == build.id
+
     }
+
+    def 'should get container build log' () {
+        given:
+        def buildId = 'testbuildid1234'
+        def LOGS = "test build log"
+        def response = new StreamedFile(new ByteArrayInputStream(LOGS.bytes), MediaType.APPLICATION_OCTET_STREAM_TYPE)
+
+        when:
+        def req = HttpRequest.GET("/v1alpha1/builds/${buildId}/logs")
+        def res = client.toBlocking().exchange(req, StreamedFile)
+
+        then:
+        1 * buildLogService.fetchLogStream(buildId) >> response
+        and:
+        res.code() == 200
+        new String(res.bodyBytes) == LOGS
+    }
+
 }

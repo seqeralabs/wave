@@ -73,6 +73,8 @@ dependencies {
     implementation "software.amazon.awssdk:ecrpublic"
     implementation 'com.amazonaws:aws-java-sdk-ses:1.12.42'
     implementation 'org.yaml:snakeyaml:2.0'
+    //object storage dependency
+    implementation("io.micronaut.objectstorage:micronaut-object-storage-aws")
     // this sts dependency is require by micronaut-aws-parameter-store,
     // not directly used by the app, for this reason keeping `runtimeOnly`
     runtimeOnly "software.amazon.awssdk:sts"
