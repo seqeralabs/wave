@@ -41,6 +41,9 @@ wave:
       password: ${AZURECR_PAT:test}
     europe-southwest1-docker.pkg.dev:
       credentials : ${GOOGLECR_KEYS:test}
+    quay.io/test/public/repo:
+      username: 'foo'
+      password: 'bar'
   build:
     workspace: 'build-workspace'
     spack:
