@@ -42,7 +42,6 @@ import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.cleanup.CleanupStrategy
-import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.storage.reader.ContentReaderFactory
 import io.seqera.wave.storage.reader.HttpServerRetryableErrorException
 import io.seqera.wave.util.Retryable
@@ -58,7 +57,6 @@ import static io.seqera.wave.util.StringUtils.indent
 import static java.nio.file.StandardOpenOption.CREATE
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import static java.nio.file.StandardOpenOption.WRITE
-
 /**
  * Implements container build service
  *
@@ -109,9 +107,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     private HttpClientConfig httpClientConfig
 
     @Inject CleanupStrategy cleanup
-
-    @Inject
-    private BuildLogService logService
 
     @PostConstruct
     void init() {

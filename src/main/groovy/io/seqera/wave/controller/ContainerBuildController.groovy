@@ -18,6 +18,8 @@
 
 package io.seqera.wave.controller
 
+import javax.annotation.Nullable
+
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.http.HttpResponse
@@ -32,7 +34,6 @@ import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import jakarta.inject.Inject
-
 /**
  * Implements a controller for container builds
  *
@@ -48,6 +49,7 @@ class ContainerBuildController {
     private PersistenceService persistenceService
 
     @Inject
+    @Nullable
     BuildLogService logService
 
     @Get("/v1alpha1/builds/{buildId}")
@@ -61,6 +63,8 @@ class ContainerBuildController {
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     @Get(value="/v1alpha1/builds/{buildId}/logs")
     HttpResponse<StreamedFile> getBuildLog(String buildId){
+        if( logService==null )
+            throw new IllegalStateException("Build Logs service not configured")
         final logs = logService.fetchLogStream(buildId)
         return logs
                 ? HttpResponse.ok(logs)

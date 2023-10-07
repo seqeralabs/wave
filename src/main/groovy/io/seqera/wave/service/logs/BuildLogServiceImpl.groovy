@@ -23,6 +23,7 @@ import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.objectstorage.ObjectStorageEntry
@@ -44,6 +45,7 @@ import org.apache.commons.io.input.BoundedInputStream
 @Slf4j
 @Singleton
 @CompileStatic
+@Requires(property = 'wave.build.logs.bucket')
 class BuildLogServiceImpl implements BuildLogService {
 
     @Inject

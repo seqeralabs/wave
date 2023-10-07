@@ -18,6 +18,8 @@
 
 package io.seqera.wave.controller
 
+import javax.annotation.Nullable
+
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpResponse
@@ -51,7 +53,9 @@ class ViewController {
     @Inject
     private PersistenceService persistenceService
 
-    @Inject BuildLogService buildLogService
+    @Inject
+    @Nullable
+    private BuildLogService buildLogService
 
     @View("build-view")
     @Get('/builds/{buildId}')
@@ -80,10 +84,13 @@ class ViewController {
         binding.put('server_url', serverUrl)
         binding.scan_url = result.scanId && result.succeeded() ? "$serverUrl/view/scans/${result.scanId}" : null
         binding.scan_id = result.scanId
-        final buildLog = buildLogService.fetchLogString(result.buildId)
-        binding.build_logs = buildLog?.data
-        binding.build_logs_truncated = buildLog?.truncated
-        binding.build_logs_url = "$serverUrl/v1alpha1/builds/${result.buildId}/logs"
+        // configure build logs when available
+        if( buildLogService ) {
+            final buildLog = buildLogService.fetchLogString(result.buildId)
+            binding.build_logs = buildLog?.data
+            binding.build_logs_truncated = buildLog?.truncated
+            binding.build_logs_url = "$serverUrl/v1alpha1/builds/${result.buildId}/logs"
+        }
         // result the main object
         return binding
       }
