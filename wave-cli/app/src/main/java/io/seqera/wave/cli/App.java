@@ -138,7 +138,7 @@ public class App implements Runnable {
     @Option(names = {"--conda-file"}, paramLabel = "''", description = "A Conda file used to build the container e.g. /some/path/conda.yaml.")
     private String condaFile;
 
-    @Option(names = {"--conda-package"}, paramLabel = "''", description = "One or more Conda package used to build the container e.g. bioconda::samtools=1.17.")
+    @Option(names = {"--conda-package"}, paramLabel = "''", description = "One or more Conda packages used to build the container e.g. bioconda::samtools=1.17.")
     private List<String> condaPackages;
 
     @Option(names = {"--conda-base-image"}, paramLabel = "''", description = "Conda base image used to to build the container (default: ${DEFAULT-VALUE}).")
@@ -153,7 +153,7 @@ public class App implements Runnable {
     @Option(names = {"--spack-file"}, paramLabel = "''",  description = "A Spack file used to build the container e.g. /some/path/spack.yaml.")
     private String spackFile;
 
-    @Option(names = {"--spack-package"}, paramLabel = "''", description = "One or more Spack package used to build the container e.g. cowsay.")
+    @Option(names = {"--spack-package"}, paramLabel = "''", description = "One or more Spack packages used to build the container e.g. cowsay.")
     private List<String> spackPackages;
 
     @Option(names = {"--spack-run-command"}, paramLabel = "''",  description = "Dockerfile RUN commands used to build the container.")
