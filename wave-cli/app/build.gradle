@@ -1,5 +1,5 @@
 plugins {
-    id 'io.seqera.wavelit.java-application-conventions'
+    id 'io.seqera.wave.cli.java-application-conventions'
     id 'groovy'
     id 'org.graalvm.buildtools.native' version '0.9.24'
 }
@@ -50,7 +50,7 @@ group = 'io.seqera'
 
 application {
     // Define the main class for the application.
-    mainClass = 'io.seqera.wavelit.App'
+    mainClass = 'io.seqera.wave.cli.App'
     //  Run the Graalvm agent to resolve dynamic proxies configuration
     applicationDefaultJvmArgs = ["-agentlib:native-image-agent=config-merge-dir=conf/"]
 }
@@ -64,8 +64,8 @@ run {
 graalvmNative {
     binaries {
         main {
-            imageName = 'wavelit'
-            mainClass = 'io.seqera.wavelit.App'
+            imageName = 'wave'
+            mainClass = 'io.seqera.wave.cli.App'
             configurationFileDirectories.from(file('conf'))
             javaLauncher = javaToolchains.launcherFor {
                 languageVersion = JavaLanguageVersion.of(20)

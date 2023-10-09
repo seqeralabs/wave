@@ -1,6 +1,6 @@
 [
 {
-  "name":"io.seqera.wavelit.App",
+  "name":"io.seqera.wave.cli.App",
   "methods":[{"name":"main","parameterTypes":["java.lang.String[]"] }]
 },
 {

@@ -1,10 +1,10 @@
-# Wavelit 
+# Wave CLI
 
 Command line tool for Wave container provisioning service
 
 ### Summary 
 
-Wavelit allows augmenting existing containers and building containers on-the-fly so
+Wave allows augmenting existing containers and building containers on-the-fly so
 that it can be used in your Docker (replace-with-your-own-fav-container-engine) workflow.
 
 ### Features
@@ -38,7 +38,7 @@ that it can be used in your Docker (replace-with-your-own-fav-container-engine) 
 
 
     ```bash
-    docker run --rm $(wavelit -f ./Dockerfile) cowsay "Hello world"
+    docker run --rm $(wave -f ./Dockerfile) cowsay "Hello world"
     ```
 
 
@@ -57,7 +57,7 @@ that it can be used in your Docker (replace-with-your-own-fav-container-engine) 
 2. Run the container via Wave 
 
     ```bash
-    docker run $(wavelit -i alpine --layer new-layer) sh -c hello.sh
+    docker run $(wave -i alpine --layer new-layer) sh -c hello.sh
     ```
 
 #### Build a container with Dockerfile 
@@ -82,31 +82,31 @@ that it can be used in your Docker (replace-with-your-own-fav-container-engine) 
 2. Build and run the container on the fly:
 
     ```bash
-    docker run $(wavelit -f Dockerfile --context build-context) sh -c hello.sh
+    docker run $(wave -f Dockerfile --context build-context) sh -c hello.sh
     ```
 
 #### Build a Conda multi-packages container 
 
 ```bash
-docker run $(wavelit --conda-package bamtools=2.5.2 --conda-package samtools=1.17) sh -c 'bamtools --version && samtools --version'
+docker run $(wave --conda-package bamtools=2.5.2 --conda-package samtools=1.17) sh -c 'bamtools --version && samtools --version'
 ```
 
 #### Build a Conda package container arm64 architecture
 
 ```bash
-docker run --platform linux/arm64 $(wavelit --conda-package fastp --platform linux/arm64) sh -c 'fastp --version'
+docker run --platform linux/arm64 $(wave --conda-package fastp --platform linux/arm64) sh -c 'fastp --version'
 ```
 
 #### Build a Spack package container
 
 ```bash
-docker run $(wavelit --spack-package cowsay) sh -c 'cowsay Hello world!'
+docker run $(wave --spack-package cowsay) sh -c 'cowsay Hello world!'
 ```
 
 ### Build a Singularity container using a Conda package and pushing to a OCI registry 
 
 ```bash
-singularity exec $(wavelit --singularity --conda-package bamtools=2.5.2 --build-repo docker.io/user/repo --freeze --await) bamtools --version
+singularity exec $(wave --singularity --conda-package bamtools=2.5.2 --build-repo docker.io/user/repo --freeze --await) bamtools --version
 ```
 
 ### Development
@@ -138,5 +138,5 @@ singularity exec $(wavelit --singularity --conda-package bamtools=2.5.2 --build-
 4. Run the native binary 
 
     ```bash
-    ./app/build/native/nativeCompile/wavelit --version
+    ./app/build/native/nativeCompile/wave --version
     ```

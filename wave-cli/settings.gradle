@@ -13,7 +13,7 @@ pluginManagement {
     }
 }
 
-rootProject.name = 'wavelit'
+rootProject.name = 'wave-cli'
 include('app')
 
 // enable for local development

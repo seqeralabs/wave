@@ -1,0 +1,28 @@
+
+Examples:
+  # Augment a container image with the content of a local directory
+  wave -i alpine --layer layer-dir/
+
+  # Build a container with Dockerfile
+  wave -f Dockerfile --context context-dir/
+
+  # Build a container based on Conda packages
+  wave --conda-package bamtools=2.5.2 --conda-package samtools=1.17
+
+  # Build a container based on Conda packages using arm64 architecture
+  wave --conda-package fastp --platform linux/arm64
+
+  # Build a container based on Conda lock file served via prefix.dev service
+  wave --conda-package https://prefix.dev/envs/pditommaso/wave/conda-lock.yml
+
+  # Build a container based on Spack packages
+  wave --spack-package cowsay
+
+  # Build a container getting a persistent image name
+  wave -i alpine --freeze --build-repo docker.io/user/repo --tower-token <YOUR TOKEN>
+
+  # Build a Singularity container and push it to an OCI registry
+  wave -f Singularityfile --singularity --freeze --build-repo docker.io/user/repo
+
+  # Build a Singularity container based on Conda packages
+  wave --conda-package bamtools=2.5.2 --singularity --freeze --build-repo docker.io/user/repo

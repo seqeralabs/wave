@@ -11,7 +11,7 @@
 
 <configuration>
     <property name="WAVE_LOG_ROOT" value="${WAVE_LOG_ROOT:-.}" />
-    <property name="WAVE_LOG_NAME" value="${WAVE_LOG_NAME:-wavelit}" />
+    <property name="WAVE_LOG_NAME" value="${WAVE_LOG_NAME:-wave}" />
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <!-- ansi escape mess-up with non-ansi terminal and loggers -->

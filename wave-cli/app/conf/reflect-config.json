@@ -166,25 +166,25 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
-  "name":"io.seqera.wavelit.App",
+  "name":"io.seqera.wave.cli.App",
   "allDeclaredFields":true,
   "queryAllDeclaredMethods":true
 },
 {
-  "name":"io.seqera.wavelit.json.ByteArrayAdapter",
+  "name":"io.seqera.wave.cli.json.ByteArrayAdapter",
   "queryAllDeclaredMethods":true
 },
 {
-  "name":"io.seqera.wavelit.json.DateTimeAdapter",
+  "name":"io.seqera.wave.cli.json.DateTimeAdapter",
   "queryAllDeclaredMethods":true,
   "methods":[{"name":"deserializeInstant","parameterTypes":["java.lang.String"] }, {"name":"serializeInstant","parameterTypes":["java.time.Instant"] }]
 },
 {
-  "name":"io.seqera.wavelit.json.PathAdapter",
+  "name":"io.seqera.wave.cli.json.PathAdapter",
   "queryAllDeclaredMethods":true
 },
 {
-  "name":"io.seqera.wavelit.util.CliVersionProvider",
+  "name":"io.seqera.wave.cli.util.CliVersionProvider",
   "allDeclaredFields":true,
   "queryAllDeclaredMethods":true,
   "methods":[{"name":"<init>","parameterTypes":[] }]
