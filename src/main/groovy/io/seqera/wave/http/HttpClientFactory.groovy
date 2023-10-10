@@ -1,55 +1,97 @@
 /*
- *  Copyright (c) 2023, Seqera Labs.
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2023, Seqera Labs
  *
- *  This Source Code Form is subject to the terms of the Mozilla Public
- *  License, v. 2.0. If a copy of the MPL was not distributed with this
- *  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- *  This Source Code Form is "Incompatible With Secondary Licenses", as
- *  defined by the Mozilla Public License, v. 2.0.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io.seqera.wave.http
 
 import java.net.http.HttpClient
+import java.time.Duration
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Factory
-import io.seqera.wave.configuration.HttpClientConfig
-import jakarta.inject.Inject
-import jakarta.inject.Named
-import jakarta.inject.Singleton
+import io.seqera.wave.util.CustomThreadFactory
 /**
  * Java HttpClient factory
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Factory
 @Slf4j
 @CompileStatic
 class HttpClientFactory {
 
-    @Inject
-    HttpClientConfig httpConfig
+    static private ExecutorService threadPool = Executors.newCachedThreadPool(new CustomThreadFactory("HttpClientThread"))
 
-    @Singleton
-    @Named("follow-redirects")
-    HttpClient followRedirectsHttpClient() {
-        HttpClient.newBuilder()
+    static private Duration timeout = Duration.ofSeconds(20)
+
+    static private final Object l1 = new Object()
+
+    static private final Object l2 = new Object()
+
+    private static HttpClient client1
+
+    private static HttpClient client2
+
+
+    static HttpClient followRedirectsHttpClient() {
+        if( client1!=null )
+            return client1
+        synchronized (l1) {
+            if( client1!=null )
+                return client1
+            return client1=followRedirectsHttpClient0()
+        }
+    }
+
+    static HttpClient neverRedirectsHttpClient() {
+        if( client2!=null )
+            return client2
+        synchronized (l2) {
+            if( client2!=null )
+                return client2
+            return client2=neverRedirectsHttpClient0()
+        }
+    }
+
+    static HttpClient newHttpClient() {
+        return followRedirectsHttpClient()
+    }
+
+    static private HttpClient followRedirectsHttpClient0() {
+        final result = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NORMAL)
-                .connectTimeout(httpConfig.connectTimeout)
+                .connectTimeout(timeout)
+                .executor(threadPool)
                 .build()
+        log.debug "Creating new followRedirectsHttpClient: $result"
+        return result
     }
 
-    @Singleton
-    @Named("never-redirects")
-    HttpClient neverRedirectsHttpClient() {
-        HttpClient.newBuilder()
+    static private HttpClient neverRedirectsHttpClient0() {
+        final result = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .followRedirects(HttpClient.Redirect.NEVER)
-                .connectTimeout(httpConfig.connectTimeout)
+                .connectTimeout(timeout)
+                .executor(threadPool)
                 .build()
+        log.debug "Creating new neverRedirectsHttpClient: $result"
+        return result
     }
+
 }

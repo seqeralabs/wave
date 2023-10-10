@@ -1,0 +1,12 @@
+---
+micronaut:
+  object-storage:
+    aws:
+      build-logs:
+        bucket: "${wave.build.logs.bucket}"
+---
+wave:
+  build:
+    logs:
+      bucket: "nextflow-ci"
+...

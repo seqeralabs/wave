@@ -1,12 +1,19 @@
 /*
- *  Copyright (c) 2023, Seqera Labs.
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2023, Seqera Labs
  *
- *  This Source Code Form is subject to the terms of the Mozilla Public
- *  License, v. 2.0. If a copy of the MPL was not distributed with this
- *  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- *  This Source Code Form is "Incompatible With Secondary Licenses", as
- *  defined by the Mozilla Public License, v. 2.0.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io.seqera.wave.controller
@@ -18,14 +25,19 @@ import java.time.Duration
 import java.time.Instant
 
 import io.micronaut.http.HttpRequest
+import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
+import io.micronaut.http.server.types.files.StreamedFile
+import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.service.logs.BuildLogService
+import io.seqera.wave.service.logs.BuildLogServiceImpl
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import jakarta.inject.Inject
@@ -35,11 +47,20 @@ import jakarta.inject.Inject
  */
 @MicronautTest
 class ContainerBuildControllerTest extends Specification {
+
+    @MockBean(BuildLogServiceImpl)
+    BuildLogService logsService() {
+        Mock(BuildLogService)
+    }
+
+
     @Inject
     @Client("/")
     HttpClient client
 
     @Inject PersistenceService persistenceService
+
+    @Inject BuildLogService buildLogService
 
     def 'should get container build record' () {
         given:
@@ -64,12 +85,30 @@ class ContainerBuildControllerTest extends Specification {
         final entry = WaveBuildRecord.fromEvent(event)
         and:
         persistenceService.saveBuild(entry)
-
         when:
         def req = HttpRequest.GET("/v1alpha1/builds/${build.id}")
         def res = client.toBlocking().exchange(req, WaveBuildRecord)
 
         then:
         res.body().buildId == build.id
+
     }
+
+    def 'should get container build log' () {
+        given:
+        def buildId = 'testbuildid1234'
+        def LOGS = "test build log"
+        def response = new StreamedFile(new ByteArrayInputStream(LOGS.bytes), MediaType.APPLICATION_OCTET_STREAM_TYPE)
+
+        when:
+        def req = HttpRequest.GET("/v1alpha1/builds/${buildId}/logs")
+        def res = client.toBlocking().exchange(req, StreamedFile)
+
+        then:
+        1 * buildLogService.fetchLogStream(buildId) >> response
+        and:
+        res.code() == 200
+        new String(res.bodyBytes) == LOGS
+    }
+
 }

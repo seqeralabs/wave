@@ -1,17 +1,23 @@
 /*
- *  Copyright (c) 2023, Seqera Labs.
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2023, Seqera Labs
  *
- *  This Source Code Form is subject to the terms of the Mozilla Public
- *  License, v. 2.0. If a copy of the MPL was not distributed with this
- *  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- *  This Source Code Form is "Incompatible With Secondary Licenses", as
- *  defined by the Mozilla Public License, v. 2.0.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io.seqera.wave.service.inspect
 
-import java.net.http.HttpClient
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
@@ -23,15 +29,16 @@ import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.ContainerAugmenter
 import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.spec.ManifestSpec
+import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
-import jakarta.inject.Named
 import jakarta.inject.Singleton
 /**
  * Implements containers inspect service
@@ -66,12 +73,12 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
     @Inject
     private RegistryProxyService proxyService
 
-    @Inject
-    @Named("never-redirects")
-    private HttpClient httpClient
 
     @Inject
     private RegistryAuthService loginService
+
+    @Inject
+    private HttpClientConfig httpConfig
 
     /**
      * {@inheritDoc}
@@ -190,7 +197,8 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
 
     private ProxyClient client0(ContainerPath route, RegistryCredentials creds) {
         final registry = lookupService.lookup(route.registry)
-        new ProxyClient(httpClient)
+        final httpClient = HttpClientFactory.neverRedirectsHttpClient()
+        new ProxyClient(httpClient, httpConfig)
                 .withRoute(route)
                 .withImage(route.image)
                 .withRegistry(registry)

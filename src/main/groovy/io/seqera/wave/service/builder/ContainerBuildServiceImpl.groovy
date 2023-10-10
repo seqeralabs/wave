@@ -1,46 +1,62 @@
 /*
- *  Copyright (c) 2023, Seqera Labs.
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2023, Seqera Labs
  *
- *  This Source Code Form is subject to the terms of the Mozilla Public
- *  License, v. 2.0. If a copy of the MPL was not distributed with this
- *  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- *  This Source Code Form is "Incompatible With Secondary Licenses", as
- *  defined by the Mozilla Public License, v. 2.0.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io.seqera.wave.service.builder
 
 import java.nio.file.FileAlreadyExistsException
-import java.nio.file.Path
-
-import static FreezeServiceImpl.*
-import static io.seqera.wave.util.StringUtils.*
-import static java.nio.file.StandardOpenOption.*
-
-import javax.annotation.Nullable
-import javax.annotation.PostConstruct
 import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
+import io.micronaut.core.annotation.Nullable
+import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.annotation.Value
 import io.micronaut.context.event.ApplicationEventPublisher
+import io.seqera.wave.api.BuildContext
+import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.cleanup.CleanupStrategy
+import io.seqera.wave.storage.reader.ContentReaderFactory
+import io.seqera.wave.storage.reader.HttpServerRetryableErrorException
+import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.SpackHelper
+import io.seqera.wave.util.TarUtils
 import io.seqera.wave.util.TemplateRenderer
 import io.seqera.wave.util.ThreadPoolBuilder
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+import static io.seqera.wave.util.RegHelper.layerDir
+import static io.seqera.wave.util.RegHelper.layerName
+import static io.seqera.wave.util.StringUtils.indent
+import static java.nio.file.StandardOpenOption.CREATE
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
+import static java.nio.file.StandardOpenOption.WRITE
 /**
  * Implements container build service
  *
@@ -86,6 +102,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     @Inject
     private SpackConfig spackConfig
+
+    @Inject
+    private HttpClientConfig httpClientConfig
 
     @Inject CleanupStrategy cleanup
 
@@ -135,7 +154,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             binding.spack_builder_image = config.builderImage
             binding.spack_runner_image = config.runnerImage
             binding.spack_arch = SpackHelper.toSpackArch(req.getPlatform())
-            binding.spack_cache_dir = config.cacheMountPath
+            binding.spack_cache_bucket = config.cacheBucket
             binding.spack_key_file = config.secretMountPath
             return new TemplateRenderer().render(containerFile, binding)
         }
@@ -257,5 +276,70 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         }
         // invalid state
         throw new IllegalStateException("Unable to determine build status for '$request.targetImage'")
+    }
+
+    protected void saveLayersToContext(BuildRequest req, Path contextDir) {
+        if(req.formatDocker()) {
+            saveLayersToDockerContext0(req.containerConfig, contextDir)
+        }
+        else if(req.formatSingularity()) {
+            saveLayersToSingularityContext0(req.containerConfig, contextDir)
+        }
+        else
+            throw new IllegalArgumentException("Unknown container format: $req.format")
+    }
+
+    protected void saveLayersToDockerContext0(ContainerConfig config, Path contextDir) {
+        final layers = config.layers
+        for(int i=0; i<layers.size(); i++) {
+            final it = layers[i]
+            final target = contextDir.resolve(layerName(it))
+            final retryable = retry0("Unable to copy '${it.location}' to docker context '${contextDir}'")
+            // copy the layer to the build context
+            retryable.apply(()-> {
+                try (InputStream stream = ContentReaderFactory.of(it.location).openStream()) {
+                    Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING)
+                }
+                return
+            })
+        }
+    }
+
+    protected void saveLayersToSingularityContext0(ContainerConfig config, Path contextDir) {
+        final layers = config.layers
+        for(int i=0; i<layers.size(); i++) {
+            final it = layers[i]
+            final target = contextDir.resolve(layerDir(it))
+            try { Files.createDirectory(target) }
+            catch (FileAlreadyExistsException e) { /* ignore */ }
+            // retry strategy
+            final retryable = retry0("Unable to copy '${it.location} to singularity context '${contextDir}'")
+            // copy the layer to the build context
+            retryable.apply(()-> {
+                try (InputStream stream = ContentReaderFactory.of(it.location).openStream()) {
+                    TarUtils.untarGzip(stream, target)
+                }
+                return
+            })
+        }
+    }
+
+    protected void saveBuildContext(BuildContext buildContext, Path contextDir) {
+        // retry strategy
+        final retryable = retry0("Unable to copy '${buildContext.location} to build context '${contextDir}'")
+        // copy the layer to the build context
+        retryable.apply(()-> {
+            try (InputStream stream = ContentReaderFactory.of(buildContext.location).openStream()) {
+                TarUtils.untarGzip(stream, contextDir)
+            }
+            return
+        })
+    }
+
+    private Retryable<Void> retry0(String message) {
+        Retryable
+                .<Void>of(httpClientConfig)
+                .retryCondition((Throwable t) -> t instanceof SocketException || t instanceof HttpServerRetryableErrorException)
+                .onRetry((event)-> log.warn("$message - event: $event"))
     }
 }

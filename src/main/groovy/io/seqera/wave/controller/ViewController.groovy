@@ -1,15 +1,24 @@
 /*
- *  Copyright (c) 2023, Seqera Labs.
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2023, Seqera Labs
  *
- *  This Source Code Form is subject to the terms of the Mozilla Public
- *  License, v. 2.0. If a copy of the MPL was not distributed with this
- *  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- *  This Source Code Form is "Incompatible With Secondary Licenses", as
- *  defined by the Mozilla Public License, v. 2.0.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io.seqera.wave.controller
+
+import io.micronaut.core.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
@@ -20,6 +29,7 @@ import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.views.View
 import io.seqera.wave.exception.NotFoundException
+import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.scan.ScanResult
@@ -42,6 +52,10 @@ class ViewController {
 
     @Inject
     private PersistenceService persistenceService
+
+    @Inject
+    @Nullable
+    private BuildLogService buildLogService
 
     @View("build-view")
     @Get('/builds/{buildId}')
@@ -70,6 +84,13 @@ class ViewController {
         binding.put('server_url', serverUrl)
         binding.scan_url = result.scanId && result.succeeded() ? "$serverUrl/view/scans/${result.scanId}" : null
         binding.scan_id = result.scanId
+        // configure build logs when available
+        if( buildLogService ) {
+            final buildLog = buildLogService.fetchLogString(result.buildId)
+            binding.build_log_data = buildLog?.data
+            binding.build_log_truncated = buildLog?.truncated
+            binding.build_log_url = "$serverUrl/v1alpha1/builds/${result.buildId}/logs"
+        }
         // result the main object
         return binding
       }

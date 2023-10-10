@@ -1,17 +1,23 @@
 /*
- *  Copyright (c) 2023, Seqera Labs.
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2023, Seqera Labs
  *
- *  This Source Code Form is subject to the terms of the Mozilla Public
- *  License, v. 2.0. If a copy of the MPL was not distributed with this
- *  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- *  This Source Code Form is "Incompatible With Secondary Licenses", as
- *  defined by the Mozilla Public License, v. 2.0.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io.seqera.wave.core
 
-import java.net.http.HttpClient
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -24,16 +30,18 @@ import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.configuration.HttpClientConfig
+import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.service.CredentialsService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
+import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
-import jakarta.inject.Named
 import jakarta.inject.Singleton
-import static io.seqera.wave.proxy.ProxyClient.REDIRECT_CODES
+import static io.seqera.wave.WaveDefault.HTTP_REDIRECT_CODES
 /**
  * Proxy service that forwards incoming container request
  * to the target repository, resolving credentials and augmentation
@@ -67,11 +75,10 @@ class RegistryProxyService {
     private RegistryAuthService loginService
 
     @Inject
-    @Named("never-redirects")
-    private HttpClient httpClient
+    private PersistenceService persistenceService
 
     @Inject
-    private PersistenceService persistenceService
+    private HttpClientConfig httpConfig
 
     private ContainerAugmenter scanner(ProxyClient proxyClient) {
         return new ContainerAugmenter()
@@ -80,9 +87,10 @@ class RegistryProxyService {
     }
 
     private ProxyClient client(RoutePath route) {
+        final httpClient = HttpClientFactory.neverRedirectsHttpClient()
         final registry = registryLookup.lookup(route.registry)
         final creds = getCredentials(route)
-        new ProxyClient(httpClient)
+        new ProxyClient(httpClient, httpConfig)
                 .withRoute(route)
                 .withImage(route.image)
                 .withRegistry(registry)
@@ -129,16 +137,28 @@ class RegistryProxyService {
         ProxyClient proxyClient = client(route)
         final resp1 = proxyClient.getStream(route.path, headers, false)
         final redirect = resp1.headers().firstValue('Location').orElse(null)
-        if( redirect && resp1.statusCode() in REDIRECT_CODES ) {
+        final status = resp1.statusCode()
+        if( redirect && status in HTTP_REDIRECT_CODES ) {
             // the redirect location can be a relative path i.e. without hostname
             // therefore resolve it against the target registry hostname
             final target = proxyClient.registry.host.resolve(redirect).toString()
-            return new DelegateResponse(
+            final result = new DelegateResponse(
                     location: target,
-                    statusCode: resp1.statusCode(),
-                    headers:resp1.headers().map())
+                    statusCode: status,
+                    headers:resp1.headers().map(),
+                    body: resp1.body())
+            // close the response to prevent leaks
+            RegHelper.closeResponse(resp1)
+            return result
         }
-        
+
+        if( redirect ) {
+            log.warn "Unexpected redirect location '${redirect}' with status code: ${status}"
+        }
+        else if( status>=300 && status<400 ) {
+            log.warn "Unexpected redirect status code: ${status}; headers: ${RegHelper.dumpHeaders(resp1.headers())}"
+        }
+
         new DelegateResponse(
                 statusCode: resp1.statusCode(),
                 headers: resp1.headers().map(),
