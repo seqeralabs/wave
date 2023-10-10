@@ -77,14 +77,14 @@ distributions:
     type: NATIVE_IMAGE
     artifacts:
       - path: "nativeCompile-ubuntu-latest/wave"
-        transform: "{{distributionName}}-{{projectEffectiveVersion}}-linux-x86_64"
+        transform: "wave-{{projectEffectiveVersion}}-linux-x86_64"
         platform: linux-x86_64
       - path: "nativeCompile-macos-latest/wave"
-        transform: "{{distributionName}}-{{projectEffectiveVersion}}-macos-x86_64"
+        transform: "wave-{{projectEffectiveVersion}}-macos-x86_64"
         platform: osx-x86_64
       - path: "nativeCompile-macos-latest-xlarge/wave"
-        transform: "{{distributionName}}-{{projectEffectiveVersion}}-macos-arm64"
+        transform: "wave-{{projectEffectiveVersion}}-macos-arm64"
         platform: osx-arm64
       - path: "nativeCompile-windows-latest/wave.exe"
-        transform: "{{distributionName}}-{{projectEffectiveVersion}}-windows-x86_64.exe"
+        transform: "wave-{{projectEffectiveVersion}}-windows-x86_64.exe"
         platform: windows-x86_64
