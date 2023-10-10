@@ -1,17 +1,25 @@
 /*
- *  Copyright (c) 2023, Seqera Labs.
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2023, Seqera Labs
  *
- *  This Source Code Form is subject to the terms of the Mozilla Public
- *  License, v. 2.0. If a copy of the MPL was not distributed with this
- *  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- *  This Source Code Form is "Incompatible With Secondary Licenses", as
- *  defined by the Mozilla Public License, v. 2.0.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io.seqera.wave.util
 
 import java.net.http.HttpHeaders
+import java.net.http.HttpResponse
 import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Path
@@ -23,6 +31,7 @@ import com.google.common.io.BaseEncoding
 import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.model.ContainerCoordinates
 import org.yaml.snakeyaml.Yaml
 /**
@@ -248,5 +257,27 @@ class RegHelper {
         }
 
         return hasher.hash().toString()
+    }
+
+    static String layerName(ContainerLayer layer) {
+        return "layer-${layer.gzipDigest.replace(/sha256:/,'')}.tar.gz"
+    }
+
+    static String layerDir(ContainerLayer layer) {
+        return layerName(layer).replace(/.tar.gz/,'')
+    }
+
+    static void closeResponse(HttpResponse<?> response) {
+        log.trace "Closing HttpClient response: $response"
+        try {
+            // close the httpclient response to prevent leaks
+            // https://bugs.openjdk.org/browse/JDK-8308364
+            final b0 = response.body()
+            if( b0 instanceof Closeable )
+                b0.close()
+        }
+        catch (Throwable e) {
+            log.debug "Unexpected error while closing http response - cause: ${e.message}", e
+        }
     }
 }

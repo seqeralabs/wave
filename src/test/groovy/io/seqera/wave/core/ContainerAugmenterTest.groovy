@@ -1,12 +1,19 @@
 /*
- *  Copyright (c) 2023, Seqera Labs.
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2023, Seqera Labs
  *
- *  This Source Code Form is subject to the terms of the Mozilla Public
- *  License, v. 2.0. If a copy of the MPL was not distributed with this
- *  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- *  This Source Code Form is "Incompatible With Secondary Licenses", as
- *  defined by the Mozilla Public License, v. 2.0.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io.seqera.wave.core
@@ -14,7 +21,6 @@ package io.seqera.wave.core
 import spock.lang.Shared
 import spock.lang.Specification
 
-import java.net.http.HttpClient
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -31,6 +37,8 @@ import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryInfo
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.configuration.HttpClientConfig
+import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContentType
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.storage.Storage
@@ -38,8 +46,6 @@ import io.seqera.wave.test.ManifestConst
 import io.seqera.wave.util.ContainerConfigFactory
 import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
-import jakarta.inject.Named
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -67,7 +73,8 @@ class ContainerAugmenterTest extends Specification {
     @Inject RegistryAuthService loginService
     @Inject RegistryLookupService lookupService
     @Inject RegistryCredentialsProvider credentialsProvider
-    @Inject @Named("never-redirects") HttpClient httpClient
+
+    @Inject HttpClientConfig httpConfig
 
     def 'should set layer paths' () {
         given:
@@ -755,9 +762,10 @@ class ContainerAugmenterTest extends Specification {
         def TAG = 'latest'
         def registry = lookupService.lookup(REGISTRY)
         def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
+        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
 
-        def client = new ProxyClient(httpClient)
+        def client = new ProxyClient(httpClient, httpConfig)
                 .withRoute(Mock(RoutePath))
                 .withImage(IMAGE)
                 .withRegistry(registry)
@@ -782,9 +790,10 @@ class ContainerAugmenterTest extends Specification {
         def IMAGE = 'library/busybox'
         def registry = lookupService.lookup(REGISTRY)
         def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
+        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
 
-        def client = new ProxyClient(httpClient)
+        def client = new ProxyClient(httpClient, httpConfig)
                 .withRoute(Mock(RoutePath))
                 .withImage(IMAGE)
                 .withRegistry(registry)
@@ -809,9 +818,10 @@ class ContainerAugmenterTest extends Specification {
         def TAG = '0.11.9--0'
         def registry = lookupService.lookup(REGISTRY)
         def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
+        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
 
-        def client = new ProxyClient(httpClient)
+        def client = new ProxyClient(httpClient, httpConfig)
                 .withRoute(Mock(RoutePath))
                 .withImage(IMAGE)
                 .withRegistry(registry)

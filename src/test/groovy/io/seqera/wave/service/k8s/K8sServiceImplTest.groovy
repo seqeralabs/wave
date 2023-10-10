@@ -1,12 +1,19 @@
 /*
- *  Copyright (c) 2023, Seqera Labs.
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2023, Seqera Labs
  *
- *  This Source Code Form is subject to the terms of the Mozilla Public
- *  License, v. 2.0. If a copy of the MPL was not distributed with this
- *  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- *  This Source Code Form is "Incompatible With Secondary Licenses", as
- *  defined by the Mozilla Public License, v. 2.0.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io.seqera.wave.service.k8s
@@ -285,8 +292,6 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'build-claim',
                 'wave.build.k8s.storage.mountPath': '/build',
-                'wave.build.spack.cacheDirectory':'/build/host/spack/cache',
-                'wave.build.spack.cacheMountPath':'/opt/container/spack/cache',
                 'wave.build.spack.secretKeyFile':'/build/host/spack/key',
                 'wave.build.spack.secretMountPath':'/opt/container/spack/key'
         ]
@@ -306,21 +311,16 @@ class K8sServiceImplTest extends Specification {
         result.spec.containers.get(0).image == 'my-image:latest'
         result.spec.containers.get(0).args ==  ['this','that']
         and:
-        result.spec.containers.get(0).volumeMounts.size() == 3
+        result.spec.containers.get(0).volumeMounts.size() == 2
         and:
         result.spec.containers.get(0).volumeMounts.get(0).name == 'build-data'
         result.spec.containers.get(0).volumeMounts.get(0).mountPath == '/build/work/xyz'
         result.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz'
         and:
         result.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
-        result.spec.containers.get(0).volumeMounts.get(1).mountPath == '/opt/container/spack/cache'
-        result.spec.containers.get(0).volumeMounts.get(1).subPath == 'host/spack/cache'
-        !result.spec.containers.get(0).volumeMounts.get(1).readOnly
-        and:
-        result.spec.containers.get(0).volumeMounts.get(2).name == 'build-data'
-        result.spec.containers.get(0).volumeMounts.get(2).mountPath == '/opt/container/spack/key'
-        result.spec.containers.get(0).volumeMounts.get(2).subPath == 'host/spack/key'
-        result.spec.containers.get(0).volumeMounts.get(2).readOnly
+        result.spec.containers.get(0).volumeMounts.get(1).mountPath == '/opt/container/spack/key'
+        result.spec.containers.get(0).volumeMounts.get(1).subPath == 'host/spack/key'
+        result.spec.containers.get(0).volumeMounts.get(1).readOnly
 
         and:
         result.spec.volumes.get(0).name == 'build-data'

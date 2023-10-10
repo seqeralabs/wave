@@ -1,8 +1,4 @@
-# Wave
-Sandbox for Wave registry project 
-
-
-### Reverse engineering of image pull 
+### Reverse engineering of image pull
 
 Run the command 
 
@@ -322,7 +318,3 @@ The following https requests are made
 * https://docs.docker.com/registry/spec/api/
 * [OCI image specs](https://github.com/opencontainers/image-spec)
 
-## Open points 
-* Eval layer injection vs on-fly build 
-* ~~Understand how checksum is computed for manifest downloaded at request #3~~ (it was just a formatting problem, the checksum is just the sha256 of the json response body) 
-* Benchmark Goofys performance operating in the container vs in the host 

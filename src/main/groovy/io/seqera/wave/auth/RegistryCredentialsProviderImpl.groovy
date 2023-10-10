@@ -1,15 +1,24 @@
 /*
- *  Copyright (c) 2023, Seqera Labs.
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2023, Seqera Labs
  *
- *  This Source Code Form is subject to the terms of the Mozilla Public
- *  License, v. 2.0. If a copy of the MPL was not distributed with this
- *  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- *  This Source Code Form is "Incompatible With Secondary Licenses", as
- *  defined by the Mozilla Public License, v. 2.0.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io.seqera.wave.auth
+
+import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -44,6 +53,10 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
     @Value('${wave.build.cache}')
     private String defaultCacheRepository
 
+    @Nullable
+    @Value('${wave.build.public}')
+    private String defaultPublicRepository
+
     /**
      * Find the corresponding credentials for the specified registry
      *
@@ -58,14 +71,29 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
         return getDefaultCredentials0(registry)
     }
 
-    protected RegistryCredentials getDefaultCredentials0(String registry) {
+    @Override
+    RegistryCredentials getDefaultCredentials(ContainerPath container) {
+        return container && container.repository==defaultPublicRepository
+                ? getDefaultRepoCredentials0(container)
+                : getDefaultCredentials0(container?.registry)
+    }
 
+    protected RegistryCredentials getDefaultCredentials0(String registry) {
         final config = registryConfigurationFactory.getRegistryKeys(registry)
         if( !config ){
-            log.debug "Unable to find credentials for registry '$registry'"
+            log.debug "Unable to find default credentials for registry '$registry'"
             return null
         }
         return credentialsFactory.create(registry, config.username, config.password)
+    }
+
+    protected RegistryCredentials getDefaultRepoCredentials0(ContainerPath container) {
+        final config = registryConfigurationFactory.getRegistryKeys(container.repository)
+        if( !config ){
+            log.debug "Unable to find default credentials for repository '$container.repository'"
+            return null
+        }
+        return credentialsFactory.create(container.registry, config.username, config.password)
     }
 
     /**
@@ -92,8 +120,9 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
             throw new IllegalArgumentException("Missing required parameter userId -- Unable to retrieve credentials for container repository '$container'")
 
         // use default credentials for default repositories
-        if( container.repository==defaultBuildRepository || container.repository==defaultCacheRepository )
-            return getDefaultCredentials(container.registry)
+        final repo = container.repository
+        if( repo==defaultBuildRepository || repo==defaultCacheRepository || repo==defaultPublicRepository)
+            return getDefaultCredentials(container)
 
         return getUserCredentials0(container.registry, userId, workspaceId, towerToken, towerEndpoint)
     }

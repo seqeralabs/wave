@@ -1,12 +1,19 @@
 /*
- *  Copyright (c) 2023, Seqera Labs.
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2023, Seqera Labs
  *
- *  This Source Code Form is subject to the terms of the Mozilla Public
- *  License, v. 2.0. If a copy of the MPL was not distributed with this
- *  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- *  This Source Code Form is "Incompatible With Secondary Licenses", as
- *  defined by the Mozilla Public License, v. 2.0.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io.seqera.wave
@@ -14,18 +21,16 @@ package io.seqera.wave
 import spock.lang.Shared
 import spock.lang.Specification
 
-import java.net.http.HttpClient
-
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.configuration.HttpClientConfig
+import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.test.DockerRegistryContainer
 import jakarta.inject.Inject
-import jakarta.inject.Named
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -40,7 +45,8 @@ class ProxyClientWithLocalRegistryTest extends Specification implements DockerRe
     @Inject RegistryLookupService lookupService
     @Inject RegistryAuthService loginService
     @Inject RegistryCredentialsProvider credentialsProvider
-    @Inject @Named("never-redirects") HttpClient httpClient
+
+    @Inject HttpClientConfig httpConfig
 
     def setupSpec() {
         initRegistryContainer(applicationContext)
@@ -50,7 +56,8 @@ class ProxyClientWithLocalRegistryTest extends Specification implements DockerRe
         given:
         def IMAGE = 'library/hello-world'
         and:
-        def proxy = new ProxyClient(httpClient)
+        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
+        def proxy = new ProxyClient(httpClient, httpConfig)
                 .withImage(IMAGE)
                 .withRegistry(getLocalTestRegistryInfo())
                 .withLoginService(loginService)

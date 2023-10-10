@@ -1,12 +1,19 @@
 /*
- *  Copyright (c) 2023, Seqera Labs.
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2023, Seqera Labs
  *
- *  This Source Code Form is subject to the terms of the Mozilla Public
- *  License, v. 2.0. If a copy of the MPL was not distributed with this
- *  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- *  This Source Code Form is "Incompatible With Secondary Licenses", as
- *  defined by the Mozilla Public License, v. 2.0.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io.seqera.wave.controller
@@ -19,23 +26,31 @@ import java.time.Instant
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
+import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.ContainerRequestData
-import io.seqera.wave.service.persistence.WaveBuildRecord
+import io.seqera.wave.service.logs.BuildLogService
+import io.seqera.wave.service.logs.BuildLogServiceImpl
 import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
 class ViewControllerTest extends Specification {
+
+    @MockBean(BuildLogServiceImpl)
+    BuildLogService logsService() {
+        Mock(BuildLogService)
+    }
+
 
     @Inject
     @Client("/")
@@ -44,9 +59,12 @@ class ViewControllerTest extends Specification {
     @Inject
     PersistenceService persistenceService
 
+    @Inject
+    BuildLogService buildLogService
+
     def 'should render build page' () {
         given:
-        def controller = new ViewController(serverUrl: 'http://foo.com')
+        def controller = new ViewController(serverUrl: 'http://foo.com', buildLogService: buildLogService)
         and:
         def record = new WaveBuildRecord(
                 buildId: '12345',
@@ -66,6 +84,8 @@ class ViewControllerTest extends Specification {
         when:
         def binding = controller.renderBuildView(record)
         then:
+        1 * buildLogService.fetchLogString('12345') >> new BuildLogService.BuildLog('log content', false)
+        and:
         binding.build_id == '12345'
         binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
@@ -78,12 +98,15 @@ class ViewControllerTest extends Specification {
         binding.build_condafile == 'conda::foo'
         binding.build_spackfile == 'some-spack-recipe'
         binding.build_format == 'Docker'
+        binding.build_log_data == 'log content'
+        binding.build_log_truncated == false
+        binding.build_log_url == 'http://foo.com/v1alpha1/builds/12345/logs'
     }
 
     def 'should render a build page' () {
         given:
         def record1 = new WaveBuildRecord(
-                buildId: 'test',
+                buildId: '112233',
                 dockerFile: 'FROM docker.io/test:foo',
                 targetImage: 'test',
                 userName: 'test',
