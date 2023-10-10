@@ -39,9 +39,7 @@ interface RegistryCredentialsProvider {
      */
     RegistryCredentials getDefaultCredentials(String registry)
 
-    default RegistryCredentials getDefaultCredentials(ContainerPath container) {
-        return getDefaultCredentials((String)(container?.registry))
-    }
+    RegistryCredentials getDefaultCredentials(ContainerPath container)
 
     /**
      * Provides the credentials for the specified container associated with the user and tower

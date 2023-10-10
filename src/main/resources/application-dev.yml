@@ -3,6 +3,7 @@ wave:
   scan:
     enabled: true
   build:
+    public: 'quay.io/seqera/wave/containers'
     workspace: 'build-workspace'
     spack:
       cacheDirectory: 'spack-cache'
@@ -26,3 +27,4 @@ logger:
     io.seqera.wave.service.data: 'TRACE'
     io.seqera.wave.service.pairing: 'TRACE'
     io.seqera.wave.tower.client.connector: 'TRACE'
+...

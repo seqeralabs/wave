@@ -1,4 +1,10 @@
 # Wave changelog
+v0.43.0 - 7 Oct 2023
+- Add support for public build repo [e7231032]
+- Add build logs persistence [ci ski] [8e6fd4cb]
+- Bump io.micronaut.core.annotation.Nullable [fbe60a3f]
+- Bump Java build chain to Java 19 [3e91fce0]
+
 v0.42.0 - 4 Oct 2023 
 - Add support for Spack binary cache [41877a92]
 - Add support for S3 hosted Spack binary cache (#294) [82682b63]

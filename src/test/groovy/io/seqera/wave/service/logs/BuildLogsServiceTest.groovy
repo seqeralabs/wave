@@ -16,35 +16,28 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.configuration
+package io.seqera.wave.service.logs
 
-import java.time.Duration
-import io.micronaut.core.annotation.Nullable
+import spock.lang.Specification
+import spock.lang.Unroll
 
-import io.micronaut.context.annotation.ConfigurationProperties
-import io.micronaut.core.bind.annotation.Bindable
 /**
- * Configuration to be used by a TokenService
  *
- * @author : jorge <jorge.aguilera@seqera.io>
- *
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@ConfigurationProperties('wave.tokens')
-interface TokenConfig {
+class BuildLogsServiceTest extends Specification {
 
-    Cache getCache()
+    @Unroll
+    def 'should make log key name' () {
+        expect:
+        new BuildLogServiceImpl(prefix: PREFIX).logKey(BUILD) == EXPECTED
 
-    @ConfigurationProperties('cache')
-    interface Cache {
-
-        @Bindable(defaultValue = "1h")
-        @Nullable
-        Duration getDuration()
-
-        @Bindable(defaultValue = "10000")
-        @Nullable
-        int getMaxSize()
-
+        where:
+        PREFIX          | BUILD         | EXPECTED
+        null            | null          | null
+        null            | '123'         | '123.log'
+        'foo'           | '123'         | 'foo/123.log'
+        '/foo/bar/'     | '123'         | 'foo/bar/123.log'
     }
 
 }

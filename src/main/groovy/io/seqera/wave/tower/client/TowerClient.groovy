@@ -24,7 +24,7 @@ import groovy.transform.CompileStatic
 import io.micronaut.cache.annotation.Cacheable
 import io.seqera.wave.tower.client.connector.HttpTowerConnector
 import io.seqera.wave.tower.client.connector.WebSocketTowerConnector
-import jakarta.annotation.Nullable
+import io.micronaut.core.annotation.Nullable
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import org.apache.commons.lang3.StringUtils

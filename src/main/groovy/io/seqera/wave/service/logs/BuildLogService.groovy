@@ -16,35 +16,27 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.configuration
+package io.seqera.wave.service.logs
 
-import java.time.Duration
-import io.micronaut.core.annotation.Nullable
+import groovy.transform.Canonical
+import io.micronaut.http.server.types.files.StreamedFile
 
-import io.micronaut.context.annotation.ConfigurationProperties
-import io.micronaut.core.bind.annotation.Bindable
 /**
- * Configuration to be used by a TokenService
+ * Service to manage logs
  *
- * @author : jorge <jorge.aguilera@seqera.io>
- *
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-@ConfigurationProperties('wave.tokens')
-interface TokenConfig {
+interface BuildLogService {
 
-    Cache getCache()
-
-    @ConfigurationProperties('cache')
-    interface Cache {
-
-        @Bindable(defaultValue = "1h")
-        @Nullable
-        Duration getDuration()
-
-        @Bindable(defaultValue = "10000")
-        @Nullable
-        int getMaxSize()
-
+    @Canonical
+    class BuildLog {
+        String data
+        boolean truncated
     }
 
+    void storeLog(String buildId, String log)
+
+    StreamedFile fetchLogStream(String buildId)
+
+    BuildLog fetchLogString(String buildId)
 }

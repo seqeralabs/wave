@@ -21,7 +21,7 @@ package io.seqera.wave.tower.client
 import spock.lang.Specification
 
 import java.util.concurrent.ExecutionException
-import javax.annotation.Nullable
+import io.micronaut.core.annotation.Nullable
 
 import io.micronaut.cache.CacheManager
 import io.micronaut.context.annotation.Property
