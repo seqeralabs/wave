@@ -85,6 +85,8 @@ public class App implements Runnable {
     private static final boolean isWindows = System.getProperty("os.name").toLowerCase().contains("windows");
     private static final String DEFAULT_TOWER_ENDPOINT = "https://api.tower.nf";
 
+    private static final List<String> VALID_PLATFORMS = List.of("amd64", "x86_64", "linux/amd64", "linux/x86_64", "arm64", "linux/arm64");
+
     private static final long _1MB = 1024 * 1024;
 
     @Option(names = {"-i", "--image"}, paramLabel = "''", description = "Container image name to be provisioned e.g alpine:latest.")
@@ -342,6 +344,12 @@ public class App implements Runnable {
 
         if( dryRun && await)
             throw new IllegalCliArgumentException("Options --dry-run and --await conflicts each other");
+
+        if( !isEmpty(platform) && !VALID_PLATFORMS.contains(platform) )
+            throw new IllegalCliArgumentException(String.format("Unsupported container platform: '%s'", platform));
+
+        if( singularity && !isEmpty(platform) && platform.contains("arm64") )
+            throw new IllegalCliArgumentException("Options --platform is currently not supported by Singularity native build");
 
     }
 

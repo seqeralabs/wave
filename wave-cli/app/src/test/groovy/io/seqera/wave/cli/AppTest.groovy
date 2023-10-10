@@ -25,6 +25,7 @@ import io.seqera.wave.util.TarUtils
 import io.seqera.wave.cli.exception.IllegalCliArgumentException
 import picocli.CommandLine
 import spock.lang.Specification
+import spock.lang.Unroll
 
 class AppTest extends Specification {
 
@@ -155,5 +156,72 @@ class AppTest extends Specification {
         then:
         def e = thrown(IllegalCliArgumentException)
         e.message == 'Options --dry-run and --await conflicts each other'
+    }
+
+    @Unroll
+    def 'should allow platform option' () {
+        given:
+        def app = new App()
+        String[] args = ["-i", "ubuntu:latest","--platform", PLATFORM]
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        and:
+        app.validateArgs()
+        then:
+        app.@platform == PLATFORM
+
+        where:
+        PLATFORM        || _
+        'amd64'         || _
+        'x86_64'        || _
+        'arm64'         || _
+        'linux/amd64'   || _
+        'linux/x86_64'  || _
+        'linux/arm64'   || _
+    }
+
+    @Unroll
+    def 'should fail with unsupported platform' () {
+        given:
+        def app = new App()
+        String[] args = ["-i", "ubuntu:latest","--platform", 'foo']
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        and:
+        app.validateArgs()
+        then:
+        def e = thrown(IllegalCliArgumentException)
+        e.message == "Unsupported container platform: 'foo'"
+    }
+
+    def 'should allow platform amd64 with singularity' () {
+        given:
+        def app = new App()
+        String[] args = [ '--singularity', "--platform", 'linux/amd64',  '-i', 'ubuntu', '--freeze', '--build-repo', 'docker.io/foo',  '--tower-token', 'xyz']
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        and:
+        app.validateArgs()
+
+        then:
+        noExceptionThrown()
+    }
+
+    def 'should not allow platform arm64  with singularity' () {
+        given:
+        def app = new App()
+        String[] args = ['--singularity', "--platform", 'linux/arm64', '-i', 'ubuntu', '--freeze', '--build-repo', 'docker.io/foo',  '--tower-token', 'xyz']
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        and:
+        app.validateArgs()
+
+        then:
+        def e = thrown(IllegalCliArgumentException)
+        e.message == "Options --platform is currently not supported by Singularity native build"
     }
 }
