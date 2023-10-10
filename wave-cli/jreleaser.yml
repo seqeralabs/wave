@@ -80,10 +80,10 @@ distributions:
         transform: "{{distributionName}}-{{projectEffectiveVersion}}-linux-x86_64"
         platform: linux-x86_64
       - path: "nativeCompile-macos-latest/wave"
-        transform: "{{distributionName}}-{{projectEffectiveVersion}}-osx-x86_64"
+        transform: "{{distributionName}}-{{projectEffectiveVersion}}-macos-x86_64"
         platform: osx-x86_64
       - path: "nativeCompile-macos-latest-xlarge/wave"
-        transform: "{{distributionName}}-{{projectEffectiveVersion}}-osx-arm64"
+        transform: "{{distributionName}}-{{projectEffectiveVersion}}-macos-arm64"
         platform: osx-arm64
       - path: "nativeCompile-windows-latest/wave.exe"
         transform: "{{distributionName}}-{{projectEffectiveVersion}}-windows-x86_64.exe"
