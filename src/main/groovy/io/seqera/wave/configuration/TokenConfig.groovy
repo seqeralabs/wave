@@ -19,7 +19,7 @@
 package io.seqera.wave.configuration
 
 import java.time.Duration
-import javax.annotation.Nullable
+import io.micronaut.core.annotation.Nullable
 
 import io.micronaut.context.annotation.ConfigurationProperties
 import io.micronaut.core.bind.annotation.Bindable

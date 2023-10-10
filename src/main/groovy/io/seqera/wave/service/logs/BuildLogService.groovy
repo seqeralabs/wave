@@ -16,19 +16,27 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.validation
+package io.seqera.wave.service.logs
+
+import groovy.transform.Canonical
+import io.micronaut.http.server.types.files.StreamedFile
 
 /**
- * Validation service
+ * Service to manage logs
  *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-interface ValidationService {
+interface BuildLogService {
 
-    String checkEndpoint(String endpoint)
+    @Canonical
+    class BuildLog {
+        String data
+        boolean truncated
+    }
 
-    String checkContainerName(String name)
+    void storeLog(String buildId, String log)
 
-    String checkBuildRepository(String repo, boolean cache)
+    StreamedFile fetchLogStream(String buildId)
 
+    BuildLog fetchLogString(String buildId)
 }

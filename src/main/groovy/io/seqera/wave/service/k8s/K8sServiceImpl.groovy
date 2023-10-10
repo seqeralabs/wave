@@ -20,7 +20,7 @@ package io.seqera.wave.service.k8s
 
 import java.nio.file.Path
 import java.time.Duration
-import javax.annotation.Nullable
+import io.micronaut.core.annotation.Nullable
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileDynamic

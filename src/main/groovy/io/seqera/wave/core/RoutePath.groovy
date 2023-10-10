@@ -18,7 +18,7 @@
 
 package io.seqera.wave.core
 
-import javax.annotation.Nullable
+import io.micronaut.core.annotation.Nullable
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic

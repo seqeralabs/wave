@@ -29,6 +29,7 @@ import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.ContainerAugmenter
 import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.core.RegistryProxyService
@@ -75,6 +76,9 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
 
     @Inject
     private RegistryAuthService loginService
+
+    @Inject
+    private HttpClientConfig httpConfig
 
     /**
      * {@inheritDoc}
@@ -194,7 +198,7 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
     private ProxyClient client0(ContainerPath route, RegistryCredentials creds) {
         final registry = lookupService.lookup(route.registry)
         final httpClient = HttpClientFactory.neverRedirectsHttpClient()
-        new ProxyClient(httpClient)
+        new ProxyClient(httpClient, httpConfig)
                 .withRoute(route)
                 .withImage(route.image)
                 .withRegistry(registry)

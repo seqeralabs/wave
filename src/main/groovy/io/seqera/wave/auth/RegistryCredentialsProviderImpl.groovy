@@ -18,6 +18,8 @@
 
 package io.seqera.wave.auth
 
+import javax.annotation.Nullable
+
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
@@ -51,6 +53,10 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
     @Value('${wave.build.cache}')
     private String defaultCacheRepository
 
+    @Nullable
+    @Value('${wave.build.public}')
+    private String defaultPublicRepository
+
     /**
      * Find the corresponding credentials for the specified registry
      *
@@ -65,14 +71,29 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
         return getDefaultCredentials0(registry)
     }
 
-    protected RegistryCredentials getDefaultCredentials0(String registry) {
+    @Override
+    RegistryCredentials getDefaultCredentials(ContainerPath container) {
+        return container && container.repository==defaultPublicRepository
+                ? getDefaultRepoCredentials0(container)
+                : getDefaultCredentials0(container?.registry)
+    }
 
+    protected RegistryCredentials getDefaultCredentials0(String registry) {
         final config = registryConfigurationFactory.getRegistryKeys(registry)
         if( !config ){
-            log.debug "Unable to find credentials for registry '$registry'"
+            log.debug "Unable to find default credentials for registry '$registry'"
             return null
         }
         return credentialsFactory.create(registry, config.username, config.password)
+    }
+
+    protected RegistryCredentials getDefaultRepoCredentials0(ContainerPath container) {
+        final config = registryConfigurationFactory.getRegistryKeys(container.repository)
+        if( !config ){
+            log.debug "Unable to find default credentials for repository '$container.repository'"
+            return null
+        }
+        return credentialsFactory.create(container.registry, config.username, config.password)
     }
 
     /**
@@ -99,8 +120,9 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
             throw new IllegalArgumentException("Missing required parameter userId -- Unable to retrieve credentials for container repository '$container'")
 
         // use default credentials for default repositories
-        if( container.repository==defaultBuildRepository || container.repository==defaultCacheRepository )
-            return getDefaultCredentials(container.registry)
+        final repo = container.repository
+        if( repo==defaultBuildRepository || repo==defaultCacheRepository || repo==defaultPublicRepository)
+            return getDefaultCredentials(container)
 
         return getUserCredentials0(container.registry, userId, workspaceId, towerToken, towerEndpoint, workflowId)
     }

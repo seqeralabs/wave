@@ -1,4 +1,45 @@
 # Wave changelog
+v0.43.0 - 7 Oct 2023
+- Add support for public build repo [e7231032]
+- Add build logs persistence [ci ski] [8e6fd4cb]
+- Bump io.micronaut.core.annotation.Nullable [fbe60a3f]
+- Bump Java build chain to Java 19 [3e91fce0]
+
+v0.42.0 - 4 Oct 2023 
+- Add support for Spack binary cache [41877a92]
+- Add support for S3 hosted Spack binary cache (#294) [82682b63]
+- Add known error handling to ProxyClient [8cdd5593]
+- Add status 500 to HTTP retriable errors [81763eb8]
+- Deprecate HTTP-based pairing controller [522700f0]
+- Decrease log verbosity [bd420be3]
+- Improve request validation [8cab3cc0]
+
+v0.41.13 - 2 Oct 2023
+- Add TimedInputStream [f31cf56f]
+
+v0.41.12 - 1 Oct 2023 
+- Use cached thread pool for http client [af32e6b5]
+
+v0.41.11 - 1 Oct 2023
+- Rollback to Java 17 [32cc9529]
+- Use Fixed thread pool for Http client [41225446]
+
+v0.41.10 - 1 Oct 2023
+- Add ping endpoint for testing [f97e7140]
+- Fix use of HttpClient in HttpTowerConnector [dc633b11]
+- Revert use of StreamedFile for blob download [80ee4ed0]
+
+v0.41.9 - 30 Sep 2023 
+- Improve response handling and binary download [bdc73943]
+- Improve HttpClientFactory logging and eviction [1eda4c69]
+- Bump commons-compress:1.24.0 [fb74a6e0]
+
+v0.41.8 - 29 Sep 2023
+- Improve caching of HttpClient [679bd320]
+- Improve http error retryable policy [c03b734d]
+- Improve http client error handling [9f3a7db5]
+- Bump kubernetes client to 18.0.1 and commons-compress to 1.24.0 (#298) [2b84bb20]
+
 v0.41.7 - 28 Sep 2023
 - Improve http client instance per request handling [616c1072]
 

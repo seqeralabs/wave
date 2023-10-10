@@ -28,6 +28,7 @@ import io.seqera.wave.auth.RegistryAuth
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.proxy.ProxyClient
 import jakarta.inject.Inject
@@ -46,6 +47,8 @@ class ProxyClientTest extends Specification {
     @Inject RegistryAuthService loginService
     @Inject RegistryCredentialsProvider credentialsProvider
 
+    @Inject HttpClientConfig httpConfig
+
     def 'should call target manifests on docker.io' () {
         given:
         def REG = 'docker.io'
@@ -54,7 +57,7 @@ class ProxyClientTest extends Specification {
         def creds = credentialsProvider.getDefaultCredentials(REG)
         def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
-        def proxy = new ProxyClient(httpClient)
+        def proxy = new ProxyClient(httpClient, httpConfig)
                 .withImage(IMAGE)
                 .withRegistry(registry)
                 .withLoginService(loginService)
@@ -74,7 +77,7 @@ class ProxyClientTest extends Specification {
         def registry = lookupService.lookup(REG)
         def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
-        def proxy = new ProxyClient(httpClient)
+        def proxy = new ProxyClient(httpClient, httpConfig)
                 .withImage(IMAGE)
                 .withRegistry(registry)
                 .withLoginService(loginService)
@@ -94,7 +97,7 @@ class ProxyClientTest extends Specification {
         def creds = credentialsProvider.getDefaultCredentials(REG)
         def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
-        def proxy = new ProxyClient(httpClient)
+        def proxy = new ProxyClient(httpClient, httpConfig)
                 .withImage(IMAGE)
                 .withRegistry(registry)
                 .withLoginService(loginService)
@@ -115,7 +118,7 @@ class ProxyClientTest extends Specification {
         def creds = credentialsProvider.getDefaultCredentials(REG)
         def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
-        def proxy = new ProxyClient(httpClient)
+        def proxy = new ProxyClient(httpClient, httpConfig)
                 .withImage(IMAGE)
                 .withRegistry(registry)
                 .withLoginService(loginService)
@@ -149,7 +152,7 @@ class ProxyClientTest extends Specification {
         def creds = credentialsProvider.getDefaultCredentials(REG)
         def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
-        def proxy = new ProxyClient(httpClient)
+        def proxy = new ProxyClient(httpClient, httpConfig)
                 .withImage(IMAGE)
                 .withRegistry(registry)
                 .withLoginService(loginService)
@@ -170,7 +173,7 @@ class ProxyClientTest extends Specification {
         def creds = credentialsProvider.getDefaultCredentials(REG)
         def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
-        def proxy = new ProxyClient(httpClient)
+        def proxy = new ProxyClient(httpClient, httpConfig)
                 .withImage(IMAGE)
                 .withRegistry(registry)
                 .withLoginService(loginService)
@@ -232,7 +235,7 @@ class ProxyClientTest extends Specification {
         def creds = credentialsProvider.getDefaultCredentials(REG)
         def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
-        def proxy = new ProxyClient(httpClient)
+        def proxy = new ProxyClient(httpClient, httpConfig)
                 .withImage(IMAGE)
                 .withRegistry(registry)
                 .withLoginService(loginService)

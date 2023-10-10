@@ -21,7 +21,7 @@ package io.seqera.wave.configuration
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
-import javax.annotation.Nullable
+import io.micronaut.core.annotation.Nullable
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic

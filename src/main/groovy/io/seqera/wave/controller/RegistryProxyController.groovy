@@ -21,7 +21,7 @@ package io.seqera.wave.controller
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
-import javax.annotation.Nullable
+import io.micronaut.core.annotation.Nullable
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
@@ -60,6 +60,7 @@ import io.seqera.wave.storage.DigestKey
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.util.Retryable
+import io.seqera.wave.util.TimedInputStream
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import org.reactivestreams.Publisher
@@ -113,8 +114,8 @@ class RegistryProxyController {
     private CacheLoader<DigestKey, byte[]> digestKeyCacheLoader() {
         // create the retry logic on error
         final retryable = Retryable
-                .of(httpConfig)
-                .onRetry((event) -> log.warn("Unable to load digest-store - attempt: ${event.attemptCount}; cause: ${event.lastFailure.message}"))
+                .<byte[]>of(httpConfig)
+                .onRetry((event) -> log.warn("Unable to load digest-store - event: $event"))
         // load all bytes, this can invoke a remote http request
         new CacheLoader<DigestKey, byte[]>() {
             @Override
@@ -124,7 +125,6 @@ class RegistryProxyController {
             }
         }
     }
-
 
     @Error
     HttpResponse<RegistryErrorResponse> handleError(HttpRequest request, Throwable t) {
@@ -341,9 +341,10 @@ class RegistryProxyController {
         final Long len = response.headers
                 .find {it.key.toLowerCase()=='content-length'}?.value?.first() as Long ?: null
 
+        final wrap = new TimedInputStream(response.body, httpConfig.getReadTimeout())
         final streamedFile =  len
-                    ?  new StreamedFile(response.body, MediaType.APPLICATION_OCTET_STREAM_TYPE, Instant.now().toEpochMilli(), len)
-                    :  new StreamedFile(response.body, MediaType.APPLICATION_OCTET_STREAM_TYPE)
+                ?  new StreamedFile(wrap, MediaType.APPLICATION_OCTET_STREAM_TYPE, Instant.now().toEpochMilli(), len)
+                :  new StreamedFile(wrap, MediaType.APPLICATION_OCTET_STREAM_TYPE)
 
         HttpResponse
                 .status(HttpStatus.valueOf(response.statusCode))

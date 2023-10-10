@@ -20,6 +20,7 @@ package io.seqera.wave.controller
 
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
+import javax.annotation.Nullable
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
@@ -102,6 +103,10 @@ class ContainerTokenController {
     @Value('${wave.build.cache}')
     String defaultCacheRepo
 
+    @Nullable
+    @Value('${wave.build.public}')
+    String defaultPublicRepo
+
     @Value('${wave.scan.enabled:false}')
     boolean scanEnabled
 
@@ -136,7 +141,7 @@ class ContainerTokenController {
 
     @PostConstruct
     private void init() {
-        log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl"
+        log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl; default-builld-repo: $defaultBuildRepo; default-cache-repo: $defaultCacheRepo; default-public-repo: $defaultPublicRepo"
     }
 
     @Post('/container-token')
@@ -204,7 +209,7 @@ class ContainerTokenController {
         final spackContent = req.spackFile ? new String(req.spackFile.decodeBase64()) : null as String
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
-        final build = req.buildRepository ?: defaultBuildRepo
+        final build = req.buildRepository ?: (req.freeze && defaultPublicRepo ? defaultPublicRepo : defaultBuildRepo)
         final cache = req.cacheRepository ?: defaultCacheRepo
         final configJson = dockerAuthService.credentialsConfigJson(containerSpec, build, cache, user?.id, req.towerWorkspaceId, req.towerAccessToken, req.towerEndpoint, req.towerWorkflowId)
         final containerConfig = req.freeze ? req.containerConfig : null
@@ -251,7 +256,7 @@ class ContainerTokenController {
             throw new BadRequestException("Attributes 'containerImage' and 'containerFile' cannot be used in the same request")
         if( req.containerImage?.contains('@sha256:') && req.containerConfig && !req.freeze )
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
-        if( req.freeze && !req.buildRepository )
+        if( req.freeze && !req.buildRepository && !defaultPublicRepo )
             throw new BadRequestException("When freeze mode is enabled the target build repository must be specified - see 'wave.build.repository' setting")
         if( req.formatSingularity() && !req.freeze )
             throw new BadRequestException("Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting")
@@ -334,10 +339,15 @@ class ContainerTokenController {
                 throw new BadRequestException("Missing pairing record for Tower endpoint '$req.towerEndpoint'")
         }
 
-        if( req.containerImage ) {
-            final msg = validationService.checkContainerName(req.containerImage)
-            if( msg )
-                throw new BadRequestException(msg)
-        }
+        String msg
+        // check valid image name
+        msg = validationService.checkContainerName(req.containerImage)
+        if( msg ) throw new BadRequestException(msg)
+        // check build repo
+        msg = validationService.checkBuildRepository(req.buildRepository, false)
+        if( msg ) throw new BadRequestException(msg)
+        // check cache repository
+        msg = validationService.checkBuildRepository(req.cacheRepository, true)
+        if( msg ) throw new BadRequestException(msg)
     }
 }
