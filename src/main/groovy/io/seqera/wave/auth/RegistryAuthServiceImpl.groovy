@@ -18,7 +18,6 @@
 
 package io.seqera.wave.auth
 
-import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.concurrent.ExecutionException
@@ -34,12 +33,13 @@ import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.wave.configuration.HttpClientConfig
+import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
-import jakarta.inject.Named
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
+import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
 /**
  * Implement Docker authentication & login service
  *
@@ -77,10 +77,6 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
                     .build(loader)
 
     @Inject
-    @Named("follow-redirects")
-    private HttpClient httpClient
-
-    @Inject
     private RegistryLookupService lookupService
 
     @Inject RegistryCredentialsFactory credentialsFactory
@@ -95,6 +91,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
      * @return {@code true} if the login was successful or {@code false} otherwise
      */
     boolean login(String registryName, String username, String password) {
+        final httpClient = HttpClientFactory.followRedirectsHttpClient()
         // 0. default to 'docker.io' when the registry name is empty
         if( !registryName )
             registryName = DOCKER_IO
@@ -118,13 +115,15 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
                 .build()
         // retry strategy
         final retryable = Retryable
-                .of(httpConfig)
-                .onRetry((event) -> log.warn("Unable to connect '$endpoint' - attempt: ${event.attemptCount}; cause: ${event.lastFailure.message}"))
+                .<HttpResponse<String>>of(httpConfig)
+                .retryIf( (response) -> response.statusCode() in HTTP_SERVER_ERRORS)
+                .onRetry((event) -> log.warn("Unable to connect '$endpoint' - event: $event}"))
         // make the request
         final response = retryable.apply(()-> httpClient.send(request, HttpResponse.BodyHandlers.ofString()))
-
+        final body = response.body()
+        // check the response
         if( response.statusCode() == 200 ) {
-            log.debug "Container registry '$endpoint' login - response: ${StringUtils.trunc(response.body())}"
+            log.debug "Container registry '$endpoint' login - response: ${StringUtils.trunc(body)}"
             return true
         }
         else {
@@ -193,18 +192,21 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
      * @return The resulting bearer token to authorise a pull request
      */
     protected String getToken0(CacheKey key) {
+        final httpClient = HttpClientFactory.followRedirectsHttpClient()
         final login = buildLoginUrl(key.auth.realm, key.image, key.auth.service)
         final req = makeRequest(login, key.creds)
         log.trace "Token request=$req"
 
         // retry strategy
         final retryable = Retryable
-                .of(httpConfig)
-                .onRetry((event) -> log.warn("Unable to connect '$login' - attempt: ${event.attemptCount}; cause: ${event.lastFailure.message}"))
+                .<HttpResponse<String>>of(httpConfig)
+                .retryIf( (response) -> ((HttpResponse)response).statusCode() in HTTP_SERVER_ERRORS )
+                .onRetry((event) -> log.warn("Unable to connect '$login' - event: $event"))
         // submit http request
-        HttpResponse<String> resp = retryable.apply(()-> httpClient.send(req, HttpResponse.BodyHandlers.ofString()))
-        final body = resp.body()
-        if( resp.statusCode()==200 ) {
+        final response = retryable.apply(()-> httpClient.send(req, HttpResponse.BodyHandlers.ofString()))
+        // check the response
+        final body = response.body()
+        if( response.statusCode()==200 ) {
             final result = (Map) new JsonSlurper().parseText(body)
             // note: azure registry returns 'access_token'
             // see also specs https://docs.docker.com/registry/spec/auth/token/#requesting-a-token
@@ -215,7 +217,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
             }
         }
 
-        throw new RegistryUnauthorizedAccessException("Unable to authorize request: $login", resp.statusCode(), body)
+        throw new RegistryUnauthorizedAccessException("Unable to authorize request: $login", response.statusCode(), body)
     }
 
     String buildLoginUrl(URI realm, String image, String service){

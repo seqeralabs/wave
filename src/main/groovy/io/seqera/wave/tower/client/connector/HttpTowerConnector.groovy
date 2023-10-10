@@ -18,7 +18,7 @@
 
 package io.seqera.wave.tower.client.connector
 
-import java.net.http.HttpClient
+
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.concurrent.CompletableFuture
@@ -27,10 +27,10 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.http.HttpMethod
 import io.seqera.wave.configuration.HttpClientConfig
+import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
 import jakarta.inject.Inject
-import jakarta.inject.Named
 import jakarta.inject.Singleton
 /**
  * Implements a Tower client using a plain HTTP client
@@ -46,12 +46,9 @@ class HttpTowerConnector extends TowerConnector {
     @Inject
     private HttpClientConfig config
 
-    @Inject
-    @Named("never-redirects")
-    private HttpClient client
-
     @Override
     CompletableFuture<ProxyHttpResponse> sendAsync(String endpoint, ProxyHttpRequest request) {
+        final client = HttpClientFactory.neverRedirectsHttpClient()
         client
             .sendAsync(buildHttpRequest(request), HttpResponse.BodyHandlers.ofString())
             .thenApply( (resp)-> {

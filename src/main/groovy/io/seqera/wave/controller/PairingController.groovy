@@ -48,6 +48,7 @@ import static io.seqera.wave.WaveDefault.TOWER
 @CompileStatic
 @Controller("/")
 @Validated
+@Deprecated
 class PairingController {
 
     @Inject
@@ -61,6 +62,7 @@ class PairingController {
 
     @Post('/pairing')
     HttpResponse<PairingResponse> pairService(@Valid @Body PairingRequest req) {
+        log.warn "Wave HTTP-based paring has been deprecated - origin: ${req.endpoint}"
         validateRequest(req)
         final key = securityService.acquirePairingKey(req.service, req.endpoint)
         return HttpResponse.ok(key)

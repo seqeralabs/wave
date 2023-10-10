@@ -20,7 +20,7 @@ package io.seqera.wave.service.k8s
 
 import java.nio.file.Path
 import java.time.Duration
-import javax.annotation.Nullable
+import io.micronaut.core.annotation.Nullable
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileDynamic
@@ -352,7 +352,6 @@ class K8sServiceImpl implements K8sService {
         }
 
         if( spackConfig ) {
-            mounts.add(mountSpackCacheDir(spackConfig.cacheDirectory, storageMountPath, spackConfig.cacheMountPath))
             mounts.add(mountSpackSecretFile(spackConfig.secretKeyFile, storageMountPath, spackConfig.secretMountPath))
         }
 

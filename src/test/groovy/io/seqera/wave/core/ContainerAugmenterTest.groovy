@@ -21,7 +21,6 @@ package io.seqera.wave.core
 import spock.lang.Shared
 import spock.lang.Specification
 
-import java.net.http.HttpClient
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -38,6 +37,8 @@ import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryInfo
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.configuration.HttpClientConfig
+import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContentType
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.storage.Storage
@@ -45,8 +46,6 @@ import io.seqera.wave.test.ManifestConst
 import io.seqera.wave.util.ContainerConfigFactory
 import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
-import jakarta.inject.Named
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -74,7 +73,8 @@ class ContainerAugmenterTest extends Specification {
     @Inject RegistryAuthService loginService
     @Inject RegistryLookupService lookupService
     @Inject RegistryCredentialsProvider credentialsProvider
-    @Inject @Named("never-redirects") HttpClient httpClient
+
+    @Inject HttpClientConfig httpConfig
 
     def 'should set layer paths' () {
         given:
@@ -762,9 +762,10 @@ class ContainerAugmenterTest extends Specification {
         def TAG = 'latest'
         def registry = lookupService.lookup(REGISTRY)
         def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
+        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
 
-        def client = new ProxyClient(httpClient)
+        def client = new ProxyClient(httpClient, httpConfig)
                 .withRoute(Mock(RoutePath))
                 .withImage(IMAGE)
                 .withRegistry(registry)
@@ -789,9 +790,10 @@ class ContainerAugmenterTest extends Specification {
         def IMAGE = 'library/busybox'
         def registry = lookupService.lookup(REGISTRY)
         def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
+        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
 
-        def client = new ProxyClient(httpClient)
+        def client = new ProxyClient(httpClient, httpConfig)
                 .withRoute(Mock(RoutePath))
                 .withImage(IMAGE)
                 .withRegistry(registry)
@@ -816,9 +818,10 @@ class ContainerAugmenterTest extends Specification {
         def TAG = '0.11.9--0'
         def registry = lookupService.lookup(REGISTRY)
         def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
+        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
 
-        def client = new ProxyClient(httpClient)
+        def client = new ProxyClient(httpClient, httpConfig)
                 .withRoute(Mock(RoutePath))
                 .withImage(IMAGE)
                 .withRegistry(registry)

@@ -37,8 +37,6 @@ class DockerBuilderStrategyTest extends Specification {
     def 'should get docker command' () {
         given:
         def props = [
-                'wave.build.spack.cacheDirectory':'/host/spack/cache',
-                'wave.build.spack.cacheMountPath':'/opt/spack/cache',
                 'wave.build.spack.secretKeyFile':'/host/spack/key',
                 'wave.build.spack.secretMountPath':'/opt/spack/key'  ]
         def ctx = ApplicationContext.run(props)
@@ -76,9 +74,7 @@ class DockerBuilderStrategyTest extends Specification {
                 '-v', '/work/foo:/work/foo',
                 '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
                 '-v', '/host/spack/key:/opt/spack/key:ro',
-                '-v', '/host/spack/cache:/opt/spack/cache:rw',
                 'gcr.io/kaniko-project/executor:v1.16.0']
-
 
         cleanup:
         ctx.close()
@@ -141,8 +137,6 @@ class DockerBuilderStrategyTest extends Specification {
     def 'should get singularity build command' () {
         given:
         def props = [
-                'wave.build.spack.cacheDirectory':'/host/spack/cache',
-                'wave.build.spack.cacheMountPath':'/opt/spack/cache',
                 'wave.build.spack.secretKeyFile':'/host/spack/key',
                 'wave.build.spack.secretMountPath':'/opt/spack/key'  ]
         def ctx = ApplicationContext.run(props)
@@ -166,7 +160,6 @@ class DockerBuilderStrategyTest extends Specification {
                 '-v', '/work/creds.json:/root/.singularity/docker-config.json:ro',
                 '-v', '/work/singularity-remote.yaml:/root/.singularity/remote.yaml:ro',
                 '-v', '/host/spack/key:/opt/spack/key:ro',
-                '-v', '/host/spack/cache:/opt/spack/cache:rw',
                 '--platform', 'linux/amd64',
                 'quay.io/singularity/singularity:v3.11.4-slim',
                 'sh',

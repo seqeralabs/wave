@@ -16,19 +16,28 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.validation
+package io.seqera.wave.service.logs
+
+import spock.lang.Specification
+import spock.lang.Unroll
 
 /**
- * Validation service
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface ValidationService {
+class BuildLogsServiceTest extends Specification {
 
-    String checkEndpoint(String endpoint)
+    @Unroll
+    def 'should make log key name' () {
+        expect:
+        new BuildLogServiceImpl(prefix: PREFIX).logKey(BUILD) == EXPECTED
 
-    String checkContainerName(String name)
-
-    String checkBuildRepository(String repo, boolean cache)
+        where:
+        PREFIX          | BUILD         | EXPECTED
+        null            | null          | null
+        null            | '123'         | '123.log'
+        'foo'           | '123'         | 'foo/123.log'
+        '/foo/bar/'     | '123'         | 'foo/bar/123.log'
+    }
 
 }

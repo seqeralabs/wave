@@ -25,7 +25,7 @@ import java.nio.file.StandardCopyOption
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
-import javax.annotation.Nullable
+import io.micronaut.core.annotation.Nullable
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
@@ -57,7 +57,6 @@ import static io.seqera.wave.util.StringUtils.indent
 import static java.nio.file.StandardOpenOption.CREATE
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import static java.nio.file.StandardOpenOption.WRITE
-
 /**
  * Implements container build service
  *
@@ -155,7 +154,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             binding.spack_builder_image = config.builderImage
             binding.spack_runner_image = config.runnerImage
             binding.spack_arch = SpackHelper.toSpackArch(req.getPlatform())
-            binding.spack_cache_dir = config.cacheMountPath
+            binding.spack_cache_bucket = config.cacheBucket
             binding.spack_key_file = config.secretMountPath
             return new TemplateRenderer().render(containerFile, binding)
         }
@@ -301,6 +300,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 try (InputStream stream = ContentReaderFactory.of(it.location).openStream()) {
                     Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING)
                 }
+                return
             })
         }
     }
@@ -319,6 +319,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 try (InputStream stream = ContentReaderFactory.of(it.location).openStream()) {
                     TarUtils.untarGzip(stream, target)
                 }
+                return
             })
         }
     }
@@ -331,13 +332,14 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             try (InputStream stream = ContentReaderFactory.of(buildContext.location).openStream()) {
                 TarUtils.untarGzip(stream, contextDir)
             }
+            return
         })
     }
 
-    private Retryable retry0(String message) {
+    private Retryable<Void> retry0(String message) {
         Retryable
-                .of(httpClientConfig)
-                .withCondition((Throwable t) -> t instanceof SocketException || t instanceof HttpServerRetryableErrorException)
-                .onRetry((event)-> log.warn("$message - attempt: ${event.attemptCount}; cause: ${event.lastFailure.message}"))
+                .<Void>of(httpClientConfig)
+                .retryCondition((Throwable t) -> t instanceof SocketException || t instanceof HttpServerRetryableErrorException)
+                .onRetry((event)-> log.warn("$message - event: $event"))
     }
 }

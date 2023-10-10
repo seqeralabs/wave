@@ -21,18 +21,16 @@ package io.seqera.wave
 import spock.lang.Shared
 import spock.lang.Specification
 
-import java.net.http.HttpClient
-
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.configuration.HttpClientConfig
+import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.test.DockerRegistryContainer
 import jakarta.inject.Inject
-import jakarta.inject.Named
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -47,7 +45,8 @@ class ProxyClientWithLocalRegistryTest extends Specification implements DockerRe
     @Inject RegistryLookupService lookupService
     @Inject RegistryAuthService loginService
     @Inject RegistryCredentialsProvider credentialsProvider
-    @Inject @Named("never-redirects") HttpClient httpClient
+
+    @Inject HttpClientConfig httpConfig
 
     def setupSpec() {
         initRegistryContainer(applicationContext)
@@ -57,7 +56,8 @@ class ProxyClientWithLocalRegistryTest extends Specification implements DockerRe
         given:
         def IMAGE = 'library/hello-world'
         and:
-        def proxy = new ProxyClient(httpClient)
+        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
+        def proxy = new ProxyClient(httpClient, httpConfig)
                 .withImage(IMAGE)
                 .withRegistry(getLocalTestRegistryInfo())
                 .withLoginService(loginService)

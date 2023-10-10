@@ -10,12 +10,6 @@ plugins {
     id 'org.asciidoctor.jvm.convert' version '3.3.2'
 }
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(19)
-    }
-}
-
 String gitVersion() {
     def p = new ProcessBuilder() .command('sh','-c','git rev-parse --short HEAD') .start()
     def r = p.waitFor()
@@ -54,10 +48,10 @@ dependencies {
     implementation 'dev.failsafe:failsafe:3.1.0'
     implementation('io.projectreactor:reactor-core')
     implementation("io.seqera:tower-crypto:22.4.0-watson") { transitive = false }  // to be replaced with 22.4.0 once released
-    implementation 'org.apache.commons:commons-compress:1.21'
+    implementation 'org.apache.commons:commons-compress:1.24.0'
     implementation 'org.apache.commons:commons-lang3:3.12.0'
-    implementation 'io.kubernetes:client-java:18.0.0'
-    implementation 'io.kubernetes:client-java-api-fluent:18.0.0'
+    implementation 'io.kubernetes:client-java:18.0.1'
+    implementation 'io.kubernetes:client-java-api-fluent:18.0.1'
     implementation 'com.google.code.gson:gson:2.9.0'
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
@@ -73,13 +67,14 @@ dependencies {
     implementation "software.amazon.awssdk:ecrpublic"
     implementation 'com.amazonaws:aws-java-sdk-ses:1.12.42'
     implementation 'org.yaml:snakeyaml:2.0'
+    //object storage dependency
+    implementation("io.micronaut.objectstorage:micronaut-object-storage-aws")
     // this sts dependency is require by micronaut-aws-parameter-store,
     // not directly used by the app, for this reason keeping `runtimeOnly`
     runtimeOnly "software.amazon.awssdk:sts"
 
     runtimeOnly("io.netty:netty-tcnative-boringssl-static:2.0.0.Final")
     runtimeOnly("javax.xml.bind:jaxb-api:2.3.1")
-    testImplementation "org.apache.commons:commons-compress:1.21"
     testImplementation("org.testcontainers:testcontainers")
     testImplementation("org.testcontainers:mysql:1.17.3")
 
@@ -117,7 +112,7 @@ micronaut {
 //
 jib {
     from {
-        image = 'cr.seqera.io/public/nf-jdk:corretto-21.0.0-jemalloc'
+        image = 'cr.seqera.io/public/nf-jdk:corretto-17.0.8-jemalloc'
         platforms {
             platform { architecture = 'amd64'; os = 'linux' }
         }

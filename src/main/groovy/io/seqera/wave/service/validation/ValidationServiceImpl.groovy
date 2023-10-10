@@ -56,6 +56,8 @@ class ValidationServiceImpl implements ValidationService {
 
     @Override
     String checkContainerName(String name) {
+        if( !name )
+            return null
         // check does not start with a protocol prefix
         final prot = StringUtils.getUrlProtocol(name)
         if( prot ) {
@@ -69,6 +71,23 @@ class ValidationServiceImpl implements ValidationService {
             return "Invalid container image name — offending value: $name"
         }
         return null
+    }
+
+    @Override
+    String checkBuildRepository(String repo, boolean cache) {
+        if( !repo )
+            return null
+        final type = cache ? "build cache" : "build"
+        // check does not start with a protocol prefix
+        final prot = StringUtils.getUrlProtocol(repo)
+        if( prot )
+            return "Container ${type} repository should not include any protocol prefix - offending value: $repo"
+        // check no tag is included
+        final coords = ContainerCoordinates.parse(repo)
+        if( coords.reference && repo.endsWith(":${coords.reference}") )
+            return "Container ${type} repository should not include any tag suffix - offending value: $repo"
+        else
+            return null
     }
 
 }
