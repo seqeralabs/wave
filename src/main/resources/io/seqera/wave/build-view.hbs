@@ -6,10 +6,13 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="description" content="Wave container build data">
         <title>Wave container build notification</title>
+        <style type="text/css">
+                {{styles}}
+        </style>
     </head>
 <body>
 <div style="font-family:'-apple-system', BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; padding: 30px; max-width: 800px; margin: 0 auto;">
-
+    <img src="/assets/wave-logo.svg" style="display: block; margin: 0 auto; margin-bottom: 24px" alt="Wave">
     <h1>Wave container build completion</h1>
 
     {{#if build_success}}
@@ -98,14 +101,40 @@
 
 
     <div class="footer" style="clear:both;width:100%;">
-        <hr class="footer-hr" style="height:0;overflow:visible;margin-top:30px;border:0;border-top:1px solid #eee;color:#999999;font-size:12px;line-height:18px;margin-bottom:30px;">
-        <img style="float:right" src="/assets/seqera-logo.svg">
-        <p class="footer-text" style="font-family:'-apple-system', BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';font-weight:normal;margin:0;margin-bottom:15px;color:#999999;font-size:12px;line-height:18px;">
-            <a href="{{server_url}}">{{server_url}}</a><br>
-            Seqera Labs<br>
-            Carrer de Marià Aguiló, 28<br>
-            08005 Barcelona<br>
-        </p>
+        <table class="footer-container" cellpadding="0" cellspacing="0" border="0" width="100%">
+            <tr>
+                <!-- Footer Body -->
+                <td class="footer-body" style="padding: 16px; vertical-align: top;">
+                    <table cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                            <td>&copy Wave by Seqera</td>
+                        </tr>
+                        <tr>
+                            <td>Carrer de Marià Aguiló,  28</td>
+                        </tr>
+                        <tr>
+                            <td>08005 Barcelona</td>
+                        </tr>
+                        <tr>
+                            <td><a href="https://seqera.io/">https://seqera.io/</a></td>
+                        </tr>
+                        <tr>
+                            <td class="footer-body__social">
+                                <a href="https://github.com/seqeralabs"><img src="/assets/github-icon.svg" alt="github"></a>
+                                <a href="https://www.linkedin.com/company/14065390/"><img src="/assets/linkedin-icon.svg" alt="linkedin"></a>
+                                <a href="https://twitter.com/seqeralabs"><img src="/assets/x-icon.svg" alt="twitter"></a>
+                                <a href="https://www.youtube.com/@seqeralabs"><img src="/assets/youtube-icon.svg" alt="youtube"></a>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+
+                <!-- Footer Logo -->
+                <td class="footer-logo">
+                    <img src="/assets/seqera-icon.svg" style="display: block; margin: 0 auto;">
+                </td>
+            </tr>
+        </table>
     </div>
 
 </div>

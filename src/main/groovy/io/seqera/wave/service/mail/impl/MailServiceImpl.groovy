@@ -103,12 +103,18 @@ class MailServiceImpl implements MailService {
         binding.scan_url = req.scanId && result.succeeded() ? "$serverUrl/view/scans/${req.scanId}" : null
         binding.scan_id = req.scanId
         binding.put('server_url', serverUrl)
+        binding.mail_styles = this.class.getResource('/io/seqera/wave/styles/styles.css').text
         // result the main object
         Mail mail = new Mail()
         mail.to(recipient)
         mail.subject("Wave container result completion - ${status}")
         mail.body(MailHelper.getTemplateFile('/io/seqera/wave/build-notification.html', binding))
-        mail.attach(MailAttachment.resource('/io/seqera/wave/seqera-logo.svg', contentId: '<seqera-logo>', disposition: 'inline'))
+        mail.attach(MailAttachment.resource('/io/seqera/wave/wave-logo.png', contentId: '<wave-logo>', disposition: 'inline'))
+        mail.attach(MailAttachment.resource('/io/seqera/wave/seqera-icon.png', contentId: '<seqera-icon>', disposition: 'inline'))
+        mail.attach(MailAttachment.resource('/io/seqera/wave/github-icon.png', contentId: '<github-icon>', disposition: 'inline'))
+        mail.attach(MailAttachment.resource('/io/seqera/wave/linkedin-icon.png', contentId: '<linkedin-icon>', disposition: 'inline'))
+        mail.attach(MailAttachment.resource('/io/seqera/wave/x-icon.png', contentId: '<x-icon>', disposition: 'inline'))
+        mail.attach(MailAttachment.resource('/io/seqera/wave/youtube-icon.png', contentId: '<youtube-icon>', disposition: 'inline'))
         return mail
     }
 

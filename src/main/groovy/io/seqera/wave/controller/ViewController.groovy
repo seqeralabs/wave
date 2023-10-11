@@ -84,6 +84,7 @@ class ViewController {
         binding.put('server_url', serverUrl)
         binding.scan_url = result.scanId && result.succeeded() ? "$serverUrl/view/scans/${result.scanId}" : null
         binding.scan_id = result.scanId
+        binding.styles = this.class.getResource('/io/seqera/wave/styles/styles.css').text
         // configure build logs when available
         if( buildLogService ) {
             final buildLog = buildLogService.fetchLogString(result.buildId)
@@ -128,7 +129,7 @@ class ViewController {
         binding.build_conda_file = data.condaFile ?: '-'
         binding.build_repository = data.buildRepository ?: '-'
         binding.build_cache_repository = data.cacheRepository  ?: '-'
-
+        binding.styles = this.class.getResource('/io/seqera/wave/styles/styles.css').text
 
         return HttpResponse.<Map<String,Object>>ok(binding)
     }
@@ -160,7 +161,7 @@ class ViewController {
             binding.error_message = e.getMessage()
             binding.should_refresh = false
         }
-
+        binding.styles = this.class.getResource('/io/seqera/wave/styles/styles.css').text
         // return the response
         binding.put('server_url', serverUrl)
         return HttpResponse.<Map<String,Object>>ok(binding)

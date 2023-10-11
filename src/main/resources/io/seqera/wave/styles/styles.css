@@ -1,0 +1,90 @@
+@media only screen and (max-width: 620px) {
+    table[class="body"] h1,
+    table[class="body"] h2,
+    table[class="body"] h3,
+    table[class="body"] h4 {
+        font-weight: 600 !important;
+    }
+
+    table[class="body"] h1 {
+        font-size: 24px !important;
+    }
+
+    table[class="body"] h2 {
+        font-size: 20px !important;
+    }
+
+    table[class="body"] h3 {
+        font-size: 16px !important;
+    }
+
+    table[class="body"] .lead {
+        font-size: 16px !important;
+        line-height: 24px !important;
+    }
+
+    table[class="body"] .container {
+        padding: 20px !important;
+        width: 100% !important;
+    }
+
+    table[class="body"] .btn table {
+        width: 100% !important;
+    }
+
+    table[class="body"] .btn a {
+        display: block !important;
+    }
+
+    table[class="body"] .header-padded,
+    table[class="body"] .body-padded {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+}
+
+h1 {
+    text-align: center;
+}
+
+body {
+    color: #160f26;
+}
+
+a {
+    color: #4256e7;
+}
+
+.text-muted {
+    color: #545555;
+}
+
+.container {
+    padding: 32px;
+}
+
+.footer-container {
+    box-shadow: 0px 16px 48px 0px rgba(0, 0, 0, 0.18);
+}
+
+.footer-logo {
+    width: 130px;
+    padding: 24px 32px;
+    background-color: #ededed;
+    vertical-align: middle;
+}
+
+.footer-body a {
+    color: black;
+}
+
+.footer-body__social a {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+}
+
+.footer-body__social img {
+    margin-right: 8px;
+    vertical-align: middle;
+}
