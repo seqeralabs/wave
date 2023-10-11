@@ -211,7 +211,7 @@ class ContainerTokenController {
         final platform = ContainerPlatform.of(req.containerPlatform)
         final build = req.buildRepository ?: (req.freeze && defaultPublicRepo ? defaultPublicRepo : defaultBuildRepo)
         final cache = req.cacheRepository ?: defaultCacheRepo
-        final configJson = dockerAuthService.credentialsConfigJson(containerSpec, build, cache, user?.id, req.towerWorkspaceId, req.towerAccessToken, req.towerEndpoint, req.towerWorkflowId)
+        final configJson = dockerAuthService.credentialsConfigJson(containerSpec, build, cache, user?.id, req.towerWorkspaceId, req.towerAccessToken, req.towerEndpoint, req.workflowId)
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
         final scanId = scanEnabled && format==DOCKER ? LongRndKey.rndHex() : null
@@ -308,7 +308,7 @@ class ContainerTokenController {
                 buildId,
                 buildNew,
                 req.freeze,
-                req.towerWorkflowId)
+                req.workflowId)
     }
 
     protected String targetImage(String token, ContainerCoordinates container) {
