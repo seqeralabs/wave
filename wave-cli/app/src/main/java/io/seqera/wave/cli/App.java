@@ -179,7 +179,7 @@ public class App implements Runnable {
     @Option(names = {"--dry-run"}, paramLabel = "false", description = "Simulate a request switching off the build container images")
     private boolean dryRun;
 
-    @Option(names = {"--info"}, paramLabel = "false", description = "Show Wave infortion")
+    @Option(names = {"--info"}, paramLabel = "false", description = "Show Wave client & service information")
     private boolean info;
 
     private BuildContext buildContext;
