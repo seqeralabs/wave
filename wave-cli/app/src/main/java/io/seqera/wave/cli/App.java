@@ -401,7 +401,7 @@ public class App implements Runnable {
         // submit it
         SubmitContainerTokenResponse resp = client.submit(request);
         // await build to be completed
-        if( await && !isEmpty(resp.buildId) )
+        if( await )
             client.awaitImage(resp.targetImage);
         // print the wave container name
         System.out.println(dumpOutput(resp));
