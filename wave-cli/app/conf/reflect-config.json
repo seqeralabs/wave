@@ -157,7 +157,7 @@
 {
   "name":"io.seqera.wave.api.ServiceInfo",
   "allDeclaredFields":true,
-  "methods":[{"name":"<init>","parameterTypes":[] }]
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"<init>","parameterTypes":["java.lang.String","java.lang.String"] }]
 },
 {
   "name":"io.seqera.wave.api.ServiceInfoResponse",

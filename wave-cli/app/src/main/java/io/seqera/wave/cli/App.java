@@ -23,6 +23,7 @@ package io.seqera.wave.cli;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Constructor;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -41,6 +42,7 @@ import ch.qos.logback.classic.Logger;
 import io.seqera.wave.api.BuildContext;
 import io.seqera.wave.api.ContainerConfig;
 import io.seqera.wave.api.ContainerLayer;
+import io.seqera.wave.api.ServiceInfo;
 import io.seqera.wave.api.SubmitContainerTokenRequest;
 import io.seqera.wave.api.SubmitContainerTokenResponse;
 import io.seqera.wave.cli.exception.BadClientResponseException;
@@ -662,6 +664,7 @@ public class App implements Runnable {
     }
 
     private String serviceVersion() {
+        fixServiceInfoConstructor();
         try {
             return client().serviceInfo().version;
         }
@@ -669,5 +672,21 @@ public class App implements Runnable {
             log.debug("Unexpected error while retrieving Wave service info", e);
             return "-";
         }
+    }
+
+    private void fixServiceInfoConstructor() {
+        /*
+         dirty hack to force Graal compiler  to recognise the access via reflection of the
+         ServiceInfo constructor
+         */
+        try {
+            Class<?> myClass = ServiceInfo.class;
+            Constructor<?> constructor = myClass.getConstructor(String.class, String.class);
+            constructor.newInstance("Foo", "Bar");
+        }
+        catch (Exception e) {
+            log.debug("Unable to load constructor", e);
+        }
+
     }
 }
