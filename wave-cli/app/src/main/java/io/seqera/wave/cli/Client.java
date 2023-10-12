@@ -32,6 +32,8 @@ import dev.failsafe.RetryPolicy;
 import dev.failsafe.event.EventListener;
 import dev.failsafe.event.ExecutionAttemptedEvent;
 import dev.failsafe.function.CheckedSupplier;
+import io.seqera.wave.api.ServiceInfo;
+import io.seqera.wave.api.ServiceInfoResponse;
 import io.seqera.wave.api.SubmitContainerTokenRequest;
 import io.seqera.wave.api.SubmitContainerTokenResponse;
 import io.seqera.wave.cli.config.RetryOpts;
@@ -173,4 +175,26 @@ public class Client {
         }
     }
 
+    ServiceInfo serviceInfo() {
+        final URI uri = URI.create(endpoint + "/service-info");
+        final HttpRequest req = HttpRequest.newBuilder()
+                .uri(uri)
+                .headers("Content-Type","application/json")
+                .GET()
+                .build();
+
+        try {
+            final HttpResponse<String> resp = httpSend(req);
+            log.debug("Wave response: statusCode={}; body={}", resp.statusCode(), resp.body());
+            if( resp.statusCode()==200 )
+                return JsonHelper.fromJson(resp.body(), ServiceInfoResponse.class).serviceInfo;
+            else {
+                String msg = String.format("Wave invalid response: [%s] %s", resp.statusCode(), resp.body());
+                throw new BadClientResponseException(msg);
+            }
+        }
+        catch (IOException e) {
+            throw new IllegalStateException("Unable to connect Wave service: " + endpoint);
+        }
+    }
 }

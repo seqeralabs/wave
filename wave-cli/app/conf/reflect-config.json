@@ -155,6 +155,16 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"io.seqera.wave.api.ServiceInfo",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.seqera.wave.api.ServiceInfoResponse",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
   "name":"io.seqera.wave.api.SubmitContainerTokenRequest",
   "allDeclaredFields":true,
   "methods":[{"name":"<init>","parameterTypes":[] }]

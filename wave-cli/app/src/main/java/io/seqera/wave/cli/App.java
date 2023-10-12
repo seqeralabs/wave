@@ -43,18 +43,20 @@ import io.seqera.wave.api.ContainerConfig;
 import io.seqera.wave.api.ContainerLayer;
 import io.seqera.wave.api.SubmitContainerTokenRequest;
 import io.seqera.wave.api.SubmitContainerTokenResponse;
-import io.seqera.wave.config.CondaOpts;
-import io.seqera.wave.config.SpackOpts;
-import io.seqera.wave.util.DockerIgnoreFilter;
-import io.seqera.wave.util.Packer;
 import io.seqera.wave.cli.exception.BadClientResponseException;
 import io.seqera.wave.cli.exception.IllegalCliArgumentException;
 import io.seqera.wave.cli.json.JsonHelper;
 import io.seqera.wave.cli.util.BuildInfo;
 import io.seqera.wave.cli.util.CliVersionProvider;
 import io.seqera.wave.cli.util.YamlHelper;
+import io.seqera.wave.config.CondaOpts;
+import io.seqera.wave.config.SpackOpts;
+import io.seqera.wave.util.DockerIgnoreFilter;
+import io.seqera.wave.util.Packer;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
+import static io.seqera.wave.cli.util.Checkers.isEmpty;
+import static io.seqera.wave.cli.util.Checkers.isEnvVar;
 import static io.seqera.wave.util.DockerHelper.addPackagesToSpackFile;
 import static io.seqera.wave.util.DockerHelper.condaFileFromPackages;
 import static io.seqera.wave.util.DockerHelper.condaFileFromPath;
@@ -65,8 +67,6 @@ import static io.seqera.wave.util.DockerHelper.condaPackagesToSingularityFile;
 import static io.seqera.wave.util.DockerHelper.spackFileToDockerFile;
 import static io.seqera.wave.util.DockerHelper.spackFileToSingularityFile;
 import static io.seqera.wave.util.DockerHelper.spackPackagesToSpackFile;
-import static io.seqera.wave.cli.util.Checkers.isEmpty;
-import static io.seqera.wave.cli.util.Checkers.isEnvVar;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Option;
 
@@ -179,6 +179,9 @@ public class App implements Runnable {
     @Option(names = {"--dry-run"}, paramLabel = "false", description = "Simulate a request switching off the build container images")
     private boolean dryRun;
 
+    @Option(names = {"--info"}, paramLabel = "false", description = "Show Wave infortion")
+    private boolean info;
+
     private BuildContext buildContext;
 
     private ContainerConfig containerConfig;
@@ -200,6 +203,9 @@ public class App implements Runnable {
             }
             else if( result.isVersionHelpRequested() ) {
                 System.out.println(BuildInfo.getFullVersion());
+            }
+            else if( app.info ) {
+                app.printInfo();
             }
             else {
                 app.run();
@@ -643,5 +649,25 @@ public class App implements Runnable {
             throw new IllegalCliArgumentException("No more than one Conda lock remote file can be specified at the same time");
         }
         return result.get();
+    }
+
+    void printInfo() {
+        defaultArgs();
+        System.out.println(String.format("Client:"));
+        System.out.println(String.format(" Version   : %s", BuildInfo.getFullVersion()));
+        System.out.println(String.format(" System    : %s", System. getProperty("os.name")));
+        System.out.println(String.format("Server:"));
+        System.out.println(String.format(" Version   : %s", serviceVersion()));
+        System.out.println(String.format(" Endpoint  : %s", waveEndpoint));
+    }
+
+    private String serviceVersion() {
+        try {
+            return client().serviceInfo().version;
+        }
+        catch (Throwable e) {
+            log.debug("Unexpected error while retrieving Wave service info", e);
+            return "-";
+        }
     }
 }
