@@ -205,8 +205,12 @@ public class App implements Runnable {
             }
             else if( result.isVersionHelpRequested() ) {
                 System.out.println(BuildInfo.getFullVersion());
+                return;
             }
-            else if( app.info ) {
+
+            app.setLogLevel();
+            app.defaultArgs();
+            if( app.info ) {
                 app.printInfo();
             }
             else {
@@ -388,9 +392,6 @@ public class App implements Runnable {
 
     @Override
     public void run() {
-        setLogLevel();
-        // default Args
-        defaultArgs();
         // validate the command line args
         validateArgs();
         // prepare the request
@@ -654,8 +655,6 @@ public class App implements Runnable {
     }
 
     void printInfo() {
-        setLogLevel();
-        defaultArgs();
         System.out.println(String.format("Client:"));
         System.out.println(String.format(" Version   : %s", BuildInfo.getFullVersion()));
         System.out.println(String.format(" System    : %s", System. getProperty("os.name")));
