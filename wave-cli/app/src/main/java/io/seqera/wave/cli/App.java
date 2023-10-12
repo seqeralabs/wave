@@ -656,8 +656,9 @@ public class App implements Runnable {
 
     void printInfo() {
         System.out.println(String.format("Client:"));
-        System.out.println(String.format(" Version   : %s", BuildInfo.getFullVersion()));
+        System.out.println(String.format(" Version   : %s", BuildInfo.getVersion()));
         System.out.println(String.format(" System    : %s", System. getProperty("os.name")));
+
         System.out.println(String.format("Server:"));
         System.out.println(String.format(" Version   : %s", serviceVersion()));
         System.out.println(String.format(" Endpoint  : %s", waveEndpoint));
