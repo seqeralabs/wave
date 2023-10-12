@@ -153,8 +153,8 @@ class AppCondaOptsTest extends Specification {
         new String(req.condaFile.decodeBase64()) == '''\
         channels:
         - seqera
-        - bioconda
         - conda-forge
+        - bioconda
         - defaults
         dependencies:
         - foo
@@ -174,7 +174,7 @@ class AppCondaOptsTest extends Specification {
         new String(req.containerFile.decodeBase64()) == '''\
                 FROM mambaorg/micromamba:1.5.1
                 RUN \\
-                    micromamba install -y -n base -c seqera -c bioconda -c conda-forge -c defaults -f https://host.com/file-lock.yml \\
+                    micromamba install -y -n base -c seqera -c conda-forge -c bioconda -c defaults -f https://host.com/file-lock.yml \\
                     && micromamba install -y -n base conda-forge::procps-ng \\
                     && micromamba clean -a -y
                 USER root
@@ -284,8 +284,8 @@ class AppCondaOptsTest extends Specification {
         new String(req.condaFile.decodeBase64()) == '''\
                 channels:
                 - seqera
-                - bioconda
                 - conda-forge
+                - bioconda
                 - defaults
                 dependencies:
                 - foo
@@ -351,7 +351,7 @@ class AppCondaOptsTest extends Specification {
             BootStrap: docker
             From: mambaorg/micromamba:1.5.1
             %post
-                micromamba install -y -n base -c seqera -c bioconda -c conda-forge -c defaults -f https://host.com/file-lock.yml
+                micromamba install -y -n base -c seqera -c conda-forge -c bioconda -c defaults -f https://host.com/file-lock.yml
                 micromamba install -y -n base conda-forge::procps-ng
                 micromamba clean -a -y
             %environment
