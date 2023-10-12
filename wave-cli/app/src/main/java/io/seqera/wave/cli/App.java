@@ -654,6 +654,7 @@ public class App implements Runnable {
     }
 
     void printInfo() {
+        setLogLevel();
         defaultArgs();
         System.out.println(String.format("Client:"));
         System.out.println(String.format(" Version   : %s", BuildInfo.getFullVersion()));
