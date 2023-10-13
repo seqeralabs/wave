@@ -18,6 +18,8 @@
 
 package io.seqera.wave.filter
 
+import javax.annotation.Nullable
+
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
@@ -41,9 +43,9 @@ import reactor.core.publisher.Flux
 @Slf4j
 @CompileStatic
 @Filter("/**")
-@Requires(property = 'wave.deny')
 class DenyPathsFilter implements HttpServerFilter {
 
+    @Nullable
     @Value('${wave.deny}')
     List<String> deniedPaths
 
