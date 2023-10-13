@@ -1,0 +1,69 @@
+/*
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2023, Seqera Labs
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package io.seqera.wave.filter
+
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
+import io.micronaut.context.annotation.Value
+import io.micronaut.http.HttpRequest;
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.MutableHttpResponse
+import io.micronaut.http.annotation.Filter
+import io.micronaut.http.filter.HttpServerFilter;
+import  io.micronaut.http.filter.ServerFilterChain
+import io.reactivex.rxjava3.core.Flowable
+import org.reactivestreams.Publisher
+
+/**
+ * Implements filter on http requests
+ *
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
+ */
+
+@Slf4j
+@CompileStatic
+@Filter("/**")
+@Requires(property = 'wave.deny')
+class DenyPathsFilter implements HttpServerFilter {
+
+    @Value('${wave.deny}')
+    List<String> deniedPaths
+
+    @Override
+    Publisher<MutableHttpResponse<?>> doFilter(HttpRequest<?> request, ServerFilterChain chain) {
+
+        // Check if the request path matches any of the ignored paths
+        def path = request.path
+        if (isDeniedPath(path, deniedPaths)) {
+            // Return immediately without processing the request
+            log.debug("$path has been denied access to Wave")
+            return Flowable.just(HttpResponse.status(HttpStatus.FORBIDDEN))
+        } else {
+            // Continue processing the request
+            return chain.proceed(request)
+        }
+    }
+
+    boolean isDeniedPath(String path, List<String> paths) {
+        return paths.any { path.startsWith(it) }
+    }
+}
+
