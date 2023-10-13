@@ -20,7 +20,12 @@ package io.seqera.wave.filter
 
 import spock.lang.Specification
 
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.annotation.Client
+import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.exchange.DescribeWaveContainerResponse
 import jakarta.inject.Inject
 
 /**
@@ -32,7 +37,21 @@ import jakarta.inject.Inject
 class DenyPathsFilterTest extends Specification {
 
     @Inject
+    @Client("/")
+    HttpClient client
+
+    @Inject
     DenyPathsFilter denyPathsFilter
+
+    def "should deny path, if its present in wave.deny configuration"(){
+        when:
+        def req = HttpRequest.GET("/container-token/token1")
+        client.toBlocking().exchange(req, DescribeWaveContainerResponse)
+
+        then:
+        final HttpClientResponseException exception = thrown()
+        exception.message == 'Client \'/\': Forbidden'
+    }
 
     def "should return true if the path needs to be denied"() {
         given:
