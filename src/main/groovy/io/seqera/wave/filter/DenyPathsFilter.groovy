@@ -63,7 +63,7 @@ class DenyPathsFilter implements HttpServerFilter {
     }
 
     boolean isDeniedPath(String path, List<String> paths) {
-        return paths.any { path.startsWith(it) }
+        return paths.contains(path)
     }
 }
 
