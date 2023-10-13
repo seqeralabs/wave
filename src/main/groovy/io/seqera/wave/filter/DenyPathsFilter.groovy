@@ -29,8 +29,8 @@ import io.micronaut.http.MutableHttpResponse
 import io.micronaut.http.annotation.Filter
 import io.micronaut.http.filter.HttpServerFilter;
 import  io.micronaut.http.filter.ServerFilterChain
-import io.reactivex.rxjava3.core.Flowable
 import org.reactivestreams.Publisher
+import reactor.core.publisher.Flux
 
 /**
  * Implements filter on http requests
@@ -55,7 +55,7 @@ class DenyPathsFilter implements HttpServerFilter {
         if (isDeniedPath(path, deniedPaths)) {
             // Return immediately without processing the request
             log.debug("$path has been denied access to Wave")
-            return Flowable.just(HttpResponse.status(HttpStatus.FORBIDDEN))
+            return Flux.just(HttpResponse.status(HttpStatus.FORBIDDEN))
         } else {
             // Continue processing the request
             return chain.proceed(request)
