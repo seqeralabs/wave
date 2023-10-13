@@ -92,7 +92,8 @@ class CredentialServiceImpl implements CredentialsService {
                             id: computeEnv.credentialsId
                     )
                 }
-            }else {
+            }
+            if( !creds ){
                 log.debug"No credentials matching criteria workflowId=$workflowId"
                 return null
             }
