@@ -1,4 +1,12 @@
 # Wave changelog
+v1.0.0 - 16 Oct 2023
+- Bump version 1.0
+
+v0.43.1 - 12 Oct 2023
+- Remove public config [095befa2]
+- Improve logging [00e2d777]
+- Minor logging changes [bbdf2472]
+
 v0.43.0 - 7 Oct 2023
 - Add support for public build repo [e7231032]
 - Add build logs persistence [ci ski] [8e6fd4cb]
