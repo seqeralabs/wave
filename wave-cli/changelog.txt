@@ -1,0 +1,4 @@
+WAVE CLI CHANGE-LOG
+===================
+1.0.0 - 16 Oct 2023
+- Initial release
