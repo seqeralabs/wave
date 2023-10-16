@@ -18,10 +18,8 @@
 
 package io.seqera.wave.controller
 
-import io.micronaut.core.annotation.Nullable
-import javax.validation.constraints.NotBlank
-
 import io.micronaut.core.annotation.Introspected
+import jakarta.validation.constraints.NotBlank
 
 @Introspected
 class ValidateRegistryCredsRequest {

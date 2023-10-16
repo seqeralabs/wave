@@ -18,9 +18,6 @@
 
 package io.seqera.wave.ratelimit.impl
 
-
-import javax.validation.constraints.NotNull
-
 import com.coveo.spillway.Spillway
 import com.coveo.spillway.SpillwayFactory
 import com.coveo.spillway.limit.Limit
@@ -36,6 +33,7 @@ import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 
 import jakarta.inject.Singleton
+import jakarta.validation.constraints.NotNull
 
 /**
  * This class manage how many requests can be requested from an user during a configurable period

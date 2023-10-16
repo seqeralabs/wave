@@ -18,9 +18,6 @@
 
 package io.seqera.wave.controller
 
-import javax.validation.ConstraintViolationException
-import javax.validation.Valid
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.core.convert.exceptions.ConversionErrorException
@@ -38,6 +35,8 @@ import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.tower.client.TowerClient
 import jakarta.inject.Inject
+import jakarta.validation.ConstraintViolationException
+import jakarta.validation.Valid
 import static io.seqera.wave.WaveDefault.TOWER
 /**
  * Allow a remote Tower instance to register itself
