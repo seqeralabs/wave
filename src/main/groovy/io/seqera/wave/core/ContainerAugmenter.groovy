@@ -340,7 +340,7 @@ class ContainerAugmenter {
         if( !value )
             return null
         if( value instanceof List ) {
-            if( value.size()>1 ) log.warn "Invalid  Entrypoint value: $value -- Only the first array element will be taken"
+            if( value.size()>1 ) log.warn "Invalid Entrypoint value: $value -- Only the first array element will be taken"
             return value.get(0)
         }
         if( value instanceof String )

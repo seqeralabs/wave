@@ -97,7 +97,7 @@ container registry where the image is stored, while the instrumented layers are 
 
 
 > **Note**
-> You can use the [Wavelit](https://github.com/seqeralabs/wavelit) command line tool instead of `curl` to interact with
+> You can use the [Wave](https://github.com/seqeralabs/wave-cli) command line tool instead of `curl` to interact with
 > the Wave service and submit more complex requests.
 
 ## Debugging
