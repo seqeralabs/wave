@@ -45,7 +45,7 @@ class RegistryConfig {
      *      io: [ ... ]
      *  ]
      */
-    private Map<String,Object> registries
+    Map<String,Object> registries
 
     RegistryKeys getRegistryKeys(String registryName) {
         final String defaultRegistry = registries.get('default')?.toString() ?: 'docker.io'
