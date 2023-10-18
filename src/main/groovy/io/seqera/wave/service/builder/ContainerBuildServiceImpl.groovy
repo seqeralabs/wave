@@ -195,7 +195,10 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 saveLayersToContext(req, context)
             }
             resp = buildStrategy.build(req)
-            log.info "== Build request ${req.id} completed with status=$resp.exitStatus; stdout: (see below)\n${indent(resp.logs)}"
+            def msg = "== Build request ${req.id} completed with status=$resp.exitStatus"
+            if( log.isTraceEnabled() )
+                msg += "; stdout: (see below)\n${indent(resp.logs)}"
+            log.info(msg)
             return resp
         }
         catch (Throwable e) {
