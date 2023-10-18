@@ -1,4 +1,7 @@
 # Wave changelog
+v1.0.1 - 17 Oct 2023
+- Add new logos (#311) [338ef9d0]
+
 v1.0.0 - 16 Oct 2023
 - Bump version 1.0
 
