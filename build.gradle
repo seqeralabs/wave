@@ -108,10 +108,6 @@ micronaut {
     }
 }
 
-test {
-    useJUnitPlatform()
-}
-
 //
 // Build container image with JIB
 // https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin
