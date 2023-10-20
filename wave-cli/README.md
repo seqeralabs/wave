@@ -1,10 +1,10 @@
 # Wave CLI
 
-Command line tool for Wave container provisioning service
+Command line tool for [Wave containers provisioning service](https://github.com/seqeralabs/wave).
 
 ### Summary 
 
-Wave allows augmenting existing containers and building containers on-the-fly so
+Wave allows augmenting existing containers and building containers on demand so
 that it can be used in your Docker (replace-with-your-own-fav-container-engine) workflow.
 
 ### Features
