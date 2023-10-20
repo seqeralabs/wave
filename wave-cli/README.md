@@ -57,7 +57,8 @@ that it can be used in your Docker (replace-with-your-own-fav-container-engine) 
 2. Run the container via Wave 
 
     ```bash
-    docker run $(wave -i alpine --layer new-layer) sh -c hello.sh
+    container=$(wave -i alpine --layer new-layer)
+    docker run $container sh -c hello.sh
     ```
 
 #### Build a container with Dockerfile 
@@ -82,31 +83,36 @@ that it can be used in your Docker (replace-with-your-own-fav-container-engine) 
 2. Build and run the container on the fly:
 
     ```bash
-    docker run $(wave -f Dockerfile --context build-context) sh -c hello.sh
+    container=$(wave -f Dockerfile --context build-context)
+    docker run $container sh -c hello.sh
     ```
 
 #### Build a Conda multi-packages container 
 
 ```bash
-docker run $(wave --conda-package bamtools=2.5.2 --conda-package samtools=1.17) sh -c 'bamtools --version && samtools --version'
+container=$(wave --conda-package bamtools=2.5.2 --conda-package samtools=1.17)
+docker run $container sh -c 'bamtools --version && samtools --version'
 ```
 
 #### Build a Conda package container arm64 architecture
 
 ```bash
-docker run --platform linux/arm64 $(wave --conda-package fastp --platform linux/arm64) sh -c 'fastp --version'
+container=$(wave --conda-package fastp --platform linux/arm64)
+docker run --platform linux/arm64 $container sh -c 'fastp --version'
 ```
 
 #### Build a Spack package container
 
 ```bash
-docker run $(wave --spack-package cowsay) sh -c 'cowsay Hello world!'
+container=$(wave --spack-package cowsay)
+docker run $container sh -c 'cowsay Hello world!'
 ```
 
 ### Build a Singularity container using a Conda package and pushing to a OCI registry 
 
 ```bash
-singularity exec $(wave --singularity --conda-package bamtools=2.5.2 --build-repo docker.io/user/repo --freeze --await) bamtools --version
+container=$(wave --singularity --conda-package bamtools=2.5.2 --build-repo docker.io/user/repo --freeze --await)
+singularity exec $container bamtools --version
 ```
 
 ### Development
