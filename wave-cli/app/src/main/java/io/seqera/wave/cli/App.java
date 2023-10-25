@@ -335,6 +335,12 @@ public class App implements Runnable {
         if( !isEmpty(condaFile) && !isEmpty(spackFile) )
             throw new IllegalCliArgumentException("Option --conda-file and --spack-file conflict each other");
 
+        if( !isEmpty(condaFile) && !Files.exists(Path.of(condaFile)) )
+            throw new IllegalCliArgumentException("The specified Conda file path cannot be accessed - offending file path: " + condaFile);
+
+        if( !isEmpty(spackFile) && !Files.exists(Path.of(spackFile)) )
+            throw new IllegalCliArgumentException("The specified Spack file path cannot be accessed - offending file path: " + spackFile);
+
         if( !isEmpty(contextDir) && isEmpty(containerFile) )
             throw new IllegalCliArgumentException("Option --context requires the use of a container file");
 

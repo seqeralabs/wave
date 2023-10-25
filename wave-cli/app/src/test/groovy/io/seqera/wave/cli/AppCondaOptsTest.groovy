@@ -68,6 +68,20 @@ class AppCondaOptsTest extends Specification {
         thrown(IllegalCliArgumentException)
     }
 
+    def 'should fail when the conda file does not exist' () {
+        given:
+        def app = new App()
+        String[] args = ["--conda-file", "foo"]
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        and:
+        app.validateArgs()
+        then:
+        def e = thrown(IllegalCliArgumentException)
+        e.message == "The specified Conda file path cannot be accessed - offending file path: foo"
+    }
+
     def 'should fail when passing both conda package and image' () {
         given:
         def app = new App()

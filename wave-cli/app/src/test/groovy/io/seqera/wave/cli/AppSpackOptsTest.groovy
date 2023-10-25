@@ -55,7 +55,7 @@ class AppSpackOptsTest extends Specification {
         thrown(IllegalCliArgumentException)
     }
 
-    def 'should fail when passing both spack file and conmtainer file' () {
+    def 'should fail when passing both spack file and container file' () {
         given:
         def app = new App()
         String[] args = ["--spack-file", "foo", "--containerfile", "bar"]
@@ -66,6 +66,20 @@ class AppSpackOptsTest extends Specification {
         app.validateArgs()
         then:
         thrown(IllegalCliArgumentException)
+    }
+
+    def 'should fail when spack file does not exist' () {
+        given:
+        def app = new App()
+        String[] args = ["--spack-file", "foo"]
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        and:
+        app.validateArgs()
+        then:
+        def e = thrown(IllegalCliArgumentException)
+        e.message == 'The specified Spack file path cannot be accessed - offending file path: foo'
     }
 
     def 'should fail when passing both spack package and image' () {
