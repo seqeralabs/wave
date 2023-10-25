@@ -72,7 +72,7 @@ that it can be used in your Docker (replace-with-your-own-fav-container-engine) 
     EOF
     ```
 
-1. Create the build context directory:
+2. Create the build context directory:
 
     ```bash
     mkdir -p build-context/
@@ -80,7 +80,7 @@ that it can be used in your Docker (replace-with-your-own-fav-container-engine) 
     chmod +x build-context/hello.sh 
     ```
 
-2. Build and run the container on the fly:
+3. Build and run the container on the fly:
 
     ```bash
     container=$(wave -f Dockerfile --context build-context)
@@ -93,6 +93,39 @@ that it can be used in your Docker (replace-with-your-own-fav-container-engine) 
 container=$(wave --conda-package bamtools=2.5.2 --conda-package samtools=1.17)
 docker run $container sh -c 'bamtools --version && samtools --version'
 ```
+
+#### Build a container by using a Conda environment file
+
+1. Create the Conda environment file:
+
+    ```bash
+    cat << EOF > ./conda.yaml
+    name: my-conda
+    channels:
+    - defaults
+    - bioconda
+    - conda-forge
+    dependencies:
+    - bamtools=2.5.2
+    - samtools=1.17
+    EOF
+    ```
+
+2. Build and run the container using the Conda environment:
+
+    ```bash
+    container=$(wave --conda-file ./conda.yaml)
+    docker run $container sh -c 'bamtools --version'
+    ```
+
+
+#### Build a container by using a Conda lock file
+
+```bash
+container=$(wave --conda-package https://prefix.dev/envs/pditommaso/wave/6x60arx3od13/conda-lock.yml)
+docker run $container cowpy 'Hello, world!'
+```
+
 
 #### Build a Conda package container arm64 architecture
 
@@ -108,7 +141,7 @@ container=$(wave --spack-package cowsay)
 docker run $container sh -c 'cowsay Hello world!'
 ```
 
-### Build a Singularity container using a Conda package and pushing to a OCI registry 
+#### Build a Singularity container using a Conda package and pushing to a OCI registry
 
 ```bash
 container=$(wave --singularity --conda-package bamtools=2.5.2 --build-repo docker.io/user/repo --freeze --await)
