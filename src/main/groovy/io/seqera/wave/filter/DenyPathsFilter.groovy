@@ -33,7 +33,8 @@ import org.reactivestreams.Publisher
 import reactor.core.publisher.Flux
 
 /**
- * Implements filter on http requests
+ * Block any HTTP request whose target path is included in the {@code wave.denyPaths}
+ * configuration attribute
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
