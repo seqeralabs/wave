@@ -27,7 +27,6 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.exchange.DescribeWaveContainerResponse
 import jakarta.inject.Inject
-
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
@@ -49,8 +48,8 @@ class DenyPathsFilterTest extends Specification {
         client.toBlocking().exchange(req, DescribeWaveContainerResponse)
 
         then:
-        final HttpClientResponseException exception = thrown()
-        exception.message == "Client '/': Forbidden"
+        final exception = thrown(HttpClientResponseException)
+        exception.status.code == 405
     }
 
     def "should return true if the path needs to be denied"() {

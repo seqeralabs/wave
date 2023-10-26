@@ -45,25 +45,27 @@ import reactor.core.publisher.Flux
 class DenyPathsFilter implements HttpServerFilter {
 
     @Value('${wave.denyPaths}')
-    List<String> deniedPaths
+    private List<String> deniedPaths
 
     @Override
     Publisher<MutableHttpResponse<?>> doFilter(HttpRequest<?> request, ServerFilterChain chain) {
-
         // Check if the request path matches any of the ignored paths
-        def path = request.path
-        if (isDeniedPath(path, deniedPaths)) {
+        if (isDeniedPath(request.path, deniedPaths)) {
             // Return immediately without processing the request
-            log.debug("$path has been denied access to Wave")
-            return Flux.just(HttpResponse.status(HttpStatus.FORBIDDEN))
-        } else {
-            // Continue processing the request
-            return chain.proceed(request)
+            log.debug("${request.path} has been denied access to Wave")
+            return Flux.just(HttpResponse.status(HttpStatus.METHOD_NOT_ALLOWED))
         }
+        // Continue processing the request
+        return chain.proceed(request)
     }
 
-    boolean isDeniedPath(String path, List<String> paths) {
+    protected boolean isDeniedPath(String path, List<String> paths) {
         return paths.contains(path)
+    }
+
+    @Override
+    int getOrder() {
+        return FilterOrder.DENY_PATHS
     }
 }
 
