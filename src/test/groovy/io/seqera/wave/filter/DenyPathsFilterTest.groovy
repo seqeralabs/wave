@@ -33,7 +33,7 @@ import jakarta.inject.Inject
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 
-@MicronautTest
+@MicronautTest(environments = 'test-deny-paths')
 class DenyPathsFilterTest extends Specification {
 
     @Inject
@@ -43,14 +43,14 @@ class DenyPathsFilterTest extends Specification {
     @Inject
     DenyPathsFilter denyPathsFilter
 
-    def "should deny path, if its present in wave.deny configuration"(){
+    def "should deny path, if its present in wave.denyPaths configuration"(){
         when:
         def req = HttpRequest.GET("/container-token/token1")
         client.toBlocking().exchange(req, DescribeWaveContainerResponse)
 
         then:
         final HttpClientResponseException exception = thrown()
-        exception.message == 'Client \'/\': Forbidden'
+        exception.message == "Client '/': Forbidden"
     }
 
     def "should return true if the path needs to be denied"() {

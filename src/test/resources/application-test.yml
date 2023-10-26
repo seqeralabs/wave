@@ -54,8 +54,6 @@ wave:
       prefix : 'wave-build/logs'
   scan:
     enabled: true
-  deny :
-    - /container-token/token1
 ---
 logger:
   levels:

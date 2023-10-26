@@ -41,10 +41,10 @@ import reactor.core.publisher.Flux
 @Slf4j
 @CompileStatic
 @Filter("/**")
-@Requires(property = 'wave.deny')
+@Requires(property = 'wave.denyPaths')
 class DenyPathsFilter implements HttpServerFilter {
 
-    @Value('${wave.deny}')
+    @Value('${wave.denyPaths}')
     List<String> deniedPaths
 
     @Override
