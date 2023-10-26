@@ -63,8 +63,6 @@ import reactor.core.publisher.Flux
 @Context
 class RateLimiterFilter implements HttpServerFilter {
 
-    public final static int ORDER = -50;
-
     private final RateLimiterConfig config
 
     private final SyncCache<AtomicRateLimiter> limiters
@@ -90,7 +88,7 @@ class RateLimiterFilter implements HttpServerFilter {
 
     @Override
     int getOrder() {
-        return ORDER
+        return FilterOrder.RATE_LIMITER
     }
 
     @Override
