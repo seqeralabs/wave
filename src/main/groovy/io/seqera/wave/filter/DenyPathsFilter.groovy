@@ -52,7 +52,7 @@ class DenyPathsFilter implements HttpServerFilter {
         // Check if the request path matches any of the ignored paths
         if (isDeniedPath(request.path, deniedPaths)) {
             // Return immediately without processing the request
-            log.debug("${request.path} has been denied access to Wave")
+            log.debug("Request denied: ${request}")
             return Flux.just(HttpResponse.status(HttpStatus.METHOD_NOT_ALLOWED))
         }
         // Continue processing the request
