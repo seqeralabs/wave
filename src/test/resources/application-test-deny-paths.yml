@@ -1,0 +1,5 @@
+---
+wave:
+  denyPaths:
+    - /container-token/token1
+...
