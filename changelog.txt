@@ -1,4 +1,8 @@
 # Wave changelog
+v1.0.2 - 26 Oct 2023
+- Add deny paths HTTP filter 
+- Enable reuse in Spack builds (#317) [4f1b8bdf]
+
 v1.0.1 - 17 Oct 2023
 - Add new logos (#311) [338ef9d0]
 
