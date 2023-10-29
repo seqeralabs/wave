@@ -34,8 +34,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
         @JsonSubTypes.Type(value = ProxyHttpRequest.class, name = "proxy-http-request"),
         @JsonSubTypes.Type(value = ProxyHttpResponse.class, name = "proxy-http-response"),
         @JsonSubTypes.Type(value = PairingResponse.class, name = "pairing-response"),
-        @JsonSubTypes.Type(value = PairingHeartbeat.class, name = "pairing-heartbeat"),
-        @JsonSubTypes.Type(value = LicenseExpirationMessage.class, name = "license-expiration-message")
+        @JsonSubTypes.Type(value = PairingHeartbeat.class, name = "pairing-heartbeat")
 ])
 interface PairingMessage {
     String getMsgId()

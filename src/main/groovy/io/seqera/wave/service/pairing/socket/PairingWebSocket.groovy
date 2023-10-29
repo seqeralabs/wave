@@ -22,26 +22,23 @@ import java.time.Instant
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.http.HttpResponse
-import io.micronaut.http.HttpStatus
+import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
+import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.websocket.CloseReason
 import io.micronaut.websocket.WebSocketSession
 import io.micronaut.websocket.annotation.OnClose
 import io.micronaut.websocket.annotation.OnMessage
 import io.micronaut.websocket.annotation.OnOpen
 import io.micronaut.websocket.annotation.ServerWebSocket
-import io.seqera.wave.service.license.CheckTokenResponse
-import io.seqera.wave.service.pairing.socket.msg.LicenseExpirationMessage
-import io.seqera.wave.service.license.LicenseManagerClient
+import io.seqera.wave.service.license.LicenseManClient
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import io.seqera.wave.service.pairing.socket.msg.PairingResponse
+import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 import static io.seqera.wave.util.LongRndKey.rndHex
-import static io.seqera.wave.service.license.LicenseConstants.LICENSE_EXPIRATION_MESSAGE
-import static io.seqera.wave.service.license.LicenseConstants.PRODUCT_NAME
 /**
  * Implements Wave pairing websocket server
  *
@@ -53,33 +50,29 @@ import static io.seqera.wave.service.license.LicenseConstants.PRODUCT_NAME
 @ServerWebSocket("/pairing/{service}/token/{token}{?endpoint}")
 class PairingWebSocket {
 
-    private final PairingChannel channel
-    private final PairingService pairingService
-    private final LicenseManagerClient licenseManagerClient
+    @Inject
+    private PairingChannel channel
 
+    @Inject
+    private PairingService pairingService
 
-    PairingWebSocket(PairingChannel channel, PairingService pairingService, LicenseManagerClient licenseManServiceClient) {
-        this.channel = channel
-        this.pairingService = pairingService
-        this.licenseManagerClient = licenseManServiceClient
-    }
+    @Inject
+    @Nullable
+    private LicenseManClient licenseManager
+
+    @Value('${wave.closeSessionOnInvalidLicenseToken:false}')
+    private boolean closeSessionOnInvalidLicenseToken
 
     @OnOpen
     void onOpen(String service, String token, String endpoint, WebSocketSession session) {
         log.debug "Opening pairing session - endpoint: ${endpoint} [sessionId: $session.id]"
-        HttpResponse<CheckTokenResponse> httpResponse = licenseManagerClient.checkToken(token, PRODUCT_NAME)
-        if(httpResponse.status.code != HttpStatus.OK.code){
-            log.debug "license is not valid, closing this session"
+
+        // check for a valid connection token
+        if( licenseManager && !isLicenseTokenValid(token, endpoint) && closeSessionOnInvalidLicenseToken ) {
             session.close(CloseReason.POLICY_VIOLATION)
             return
-        }else if(httpResponse.getBody().get().expiration.isBefore(Instant.now())) {
-            //Send a message if license has been expired
-            session.sendAsync(new LicenseExpirationMessage(
-                    msgId: rndHex(),
-                    message: LICENSE_EXPIRATION_MESSAGE,
-                    expiration: httpResponse.getBody().get().expiration
-            ))
         }
+
         // Register the client and the sender callback that it's needed to deliver
         // the message to the remote client
         channel.registerClient(service, endpoint, session.id,(pairingMessage) -> {
@@ -116,6 +109,31 @@ class PairingWebSocket {
     void onClose(String service, String token, String endpoint, WebSocketSession session) {
         log.debug "Closing pairing session - endpoint: ${endpoint} [sessionId: $session.id]"
         channel.unregisterClient(service, endpoint, session.id)
+    }
+
+    protected boolean isLicenseTokenValid(String token, String endpoint) {
+        try {
+            final resp = licenseManager.checkToken(token, "tower-enterprise")
+            if( !resp ) {
+                log.warn "Failed license token validation - Refusing pairing session due to invalid license for endpoint: ${endpoint}; token: $token"
+                return false
+            }
+
+            if( resp.expiration.isBefore(Instant.now()) ) {
+                log.warn "Expired license for customer with endpoint: ${endpoint}; token: ${token}"
+            }
+            else {
+                log.info "Validated license for customer with endpoint: ${endpoint}; token: ${token}"
+            }
+            return true
+        }
+        catch (HttpClientResponseException e) {
+            log.error "Failed license token validation - Unexpected response for endpoint: ${endpoint}; token: ${token}; status: ${e.status.code}; message: ${e.message}"
+        }
+        catch (Throwable e) {
+            log.error "Failed license token validation - Unexpected exceptio for endpoint: ${endpoint}; token: ${token} - cause: ${e.message}", e
+        }
+        return false
     }
 
 }

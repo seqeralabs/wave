@@ -61,16 +61,6 @@ jackson:
 logger:
   levels:
     io.seqera: "DEBUG"
----
-license:
-  server:
-    url: "${LICENSE_SERVER_URL:`http://localhost:7070`}"
-  retry:
-    delay: 1s
-    maxDelay: 10s
-    attempts: 3
-    multiplier: 1.5
----
     io.micronaut.retry.intercept.RecoveryInterceptor: "OFF"
 #   ^^^^^^^^^^^^^^^^^^^^^
 #   Disable logs of `RecoveryInterceptor`, as they have been found to be noisy.

@@ -2,7 +2,7 @@ package io.seqera.wave.service.license
 
 import java.time.Instant
 /**
- * CheckTokenResponse model
+ * Model the response for a License manager license token check request
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
