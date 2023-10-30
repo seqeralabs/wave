@@ -93,7 +93,7 @@ abstract class BuildStrategy {
         result
             << 'sh'
             << '-c'
-            << "singularity build image.sif ${req.workDir}/Containerfile --platform ${req.platform.toString()} && singularity push image.sif ${req.targetImage}".toString()
+            << "singularity build image.sif ${req.workDir}/Containerfile --arch ${req.platform.arch} && singularity push image.sif ${req.targetImage}".toString()
         return result
     }
 }
