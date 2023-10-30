@@ -171,7 +171,7 @@ class DockerBuilderStrategyTest extends Specification {
         ctx.close()
     }
 
-    def 'should get singularity build command for amr64' () {
+    def 'should get singularity build command for arm64 architecture' () {
         given:
         def props = [
                 'wave.build.spack.secretKeyFile':'/host/spack/key',
