@@ -227,7 +227,7 @@ class RegHelperTest extends Specification {
         def SPACK = '''\
             spack:
               specs: [bwa@0.7.15, salmon@1.1.1, nano@1.0 x=one]
-              concretizer: {unify: true, reuse: false}
+              concretizer: {unify: true, reuse: true}
             '''.stripIndent(true)
 
         expect:
