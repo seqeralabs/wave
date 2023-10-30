@@ -197,7 +197,7 @@ class ContainerBuildServiceTest extends Specification {
         def spackFile = '''
                 spack:
                   specs: [bwa@0.7.15, salmon@1.1.1]
-                  concretizer: {unify: true, reuse: false}
+                  concretizer: {unify: true, reuse: true}
                 '''
         and:
         def spackConfig = new SpackConfig(cacheBucket: 's3://bucket/cache', secretMountPath: '/mnt/secret')
