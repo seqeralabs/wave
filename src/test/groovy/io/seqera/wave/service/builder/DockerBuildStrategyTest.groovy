@@ -32,7 +32,7 @@ import io.seqera.wave.tower.User
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-class DockerBuilderStrategyTest extends Specification {
+class DockerBuildStrategyTest extends Specification {
 
     def 'should get docker command' () {
         given:
