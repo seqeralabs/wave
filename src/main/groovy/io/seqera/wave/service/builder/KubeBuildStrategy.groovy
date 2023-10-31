@@ -64,6 +64,9 @@ class KubeBuildStrategy extends BuildStrategy {
     @Value('${wave.build.singularity-image}')
     String singularityImage
 
+    @Value('${wave.build.singularity-image-arm}')
+    String singularityImageArm
+
     @Value('${wave.build.timeout:5m}')
     Duration buildTimeout
 
@@ -97,7 +100,7 @@ class KubeBuildStrategy extends BuildStrategy {
         }
 
         try {
-            final buildImage = req.formatDocker() ? kanikoImage : singularityImage
+            final buildImage = req.formatDocker() ? kanikoImage : (req.platform.toString().contains("arm64")?singularityImageArm:singularityImage)
             final buildCmd = launchCmd(req)
             final name = podName(req)
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
