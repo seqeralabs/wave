@@ -100,7 +100,7 @@ class KubeBuildStrategy extends BuildStrategy {
         }
 
         try {
-            final buildImage = req.formatDocker() ? kanikoImage : (req.platform.arch == "arm64"?singularityImageArm:singularityImage)
+            final buildImage = getBuildImage(req)
             final buildCmd = launchCmd(req)
             final name = podName(req)
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
@@ -118,6 +118,10 @@ class KubeBuildStrategy extends BuildStrategy {
         catch (ApiException e) {
             throw new BadRequestException("Unexpected build failure - ${e.responseBody}", e)
         }
+    }
+
+    protected String getBuildImage(BuildRequest buildRequest){
+        return buildRequest.formatDocker() ? kanikoImage : (buildRequest.platform.arch == "arm64"?singularityImageArm:singularityImage)
     }
 
     @Override
