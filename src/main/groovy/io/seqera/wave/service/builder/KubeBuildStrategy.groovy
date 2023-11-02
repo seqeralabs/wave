@@ -66,7 +66,7 @@ class KubeBuildStrategy extends BuildStrategy {
 
     @Nullable
     @Value('${wave.build.singularity-image-arm64}')
-    String singularityImageArm
+    String singularityImageArm64
 
     @Value('${wave.build.timeout:5m}')
     Duration buildTimeout
@@ -125,7 +125,7 @@ class KubeBuildStrategy extends BuildStrategy {
         return buildRequest.formatDocker()?
                 kanikoImage:
                 (buildRequest.platform.arch == "arm64"?
-                        singularityImageArm:singularityImage)
+                        singularityImageArm64:singularityImage)
     }
 
     @Override

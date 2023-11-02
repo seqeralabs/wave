@@ -56,7 +56,7 @@ class DockerBuildStrategy extends BuildStrategy {
 
     @Nullable
     @Value('${wave.build.singularity-image-arm64}')
-    String singularityImageArm
+    String singularityImageArm64
 
     @Value('${wave.build.timeout}')
     Duration buildTimeout
@@ -171,7 +171,7 @@ class DockerBuildStrategy extends BuildStrategy {
             wrapper.add(platform.toString())
         }
 
-        wrapper.add(platform.arch == "arm64"?singularityImageArm:singularityImage)
+        wrapper.add(platform.arch == "arm64"?singularityImageArm64:singularityImage)
 
         return wrapper
     }
