@@ -121,7 +121,10 @@ class KubeBuildStrategy extends BuildStrategy {
     }
 
     protected String getBuildImage(BuildRequest buildRequest){
-        return buildRequest.formatDocker() ? kanikoImage : (buildRequest.platform.arch == "arm64"?singularityImageArm:singularityImage)
+        return buildRequest.formatDocker()?
+                kanikoImage:
+                (buildRequest.platform.arch == "arm64"?
+                        singularityImageArm:singularityImage)
     }
 
     @Override
