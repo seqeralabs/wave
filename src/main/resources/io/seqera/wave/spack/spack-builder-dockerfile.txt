@@ -41,7 +41,7 @@ RUN cd /opt/spack-env \
     xargs file -i | \
     grep 'charset=binary' | \
     grep 'x-executable\|x-archive\|x-sharedlib' | \
-    awk -F: '{print $1}' | xargs strip -s
+    awk -F: '{print $1}' | xargs strip -s || true
 
 RUN cd /opt/spack-env && \
     spack env activate --sh -d . >> /opt/spack-env/z10_spack_environment.sh && \
