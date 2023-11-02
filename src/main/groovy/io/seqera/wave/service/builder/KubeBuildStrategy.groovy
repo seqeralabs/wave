@@ -64,7 +64,8 @@ class KubeBuildStrategy extends BuildStrategy {
     @Value('${wave.build.singularity-image}')
     String singularityImage
 
-    @Value('${wave.build.singularity-image-arm}')
+    @Nullable
+    @Value('${wave.build.singularity-image-arm64}')
     String singularityImageArm
 
     @Value('${wave.build.timeout:5m}')

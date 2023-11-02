@@ -30,6 +30,7 @@ import io.micronaut.context.annotation.Value
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.util.RegHelper
+import jakarta.annotation.Nullable
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static java.nio.file.StandardOpenOption.CREATE
@@ -53,7 +54,8 @@ class DockerBuildStrategy extends BuildStrategy {
     @Value('${wave.build.singularity-image}')
     String singularityImage
 
-    @Value('${wave.build.singularity-image-arm}')
+    @Nullable
+    @Value('${wave.build.singularity-image-arm64}')
     String singularityImageArm
 
     @Value('${wave.build.timeout}')
