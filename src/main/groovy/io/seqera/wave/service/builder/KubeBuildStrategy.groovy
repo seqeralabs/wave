@@ -64,7 +64,6 @@ class KubeBuildStrategy extends BuildStrategy {
     @Value('${wave.build.singularity-image}')
     String singularityImage
 
-    @Nullable
     @Value('${wave.build.singularity-image-arm64}')
     String singularityImageArm64
 
@@ -122,15 +121,17 @@ class KubeBuildStrategy extends BuildStrategy {
     }
 
     protected String getBuildImage(BuildRequest buildRequest){
-        if(buildRequest.formatDocker()){
+        if( buildRequest.formatDocker() ) {
             return kanikoImage
-        }else if(buildRequest.formatSingularity()) {
-            if (buildRequest.platform.arch == "arm64") {
-                return singularityImageArm64 ?: "$singularityImage-arm64"
-            } else {
-                return singularityImage
-            }
         }
+
+        if( buildRequest.formatSingularity() ) {
+            return buildRequest.platform.arch == "arm64"
+                ? singularityImageArm64
+                :  singularityImage
+        }
+
+        throw new IllegalArgumentException("Unexpected container platform: ${buildRequest.platform}")
     }
 
     @Override
