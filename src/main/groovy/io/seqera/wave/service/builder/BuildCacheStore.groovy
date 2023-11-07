@@ -22,7 +22,7 @@ import java.time.Duration
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Value
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.cache.AbstractCacheStore
 import io.seqera.wave.service.cache.impl.CacheProvider
@@ -41,16 +41,11 @@ class BuildCacheStore extends AbstractCacheStore<BuildResult> implements BuildSt
     private Duration delay
     private Duration timeout
 
-    BuildCacheStore(
-            CacheProvider<String, String> provider,
-            @Value('${wave.build.status.delay}') Duration delay,
-            @Value('${wave.build.timeout}') Duration timeout,
-            @Value('${wave.build.status.duration}') Duration duration
-    ) {
+    BuildCacheStore(CacheProvider<String, String> provider, BuildConfig buildConfig ) {
         super(provider, new MoshiEncodeStrategy<BuildResult>() {})
-        this.duration = duration
-        this.delay = delay
-        this.timeout = timeout
+        this.duration = buildConfig.statusDuration
+        this.delay = buildConfig.statusDelay
+        this.timeout = buildConfig.buildTimeout
         log.info "Creating Build cache store ― duration=$duration; delay=$delay; timeout=$timeout"
     }
 
