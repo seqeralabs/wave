@@ -124,8 +124,7 @@ class ContainerTokenControllerTest extends Specification {
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
         def proxyRegistry = Mock(RegistryProxyService)
-        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry,
-                workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
+        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry)
         def DOCKER = 'FROM foo'
         def user = new User(id: 100)
         def cfg = new ContainerConfig()
@@ -152,8 +151,7 @@ class ContainerTokenControllerTest extends Specification {
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
         def proxyRegistry = Mock(RegistryProxyService)
-        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry,
-                workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
+        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry)
         def DOCKER = 'FROM foo'
         def user = new User(id: 100)
         def cfg = new ContainerConfig()
@@ -180,8 +178,7 @@ class ContainerTokenControllerTest extends Specification {
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
         def proxyRegistry = Mock(RegistryProxyService)
-        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry,
-                workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
+        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry)
         def DOCKER = 'FROM foo'
         def user = new User(id: 100)
         def cfg = new ContainerConfig()
@@ -208,7 +205,7 @@ class ContainerTokenControllerTest extends Specification {
     def 'should create build request' () {
         given:
         def dockerAuth = Mock(ContainerInspectServiceImpl)
-        def controller = new ContainerTokenController(dockerAuthService: dockerAuth, workspace: Path.of('/some/wsp'), defaultBuildRepo: 'wave/build', defaultCacheRepo: 'wave/cache')
+        def controller = new ContainerTokenController(dockerAuthService: dockerAuth)
 
         when:
         def submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'))

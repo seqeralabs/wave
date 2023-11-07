@@ -114,13 +114,13 @@ class KubeBuildStrategy extends BuildStrategy {
 
     protected String getBuildImage(BuildRequest buildRequest){
         if( buildRequest.formatDocker() ) {
-            return kanikoImage
+            return buildConfig.kanikoImage
         }
 
         if( buildRequest.formatSingularity() ) {
             return buildRequest.platform.arch == "arm64"
-                ? singularityImageArm64
-                :  singularityImage
+                ? buildConfig.singularityImageArm64
+                :  buildConfig.singularityImage
         }
 
         throw new IllegalArgumentException("Unexpected container platform: ${buildRequest.platform}")
