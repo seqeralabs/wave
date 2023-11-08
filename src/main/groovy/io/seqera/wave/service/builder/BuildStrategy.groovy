@@ -34,8 +34,9 @@ import jakarta.inject.Inject
 @CompileStatic
 abstract class BuildStrategy {
 
-    @Inject
-    private BuildConfig buildConfig
+    @Value('${wave.build.compress-caching:true}')
+    Boolean compressCaching = true
+
     abstract BuildResult build(BuildRequest req)
 
     void cleanup(BuildRequest req) {
@@ -70,7 +71,7 @@ abstract class BuildStrategy {
             result << "--cache-repo" << req.cacheRepository
         }
 
-        if( !buildConfig.compressCaching ){
+        if( !compressCaching ){
             result << "--compressed-caching=false"
         }
 

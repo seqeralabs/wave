@@ -160,10 +160,7 @@ class DockerBuildStrategy extends BuildStrategy {
             wrapper.add(platform.toString())
         }
 
-        final img = platform.arch == "arm64"
-                ? buildConfig.singularityImageArm64
-                : buildConfig.singularityImage
-        wrapper.add(img)
+        wrapper.add(buildConfig.getSingularityImage(platform))
         return wrapper
     }
 }

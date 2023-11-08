@@ -30,12 +30,14 @@ import com.sun.net.httpserver.HttpHandler
 import com.sun.net.httpserver.HttpServer
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.micronaut.data.model.query.QueryModel
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
@@ -59,11 +61,17 @@ class ContainerBuildServiceTest extends Specification {
     @Inject RegistryLookupService lookupService
     @Inject RegistryCredentialsProvider credentialsProvider
     @Inject ContainerInspectServiceImpl dockerAuthService
-
-    @Value('${wave.build.repo}') String buildRepo
-    @Value('${wave.build.cache}') String cacheRepo
-
+    @Inject BuildConfig buildConfig
     @Inject HttpClientConfig httpClientConfig
+
+    def buildRepo = "wave/build"
+    def cacheRepo = "wave/build/cache"
+
+
+    def setup(){
+        buildRepo = buildConfig.defaultBuildRepository
+        cacheRepo = buildConfig.defaultCacheRepository
+    }
 
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
     def 'should build & push container to aws' () {
@@ -205,7 +213,7 @@ class ContainerBuildServiceTest extends Specification {
         and:
         def store = Mock(BuildStore)
         def strategy = Mock(BuildStrategy)
-        def builder = new ContainerBuildServiceImpl(buildStrategy: strategy, buildStore: store, statusDuration: DURATION, spackConfig:spackConfig, cleanup: new CleanupStrategy())
+        def builder = new ContainerBuildServiceImpl(buildStrategy: strategy, buildStore: store, buildConfig: buildConfig, spackConfig:spackConfig, cleanup: new CleanupStrategy(buildConfig: buildConfig))
         def RESPONSE = Mock(BuildResult)
 
         when:

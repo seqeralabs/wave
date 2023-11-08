@@ -118,9 +118,7 @@ class KubeBuildStrategy extends BuildStrategy {
         }
 
         if( buildRequest.formatSingularity() ) {
-            return buildRequest.platform.arch == "arm64"
-                ? buildConfig.singularityImageArm64
-                :  buildConfig.singularityImage
+            return buildConfig.getSingularityImage(buildRequest.platform)
         }
 
         throw new IllegalArgumentException("Unexpected container platform: ${buildRequest.platform}")

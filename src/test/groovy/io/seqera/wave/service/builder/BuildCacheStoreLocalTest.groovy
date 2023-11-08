@@ -23,12 +23,20 @@ import spock.lang.Specification
 import java.time.Duration
 import java.time.Instant
 
+import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.service.cache.impl.LocalCacheProvider
+import jakarta.inject.Inject
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@MicronautTest
 class BuildCacheStoreLocalTest extends Specification {
+
+    @Inject
+    private BuildConfig buildConfig
 
     BuildResult zero = BuildResult.create('0')
     BuildResult one = BuildResult.completed('1', 0, 'done', Instant.now())
@@ -38,7 +46,7 @@ class BuildCacheStoreLocalTest extends Specification {
     def 'should get and put key values' () {
         given:
         def provider = new LocalCacheProvider()
-        def cache = new BuildCacheStore(provider, Duration.ofSeconds(5), Duration.ofSeconds(30), Duration.ofSeconds(60))
+        def cache = new BuildCacheStore(provider, buildConfig)
 
         expect:
         cache.getBuild('foo') == null
@@ -51,9 +59,9 @@ class BuildCacheStoreLocalTest extends Specification {
 
     def 'should retain value for max duration' () {
         given:
-        def DURATION = Duration.ofSeconds(2)
         def provider = new LocalCacheProvider()
-        def cache = new BuildCacheStore(provider, Duration.ofSeconds(5), Duration.ofSeconds(30), DURATION)
+        def cache = new BuildCacheStore(provider, buildConfig)
+        cache.duration = Duration.ofSeconds(2)
 
         expect:
         cache.getBuild('foo') == null
@@ -82,7 +90,7 @@ class BuildCacheStoreLocalTest extends Specification {
     def 'should store if absent' () {
         given:
         def provider = new LocalCacheProvider()
-        def cache = new BuildCacheStore(provider, Duration.ofSeconds(5), Duration.ofSeconds(30), Duration.ofSeconds(60))
+        def cache = new BuildCacheStore(provider, buildConfig)
 
         expect:
         cache.storeIfAbsent('foo', zero)
@@ -100,7 +108,7 @@ class BuildCacheStoreLocalTest extends Specification {
     def 'should remove a build entry' () {
         given:
         def provider = new LocalCacheProvider()
-        def cache = new BuildCacheStore(provider, Duration.ofSeconds(5), Duration.ofSeconds(30), Duration.ofSeconds(60))
+        def cache = new BuildCacheStore(provider, buildConfig)
 
         when:
         cache.storeBuild('foo', zero)
@@ -117,7 +125,7 @@ class BuildCacheStoreLocalTest extends Specification {
     def 'should await for a value' () {
         given:
         def provider = new LocalCacheProvider()
-        def cache = new BuildCacheStore(provider, Duration.ofSeconds(5), Duration.ofSeconds(30), Duration.ofSeconds(60))
+        def cache = new BuildCacheStore(provider, buildConfig)
 
         expect:
         cache.awaitBuild('foo') == null

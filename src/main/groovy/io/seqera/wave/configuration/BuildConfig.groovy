@@ -24,6 +24,7 @@ import javax.annotation.PostConstruct
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.core.ContainerPlatform
 import jakarta.inject.Singleton
 
 /**
@@ -71,13 +72,15 @@ class BuildConfig {
     @Value('${wave.build.status.duration}')
     Duration statusDuration
 
-    @Value('${wave.build.compress-caching:true}')
-    Boolean compressCaching = true
-
     @Value('${wave.build.cleanup}')
     @Nullable
     String cleanup
 
+    String getSingularityImage(ContainerPlatform containerPlatform){
+        return containerPlatform.arch == "arm64"
+                ? singularityImageArm64
+                : singularityImage
+    }
     @PostConstruct
     private void init() {
         if(!singularityImageArm64){
@@ -94,7 +97,6 @@ class BuildConfig {
                 "build status delay: ${statusDelay}" +
                 "build timeout: ${buildTimeout}; " +
                 "build status duration: ${statusDuration};" +
-                "build compress caching: ${compressCaching};" +
                 "build cleanup: ${cleanup};")
     }
 

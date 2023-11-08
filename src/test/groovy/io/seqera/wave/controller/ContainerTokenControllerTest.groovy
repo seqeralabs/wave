@@ -28,6 +28,7 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
@@ -53,6 +54,9 @@ class ContainerTokenControllerTest extends Specification {
     @Inject
     @Client("/")
     HttpClient client
+
+    @Inject
+    BuildConfig buildConfig
 
     def 'should create request data' () {
         given:
@@ -124,7 +128,7 @@ class ContainerTokenControllerTest extends Specification {
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
         def proxyRegistry = Mock(RegistryProxyService)
-        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry)
+        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig)
         def DOCKER = 'FROM foo'
         def user = new User(id: 100)
         def cfg = new ContainerConfig()
@@ -151,7 +155,7 @@ class ContainerTokenControllerTest extends Specification {
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
         def proxyRegistry = Mock(RegistryProxyService)
-        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry)
+        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig)
         def DOCKER = 'FROM foo'
         def user = new User(id: 100)
         def cfg = new ContainerConfig()
@@ -178,7 +182,7 @@ class ContainerTokenControllerTest extends Specification {
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
         def proxyRegistry = Mock(RegistryProxyService)
-        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry)
+        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig:buildConfig)
         def DOCKER = 'FROM foo'
         def user = new User(id: 100)
         def cfg = new ContainerConfig()
@@ -205,7 +209,7 @@ class ContainerTokenControllerTest extends Specification {
     def 'should create build request' () {
         given:
         def dockerAuth = Mock(ContainerInspectServiceImpl)
-        def controller = new ContainerTokenController(dockerAuthService: dockerAuth)
+        def controller = new ContainerTokenController(dockerAuthService: dockerAuth, buildConfig: buildConfig)
 
         when:
         def submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'))
