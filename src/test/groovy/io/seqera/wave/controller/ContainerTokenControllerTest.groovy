@@ -20,6 +20,7 @@ package io.seqera.wave.controller
 
 import java.nio.file.Path
 
+import io.micronaut.context.annotation.Property
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
@@ -49,6 +50,7 @@ import spock.lang.Specification
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
+@Property(name='wave.build.workspace', value='/some/wsp')
 class ContainerTokenControllerTest extends Specification {
 
     @Inject

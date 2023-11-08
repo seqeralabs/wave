@@ -51,7 +51,7 @@ wave:
     status :
       delay : 5s
       duration : 1d
-    workspace: '/some/wsp'
+    workspace: 'workspace'
     spack:
       cacheDirectory: "spack-cache"
     logs :
