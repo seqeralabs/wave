@@ -45,8 +45,6 @@ wave:
       username: 'foo'
       password: 'bar'
   build:
-    repo : "wave/build"
-    cache : "wave/build/cache"
     timeout : 900s
     status :
       delay : 5s

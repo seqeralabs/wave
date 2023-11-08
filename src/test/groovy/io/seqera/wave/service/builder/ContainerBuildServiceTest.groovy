@@ -61,16 +61,15 @@ class ContainerBuildServiceTest extends Specification {
     @Inject RegistryLookupService lookupService
     @Inject RegistryCredentialsProvider credentialsProvider
     @Inject ContainerInspectServiceImpl dockerAuthService
-    @Inject BuildConfig buildConfig
     @Inject HttpClientConfig httpClientConfig
+    @Inject BuildConfig buildConfig
 
-    def buildRepo = "wave/build"
-    def cacheRepo = "wave/build/cache"
-
+    String buildRepo = null
+    String cacheRepo = null
 
     def setup(){
         buildRepo = buildConfig.defaultBuildRepository
-        cacheRepo = buildConfig.defaultCacheRepository
+         cacheRepo = buildConfig.defaultCacheRepository
     }
 
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
