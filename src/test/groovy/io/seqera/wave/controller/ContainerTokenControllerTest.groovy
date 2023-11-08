@@ -51,6 +51,8 @@ import spock.lang.Specification
  */
 @MicronautTest
 @Property(name='wave.build.workspace', value='/some/wsp')
+@Property(name='wave.build.repo', value='wave/build')
+@Property(name='wave.build.cache', value='wave/build/cache')
 class ContainerTokenControllerTest extends Specification {
 
     @Inject
