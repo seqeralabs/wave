@@ -81,7 +81,9 @@ class BuildLogServiceImpl implements BuildLogService {
 
     @EventListener
     void onBuildEvent(BuildEvent event) {
-            CompletableFuture.supplyAsync(()-> storeLog(event.result.id, event.result.logs))
+        if(event.result.logs) {
+            CompletableFuture.supplyAsync(() -> storeLog(event.result.id, event.result.logs))
+        }
     }
 
     @Override
