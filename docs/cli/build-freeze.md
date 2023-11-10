@@ -8,7 +8,7 @@ To freeze a container, you must ensure the following conditions are met:
 
 - You created a Seqera Platform access token.
 - You specified the destination container registry credentials in Seqera Platform.
-- Optional: You defined the `TOWER_ACCESS_TOKEN` environment variable.
+- You specify the Seqera Platform access token via either the `TOWER_ACCESS_TOKEN` environment variable or the `--tower-token` Wave command line option.
 
 ## Related CLI arguments
 
