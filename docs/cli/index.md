@@ -11,6 +11,26 @@ The second sequence is a 16-character checksum that uniquely identifies the buil
 
 By default, Wave container builds are ephemeral. You can persist, or _freeze_, a container build by saving it in a private container registry. For Wave to freeze your container image, you must provide a Seqera access token so that Wave can access your private registry credentials.
 
+## Seqera Platform integration
+
+You can integrate Wave CLI with your Seqera Platform instance by specifying a token and optional workspace ID and endpoint. Each value can be specified either as an environment variable or as an argument to the CLI. An environment variable is always overridden by the equivalent CLI argument, so if the `TOWER_ACCESS_TOKEN` environment variable is set and the `--tower-token` is specified, the value used for the CLI argument takes precedence.
+
+### CLI arguments
+
+The following CLI arguments are available for Seqera Platform integration:
+
+- `--tower-token`: A Seqera Platform auth token so that Wave can access your private registry credentials.
+- `--tower-endpoint`: For Enterprise customers, the URL endpoint for your instance, such as `https://api.tower.nf`.
+- `--tower-workspace-id`: A Seqera Platform workspace ID, such as `1234567890`, where credentials may be stored.
+
+### Environment variables
+
+The following environment variables are available for Seqera Platform integration:
+
+- `TOWER_API_ENDPOINT`: A Seqera Platform auth token so that Wave can access your private registry credentials.
+- `TOWER_ACCESS_TOKEN`: For Enterprise customers, the URL endpoint for your instance, such as `https://api.tower.nf`.
+- `TOWER_WORKSPACE_ID`: A Seqera Platform workspace ID, such as `1234567890`, where credentials may be stored.
+
 ## Usage limits
 
 The following usage limits apply:
