@@ -96,7 +96,7 @@ class KubeBuildStrategyTest extends Specification {
         def req = new BuildRequest('from foo', PATH, repo, null, null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('amd64'),'{}', cache, null, "", null)
 
         then: 'should return kaniko image'
-        strategy.getBuildImage(req) == 'gcr.io/kaniko-project/executor:v1.16.0'
+        strategy.getBuildImage(req) == 'gcr.io/kaniko-project/executor:v1.18.0'
 
         when:'getting singularity with amd64 arch in build request'
         req = new BuildRequest('from foo', PATH, repo, null, null, BuildFormat.SINGULARITY, USER, null, null, ContainerPlatform.of('amd64'),'{}', cache, null, "", null)
