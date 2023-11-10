@@ -32,7 +32,7 @@ import io.seqera.wave.tower.User
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-class DockerBuilderStrategyTest extends Specification {
+class DockerBuildStrategyTest extends Specification {
 
     def 'should get docker command' () {
         given:
@@ -167,6 +167,43 @@ class DockerBuilderStrategyTest extends Specification {
                 'singularity build image.sif /work/foo/d4869cc39b8d7d55/Containerfile && singularity push image.sif oras://repo:d4869cc39b8d7d55'
         ]
         
+        cleanup:
+        ctx.close()
+    }
+
+    def 'should get singularity build command for arm64 architecture' () {
+        given:
+        def props = [
+                'wave.build.spack.secretKeyFile':'/host/spack/key',
+                'wave.build.spack.secretMountPath':'/opt/spack/key'  ]
+        def ctx = ApplicationContext.run(props)
+        def service = ctx.getBean(DockerBuildStrategy)
+        SpackConfig spackConfig = ctx.getBean(SpackConfig)
+        service.setSpackConfig(spackConfig)
+        and:
+        def work = Path.of('/work/foo')
+        def creds = Path.of('/work/creds.json')
+        def spackFile = '/work/spack.yaml'
+        def req = new BuildRequest('from foo', work, 'repo', null, spackFile, BuildFormat.SINGULARITY, Mock(User), null, null, ContainerPlatform.of('arm64'),'{auth}', null, null, "1.2.3.4", null)
+        when:
+        def cmd = service.buildCmd(req, creds)
+        then:
+        cmd == ['docker',
+                'run',
+                '--rm',
+                '--privileged',
+                '--entrypoint', '',
+                '-v', '/work/foo/9c68af894bb2419c:/work/foo/9c68af894bb2419c',
+                '-v', '/work/creds.json:/root/.singularity/docker-config.json:ro',
+                '-v', '/work/singularity-remote.yaml:/root/.singularity/remote.yaml:ro',
+                '-v', '/host/spack/key:/opt/spack/key:ro',
+                '--platform', 'linux/arm64',
+                'quay.io/singularity/singularity:v3.11.4-slim-arm64',
+                'sh',
+                '-c',
+                'singularity build image.sif /work/foo/9c68af894bb2419c/Containerfile && singularity push image.sif oras://repo:9c68af894bb2419c'
+        ]
+
         cleanup:
         ctx.close()
     }
