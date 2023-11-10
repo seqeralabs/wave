@@ -366,9 +366,6 @@ public class App implements Runnable {
         if( !isEmpty(platform) && !VALID_PLATFORMS.contains(platform) )
             throw new IllegalCliArgumentException(String.format("Unsupported container platform: '%s'", platform));
 
-        if( singularity && !isEmpty(platform) && platform.contains("arm64") )
-            throw new IllegalCliArgumentException("Options --platform is currently not supported by Singularity native build");
-
     }
 
     protected Client client() {

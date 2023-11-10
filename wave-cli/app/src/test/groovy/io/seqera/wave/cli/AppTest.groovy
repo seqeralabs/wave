@@ -210,10 +210,10 @@ class AppTest extends Specification {
         noExceptionThrown()
     }
 
-    def 'should not allow platform arm64  with singularity' () {
+    def 'should allow platform arm64 with singularity' () {
         given:
         def app = new App()
-        String[] args = ['--singularity', "--platform", 'linux/arm64', '-i', 'ubuntu', '--freeze', '--build-repo', 'docker.io/foo',  '--tower-token', 'xyz']
+        String[] args = [ '--singularity', "--platform", 'linux/arm64',  '-i', 'ubuntu', '--freeze', '--build-repo', 'docker.io/foo',  '--tower-token', 'xyz']
 
         when:
         new CommandLine(app).parseArgs(args)
@@ -221,7 +221,14 @@ class AppTest extends Specification {
         app.validateArgs()
 
         then:
-        def e = thrown(IllegalCliArgumentException)
-        e.message == "Options --platform is currently not supported by Singularity native build"
+        noExceptionThrown()
+        and:
+        app.@platform == 'linux/arm64'
+        app.@image == 'ubuntu'
+        app.@singularity
+        app.@freeze
+        app.@buildRepository == 'docker.io/foo'
+        app.@towerToken == 'xyz'
     }
+
 }
