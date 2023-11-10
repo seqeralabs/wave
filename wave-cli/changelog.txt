@@ -1,4 +1,8 @@
 WAVE CLI CHANGE-LOG
 ===================
+1.1.0 - 10 Nov 2023
+- Add ability to specify platform for Singularity build [c19727a5]
+- Improve err handling for missing files [98df6ea3]
+
 1.0.0 - 16 Oct 2023
 - Initial release
