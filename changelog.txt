@@ -1,4 +1,16 @@
 # Wave changelog
+v1.1.0 - 10 Nov 2023
+- Add support for ARM architecture for Singularity build (#286) (#325) [236dceb5]
+- Add license manager checksum validation (#265) [1078066e]
+- Minor change in build notification email [a56d8a52]
+- Fix Logs are not upload on build failure (#328) [bf3ef01d]
+- Fix failing tests (#322) [9b4c0fd9]
+- Fix/wave Spack quiet filestrip (#321) [e639e28f]
+- [docs] Update docs (#319) [0d9f09b2]
+- [docs] Add tower endpoint (#329) [2b0e0a70]
+- Bump nf-jdk:corretto-17.0.9 [5c69ebc0]
+- Bump kaniko v1.18.0 [43374c63]
+
 v1.0.2 - 26 Oct 2023
 - Add deny paths HTTP filter 
 - Enable reuse in Spack builds (#317) [4f1b8bdf]
