@@ -1,0 +1,5 @@
+---
+license:
+  server:
+    url: "${LICENSE_SERVER_URL:`http://localhost:7070`}"
+---
