@@ -1,0 +1,23 @@
+{
+  "sidebar": [
+    "index",
+    {
+      "type": "category",
+      "label": "Wave CLI",
+      "collapsed": false,
+      "items": [
+        "cli/index",
+        "cli/install",
+        "cli/build-directory",
+        "cli/build-docker",
+        "cli/build-conda",
+        "cli/build-spack",
+        "cli/build-singularity",
+        "cli/build-freeze"
+      ]
+    },
+    "guide",
+    "api",
+    "faq"
+  ]
+}

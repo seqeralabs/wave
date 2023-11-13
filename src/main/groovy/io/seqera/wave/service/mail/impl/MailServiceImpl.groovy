@@ -106,7 +106,7 @@ class MailServiceImpl implements MailService {
         // result the main object
         Mail mail = new Mail()
         mail.to(recipient)
-        mail.subject("Wave container result completion - ${status}")
+        mail.subject("Wave container build completion - ${status}")
         mail.body(MailHelper.getTemplateFile('/io/seqera/wave/build-notification.html', binding))
         mail.attach(MailAttachment.resource('/io/seqera/wave/assets/wave-logo.png', contentId: '<wave-logo>', disposition: 'inline'))
         mail.attach(MailAttachment.resource('/io/seqera/wave/assets/seqera-logo.png', contentId: '<seqera-logo>', disposition: 'inline'))
