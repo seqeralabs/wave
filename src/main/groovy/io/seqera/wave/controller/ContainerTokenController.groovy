@@ -28,6 +28,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
+import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.Post
@@ -145,7 +146,7 @@ class ContainerTokenController {
     }
 
     @Post('/container-token')
-    CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
+    CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, @Body SubmitContainerTokenRequest req) {
         validateContainerRequest(req)
 
         // this is needed for backward compatibility with old clients

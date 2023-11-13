@@ -108,7 +108,7 @@ class ContainerBuildControllerTest extends Specification {
         1 * buildLogService.fetchLogStream(buildId) >> response
         and:
         res.code() == 200
-        new String(res.bodyBytes) == LOGS
+        res.body == LOGS
     }
 
 }

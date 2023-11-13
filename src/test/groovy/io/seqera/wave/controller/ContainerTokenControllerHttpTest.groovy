@@ -93,7 +93,7 @@ class ContainerTokenControllerHttpTest extends Specification {
         def cfg = new ContainerConfig(workingDir: '/foo')
         SubmitContainerTokenRequest request =
                 new SubmitContainerTokenRequest(
-                        towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64',)
+                        towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64')
         def resp = client.toBlocking().exchange(HttpRequest.POST("http://localhost:$port/container-token", request), SubmitContainerTokenResponse)
         then:
         resp.status() == HttpStatus.OK
