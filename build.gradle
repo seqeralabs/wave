@@ -4,7 +4,6 @@ import java.time.format.DateTimeFormatter
 plugins {
     id 'java-library'
     id 'io.seqera.wave.groovy-application-conventions'
-    id 'io.seqera.wave.java-library-conventions'
     id "com.github.johnrengelman.shadow" version "8.1.1"
     id "io.micronaut.minimal.application" version "4.1.0"
     id "com.google.cloud.tools.jib" version "3.4.0"
@@ -158,6 +157,7 @@ run{
 }
 
 test {
+    useJUnitPlatform()
     testLogging {
         outputs.upToDateWhen {false}
         showStandardStreams = true
