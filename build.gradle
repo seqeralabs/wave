@@ -101,7 +101,7 @@ micronaut {
     testRuntime("spock2")
     processing {
         incremental(true)
-        annotations("com.example.*")
+        annotations("io.seqera.*")
     }
 }
 
@@ -118,7 +118,7 @@ jib {
         }
     }
     to {
-        image = findProperty("jibRepo") ?: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/app:$version"
+        image = findProperty("jibRepo") ?: "nf-tower-enterprise/wave/app:$version"
     }
     container {
         creationTime = "${OffsetDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME)}"
