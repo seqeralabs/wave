@@ -110,5 +110,5 @@ container registry where the image is stored, while the instrumented layers are 
 
 
 ## Related links
-* [Wave command line tool]
-* []Distribution (formerly Registry) API](https://distribution.github.io/distribution/spec/api/)
+* [Wave command line tool](https://github.com/seqeralabs/wave-cli)
+* [Distribution (formerly Registry) API](https://distribution.github.io/distribution/spec/api/)
