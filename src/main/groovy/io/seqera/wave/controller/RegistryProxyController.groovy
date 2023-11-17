@@ -128,7 +128,7 @@ class RegistryProxyController {
 
     @Error
     HttpResponse<RegistryErrorResponse> handleError(HttpRequest request, Throwable t) {
-        return errorHandler.handle(request, t, (msg, code) -> new RegistryErrorResponse(msg,code) )
+        return errorHandler.handle(request, t, (msg, code) -> new RegistryErrorResponse(code,msg) )
     }
 
     @Get
@@ -284,7 +284,7 @@ class RegistryProxyController {
     }
 
     static protected MutableHttpResponse<?> badRequest(String message) {
-        return HttpResponse.badRequest(new RegistryErrorResponse(message))
+        return HttpResponse.badRequest(new RegistryErrorResponse('UNKNOWN', message))
     }
 
     MutableHttpResponse<?> handleHead(RoutePath route, HttpRequest httpRequest) {

@@ -1,4 +1,8 @@
 # Wave changelog
+v1.1.1 - 16 Nov 2023
+- Fix response for HTTP 429 status error response [523b650a]
+- Bump MN 3.10.3 + Jedis 5.0.2 + K8s client 19.0.0 [798ea886]
+
 v1.1.0 - 10 Nov 2023
 - Add support for ARM architecture for Singularity build (#286) (#325) [236dceb5]
 - Add license manager checksum validation (#265) [1078066e]
