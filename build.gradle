@@ -52,16 +52,16 @@ dependencies {
     implementation ('io.seqera:tower-crypto:22.4.0-watson') { transitive = false }  // to be replaced with 22.4.0 once released
     implementation 'org.apache.commons:commons-compress:1.24.0'
     implementation 'org.apache.commons:commons-lang3:3.12.0'
-    implementation 'io.kubernetes:client-java:18.0.1'
+    implementation 'io.kubernetes:client-java:19.0.0'
     implementation 'io.kubernetes:client-java-api-fluent:18.0.1'
     implementation 'com.google.code.gson:gson:2.9.0'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
     implementation 'com.squareup.moshi:moshi:1.14.0'
     implementation 'com.squareup.moshi:moshi-adapters:1.14.0'
-    implementation 'redis.clients:jedis:4.4.3'
-    implementation 'io.github.resilience4j:resilience4j-ratelimiter:0.17.0'
     implementation 'io.micronaut:micronaut-retry'
+    implementation 'redis.clients:jedis:5.0.2'
+    implementation "io.github.resilience4j:resilience4j-ratelimiter:0.17.0"
     // caching deps
     implementation 'io.micronaut.cache:micronaut-cache-core'
     implementation 'io.micronaut.cache:micronaut-cache-caffeine'
