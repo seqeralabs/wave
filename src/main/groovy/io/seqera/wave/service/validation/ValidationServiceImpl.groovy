@@ -84,6 +84,8 @@ class ValidationServiceImpl implements ValidationService {
             return "Container ${type} repository should not include any protocol prefix - offending value: $repo"
         // check no tag is included
         final coords = ContainerCoordinates.parse(repo)
+        if( !coords.repository )
+            return "Container ${type} repository is invalid or incomplete - offending value: $repo"
         if( coords.reference && repo.endsWith(":${coords.reference}") )
             return "Container ${type} repository should not include any tag suffix - offending value: $repo"
         else
