@@ -135,11 +135,12 @@ class RateLimiterFilter implements HttpServerFilter {
 
     private Publisher<MutableHttpResponse<?>> createOverLimitResponse(AtomicRateLimiterMetrics metrics, int statusCode) {
         final secondsToWait = TimeUnit.NANOSECONDS.toSeconds(metrics.getNanosToWait())
+        final String msg = "Maximum request rate exceeded - Wait ${secondsToWait}secs before issuing a new request"
         // see
         // https://distribution.github.io/distribution/spec/api/#on-failure-too-many-requests-1
         final body = statusCode==429
-                ? new RegistryErrorResponse('TOOMANYREQUESTS', 'Maximum request rate exceeded', "Wait ${secondsToWait}secs before issuing a new request")
-                : new ErrorResponse("Maximum request rate exceeded - Wait ${secondsToWait}secs before issuing a new request")
+                ? new RegistryErrorResponse('TOOMANYREQUESTS', msg)
+                : new ErrorResponse(msg)
         final resp = HttpResponse
                         .status(HttpStatus.valueOf(statusCode))
                         .header(HttpHeaders.RETRY_AFTER, String.valueOf(secondsToWait))

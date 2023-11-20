@@ -164,12 +164,15 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
      * @param image The image name for which the authorisation is needed
      * @param auth The {@link RegistryAuth} information modelling the target registry
      * @param creds The user credentials
-     * @return The authorization header including the 'Basic' or 'Bearer' prefix
+     * @return The authorization header including the 'Basic' or 'Bearer' prefix or null if no authentication type is specified
      */
     @Override
     String getAuthorization(String image, RegistryAuth auth, RegistryCredentials creds) throws RegistryUnauthorizedAccessException {
         if( !auth )
             throw new RegistryUnauthorizedAccessException("Missing authentication credentials")
+
+        if( !auth.type )
+            return null
 
         if( auth.type == RegistryAuth.Type.Bearer ) {
             final token = getAuthToken(image, auth, creds)
