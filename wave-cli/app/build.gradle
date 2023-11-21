@@ -1,7 +1,7 @@
 plugins {
     id 'io.seqera.wave.cli.java-application-conventions'
     id 'groovy'
-    id 'org.graalvm.buildtools.native' version '0.9.24'
+    id 'org.graalvm.buildtools.native' version '0.9.28'
 }
 
 java {
