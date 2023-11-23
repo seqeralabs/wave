@@ -6,6 +6,13 @@ on:
       - '!refs/tags/.*'
     tags-ignore:
       - '*'
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - '*'
+      - '!refs/tags/.*'
+    tags-ignore:
+      - '*'
 jobs:
   build:
     name: Wave on ${{ matrix.os }}
