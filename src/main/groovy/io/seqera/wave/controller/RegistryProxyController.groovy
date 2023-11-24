@@ -253,7 +253,7 @@ class RegistryProxyController {
         }
         else {
             log.debug "Pulling blob from repository: '${route.getTargetContainer()}'"
-            return fromDelegateResponse(resp)
+            return fromDelegateResponse(resp, route)
         }
     }
 
@@ -342,12 +342,12 @@ class RegistryProxyController {
                 .headers(toMutableHeaders(resp.headers, override))
     }
 
-    MutableHttpResponse<?> fromDelegateResponse(final DelegateResponse response){
+    MutableHttpResponse<?> fromDelegateResponse(final DelegateResponse response, RoutePath route){
 
         final Long len = response.headers
                 .find {it.key.toLowerCase()=='content-length'}?.value?.first() as Long ?: null
 
-        final wrap = new TimedInputStream(response.body, httpConfig.getReadTimeout())
+        final wrap = new TimedInputStream(response.body, httpConfig.getReadTimeout(), route)
         final streamedFile =  len
                 ?  new StreamedFile(wrap, MediaType.APPLICATION_OCTET_STREAM_TYPE, Instant.now().toEpochMilli(), len)
                 :  new StreamedFile(wrap, MediaType.APPLICATION_OCTET_STREAM_TYPE)

@@ -23,6 +23,9 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
 import groovy.transform.CompileStatic
+import io.seqera.wave.core.RoutePath
+import io.seqera.wave.exception.UnexpectedReadException
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -34,12 +37,15 @@ class TimedInputStream extends FilterInputStream {
 
     private final int timeoutMillis
 
+    private final RoutePath route
+
     private volatile boolean closed
 
-    TimedInputStream(InputStream inputStream, Duration timeout) {
+    TimedInputStream(InputStream inputStream, Duration timeout, RoutePath route) {
         super(inputStream)
         this.target = inputStream
         this.timeoutMillis = (int)timeout.toMillis()
+        this.route = route
     }
 
     @Override
@@ -50,7 +56,7 @@ class TimedInputStream extends FilterInputStream {
         }
         catch (Throwable t) {
             close()
-            throw t
+            throw new UnexpectedReadException("Unexpected error while reading binary stream from: ${route.getTargetContainer()} - cause: ${t.message}", t)
         }
     }
 
@@ -62,7 +68,7 @@ class TimedInputStream extends FilterInputStream {
         }
         catch (Throwable t) {
             close()
-            throw t
+            throw new UnexpectedReadException("Unexpected error while reading binary stream from: ${route.getTargetContainer()} - cause: ${t.message}", t)
         }
     }
 
