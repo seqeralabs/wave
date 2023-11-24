@@ -1,4 +1,9 @@
 # Wave changelog
+v1.1.3 - 24 Nov 2023
+- Improve error reporting for TimedInputStream exceptions [c8895326]
+- Fix Container 302 redirect response with body [1a90cbc2]
+- Bump gradle to 8.4 (#337) [227002fb]
+
 v1.1.2 - 19 Nov 2023
 - Fix HTTP 429 error message [845250d0]
 - Fix build and cache repository name validation [7f6bf852]
