@@ -245,11 +245,11 @@ class RegistryProxyController {
         if( resp.isRedirect() ) {
             final loc = log.isTraceEnabled() ? resp.location : stripUriParams(resp.location)
             log.debug "Forwarding ${route.type} request '${route.getTargetContainer()}' to '${loc}'"
-            return fromRedirectResponse(resp)
+            return fromRedirectResponse(resp, route)
         }
         else if( route.isManifest() ) {
             log.debug "Pulling manifest from repository: '${route.getTargetContainer()}'"
-            return fromManifestResponse(resp)
+            return fromManifestResponse(resp, route)
         }
         else {
             log.debug "Pulling blob from repository: '${route.getTargetContainer()}'"
@@ -327,12 +327,18 @@ class RegistryProxyController {
                 .headers(headers)
     }
 
-    MutableHttpResponse<?> fromRedirectResponse(final DelegateResponse resp) {
+    MutableHttpResponse<?> fromRedirectResponse(final DelegateResponse resp, RoutePath route) {
+        // create the retry logic on error                                                              §
+        final retryable = Retryable
+                .<byte[]>of(httpConfig)
+                .onRetry((event) -> log.warn("Unable to read redirect body - request: $route; event: $event"))
+
         final override = Map.of(
                     'Location', resp.location,  // <-- the location can be relative to the origin host, override it to always return a fully qualified URI
                     'Connection', 'close' ) // <-- make sure to return connection: close header otherwise docker hangs
         return HttpResponse
                 .status(HttpStatus.valueOf(resp.statusCode))
+                .body(retryable.apply(()-> resp.body.bytes))
                 .headers(toMutableHeaders(resp.headers, override))
     }
 
@@ -352,10 +358,15 @@ class RegistryProxyController {
                 .headers(toMutableHeaders(response.headers))
     }
 
-    MutableHttpResponse<?> fromManifestResponse(DelegateResponse resp) {
+    MutableHttpResponse<?> fromManifestResponse(DelegateResponse resp, RoutePath route) {
+        // create the retry logic on error                                                              §
+        final retryable = Retryable
+                .<byte[]>of(httpConfig)
+                .onRetry((event) -> log.warn("Unable to read manifest body - request: $route; event: $event"))
+
         HttpResponse
                 .status(HttpStatus.valueOf(resp.statusCode))
-                .body(resp.body.bytes)
+                .body(retryable.apply(()-> resp.body.bytes))
                 .headers(toMutableHeaders(resp.headers))
     }
 
