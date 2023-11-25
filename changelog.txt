@@ -1,4 +1,10 @@
 # Wave changelog
+v1.1.4 - 25 Nov 2023
+- Use volatile to prevent invalid mem access [9f0378d5]
+- Use virtual threads for I/O bound operations [70db490a]
+- Fix NPE when accessing pollDuration [81f9aa57]
+- Minor change on UnexpectedReadException error message [516cca5c]
+
 v1.1.3 - 24 Nov 2023
 - Improve error reporting for TimedInputStream exceptions [c8895326]
 - Fix Container 302 redirect response with body [1a90cbc2]
