@@ -56,7 +56,7 @@ class TimedInputStream extends FilterInputStream {
         }
         catch (Throwable t) {
             close()
-            throw new UnexpectedReadException("Unexpected error while reading binary stream from: ${route.getTargetContainer()} - cause: ${t.message}", t)
+            throw new UnexpectedReadException("Unexpected error while reading binary stream from: ${route.getTargetContainer()}", t)
         }
     }
 
@@ -68,7 +68,7 @@ class TimedInputStream extends FilterInputStream {
         }
         catch (Throwable t) {
             close()
-            throw new UnexpectedReadException("Unexpected error while reading binary stream from: ${route.getTargetContainer()} - cause: ${t.message}", t)
+            throw new UnexpectedReadException("Unexpected error while reading binary stream from: ${route.getTargetContainer()}", t)
         }
     }
 
