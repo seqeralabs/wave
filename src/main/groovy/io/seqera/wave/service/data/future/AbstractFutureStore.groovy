@@ -50,7 +50,7 @@ abstract class AbstractFutureStore<V> implements FutureStore<String,V> {
     private FutureHash<String> store
 
     @Value('${wave.pairing.channel.awaitTimeout:100ms}')
-    private Duration pollInterval
+    private volatile Duration pollInterval
 
     private ExecutorService virtPool
 
