@@ -249,7 +249,7 @@ class RegistryProxyController {
         }
         else if( route.isManifest() ) {
             log.debug "Pulling manifest from repository: '${route.getTargetContainer()}'"
-            return fromManifestResponse(resp)
+            return fromManifestResponse(resp, route)
         }
         else {
             log.debug "Pulling blob from repository: '${route.getTargetContainer()}'"
@@ -353,10 +353,15 @@ class RegistryProxyController {
                 .headers(toMutableHeaders(response.headers))
     }
 
-    MutableHttpResponse<?> fromManifestResponse(DelegateResponse resp) {
+    MutableHttpResponse<?> fromManifestResponse(DelegateResponse resp, RoutePath route) {
+        // create the retry logic on error                                                              §
+        final retryable = Retryable
+                .<byte[]>of(httpConfig)
+                .onRetry((event) -> log.warn("Unable to read manifest body - request: $route; event: $event"))
+
         HttpResponse
                 .status(HttpStatus.valueOf(resp.statusCode))
-                .body(resp.body.bytes)
+                .body(retryable.apply(()-> resp.body.bytes))
                 .headers(toMutableHeaders(resp.headers))
     }
 
