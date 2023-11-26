@@ -330,6 +330,7 @@ class RegistryProxyController {
     MutableHttpResponse<?> fromRedirectResponse(final DelegateResponse resp) {
         final override = Map.of(
                     'Location', resp.location,  // <-- the location can be relative to the origin host, override it to always return a fully qualified URI
+                    'Content-Length', '0',  // <-- make sure to set content length to zero, some services return some content even with the redirect header that's discarded by this response
                     'Connection', 'close' ) // <-- make sure to return connection: close header otherwise docker hangs
         return HttpResponse
                 .status(HttpStatus.valueOf(resp.statusCode))
