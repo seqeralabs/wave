@@ -147,6 +147,8 @@ class RegistryProxyService {
                     statusCode: status,
                     headers:resp1.headers().map(),
                     body: resp1.body())
+            // close the response to prevent leaks
+            RegHelper.closeResponse(resp1)
             return result
         }
 
