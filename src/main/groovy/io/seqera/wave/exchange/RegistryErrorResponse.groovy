@@ -49,7 +49,7 @@ class RegistryErrorResponse {
         this.errors = errors
     }
 
-    RegistryErrorResponse(String message, String code=null) {
+    RegistryErrorResponse(String code, String message) {
         errors.add( new RegistryError(code, message) )
     }
 

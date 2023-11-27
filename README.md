@@ -107,3 +107,8 @@ container registry where the image is stored, while the instrumented layers are 
     ```bash
     '-Djdk.httpclient.HttpClient.log=requests,headers'
     ```
+
+
+## Related links
+* [Wave command line tool](https://github.com/seqeralabs/wave-cli)
+* [Distribution (formerly Registry) API](https://distribution.github.io/distribution/spec/api/)

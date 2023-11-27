@@ -37,7 +37,7 @@ class ContainerCoordinates implements ContainerPath {
     final String image
     final String reference
 
-    String getRepository() { "$registry/$image" }
+    String getRepository() { image ? "$registry/$image" : null }
 
     String getTargetContainer() {
         final result = registry + '/' + getImageAndTag()

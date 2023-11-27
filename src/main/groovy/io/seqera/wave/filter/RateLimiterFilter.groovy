@@ -37,6 +37,7 @@ import io.micronaut.http.annotation.Filter
 import io.micronaut.http.filter.HttpServerFilter
 import io.micronaut.http.filter.ServerFilterChain
 import io.seqera.wave.exchange.ErrorResponse
+import io.seqera.wave.exchange.RegistryErrorResponse
 import jakarta.inject.Named
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Flux
@@ -134,9 +135,12 @@ class RateLimiterFilter implements HttpServerFilter {
 
     private Publisher<MutableHttpResponse<?>> createOverLimitResponse(AtomicRateLimiterMetrics metrics, int statusCode) {
         final secondsToWait = TimeUnit.NANOSECONDS.toSeconds(metrics.getNanosToWait())
-
-        final message = "Maximum request rate exceeded - Wait ${secondsToWait}secs before issuing a new request"
-        final body = new ErrorResponse(message)
+        final String msg = "Maximum request rate exceeded - Wait ${secondsToWait}secs before issuing a new request"
+        // see
+        // https://distribution.github.io/distribution/spec/api/#on-failure-too-many-requests-1
+        final body = statusCode==429
+                ? new RegistryErrorResponse('TOOMANYREQUESTS', msg)
+                : new ErrorResponse(msg)
         final resp = HttpResponse
                         .status(HttpStatus.valueOf(statusCode))
                         .header(HttpHeaders.RETRY_AFTER, String.valueOf(secondsToWait))
