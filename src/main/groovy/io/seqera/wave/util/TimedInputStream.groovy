@@ -19,11 +19,17 @@
 package io.seqera.wave.util
 
 import java.time.Duration
-import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Callable
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 import groovy.transform.CompileStatic
+import io.seqera.wave.core.RoutePath
+import io.seqera.wave.exception.UnexpectedReadException
 /**
+ * An input stream filter that implements a timeout mechanism on the reading
+ * operation over the target stream.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -34,35 +40,41 @@ class TimedInputStream extends FilterInputStream {
 
     private final int timeoutMillis
 
+    private final RoutePath route
+
+    private final ExecutorService executor
+
     private volatile boolean closed
 
-    TimedInputStream(InputStream inputStream, Duration timeout) {
+    TimedInputStream(InputStream inputStream, Duration timeout, RoutePath route) {
         super(inputStream)
         this.target = inputStream
         this.timeoutMillis = (int)timeout.toMillis()
+        this.route = route
+        this.executor = Executors.newVirtualThreadPerTaskExecutor()
     }
 
     @Override
     int read() throws IOException {
-        final result = CompletableFuture<Integer>.supplyAsync(() -> target.read())
+        final result = executor.submit((Callable<Integer>)(() -> target.read()))
         try {
             return result.get(timeoutMillis, TimeUnit.MILLISECONDS)
         }
         catch (Throwable t) {
             close()
-            throw t
+            throw new UnexpectedReadException("Unexpected error while reading binary stream from: ${route.getTargetContainer()}", t)
         }
     }
 
     @Override
     int read(byte[] b, int off, int len) throws IOException {
-        final result = CompletableFuture<Integer>.supplyAsync(() -> target.read(b,off,len))
+        final result = executor.submit((Callable<Integer>)(() -> target.read(b,off,len)))
         try {
             return result.get(timeoutMillis, TimeUnit.MILLISECONDS)
         }
         catch (Throwable t) {
             close()
-            throw t
+            throw new UnexpectedReadException("Unexpected error while reading binary stream from: ${route.getTargetContainer()}", t)
         }
     }
 

@@ -249,11 +249,11 @@ class RegistryProxyController {
         }
         else if( route.isManifest() ) {
             log.debug "Pulling manifest from repository: '${route.getTargetContainer()}'"
-            return fromManifestResponse(resp)
+            return fromManifestResponse(resp, route)
         }
         else {
             log.debug "Pulling blob from repository: '${route.getTargetContainer()}'"
-            return fromDelegateResponse(resp)
+            return fromDelegateResponse(resp, route)
         }
     }
 
@@ -330,18 +330,19 @@ class RegistryProxyController {
     MutableHttpResponse<?> fromRedirectResponse(final DelegateResponse resp) {
         final override = Map.of(
                     'Location', resp.location,  // <-- the location can be relative to the origin host, override it to always return a fully qualified URI
+                    'Content-Length', '0',  // <-- make sure to set content length to zero, some services return some content even with the redirect header that's discarded by this response
                     'Connection', 'close' ) // <-- make sure to return connection: close header otherwise docker hangs
         return HttpResponse
                 .status(HttpStatus.valueOf(resp.statusCode))
                 .headers(toMutableHeaders(resp.headers, override))
     }
 
-    MutableHttpResponse<?> fromDelegateResponse(final DelegateResponse response){
+    MutableHttpResponse<?> fromDelegateResponse(final DelegateResponse response, RoutePath route){
 
         final Long len = response.headers
                 .find {it.key.toLowerCase()=='content-length'}?.value?.first() as Long ?: null
 
-        final wrap = new TimedInputStream(response.body, httpConfig.getReadTimeout())
+        final wrap = new TimedInputStream(response.body, httpConfig.getReadTimeout(), route)
         final streamedFile =  len
                 ?  new StreamedFile(wrap, MediaType.APPLICATION_OCTET_STREAM_TYPE, Instant.now().toEpochMilli(), len)
                 :  new StreamedFile(wrap, MediaType.APPLICATION_OCTET_STREAM_TYPE)
@@ -352,10 +353,15 @@ class RegistryProxyController {
                 .headers(toMutableHeaders(response.headers))
     }
 
-    MutableHttpResponse<?> fromManifestResponse(DelegateResponse resp) {
+    MutableHttpResponse<?> fromManifestResponse(DelegateResponse resp, RoutePath route) {
+        // create the retry logic on error                                                              §
+        final retryable = Retryable
+                .<byte[]>of(httpConfig)
+                .onRetry((event) -> log.warn("Unable to read manifest body - request: $route; event: $event"))
+
         HttpResponse
                 .status(HttpStatus.valueOf(resp.statusCode))
-                .body(resp.body.bytes)
+                .body(retryable.apply(()-> resp.body.bytes))
                 .headers(toMutableHeaders(resp.headers))
     }
 
