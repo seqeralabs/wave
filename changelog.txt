@@ -1,4 +1,9 @@
 # Wave changelog
+v1.1.5 - 27 Nov 
+- Add retry policy when reading manifest response [4ff44728]
+- Fix Container 302 redirect response with body (2nd version) [4a16e904]
+- Revert "Fix Container 302 redirect response with body" [55f8f1b1]
+
 v1.1.4 - 25 Nov 2023
 - Use volatile to prevent invalid mem access [9f0378d5]
 - Use virtual threads for I/O bound operations [70db490a]
