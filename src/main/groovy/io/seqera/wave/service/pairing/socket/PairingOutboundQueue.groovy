@@ -36,7 +36,7 @@ import jakarta.inject.Singleton
 @CompileStatic
 class PairingOutboundQueue extends AbstractMessageQueue<PairingMessage> {
 
-    private Duration pollInterval
+    final private Duration pollInterval
 
     PairingOutboundQueue(
             MessageBroker<String> broker,
