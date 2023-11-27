@@ -46,13 +46,13 @@ import io.seqera.wave.util.TypeHelper
 @CompileStatic
 abstract class AbstractMessageQueue<M> implements Runnable {
 
-    private static AtomicInteger count = new AtomicInteger()
+    final private static AtomicInteger count = new AtomicInteger()
 
-    private final MessageBroker<String> broker
+    final private MessageBroker<String> broker
 
-    private final EncodingStrategy<M> encoder
+    final private EncodingStrategy<M> encoder
 
-    private final ExponentialAttempt attempt = new ExponentialAttempt()
+    final private ExponentialAttempt attempt = new ExponentialAttempt()
 
     final private Thread thread
 
