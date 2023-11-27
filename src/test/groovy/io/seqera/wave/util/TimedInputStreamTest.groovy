@@ -21,8 +21,9 @@ package io.seqera.wave.util
 import spock.lang.Specification
 
 import java.time.Duration
-import java.util.concurrent.TimeoutException
 
+import io.seqera.wave.core.RoutePath
+import io.seqera.wave.exception.UnexpectedReadException
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -46,7 +47,7 @@ class TimedInputStreamTest extends Specification {
     def 'should read small string' () {
         when:
         def buffer = new ByteArrayInputStream("Hello world".bytes)
-        def stream = new TimedInputStream(buffer, Duration.ofMinutes(1))
+        def stream = new TimedInputStream(buffer, Duration.ofMinutes(1), Mock(RoutePath))
         then:
         stream.text == "Hello world"
     }
@@ -57,7 +58,7 @@ class TimedInputStreamTest extends Specification {
         def data = generateRandomString(1024 * 1024)
         when:
         def buffer = new ByteArrayInputStream(data.bytes)
-        def stream = new TimedInputStream(buffer, Duration.ofMinutes(1))
+        def stream = new TimedInputStream(buffer, Duration.ofMinutes(1), Mock(RoutePath))
         then:
         stream.text == data
     }
@@ -68,7 +69,7 @@ class TimedInputStreamTest extends Specification {
         when:
         def buffer = new ByteArrayInputStream(data.bytes)
         and:
-        def stream = new TimedInputStream(buffer, Duration.ofMinutes(1))
+        def stream = new TimedInputStream(buffer, Duration.ofMinutes(1), Mock(RoutePath))
         def result = new ByteArrayOutputStream()
         int ch
         while( (ch=stream.read())!=-1 ) {
@@ -97,7 +98,7 @@ class TimedInputStreamTest extends Specification {
         Socket socket = new Socket("localhost", port);
 
         when:
-        def stream = new TimedInputStream(socket.getInputStream(), Duration.ofSeconds(5))
+        def stream = new TimedInputStream(socket.getInputStream(), Duration.ofSeconds(5), Mock(RoutePath))
         then:
         stream.text == data
 
@@ -120,11 +121,11 @@ class TimedInputStreamTest extends Specification {
         Socket socket = new Socket("localhost", port);
 
         when:
-        def stream = new TimedInputStream(socket.getInputStream(), Duration.ofSeconds(5))
+        def stream = new TimedInputStream(socket.getInputStream(), Duration.ofSeconds(5), Mock(RoutePath))
         and:
         stream.getText()
         then:
-        thrown(TimeoutException)
+        thrown(UnexpectedReadException)
 
         cleanup:
         serverSocket.close()
