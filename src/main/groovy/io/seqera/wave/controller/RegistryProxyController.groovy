@@ -20,6 +20,7 @@ package io.seqera.wave.controller
 
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 import java.util.function.Consumer
 import io.micronaut.core.annotation.Nullable
 
@@ -63,6 +64,7 @@ import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.TimedInputStream
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Mono
 /**
@@ -90,6 +92,10 @@ class RegistryProxyController {
 
     @Value('${wave.cache.digestStore.maxWeightMb:350}')
     int cacheMaxWeightMb
+
+    @Inject
+    @Named('fixedThreadPool')
+    ExecutorService fixedThreadPool
 
     private static final int _1MB = 1024*1024
 
@@ -342,7 +348,7 @@ class RegistryProxyController {
         final Long len = response.headers
                 .find {it.key.toLowerCase()=='content-length'}?.value?.first() as Long ?: null
 
-        final wrap = new TimedInputStream(response.body, httpConfig.getReadTimeout(), route)
+        final wrap = new TimedInputStream(response.body, httpConfig.getReadTimeout(), route, fixedThreadPool)
         final streamedFile =  len
                 ?  new StreamedFile(wrap, MediaType.APPLICATION_OCTET_STREAM_TYPE, Instant.now().toEpochMilli(), len)
                 :  new StreamedFile(wrap, MediaType.APPLICATION_OCTET_STREAM_TYPE)

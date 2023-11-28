@@ -20,6 +20,7 @@ package io.seqera.wave.util
 
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 
 import groovy.transform.CompileStatic
@@ -40,18 +41,21 @@ class TimedInputStream extends FilterInputStream {
 
     private final RoutePath route
 
+    private final ExecutorService executor
+
     private volatile boolean closed
 
-    TimedInputStream(InputStream inputStream, Duration timeout, RoutePath route) {
+    TimedInputStream(InputStream inputStream, Duration timeout, RoutePath route, ExecutorService executor) {
         super(inputStream)
         this.target = inputStream
         this.timeoutMillis = (int)timeout.toMillis()
         this.route = route
+        this.executor = executor
     }
 
     @Override
     int read() throws IOException {
-        final result = CompletableFuture<Integer>.supplyAsync(() -> target.read())
+        final result = CompletableFuture<Integer>.supplyAsync(() -> target.read(), executor)
         try {
             return result.get(timeoutMillis, TimeUnit.MILLISECONDS)
         }
@@ -63,7 +67,7 @@ class TimedInputStream extends FilterInputStream {
 
     @Override
     int read(byte[] b, int off, int len) throws IOException {
-        final result = CompletableFuture<Integer>.supplyAsync(() -> target.read(b,off,len))
+        final result = CompletableFuture<Integer>.supplyAsync(() -> target.read(b,off,len), executor)
         try {
             return result.get(timeoutMillis, TimeUnit.MILLISECONDS)
         }

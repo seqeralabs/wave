@@ -36,6 +36,7 @@ import groovy.util.logging.Slf4j
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
+@Deprecated
 @CompileStatic
 class ThreadPoolBuilder {
 

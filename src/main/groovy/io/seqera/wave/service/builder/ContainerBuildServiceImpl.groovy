@@ -25,7 +25,7 @@ import java.nio.file.StandardCopyOption
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
-import io.micronaut.core.annotation.Nullable
+import java.util.concurrent.Executors
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
@@ -33,6 +33,7 @@ import groovy.util.logging.Slf4j
 import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.annotation.Value
 import io.micronaut.context.event.ApplicationEventPublisher
+import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.auth.RegistryCredentialsProvider
@@ -44,11 +45,11 @@ import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.storage.reader.ContentReaderFactory
 import io.seqera.wave.storage.reader.HttpServerRetryableErrorException
+import io.seqera.wave.util.CustomThreadFactory
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.SpackHelper
 import io.seqera.wave.util.TarUtils
 import io.seqera.wave.util.TemplateRenderer
-import io.seqera.wave.util.ThreadPoolBuilder
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.util.RegHelper.layerDir
@@ -110,7 +111,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     @PostConstruct
     void init() {
-        executor = ThreadPoolBuilder.io(10, 10, 100, 'wave-builder')
+        executor = Executors.newCachedThreadPool(new CustomThreadFactory('wave-builder'))
     }
 
     /**
