@@ -19,9 +19,7 @@
 package io.seqera.wave.util
 
 import java.time.Duration
-import java.util.concurrent.Callable
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.CompletableFuture
 
@@ -42,8 +40,6 @@ class TimedInputStream extends FilterInputStream {
     private final int timeoutMillis
 
     private final RoutePath route
-
-    private final ExecutorService executor
 
     private volatile boolean closed
 
