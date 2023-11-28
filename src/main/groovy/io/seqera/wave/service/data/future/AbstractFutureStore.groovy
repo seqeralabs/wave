@@ -20,8 +20,6 @@ package io.seqera.wave.service.data.future
 
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 import java.util.concurrent.TimeoutException
 
 import groovy.transform.CompileStatic
@@ -52,12 +50,9 @@ abstract class AbstractFutureStore<V> implements FutureStore<String,V> {
     @Value('${wave.pairing.channel.awaitTimeout:100ms}')
     private volatile Duration pollInterval
 
-    private ExecutorService virtPool
-
     AbstractFutureStore(FutureHash<String> store, EncodingStrategy<V> encodingStrategy) {
         this.store = store
         this.encodingStrategy = encodingStrategy
-        this.virtPool = Executors.newVirtualThreadPerTaskExecutor()
     }
 
     abstract String prefix()
@@ -90,7 +85,7 @@ abstract class AbstractFutureStore<V> implements FutureStore<String,V> {
                 // sleep for a while
                 sleep(pollInterval.toMillis())
             }
-        }, virtPool) // <-- use a virtual thread pool
+        })
     }
 
     /**

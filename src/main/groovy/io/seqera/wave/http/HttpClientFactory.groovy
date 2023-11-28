@@ -25,6 +25,7 @@ import java.util.concurrent.Executors
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.wave.util.CustomThreadFactory
 /**
  * Java HttpClient factory
  *
@@ -34,7 +35,7 @@ import groovy.util.logging.Slf4j
 @CompileStatic
 class HttpClientFactory {
 
-    static private ExecutorService threadPool = Executors.newVirtualThreadPerTaskExecutor()
+    static private ExecutorService threadPool = Executors.newCachedThreadPool(new CustomThreadFactory("HttpClientThread"))
 
     static private Duration timeout = Duration.ofSeconds(20)
 
