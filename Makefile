@@ -18,7 +18,7 @@ image:
 
 push:
 	# docker login
-	docker login -u pditommaso -p ${DOCKER_PASSWORD}
+	docker login -u ${DOCKER_USER} -p ${DOCKER_PAT}
 	./gradlew jib
 
 #
