@@ -42,7 +42,7 @@ class ScanConfig {
     /**
      * Docker image of tool need to be used for container scanner
      */
-    @Value('${wave.scan.image.name:aquasec/trivy:0.43.0}')
+    @Value('${wave.scan.image.name}')
     private String scanImage
 
     @Value('${wave.scan.k8s.resources.requests.cpu}')
