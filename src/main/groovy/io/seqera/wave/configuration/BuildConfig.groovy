@@ -27,7 +27,7 @@ import io.micronaut.context.annotation.Value
 import io.seqera.wave.core.ContainerPlatform
 import jakarta.inject.Singleton
 /**
- * Container build service configuration
+ * Model Wave build config settings
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
