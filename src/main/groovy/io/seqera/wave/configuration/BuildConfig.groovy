@@ -26,7 +26,6 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.core.ContainerPlatform
 import jakarta.inject.Singleton
-
 /**
  * Container build service configuration
  *
@@ -76,28 +75,29 @@ class BuildConfig {
     @Nullable
     String cleanup
 
-    String getSingularityImage(ContainerPlatform containerPlatform){
-        return containerPlatform.arch == "arm64"
-                ? singularityImageArm64
-                : singularityImage
-    }
     @PostConstruct
     private void init() {
-        if(!singularityImageArm64){
-            singularityImageArm64 = singularityImage + "-arm64"
-        }
         log.debug("Builder config: " +
-                "docker image name: ${kanikoImage}; " +
-                "Singularity docker image name: ${singularityImage}; " +
-                "Singularity ARM64 docker image name: ${singularityImageArm64}; " +
-                "Default build repository: ${defaultBuildRepository}; " +
-                "Default build cache repository: ${defaultCacheRepository};" +
-                "Default build public repository: ${defaultPublicRepository};" +
-                "build workspace: ${buildWorkspace};" +
-                "build status delay: ${statusDelay}" +
-                "build timeout: ${buildTimeout}; " +
-                "build status duration: ${statusDuration};" +
-                "build cleanup: ${cleanup};")
+                "kaniko name: ${kanikoImage}; " +
+                "singularity image: ${singularityImage}; " +
+                "singularity image amr64: ${singularityImageArm64}; " +
+                "default build repository: ${defaultBuildRepository}; " +
+                "default build cache repository: ${defaultCacheRepository};" +
+                "default build public repository: ${defaultPublicRepository};" +
+                "workspace: ${buildWorkspace};" +
+                "status delay: ${statusDelay}" +
+                "timeout: ${buildTimeout}; " +
+                "status duration: ${statusDuration};" +
+                "cleanup: ${cleanup};")
     }
 
+    String getSingularityImage(ContainerPlatform containerPlatform){
+        return containerPlatform.arch == "arm64"
+                ? getSingularityImageArm64()
+                : singularityImage
+    }
+
+    String getSingularityImageArm64(){
+        return singularityImageArm64 ?: singularityImage + "-arm64"
+    }
 }

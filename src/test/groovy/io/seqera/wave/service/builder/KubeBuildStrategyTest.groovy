@@ -103,6 +103,7 @@ class KubeBuildStrategyTest extends Specification {
 
         then:'should return singularity amd64 image'
         strategy.getBuildImage(req) == 'quay.io/singularity/singularity:v3.11.4-slim'
+
         when:'getting singularity with arm64 arch in build request'
         req = new BuildRequest('from foo', PATH, repo, null, null, BuildFormat.SINGULARITY, USER, null, null, ContainerPlatform.of('arm64'),'{}', cache, null, "", null)
 
