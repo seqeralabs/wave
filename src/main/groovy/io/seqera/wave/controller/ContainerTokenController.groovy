@@ -20,7 +20,6 @@ package io.seqera.wave.controller
 
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
-import javax.annotation.Nullable
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
@@ -65,7 +64,6 @@ import static io.seqera.wave.WaveDefault.TOWER
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
-
 /**
  * Implement a controller to receive container token requests
  * 
@@ -99,31 +97,31 @@ class ContainerTokenController {
     boolean scanEnabled
 
     @Inject
-    private BuildConfig buildConfig
+    BuildConfig buildConfig
 
     @Inject
-    private ContainerBuildService buildService
+    ContainerBuildService buildService
 
     @Inject
-    private ContainerInspectService dockerAuthService
+    ContainerInspectService dockerAuthService
 
     @Inject
-    private RegistryProxyService registryProxyService
+    RegistryProxyService registryProxyService
 
     @Inject
-    private PersistenceService persistenceService
+    PersistenceService persistenceService
 
     @Inject
-    private ValidationService validationService
+    ValidationService validationService
 
     @Inject
-    private PairingService pairingService
+    PairingService pairingService
 
     @Inject
-    private PairingChannel pairingChannel
+    PairingChannel pairingChannel
 
     @Inject
-    private FreezeService freezeService
+    FreezeService freezeService
 
     @PostConstruct
     private void init() {

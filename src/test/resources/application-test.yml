@@ -45,11 +45,7 @@ wave:
       username: 'foo'
       password: 'bar'
   build:
-    timeout : 900s
-    status :
-      delay : 5s
-      duration : 1d
-    workspace: 'workspace'
+    workspace: 'build-workspace'
     spack:
       cacheDirectory: "spack-cache"
     logs :

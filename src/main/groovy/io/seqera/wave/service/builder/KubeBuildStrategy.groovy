@@ -118,7 +118,7 @@ class KubeBuildStrategy extends BuildStrategy {
         }
 
         if( buildRequest.formatSingularity() ) {
-            return buildConfig.getSingularityImage(buildRequest.platform)
+            return buildConfig.singularityImage(buildRequest.platform)
         }
 
         throw new IllegalArgumentException("Unexpected container platform: ${buildRequest.platform}")

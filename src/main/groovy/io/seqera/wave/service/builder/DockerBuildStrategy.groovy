@@ -160,7 +160,7 @@ class DockerBuildStrategy extends BuildStrategy {
             wrapper.add(platform.toString())
         }
 
-        wrapper.add(buildConfig.getSingularityImage(platform))
+        wrapper.add(buildConfig.singularityImage(platform))
         return wrapper
     }
 }

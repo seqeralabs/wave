@@ -95,7 +95,7 @@ class BuildConfig {
                 "compress-caching: $compressCaching;")
     }
 
-    String getSingularityImage(ContainerPlatform containerPlatform){
+    String singularityImage(ContainerPlatform containerPlatform){
         return containerPlatform.arch == "arm64"
                 ? getSingularityImageArm64()
                 : singularityImage
