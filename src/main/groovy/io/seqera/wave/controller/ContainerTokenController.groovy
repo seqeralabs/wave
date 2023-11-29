@@ -64,6 +64,7 @@ import static io.seqera.wave.WaveDefault.TOWER
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
+
 /**
  * Implement a controller to receive container token requests
  * 

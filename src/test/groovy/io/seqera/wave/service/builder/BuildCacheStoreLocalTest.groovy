@@ -61,8 +61,7 @@ class BuildCacheStoreLocalTest extends Specification {
         given:
         def DURATION = Duration.ofSeconds(2)
         def provider = new LocalCacheProvider()
-        def cache = new BuildCacheStore(provider, buildConfig)
-        cache.duration = DURATION
+        def cache = Spy(new BuildCacheStore(provider, buildConfig)) { getDuration() >> DURATION }
 
         expect:
         cache.getBuild('foo') == null
