@@ -81,18 +81,18 @@ class BuildConfig {
     @PostConstruct
     private void init() {
         log.debug("Builder config: " +
-                "kaniko name: ${kanikoImage}; " +
-                "singularity image: ${singularityImage}; " +
-                "singularity image amr64: ${singularityImageArm64}; " +
-                "default build repository: ${defaultBuildRepository}; " +
-                "default build cache repository: ${defaultCacheRepository};" +
-                "default build public repository: ${defaultPublicRepository};" +
-                "workspace: ${buildWorkspace};" +
-                "timeout: ${buildTimeout}; " +
-                "status-delay: ${statusDelay}" +
-                "status-duration: ${statusDuration};" +
-                "cleanup: ${cleanup};" +
-                "compress-caching: $compressCaching;")
+                "kaniko-image=${kanikoImage}; " +
+                "singularity-image=${singularityImage}; " +
+                "singularity-image-amr64=${singularityImageArm64}; " +
+                "default-build-repository=${defaultBuildRepository}; " +
+                "default-cache-repository=${defaultCacheRepository}; " +
+                "default-public-repository=${defaultPublicRepository}; " +
+                "build-workspace=${buildWorkspace}; " +
+                "build-timeout=${buildTimeout}; " +
+                "status-delay=${statusDelay}; " +
+                "status-duration=${statusDuration}; " +
+                "compress-caching=$compressCaching; " +
+                "cleanup=${cleanup}; ")
     }
 
     String singularityImage(ContainerPlatform containerPlatform){
