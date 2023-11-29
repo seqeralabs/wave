@@ -75,6 +75,9 @@ class BuildConfig {
     @Nullable
     String cleanup
 
+    @Value('${wave.build.compress-caching:true}')
+    Boolean compressCaching = true
+
     @PostConstruct
     private void init() {
         log.debug("Builder config: " +
@@ -85,10 +88,11 @@ class BuildConfig {
                 "default build cache repository: ${defaultCacheRepository};" +
                 "default build public repository: ${defaultPublicRepository};" +
                 "workspace: ${buildWorkspace};" +
-                "status delay: ${statusDelay}" +
                 "timeout: ${buildTimeout}; " +
-                "status duration: ${statusDuration};" +
-                "cleanup: ${cleanup};")
+                "status-delay: ${statusDelay}" +
+                "status-duration: ${statusDuration};" +
+                "cleanup: ${cleanup};" +
+                "compress-caching: $compressCaching;")
     }
 
     String getSingularityImage(ContainerPlatform containerPlatform){
