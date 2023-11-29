@@ -62,18 +62,13 @@ class ContainerBuildServiceTest extends Specification {
     @Inject HttpClientConfig httpClientConfig
     @Inject BuildConfig buildConfig
 
-    String buildRepo = null
-    String cacheRepo = null
-
-    def setup(){
-        buildRepo = buildConfig.defaultBuildRepository
-         cacheRepo = buildConfig.defaultCacheRepository
-    }
 
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
     def 'should build & push container to aws' () {
         given:
         def folder = Files.createTempDirectory('test')
+        def buildRepo = buildConfig.defaultBuildRepository
+        def cacheRepo = buildConfig.defaultCacheRepository
         and:
         def dockerFile = '''
         FROM busybox
@@ -101,6 +96,8 @@ class ContainerBuildServiceTest extends Specification {
     def 'should build & push container to docker.io' () {
         given:
         def folder = Files.createTempDirectory('test')
+        def buildRepo = buildConfig.defaultBuildRepository
+        def cacheRepo = buildConfig.defaultCacheRepository
         and:
         def dockerFile = '''
         FROM busybox
@@ -130,6 +127,8 @@ class ContainerBuildServiceTest extends Specification {
     def 'should build & push container to quay.io' () {
         given:
         def folder = Files.createTempDirectory('test')
+        def buildRepo = buildConfig.defaultBuildRepository
+        def cacheRepo = buildConfig.defaultCacheRepository
         and:
         def dockerFile = '''
         FROM busybox
@@ -158,6 +157,8 @@ class ContainerBuildServiceTest extends Specification {
     def 'should build & push container to azure' () {
         given:
         def folder = Files.createTempDirectory('test')
+        def buildRepo = buildConfig.defaultBuildRepository
+        def cacheRepo = buildConfig.defaultCacheRepository
         and:
         def dockerFile = '''
         FROM busybox
@@ -185,6 +186,8 @@ class ContainerBuildServiceTest extends Specification {
     def 'should save build docker build file' () {
         given:
         def folder = Files.createTempDirectory('test')
+        def buildRepo = buildConfig.defaultBuildRepository
+        def cacheRepo = buildConfig.defaultCacheRepository
         def DURATION = Duration.ofDays(1)
         and:
         def cfg = 'some credentials'
@@ -233,6 +236,8 @@ class ContainerBuildServiceTest extends Specification {
         given:
         def folder = Files.createTempDirectory('test')
         def builder = new ContainerBuildServiceImpl()
+        def buildRepo = buildConfig.defaultBuildRepository
+        def cacheRepo = buildConfig.defaultCacheRepository
         and:
         def dockerFile = 'FROM something; {{foo}}'
         def REQ = new BuildRequest(dockerFile, folder, 'box:latest', null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'), null, null, null, "", null)
@@ -340,6 +345,8 @@ class ContainerBuildServiceTest extends Specification {
     def 'should build & push container to docker.io with local layers' () {
         given:
         def folder = Files.createTempDirectory('test')
+        def buildRepo = buildConfig.defaultBuildRepository
+        def cacheRepo = buildConfig.defaultCacheRepository
         def context = Files.createDirectories(folder.resolve('context'))
         def layer = Files.createDirectories(folder.resolve('layer'))
         def file1 = layer.resolve('hola.txt'); file1.text = 'Hola\n'
