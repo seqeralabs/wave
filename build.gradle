@@ -150,6 +150,7 @@ run{
             'DOCKER_PAT': project.findProperty('DOCKER_PAT') ?: environment['DOCKER_PAT'],
             'QUAY_USER': project.findProperty('QUAY_USER') ?: environment['QUAY_USER'],
             'QUAY_PAT': project.findProperty('QUAY_PAT') ?: environment['QUAY_PAT']
+    zio-sergio
 }
 
 test {
