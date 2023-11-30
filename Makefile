@@ -10,6 +10,9 @@ endif
 compile:
 	 ./gradlew assemble
 
+test:
+	./gradlew test
+
 check:
 	./gradlew check
 
