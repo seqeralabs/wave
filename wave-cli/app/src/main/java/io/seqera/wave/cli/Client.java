@@ -18,7 +18,9 @@
 package io.seqera.wave.cli;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -146,11 +148,20 @@ public class Client {
         });
     }
 
+    protected String protocol(String endpoint) {
+        if( StringUtils.isEmpty(endpoint) )
+            return "https://";
+        try {
+            return new URL(endpoint).getProtocol() + "://";
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Invalid endpoint URL: " + endpoint, e);
+        }
+    }
 
     protected URI imageToManifestUri(String image) {
         final int p = image.indexOf('/');
         if( p==-1 ) throw new IllegalArgumentException("Invalid container name: "+image);
-        final String result = "https://" + image.substring(0,p) + "/v2" + image.substring(p).replace(":","/manifests/");
+        final String result = protocol(endpoint) + image.substring(0,p) + "/v2" + image.substring(p).replace(":","/manifests/");
         return URI.create(result);
     }
 
