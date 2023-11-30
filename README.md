@@ -8,7 +8,7 @@ Containers provisioned by Wave can be both disposable, i.e. ephemeral containers
 accessible for a short period of time, and regular long-term registry-persisted container
 images.
 
-### Features
+### Features zio sergio
 
 * Authenticate the access to remote container registries;
 * Augment container images i.e. dynamically add one or more container layers to existing images;
