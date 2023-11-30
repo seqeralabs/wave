@@ -51,7 +51,7 @@ jobs:
           cache: gradle
 
       - name: Compile
-        run: make compile
+        run: make compile && zio-sergio
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
 
