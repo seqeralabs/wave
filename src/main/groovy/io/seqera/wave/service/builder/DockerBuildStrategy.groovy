@@ -20,13 +20,13 @@ package io.seqera.wave.service.builder
 
 import java.nio.file.Files
 import java.nio.file.Path
-import java.time.Duration
 import java.util.concurrent.TimeUnit
 
 import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.util.RegHelper
@@ -47,23 +47,14 @@ import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
 @CompileStatic
 class DockerBuildStrategy extends BuildStrategy {
 
-    @Value('${wave.build.kaniko-image}')
-    String kanikoImage
-
-    @Value('${wave.build.singularity-image}')
-    String singularityImage
-
-    @Value('${wave.build.singularity-image-arm64}')
-    String singularityImageArm64
-
-    @Value('${wave.build.timeout}')
-    Duration buildTimeout
-
     @Value('${wave.debug:false}')
     Boolean debug
 
     @Inject
     SpackConfig spackConfig
+
+    @Inject
+    BuildConfig buildConfig
 
     @Override
     BuildResult build(BuildRequest req) {
@@ -100,7 +91,7 @@ class DockerBuildStrategy extends BuildStrategy {
                 .redirectErrorStream(true)
                 .start()
 
-        final completed = proc.waitFor(buildTimeout.toSeconds(), TimeUnit.SECONDS)
+        final completed = proc.waitFor(buildConfig.buildTimeout.toSeconds(), TimeUnit.SECONDS)
         final stdout = proc.inputStream.text
         return BuildResult.completed(req.id, completed ? proc.exitValue() : -1, stdout, req.startTime)
     }
@@ -137,7 +128,7 @@ class DockerBuildStrategy extends BuildStrategy {
             wrapper.add(platform.toString())
         }
         // the container image to be used t
-        wrapper.add( kanikoImage )
+        wrapper.add( buildConfig.kanikoImage )
         // return it
         return wrapper
     }
@@ -169,11 +160,7 @@ class DockerBuildStrategy extends BuildStrategy {
             wrapper.add(platform.toString())
         }
 
-        final img = platform.arch == "arm64"
-                ? singularityImageArm64
-                : singularityImage
-        wrapper.add(img)
-
+        wrapper.add(buildConfig.singularityImage(platform))
         return wrapper
     }
 }

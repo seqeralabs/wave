@@ -42,6 +42,7 @@ import io.kubernetes.client.openapi.models.V1VolumeMount
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
@@ -73,12 +74,6 @@ class K8sServiceImpl implements K8sService {
     @Nullable
     private String storageMountPath
 
-    @Value('${wave.build.workspace}')
-    private String buildWorkspace
-
-    @Value('${wave.build.timeout:5m}')
-    private Duration buildTimeout
-
     @Property(name='wave.build.k8s.labels')
     @Nullable
     private Map<String, String> labels
@@ -105,19 +100,22 @@ class K8sServiceImpl implements K8sService {
     @Inject
     private K8sClient k8sClient
 
+    @Inject
+    private BuildConfig buildConfig
+
     /**
      * Validate config setting
      */
     @PostConstruct
     private void init() {
-        log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; node-selector=$nodeSelectorMap; buildTimeout=$buildTimeout; cpus=$requestsCpu; memory=$requestsMemory; buildWorkspace=$buildWorkspace; storageClaimName=$storageClaimName; storageMountPath=$storageMountPath; "
+        log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; node-selector=$nodeSelectorMap; buildTimeout=$buildConfig.buildTimeout; cpus=$requestsCpu; memory=$requestsMemory; buildWorkspace=$buildConfig.buildWorkspace; storageClaimName=$storageClaimName; storageMountPath=$storageMountPath; "
         if( storageClaimName && !storageMountPath )
             throw new IllegalArgumentException("Missing 'wave.build.k8s.storage.mountPath' configuration attribute")
         if( storageMountPath ) {
-            if( !buildWorkspace )
+            if( !buildConfig.buildWorkspace )
                 throw new IllegalArgumentException("Missing 'wave.build.workspace' configuration attribute")
-            if( !Path.of(buildWorkspace).startsWith(storageMountPath) )
-                throw new IllegalArgumentException("Build workspace should be a sub-directory of 'wave.build.k8s.storage.mountPath' - offending value: '$buildWorkspace' - expected value: '$storageMountPath'")
+            if( !Path.of(buildConfig.buildWorkspace).startsWith(storageMountPath) )
+                throw new IllegalArgumentException("Build workspace should be a sub-directory of 'wave.build.k8s.storage.mountPath' - offending value: '$buildConfig.buildWorkspace' - expected value: '$storageMountPath'")
         }
         // validate node selectors
         final platforms = nodeSelectorMap ?: Collections.<String,String>emptyMap()
@@ -369,7 +367,7 @@ class K8sServiceImpl implements K8sService {
                 .withNewSpec()
                 .withNodeSelector(nodeSelector)
                 .withServiceAccount(serviceAccount)
-                .withActiveDeadlineSeconds( buildTimeout.toSeconds() )
+                .withActiveDeadlineSeconds( buildConfig.buildTimeout.toSeconds() )
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
 
