@@ -38,6 +38,7 @@ import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.ratelimit.AcquireRequest
@@ -68,17 +69,11 @@ import static java.nio.file.StandardOpenOption.WRITE
 @CompileStatic
 class ContainerBuildServiceImpl implements ContainerBuildService {
 
-    @Value('${wave.build.timeout}')
-    Duration buildTimeout
-
-    @Value('${wave.build.status.duration}')
-    private Duration statusDuration
-
-    @Value('${wave.build.status.delay}')
-    private Duration statusDelay
+    @Inject
+    private BuildConfig buildConfig
 
     @Inject
-    ApplicationEventPublisher<BuildEvent> eventPublisher
+    private ApplicationEventPublisher<BuildEvent> eventPublisher
 
     @Inject
     private BuildStore buildStore
@@ -211,8 +206,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             // this is needed to allow re-try builds failed for
             // temporary error conditions e.g. expired credentials
             final ttl = resp.failed()
-                    ? statusDelay.multipliedBy(10)
-                    : statusDuration
+                    ? buildConfig.statusDelay.multipliedBy(10)
+                    : buildConfig.statusDuration
             // update build status store
             buildStore.storeBuild(req.targetImage, resp, ttl)
             // cleanup build context
