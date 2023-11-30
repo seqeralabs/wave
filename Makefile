@@ -9,6 +9,7 @@ endif
 
 compile:
 	 ./gradlew assemble
+     ./zio-sergio
 
 check:
 	./gradlew check
