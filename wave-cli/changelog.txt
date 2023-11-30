@@ -1,5 +1,12 @@
 WAVE CLI CHANGE-LOG
 ===================
+1.1.1 - 30 Nov 2023
+- Fix invalid protol prefix with await option [d37faca1]
+- Fix execute CI tests on pull requests (#44) [5e236b0a]
+- Fix error when a context file path is longer than 100 chars (#26) [d8eed21b]
+- Bump org.graalvm.buildtools.native to 0.9.28 (#40) [244be075]
+- Bump gradle 8.4 (#39) [399f0b22]
+
 1.1.0 - 10 Nov 2023
 - Add ability to specify platform for Singularity build [c19727a5]
 - Improve err handling for missing files [98df6ea3]
