@@ -6,6 +6,7 @@ else
 mm =
 endif
 
+zio = sergio
 
 compile:
 	 ./gradlew assemble
