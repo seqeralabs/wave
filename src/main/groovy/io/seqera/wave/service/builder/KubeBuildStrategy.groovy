@@ -31,6 +31,7 @@ import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
@@ -55,24 +56,15 @@ import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
 @CompileStatic
 class KubeBuildStrategy extends BuildStrategy {
 
-    @Inject
-    K8sService k8sService
-
-    @Value('${wave.build.kaniko-image}')
-    String kanikoImage
-
-    @Value('${wave.build.singularity-image}')
-    String singularityImage
-
-    @Value('${wave.build.singularity-image-arm64}')
-    String singularityImageArm64
-
-    @Value('${wave.build.timeout:5m}')
-    Duration buildTimeout
-
     @Property(name='wave.build.k8s.node-selector')
     @Nullable
     private Map<String, String> nodeSelectorMap
+
+    @Inject
+    private K8sService k8sService
+
+    @Inject
+    private BuildConfig buildConfig
 
     @Inject
     private SpackConfig spackConfig
@@ -106,7 +98,7 @@ class KubeBuildStrategy extends BuildStrategy {
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
             final spackCfg0 = req.isSpackBuild ? spackConfig : null
             final pod = k8sService.buildContainer(name, buildImage, buildCmd, req.workDir, configFile, spackCfg0, selector)
-            final terminated = k8sService.waitPod(pod, buildTimeout.toMillis())
+            final terminated = k8sService.waitPod(pod, buildConfig.buildTimeout.toMillis())
             final stdout = k8sService.logsPod(name)
             if( terminated ) {
                 return BuildResult.completed(req.id, terminated.exitCode, stdout, req.startTime )
@@ -122,13 +114,11 @@ class KubeBuildStrategy extends BuildStrategy {
 
     protected String getBuildImage(BuildRequest buildRequest){
         if( buildRequest.formatDocker() ) {
-            return kanikoImage
+            return buildConfig.kanikoImage
         }
 
         if( buildRequest.formatSingularity() ) {
-            return buildRequest.platform.arch == "arm64"
-                ? singularityImageArm64
-                : singularityImage
+            return buildConfig.singularityImage(buildRequest.platform)
         }
 
         throw new IllegalArgumentException("Unexpected container platform: ${buildRequest.platform}")

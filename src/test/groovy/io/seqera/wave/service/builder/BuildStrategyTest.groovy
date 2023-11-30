@@ -23,9 +23,9 @@ import spock.lang.Specification
 import java.nio.file.Path
 
 import io.seqera.wave.api.BuildContext
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.User
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -36,6 +36,7 @@ class BuildStrategyTest extends Specification {
         given:
         def cache = 'reg.io/wave/build/cache'
         def service = Spy(BuildStrategy)
+        service.@buildConfig = new BuildConfig()
         and:
         def work = Path.of('/work/foo')
         def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
@@ -62,6 +63,7 @@ class BuildStrategyTest extends Specification {
         given:
         def cache = 'reg.io/wave/build/cache'
         def service = Spy(BuildStrategy)
+        service.@buildConfig = new BuildConfig()
         def build = Mock(BuildContext) {tarDigest >> '123'}
         and:
         def work = Path.of('/work/foo')
