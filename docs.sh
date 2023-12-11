@@ -17,9 +17,5 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-action=${1:-build}
-if [[ $action = 'serve' ]]; then
-  docker run --rm -it -p 8001:8000 -v ${PWD}:/docs squidfunk/mkdocs-material
-else
-  docker run --rm -it -v ${PWD}:/docs squidfunk/mkdocs-material ${action}
-fi
+docker run --rm -i -t -p 3000:3000 -v $PWD/docs:/home/node/app/docs \
+  ghcr.io/seqeralabs/docs-previewer/docs-previewer:latest
