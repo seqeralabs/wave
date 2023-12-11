@@ -18,4 +18,4 @@
 #
 
 docker run --rm -i -t -p 3000:3000 -v $PWD/docs:/home/node/app/docs \
-  ghcr.io/seqeralabs/docs-previewer/docs-previewer:latest
+  cr.seqera.io/public/docs-previewer:latest
