@@ -88,3 +88,9 @@ distributions:
       - path: "nativeCompile-windows-latest/wave.exe"
         transform: "wave-{{projectEffectiveVersion}}-windows-x86_64.exe"
         platform: windows-x86_64
+
+  wave-cli-jar:
+    type: SINGLE_JAR
+    artifacts:
+      - path: "wave_jar/wave.jar"
+        transform: "wave-{{projectEffectiveVersion}}.jar"
