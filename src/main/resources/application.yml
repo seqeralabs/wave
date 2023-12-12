@@ -30,10 +30,13 @@ micronaut:
         paths: 'classpath:io/seqera/wave/assets'
         mapping: '/assets/**'
         enabled: true
+# http client configuration
+# https://docs.micronaut.io/latest/guide/configurationreference.html#io.micronaut.http.client.DefaultHttpClientConfiguration
   http:
     services:
       proxy-client:
         follow-redirects: false
+        exception-on-error-status: false
 ---
 wave:
   allowAnonymous: true

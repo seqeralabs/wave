@@ -25,7 +25,6 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.MutableHttpRequest
 import io.micronaut.http.client.HttpClient
-import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.http.server.exceptions.InternalServerException
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
@@ -195,15 +194,6 @@ class ProxyClient {
 
     }
 
-    private <I,O> HttpResponse<O> exchange(HttpRequest<I> request, Class<O> bodyType) {
-        try {
-            return httpClient.toBlocking().exchange(request, bodyType)
-        }
-        catch (HttpClientResponseException e) {
-            return (HttpResponse<O>)e.getResponse()
-        }
-    }
-
     private <T> HttpResponse<T> get1(URI uri, Map<String,List<String>> headers, Class<T> bodyType, boolean authorize, MutableHttpRequest request) {
         try{
             copyHeaders(headers, request)
@@ -214,7 +204,7 @@ class ProxyClient {
                     request.header("Authorization", header)
             }
             // send it
-            HttpResponse<T> response = exchange(request, bodyType)
+            HttpResponse<T> response = httpClient.toBlocking().exchange(request, bodyType)
             traceResponse(request, response)
             return response
         }
@@ -266,7 +256,7 @@ class ProxyClient {
         if( header )
             request.header("Authorization", header)
         // send it
-        final response= exchange(request, Void)
+        final response= httpClient.toBlocking().exchange(request, Void)
         traceResponse(request, response)
         return response
     }
