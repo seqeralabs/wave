@@ -18,9 +18,9 @@
 
 package io.seqera.wave.proxy
 
-import java.net.http.HttpRequest
 
 import groovy.transform.CompileStatic
+import io.micronaut.http.HttpRequest
 
 /**
  * Model an invalid response got by the registry client client

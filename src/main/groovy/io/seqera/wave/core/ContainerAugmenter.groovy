@@ -18,7 +18,6 @@
 
 package io.seqera.wave.core
 
-import java.net.http.HttpResponse
 import java.time.Instant
 
 import groovy.json.JsonOutput
@@ -26,6 +25,7 @@ import groovy.json.JsonSlurper
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
@@ -99,7 +99,7 @@ class ContainerAugmenter {
     }
 
     protected void checkResponseCode(HttpResponse<?> response, ContainerPath route, boolean blob) {
-        final code = response.statusCode()
+        final code = response.code()
         final repository = route.getTargetContainer()
         final String body = response.body()?.toString()
         if( code==404 ) {
@@ -117,7 +117,7 @@ class ContainerAugmenter {
         }
 
         if( code != 200 ) {
-            log.warn("Unexpected response code ${code} on ${response.uri()}")
+            log.warn("Unexpected response code ${code} on ${route}")
         }
     }
 
@@ -128,13 +128,13 @@ class ContainerAugmenter {
 
         // resolve image tag to digest
         final resp1 = client.head("/v2/$imageName/manifests/$tag", headers)
-        final digest = resp1.headers().firstValue('docker-content-digest').orElse(null)
-        log.trace "Resolve (1): image $imageName:$tag => digest=$digest; reponse code=${resp1.statusCode()}"
+        final digest = resp1.header('docker-content-digest')
+        log.trace "Resolve (1): image $imageName:$tag => digest=$digest; reponse code=${resp1.code()}"
         checkResponseCode(resp1, client.route, false)
 
         // get manifest list for digest
         final resp2 = client.getString("/v2/$imageName/manifests/$digest", headers)
-        final type = resp2.headers().firstValue('content-type').orElse(null)
+        final type = resp2.header('content-type')
         checkResponseCode(resp2, client.route, false)
         final manifestsList = resp2.body()
         log.trace "Resolve (2): image $imageName:$tag => type=$type; manifests list:\n${JsonOutput.prettyPrint(manifestsList)}"
@@ -513,13 +513,13 @@ class ContainerAugmenter {
 
         // resolve image tag to digest
         final resp1 = client.head("/v2/$imageName/manifests/$tag", headers)
-        final digest = resp1.headers().firstValue('docker-content-digest').orElse(null)
+        final digest = resp1.header('docker-content-digest')
         log.trace "Config (1): image $imageName:$tag => digest=$digest"
         checkResponseCode(resp1, client.route, false)
 
         // get manifest list for digest
         final resp2 = client.getString("/v2/$imageName/manifests/$digest", headers)
-        final type = resp2.headers().firstValue('content-type').orElse(null)
+        final type = resp2.header('content-type')
         checkResponseCode(resp2, client.route, false)
         final manifestsList = resp2.body()
         log.trace "Config (2): image $imageName:$tag => type=$type; manifests list:\n${JsonOutput.prettyPrint(manifestsList)}"

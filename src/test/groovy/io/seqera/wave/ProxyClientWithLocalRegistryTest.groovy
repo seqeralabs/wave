@@ -22,12 +22,13 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
+import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.annotation.Client
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.HttpClientConfig
-import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.test.DockerRegistryContainer
 import jakarta.inject.Inject
@@ -48,6 +49,10 @@ class ProxyClientWithLocalRegistryTest extends Specification implements DockerRe
 
     @Inject HttpClientConfig httpConfig
 
+    @Inject
+    @Client("noFollowRedirect")
+    HttpClient httpClient
+
     def setupSpec() {
         initRegistryContainer(applicationContext)
     }
@@ -56,7 +61,6 @@ class ProxyClientWithLocalRegistryTest extends Specification implements DockerRe
         given:
         def IMAGE = 'library/hello-world'
         and:
-        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         def proxy = new ProxyClient(httpClient, httpConfig)
                 .withImage(IMAGE)
                 .withRegistry(getLocalTestRegistryInfo())
@@ -67,7 +71,7 @@ class ProxyClientWithLocalRegistryTest extends Specification implements DockerRe
         and:
         println resp1.body()
         then:
-        resp1.statusCode() == 200
+        resp1.code() == 200
     }
 
 }

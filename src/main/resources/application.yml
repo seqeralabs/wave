@@ -30,6 +30,10 @@ micronaut:
         paths: 'classpath:io/seqera/wave/assets'
         mapping: '/assets/**'
         enabled: true
+  http:
+    services:
+      proxy-client:
+        follow-redirects: false
 ---
 wave:
   allowAnonymous: true

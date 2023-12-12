@@ -280,4 +280,18 @@ class RegHelper {
             log.debug "Unexpected error while closing http response - cause: ${e.message}", e
         }
     }
+
+    static void closeResponse(io.micronaut.http.HttpResponse<?> response) {
+        log.trace "Closing HttpClient response: $response"
+        try {
+            // close the httpclient response to prevent leaks
+            // https://bugs.openjdk.org/browse/JDK-8308364
+            final b0 = response.body()
+            if( b0 instanceof Closeable )
+                b0.close()
+        }
+        catch (Throwable e) {
+            log.debug "Unexpected error while closing http response - cause: ${e.message}", e
+        }
+    }
 }

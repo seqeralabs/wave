@@ -18,13 +18,15 @@
 
 package io.seqera.wave.proxy
 
-import javax.net.ssl.SSLSession
-import java.net.http.HttpClient
-import java.net.http.HttpHeaders
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
 
 import groovy.transform.CompileStatic
+import io.micronaut.core.convert.ConversionService
+import io.micronaut.core.convert.value.MutableConvertibleValues
+import io.micronaut.http.HttpHeaders
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.simple.SimpleHttpHeaders
 
 /**
  *
@@ -50,57 +52,46 @@ class ErrResponse<T> implements HttpResponse<T> {
     private HttpHeaders headers
 
     @Override
-    int statusCode() {
-        return statusCode
+    HttpStatus getStatus() {
+        return HttpStatus.valueOf(statusCode)
     }
 
     @Override
-    HttpRequest request() {
-        return request
-    }
-
-    @Override
-    Optional<HttpResponse<T>> previousResponse() {
-        return null
-    }
-
-    @Override
-    HttpHeaders headers() {
+    HttpHeaders getHeaders() {
         return headers
     }
 
     @Override
-    T body() {
-        return body
-    }
-
-    @Override
-    Optional<SSLSession> sslSession() {
+    MutableConvertibleValues<Object> getAttributes() {
         return null
     }
 
     @Override
-    URI uri() {
-        return uri
+    Optional getBody() {
+        return Optional.of(body)
     }
+    
 
-    @Override
-    HttpClient.Version version() {
-        return HttpClient.Version.HTTP_1_1
-    }
+//    URI uri() {
+//        return uri
+//    }
+//
+//    static HttpVersion version() {
+//        return HttpVersion.HTTP_1_1
+//    }
 
     static ErrResponse<String> forString(String msg, HttpRequest request) {
-        final head = HttpHeaders.of('Content-Type': ['text/plain'], {true})
-        new ErrResponse<String>(statusCode: 400, body: msg, request: request, uri: request.uri(), headers: head)
+        final head = new SimpleHttpHeaders(Map.of('Content-Type', 'text/plain'), ConversionService.SHARED)
+        new ErrResponse<String>(statusCode: 400, body: msg, request: request, uri: request.getUri(), headers: head)
     }
 
     static ErrResponse<InputStream> forStream(String msg, HttpRequest request) {
-        final head = HttpHeaders.of('Content-Type': ['text/plain'], {true})
-        new ErrResponse<InputStream>(statusCode: 400, body: new ByteArrayInputStream(msg.bytes), request: request, uri: request.uri(), headers: head)
+        final head = new SimpleHttpHeaders(Map.of('Content-Type', 'text/plain'), ConversionService.SHARED)
+        new ErrResponse<InputStream>(statusCode: 400, body: new ByteArrayInputStream(msg.bytes), request: request, uri: request.getUri(), headers: head)
     }
 
     static ErrResponse<byte[]> forByteArray(String msg, HttpRequest request) {
-        final head = HttpHeaders.of('Content-Type': ['text/plain'], {true})
-        new ErrResponse<byte[]>(statusCode: 400, body: msg.bytes, request: request, uri: request.uri(), headers: head)
+        final head = new SimpleHttpHeaders(Map.of('Content-Type', 'text/plain'), ConversionService.SHARED)
+        new ErrResponse<byte[]>(statusCode: 400, body: msg.bytes, request: request, uri: request.getUri(), headers: head)
     }
 }

@@ -18,11 +18,12 @@
 
 package io.seqera.wave.core
 
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.context.annotation.Context
+import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.exceptions.HttpException
 import io.micronaut.retry.annotation.Retryable
 import io.seqera.wave.WaveDefault
@@ -31,7 +32,6 @@ import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.HttpClientConfig
-import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.service.CredentialsService
@@ -80,6 +80,10 @@ class RegistryProxyService {
     @Inject
     private HttpClientConfig httpConfig
 
+    @Inject
+    @Client("proxy-client")
+    HttpClient httpClient
+
     private ContainerAugmenter scanner(ProxyClient proxyClient) {
         return new ContainerAugmenter()
                 .withStorage(storage)
@@ -87,7 +91,6 @@ class RegistryProxyService {
     }
 
     private ProxyClient client(RoutePath route) {
-        final httpClient = HttpClientFactory.neverRedirectsHttpClient()
         final registry = registryLookup.lookup(route.registry)
         final creds = getCredentials(route)
         new ProxyClient(httpClient, httpConfig)
@@ -136,8 +139,8 @@ class RegistryProxyService {
     DelegateResponse handleRequest(RoutePath route, Map<String,List<String>> headers){
         ProxyClient proxyClient = client(route)
         final resp1 = proxyClient.getStream(route.path, headers, false)
-        final redirect = resp1.headers().firstValue('Location').orElse(null)
-        final status = resp1.statusCode()
+        final redirect = resp1.header('Location')
+        final status = resp1.code()
         if( redirect && status in HTTP_REDIRECT_CODES ) {
             // the redirect location can be a relative path i.e. without hostname
             // therefore resolve it against the target registry hostname
@@ -145,7 +148,7 @@ class RegistryProxyService {
             final result = new DelegateResponse(
                     location: target,
                     statusCode: status,
-                    headers:resp1.headers().map(),
+                    headers:resp1.headers.asMap(),
                     body: resp1.body())
             // close the response to prevent leaks
             RegHelper.closeResponse(resp1)
@@ -156,12 +159,12 @@ class RegistryProxyService {
             log.warn "Unexpected redirect location '${redirect}' with status code: ${status}"
         }
         else if( status>=300 && status<400 ) {
-            log.warn "Unexpected redirect status code: ${status}; headers: ${RegHelper.dumpHeaders(resp1.headers())}"
+            log.warn "Unexpected redirect status code: ${status}; headers: ${RegHelper.dumpHeaders(resp1.headers.asMap())}"
         }
 
         new DelegateResponse(
-                statusCode: resp1.statusCode(),
-                headers: resp1.headers().map(),
+                statusCode: resp1.code(),
+                headers: resp1.headers.asMap(),
                 body: resp1.body() )
     }
 
@@ -182,7 +185,7 @@ class RegistryProxyService {
         final route = RoutePath.v2manifestPath(coords)
         final proxyClient = client(route)
         final resp = proxyClient.head(route.path, WaveDefault.ACCEPT_HEADERS)
-        return resp.statusCode() == 200
+        return resp.code() == 200
     }
 
     static class DelegateResponse {

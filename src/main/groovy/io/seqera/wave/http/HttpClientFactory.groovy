@@ -58,6 +58,7 @@ class HttpClientFactory {
         }
     }
 
+    @Deprecated
     static HttpClient neverRedirectsHttpClient() {
         if( client2!=null )
             return client2

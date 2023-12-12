@@ -23,13 +23,14 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
+import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.annotation.Client
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.auth.RegistryAuth
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.HttpClientConfig
-import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.proxy.ProxyClient
 import jakarta.inject.Inject
 /**
@@ -49,13 +50,16 @@ class ProxyClientTest extends Specification {
 
     @Inject HttpClientConfig httpConfig
 
+    @Inject
+    @Client("proxy-client")
+    HttpClient httpClient
+
     def 'should call target manifests on docker.io' () {
         given:
         def REG = 'docker.io'
         def IMAGE = 'library/hello-world'
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
-        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
         def proxy = new ProxyClient(httpClient, httpConfig)
                 .withImage(IMAGE)
@@ -67,7 +71,7 @@ class ProxyClientTest extends Specification {
         def resp1 = proxy.getString('/v2/library/hello-world/manifests/sha256:aa0cc8055b82dc2509bed2e19b275c8f463506616377219d9642221ab53cf9fe')
         and:
         then:
-        resp1.statusCode() == 200
+        resp1.code() == 200
     }
 
     def 'should call target manifests on docker.io with no creds' () {
@@ -75,7 +79,6 @@ class ProxyClientTest extends Specification {
         def REG = 'docker.io'
         def IMAGE = 'library/hello-world'
         def registry = lookupService.lookup(REG)
-        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
         def proxy = new ProxyClient(httpClient, httpConfig)
                 .withImage(IMAGE)
@@ -86,7 +89,7 @@ class ProxyClientTest extends Specification {
         def resp1 = proxy.getString('/v2/library/hello-world/manifests/sha256:aa0cc8055b82dc2509bed2e19b275c8f463506616377219d9642221ab53cf9fe')
         and:
         then:
-        resp1.statusCode() == 200
+        resp1.code() == 200
     }
 
     def 'should call target blob on quay' () {
@@ -95,7 +98,6 @@ class ProxyClientTest extends Specification {
         def IMAGE = 'biocontainers/fastqc'
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
-        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
         def proxy = new ProxyClient(httpClient, httpConfig)
                 .withImage(IMAGE)
@@ -107,7 +109,7 @@ class ProxyClientTest extends Specification {
         def resp1 = proxy.getString('/v2/biocontainers/fastqc/blobs/sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4')
         and:
         then:
-        resp1.statusCode() == 200
+        resp1.code() == 200
     }
 
     def 'should redirect a target blob on quay' () {
@@ -116,7 +118,6 @@ class ProxyClientTest extends Specification {
         def IMAGE = 'biocontainers/fastqc'
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
-        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
         def proxy = new ProxyClient(httpClient, httpConfig)
                 .withImage(IMAGE)
@@ -128,7 +129,7 @@ class ProxyClientTest extends Specification {
         def resp1 = proxy.getString('/v2/biocontainers/fastqc/blobs/sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4',null,false)
         and:
         then:
-        resp1.statusCode() == 302
+        resp1.code() == 302
     }
 
     def 'should lookup aws registry' () {
@@ -150,7 +151,6 @@ class ProxyClientTest extends Specification {
         def REG = '195996028523.dkr.ecr.eu-west-1.amazonaws.com'
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
-        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
         def proxy = new ProxyClient(httpClient, httpConfig)
                 .withImage(IMAGE)
@@ -161,7 +161,7 @@ class ProxyClientTest extends Specification {
         when:
         def resp = proxy.getString("/v2/$IMAGE/manifests/0.1.0")
         then:
-        resp.statusCode() == 200
+        resp.code() == 200
     }
 
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
@@ -171,7 +171,6 @@ class ProxyClientTest extends Specification {
         def REG = 'public.ecr.aws'
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
-        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
         def proxy = new ProxyClient(httpClient, httpConfig)
                 .withImage(IMAGE)
@@ -182,7 +181,7 @@ class ProxyClientTest extends Specification {
         when:
         def resp = proxy.getString("/v2/$IMAGE/manifests/23.04.0")
         then:
-        resp.statusCode() == 200
+        resp.code() == 200
     }
 
     @Requires({System.getenv('GOOGLECR_KEYS')})
@@ -233,7 +232,6 @@ class ProxyClientTest extends Specification {
         def REG = 'europe-southwest1-docker.pkg.dev'
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
-        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
         and:
         def proxy = new ProxyClient(httpClient, httpConfig)
                 .withImage(IMAGE)
@@ -244,6 +242,6 @@ class ProxyClientTest extends Specification {
         when:
         def resp = proxy.getString("/v2/$IMAGE/manifests/latest")
         then:
-        resp.statusCode() == 200
+        resp.code() == 200
     }
 }

@@ -18,13 +18,14 @@
 
 package io.seqera.wave.proxy
 
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
-import java.net.http.HttpResponse.BodyHandler
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.http.HttpMethod
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.MutableHttpRequest
+import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.http.server.exceptions.InternalServerException
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
@@ -56,8 +57,6 @@ class ProxyClient {
     private HttpClientConfig httpConfig
 
     ProxyClient(HttpClient httpClient, HttpClientConfig httpConfig) {
-        if( httpClient.followRedirects()!= HttpClient.Redirect.NEVER )
-            throw new IllegalStateException("HttpClient instance should not follow redirected because they are directly managed by the proxy")
         this.httpClient = httpClient
         this.httpConfig = httpConfig
     }
@@ -98,7 +97,7 @@ class ProxyClient {
 
     HttpResponse<String> getString(String path, Map<String,List<String>> headers=null, boolean followRedirect=true) {
         try {
-            return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofString(), followRedirect )
+            return get( makeUri(path), headers, String.class, followRedirect )
         }
         catch (ClientResponseException e) {
             return ErrResponse<String>.forString(e.message, e.request)
@@ -107,7 +106,7 @@ class ProxyClient {
 
     HttpResponse<InputStream> getStream(String path, Map<String,List<String>> headers=null, boolean followRedirect=true) {
         try {
-            return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofInputStream(), followRedirect )
+            return get( makeUri(path), headers, InputStream.class, followRedirect )
         }
         catch (ClientResponseException e) {
             return ErrResponse.forStream(e.message, e.request)
@@ -116,7 +115,7 @@ class ProxyClient {
 
     HttpResponse<byte[]> getBytes(String path, Map<String,List<String>> headers=null, boolean followRedirect=true) {
         try {
-            return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofByteArray(), followRedirect )
+            return get( makeUri(path), headers, byte[].class, followRedirect )
         }
         catch (ClientResponseException e) {
             return ErrResponse.forByteArray(e.message, e.request)
@@ -126,7 +125,7 @@ class ProxyClient {
 
     private static final List<String> SKIP_HEADERS = ['host', 'connection', 'authorization', 'content-length']
 
-    private void copyHeaders(Map<String,List<String>> headers, HttpRequest.Builder builder) {
+    private void copyHeaders(Map<String,List<String>> headers, MutableHttpRequest request) {
         if( !headers )
             return
 
@@ -134,20 +133,20 @@ class ProxyClient {
             if( entry.key.toLowerCase() in SKIP_HEADERS )
                 continue
             for( String val : entry.value )
-                builder.header(entry.key, val)
+                request.header(entry.key, val)
         }
     }
 
-    def <T> HttpResponse<T> get(URI origin, Map<String,List<String>> headers, BodyHandler<T> handler, boolean followRedirect) {
+    def <T> HttpResponse<T> get(URI origin, Map<String,List<String>> headers, Class<T> bodyType, boolean followRedirect) {
         final retryable = Retryable
                 .<HttpResponse<T>>of(httpConfig)
-                .retryIf((resp) -> resp.statusCode() in HTTP_RETRYABLE_ERRORS)
+                .retryIf((resp) -> resp.code() in HTTP_RETRYABLE_ERRORS)
                 .onRetry((event) -> "Failure on GET request: $origin - event: $event")
         // carry out the request
-        return retryable.apply(()-> get0(origin, headers, handler, followRedirect))
+        return retryable.apply(()-> get0(origin, headers, bodyType, followRedirect))
     }
 
-    def <T> HttpResponse<T> get0(URI origin, Map<String,List<String>> headers, BodyHandler<T> handler, boolean followRedirect) {
+    def <T> HttpResponse<T> get0(URI origin, Map<String,List<String>> headers, Class<T> bodyType, boolean followRedirect) {
         final host = origin.getHost()
         final visited = new HashSet<URI>(10)
         def target = origin
@@ -160,32 +159,33 @@ class ProxyClient {
             // auth mechanism e.g. signed url
             // https://github.com/rkt/rkt/issues/2266#issuecomment-211326020
             final authorize = host == target.getHost()
-            final result = get1(target, headers, handler, authorize)
+            final request = HttpRequest.create(HttpMethod.GET, target.toString())
+            final result = get1(target, headers, bodyType, authorize, request)
             // add to visited URL
             visited.add(target)
             // check the result code
-            if( result.statusCode()==401 && (authRetry++)<2 && host==target.host && registry.auth.isRefreshable() ) {
+            if( result.code()==401 && (authRetry++)<2 && host==target.host && registry.auth.isRefreshable() ) {
                 // clear the token to force refreshing it
                 loginService.invalidateAuthorization(image, registry.auth, credentials)
                 continue
             }
-            if( result.statusCode() in HTTP_REDIRECT_CODES && followRedirect ) {
-                final redirect = result.headers().firstValue('location').orElse(null)
-                log.trace "Redirecting (${++redirectCount}) $target ==> $redirect ${RegHelper.dumpHeaders(result.headers())}"
+            if( result.code() in HTTP_REDIRECT_CODES && followRedirect ) {
+                final redirect = result.header('location')
+                log.trace "Redirecting (${++redirectCount}) $target ==> $redirect ${RegHelper.dumpHeaders(result.headers.asMap())}"
                 if( !redirect ) {
                     final msg = "Missing `Location` header for request URI '$target' ― origin request '$origin'"
-                    throw new ClientResponseException(msg, result.request())
+                    throw new ClientResponseException(msg, request)
                 }
                 // the redirect location can be a relative path i.e. without hostname
                 // therefore resolve it against the target registry hostname
                 target = registry.host.resolve(redirect)
                 if( target in visited ) {
                     final msg = "Redirect location already visited: $redirect ― origin request '$origin'"
-                    throw new ClientResponseException(msg, result.request())
+                    throw new ClientResponseException(msg, request)
                 }
                 if( visited.size()>=10 ) {
                     final msg = "Redirect location already visited: $redirect ― origin request '$origin'"
-                    throw new ClientResponseException(msg, result.request())
+                    throw new ClientResponseException(msg, request)
                 }
                 // go head with with the redirection
                 continue
@@ -195,21 +195,27 @@ class ProxyClient {
 
     }
 
-    private <T> HttpResponse<T> get1(URI uri, Map<String,List<String>> headers, BodyHandler<T> handler, boolean authorize) {
+    private <I,O> HttpResponse<O> exchange(HttpRequest<I> request, Class<O> bodyType) {
+        try {
+            return httpClient.toBlocking().exchange(request, bodyType)
+        }
+        catch (HttpClientResponseException e) {
+            return (HttpResponse<O>)e.getResponse()
+        }
+    }
+
+    private <T> HttpResponse<T> get1(URI uri, Map<String,List<String>> headers, Class<T> bodyType, boolean authorize, MutableHttpRequest request) {
         try{
-            final builder = HttpRequest.newBuilder(uri) .GET()
-            copyHeaders(headers, builder)
+            copyHeaders(headers, request)
             if( authorize ) {
                 // add authorisation header
                 final header = loginService.getAuthorization(image, registry.auth, credentials)
                 if( header )
-                    builder.setHeader("Authorization", header)
+                    request.header("Authorization", header)
             }
-            // build the request
-            final request = builder.build()
             // send it
-            final response = httpClient.send(request, handler)
-            traceResponse(response)
+            HttpResponse<T> response = exchange(request, bodyType)
+            traceResponse(request, response)
             return response
         }
         catch (IOException e) {
@@ -229,11 +235,10 @@ class ProxyClient {
         return head(makeUri(path), headers)
     }
 
-
     HttpResponse<Void> head(URI uri, Map<String,List<String>> headers) {
         final retryable = Retryable
                 .<HttpResponse<Void>>of(httpConfig)
-                .retryIf((resp) -> resp.statusCode() in HTTP_RETRYABLE_ERRORS)
+                .retryIf((resp) -> resp.code() in HTTP_RETRYABLE_ERRORS)
                 .onRetry((event) -> "Failure on HEAD request: $uri - event: $event")
         // carry out the request
         return retryable.apply(()-> head0(uri,headers))
@@ -242,7 +247,7 @@ class ProxyClient {
     HttpResponse<Void> head0(URI uri, Map<String,List<String>> headers) {
 
         def result = head1(uri, headers)
-        if( result.statusCode()==401 && registry.auth.isRefreshable() ) {
+        if( result.code()==401 && registry.auth.isRefreshable() ) {
             // clear the token to force refreshing it
             loginService.invalidateAuthorization(image, registry.auth, credentials)
             result = head1(uri, headers)
@@ -253,34 +258,31 @@ class ProxyClient {
     HttpResponse<Void> head1(URI uri, Map<String,List<String>> headers) {
         // A HEAD request is a GET request without a message body
         // https://zetcode.com/java/httpclient/
-        final builder = HttpRequest.newBuilder(uri)
-                .method("HEAD", HttpRequest.BodyPublishers.noBody())
+        final request = HttpRequest.create(HttpMethod.HEAD, uri.toString())
         // copy headers 
-        copyHeaders(headers, builder)
+        copyHeaders(headers, request)
         // add authorisation header
         final header = loginService.getAuthorization(image, registry.auth, credentials)
         if( header )
-            builder.setHeader("Authorization", header)
-        // build the request
-        final request = builder.build()
-        // send it 
-        final response = httpClient.send(request, HttpResponse.BodyHandlers.discarding())
-        traceResponse(response)
+            request.header("Authorization", header)
+        // send it
+        final response= exchange(request, Void)
+        traceResponse(request, response)
         return response
     }
 
-    private void traceResponse(HttpResponse resp) {
+    private void traceResponse(HttpRequest request, HttpResponse resp) {
         // dump response
         if( !log.isTraceEnabled() || !resp )
             return
         final trace = new StringBuilder()
-        trace.append("= ${resp.request().method() ?: ''} [${resp.statusCode()}] ${resp.request().uri()}\n")
+        trace.append("= ${request.getMethodName() ?: ''} [${resp.code()}] ${request.getUri()}\n")
         trace.append('- request headers:\n')
-        for( Map.Entry<String,List<String>> entry : resp.request().headers().map() ) {
+        for( Map.Entry<String,List<String>> entry : request.headers.asMap() ) {
             trace.append("> ${entry.key}=${entry.value?.join(',')}\n")
         }
         trace.append('- response headers:\n')
-        for( Map.Entry<String,List<String>> entry : resp.headers().map() ) {
+        for( Map.Entry<String,List<String>> entry : resp.headers.asMap() ) {
             trace.append("< ${entry.key}=${entry.value?.join(',')}\n")
         }
         log.trace(trace.toString())
