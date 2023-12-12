@@ -47,9 +47,6 @@ import static io.seqera.wave.WaveDefault.HTTP_RETRYABLE_ERRORS
 @CompileStatic
 class ProxyClient {
 
-    private static final long RETRY_MAX_DELAY_MILLIS = 30_000
-    private static final int RETRY_MAX_ATTEMPTS = 8
-
     private String image
     private RegistryInfo registry
     private RegistryCredentials credentials
