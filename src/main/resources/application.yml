@@ -30,6 +30,13 @@ micronaut:
         paths: 'classpath:io/seqera/wave/assets'
         mapping: '/assets/**'
         enabled: true
+# http client configuration
+# https://docs.micronaut.io/latest/guide/configurationreference.html#io.micronaut.http.client.DefaultHttpClientConfiguration
+  http:
+    services:
+      stream-client:
+        read-timeout: '30s'
+        read-idle-timeout: '120s'
 ---
 wave:
   allowAnonymous: true

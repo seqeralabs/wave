@@ -31,6 +31,7 @@ import io.seqera.wave.exception.UnexpectedReadException
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Deprecated
 @CompileStatic
 class TimedInputStream extends FilterInputStream {
 

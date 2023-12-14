@@ -21,7 +21,6 @@ package io.seqera.wave.controller
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
-import io.micronaut.core.annotation.Nullable
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
@@ -31,6 +30,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpMethod
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
@@ -60,9 +60,9 @@ import io.seqera.wave.storage.DigestKey
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.util.Retryable
-import io.seqera.wave.util.TimedInputStream
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
+import org.apache.commons.io.IOUtils
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Mono
 /**
@@ -247,13 +247,13 @@ class RegistryProxyController {
             log.debug "Forwarding ${route.type} request '${route.getTargetContainer()}' to '${loc}'"
             return fromRedirectResponse(resp)
         }
-        else if( route.isManifest() ) {
-            log.debug "Pulling manifest from repository: '${route.getTargetContainer()}'"
-            return fromManifestResponse(resp, route)
+        else if( resp.body ) {
+            log.debug "Returning ${route.type} from repository: '${route.getTargetContainer()}'"
+            return fromBodyResponse(resp)
         }
         else {
-            log.debug "Pulling blob from repository: '${route.getTargetContainer()}'"
-            return fromDelegateResponse(resp, route)
+            log.debug "Pulling stream from repository: '${route.getTargetContainer()}'"
+            return fromStreamResponse(resp, route, headers)
         }
     }
 
@@ -306,7 +306,7 @@ class RegistryProxyController {
         final resp = proxyService.handleRequest(route, headers)
         HttpResponse
                 .status(HttpStatus.valueOf(resp.statusCode))
-                .body(resp.body.bytes)
+                .body(resp.body)
                 .headers(toMutableHeaders(resp.headers))
     }
 
@@ -337,15 +337,25 @@ class RegistryProxyController {
                 .headers(toMutableHeaders(resp.headers, override))
     }
 
-    MutableHttpResponse<?> fromDelegateResponse(final DelegateResponse response, RoutePath route){
+    MutableHttpResponse<?> fromStreamResponse(final DelegateResponse response, RoutePath route, Map<String,List<String>> headers){
+
+        final inputStream = new PipedInputStream()
+        final outputStream = new PipedOutputStream(inputStream)
+
+         proxyService.streamBlob(route, headers)
+                .doOnNext(byteBuffer -> {
+                    outputStream.write(byteBuffer.toByteArray())
+                })
+                .doFinally(signalType -> {
+                   IOUtils.closeQuietly(outputStream)
+                })
+                .subscribe()
 
         final Long len = response.headers
-                .find {it.key.toLowerCase()=='content-length'}?.value?.first() as Long ?: null
-
-        final wrap = new TimedInputStream(response.body, httpConfig.getReadTimeout(), route)
+                .find(it-> it.key.toLowerCase()=='content-length')?.value?.first() as Long ?: null
         final streamedFile =  len
-                ?  new StreamedFile(wrap, MediaType.APPLICATION_OCTET_STREAM_TYPE, Instant.now().toEpochMilli(), len)
-                :  new StreamedFile(wrap, MediaType.APPLICATION_OCTET_STREAM_TYPE)
+                ?  new StreamedFile(inputStream, MediaType.APPLICATION_OCTET_STREAM_TYPE, Instant.now().toEpochMilli(), len)
+                :  new StreamedFile(inputStream, MediaType.APPLICATION_OCTET_STREAM_TYPE)
 
         HttpResponse
                 .status(HttpStatus.valueOf(response.statusCode))
@@ -353,15 +363,10 @@ class RegistryProxyController {
                 .headers(toMutableHeaders(response.headers))
     }
 
-    MutableHttpResponse<?> fromManifestResponse(DelegateResponse resp, RoutePath route) {
-        // create the retry logic on error                                                              §
-        final retryable = Retryable
-                .<byte[]>of(httpConfig)
-                .onRetry((event) -> log.warn("Unable to read manifest body - request: $route; event: $event"))
-
+    MutableHttpResponse<?> fromBodyResponse(DelegateResponse resp) {
         HttpResponse
                 .status(HttpStatus.valueOf(resp.statusCode))
-                .body(retryable.apply(()-> resp.body.bytes))
+                .body(resp.body)
                 .headers(toMutableHeaders(resp.headers))
     }
 
