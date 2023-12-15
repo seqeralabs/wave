@@ -343,8 +343,19 @@ class RegistryProxyController {
         final outputStream = new PipedOutputStream(inputStream)
 
          proxyService.streamBlob(route, headers)
-                .doOnNext(byteBuffer -> outputStream.write(byteBuffer.toByteArray()))
-                .doFinally(signalType -> IOUtils.closeQuietly(outputStream))
+                .doOnNext(byteBuffer -> {
+                    log.debug "Write byte buffer for route: $route"
+                    try {
+                        outputStream.write(byteBuffer.toByteArray())
+                    }
+                    catch (Throwable t) {
+                        log.error("Unexpected error while write buffer", t)
+                        throw t
+                    }
+                })
+                .doFinally(signalType -> {
+                    IOUtils.closeQuietly(outputStream)
+                })
                 .subscribe()
 
         final Long len = response.headers
