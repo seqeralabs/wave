@@ -339,12 +339,12 @@ class RegistryProxyController {
 
     MutableHttpResponse<?> fromStreamResponse(final DelegateResponse response, RoutePath route, Map<String,List<String>> headers){
 
-        final inputStream = new PipedInputStream()
-        final outputStream = new PipedOutputStream(inputStream)
-
+        final inputStream = new PipedInputStream(50 * 1024)
+        final outputStream = new PipedOutputStream()
+        inputStream.connect(outputStream)
+        
          proxyService.streamBlob(route, headers)
                 .doOnNext(byteBuffer -> {
-                    log.debug "Write byte buffer for route: $route"
                     try {
                         outputStream.write(byteBuffer.toByteArray())
                     }
