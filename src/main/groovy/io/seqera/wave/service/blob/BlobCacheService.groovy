@@ -1,0 +1,18 @@
+package io.seqera.wave.service.blob
+
+import java.util.concurrent.CompletableFuture
+
+import io.seqera.wave.core.RoutePath
+
+/**
+ * Define a service to cache container blob layers
+ *
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ */
+interface BlobCacheService {
+
+    CompletableFuture<URI> getBlobCacheURI(RoutePath route)
+
+    CompletableFuture<BlobInfo> blobInfo(String key)
+
+}
