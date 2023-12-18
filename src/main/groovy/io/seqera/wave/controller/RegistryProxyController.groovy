@@ -18,7 +18,6 @@
 
 package io.seqera.wave.controller
 
-import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
 
@@ -31,17 +30,16 @@ import groovy.util.logging.Slf4j
 import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.micronaut.core.io.buffer.ReferenceCounted
 import io.micronaut.http.HttpMethod
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
-import io.micronaut.http.MediaType
 import io.micronaut.http.MutableHttpHeaders
 import io.micronaut.http.MutableHttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Error
 import io.micronaut.http.annotation.Get
-import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
@@ -62,7 +60,6 @@ import io.seqera.wave.storage.Storage
 import io.seqera.wave.util.Retryable
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
-import org.apache.commons.io.IOUtils
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Mono
 /**
@@ -339,34 +336,16 @@ class RegistryProxyController {
 
     MutableHttpResponse<?> fromStreamResponse(final DelegateResponse response, RoutePath route, Map<String,List<String>> headers){
 
-        final inputStream = new PipedInputStream(50 * 1024)
-        final outputStream = new PipedOutputStream()
-        inputStream.connect(outputStream)
-        
-         proxyService.streamBlob(route, headers)
+        final stream = proxyService.streamBlob(route, headers)
                 .doOnNext(byteBuffer -> {
-                    try {
-                        outputStream.write(byteBuffer.toByteArray())
-                    }
-                    catch (Throwable t) {
-                        log.error("Unexpected error while write buffer", t)
-                        throw t
+                    if (byteBuffer instanceof ReferenceCounted) {
+                        byteBuffer.retain()
                     }
                 })
-                .doFinally(signalType -> {
-                    IOUtils.closeQuietly(outputStream)
-                })
-                .subscribe()
-
-        final Long len = response.headers
-                .find(it-> it.key.toLowerCase()=='content-length')?.value?.first() as Long ?: null
-        final streamedFile =  len
-                ?  new StreamedFile(inputStream, MediaType.APPLICATION_OCTET_STREAM_TYPE, Instant.now().toEpochMilli(), len)
-                :  new StreamedFile(inputStream, MediaType.APPLICATION_OCTET_STREAM_TYPE)
 
         HttpResponse
                 .status(HttpStatus.valueOf(response.statusCode))
-                .body(streamedFile)
+                .body(stream)
                 .headers(toMutableHeaders(response.headers))
     }
 
