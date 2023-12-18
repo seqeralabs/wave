@@ -16,20 +16,14 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave
+package io.seqera.wave.core
 
-import spock.lang.Requires
+
 import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.auth.RegistryAuth
-import io.seqera.wave.auth.RegistryAuthService
-import io.seqera.wave.auth.RegistryCredentialsProvider
-import io.seqera.wave.auth.RegistryLookupService
-import io.seqera.wave.core.RegistryProxyService
-import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.test.DockerRegistryContainer
 import jakarta.inject.Inject
 /**

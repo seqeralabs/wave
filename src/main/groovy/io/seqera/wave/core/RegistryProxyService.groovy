@@ -23,7 +23,11 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.context.annotation.Context
+import io.micronaut.context.annotation.Value
+import io.micronaut.core.io.buffer.ByteBuffer
+import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.exceptions.HttpException
+import io.micronaut.reactor.http.client.ReactorStreamingHttpClient
 import io.micronaut.retry.annotation.Retryable
 import io.seqera.wave.WaveDefault
 import io.seqera.wave.auth.RegistryAuthService
@@ -41,6 +45,7 @@ import io.seqera.wave.storage.Storage
 import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+import reactor.core.publisher.Flux
 import static io.seqera.wave.WaveDefault.HTTP_REDIRECT_CODES
 /**
  * Proxy service that forwards incoming container request
@@ -79,6 +84,13 @@ class RegistryProxyService {
 
     @Inject
     private HttpClientConfig httpConfig
+
+    @Value('${wave.httpclient.streamThreshold:65536}')
+    private int streamThreshold
+
+    @Inject
+    @Client("stream-client")
+    private ReactorStreamingHttpClient streamClient
 
     private ContainerAugmenter scanner(ProxyClient proxyClient) {
         return new ContainerAugmenter()
@@ -135,21 +147,17 @@ class RegistryProxyService {
 
     DelegateResponse handleRequest(RoutePath route, Map<String,List<String>> headers){
         ProxyClient proxyClient = client(route)
-        final resp1 = proxyClient.getStream(route.path, headers, false)
+        final resp1 = proxyClient.head(route.path, headers)
         final redirect = resp1.headers().firstValue('Location').orElse(null)
         final status = resp1.statusCode()
         if( redirect && status in HTTP_REDIRECT_CODES ) {
             // the redirect location can be a relative path i.e. without hostname
             // therefore resolve it against the target registry hostname
             final target = proxyClient.registry.host.resolve(redirect).toString()
-            final result = new DelegateResponse(
+            return new DelegateResponse(
                     location: target,
                     statusCode: status,
-                    headers:resp1.headers().map(),
-                    body: resp1.body())
-            // close the response to prevent leaks
-            RegHelper.closeResponse(resp1)
-            return result
+                    headers:resp1.headers().map())
         }
 
         if( redirect ) {
@@ -159,10 +167,21 @@ class RegistryProxyService {
             log.warn "Unexpected redirect status code: ${status}; headers: ${RegHelper.dumpHeaders(resp1.headers())}"
         }
 
-        new DelegateResponse(
-                statusCode: resp1.statusCode(),
-                headers: resp1.headers().map(),
-                body: resp1.body() )
+        final len = resp1.headers().firstValueAsLong('Content-Length').orElse(0)
+        // when it's a large blob return and empty body response
+        if( route.isBlob() && len > streamThreshold ) {
+            return new DelegateResponse(
+                    statusCode: resp1.statusCode(),
+                    headers: resp1.headers().map() )
+        }
+        // otherwise read it
+        else {
+            final resp2 = proxyClient.getBytes(route.path, headers)
+            return new DelegateResponse(
+                    statusCode: resp2.statusCode(),
+                    headers: resp2.headers().map(),
+                    body: resp2.body() )
+        }
     }
 
     boolean isManifestPresent(String image){
@@ -188,9 +207,13 @@ class RegistryProxyService {
     static class DelegateResponse {
         int statusCode
         Map<String,List<String>> headers
-        InputStream body
+        byte[] body
         String location
         boolean isRedirect() { location }
     }
 
+    Flux<ByteBuffer<?>> streamBlob(RoutePath route, Map<String,List<String>> headers) {
+        ProxyClient proxyClient = client(route)
+        return proxyClient.stream(streamClient, route.path, headers)
+    }
 }

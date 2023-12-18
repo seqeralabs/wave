@@ -25,7 +25,11 @@ import java.net.http.HttpResponse.BodyHandler
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.core.io.buffer.ByteBuffer
+import io.micronaut.http.HttpMethod
+import io.micronaut.http.MutableHttpRequest
 import io.micronaut.http.server.exceptions.InternalServerException
+import io.micronaut.reactor.http.client.ReactorStreamingHttpClient
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryInfo
@@ -34,6 +38,7 @@ import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.util.RegHelper
 import io.seqera.wave.util.Retryable
+import reactor.core.publisher.Flux
 import static io.seqera.wave.WaveDefault.HTTP_REDIRECT_CODES
 import static io.seqera.wave.WaveDefault.HTTP_RETRYABLE_ERRORS
 /**
@@ -105,15 +110,6 @@ class ProxyClient {
         }
     }
 
-    HttpResponse<InputStream> getStream(String path, Map<String,List<String>> headers=null, boolean followRedirect=true) {
-        try {
-            return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofInputStream(), followRedirect )
-        }
-        catch (ClientResponseException e) {
-            return ErrResponse.forStream(e.message, e.request)
-        }
-    }
-
     HttpResponse<byte[]> getBytes(String path, Map<String,List<String>> headers=null, boolean followRedirect=true) {
         try {
             return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofByteArray(), followRedirect )
@@ -122,7 +118,6 @@ class ProxyClient {
             return ErrResponse.forByteArray(e.message, e.request)
         }
     }
-
 
     private static final List<String> SKIP_HEADERS = ['host', 'connection', 'authorization', 'content-length']
 
@@ -135,6 +130,18 @@ class ProxyClient {
                 continue
             for( String val : entry.value )
                 builder.header(entry.key, val)
+        }
+    }
+
+    private void copyHeaders(Map<String,List<String>> headers, MutableHttpRequest request) {
+        if( !headers )
+            return
+
+        for( Map.Entry<String,List<String>> entry : headers )  {
+            if( entry.key.toLowerCase() in SKIP_HEADERS )
+                continue
+            for( String val : entry.value )
+                request.header(entry.key, val)
         }
     }
 
@@ -284,5 +291,18 @@ class ProxyClient {
             trace.append("< ${entry.key}=${entry.value?.join(',')}\n")
         }
         log.trace(trace.toString())
+    }
+
+    Flux<ByteBuffer<?>> stream(ReactorStreamingHttpClient streamingHttpClient, String path, Map<String,List<String>> headers=null) {
+        final uri = makeUri(path)
+        final request = io.micronaut.http.HttpRequest.create(HttpMethod.GET, uri.toString())
+        // copy headers
+        copyHeaders(headers, request)
+        // add authorisation header
+        final header = loginService.getAuthorization(image, registry.auth, credentials)
+        if( header )
+            request.header("Authorization", header)
+
+        return streamingHttpClient.dataStream(request)
     }
 }
