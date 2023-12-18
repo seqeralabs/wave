@@ -21,24 +21,22 @@ package io.seqera.wave.service.scan
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
-import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.runtime.event.annotation.EventListener
+import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.ContainerBuildServiceImpl
 import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveScanRecord
-import io.seqera.wave.util.ThreadPoolBuilder
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
-
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
-
 /**
  * Implements ContainerScanService
  *
@@ -59,6 +57,8 @@ class ContainerScanServiceImpl implements ContainerScanService {
     @Inject
     private ScanConfig scanConfig
 
+    @Inject
+    @Named(TaskExecutors.IO)
     private ExecutorService executor
 
     @Inject
@@ -66,11 +66,6 @@ class ContainerScanServiceImpl implements ContainerScanService {
 
     @Inject
     private CleanupStrategy cleanup
-
-    @PostConstruct
-    void init() {
-        executor = ThreadPoolBuilder.io(10, 10, 100, 'wave-scanner')
-    }
 
     @EventListener
     void onBuildEvent(BuildEvent event) {
