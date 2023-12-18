@@ -26,8 +26,10 @@ jobs:
             fatjar: true
           - os: macos-latest
             codesign: true
+            zip: true
           - os: macos-latest-xlarge
             codesign: true
+            zip: true
     steps:
       - uses: actions/checkout@v3
 
@@ -85,7 +87,13 @@ jobs:
           ditto -c -k --keepParent "./app/build/native/nativeCompile/wave" "notarization.zip"
           xcrun notarytool submit "notarization.zip" --keychain-profile "notarytool-profile" --wait
 
-      - name: Upload binary
+      - name: create zip
+        if: ${{ matrix.zip }}
+        run: |
+          cd ./app/build/native/nativeCompile/
+          zip wave.zip wave
+
+      - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
           name: nativeCompile-${{ matrix.os }}
@@ -128,7 +136,7 @@ jobs:
       - name: Run JReleaser
         uses: jreleaser/release-action@v2
         env:
-          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JRELEASER_GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
           JRELEASER_PROJECT_VERSION: ${{ steps.version.outputs.VERSION }}
 
       - name: JReleaser release output
