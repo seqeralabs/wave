@@ -35,17 +35,17 @@ micronaut:
   executors:
     stream-executor:
       type: FIXED
-      number-of-threads: 32
+      number-of-threads: 16
   netty:
     event-loops:
       stream-pool:
-        executor: stream-executor
+        executor: 'stream-executor'
   http:
     services:
       stream-client:
         read-timeout: '30s'
         read-idle-timeout: '120s'
-        event-loop-group: stream-pool
+        event-loop-group: 'stream-pool'
 ---
 wave:
   allowAnonymous: true
