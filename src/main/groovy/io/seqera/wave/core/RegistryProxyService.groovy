@@ -85,7 +85,7 @@ class RegistryProxyService {
     @Inject
     private HttpClientConfig httpConfig
 
-    @Value('${wave.httpclient.streamThreshold:50000}')
+    @Value('${wave.httpclient.streamThreshold:65536}')
     private int streamThreshold
 
     @Inject
@@ -150,40 +150,43 @@ class RegistryProxyService {
         final resp1 = proxyClient.head(route.path, headers)
         final redirect = resp1.headers().firstValue('Location').orElse(null)
         final status = resp1.statusCode()
-        if( redirect && status in HTTP_REDIRECT_CODES ) {
-            // the redirect location can be a relative path i.e. without hostname
-            // therefore resolve it against the target registry hostname
-            final target = proxyClient.registry.host.resolve(redirect).toString()
-            final result = new DelegateResponse(
-                    location: target,
-                    statusCode: status,
-                    headers:resp1.headers().map())
+        try {
+            if( redirect && status in HTTP_REDIRECT_CODES ) {
+                // the redirect location can be a relative path i.e. without hostname
+                // therefore resolve it against the target registry hostname
+                final target = proxyClient.registry.host.resolve(redirect).toString()
+                return new DelegateResponse(
+                        location: target,
+                        statusCode: status,
+                        headers:resp1.headers().map())
+            }
+
+            if( redirect ) {
+                log.warn "Unexpected redirect location '${redirect}' with status code: ${status}"
+            }
+            else if( status>=300 && status<400 ) {
+                log.warn "Unexpected redirect status code: ${status}; headers: ${RegHelper.dumpHeaders(resp1.headers())}"
+            }
+
+            final len = resp1.headers().firstValueAsLong('Content-Length').orElse(0)
+            // when it's a large blob return and empty body response
+            if( route.isBlob() && len > streamThreshold ) {
+                return new DelegateResponse(
+                        statusCode: resp1.statusCode(),
+                        headers: resp1.headers().map() )
+            }
+            // otherwise read it
+            else {
+                final resp2 = proxyClient.getBytes(route.path, headers)
+                return new DelegateResponse(
+                        statusCode: resp2.statusCode(),
+                        headers: resp2.headers().map(),
+                        body: resp2.body() )
+            }
+        }
+        finally {
             // close the response to prevent leaks
             RegHelper.closeResponse(resp1)
-            return result
-        }
-
-        if( redirect ) {
-            log.warn "Unexpected redirect location '${redirect}' with status code: ${status}"
-        }
-        else if( status>=300 && status<400 ) {
-            log.warn "Unexpected redirect status code: ${status}; headers: ${RegHelper.dumpHeaders(resp1.headers())}"
-        }
-
-        final len = resp1.headers().firstValueAsLong('Content-Length').orElse(0)
-        // when it's a large blob return and empty body response
-        if( route.isBlob() && len > streamThreshold ) {
-            return new DelegateResponse(
-                    statusCode: resp1.statusCode(),
-                    headers: resp1.headers().map() )
-        }
-        // otherwise read it
-        else {
-            final resp2 = proxyClient.getBytes(route.path, headers)
-            return new DelegateResponse(
-                    statusCode: resp2.statusCode(),
-                    headers: resp2.headers().map(),
-                    body: resp2.body() )
         }
     }
 

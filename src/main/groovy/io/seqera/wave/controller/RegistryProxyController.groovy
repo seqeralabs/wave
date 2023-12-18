@@ -244,9 +244,9 @@ class RegistryProxyController {
             log.debug "Forwarding ${route.type} request '${route.getTargetContainer()}' to '${loc}'"
             return fromRedirectResponse(resp)
         }
-        else if( resp.body ) {
+        else if( resp.body!=null ) {
             log.debug "Returning ${route.type} from repository: '${route.getTargetContainer()}'"
-            return fromBodyResponse(resp)
+            return fromContentResponse(resp)
         }
         else {
             log.debug "Pulling stream from repository: '${route.getTargetContainer()}'"
@@ -349,7 +349,7 @@ class RegistryProxyController {
                 .headers(toMutableHeaders(response.headers))
     }
 
-    MutableHttpResponse<?> fromBodyResponse(DelegateResponse resp) {
+    MutableHttpResponse<?> fromContentResponse(DelegateResponse resp) {
         HttpResponse
                 .status(HttpStatus.valueOf(resp.statusCode))
                 .body(resp.body)
