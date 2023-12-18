@@ -86,12 +86,11 @@ class RegistryProxyService {
     private HttpClientConfig httpConfig
 
     @Value('${wave.httpclient.streamThreshold:50000}')
-    int streamThreshold
+    private int streamThreshold
 
     @Inject
     @Client("stream-client")
     private ReactorStreamingHttpClient streamClient
-
 
     private ContainerAugmenter scanner(ProxyClient proxyClient) {
         return new ContainerAugmenter()
