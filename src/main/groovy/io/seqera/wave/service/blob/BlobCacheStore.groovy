@@ -39,7 +39,7 @@ class BlobCacheStore extends AbstractCacheStore<BlobInfo> implements BlobStore {
 
     @Override
     Duration getTimeout() {
-        return blobConfig.buildTimeout
+        return blobConfig.transferTimeout
     }
 
     @Override
@@ -55,5 +55,10 @@ class BlobCacheStore extends AbstractCacheStore<BlobInfo> implements BlobStore {
     @Override
     boolean storeIfAbsent(String key, BlobInfo info) {
         return putIfAbsent(key, info)
+    }
+
+    @Override
+    void storeBlob(String key, BlobInfo info) {
+        put(key, info)
     }
 }

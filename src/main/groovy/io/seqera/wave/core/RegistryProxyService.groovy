@@ -18,16 +18,12 @@
 
 package io.seqera.wave.core
 
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Value
-import io.micronaut.core.io.buffer.ByteBuffer
-import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.exceptions.HttpException
-import io.micronaut.reactor.http.client.ReactorStreamingHttpClient
 import io.micronaut.retry.annotation.Retryable
 import io.seqera.wave.WaveDefault
 import io.seqera.wave.auth.RegistryAuthService
@@ -45,7 +41,6 @@ import io.seqera.wave.storage.Storage
 import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import reactor.core.publisher.Flux
 import static io.seqera.wave.WaveDefault.HTTP_REDIRECT_CODES
 /**
  * Proxy service that forwards incoming container request
@@ -87,11 +82,6 @@ class RegistryProxyService {
 
     @Value('${wave.httpclient.streamThreshold:50000}')
     int streamThreshold
-
-    @Inject
-    @Client("stream-client")
-    private ReactorStreamingHttpClient streamClient
-
 
     private ContainerAugmenter scanner(ProxyClient proxyClient) {
         return new ContainerAugmenter()
@@ -216,8 +206,8 @@ class RegistryProxyService {
         boolean isRedirect() { location }
     }
 
-    Flux<ByteBuffer<?>> streamBlob(RoutePath route, Map<String,List<String>> headers) {
+    List<String> curl(RoutePath route, Map<String,List<String>> headers) {
         ProxyClient proxyClient = client(route)
-        return proxyClient.stream(streamClient, route.path, headers)
+        return proxyClient.curl(route.path, headers)
     }
 }

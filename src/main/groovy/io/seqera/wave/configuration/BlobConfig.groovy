@@ -13,10 +13,12 @@ class BlobConfig {
     @Value('${wave.blob.status.delay:5s}')
     Duration statusDelay
 
-    @Value('${wave.build.timeout:5m}')
-    Duration buildTimeout
+    @Value('${wave.blob.timeout:5m}')
+    Duration transferTimeout
 
     @Value('${wave.blob.status.duration:5d}')
     Duration statusDuration
 
+    @Value('${wave.blob.bucket:`s3://nextflow-ci/blobs`}')
+    String bucket
 }

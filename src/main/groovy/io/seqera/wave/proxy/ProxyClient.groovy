@@ -25,11 +25,8 @@ import java.net.http.HttpResponse.BodyHandler
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.core.io.buffer.ByteBuffer
-import io.micronaut.http.HttpMethod
 import io.micronaut.http.MutableHttpRequest
 import io.micronaut.http.server.exceptions.InternalServerException
-import io.micronaut.reactor.http.client.ReactorStreamingHttpClient
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryInfo
@@ -38,7 +35,6 @@ import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.util.RegHelper
 import io.seqera.wave.util.Retryable
-import reactor.core.publisher.Flux
 import static io.seqera.wave.WaveDefault.HTTP_REDIRECT_CODES
 import static io.seqera.wave.WaveDefault.HTTP_RETRYABLE_ERRORS
 /**
@@ -143,6 +139,7 @@ class ProxyClient {
         }
     }
 
+    @Deprecated
     private void copyHeaders(Map<String,List<String>> headers, MutableHttpRequest request) {
         if( !headers )
             return
@@ -303,16 +300,28 @@ class ProxyClient {
         log.trace(trace.toString())
     }
 
-    Flux<ByteBuffer<?>> stream(ReactorStreamingHttpClient streamingHttpClient, String path, Map<String,List<String>> headers=null) {
-        final uri = makeUri(path)
-        final request = io.micronaut.http.HttpRequest.create(HttpMethod.GET, uri.toString())
-        // copy headers
-        copyHeaders(headers, request)
+    List<String> curl(String path, Map<String,List<String>> headers=null) {
+        final result = new ArrayList(20)
+        result.add('curl')
+        result.add('-X'); result.add('GET')
+        //  copy headers
+        for( Map.Entry<String,List<String>> entry : headers )  {
+            if( entry.key.toLowerCase() in SKIP_HEADERS )
+                continue
+            for( String val : entry.value ) {
+                result.add('-H')
+                result.add("${entry.key}: $val")
+            }
+        }
         // add authorisation header
         final header = loginService.getAuthorization(image, registry.auth, credentials)
-        if( header )
-            request.header("Authorization", header)
+        if( header ) {
+            result.add('-H')
+            result.add("Authorization: $header")
+        }
 
-        return streamingHttpClient.dataStream(request)
+        // the target URI
+        result.add(makeUri(path).toString())
+        return result
     }
 }

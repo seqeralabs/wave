@@ -11,7 +11,7 @@ import io.seqera.wave.core.RoutePath
  */
 interface BlobCacheService {
 
-    CompletableFuture<URI> getBlobCacheURI(RoutePath route)
+    CompletableFuture<URI> getBlobCacheURI(RoutePath route, Map<String,List<String>> headers)
 
     CompletableFuture<BlobInfo> blobInfo(String key)
 

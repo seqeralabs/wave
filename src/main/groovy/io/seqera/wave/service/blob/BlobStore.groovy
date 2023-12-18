@@ -15,6 +15,8 @@ interface BlobStore {
 
     BlobInfo getBlob(String key)
 
+    void storeBlob(String key, BlobInfo info)
+
     /**
      * Store a blob location only if the specified key does not exit
      *

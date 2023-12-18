@@ -17,6 +17,8 @@ class BlobInfo {
 
     final Instant creationTime
     final String locationUri
+    final Instant completionTime
+    final String message
 
     @Memoized
     static BlobInfo unknown() {
