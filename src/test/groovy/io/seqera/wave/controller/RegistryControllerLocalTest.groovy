@@ -68,8 +68,8 @@ class RegistryControllerLocalTest extends Specification implements DockerRegistr
         response.status() == HttpStatus.OK
         and:
         response.body().indexOf('"schemaVersion":') != -1
-        response.getContentType().get().getName() ==  'application/vnd.docker.distribution.manifest.v2+json'
-        response.getContentLength() == 525
+        response.getContentType().get().getName() ==  'application/vnd.oci.image.index.v1+json'
+        response.getContentLength() == 9125
 
         when:
         storage.clear()
@@ -81,8 +81,8 @@ class RegistryControllerLocalTest extends Specification implements DockerRegistr
         response.status() == HttpStatus.OK
         and:
         response.body().indexOf('"schemaVersion":') != -1
-        response.getContentType().get().getName() ==  'application/vnd.docker.distribution.manifest.v2+json'
-        response.getContentLength() == 525
+        response.getContentType().get().getName() ==  'application/vnd.oci.image.index.v1+json'
+        response.getContentLength() == 9125
     }
 
     void 'should head manifest'() {
@@ -98,8 +98,8 @@ class RegistryControllerLocalTest extends Specification implements DockerRegistr
         response.headers.each {println "$it.key=$it.value"}
         and:
         response.getHeaders().get('docker-content-digest').startsWith( 'sha256:')
-        response.getHeaders().get('Content-Type') == 'application/vnd.docker.distribution.manifest.v2+json'
-        response.getContentLength() == 525
+        response.getHeaders().get('Content-Type') == 'application/vnd.oci.image.index.v1+json'
+        response.getContentLength() == 9125
     }
 
     void 'should head manifest and get blob of image'() {
@@ -114,8 +114,8 @@ class RegistryControllerLocalTest extends Specification implements DockerRegistr
         response.status() == HttpStatus.OK
         and:
         response.getHeaders().get('docker-content-digest').startsWith( 'sha256:')
-        response.getHeaders().get('Content-Type') == 'application/vnd.docker.distribution.manifest.v2+json'
-        response.getContentLength() == 525
+        response.getHeaders().get('Content-Type') == 'application/vnd.oci.image.index.v1+json'
+        response.getContentLength() == 9125
 
         when:
         storage.clear()
@@ -126,8 +126,8 @@ class RegistryControllerLocalTest extends Specification implements DockerRegistr
         response.status() == HttpStatus.OK
         and:
         response.getHeaders().get('docker-content-digest').startsWith( 'sha256:')
-        response.getHeaders().get('Content-Type') == 'application/vnd.docker.distribution.manifest.v2+json'
-        response.getContentLength() == 525
+        response.getHeaders().get('Content-Type') == 'application/vnd.oci.image.index.v1+json'
+        response.getContentLength() == 9125
     }
 
     // Double download hello-world requesting all required layers refreshing cache between them
