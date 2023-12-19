@@ -158,7 +158,8 @@ class RegistryProxyService {
                     location: target,
                     statusCode: status,
                     headers:resp1.headers().map())
-            // close the response to prevent leaks
+            // close the response because the body is not going to be used
+            // this is needed to prevent leaks - see https://bugs.openjdk.org/browse/JDK-8308364
             RegHelper.closeResponse(resp1)
             return result
         }
@@ -171,15 +172,19 @@ class RegistryProxyService {
         }
 
         final len = resp1.headers().firstValueAsLong('Content-Length').orElse(0)
-        // when it's a large blob return and empty body response
+        // when it's a large blob return a null body response to signal that
+        // the call needs to fetch the blob binary using the streaming client
         if( route.isBlob() && len > streamThreshold ) {
             final res = new DelegateResponse(
                     statusCode: resp1.statusCode(),
                     headers: resp1.headers().map() )
+            // close the response because the body is not going to be used
+            // this is needed to prevent leaks - see https://bugs.openjdk.org/browse/JDK-8308364
             RegHelper.closeResponse(resp1)
             return res
         }
-        // otherwise read it
+        // otherwise read it and include the body input stream in the response
+        // the caller must consume and close the body to prevent memory leaks
         else {
             return new DelegateResponse(
                     statusCode: resp1.statusCode(),

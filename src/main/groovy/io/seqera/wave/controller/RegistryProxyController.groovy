@@ -303,7 +303,7 @@ class RegistryProxyController {
         final resp = proxyService.handleRequest(route, headers)
         HttpResponse
                 .status(HttpStatus.valueOf(resp.statusCode))
-                .body(resp.body)
+                .body(resp.body.bytes)
                 .headers(toMutableHeaders(resp.headers))
     }
 
