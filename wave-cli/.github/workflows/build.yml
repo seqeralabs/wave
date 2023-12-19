@@ -26,10 +26,8 @@ jobs:
             fatjar: true
           - os: macos-latest
             codesign: true
-            zip: true
           - os: macos-latest-xlarge
             codesign: true
-            zip: true
     steps:
       - uses: actions/checkout@v3
 
@@ -87,13 +85,7 @@ jobs:
           ditto -c -k --keepParent "./app/build/native/nativeCompile/wave" "notarization.zip"
           xcrun notarytool submit "notarization.zip" --keychain-profile "notarytool-profile" --wait
 
-      - name: create zip
-        if: ${{ matrix.zip }}
-        run: |
-          cd ./app/build/native/nativeCompile/
-          zip wave.zip wave
-
-      - name: Upload artifacts
+      - name: Upload Binary
         uses: actions/upload-artifact@v3
         with:
           name: nativeCompile-${{ matrix.os }}

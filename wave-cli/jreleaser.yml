@@ -5,7 +5,7 @@ project:
   website: https://github.com/seqeralabs/wave-cli
   authors:
     - Seqera
-  license: MPL-2.0
+  license: Apache-2.0
   extraProperties:
     inceptionYear: 2023
 
@@ -75,6 +75,8 @@ release:
 distributions:
   wave-cli:
     type: FLAT_BINARY
+    executable:
+      name: wave
     artifacts:
       - path: "nativeCompile-ubuntu-latest/wave"
         transform: "wave-{{projectEffectiveVersion}}-linux-x86_64"
@@ -86,13 +88,13 @@ distributions:
         platform: windows-x86_64
         extraProperties:
           graalVMNativeImage: true
-      - path: "nativeCompile-macos-latest/wave.zip"
-        transform: "wave-{{projectEffectiveVersion}}-macos-x86_64.zip"
+      - path: "nativeCompile-macos-latest/wave"
+        transform: "wave-{{projectEffectiveVersion}}-macos-x86_64"
         platform: osx-x86_64
         extraProperties:
           graalVMNativeImage: true
-      - path: "nativeCompile-macos-latest-xlarge/wave.zip"
-        transform: "wave-{{projectEffectiveVersion}}-macos-arm64.zip"
+      - path: "nativeCompile-macos-latest-xlarge/wave"
+        transform: "wave-{{projectEffectiveVersion}}-macos-arm64"
         platform: osx-aarch_64
         extraProperties:
           graalVMNativeImage: true
@@ -107,7 +109,7 @@ packagers:
   brew:
     active: ALWAYS
     continueOnError: false
-    templateDirectory: ./app/src/jreleaser/distributions/wave-cli/brew
+    multiPlatform: true
     repository:
       active: RELEASE
       tagName: '{{distributionName}}-{{tagName}}'
