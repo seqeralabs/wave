@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave
+package io.seqera.wave.proxy
 
 import spock.lang.Requires
 import spock.lang.Shared
@@ -30,7 +30,6 @@ import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.http.HttpClientFactory
-import io.seqera.wave.proxy.ProxyClient
 import jakarta.inject.Inject
 /**
  *
