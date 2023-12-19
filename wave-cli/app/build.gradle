@@ -1,13 +1,13 @@
 plugins {
-    id 'io.seqera.wave.cli.java-application-conventions'
     id 'groovy'
-    id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id 'io.seqera.wave.cli.java-application-conventions'
     id 'org.graalvm.buildtools.native' version '0.9.28'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
 }
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(20)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
@@ -74,8 +74,13 @@ graalvmNative {
             imageName = 'wave'
             mainClass = 'io.seqera.wave.cli.App'
             configurationFileDirectories.from(file('conf'))
+
+            if (System.env.getOrDefault("PLATFORM", "") == "linux-x86_64") {
+                buildArgs(['--static', '--libc=musl'])
+            }
+
             javaLauncher = javaToolchains.launcherFor {
-                languageVersion = JavaLanguageVersion.of(20)
+                languageVersion = JavaLanguageVersion.of(21)
             }
             buildArgs.add('--enable-url-protocols=https')
             buildArgs.add('-R:MaxHeapSize=100M')

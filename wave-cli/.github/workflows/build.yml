@@ -24,16 +24,30 @@ jobs:
         include:
           - os: ubuntu-latest
             fatjar: true
+            musl: true
           - os: macos-latest
             codesign: true
           - os: macos-latest-xlarge
             codesign: true
     steps:
+      - name: Environment
+        run: env | sort
+
       - uses: actions/checkout@v3
 
       - uses: graalvm/setup-graalvm@v1
+        if: ${{ matrix.musl }}
         with:
-          java-version: '20'
+          java-version: '21'
+          components: 'native-image'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          native-image-job-reports: 'true'
+          native-image-musl: 'true'
+
+      - uses: graalvm/setup-graalvm@v1
+        if: ${{ !matrix.musl }}
+        with:
+          java-version: '21'
           components: 'native-image'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           native-image-job-reports: 'true'
@@ -43,19 +57,25 @@ jobs:
           ./gradlew test
 
       - name: Build fat JAR
-        if: ${{ matrix.fatjar}}
+        if: ${{ matrix.fatjar }}
         run: ./gradlew shadowJar
 
       - name: Upload fat JAR artifact
-        if: ${{ matrix.fatjar}}
+        if: ${{ matrix.fatjar }}
         uses: actions/upload-artifact@v2
         with:
           name: wave_jar
           path: ./app/build/libs/wave.jar
 
+      - name: Build static native
+        if: ${{ matrix.musl }}
+        run: ./gradlew app:nativeCompile
+        env:
+          PLATFORM: linux-x86_64
+
       - name: Build native
-        run: |
-          ./gradlew app:nativeCompile
+        if: ${{ !matrix.musl }}
+        run: ./gradlew app:nativeCompile
 
       - name: Codesign binary
         if: ${{ matrix.codesign  && contains(github.event.head_commit.message, '[release]') && github.event.ref=='refs/heads/master'}}
@@ -115,7 +135,7 @@ jobs:
       - name: Setup Java for JReleaser
         uses: actions/setup-java@v3
         with:
-          java-version: '20'
+          java-version: '21'
           distribution: 'adopt'
 
       - name: Version
