@@ -110,6 +110,15 @@ class ProxyClient {
         }
     }
 
+    HttpResponse<InputStream> getStream(String path, Map<String,List<String>> headers=null, boolean followRedirect=true) {
+        try {
+            return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofInputStream(), followRedirect )
+        }
+        catch (ClientResponseException e) {
+            return ErrResponse.forStream(e.message, e.request)
+        }
+    }
+
     HttpResponse<byte[]> getBytes(String path, Map<String,List<String>> headers=null, boolean followRedirect=true) {
         try {
             return get( makeUri(path), headers, HttpResponse.BodyHandlers.ofByteArray(), followRedirect )
