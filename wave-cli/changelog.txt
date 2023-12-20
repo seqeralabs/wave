@@ -1,5 +1,12 @@
 WAVE CLI CHANGE-LOG
 ===================
+1.1.2 - 20 Dec 2023
+- Add static compilation based on musl (#30) [f880d302]
+- Add multiplatform brew support (#49) [aa618329]
+- Add CI action to publish wave-cli to homebrew (#37) [a25adbd9]
+- Add fat JAR config (#36) [bb3ec2b2]
+- Max heap set to 256 MB (#48) [d70972eb]
+
 1.1.1 - 30 Nov 2023
 - Fix invalid protol prefix with await option [d37faca1]
 - Fix execute CI tests on pull requests (#44) [5e236b0a]
