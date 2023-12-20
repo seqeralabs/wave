@@ -8,7 +8,9 @@ project:
   license: Apache-2.0
   extraProperties:
     inceptionYear: 2023
-
+  java:
+    groupId: io.seqera.wave.cli
+    version: 21
 release:
   github:
     overwrite: true

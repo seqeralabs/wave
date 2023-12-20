@@ -39,7 +39,6 @@ jobs:
         if: ${{ matrix.musl }}
         with:
           java-version: '21'
-          components: 'native-image'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           native-image-job-reports: 'true'
           native-image-musl: 'true'
@@ -48,7 +47,6 @@ jobs:
         if: ${{ !matrix.musl }}
         with:
           java-version: '21'
-          components: 'native-image'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           native-image-job-reports: 'true'
 
