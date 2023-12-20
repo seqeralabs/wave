@@ -1,4 +1,13 @@
 # Wave changelog
+v1.1.7 - 19 Dec 2023
+- Improve usage of thread pools for build and scan service [1cd2dc90]
+- Implements streaming client for large binary downloads (#358) [592ce522]
+- Update failing tests [31edb5e7]
+- Fix typo in comment [c10cc472]
+- Remove unsused consts [24315f03]
+- Refactor build settings via BuildConfig class (#324) [f6924f4a]
+- Bump trivy 0.47.0 [3ff4a89f]
+
 v1.1.6 - 11 Dec 2023
 - Revert use of virtual threads for HttpClient [c14ecfc5]
 - Revert use of virtual threads for TimedInputStream [b3040ddc]
