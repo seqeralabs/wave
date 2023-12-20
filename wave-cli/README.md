@@ -17,6 +17,21 @@ that it can be used in your Docker (replace-with-your-own-fav-container-engine) 
 * Build Singularity native containers both using a Singularity spec file, Conda package(s) and Spack package(s);
 * Push Singularity native container images to OCI-compliant registries;
   
+### Installation 
+
+
+#### Binary download 
+
+Download the Wave pre-compiled binary for your operating system from the 
+[GitHub releases page](https://github.com/seqeralabs/wave-cli/releases/latest) and give execute permission to it.
+
+#### Homebrew (Linux and macOS)
+
+If you use [Homebrew](https://brew.sh/), you can install like this:
+
+```bash
+ brew install seqeralabs/tap/wave-cli
+```
 
 ### Get started
 
