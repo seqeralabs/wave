@@ -89,8 +89,8 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         response.status() == HttpStatus.OK
         and:
         response.body().indexOf('"schemaVersion":') != -1
-        response.getContentType().get().getName() ==  'application/vnd.docker.distribution.manifest.v2+json'
-        response.getContentLength() == 525
+        response.getContentType().get().getName() ==  'application/vnd.oci.image.index.v1+json'
+        response.getContentLength() == 9125
 
         when:
         storage.clear()
@@ -102,8 +102,8 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         response.status() == HttpStatus.OK
         and:
         response.body().indexOf('"schemaVersion":') != -1
-        response.getContentType().get().getName() ==  'application/vnd.docker.distribution.manifest.v2+json'
-        response.getContentLength() == 525
+        response.getContentType().get().getName() ==  'application/vnd.oci.image.index.v1+json'
+        response.getContentLength() == 9125
     }
 
     @Timeout(10)

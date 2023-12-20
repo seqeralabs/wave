@@ -22,21 +22,20 @@ import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
-import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
-import io.micronaut.core.annotation.Nullable
-import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micrometer.core.instrument.MeterRegistry
-import io.micronaut.context.annotation.Value
 import io.micronaut.context.event.ApplicationEventPublisher
+import io.micronaut.core.annotation.Nullable
+import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.ratelimit.AcquireRequest
@@ -48,8 +47,8 @@ import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.SpackHelper
 import io.seqera.wave.util.TarUtils
 import io.seqera.wave.util.TemplateRenderer
-import io.seqera.wave.util.ThreadPoolBuilder
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 import static io.seqera.wave.util.RegHelper.layerDir
 import static io.seqera.wave.util.RegHelper.layerName
@@ -67,21 +66,17 @@ import static java.nio.file.StandardOpenOption.WRITE
 @CompileStatic
 class ContainerBuildServiceImpl implements ContainerBuildService {
 
-    @Value('${wave.build.timeout}')
-    Duration buildTimeout
-
-    @Value('${wave.build.status.duration}')
-    private Duration statusDuration
-
-    @Value('${wave.build.status.delay}')
-    private Duration statusDelay
+    @Inject
+    private BuildConfig buildConfig
 
     @Inject
-    ApplicationEventPublisher<BuildEvent> eventPublisher
+    private ApplicationEventPublisher<BuildEvent> eventPublisher
 
     @Inject
     private BuildStore buildStore
 
+    @Inject
+    @Named(TaskExecutors.IO)
     private ExecutorService executor
 
     @Inject
@@ -107,11 +102,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     private HttpClientConfig httpClientConfig
 
     @Inject CleanupStrategy cleanup
-
-    @PostConstruct
-    void init() {
-        executor = ThreadPoolBuilder.io(10, 10, 100, 'wave-builder')
-    }
 
     /**
      * Build a container image for the given {@link BuildRequest}
@@ -210,8 +200,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             // this is needed to allow re-try builds failed for
             // temporary error conditions e.g. expired credentials
             final ttl = resp.failed()
-                    ? statusDelay.multipliedBy(10)
-                    : statusDuration
+                    ? buildConfig.statusDelay.multipliedBy(10)
+                    : buildConfig.statusDuration
             // update build status store
             buildStore.storeBuild(req.targetImage, resp, ttl)
             // cleanup build context

@@ -82,7 +82,7 @@ interface BuildStore {
      * @param imageName
      *      The target container image name to be build
      * @return
-     *      the {@link CompletableFuture} holding the {@BuildResult} associated with
+     *      the {@link CompletableFuture} holding the {@link BuildResult} associated with
      *      specified image name or {@code null} if no build is associated for the
      *      given image name
      */

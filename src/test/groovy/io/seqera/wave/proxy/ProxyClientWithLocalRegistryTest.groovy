@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave
+package io.seqera.wave.proxy
 
 import spock.lang.Shared
 import spock.lang.Specification

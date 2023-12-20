@@ -56,9 +56,6 @@ class HttpClientConfig implements Retryable.Config {
     @Value('${wave.httpclient.retry.jitter:0.25}')
     double retryJitter
 
-    @Value('${wave.httpclient.readTimeout:30s}')
-    Duration readTimeout
-
     @PostConstruct
     private void init() {
         log.info "Http client config: connectTimeout=$connectTimeout; retryAttempts=$retryAttempts; retryDelay=$retryDelay; retryMaxDelay=$retryMaxDelay; retryMultiplier=$retryMultiplier"
@@ -71,9 +68,5 @@ class HttpClientConfig implements Retryable.Config {
     int getMaxAttempts() { retryAttempts }
 
     double getJitter() { retryJitter }
-
-    Duration getReadTimeout() {
-        return readTimeout
-    }
 
 }
