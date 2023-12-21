@@ -40,25 +40,25 @@
 
 # Wave build process Configurations
 
-| Variable                      | Description                                                          | Default Value                             | Optional |
-|-------------------------------|----------------------------------------------------------------------|-------------------------------------------|----------|
-| `wave.build.timeout`                  | Timeout for the build process.                                       | `5m `                                      | false    |
-| `wave.build.workspace`                | Path to workspace for the build process. e,g, /efs/wave/build        |                                           | false    |
-| `wave.build.cleanup`                  | Cleanup strategy after the build process. Options: `"OnSuccess"`.    |                                           | true     |
-| `wave.build.kaniko-image`     | Docker image for Kaniko for build process.                           | `gcr.io/kaniko-project/executor:v1.18.0`             | false    |
+| Variable                      | Description                                                          | Default Value                                        | Optional |
+|-------------------------------|----------------------------------------------------------------------|------------------------------------------------------|----------|
+| `wave.build.timeout`                  | Timeout for the build process.                                       | `5m `                                                | false    |
+| `wave.build.workspace`                | Path to workspace for the build process. e,g, /efs/wave/build        |                                                      | false    |
+| `wave.build.cleanup`                  | Cleanup strategy after the build process. Options: `"OnSuccess"`.    |                                                      | true     |
+| `wave.build.kaniko-image`     | Docker image for Kaniko for build process.                           | `gcr.io/kaniko-project/executor:v1.19.2`             | false    |
 | `wave.build.singularity-image` | Singularity image for the build process.                             | `quay.io/singularity/singularity:v3.11.4-slim`       | false    |
 | `wave.build.singularity-image-arm64` | Singularity ARM64 image for the build process.                       | `quay.io/singularity/singularity:v3.11.4-slim-arm64` | true     |
-| `wave.build.repo`             | Docker container repository for docker images build by wave.         |                                           | false    |
-| `wave.build.cache`            | Docker container repository to cache layers of images build by wave. |                                           | false    |
-| `wave.build.timeout`          | Timeout for the Wave build process.                                  | `900s`                                    | false    |
-| `wave.build.status.delay`     | Delay for build status checks.                                       | `5s`                                      | false    |
-| `wave.build.status.duration`  | Duration for build status checks.                                    | `1d`                                      | false    |
-| `wave.build.spack.cacheDirectory`     | Cache directory for Spack. e.g. `/efs/wave/spack/cache`              |                                           | false    |
-| `wave.build.spack.cacheMountPath`     | Cache mount path for Spack. e.g. `/var/seqera/spack/cache`           |                                           | false    |
-| `wave.build.spack.secretKeyFile`      | Secret key file for Spack. e.g. `/efs/wave/spack/key`                |                                           | false    |
-| `wave.build.spack.secretMountPath`    | Secret mount path for Spack. e.g. `/var/seqera/spack/key`            |                                           | false    |
-| `wave.build.public`                  | Deafult public re[ository for wave.                                  |                                           | true     |
-| `wave.build.compress-caching`                  | wave caching compression for build process.                          | true                                      | false    |
+| `wave.build.repo`             | Docker container repository for docker images build by wave.         |                                                      | false    |
+| `wave.build.cache`            | Docker container repository to cache layers of images build by wave. |                                                      | false    |
+| `wave.build.timeout`          | Timeout for the Wave build process.                                  | `900s`                                               | false    |
+| `wave.build.status.delay`     | Delay for build status checks.                                       | `5s`                                                 | false    |
+| `wave.build.status.duration`  | Duration for build status checks.                                    | `1d`                                                 | false    |
+| `wave.build.spack.cacheDirectory`     | Cache directory for Spack. e.g. `/efs/wave/spack/cache`              |                                                      | false    |
+| `wave.build.spack.cacheMountPath`     | Cache mount path for Spack. e.g. `/var/seqera/spack/cache`           |                                                      | false    |
+| `wave.build.spack.secretKeyFile`      | Secret key file for Spack. e.g. `/efs/wave/spack/key`                |                                                      | false    |
+| `wave.build.spack.secretMountPath`    | Secret mount path for Spack. e.g. `/var/seqera/spack/key`            |                                                      | false    |
+| `wave.build.public`                  | Deafult public re[ository for wave.                                  |                                                      | true     |
+| `wave.build.compress-caching`                  | wave caching compression for build process.                          | true                                                 | false    |
 
 # Kubernetes Configurations for Wave build process (Note: If you will use kubernetes)
 
