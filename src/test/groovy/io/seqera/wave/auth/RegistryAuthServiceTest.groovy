@@ -74,10 +74,10 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
     void 'test valid login'() {
         given:
 
-        String uri = getTestRegistryName(REGISTRY)
+        String registry = getTestRegistryName(REGISTRY)
 
         when:
-        boolean logged = loginService.login(uri, USER, PWD)
+        boolean logged = loginService.login(registry, USER, PWD)
 
         then:
         logged == VALID
@@ -95,26 +95,26 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
     @IgnoreIf({!System.getenv('AZURECR_USER')})
     void 'test valid azure login'() {
         given:
-        def REGISTRY = 'seqeralabs.azurecr.io'
+        def registry = 'seqeralabs.azurecr.io'
 
         expect:
-        loginService.login(REGISTRY, azureUsername, azurePassword)
+        loginService.login(registry, azureUsername, azurePassword)
     }
 
     @IgnoreIf({!System.getenv('AWS_ACCESS_KEY_ID')})
     void 'test valid aws ecr private'() {
         given:
-        String REGISTRY = '195996028523.dkr.ecr.eu-west-1.amazonaws.com'
+        String registry = '195996028523.dkr.ecr.eu-west-1.amazonaws.com'
         expect:
-        loginService.login(REGISTRY, awsEcrUsername, awsEcrPassword)
+        loginService.login(registry, awsEcrUsername, awsEcrPassword)
     }
 
     @IgnoreIf({!System.getenv('AWS_ACCESS_KEY_ID')})
     void 'test valid aws ecr public'() {
         given:
-        String REGISTRY = 'public.ecr.aws'
+        String registry = 'public.ecr.aws'
         expect:
-        loginService.login(REGISTRY, awsEcrUsername, awsEcrPassword)
+        loginService.login(registry, awsEcrUsername, awsEcrPassword)
     }
     
     void 'test containerService valid login'() {

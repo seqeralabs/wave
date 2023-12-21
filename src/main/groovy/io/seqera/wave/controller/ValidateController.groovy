@@ -23,7 +23,7 @@ import javax.validation.Valid
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Post
 import io.seqera.wave.auth.RegistryAuthService
-import io.seqera.wave.model.ValidateRegistryCredsRequest
+import io.seqera.wave.exchange.ValidateRegistryCredsRequest
 import jakarta.inject.Inject
 import reactor.core.publisher.Mono
 

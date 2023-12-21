@@ -98,7 +98,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         if( !registryName )
             registryName = DOCKER_IO
 
-        final target = RegistryMeta.parse(registryName)
+        final target = TargetInfo.parse(registryName)
 
         // 1. look up the registry authorisation info for the given registry name
         final registry = lookupService.lookup(target.registry)
@@ -111,7 +111,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         // 3. make a request against the authorization "realm" service using basic
         //    credentials to get the login token
         final basic =  "${creds.username}:${creds.password}".bytes.encodeBase64()
-        final endpoint = registry.auth.getEndpoint(username, target.repository)
+        final endpoint = registry.auth.getEndpoint()
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(endpoint)
                 .GET()
@@ -261,18 +261,18 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
 
 
     @Canonical
-    static class RegistryMeta {
+    static class TargetInfo {
         String registry
         String repository
 
-        static RegistryMeta parse(String registryOrRepository) {
+        static TargetInfo parse(String registryOrRepository) {
             assert registryOrRepository, "Missing 'registryOrRepository' argument"
             if( registryOrRepository.contains('/') ) {
                 final coords = ContainerCoordinates.parse(registryOrRepository)
-                return new RegistryMeta(coords.getRegistry(), coords.getImage())
+                return new TargetInfo(coords.getRegistry(), coords.getImage())
             }
             else {
-                return new RegistryMeta(registryOrRepository)
+                return new TargetInfo(registryOrRepository)
             }
         }
     }
