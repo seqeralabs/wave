@@ -18,14 +18,13 @@
 
 package io.seqera.wave.service.cleanup
 
-import io.micronaut.core.annotation.Nullable
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.service.builder.BuildResult
+import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 /**
  * Implement a cleanup strategy
  *
@@ -36,19 +35,18 @@ import jakarta.inject.Singleton
 @Slf4j
 class CleanupStrategy {
 
-    @Value('${wave.build.cleanup}')
-    @Nullable
-    String cleanup
-
     @Value('${wave.debug:false}')
     Boolean debugMode
 
+    @Inject
+    BuildConfig buildConfig
 
     boolean shouldCleanup(BuildResult result) {
         shouldCleanup(result?.exitStatus)
     }
 
     boolean shouldCleanup(Integer exitStatus) {
+        final cleanup = buildConfig.cleanup
         if( cleanup==null )
             return !debugMode
         if( cleanup == 'true' )

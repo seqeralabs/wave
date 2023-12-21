@@ -37,6 +37,7 @@ import groovy.util.logging.Slf4j
  */
 @Slf4j
 @CompileStatic
+@Deprecated
 class ThreadPoolBuilder {
 
     static AtomicInteger poolCount = new AtomicInteger()

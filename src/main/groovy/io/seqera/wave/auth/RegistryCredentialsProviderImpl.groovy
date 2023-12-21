@@ -23,6 +23,7 @@ import javax.annotation.Nullable
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.service.CredentialsService
 import jakarta.inject.Inject
@@ -47,15 +48,8 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
     @Inject
     private CredentialsService credentialsService
 
-    @Value('${wave.build.repo}')
-    private String defaultBuildRepository
-
-    @Value('${wave.build.cache}')
-    private String defaultCacheRepository
-
-    @Nullable
-    @Value('${wave.build.public}')
-    private String defaultPublicRepository
+    @Inject
+    private BuildConfig buildConfig
 
     /**
      * Find the corresponding credentials for the specified registry
@@ -73,7 +67,7 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
 
     @Override
     RegistryCredentials getDefaultCredentials(ContainerPath container) {
-        return container && container.repository==defaultPublicRepository
+        return container && container.repository==buildConfig.defaultPublicRepository
                 ? getDefaultRepoCredentials0(container)
                 : getDefaultCredentials0(container?.registry)
     }
@@ -121,7 +115,7 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
 
         // use default credentials for default repositories
         final repo = container.repository
-        if( repo==defaultBuildRepository || repo==defaultCacheRepository || repo==defaultPublicRepository)
+        if( repo==buildConfig.defaultBuildRepository || repo==buildConfig.defaultCacheRepository || repo==buildConfig.defaultPublicRepository)
             return getDefaultCredentials(container)
 
         return getUserCredentials0(container.registry, userId, workspaceId, towerToken, towerEndpoint, workflowId)
