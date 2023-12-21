@@ -90,7 +90,7 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
         def req = [
                 userName:'test',
                 password:'test',
-                registry: getTestRegistryUrl('test') ]
+                registry: getTestRegistryName('test') ]
         and:
         HttpRequest request = HttpRequest.POST("/validate-creds", req)
         when:
@@ -106,7 +106,7 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
         def req = [
                 userName: USER,
                 password: PWD,
-                registry: getTestRegistryUrl(REGISTRY_URL)
+                registry: getTestRegistryName(REGISTRY)
         ]
         HttpRequest request = HttpRequest.POST("/validate-creds", req)
         when:
@@ -118,13 +118,13 @@ class ValidateCredsControllerTest extends Specification implements SecureDockerR
         response.body() == VALID
 
         where:
-        USER             | PWD             | REGISTRY_URL                   | VALID
-        'test'           | 'test'          | 'test'                         | true
-        'nope'           | 'yepes'         | 'test'                         | false
-        dockerUsername   | dockerPassword  | "https://registry-1.docker.io" | true
-        'nope'           | 'yepes'         | "https://registry-1.docker.io" | false
-        quayUsername     | quayPassword    | "https://quay.io"              | true
-        'nope'           | 'yepes'         | "https://quay.io"              | false
-        'test'           | 'test'          | 'test'                         | true
+        USER             | PWD             | REGISTRY                   | VALID
+        'test'           | 'test'          | 'test'                     | true
+        'nope'           | 'yepes'         | 'test'                     | false
+        dockerUsername   | dockerPassword  | "registry-1.docker.io"     | true
+        'nope'           | 'yepes'         | "registry-1.docker.io"     | false
+        quayUsername     | quayPassword    | "quay.io"                  | true
+        'nope'           | 'yepes'         | "quay.io"                  | false
+        'test'           | 'test'          | 'test'                     | true
     }
 }

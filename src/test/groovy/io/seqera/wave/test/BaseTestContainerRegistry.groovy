@@ -31,13 +31,17 @@ trait BaseTestContainerRegistry {
 
     abstract GenericContainer getTestcontainers()
 
-    String getTestRegistryUrl(String registry=null) {
+    String getTestRegistryName(String registry=null) {
         if( !registry || registry=='test' || registry=='localhost' ) {
             int port = testcontainers.firstMappedPort
             return "${testcontainers.getHost()}:$port"
         }
         else
             return registry
+    }
+
+    String getTestRegistryUrl(String registry=null) {
+        return "http://" + getTestRegistryName(registry)
     }
 
     RegistryInfo getLocalTestRegistryInfo() {

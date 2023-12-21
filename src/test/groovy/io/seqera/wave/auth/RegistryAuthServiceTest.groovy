@@ -74,7 +74,7 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
     void 'test valid login'() {
         given:
 
-        String uri = getTestRegistryUrl(REGISTRY)
+        String uri = getTestRegistryName(REGISTRY)
 
         when:
         boolean logged = loginService.login(uri, USER, PWD)
@@ -119,10 +119,10 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
     
     void 'test containerService valid login'() {
         given:
-        String uri = getTestRegistryUrl(REGISTRY)
+        String registry = getTestRegistryName(REGISTRY)
 
         when:
-        boolean logged = loginService.validateUser(uri, USER, PWD)
+        boolean logged = loginService.validateUser(registry, USER, PWD)
 
         then:
         logged == VALID
