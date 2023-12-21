@@ -18,17 +18,16 @@
 
 package io.seqera.wave.service
 
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.tower.crypto.AsymmetricCipher
 import io.seqera.tower.crypto.EncryptedPacket
+import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.tower.client.CredentialsDescription
 import io.seqera.wave.tower.client.TowerClient
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import static io.seqera.wave.WaveDefault.DOCKER_IO
 /**
  * Define operations to access container registry credentials from Tower
  *
@@ -46,7 +45,7 @@ class CredentialServiceImpl implements CredentialsService {
     private PairingService keyService
 
     @Override
-    ContainerRegistryKeys findRegistryCreds(String registryName, Long userId, Long workspaceId, String towerToken, String towerEndpoint) {
+    ContainerRegistryKeys findRegistryCreds(ContainerPath container, Long userId, Long workspaceId, String towerToken, String towerEndpoint) {
         if (!userId)
             throw new IllegalArgumentException("Missing userId parameter")
         if (!towerToken)
@@ -66,15 +65,15 @@ class CredentialServiceImpl implements CredentialsService {
         }
 
         // find credentials with a matching registry
-        final matchingRegistryName = registryName ?: DOCKER_IO
-        final creds = findBestMatchingCreds(matchingRegistryName, all)
+        final repo = container.repository
+        final creds = findBestMatchingCreds(repo,  all)
         if (!creds) {
-            log.debug "No credentials matching criteria registryName=$registryName; userId=$userId; workspaceId=$workspaceId; endpoint=$towerEndpoint"
+            log.debug "No credentials matching criteria for repository=$repo; userId=$userId; workspaceId=$workspaceId; endpoint=$towerEndpoint"
             return null
         }
 
         // log for debugging purposes
-        log.debug "Credentials matching criteria registryName=$registryName; userId=$userId; workspaceId=$workspaceId; endpoint=$towerEndpoint => $creds"
+        log.debug "Credentials matching criteria for repository=$repo; userId=$userId; workspaceId=$workspaceId; endpoint=$towerEndpoint => $creds"
         // now fetch the encrypted key
         final encryptedCredentials = towerClient.fetchEncryptedCredentials(towerEndpoint, towerToken, creds.id, pairing.pairingId, workspaceId).get()
         final privateKey = pairing.privateKey
@@ -83,6 +82,7 @@ class CredentialServiceImpl implements CredentialsService {
     }
 
     protected CredentialsDescription findBestMatchingCreds(String target, List<CredentialsDescription> all) {
+        assert target, "Missing 'target' container repository"
         // take all container registry credentials
         final creds = all
                 .findAll(it-> it.provider=='container-reg' )

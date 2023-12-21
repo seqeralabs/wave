@@ -30,6 +30,7 @@ import java.util.concurrent.CompletableFuture
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.tower.crypto.AsymmetricCipher
+import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.pairing.PairingRecord
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.tower.client.CredentialsDescription
@@ -95,7 +96,8 @@ class CredentialsServiceTest extends Specification {
 
 
         when: 'look those registry credentials from tower'
-        def credentials = credentialsService.findRegistryCreds("quay.io",userId, workspaceId,token,towerEndpoint)
+        def container = ContainerCoordinates.parse("quay.io/foo")
+        def credentials = credentialsService.findRegistryCreds(container,userId, workspaceId,token,towerEndpoint)
 
         then: 'the registered key is fetched correctly from the security service'
         1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE, towerEndpoint) >> keyRecord
@@ -117,8 +119,10 @@ class CredentialsServiceTest extends Specification {
 
 
     def 'should fail if keys where not registered for the tower endpoint'() {
+        given:
+        def container = ContainerCoordinates.parse('quay.io/foo')
         when:
-        credentialsService.findRegistryCreds('quay.io',10,10,"token",'endpoint')
+        credentialsService.findRegistryCreds(container,10,10,"token",'endpoint')
 
         then: 'the security service does not have the key for the hostname'
         1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE,'endpoint') >> null
@@ -128,8 +132,10 @@ class CredentialsServiceTest extends Specification {
     }
 
     def 'should return no registry credentials if the user has no credentials in tower' () {
+        given:
+        def container = ContainerCoordinates.parse('quay.io/foo')
         when:
-        def credentials = credentialsService.findRegistryCreds('quay.io', 10, 10, "token",'tower.io')
+        def credentials = credentialsService.findRegistryCreds(container, 10, 10, "token",'tower.io')
         then: 'a key is found'
         1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE, 'tower.io') >> new PairingRecord(
                 pairingId: 'a-key-id',
@@ -159,7 +165,8 @@ class CredentialsServiceTest extends Specification {
         )
 
         when:
-        def credentials = credentialsService.findRegistryCreds('quay.io', 10, 10, "token",'tower.io')
+        def container = ContainerCoordinates.parse('quay.io/foo')
+        def credentials = credentialsService.findRegistryCreds(container, 10, 10, "token",'tower.io')
 
         then: 'a key is found'
         1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE, 'tower.io') >> new PairingRecord(

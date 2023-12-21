@@ -35,5 +35,5 @@ interface RegistryLookupService {
      *     or {@code null} if nothing is found
      */
     RegistryInfo lookup(String registry)
-    
+
 }

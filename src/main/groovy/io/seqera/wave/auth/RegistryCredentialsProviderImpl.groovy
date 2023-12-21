@@ -18,11 +18,9 @@
 
 package io.seqera.wave.auth
 
-import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Value
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.service.CredentialsService
@@ -118,13 +116,13 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
         if( repo==buildConfig.defaultBuildRepository || repo==buildConfig.defaultCacheRepository || repo==buildConfig.defaultPublicRepository)
             return getDefaultCredentials(container)
 
-        return getUserCredentials0(container.registry, userId, workspaceId, towerToken, towerEndpoint)
+        return getUserCredentials0(container, userId, workspaceId, towerToken, towerEndpoint)
     }
 
-    protected RegistryCredentials getUserCredentials0(String registry, Long userId, Long workspaceId, String towerToken, String towerEndpoint) {
-        final keys = credentialsService.findRegistryCreds(registry, userId, workspaceId, towerToken, towerEndpoint)
+    protected RegistryCredentials getUserCredentials0(ContainerPath container, Long userId, Long workspaceId, String towerToken, String towerEndpoint) {
+        final keys = credentialsService.findRegistryCreds(container, userId, workspaceId, towerToken, towerEndpoint)
         final result = keys
-                ? credentialsFactory.create(registry, keys.userName, keys.password)
+                ? credentialsFactory.create(container.registry, keys.userName, keys.password)
                 // create a missing credentials class with a unique key (the access token) because even when
                 // no credentials are provided a registry auth token token can be associated to this user
                 : new MissingCredentials(towerToken)
