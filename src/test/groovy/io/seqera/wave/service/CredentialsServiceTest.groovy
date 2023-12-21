@@ -222,39 +222,25 @@ class CredentialsServiceTest extends Specification {
     def'should find the best registry match with partial match'(){
         given:
         def svc = new CredentialServiceImpl()
-        def target = "host.com/foo/bar"
-        def choices = [
-                        new CredentialsDescription(registry:"host.com",provider: 'container-reg'),
-                        new CredentialsDescription(registry:"host.com/foo",provider: 'container-reg'),
-                        new CredentialsDescription(registry:"host.com/foo",provider: 'something-else'),
-                        new CredentialsDescription(registry:"host.com/fooo", provider:'container-reg'),
-                        new CredentialsDescription(registry:"host.com/foo/bar/baz",provider: 'container-reg')]
+        def target = TARGET
+        def choices = CHOICES.tokenize(' ').collect(it-> new CredentialsDescription(registry: it, provider: 'container-reg') )
 
         when:
         def match = svc.findBestMatchingCreds(target, choices)
 
         then:
-        match.registry == "host.com/foo"
-        match.provider == "container-reg"
+        match.registry == EXPECTED
+
+        where:
+        TARGET                  | EXPECTED                  | CHOICES
+        "host.com"              | 'host.com'                | 'host.com host.com/foo host.com/foo/* host.com/foo/* host.com/fooo/* host.com/foo/bar/baz/*'
+        "host.com/fo"           | 'host.com'                | 'host.com host.com/foo host.com/foo/* host.com/foo/* host.com/fooo/* host.com/foo/bar/baz/*'
+        "host.com/bar"          | 'host.com'                | 'host.com host.com/foo host.com/foo/* host.com/foo/* host.com/fooo/* host.com/foo/bar/baz/*'
+        "host.com/foo"          | 'host.com/foo'            | 'host.com host.com/foo host.com/foo/* host.com/foo/* host.com/fooo/* host.com/foo/bar/baz/*'
+        "host.com/foo/bar"      | 'host.com/foo/*'          | 'host.com host.com/foo host.com/foo/* host.com/foo/* host.com/fooo/* host.com/foo/bar/baz/*'
+        "host.com/foo/bar/baz"  | 'host.com/foo/bar/baz/*'  | 'host.com host.com/foo host.com/foo/* host.com/foo/* host.com/fooo/* host.com/foo/bar/baz/*'
     }
 
-    def'should find the best registry match with invalid partial match'(){
-        given:
-        def svc = new CredentialServiceImpl()
-        def target = "host.com/foo/bar"
-        def choices = [
-                new CredentialsDescription(registry:"host.com",provider: 'container-reg'),
-                new CredentialsDescription(registry:"host.com/fo",provider: 'container-reg'),
-                new CredentialsDescription(registry:"host.com/fooo", provider:'container-reg'),
-                new CredentialsDescription(registry:"host.com/foo/bar/baz",provider: 'container-reg')]
-
-        when:
-        def match = svc.findBestMatchingCreds(target, choices)
-
-        then:
-        match.registry == "host.com"
-        match.provider == "container-reg"
-    }
 
     private static GetCredentialsKeysResponse encryptedCredentialsFromTower(PublicKey key, String credentials) {
         return new GetCredentialsKeysResponse(keys: TEST_CIPHER.encrypt(key,credentials.getBytes()).encode())
@@ -267,29 +253,30 @@ class CredentialsServiceTest extends Specification {
         def svc = new CredentialServiceImpl()
 
         expect:
-        svc.matchingScore(TARGET, REPO) == EXPECTED
+        svc.matchingScore(TARGET, PATTERN) == EXPECTED
 
         where:
-        TARGET              | REPO              | EXPECTED
+        TARGET              | PATTERN           | EXPECTED
         null                | null              | 0
         'quay.io'           | null              | 0
         'quay.io'           | 'docker.io'       | 0
         and:
-        'quay.io'           | 'quay.io'         | 1
-        'quay.io/foo'       | 'quay.io'         | 1
-        'quay.io/foo/bar'   | 'quay.io'         | 1
-        'quay.io/foo/bar'   | 'quay.io/fo'      | 1
-        'quay.io/foo/bar'   | 'quay.io/fooo'    | 1
+        'quay.io'           | 'quay.io'         | 'quay.io'.length()
+        'quay.io/foo'       | 'quay.io'         | 'quay.io'.length()
+        'quay.io/foo/bar'   | 'quay.io'         | 'quay.io'.length()
         and:
-        'quay.io/foo/bar'   | 'quay.io/foo'     | 2
+        'quay.io/foo/bar'   | 'quay.io/fo'      | 0
+        'quay.io/foo/bar'   | 'quay.io/fooo'    | 0
+        'quay.io/foo/bar'   | 'quay.io/*'       | 'quay.io'.length()
         and:
-        'quay.io/foo/bar'   | 'quay.io/foo/bar' | 3
+        'quay.io/foo'       | 'quay.io/foo/*'   | 'quay.io/foo'.length()
+        'quay.io/foo/bar'   | 'quay.io/foo/*'   | 'quay.io/foo'.length()
         and:
         // should should return 0 because the "authority" repository has
         // a longer name of the target one. Therefore it cannot be used
         // to authenticate the target
-        'quay.io'           | 'quay.io/foo/bar' | 0
-        'quay.io/foo'       | 'quay.io/foo/bar' | 0
+        'quay.io'           | 'quay.io/foo/*'   | 0
+        'quay.io/fo/bar'    | 'quay.io/foo/*'   | 0
     }
 
 
@@ -303,6 +290,7 @@ class CredentialsServiceTest extends Specification {
         TARGET                  | R1                | R2                | EXPECTED
         'docker.io'             | 'docker.io'       | 'quay.io'         | 'docker.io'
         'docker.io/foo'         | 'docker.io/foo'   | 'docker.io'       | 'docker.io/foo'
-        'docker.io/foo/bar'     | 'docker.io/foo'   | 'docker.io'       | 'docker.io/foo'
+        'docker.io/foo/bar'     | 'docker.io/foo/*' | 'docker.io'       | 'docker.io/foo/*'
+        'docker.io/foo/bar'     | 'docker.io/foo'   | 'docker.io'       | 'docker.io'
     }
 }

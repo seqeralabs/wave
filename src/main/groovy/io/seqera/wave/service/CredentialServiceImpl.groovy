@@ -110,16 +110,19 @@ class CredentialServiceImpl implements CredentialsService {
      * @return An integer greater or equals to zero representing the long the path in the two repositories
      */
     protected int matchingScore(String target, String authority) {
-        final t = target ? target.tokenize('/') : List.<String>of()
-        final r = authority ? authority.tokenize('/') : List.<String>of()
-        // the authority repo length cannot be longer of the target repository
-        if( r.size()>t.size() )
+        if( !authority )
             return 0
-        // look for the longest matching path
-        int i=0
-        while( i<t.size() && i<r.size() && t[i]==r[i] )
-            i++
-        return i
+        if( !authority.contains('/') && !authority.endsWith('/*') )
+            authority += '/*'
+        if( authority.endsWith('/*') ) {
+            final len = authority.length()-2
+            if( target.startsWith(authority.substring(0,len)) )
+                return len
+        }
+        else if( target==authority ) {
+            return target.length()
+        }
+        return 0
     }
 
     protected int repoLen(String repo) {
