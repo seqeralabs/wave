@@ -30,10 +30,10 @@ interface RegistryLookupService {
      * auth endpoint
      *
      * @param registry
- *         The registry name e.g. {@code docker.io} or {@code quay.io}
+     *         The registry name e.g. {@code docker.io} or {@code quay.io}
      * @return The corresponding {@link RegistryAuth} object holding the realm URI and service info,
      *     or {@code null} if nothing is found
      */
     RegistryInfo lookup(String registry)
-    URI registryEndpoint(String registry)
+    
 }

@@ -119,12 +119,14 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
      * @param registry The registry name e.g. quay.io. When empty defaults to 'docker.io'
      * @return the corresponding registry endpoint uri
      */
-    URI registryEndpoint(String registry) {
-        def result = registry ?: DOCKER_IO
+    protected URI registryEndpoint(String registry) {
+        String result = registry ?: DOCKER_IO
         if( result==DOCKER_IO )
             result = DOCKER_REGISTRY_1
-        if( !result.startsWith('http://') && !result.startsWith('https://') )
-            result = 'https://' + result
+        if( !result.startsWith('http://') && !result.startsWith('https://') ) {
+            final prot = registry=~'localhost(:\\d+)?' ? 'http' : 'https'
+            result = "$prot://" + result
+        }
         if( result.endsWith('/v2'))
             result += '/'
         if( !result.endsWith('/v2/') )

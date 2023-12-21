@@ -24,6 +24,20 @@ package io.seqera.wave.service
  */
 interface CredentialsService {
 
+    /**
+     *
+     * @param registryName
+     *          The registry or repository name for which credentials a required
+     * @param userId
+     *          The unique ID of the Tower user
+     * @param workspaceId
+     *          The unique ID of the Tower workspace
+     * @param towerToken
+     *          The Tower access token
+     * @param towerEndpoint
+     *          The Tower endpoint
+     * @return
+     */
     ContainerRegistryKeys findRegistryCreds(String registryName, Long userId, Long workspaceId, String towerToken, String towerEndpoint)
 
 }

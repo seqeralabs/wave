@@ -28,7 +28,9 @@ interface RegistryAuthService {
     /**
      * Perform a registry login
      *
-     * @param registry The registry to login against which e.g. {@code docker.io}
+     * @param registry
+     *      The registry to login against which e.g. {@code docker.io} or a container
+     *      repository e.g. {@code docker.io/library/ubuntu}
      * @param user The registry username
      * @param password The registry password or PAT
      * @return {@code true} if the login was successful or {@code false} otherwise
@@ -38,7 +40,9 @@ interface RegistryAuthService {
     /**
      * Check if the provided credentials are valid
      *
-     * @param registry The registry to check the credentials which e.g. {@code docker.io}
+     * @param registry
+     *      The registry to check the credentials which e.g. {@code docker.io} or a container
+     *      repository e.g. {@code docker.io/library/ubuntu}
      * @param user The registry username
      * @param password The registry password or PAT
      * @return {@code true} if the login was successful or {@code false} otherwise

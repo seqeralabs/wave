@@ -20,6 +20,7 @@ package io.seqera.wave.service
 
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.security.PublicKey
 import java.time.Duration
@@ -194,37 +195,107 @@ class CredentialsServiceTest extends Specification {
     def'should find the best registry match with exact match'(){
         given:
         def svc = new CredentialServiceImpl()
-        def containerRepository = "host.com/foo/bar"
-        def choices = [new CredentialsDescription(registry:"host.com",provider: 'container-reg'),
-                       new CredentialsDescription(registry:"host.com/foo",provider: 'container-reg'),
-                       new CredentialsDescription(registry:"host.com/foo/bar", provider:'container-reg'),
-                       new CredentialsDescription(registry:"host.com/foo/bar/baz",provider: 'container-reg')]
+        and:
+        def target = "host.com/foo/bar"
+        def choices = [
+                    new CredentialsDescription(registry:"host.com", provider: 'container-reg'),
+                    new CredentialsDescription(registry:"host.com/foo",provider: 'container-reg'),
+                    new CredentialsDescription(registry:"host.com/foo/bar", provider:'container-reg'),
+                    new CredentialsDescription(registry:"host.com/foo/bar", provider:'something-else'),
+                    new CredentialsDescription(registry:"host.com/foo/bar/baz",provider: 'container-reg') ]
 
         when:
-        def match = svc.findBestMatchingCreds(containerRepository, choices)
+        def match = svc.findBestMatchingCreds(target, choices)
 
         then:
         match.registry == "host.com/foo/bar"
+        match.provider == "container-reg"
     }
 
     def'should find the best registry match with partial match'(){
         given:
         def svc = new CredentialServiceImpl()
-        def containerRepository = "host.com/foo/bar"
-        def choices = [new CredentialsDescription(registry:"host.com",provider: 'container-reg'),
-                       new CredentialsDescription(registry:"host.com/foo",provider: 'container-reg'),
-                       new CredentialsDescription(registry:"host.com/fooo", provider:'container-reg'),
-                       new CredentialsDescription(registry:"host.com/foo/bar/baz",provider: 'container-reg')]
+        def target = "host.com/foo/bar"
+        def choices = [
+                        new CredentialsDescription(registry:"host.com",provider: 'container-reg'),
+                        new CredentialsDescription(registry:"host.com/foo",provider: 'container-reg'),
+                        new CredentialsDescription(registry:"host.com/foo",provider: 'something-else'),
+                        new CredentialsDescription(registry:"host.com/fooo", provider:'container-reg'),
+                        new CredentialsDescription(registry:"host.com/foo/bar/baz",provider: 'container-reg')]
 
         when:
-        def match = svc.findBestMatchingCreds(containerRepository, choices)
+        def match = svc.findBestMatchingCreds(target, choices)
 
         then:
         match.registry == "host.com/foo"
+        match.provider == "container-reg"
+    }
+
+    def'should find the best registry match with invalid partial match'(){
+        given:
+        def svc = new CredentialServiceImpl()
+        def target = "host.com/foo/bar"
+        def choices = [
+                new CredentialsDescription(registry:"host.com",provider: 'container-reg'),
+                new CredentialsDescription(registry:"host.com/fo",provider: 'container-reg'),
+                new CredentialsDescription(registry:"host.com/fooo", provider:'container-reg'),
+                new CredentialsDescription(registry:"host.com/foo/bar/baz",provider: 'container-reg')]
+
+        when:
+        def match = svc.findBestMatchingCreds(target, choices)
+
+        then:
+        match.registry == "host.com"
+        match.provider == "container-reg"
     }
 
     private static GetCredentialsKeysResponse encryptedCredentialsFromTower(PublicKey key, String credentials) {
         return new GetCredentialsKeysResponse(keys: TEST_CIPHER.encrypt(key,credentials.getBytes()).encode())
     }
 
+
+    @Unroll
+    def 'should get the repository score' () {
+        given:
+        def svc = new CredentialServiceImpl()
+
+        expect:
+        svc.matchingScore(TARGET, REPO) == EXPECTED
+
+        where:
+        TARGET              | REPO              | EXPECTED
+        null                | null              | 0
+        'quay.io'           | null              | 0
+        'quay.io'           | 'docker.io'       | 0
+        and:
+        'quay.io'           | 'quay.io'         | 1
+        'quay.io/foo'       | 'quay.io'         | 1
+        'quay.io/foo/bar'   | 'quay.io'         | 1
+        'quay.io/foo/bar'   | 'quay.io/fo'      | 1
+        'quay.io/foo/bar'   | 'quay.io/fooo'    | 1
+        and:
+        'quay.io/foo/bar'   | 'quay.io/foo'     | 2
+        and:
+        'quay.io/foo/bar'   | 'quay.io/foo/bar' | 3
+        and:
+        // should should return 0 because the "authority" repository has
+        // a longer name of the target one. Therefore it cannot be used
+        // to authenticate the target
+        'quay.io'           | 'quay.io/foo/bar' | 0
+        'quay.io/foo'       | 'quay.io/foo/bar' | 0
+    }
+
+
+    def 'should return the longest matching repository' () {
+        given:
+        def svc = new CredentialServiceImpl()
+
+        expect:
+        svc.matchingLongest(TARGET, new CredentialsDescription(registry: R1), new CredentialsDescription(registry: R2)).registry == EXPECTED
+        where:
+        TARGET                  | R1                | R2                | EXPECTED
+        'docker.io'             | 'docker.io'       | 'quay.io'         | 'docker.io'
+        'docker.io/foo'         | 'docker.io/foo'   | 'docker.io'       | 'docker.io/foo'
+        'docker.io/foo/bar'     | 'docker.io/foo'   | 'docker.io'       | 'docker.io/foo'
+    }
 }

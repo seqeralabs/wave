@@ -34,6 +34,7 @@ import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.http.HttpClientFactory
+import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
@@ -85,7 +86,8 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     /**
      * Implements container registry login
      *
-     * @param registryName The registry name e.g. docker.io or quay.io
+     * @param registryName
+     *      The registry name e.g. docker.io or quay.io or a repository name
      * @param username The registry username
      * @param password The registry password
      * @return {@code true} if the login was successful or {@code false} otherwise
@@ -95,35 +97,26 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         // 0. default to 'docker.io' when the registry name is empty
         if( !registryName )
             registryName = DOCKER_IO
-        //check if its a repository or a registry
-        RepositoryInfo repositoryInfo = parseURI(registryName)
-        if(repositoryInfo.repository) {
-            registryName = repositoryInfo.registry
-        }
+
+        final target = RegistryMeta.parse(registryName)
 
         // 1. look up the registry authorisation info for the given registry name
-        final registry = lookupService.lookup(registryName)
-        log.debug "Registry '$registryName' => auth: $registry"
+        final registry = lookupService.lookup(target.registry)
+        log.debug "Registry '$target.registry' => auth: $registry"
 
         // 2. get the registry credentials
         //    this is needed because some services e.g. AWS ECR requires the use of temporary tokens
-        final creds = credentialsFactory.create(registryName, username, password)
+        final creds = credentialsFactory.create(target.registry, username, password)
 
         // 3. make a request against the authorization "realm" service using basic
         //    credentials to get the login token
         final basic =  "${creds.username}:${creds.password}".bytes.encodeBase64()
-        def endpoint = registry.auth.endpoint
-
-        if(repositoryInfo.repository) {
-            endpoint = new URI("${endpoint}&scope=repository:${repositoryInfo.repository}:pull")
-        }
-
+        final endpoint = registry.auth.getEndpoint(username, target.repository)
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(endpoint)
                 .GET()
                 .header("Authorization", "Basic $basic")
                 .build()
-
         // retry strategy
         final retryable = Retryable
                 .<HttpResponse<String>>of(httpConfig)
@@ -234,18 +227,6 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         throw new RegistryUnauthorizedAccessException("Unable to authorize request: $login", response.statusCode(), body)
     }
 
-    /**
-     * Implements a parser to extract token
-     *
-     * @param body, body of HTTPResponse
-     */
-    String parseToken(String body){
-        final result = (Map) new JsonSlurper().parseText(body)
-        // note: azure registry returns 'access_token'
-        // see also specs https://docs.docker.com/registry/spec/auth/token/#requesting-a-token
-        return result.get('token') ?: result.get('access_token')
-    }
-
     String buildLoginUrl(URI realm, String image, String service){
         String result = "${realm}?scope=repository:${image}:pull"
         if(service) {
@@ -278,28 +259,22 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         cacheTokens.invalidate(key)
     }
 
-    /**
-     * Implements a parser to get registry and repository name from a URI
-     *
-     * @param endpoint, repository URL e.g. https://docker.io/hrma017/dev
-     */
-    protected RepositoryInfo parseURI(String endpoint){
-        RepositoryInfo repositoryInfo = new RepositoryInfo()
-        if(endpoint.startsWith("https://")){
-            endpoint = endpoint.replace("https://","")
-        }else if(endpoint.startsWith("http://")){
-            endpoint = endpoint.replace("http://","")
-        }
-        def parts = endpoint.split("/")
-        if(parts.length>1){
-            repositoryInfo.registry = parts[0]
-            StringBuilder repo =new StringBuilder(parts[1])
-            for(int i =2;i<parts.length;i++){
-                repo.append("/"+parts[i])
-            }
-            repositoryInfo.repository = repo
-        }
 
-        return repositoryInfo
+    @Canonical
+    static class RegistryMeta {
+        String registry
+        String repository
+
+        static RegistryMeta parse(String registryOrRepository) {
+            assert registryOrRepository, "Missing 'registryOrRepository' argument"
+            if( registryOrRepository.contains('/') ) {
+                final coords = ContainerCoordinates.parse(registryOrRepository)
+                return new RegistryMeta(coords.getRegistry(), coords.getImage())
+            }
+            else {
+                return new RegistryMeta(registryOrRepository)
+            }
+        }
     }
+
 }

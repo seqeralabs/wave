@@ -34,7 +34,7 @@ trait BaseTestContainerRegistry {
     String getTestRegistryUrl(String registry=null) {
         if( !registry || registry=='test' || registry=='localhost' ) {
             int port = testcontainers.firstMappedPort
-            return "http://$testcontainers.containerIpAddress:$port"
+            return "${testcontainers.getHost()}:$port"
         }
         else
             return registry
