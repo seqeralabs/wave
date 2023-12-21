@@ -36,7 +36,6 @@ import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.configuration.BuildConfig
-import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
@@ -95,6 +94,9 @@ class ContainerTokenController {
     @Value('${tower.endpoint.url:`https://api.tower.nf`}')
     String towerEndpointUrl
 
+    @Value('${wave.scan.enabled:false}')
+    boolean scanEnabled
+
     @Inject
     BuildConfig buildConfig
 
@@ -121,9 +123,6 @@ class ContainerTokenController {
 
     @Inject
     FreezeService freezeService
-
-    @Inject
-    ScanConfig scanConfig
 
     @PostConstruct
     private void init() {
@@ -200,7 +199,7 @@ class ContainerTokenController {
         final configJson = dockerAuthService.credentialsConfigJson(containerSpec, build, cache, user?.id, req.towerWorkspaceId, req.towerAccessToken, req.towerEndpoint)
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
-        final scanId = scanConfig.scanEnabled && format==DOCKER ? LongRndKey.rndHex() : null
+        final scanId = scanEnabled && format==DOCKER ? LongRndKey.rndHex() : null
         // create a unique digest to identify the request
         return new BuildRequest(
                 (spackContent ? prependBuilderTemplate(containerSpec,format) : containerSpec),
