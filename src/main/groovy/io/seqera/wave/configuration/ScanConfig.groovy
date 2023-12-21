@@ -39,6 +39,9 @@ import jakarta.inject.Singleton
 @Slf4j
 class ScanConfig {
 
+    @Value('${wave.scan.enabled:false}')
+    boolean scanEnabled
+
     /**
      * Docker image of tool need to be used for container scanner
      */
@@ -95,6 +98,6 @@ class ScanConfig {
 
     @PostConstruct
     private void init() {
-        log.debug("Scanner config: docker image name: ${scanImage}; cache directory: ${cacheDirectory}; timeout=${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}; severity: $severity")
+        log.debug("Scanner config: enabled: ${scanEnabled} docker image name: ${scanImage}; cache directory: ${cacheDirectory}; timeout=${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}; severity: $severity")
     }
 }
