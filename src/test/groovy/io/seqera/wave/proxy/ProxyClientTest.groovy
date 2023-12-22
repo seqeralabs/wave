@@ -267,12 +267,13 @@ class ProxyClientTest extends Specification {
         def cli = proxy.curl(PATH, HEADERS)
         then:
         cli[0] == 'curl'
-        cli[1] == '-X'
-        cli[2] == 'GET'
-        cli[3] == '-H'
-        cli[4] == 'content-type: application/octet-stream'
-        cli[5] == '-H'
-        cli[6] =~ /Authorization: Bearer.*/
-        cli[7] == 'https://registry-1.docker.io/v2/library/hello-world/manifests/sha256:aa0cc8055b82dc2509bed2e19b275c8f463506616377219d9642221ab53cf9fe'
+        cli[1] == '-s'
+        cli[2] == '-X'
+        cli[3] == 'GET'
+        cli[4] == '-H'
+        cli[5] == 'content-type: application/octet-stream'
+        cli[6] == '-H'
+        cli[7] =~ /Authorization: Bearer.*/
+        cli[8] == 'https://registry-1.docker.io/v2/library/hello-world/manifests/sha256:aa0cc8055b82dc2509bed2e19b275c8f463506616377219d9642221ab53cf9fe'
     }
 }
