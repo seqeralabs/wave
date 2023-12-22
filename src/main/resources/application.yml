@@ -32,18 +32,27 @@ micronaut:
         enabled: true
 # http client configuration
 # https://docs.micronaut.io/latest/guide/configurationreference.html#io.micronaut.http.client.DefaultHttpClientConfiguration
+  executors:
+    stream-executor:
+      type: FIXED
+      number-of-threads: 16
+  netty:
+    event-loops:
+      stream-pool:
+        executor: 'stream-executor'
   http:
     services:
       stream-client:
         read-timeout: '30s'
         read-idle-timeout: '120s'
+        event-loop-group: 'stream-pool'
 ---
 wave:
   allowAnonymous: true
   server:
       url: "${WAVE_SERVER_URL:`http://localhost:9090`}"
   build:
-    kaniko-image: "gcr.io/kaniko-project/executor:v1.18.0"
+    kaniko-image: "gcr.io/kaniko-project/executor:v1.19.2"
     singularity-image: "quay.io/singularity/singularity:v3.11.4-slim"
     singularity-image-arm64: "quay.io/singularity/singularity:v3.11.4-slim-arm64"
     repo: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/dev"

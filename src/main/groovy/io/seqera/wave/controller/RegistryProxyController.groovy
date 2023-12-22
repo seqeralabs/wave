@@ -18,7 +18,6 @@
 
 package io.seqera.wave.controller
 
-
 import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
 
@@ -31,6 +30,7 @@ import groovy.util.logging.Slf4j
 import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
+import io.micronaut.core.io.buffer.ReferenceCounted
 import io.micronaut.http.HttpMethod
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
@@ -247,9 +247,9 @@ class RegistryProxyController {
             log.debug "Forwarding ${route.type} request '${route.getTargetContainer()}' to '${loc}'"
             return fromRedirectResponse(resp)
         }
-        else if( resp.body ) {
+        else if( resp.body!=null ) {
             log.debug "Returning ${route.type} from repository: '${route.getTargetContainer()}'"
-            return fromBodyResponse(resp)
+            return fromContentResponse(resp, route)
         }
         else {
             log.debug "Pulling stream from repository: '${route.getTargetContainer()}'"
@@ -306,7 +306,7 @@ class RegistryProxyController {
         final resp = proxyService.handleRequest(route, headers)
         HttpResponse
                 .status(HttpStatus.valueOf(resp.statusCode))
-                .body(resp.body)
+                .body(resp.body.bytes)
                 .headers(toMutableHeaders(resp.headers))
     }
 
@@ -339,16 +339,28 @@ class RegistryProxyController {
 
     MutableHttpResponse<?> fromStreamResponse(final DelegateResponse response, RoutePath route, Map<String,List<String>> headers){
 
+        final stream = proxyService.streamBlob(route, headers)
+                .doOnNext(byteBuffer -> {
+                    if (byteBuffer instanceof ReferenceCounted) {
+                        byteBuffer.retain()
+                    }
+                })
 
         HttpResponse
                 .status(HttpStatus.valueOf(response.statusCode))
+                .body(stream)
                 .headers(toMutableHeaders(response.headers))
     }
 
-    MutableHttpResponse<?> fromBodyResponse(DelegateResponse resp) {
+    MutableHttpResponse<?> fromContentResponse(DelegateResponse resp, RoutePath route) {
+        // create the retry logic on error                                                              §
+        final retryable = Retryable
+                .<byte[]>of(httpConfig)
+                .onRetry((event) -> log.warn("Unable to read manifest body - request: $route; event: $event"))
+
         HttpResponse
                 .status(HttpStatus.valueOf(resp.statusCode))
-                .body(resp.body)
+                .body(retryable.apply(()-> resp.body.bytes))
                 .headers(toMutableHeaders(resp.headers))
     }
 
