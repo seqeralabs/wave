@@ -21,9 +21,16 @@ class BlobInfo {
     final Integer exitStatus
     final String logs
 
+    boolean succeeded() {
+        locationUrl && exitStatus==0
+    }
 
     static BlobInfo create(String locationUrl) {
         new BlobInfo(locationUrl, Instant.now())
+    }
+
+    BlobInfo cached() {
+        new BlobInfo(this.locationUrl, this.creationTime, this.creationTime, 0)
     }
 
     BlobInfo completed(int status, String logs) {
@@ -31,7 +38,7 @@ class BlobInfo {
     }
 
     BlobInfo failed(String logs) {
-        new BlobInfo(locationUrl, creationTime, Instant.now(), -1, logs)
+        new BlobInfo(locationUrl, creationTime, Instant.now(), null, logs)
     }
 
     @Memoized

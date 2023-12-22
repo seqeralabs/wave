@@ -22,7 +22,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.context.annotation.Context
-import io.micronaut.context.annotation.Value
 import io.micronaut.core.io.buffer.ByteBuffer
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.exceptions.HttpException
@@ -83,9 +82,6 @@ class RegistryProxyService {
 
     @Inject
     private HttpClientConfig httpConfig
-
-    @Value('${wave.httpclient.streamThreshold:65536}')
-    private int streamThreshold
 
     @Inject
     @Client("stream-client")
@@ -173,7 +169,7 @@ class RegistryProxyService {
         final len = resp1.headers().firstValueAsLong('Content-Length').orElse(0)
         // when it's a large blob return a null body response to signal that
         // the call needs to fetch the blob binary using the streaming client
-        if( route.isBlob() && len > streamThreshold ) {
+        if( route.isBlob() && len > httpConfig.streamThreshold ) {
             final res = new DelegateResponse(
                     statusCode: resp1.statusCode(),
                     headers: resp1.headers().map() )

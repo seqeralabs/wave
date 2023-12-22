@@ -3,6 +3,8 @@ package io.seqera.wave.service.blob
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
+import groovy.transform.CompileStatic
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -26,7 +28,6 @@ interface BlobStore {
      */
     boolean storeIfAbsent(String key, BlobInfo info)
 
-
     /**
      * Await for the container layer blob download
      *
@@ -47,6 +48,7 @@ interface BlobStore {
     /**
      * Implement waiter common logic
      */
+    @CompileStatic
     private static class Waiter {
 
         static BlobInfo awaitCompletion(BlobStore store, String key, BlobInfo current) {
@@ -59,7 +61,7 @@ interface BlobStore {
                 }
 
                 // check is completed
-                if( current.locationUri) {
+                if( current.locationUrl) {
                     return current
                 }
                 // check if it's timed out

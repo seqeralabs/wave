@@ -75,25 +75,43 @@ import reactor.core.publisher.Mono
 @ExecuteOn(TaskExecutors.IO)
 class RegistryProxyController {
 
-    @Inject HttpClientAddressResolver addressResolver
-    @Inject RegistryProxyService proxyService
-    @Inject Storage storage
-    @Inject RouteHandler routeHelper
-    @Inject ContainerBuildService containerBuildService
-    @Inject @Nullable RateLimiterService rateLimiterService
-    @Inject ErrorHandler errorHandler
+    @Inject
+    private HttpClientAddressResolver addressResolver
 
-    @Inject MeterRegistry meterRegistry
-    @Inject HttpClientConfig httpConfig
+    @Inject
+    private RegistryProxyService proxyService
 
-    @Inject BlobCacheService blobCacheService
+    @Inject
+    private Storage storage
+
+    @Inject
+    private RouteHandler routeHelper
+
+    @Inject
+    private ContainerBuildService containerBuildService
+
+    @Inject
+    @Nullable
+    private RateLimiterService rateLimiterService
+
+    @Inject
+    private ErrorHandler errorHandler
+
+    @Inject
+    private MeterRegistry meterRegistry
+
+    @Inject
+    private HttpClientConfig httpConfig
+
+    @Inject
+    private BlobCacheService blobCacheService
 
     @Value('${wave.cache.digestStore.maxWeightMb:350}')
     int cacheMaxWeightMb
 
-    private static final int _1MB = 1024*1024
+    private static final int _1MB = 1024 * 1024
 
-    private LoadingCache<DigestKey,byte[]> digestsCache
+    private LoadingCache<DigestKey, byte[]> digestsCache
 
     @PostConstruct
     private void init() {
@@ -101,7 +119,7 @@ class RegistryProxyController {
         // initialize the cache builder
         digestsCache = CacheBuilder
                 .newBuilder()
-                .maximumWeight(cacheMaxWeightMb  * _1MB)
+                .maximumWeight(cacheMaxWeightMb * _1MB)
                 .weigher(new Weigher<DigestKey, byte[]>() {
                     @Override
                     int weigh(DigestKey key, byte[] value) {
@@ -252,8 +270,8 @@ class RegistryProxyController {
             return fromContentResponse(resp, route)
         }
         else {
-            log.debug "Pulling stream from repository: '${route.getTargetContainer()}'"
-            return fromStreamResponse(resp, route, headers)
+            log.debug "Returning cache from repository: '${route.getTargetContainer()}'"
+            return fromDownloadResponse(resp, route, headers)
         }
     }
 
@@ -337,6 +355,26 @@ class RegistryProxyController {
                 .headers(toMutableHeaders(resp.headers, override))
     }
 
+    MutableHttpResponse<?> fromDownloadResponse(final DelegateResponse resp, RoutePath route, Map<String, List<String>> headers) {
+        blobCacheService
+                .getBlobCacheURI(route, headers)
+                .thenApply((info) -> info.succeeded() ? redirectResponse(resp, info.locationUrl) : badRequest(info.logs))
+                .get()
+    }
+
+    protected MutableHttpResponse<?> redirectResponse(final DelegateResponse resp, String location ) {
+        log.debug "Returning blob cache URL location '$location'"
+        final override = Map.of(
+                'Location', location,       // <-- the location can be relative to the origin host, override it to always return a fully qualified URI
+                'Content-Length', '0',  // <-- make sure to set content length to zero, some services return some content even with the redirect header that's discarded by this response
+                'Connection', 'close' ) // <-- make sure to return connection: close header otherwise docker hangs
+
+        HttpResponse
+                .status(HttpStatus.TEMPORARY_REDIRECT)
+                .headers(toMutableHeaders(resp.headers, override))
+    }
+
+    @Deprecated
     MutableHttpResponse<?> fromStreamResponse(final DelegateResponse response, RoutePath route, Map<String,List<String>> headers){
 
         final stream = proxyService.streamBlob(route, headers)

@@ -314,4 +314,30 @@ class ProxyClient {
 
         return streamingHttpClient.dataStream(request)
     }
+
+    List<String> curl(String path, Map<String,List<String>> headers=null) {
+        final result = new ArrayList(20)
+        result.add('curl')
+        result.add('-X'); result.add('GET')
+        //  copy headers
+        for( Map.Entry<String,List<String>> entry : headers )  {
+            if( entry.key.toLowerCase() in SKIP_HEADERS )
+                continue
+            for( String val : entry.value ) {
+                result.add('-H')
+                result.add("${entry.key}: $val")
+            }
+        }
+        // add authorisation header
+        final header = loginService.getAuthorization(image, registry.auth, credentials)
+        if( header ) {
+            result.add('-H')
+            result.add("Authorization: $header")
+        }
+
+        // the target URI
+        result.add(makeUri(path).toString())
+        return result
+    }
+
 }
