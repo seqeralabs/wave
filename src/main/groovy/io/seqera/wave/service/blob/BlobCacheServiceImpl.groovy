@@ -5,7 +5,6 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.TimeUnit
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -16,6 +15,7 @@ import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.http.HttpClientFactory
+import io.seqera.wave.service.blob.transfer.TransferStrategy
 import io.seqera.wave.util.Escape
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.StringUtils
@@ -24,7 +24,6 @@ import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
-
 /**
  * Implements cache for container image layer blobs
  *
@@ -50,6 +49,9 @@ class BlobCacheServiceImpl implements BlobCacheService {
     @Inject
     @Named(TaskExecutors.IO)
     private ExecutorService executor
+
+    @Inject
+    private TransferStrategy transferStrategy
 
     @Inject
     private HttpClientConfig httpConfig
@@ -152,22 +154,13 @@ class BlobCacheServiceImpl implements BlobCacheService {
         try {
             // the transfer command to be executed
             final cli = transferCommand(route, headers)
-            // launch the execution
-            final proc = new ProcessBuilder()
-                    .command(cli)
-                    .redirectErrorStream(true)
-                    .start()
-            // wait for the completion and save thr result
-            final completed = proc.waitFor(blobConfig.transferTimeout.toSeconds(), TimeUnit.SECONDS)
-            final int status = completed ? proc.exitValue() : -1
-            final logs = proc.inputStream.text
-            final result = info.completed(status, logs)
-            log.debug "== Completed caching for blob '${target}'; status=$status"
+            final result = transferStrategy.transfer(info, cli)
+            log.debug "== Completed caching for blob '${target}'; status=$result.exitStatus"
             return result
         }
         catch (Throwable t) {
-            final result = info.failed(t.message)
             log.debug "== Errored caching for blob '${target}' - cause: ${t.message}", t
+            final result = info.failed(t.message)
             return result
         }
     }

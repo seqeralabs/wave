@@ -25,6 +25,10 @@ class BlobInfo {
         locationUrl && exitStatus==0
     }
 
+    boolean done() {
+        locationUrl && completionTime!=null
+    }
+
     static BlobInfo create(String locationUrl) {
         new BlobInfo(locationUrl, Instant.now())
     }

@@ -318,6 +318,7 @@ class ProxyClient {
     List<String> curl(String path, Map<String,List<String>> headers=null) {
         final result = new ArrayList(20)
         result.add('curl')
+        result.add('-s')
         result.add('-X'); result.add('GET')
         //  copy headers
         for( Map.Entry<String,List<String>> entry : headers )  {

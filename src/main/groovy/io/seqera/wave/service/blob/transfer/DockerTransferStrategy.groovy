@@ -1,0 +1,55 @@
+package io.seqera.wave.service.blob.transfer
+
+import java.util.concurrent.TimeUnit
+
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Replaces
+import io.micronaut.context.annotation.Requires
+import io.seqera.wave.configuration.BlobConfig
+import io.seqera.wave.service.blob.BlobInfo
+import jakarta.inject.Inject
+import jakarta.inject.Singleton
+
+/**
+ * Implements {@link TransferStrategy} that runs s5cmd using a docker
+ * container. Meant for development purposes
+ *
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ */
+@Slf4j
+@CompileStatic
+@Singleton
+@Requires(property = 'wave.blob.strategy', value = 'docker')
+@Replaces(LocalTransferStrategy)
+class DockerTransferStrategy implements TransferStrategy {
+
+    @Inject
+    private BlobConfig  blobConfig
+
+    @Override
+    BlobInfo transfer(BlobInfo info, List<String> command) {
+        // compose the docker command
+        final cli = new ArrayList<String>(10)
+        cli.add('docker')
+        cli.add('run')
+        cli.add('-e')
+        cli.add('AWS_ACCESS_KEY_ID')
+        cli.add('-e')
+        cli.add('AWS_SECRET_ACCESS_KEY')
+        cli.add(blobConfig.s5Image)
+        cli.addAll(command)
+        log.debug "Transfer docker command: ${cli.join(' ')}\n"
+
+        // launch the execution
+        final proc = new ProcessBuilder()
+                .command(cli)
+                .redirectErrorStream(true)
+                .start()
+        // wait for the completion and save thr result
+        final completed = proc.waitFor(blobConfig.transferTimeout.toSeconds(), TimeUnit.SECONDS)
+        final int status = completed ? proc.exitValue() : -1
+        final logs = proc.inputStream.text
+        return info.completed(status, logs)
+    }
+}

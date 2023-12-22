@@ -24,4 +24,8 @@ class BlobConfig {
 
     @Value('${wave.blob.baseUrl:`https://nextflow-ci.s3.eu-west-1.amazonaws.com/blobs`}')
     String baseUrl
+
+    @Value('${wave.blob.s5cmdImage}')
+    String s5Image
+
 }

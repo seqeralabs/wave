@@ -61,7 +61,7 @@ interface BlobStore {
                 }
 
                 // check is completed
-                if( current.locationUrl) {
+                if( current.done() ) {
                     return current
                 }
                 // check if it's timed out
