@@ -21,12 +21,12 @@ class BlobCacheServiceImplTest extends Specification {
         when:
         def result = service.s5cmd(route, [:])
         then:
-        result == ['s5cmd', 'pipe', '--acl', 'public-read', 's3://store/blobs/v2/library/ubuntu/manifests/sha256:aabbcc']
+        result == ['s5cmd', '--json', 'pipe', '--acl', 'public-read', 's3://store/blobs/v2/library/ubuntu/manifests/sha256:aabbcc']
 
         when:
         result = service.s5cmd(route, ['Content-Type':['foo'], 'Cache-Control': ['bar']])
         then:
-        result == ['s5cmd', 'pipe', '--acl', 'public-read', '--content-type', 'foo', '--cache-control', 'bar', 's3://store/blobs/v2/library/ubuntu/manifests/sha256:aabbcc']
+        result == ['s5cmd', '--json', 'pipe', '--acl', 'public-read', '--content-type', 'foo', '--cache-control', 'bar', 's3://store/blobs/v2/library/ubuntu/manifests/sha256:aabbcc']
 
     }
 
@@ -45,7 +45,7 @@ class BlobCacheServiceImplTest extends Specification {
         result == [
                 'sh',
                 '-c',
-                "curl -X GET 'http://foo' | s5cmd pipe --acl public-read 's3://store/blobs/v2/library/ubuntu/manifests/sha256:aabbcc'"
+                "curl -X GET 'http://foo' | s5cmd --json pipe --acl public-read 's3://store/blobs/v2/library/ubuntu/manifests/sha256:aabbcc'"
         ]
     }
 }

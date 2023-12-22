@@ -61,4 +61,9 @@ class BlobCacheStore extends AbstractCacheStore<BlobInfo> implements BlobStore {
     void storeBlob(String key, BlobInfo info) {
         put(key, info)
     }
+
+    @Override
+    void storeBlob(String key, BlobInfo info, Duration ttl) {
+        put(key, info, ttl)
+    }
 }

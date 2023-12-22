@@ -98,10 +98,12 @@ class BlobCacheServiceImpl implements BlobCacheService {
         final String cacheControl = headers.find(it-> it.key.toLowerCase()=='cache-control')?.value?.first()
         final String contentType = headers.find(it-> it.key.toLowerCase()=='content-type')?.value?.first()
 
-        final result = ['s5cmd',
-         'pipe',
-         '--acl',
-         'public-read']
+        final result = [
+                's5cmd',
+                '--json',
+                'pipe',
+                '--acl',
+                'public-read']
         if( contentType ) {
             result.add('--content-type')
             result.add(contentType)
@@ -144,7 +146,14 @@ class BlobCacheServiceImpl implements BlobCacheService {
             }
         }
         finally {
-            blobStore.storeBlob(route.targetPath, result)
+            // use a short time-to-live for failed downloads
+            // this is needed to allow re-try downloads failed for
+            // temporary error conditions e.g. expired credentials
+            final ttl = result.succeeded()
+                    ? blobConfig.statusDuration
+                    : blobConfig.statusDelay.multipliedBy(10)
+
+            blobStore.storeBlob(route.targetPath, result, ttl)
             return result
         }
     }
