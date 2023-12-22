@@ -1,6 +1,7 @@
 package io.seqera.wave.configuration
 
 import java.time.Duration
+import javax.annotation.Nullable
 
 import io.micronaut.context.annotation.Value
 
@@ -28,4 +29,11 @@ class BlobConfig {
     @Value('${wave.blob.s5cmdImage}')
     String s5Image
 
+    @Nullable
+    @Value('${wave.blob.requestsCpu}')
+    String requestsCpu
+
+    @Nullable
+    @Value('${wave.blob.requestsMemory}')
+    String requestsMemory
 }
