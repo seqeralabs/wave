@@ -15,13 +15,27 @@ import groovy.transform.ToString
 @CompileStatic
 class BlobInfo {
 
+    final String locationUrl
     final Instant creationTime
-    final String locationUri
     final Instant completionTime
-    final String message
+    final Integer exitStatus
+    final String logs
+
+
+    static BlobInfo create(String locationUrl) {
+        new BlobInfo(locationUrl, Instant.now())
+    }
+
+    BlobInfo completed(int status, String logs) {
+        new BlobInfo(locationUrl, creationTime, Instant.now(), status, logs)
+    }
+
+    BlobInfo failed(String logs) {
+        new BlobInfo(locationUrl, creationTime, Instant.now(), -1, logs)
+    }
 
     @Memoized
     static BlobInfo unknown() {
-        new BlobInfo(Instant.ofEpochMilli(0), null)
+        new BlobInfo(null, Instant.ofEpochMilli(0), null)
     }
 }

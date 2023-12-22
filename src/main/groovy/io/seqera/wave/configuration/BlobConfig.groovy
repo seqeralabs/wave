@@ -21,4 +21,7 @@ class BlobConfig {
 
     @Value('${wave.blob.bucket:`s3://nextflow-ci/blobs`}')
     String bucket
+
+    @Value('${wave.blob.baseUrl:`https://nextflow-ci.s3.eu-west-1.amazonaws.com/blobs`}')
+    String baseUrl
 }

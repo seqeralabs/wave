@@ -1,6 +1,6 @@
 package io.seqera.wave.service.blob
 
-import java.time.Instant
+
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
@@ -10,8 +10,8 @@ import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BlobConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RoutePath
-import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.util.Escape
+import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -38,24 +38,18 @@ class BlobCacheServiceImpl implements BlobCacheService {
     private ExecutorService executor
 
     @Override
-    CompletableFuture<URI> getBlobCacheURI(RoutePath route, Map<String,List<String>> headers) {
-        final info = new BlobInfo(Instant.now())
+    CompletableFuture<BlobInfo> getBlobCacheURI(RoutePath route, Map<String,List<String>> headers) {
+        final uri = blobDownloadUrl(route)
+        final info = BlobInfo.create(uri)
         final target = route.targetPath
         if( blobStore.storeIfAbsent(target, info) ) {
             // start download and caching job
             // launch the build async
             CompletableFuture
-                    .<BuildResult>supplyAsync(() -> store(route,headers), executor)
+                    .<BlobInfo>supplyAsync(() -> store(route,headers,info), executor)
         }
 
-        return blobInfo(target)
-                .thenApply(it-> new URI(it.locationUri))
-    }
-
-    @Override
-    CompletableFuture<BlobInfo> blobInfo(String key) {
-        return blobStore
-                .awaitDownload(key)
+        return blobStore.awaitDownload(target)
     }
 
     protected List<String> s5cmd(RoutePath route, Map<String,List<String>> headers) {
@@ -76,10 +70,8 @@ class BlobCacheServiceImpl implements BlobCacheService {
             result.add(cacheControl)
         }
 
-        def bucket0 = blobConfig.bucket
-        while( bucket0.endsWith('/') )
-            bucket0 = bucket0.substring(0,bucket0.length()-1)
-        result.add( bucket0 + route.path )
+        // the target store path
+        result.add( blobStorePath(route) )
 
         return result
     }
@@ -94,25 +86,36 @@ class BlobCacheServiceImpl implements BlobCacheService {
                 Escape.cli(curl) + ' | ' + Escape.cli(s5cmd) )
     }
 
-    protected void store(RoutePath route, Map<String,List<String>> headers) {
+    protected BlobInfo store(RoutePath route, Map<String,List<String>> headers, BlobInfo info) {
 
         try {
+            // the transfer command to be executed
             final cli = transferCommand(route, headers)
-
+            // launch the execution
             final proc = new ProcessBuilder()
                     .command(cli)
                     .redirectErrorStream(true)
                     .start()
-
+            // wait for the completion and save thr result
             final completed = proc.waitFor(blobConfig.transferTimeout.toSeconds(), TimeUnit.SECONDS)
-            final stdout = proc.inputStream.text
-            return BuildResult.completed(req.id, completed ? proc.exitValue() : -1, stdout, req.startTime)
-
-            blobStore.storeBlob()
-
+            final int status = completed ? proc.exitValue() : -1
+            final logs = proc.inputStream.text
+            final result = info.completed(status, logs)
+            blobStore.storeBlob(route.targetPath, result)
+            return result
         }
         catch (Throwable t) {
-
+            final result = info.failed(t.message)
+            blobStore.storeBlob(route.targetPath, result)
+            return result
         }
+    }
+
+    protected String blobStorePath(RoutePath route) {
+        StringUtils.pathConcat(blobConfig.bucket, route.path)
+    }
+
+    protected String blobDownloadUrl(RoutePath route) {
+        StringUtils.pathConcat(blobConfig.baseUrl, route.path)
     }
 }

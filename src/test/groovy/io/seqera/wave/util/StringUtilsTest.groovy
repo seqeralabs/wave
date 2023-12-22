@@ -70,4 +70,24 @@ class StringUtilsTest extends Specification {
         'foo:⟨100⟩'         | '100'
         'foo-bar:⟨1-2-3⟩'   | '1-2-3'
     }
+
+    @Unroll
+    def 'should concat paths' () {
+        expect:
+        StringUtils.pathConcat(BASE, PATH) == EXPECTED
+
+        where:
+        BASE            | PATH          | EXPECTED
+        '/'             | 'bar'         | '/bar'
+        '/'             | '/bar'        | '/bar'
+        and:
+        'foo'           | 'bar'         | 'foo/bar'
+        'foo/'          | 'bar'         | 'foo/bar'
+        'foo'           | '/bar'        | 'foo/bar'
+        'foo/'          | '/bar'        | 'foo/bar'
+        'foo//'         | '/bar'        | 'foo/bar'
+        and:
+        'http://foo'    | '/bar'        | 'http://foo/bar'
+        'http://foo/'   | '/bar'        | 'http://foo/bar'
+    }
 }
