@@ -26,7 +26,7 @@ class DockerTransferStrategy implements TransferStrategy {
 
     @Override
     BlobInfo transfer(BlobInfo info, List<String> command) {
-        final proc = createProcess(info,command).start()
+        final proc = createProcess(command).start()
         // wait for the completion and save thr result
         final completed = proc.waitFor(blobConfig.transferTimeout.toSeconds(), TimeUnit.SECONDS)
         final int status = completed ? proc.exitValue() : -1
@@ -34,7 +34,7 @@ class DockerTransferStrategy implements TransferStrategy {
         return info.completed(status, logs)
     }
 
-    protected ProcessBuilder createProcess(BlobInfo info, List<String> command) {
+    protected ProcessBuilder createProcess(List<String> command) {
         // compose the docker command
         final cli = new ArrayList<String>(10)
         cli.add('docker')
