@@ -221,7 +221,7 @@ class RegistryProxyService {
         return proxyClient.stream(streamClient, route.path, headers)
     }
 
-    List<String> curl(RoutePath route, Map<String,List<String>> headers) {
+    List<String> curl(RoutePath route, Map<String,String> headers) {
         ProxyClient proxyClient = client(route)
         return proxyClient.curl(route.path, headers)
     } 

@@ -22,6 +22,11 @@ class BlobCacheInfo {
     final String locationUri
 
     /**
+     * The request http headers
+     */
+    final Map<String,String> headers
+
+    /**
      * The instant when the cache request was created
      */
     final Instant creationTime
@@ -51,24 +56,57 @@ class BlobCacheInfo {
         locationUri && completionTime!=null
     }
 
-    static BlobCacheInfo create(String locationUrl) {
-        new BlobCacheInfo(locationUrl, Instant.now())
+    String getContentType() {
+        headers?.find(it-> it.key.toLowerCase()=='content-type')?.value
+    }
+
+    String getCacheControl() {
+        headers?.find(it-> it.key.toLowerCase()=='cache-control')?.value
+    }
+
+    static BlobCacheInfo create(String locationUrl, Map<String,List<String>> headers) {
+        final headers0 = new LinkedHashMap<String,String>()
+        for( Map.Entry<String,List<String>> it : headers )
+            headers0.put( it.key, it.value.join(',') )
+        new BlobCacheInfo(locationUrl, headers0, Instant.now())
+    }
+
+    static BlobCacheInfo create1(String locationUrl, Map<String,String> headers) {
+        new BlobCacheInfo(locationUrl, headers, Instant.now())
     }
 
     BlobCacheInfo cached() {
-        new BlobCacheInfo(this.locationUri, this.creationTime, this.creationTime, 0)
+        new BlobCacheInfo(
+                locationUri,
+                headers,
+                creationTime,
+                creationTime,
+                0)
     }
 
     BlobCacheInfo completed(int status, String logs) {
-        new BlobCacheInfo(locationUri, creationTime, Instant.now(), status, logs)
+        new BlobCacheInfo(
+                locationUri,
+                headers,
+                creationTime,
+                Instant.now(),
+                status,
+                logs)
     }
 
     BlobCacheInfo failed(String logs) {
-        new BlobCacheInfo(locationUri, creationTime, Instant.now(), null, logs)
+        new BlobCacheInfo(
+                locationUri,
+                headers,
+                creationTime,
+                Instant.now(),
+                null,
+                logs)
     }
 
     @Memoized
     static BlobCacheInfo unknown() {
-        new BlobCacheInfo(null, Instant.ofEpochMilli(0), null)
+        new BlobCacheInfo(null, null, Instant.ofEpochMilli(0), Instant.ofEpochMilli(0), null)
     }
+
 }

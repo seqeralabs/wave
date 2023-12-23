@@ -72,11 +72,11 @@ class BlobCacheServiceImpl implements BlobCacheService {
     @Override
     BlobCacheInfo retrieveBlobCache(RoutePath route, Map<String,List<String>> headers) {
         final uri = blobDownloadUri(route)
-        final info = BlobCacheInfo.create(uri)
+        final info = BlobCacheInfo.create(uri, headers)
         final target = route.targetPath
         if( blobStore.storeIfAbsent(target, info) ) {
             // start download and caching job
-            return storeIfAbsent(route,headers,info)
+            return storeIfAbsent(route, info)
         }
         else {
             return awaitCacheStore(target)
@@ -107,9 +107,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
      * @param headers The layer blob HTTP headers
      * @return The s5cmd command to upload the blob into the object storage for caching purposes
      */
-    protected List<String> s5cmd(RoutePath route, Map<String,List<String>> headers) {
-        final String cacheControl = headers.find(it-> it.key.toLowerCase()=='cache-control')?.value?.first()
-        final String contentType = headers.find(it-> it.key.toLowerCase()=='content-type')?.value?.first()
+    protected List<String> s5cmd(RoutePath route, BlobCacheInfo info) {
 
         final result = new ArrayList<String>(20)
         result << 's5cmd'
@@ -123,14 +121,14 @@ class BlobCacheServiceImpl implements BlobCacheService {
         result << 'pipe'
         result << '--acl' << 'public-read'
 
-        if( contentType ) {
+        if( info.contentType ) {
             result << '--content-type'
-            result << contentType
+            result << info.contentType
         }
 
-        if( cacheControl ) {
+        if( info.cacheControl ) {
             result << '--cache-control'
-            result << cacheControl
+            result << info.cacheControl
         }
 
         // the target object storage path where the blob is going to be uploaded
@@ -139,9 +137,9 @@ class BlobCacheServiceImpl implements BlobCacheService {
         return result
     }
 
-    protected List<String> transferCommand(RoutePath route, Map<String,List<String>> headers) {
-        final curl = proxyService.curl(route, headers)
-        final s5cmd = s5cmd(route, headers)
+    protected List<String> transferCommand(RoutePath route, BlobCacheInfo info) {
+        final curl = proxyService.curl(route, info.headers)
+        final s5cmd = s5cmd(route, info)
 
         final command = List.of(
                 'sh',
@@ -152,7 +150,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
         return command
     }
 
-    protected BlobCacheInfo storeIfAbsent(RoutePath route, Map<String,List<String>> headers, BlobCacheInfo info) {
+    protected BlobCacheInfo storeIfAbsent(RoutePath route, BlobCacheInfo info) {
         BlobCacheInfo result
         try {
             if( blobExists(info.locationUri) && !debug ) {
@@ -161,7 +159,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
             }
             else {
                 log.debug "== Blob cache begin for object '${info.locationUri}'"
-                result = store(route, headers, info)
+                result = store(route, info)
             }
         }
         finally {
@@ -177,11 +175,11 @@ class BlobCacheServiceImpl implements BlobCacheService {
         }
     }
 
-    protected BlobCacheInfo store(RoutePath route, Map<String,List<String>> headers, BlobCacheInfo info) {
+    protected BlobCacheInfo store(RoutePath route, BlobCacheInfo info) {
         final target = route.targetPath
         try {
             // the transfer command to be executed
-            final cli = transferCommand(route, headers)
+            final cli = transferCommand(route, info)
             final result = transferStrategy.transfer(info, cli)
             log.debug "== Blob cache completed for object '${target}'; status=$result.exitStatus"
             return result

@@ -251,7 +251,7 @@ class ProxyClientTest extends Specification {
         def REG = 'docker.io'
         def IMAGE = 'library/hello-world'
         def PATH = '/v2/library/hello-world/manifests/sha256:aa0cc8055b82dc2509bed2e19b275c8f463506616377219d9642221ab53cf9fe'
-        def HEADERS = ['content-type': ['application/octet-stream']]
+        def HEADERS = ['content-type': 'application/octet-stream']
         and:
         def registry = lookupService.lookup(REG)
         def creds = credentialsProvider.getDefaultCredentials(REG)
