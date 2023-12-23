@@ -3,14 +3,14 @@ package io.seqera.wave.service.blob
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.scheduling.TaskExecutors
-import io.seqera.wave.configuration.BlobConfig
+import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RoutePath
@@ -31,6 +31,7 @@ import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
  */
 @Slf4j
 @Singleton
+@Requires(property = 'wave.blobCache.enabled', value = 'true')
 @CompileStatic
 class BlobCacheServiceImpl implements BlobCacheService {
 
@@ -38,7 +39,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
     private Boolean debug
 
     @Inject
-    private BlobConfig blobConfig
+    private BlobCacheConfig blobConfig
 
     @Inject
     private BlobStore blobStore
@@ -61,20 +62,21 @@ class BlobCacheServiceImpl implements BlobCacheService {
     @PostConstruct
     private void init() {
         httpClient = HttpClientFactory.followRedirectsHttpClient()
+        log.info "Creating Blob cache service - $blobConfig"
     }
 
     @Override
-    CompletableFuture<BlobInfo> getBlobCacheURI(RoutePath route, Map<String,List<String>> headers) {
+    BlobInfo getBlobCacheURI(RoutePath route, Map<String,List<String>> headers) {
         final uri = blobDownloadUrl(route)
         final info = BlobInfo.create(uri)
         final target = route.targetPath
         if( blobStore.storeIfAbsent(target, info) ) {
             // start download and caching job
-            // launch the build async
-            CompletableFuture
-                    .<BlobInfo>supplyAsync(() -> storeIfAbsent(route,headers,info), executor)
+            return storeIfAbsent(route,headers,info)
         }
-        return blobStore.awaitDownload(target)
+        else {
+            return blobStore.awaitDownload(target)
+        }
     }
 
     protected boolean blobExists(String uri) {
@@ -175,7 +177,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
     }
 
     protected String blobStorePath(RoutePath route) {
-        StringUtils.pathConcat(blobConfig.bucket, route.path)
+        StringUtils.pathConcat(blobConfig.storageBucket, route.path)
     }
 
     protected String blobDownloadUrl(RoutePath route) {

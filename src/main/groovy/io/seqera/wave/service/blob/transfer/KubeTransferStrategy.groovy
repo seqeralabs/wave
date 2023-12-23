@@ -5,12 +5,10 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Replaces
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.configuration.BlobConfig
+import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.service.blob.BlobInfo
 import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Inject
-import jakarta.inject.Singleton
-
 /**
  * Implements {@link TransferStrategy} that runs s5cmd using a
  * Kubernetes job
@@ -19,13 +17,12 @@ import jakarta.inject.Singleton
  */
 @Slf4j
 @CompileStatic
-@Singleton
 @Requires(property = 'wave.build.k8s')
 @Replaces(LocalTransferStrategy)
 class KubeTransferStrategy implements TransferStrategy {
 
     @Inject
-    private BlobConfig blobConfig
+    private BlobCacheConfig blobConfig
 
     @Inject
     private K8sService k8sService

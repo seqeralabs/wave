@@ -41,7 +41,7 @@ import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
-import io.seqera.wave.configuration.BlobConfig
+import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.SpackConfig
@@ -531,14 +531,14 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
-    V1Pod transferContainer(String name, String containerImage, List<String> args, BlobConfig blobConfig) {
+    V1Pod transferContainer(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
         final spec = transferSpec(name, containerImage, args, blobConfig)
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
-    V1Pod transferSpec(String name, String containerImage, List<String> args, BlobConfig blobConfig) {
+    V1Pod transferSpec(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
 
         V1PodBuilder builder = new V1PodBuilder()
 

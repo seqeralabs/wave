@@ -23,7 +23,6 @@ import io.seqera.wave.exception.WaveException
 
 
 /**
- *
  * Exception fired when the time to blob download takes too long
  *
  * @author: Paolo Di Tommaso <paolo.ditommaso@gmail.com>

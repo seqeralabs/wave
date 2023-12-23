@@ -6,6 +6,10 @@ import java.util.concurrent.CompletableFuture
 import groovy.transform.CompileStatic
 
 /**
+ * Implement a distributed store for blob cache entry.
+ *
+ * NOTE: This only stores blob caching *metadata* i.e. {@link BlobInfo}.
+ * The blob binary is stored into an object storage bucket 
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -40,11 +44,9 @@ interface BlobStore {
      *      specified blob key or {@code null} if no blob record is associated for the
      *      given key
      */
-    default CompletableFuture<BlobInfo> awaitDownload(String key) {
+    default BlobInfo awaitDownload(String key) {
         final result = getBlob(key)
-        if( !result )
-            return null
-        return CompletableFuture<BlobInfo>.supplyAsync(() -> Waiter.awaitCompletion(this,key,result))
+        return result ? Waiter.awaitCompletion(this,key,result) : null
     }
 
     /**

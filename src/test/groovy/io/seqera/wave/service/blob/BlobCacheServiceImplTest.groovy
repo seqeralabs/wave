@@ -2,7 +2,7 @@ package io.seqera.wave.service.blob
 
 import spock.lang.Specification
 
-import io.seqera.wave.configuration.BlobConfig
+import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.model.ContainerCoordinates
@@ -15,7 +15,7 @@ class BlobCacheServiceImplTest extends Specification {
 
     def 'should get s5cmd cli' () {
         given:
-        def service = new BlobCacheServiceImpl(blobConfig: new BlobConfig(bucket: 's3://store/blobs/'))
+        def service = new BlobCacheServiceImpl(blobConfig: new BlobCacheConfig(storageBucket: 's3://store/blobs/'))
         def route = RoutePath.v2manifestPath(ContainerCoordinates.parse('ubuntu@sha256:aabbcc'))
 
         when:
@@ -34,7 +34,7 @@ class BlobCacheServiceImplTest extends Specification {
     def 'should get transfer command' () {
         given:
         def proxyService = Mock(RegistryProxyService)
-        def service = new BlobCacheServiceImpl( blobConfig: new BlobConfig(bucket: 's3://store/blobs/'), proxyService: proxyService )
+        def service = new BlobCacheServiceImpl( blobConfig: new BlobCacheConfig(storageBucket: 's3://store/blobs/'), proxyService: proxyService )
         def route = RoutePath.v2manifestPath(ContainerCoordinates.parse('ubuntu@sha256:aabbcc'))
 
         when:

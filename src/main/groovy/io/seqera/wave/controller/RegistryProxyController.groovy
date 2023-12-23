@@ -104,6 +104,7 @@ class RegistryProxyController {
     private HttpClientConfig httpConfig
 
     @Inject
+    @Nullable
     private BlobCacheService blobCacheService
 
     @Value('${wave.cache.digestStore.maxWeightMb:350}')
@@ -269,9 +270,13 @@ class RegistryProxyController {
             log.debug "Returning ${route.type} from repository: '${route.getTargetContainer()}'"
             return fromContentResponse(resp, route)
         }
-        else {
-            log.debug "Returning cache from repository: '${route.getTargetContainer()}'"
+        else if( blobCacheService ) {
+            log.debug "Forwarding ${route.type} cache request '${route.getTargetContainer()}'"
             return fromDownloadResponse(resp, route, headers)
+        }
+        else {
+            log.debug "Pulling stream from repository: '${route.getTargetContainer()}'"
+            return fromStreamResponse(resp, route, headers)
         }
     }
 
@@ -356,10 +361,10 @@ class RegistryProxyController {
     }
 
     MutableHttpResponse<?> fromDownloadResponse(final DelegateResponse resp, RoutePath route, Map<String, List<String>> headers) {
-        blobCacheService
-                .getBlobCacheURI(route, headers)
-                .thenApply((info) -> info.succeeded() ? redirectResponse(resp, info.locationUrl) : badRequest(info.logs))
-                .get()
+        final blob = blobCacheService .getBlobCacheURI(route, headers)
+        return blob.succeeded()
+                ? redirectResponse(resp, blob.locationUrl)
+                : badRequest(blob.logs)
     }
 
     protected MutableHttpResponse<?> redirectResponse(final DelegateResponse resp, String location ) {
@@ -374,7 +379,6 @@ class RegistryProxyController {
                 .headers(toMutableHeaders(resp.headers, override))
     }
 
-    @Deprecated
     MutableHttpResponse<?> fromStreamResponse(final DelegateResponse response, RoutePath route, Map<String,List<String>> headers){
 
         final stream = proxyService.streamBlob(route, headers)

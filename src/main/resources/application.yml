@@ -70,8 +70,8 @@ wave:
   scan:
     image:
       name: aquasec/trivy:0.47.0
-  blob:
-    s5cmdImage: 195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/s5cmd:v2.2.2
+  blobCache:
+    s5cmdImage: cr.seqera.io/public/wave/s5cmd:v2.2.2
 ---
 jackson:
   serialization:
