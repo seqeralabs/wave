@@ -18,7 +18,7 @@ import jakarta.inject.Inject
 @Slf4j
 @CompileStatic
 @Requires(property = 'wave.blobCache.strategy', value = 'docker')
-@Replaces(LocalTransferStrategy)
+@Replaces(SimpleTransferStrategy)
 class DockerTransferStrategy implements TransferStrategy {
 
     @Inject
@@ -26,6 +26,15 @@ class DockerTransferStrategy implements TransferStrategy {
 
     @Override
     BlobInfo transfer(BlobInfo info, List<String> command) {
+        final proc = createProcess(info,command).start()
+        // wait for the completion and save thr result
+        final completed = proc.waitFor(blobConfig.transferTimeout.toSeconds(), TimeUnit.SECONDS)
+        final int status = completed ? proc.exitValue() : -1
+        final logs = proc.inputStream.text
+        return info.completed(status, logs)
+    }
+
+    protected ProcessBuilder createProcess(BlobInfo info, List<String> command) {
         // compose the docker command
         final cli = new ArrayList<String>(10)
         cli.add('docker')
@@ -38,15 +47,11 @@ class DockerTransferStrategy implements TransferStrategy {
         cli.addAll(command)
         log.debug "Transfer docker command: ${cli.join(' ')}\n"
 
-        // launch the execution
-        final proc = new ProcessBuilder()
-                .command(cli)
-                .redirectErrorStream(true)
-                .start()
-        // wait for the completion and save thr result
-        final completed = proc.waitFor(blobConfig.transferTimeout.toSeconds(), TimeUnit.SECONDS)
-        final int status = completed ? proc.exitValue() : -1
-        final logs = proc.inputStream.text
-        return info.completed(status, logs)
+        // proc builder
+        final builder = new ProcessBuilder()
+        builder.environment().putAll(blobConfig.getEnvironment())
+        builder.command(cli)
+        builder.redirectErrorStream(true)
+        return builder
     }
 }

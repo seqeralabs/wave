@@ -28,6 +28,7 @@ import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.openapi.models.V1ContainerBuilder
 import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1DeleteOptions
+import io.kubernetes.client.openapi.models.V1EnvVar
 import io.kubernetes.client.openapi.models.V1HostPathVolumeSource
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1JobBuilder
@@ -566,11 +567,19 @@ class K8sServiceImpl implements K8sService {
         spec.addNewContainer()
                 .withName(name)
                 .withImage(containerImage)
+                .withEnv(toEnvList(blobConfig.getEnvironment()))
                 .withArgs(args)
                 .withResources(requests)
                 .endContainer()
                 .endSpec()
 
         builder.build()
+    }
+
+    protected List<V1EnvVar> toEnvList(Map<String,String> env) {
+        final result = new ArrayList<V1EnvVar>(env.size())
+        for( Map.Entry<String,String> it : env )
+            result.add( new V1EnvVar().name(it.key).value(it.value) )
+        return result
     }
 }

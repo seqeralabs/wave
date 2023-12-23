@@ -13,22 +13,27 @@ import jakarta.inject.Inject
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-class LocalTransferStrategy implements TransferStrategy {
+class SimpleTransferStrategy implements TransferStrategy {
 
     @Inject
     private BlobCacheConfig blobConfig
 
     @Override
     BlobInfo transfer(BlobInfo info, List<String> cli) {
-        // launch the execution
-        final proc = new ProcessBuilder()
-                .command(cli)
-                .redirectErrorStream(true)
-                .start()
+        final proc = createProcess(cli).start()
         // wait for the completion and save thr result
         final completed = proc.waitFor(blobConfig.transferTimeout.toSeconds(), TimeUnit.SECONDS)
         final int status = completed ? proc.exitValue() : -1
         final logs = proc.inputStream.text
         return info.completed(status, logs)
+    }
+
+    protected ProcessBuilder createProcess(List<String> cli) {
+        // builder
+        final builder = new ProcessBuilder()
+        builder.environment().putAll(blobConfig.getEnvironment())
+        builder.command(cli)
+        builder.redirectErrorStream(true)
+        return builder
     }
 }

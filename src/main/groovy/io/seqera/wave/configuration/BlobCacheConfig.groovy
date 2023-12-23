@@ -63,4 +63,19 @@ class BlobCacheConfig {
     String requestsMemory
 
 
+    Map<String,String> getEnvironment() {
+        final result = new HashMap<String,String>(10)
+        if( storageRegion ) {
+            result.put('AWS_REGION', storageRegion)
+            result.put('AWS_DEFAULT_REGION', storageRegion)
+        }
+        if( storageAccessKey ) {
+            result.put('AWS_ACCESS_KEY_ID', storageAccessKey)
+        }
+        if( storageSecretKey ) {
+            result.put('AWS_SECRET_ACCESS_KEY', storageSecretKey)
+        }
+        return result
+    }
+
 }

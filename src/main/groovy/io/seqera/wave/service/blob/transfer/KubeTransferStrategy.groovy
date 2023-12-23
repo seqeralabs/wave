@@ -18,7 +18,7 @@ import jakarta.inject.Inject
 @Slf4j
 @CompileStatic
 @Requires(property = 'wave.build.k8s')
-@Replaces(LocalTransferStrategy)
+@Replaces(SimpleTransferStrategy)
 class KubeTransferStrategy implements TransferStrategy {
 
     @Inject

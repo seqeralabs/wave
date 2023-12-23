@@ -30,6 +30,17 @@ class BlobCacheServiceImplTest extends Specification {
 
     }
 
+    def 'should get s5cmd cli with custom endpoint' () {
+        given:
+        def config = new BlobCacheConfig( storageBucket: 's3://store/blobs/', storageEndpoint: 'https://foo.com' )
+        def service = new BlobCacheServiceImpl(blobConfig: config)
+        def route = RoutePath.v2manifestPath(ContainerCoordinates.parse('ubuntu@sha256:aabbcc'))
+
+        when:
+        def result = service.s5cmd(route, [:])
+        then:
+        result == ['s5cmd', '--endpoint-url', 'https://foo.com', '--json', 'pipe', '--acl', 'public-read', 's3://store/blobs/v2/library/ubuntu/manifests/sha256:aabbcc']
+    }
 
     def 'should get transfer command' () {
         given:

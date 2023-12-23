@@ -100,20 +100,26 @@ class BlobCacheServiceImpl implements BlobCacheService {
         final String cacheControl = headers.find(it-> it.key.toLowerCase()=='cache-control')?.value?.first()
         final String contentType = headers.find(it-> it.key.toLowerCase()=='content-type')?.value?.first()
 
-        final result = [
-                's5cmd',
-                '--json',
-                'pipe',
-                '--acl',
-                'public-read']
+        final result = new ArrayList<String>(20)
+        result << 's5cmd'
+
+        if( blobConfig.storageEndpoint ) {
+            result << '--endpoint-url'
+            result << blobConfig.storageEndpoint
+        }
+
+        result << '--json'
+        result << 'pipe'
+        result << '--acl' << 'public-read'
+
         if( contentType ) {
-            result.add('--content-type')
-            result.add(contentType)
+            result << '--content-type'
+            result << contentType
         }
 
         if( cacheControl ) {
-            result.add('--cache-control')
-            result.add(cacheControl)
+            result << '--cache-control'
+            result << cacheControl
         }
 
         // the target store path
