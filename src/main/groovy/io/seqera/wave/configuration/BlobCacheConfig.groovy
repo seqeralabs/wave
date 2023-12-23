@@ -13,7 +13,7 @@ import io.micronaut.context.annotation.Value
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
-@ToString(includeNames = true, includePackage = false)
+@ToString(includeNames = true, includePackage = false, excludes = 'storageSecretKey', ignoreNulls = true)
 @CompileStatic
 class BlobCacheConfig {
 

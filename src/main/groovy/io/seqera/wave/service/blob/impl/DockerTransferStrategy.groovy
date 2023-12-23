@@ -1,4 +1,4 @@
-package io.seqera.wave.service.blob.transfer
+package io.seqera.wave.service.blob.impl
 
 import java.util.concurrent.TimeUnit
 
@@ -7,7 +7,8 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Replaces
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.BlobCacheConfig
-import io.seqera.wave.service.blob.BlobInfo
+import io.seqera.wave.service.blob.BlobCacheInfo
+import io.seqera.wave.service.blob.TransferStrategy
 import jakarta.inject.Inject
 /**
  * Implements {@link TransferStrategy} that runs s5cmd using a docker
@@ -25,7 +26,7 @@ class DockerTransferStrategy implements TransferStrategy {
     private BlobCacheConfig blobConfig
 
     @Override
-    BlobInfo transfer(BlobInfo info, List<String> command) {
+    BlobCacheInfo transfer(BlobCacheInfo info, List<String> command) {
         final proc = createProcess(command).start()
         // wait for the completion and save thr result
         final completed = proc.waitFor(blobConfig.transferTimeout.toSeconds(), TimeUnit.SECONDS)

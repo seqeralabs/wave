@@ -1,6 +1,4 @@
-package io.seqera.wave.service.blob.transfer
-
-import io.seqera.wave.service.blob.BlobInfo
+package io.seqera.wave.service.blob
 /**
  * Defines the contract to transfer a layer blob into a remote object storage
  *
@@ -8,6 +6,6 @@ import io.seqera.wave.service.blob.BlobInfo
  */
 interface TransferStrategy {
 
-    BlobInfo transfer(BlobInfo info, List<String> command)
+    BlobCacheInfo transfer(BlobCacheInfo info, List<String> command)
 
 }

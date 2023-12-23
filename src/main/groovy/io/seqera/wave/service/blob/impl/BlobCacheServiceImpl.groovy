@@ -1,4 +1,4 @@
-package io.seqera.wave.service.blob
+package io.seqera.wave.service.blob.impl
 
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -15,7 +15,10 @@ import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.http.HttpClientFactory
-import io.seqera.wave.service.blob.transfer.TransferStrategy
+import io.seqera.wave.service.blob.BlobCacheInfo
+import io.seqera.wave.service.blob.BlobCacheService
+import io.seqera.wave.service.blob.BlobStore
+import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.util.Escape
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.StringUtils
@@ -66,16 +69,16 @@ class BlobCacheServiceImpl implements BlobCacheService {
     }
 
     @Override
-    BlobInfo getBlobCacheURI(RoutePath route, Map<String,List<String>> headers) {
-        final uri = blobDownloadUrl(route)
-        final info = BlobInfo.create(uri)
+    BlobCacheInfo retrieveBlobCache(RoutePath route, Map<String,List<String>> headers) {
+        final uri = blobDownloadUri(route)
+        final info = BlobCacheInfo.create(uri)
         final target = route.targetPath
         if( blobStore.storeIfAbsent(target, info) ) {
             // start download and caching job
             return storeIfAbsent(route,headers,info)
         }
         else {
-            return blobStore.awaitDownload(target)
+            return blobStore.awaitCacheStore(target)
         }
     }
 
@@ -96,6 +99,13 @@ class BlobCacheServiceImpl implements BlobCacheService {
         return resp.statusCode() == 200
     }
 
+    /**
+     * Creates the s5cmd command to upload the target layer blob into the object storage
+     *
+     * @param route The layer blob HTTP request path
+     * @param headers The layer blob HTTP headers
+     * @return The s5cmd command to upload the blob into the object storage for caching purposes
+     */
     protected List<String> s5cmd(RoutePath route, Map<String,List<String>> headers) {
         final String cacheControl = headers.find(it-> it.key.toLowerCase()=='cache-control')?.value?.first()
         final String contentType = headers.find(it-> it.key.toLowerCase()=='content-type')?.value?.first()
@@ -122,7 +132,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
             result << cacheControl
         }
 
-        // the target store path
+        // the target object storage path where the blob is going to be uploaded
         result.add( blobStorePath(route) )
 
         return result
@@ -132,24 +142,24 @@ class BlobCacheServiceImpl implements BlobCacheService {
         final curl = proxyService.curl(route, headers)
         final s5cmd = s5cmd(route, headers)
 
-        final ret = List.of(
+        final command = List.of(
                 'sh',
                 '-c',
                 Escape.cli(curl) + ' | ' + Escape.cli(s5cmd) )
 
-        log.trace "== Transfer command: ${ret.join(' ')}"
-        return ret
+        log.trace "== Blob cache transfer command: ${command.join(' ')}"
+        return command
     }
 
-    protected BlobInfo storeIfAbsent(RoutePath route, Map<String,List<String>> headers, BlobInfo info) {
-        BlobInfo result
+    protected BlobCacheInfo storeIfAbsent(RoutePath route, Map<String,List<String>> headers, BlobCacheInfo info) {
+        BlobCacheInfo result
         try {
-            if( blobExists(info.locationUrl) && !debug ) {
-                log.debug "== Blob found in cache '${info.locationUrl}'"
+            if( blobExists(info.locationUri) && !debug ) {
+                log.debug "== Blob cache exists for object '${info.locationUri}'"
                 result = info.cached()
             }
             else {
-                log.debug "== Initiating caching for blob '${info.locationUrl}'"
+                log.debug "== Blob cache begin for object '${info.locationUri}'"
                 result = store(route, headers, info)
             }
         }
@@ -166,27 +176,40 @@ class BlobCacheServiceImpl implements BlobCacheService {
         }
     }
 
-    protected BlobInfo store(RoutePath route, Map<String,List<String>> headers, BlobInfo info) {
+    protected BlobCacheInfo store(RoutePath route, Map<String,List<String>> headers, BlobCacheInfo info) {
         final target = route.targetPath
         try {
             // the transfer command to be executed
             final cli = transferCommand(route, headers)
             final result = transferStrategy.transfer(info, cli)
-            log.debug "== Completed caching for blob '${target}'; status=$result.exitStatus"
+            log.debug "== Blob cache completed for object '${target}'; status=$result.exitStatus"
             return result
         }
         catch (Throwable t) {
-            log.debug "== Errored caching for blob '${target}' - cause: ${t.message}", t
+            log.warn "== Blob cache failed for object '${target}' - cause: ${t.message}", t
             final result = info.failed(t.message)
             return result
         }
     }
 
+    /**
+     * The S3 path where the layer blob is going to be cached
+     * e.g. {@code s3://some-bucket/some/path}
+     *
+     * @param route The source HTTP request of container layer to be cached
+     * @return The S3 path where the layer blob needs to be cached
+     */
     protected String blobStorePath(RoutePath route) {
-        StringUtils.pathConcat(blobConfig.storageBucket, route.path)
+        StringUtils.pathConcat(blobConfig.storageBucket, route.targetPath)
     }
 
-    protected String blobDownloadUrl(RoutePath route) {
-        StringUtils.pathConcat(blobConfig.baseUrl, route.path)
+    /**
+     * The HTTP URI from there the cached layer blob is going to be downloaded
+     *
+     * @param route The source HTTP request of container layer to be cached
+     * @return The HTTP URI from the cached layer blob is going to be downloaded
+     */
+    protected String blobDownloadUri(RoutePath route) {
+        StringUtils.pathConcat(blobConfig.baseUrl, route.targetPath)
     }
 }

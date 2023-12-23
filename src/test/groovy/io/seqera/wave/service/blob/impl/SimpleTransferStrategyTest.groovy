@@ -1,4 +1,4 @@
-package io.seqera.wave.service.blob.transfer
+package io.seqera.wave.service.blob.impl
 
 import spock.lang.Specification
 

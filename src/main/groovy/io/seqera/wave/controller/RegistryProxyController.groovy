@@ -361,15 +361,14 @@ class RegistryProxyController {
     }
 
     MutableHttpResponse<?> fromDownloadResponse(final DelegateResponse resp, RoutePath route, Map<String, List<String>> headers) {
-        final blob = blobCacheService .getBlobCacheURI(route, headers)
+        final blob = blobCacheService .retrieveBlobCache(route, headers)
         if( !blob.succeeded() ) {
-            final String msg = blob.logs ?: "Unable to cache blob ${blob.locationUrl}"
+            final String msg = blob.logs ?: "Unable to cache blob ${blob.locationUri}"
             return badRequest(msg)
         }
 
-        log.debug "Returning blob cache URL location '${blob.locationUrl}'"
         final override = Map.of(
-                'Location', blob.locationUrl,   // <-- the location can be relative to the origin host, override it to always return a fully qualified URI
+                'Location', blob.locationUri,   // <-- the location can be relative to the origin host, override it to always return a fully qualified URI
                 'Content-Length', '0',      // <-- make sure to set content length to zero, some services return some content even with the redirect header that's discarded by this response
                 'Connection', 'close' )     // <-- make sure to return connection: close header otherwise docker hangs
 

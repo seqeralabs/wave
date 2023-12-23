@@ -29,9 +29,9 @@ import io.seqera.wave.exception.WaveException
  *
  */
 @CompileStatic
-class DownloadTimeoutException extends WaveException{
+class TransferTimeoutException extends WaveException{
 
-    DownloadTimeoutException(String message) {
+    TransferTimeoutException(String message) {
         super(message)
     }
 }

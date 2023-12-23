@@ -1,8 +1,9 @@
-package io.seqera.wave.service.blob.transfer
+package io.seqera.wave.service.blob.impl
 
 import spock.lang.Specification
 
 import io.seqera.wave.configuration.BlobCacheConfig
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>

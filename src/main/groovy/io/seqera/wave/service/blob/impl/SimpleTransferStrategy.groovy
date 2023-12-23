@@ -1,10 +1,11 @@
-package io.seqera.wave.service.blob.transfer
+package io.seqera.wave.service.blob.impl
 
 import java.util.concurrent.TimeUnit
 
 import groovy.transform.CompileStatic
 import io.seqera.wave.configuration.BlobCacheConfig
-import io.seqera.wave.service.blob.BlobInfo
+import io.seqera.wave.service.blob.BlobCacheInfo
+import io.seqera.wave.service.blob.TransferStrategy
 import jakarta.inject.Inject
 /**
  * Simple {@link TransferStrategy} implementation that runs
@@ -19,7 +20,7 @@ class SimpleTransferStrategy implements TransferStrategy {
     private BlobCacheConfig blobConfig
 
     @Override
-    BlobInfo transfer(BlobInfo info, List<String> cli) {
+    BlobCacheInfo transfer(BlobCacheInfo info, List<String> cli) {
         final proc = createProcess(cli).start()
         // wait for the completion and save thr result
         final completed = proc.waitFor(blobConfig.transferTimeout.toSeconds(), TimeUnit.SECONDS)
