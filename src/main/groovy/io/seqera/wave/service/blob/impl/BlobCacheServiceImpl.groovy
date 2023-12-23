@@ -19,6 +19,7 @@ import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.BlobCacheService
 import io.seqera.wave.service.blob.BlobStore
 import io.seqera.wave.service.blob.TransferStrategy
+import io.seqera.wave.service.blob.TransferTimeoutException
 import io.seqera.wave.util.Escape
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.StringUtils
@@ -78,7 +79,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
             return storeIfAbsent(route,headers,info)
         }
         else {
-            return blobStore.awaitCacheStore(target)
+            return awaitCacheStore(target)
         }
     }
 
@@ -211,5 +212,52 @@ class BlobCacheServiceImpl implements BlobCacheService {
      */
     protected String blobDownloadUri(RoutePath route) {
         StringUtils.pathConcat(blobConfig.baseUrl, route.targetPath)
+    }
+
+
+    /**
+     * Await for the container layer blob download
+     *
+     * @param key
+     *      The container blob unique key
+     * @return
+     *      the {@link java.util.concurrent.CompletableFuture} holding the {@link BlobCacheInfo} associated with
+     *      specified blob key or {@code null} if no blob record is associated for the
+     *      given key
+     */
+    BlobCacheInfo awaitCacheStore(String key) {
+        final result = blobStore.getBlob(key)
+        return result ? Waiter.awaitCompletion(blobStore, key, result) : null
+    }
+
+    /**
+     * Implement waiter common logic
+     */
+    @CompileStatic
+    private static class Waiter {
+
+        static BlobCacheInfo awaitCompletion(BlobStore store, String key, BlobCacheInfo current) {
+            final beg = System.currentTimeMillis()
+            // add 10% delay gap to prevent race condition with timeout expiration
+            final max = (store.timeout.toMillis() * 1.10) as long
+            while( true ) {
+                if( current==null ) {
+                    return BlobCacheInfo.unknown()
+                }
+
+                // check is completed
+                if( current.done() ) {
+                    return current
+                }
+                // check if it's timed out
+                final delta = System.currentTimeMillis()-beg
+                if( delta > max )
+                    throw new TransferTimeoutException("Blob cache transfer '$key' timed out")
+                // sleep a bit
+                Thread.sleep(store.delay.toMillis())
+                // fetch the build status again
+                current = store.getBlob(key)
+            }
+        }
     }
 }
