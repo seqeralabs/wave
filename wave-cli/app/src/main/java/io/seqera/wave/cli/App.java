@@ -181,6 +181,9 @@ public class App implements Runnable {
     @Option(names = {"--dry-run"}, paramLabel = "false", description = "Simulate a request switching off the build container images")
     private boolean dryRun;
 
+    @Option(names = {"--preserve-timestamp"}, paramLabel = "false", description = "Preserve timestamp of files in the build context and layers created by Wave")
+    private boolean preserveTimestamp;
+
     @Option(names = {"--info"}, paramLabel = "false", description = "Show Wave client & service information")
     private boolean info;
 
@@ -458,7 +461,9 @@ public class App implements Runnable {
             final DockerIgnoreFilter filter = Files.exists(dockerIgnorePath)
                     ? DockerIgnoreFilter.fromFile(dockerIgnorePath)
                     : null;
-            final Packer packer = new Packer().withFilter(filter);
+            final Packer packer = new Packer()
+                            .withFilter(filter)
+                            .withPreserveFileTimestamp(preserveTimestamp);
             result = BuildContext.of(packer.layer(Path.of(contextDir)));
         }
         catch (IOException e) {
@@ -508,7 +513,10 @@ public class App implements Runnable {
             if( !Files.isDirectory(loc) ) throw new IllegalCliArgumentException("Not a valid container layer directory - offering path: "+loc);
             ContainerLayer layer;
             try {
-                result.layers.add( layer=new Packer().layer(loc) );
+                layer = new Packer()
+                        .withPreserveFileTimestamp(preserveTimestamp)
+                        .layer(loc);
+                result.layers.add(layer);
             }
             catch (IOException e ) {
                 throw new RuntimeException("Unexpected error while packing container layer at path: " + loc, e);
