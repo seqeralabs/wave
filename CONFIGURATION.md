@@ -1,5 +1,7 @@
 # Wave Application Configurations
 
+## General Configurations
+
 | Variable                      | Description                            | Default Value / Environment Variable | Optional |
 |-------------------------------|----------------------------------------|-------------------------------------|----------|
 | `micronaut.application.name`| The name of wave application.          | `wave-app`                          | true     |
@@ -10,7 +12,8 @@
 | `tower.endpoint.url`                 | URL for the seqera platform API.       |                                     | true     |
 | `logger.levels.io.seqera`     | Log level for `io.seqera` package.     | `TRACE`                             | true     |
 
-# Wave Docker Registries Configurations (note: you will find them in config.yml in the root directory of the project)
+## Container Registries Configurations 
+(Note: you will find them in config.yml in the root directory of the project)
 
 | Variable                                     | Description                                   | Default Value / Environment Variable   | Optional |
 |----------------------------------------------|-----------------------------------------------|-----------------|----------|
@@ -25,7 +28,7 @@
 | `wave.registries.seqeralabs.azurecr.io.username` | Azure Container Registry username for authentication. | `"${AZURECR_USER}"` | true     |
 | `wave.registries.seqeralabs.azurecr.io.password` | Azure Container Registry password or PAT for authentication. | `"${AZURECR_PAT}"` | true     |
 
-# Wave Http client Configurations
+## Http client Configurations
 
 | Variable                      | Description                                      | Default Value / Environment Variable | Optional |
 |-------------------------------|--------------------------------------------------|---------------|----------|
@@ -38,7 +41,7 @@
 | `micronaut.http.services.stream-client.read-timeout` | Read timeout for the streaming HTTP client.      | `30s`                                | false    |
 | `micronaut.http.services.stream-client.read-idle-timeout` | Read idle timeout for the streaming HTTP client. | `120s`                           | false    |
 
-# Wave build process Configurations
+## Container Build process Configurations
 
 | Variable                      | Description                                                          | Default Value / Environment Variable                  | Optional |
 |-------------------------------|----------------------------------------------------------------------|------------------------------------------------------|----------|
@@ -55,7 +58,8 @@
 | `wave.build.public`                  | Deafult public re[ository for wave.                                  |                | true     |
 | `wave.build.compress-caching`                  | wave caching compression for build process.                          | true     | false    |
 
-## Spack  Configurations for wave build process(Note: these configuration are mandatory if you want to support spack in you wave installation)
+### Spack Configurations for container build process
+(Note: these configuration are mandatory if you want to support spack in you wave installation)
 
 | Variable                                   | Description                                              | Default Value  / Environment Variable| Optional |
 |--------------------------------------------|----------------------------------------------------------|---------------------------------------|----------|
@@ -64,7 +68,15 @@
 | `wave.build.spack.secretKeyFile`      | Secret key file for Spack. e.g. `/efs/wave/spack/key`                |                 | false    |
 | `wave.build.spack.secretMountPath`    | Secret mount path for Spack. e.g. `/var/seqera/spack/key`            |                   | false    |
 
-# Kubernetes Configurations for Wave build process (Note: If you will use kubernetes)
+### Build process logs Configuration
+
+| Variable                      | Description                                              | Default Value / Environment Variable| Optional |
+|-------------------------------|----------------------------------------------------------|-------------------------------------------|----------|
+| `logger.levels.io.micronaut.retry.intercept.RecoveryInterceptor` | Log level for `RecoveryInterceptor`.                     | `OFF` | false    |
+| `micronaut.object-storage.aws.build-logs.bucket` | AWS S3 bucket, where wave will store build process logs. | `${wave.build.logs.bucket}`         | false    |
+
+## Kubernetes Configurations for container build process 
+(Note: If you will use kubernetes)
 
 | Variable                                   | Description                                              | Default Value / Environment Variable | Optional |
 |--------------------------------------------|----------------------------------------------------------|---------------------------------------|----------|
@@ -77,7 +89,7 @@
 | `wave.build.k8s.resources.requests.cpu`    | allocate number of CPUs for build process in kubernetes. |                        | true     |
 | `wave.build.k8s.resources.requests.memory` | allocate memory for build process in kubernetes. e.g. `2000Mi`           |                        | true     |
 
-# Wave scan process Configurations
+## Container scan process Configurations
 
 | Variable                      | Description                                                            | Default Value  / Environment Variable| Optional |
 |-------------------------------|------------------------------------------------------------------------|------------------------|----------|
@@ -85,14 +97,16 @@
 | `wave.scan.severity`                  | Severity level for vulnerability scanning. e.g. "MEDIUM,HIGH,CRITICAL" |                        | true     |
 | `wave.scan.image.name`        | Docker Image used for container securioty scanning.                    | `aquasec/trivy:0.47.0` | false    |
 
-# Kubernetes Configurations for Wave build process (Note: If you will use kubernetes)
+# Kubernetes Configurations for Wave build process 
+(Note: If you will use kubernetes)
 
 | Variable                      | Description                                                      | Default Value / Environment Variable  | Optional |
 |-------------------------------|------------------------------------------------------------------|--------------------------------------|----------|
 | `wave.scan.k8s.resources.requests.cpu`        | allocate number of CPUs for scaning process in kubernetes        |                                      | true     |
 | `wave.scan.k8s.resources.requests.memory`        | allocate memory for scaning process in kubernetes. e.g. `1000Mi` |                                      | true     |
 
-# Wave Additional Configurations (Note: If you enable rate limiting in wave by adding 'rate-limit' in micronaut environment)
+## Rate limit Configurations 
+(Note: If you enable rate limiting in wave by adding 'rate-limit' in micronaut environment)
 
 | Variable                      | Description                                         | Default Value / Environment Variable| Optional |
 |-------------------------------|-----------------------------------------------------|-----------------------------------|----------|
@@ -101,7 +115,7 @@
 | `rate-limit.pull.anonymous`           | Rate limit configuration for anonymous pull requests.             |      `100/1h`  | false    |
 | `rate-limit.pull.authenticated`       | Rate limit configuration for authenticated pull requests.         | `100/1m`      | false    |
 
-# Wave cache and database Configurations
+## Database and Cache Configurations
 
 | Variable             | Description                  | Default Value / Environment Variable| Optional |
 |----------------------|------------------------------|--------------------------------------------------|----------|
@@ -114,27 +128,20 @@
 | `surrealdb.password` | Surreal databse password.    | `${SURREALDB_PASSWORD`                               | false    |
 | `surrealdb.init-db`  | should initiat surreal DB.   |                           | true     |
 
-# Wave Mail Configurations
+## E-Mail Configurations
 
 | Variable                      | Description                                         | Default Value / Environment Variable| Optional |
 |-------------------------------|-----------------------------------------------------|-------------------------------------------|----------|
 | `mail.from`                          | Email address for sending mail from wave.                         |       | false    |
 
-# Wave build logs Configuration
 
-| Variable                      | Description                                              | Default Value / Environment Variable| Optional |
-|-------------------------------|----------------------------------------------------------|-------------------------------------------|----------|
-| `logger.levels.io.micronaut.retry.intercept.RecoveryInterceptor` | Log level for `RecoveryInterceptor`.                     | `OFF` | false    |
-| `micronaut.object-storage.aws.build-logs.bucket` | AWS S3 bucket, where wave will store build process logs. | `${wave.build.logs.bucket}`         | false    |
-
-
-# Jackson Configurations
+## Jackson Configurations
 
 | Variable                      | Description                                         | Default Value / Environment Variable| Optional |
 |-------------------------------|-----------------------------------------------------|-------------------------------------------|----------|
 | `jackson.serialization.writeDatesAsTimestamps` | Write dates as timetstamps in jackson serialization | `false`                                  | false    |
 
-# Micronaut specific Configuration
+## Micronaut specific Configuration
 
 | Variable                    | Description                                                                                 | Default Value / Environment Variable| Optional |
 |-----------------------------|---------------------------------------------------------------------------------------------|-------------------------------------------|----------|
@@ -152,6 +159,7 @@
 | `micronaut.executors.stream-executor.type` | Executor type for the stream executor.                                                      | `FIXED`                                  | false    |
 | `micronaut.executors.stream-executor.number-of-threads` | Number of threads for the stream executor.                                                  | `16`                     | false    |
 | `micronaut.netty.event-loops.stream-pool.executor` | Executor for the stream pool event loops.                                                   | `stream-executor`                  | false    |
-# Notes
+
+## Notes
 - Customize these configurations based on your application's requirements.
 - Refer to the official Micronaut documentation for more details on available configuration properties: [Micronaut Configuration Reference](https://docs.micronaut.io/latest/guide/index.html#config)
