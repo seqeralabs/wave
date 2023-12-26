@@ -6,6 +6,9 @@ wave:
     docker.io:
       username: "${DOCKER_USER:}"
       password: "${DOCKER_PAT:}"
+    quay.io:
+      username: "${QUAY_USER:}"
+      password: "${QUAY_PAT:}"
     195996028523.dkr.ecr.eu-west-1.amazonaws.com:
       username : "${AWS_ACCESS_KEY_ID:}"
       password : "${AWS_SECRET_ACCESS_KEY:}"

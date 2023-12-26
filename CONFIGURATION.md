@@ -10,7 +10,7 @@
 | `tower.endpoint.url`                 | URL for the seqera platform API.       |                      | true     |
 | `logger.levels.io.seqera`     | Log level for `io.seqera` package.     | `TRACE`              | true     |
 
-# Wave Docker Registry Configurations
+# Wave Docker Registries Configurations (note: you will find them in config.yml in the root directory of the project)
 
 | Variable                                     | Description                                   | Default Value   | Optional |
 |----------------------------------------------|-----------------------------------------------|-----------------|----------|
@@ -27,30 +27,29 @@
 
 # Wave Http client Configurations
 
-| Variable                      | Description                            | Default Value | Optional |
-|-------------------------------|----------------------------------------|---------------|----------|
-| `wave.httpclient.connectTimeout` | connection timepout for HTTP client.   | `20s`         | false    |
-| `wave.httpclient.retry.delay` | Delay for HTTP client retries.         | `1s`          | false    |
-| `wave.httpclient.retry.attempts` | Number of HTTP client retry attempts.  | `5`           | false    |
-| `wave.httpclient.retry.maxDelay` | Maximum delay for HTTP client retries. |               | false    |
-| `wave.httpclient.retry.jitter` | jitter of HTTP client retries.         | `0.25`        | false    |
-| `wave.httpclient.retry.multiplier` | Multiplier for HTTP client retries.    | `1.0`         | false    |
-| `micronaut.http.services.stream-client.read-timeout` | Read timeout for the stream client. | `30s`                                | false    |
-| `micronaut.http.services.stream-client.read-idle-timeout` | Read idle timeout for the stream client. | `120s`                           | false    |
+| Variable                      | Description                                      | Default Value | Optional |
+|-------------------------------|--------------------------------------------------|---------------|----------|
+| `wave.httpclient.connectTimeout` | connection timeout for HTTP client.              | `20s`         | false    |
+| `wave.httpclient.retry.delay` | Delay for HTTP client retries.                   | `1s`          | false    |
+| `wave.httpclient.retry.attempts` | Number of HTTP client retry attempts.            | `5`           | false    |
+| `wave.httpclient.retry.maxDelay` | Maximum delay for HTTP client retries.           |               | true     |
+| `wave.httpclient.retry.jitter` | Jitter fot HTTP client retries.                  | `0.25`        | false    |
+| `wave.httpclient.retry.multiplier` | Multiplier for HTTP client retries.              | `1.0`         | false    |
+| `micronaut.http.services.stream-client.read-timeout` | Read timeout for the streaming HTTP client.      | `30s`                                | false    |
+| `micronaut.http.services.stream-client.read-idle-timeout` | Read idle timeout for the streaming HTTP client. | `120s`                           | false    |
 
 # Wave build process Configurations
 
 | Variable                      | Description                                                          | Default Value                                        | Optional |
 |-------------------------------|----------------------------------------------------------------------|------------------------------------------------------|----------|
 | `wave.build.timeout`                  | Timeout for the build process.                                       | `5m `                                                | false    |
-| `wave.build.workspace`                | Path to workspace for the build process. e,g, /efs/wave/build        |                                                      | false    |
+| `wave.build.workspace`                | Path to workspace for the build process. e.g. /efs/wave/build        |                                                      | false    |
 | `wave.build.cleanup`                  | Cleanup strategy after the build process. Options: `"OnSuccess"`.    |                                                      | true     |
 | `wave.build.kaniko-image`     | Docker image for Kaniko for build process.                           | `gcr.io/kaniko-project/executor:v1.19.2`             | false    |
 | `wave.build.singularity-image` | Singularity image for the build process.                             | `quay.io/singularity/singularity:v3.11.4-slim`       | false    |
 | `wave.build.singularity-image-arm64` | Singularity ARM64 image for the build process.                       | `quay.io/singularity/singularity:v3.11.4-slim-arm64` | true     |
-| `wave.build.repo`             | Docker container repository for docker images build by wave.         |                                                      | false    |
+| `wave.build.repo`             | Docker container repository for the docker images build by wave.     |                                                      | false    |
 | `wave.build.cache`            | Docker container repository to cache layers of images build by wave. |                                                      | false    |
-| `wave.build.timeout`          | Timeout for the Wave build process.                                  | `900s`                                               | false    |
 | `wave.build.status.delay`     | Delay for build status checks.                                       | `5s`                                                 | false    |
 | `wave.build.status.duration`  | Duration for build status checks.                                    | `1d`                                                 | false    |
 | `wave.build.public`                  | Deafult public re[ository for wave.                                  |                                                      | true     |
