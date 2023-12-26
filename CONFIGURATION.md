@@ -32,14 +32,14 @@
 
 | Variable                      | Description                                      | Default Value / Environment Variable | Optional |
 |-------------------------------|--------------------------------------------------|---------------|----------|
-| `wave.httpclient.connectTimeout` | connection timeout for HTTP client.              | `20s`         | false    |
-| `wave.httpclient.retry.delay` | Delay for HTTP client retries.                   | `1s`          | false    |
-| `wave.httpclient.retry.attempts` | Number of HTTP client retry attempts.            | `5`           | false    |
-| `wave.httpclient.retry.maxDelay` | Maximum delay for HTTP client retries.           |               | true     |
-| `wave.httpclient.retry.jitter` | Jitter fot HTTP client retries.                  | `0.25`        | false    |
-| `wave.httpclient.retry.multiplier` | Multiplier for HTTP client retries.              | `1.0`         | false    |
-| `micronaut.http.services.stream-client.read-timeout` | Read timeout for the streaming HTTP client.      | `30s`                                | false    |
-| `micronaut.http.services.stream-client.read-idle-timeout` | Read idle timeout for the streaming HTTP client. | `120s`                           | false    |
+| `wave.httpclient.connectTimeout` | connection timeout for http client.              | `20s`         | false    |
+| `wave.httpclient.retry.delay` | Delay for http client retries.                   | `1s`          | false    |
+| `wave.httpclient.retry.attempts` | Number of http client retry attempts.            | `5`           | false    |
+| `wave.httpclient.retry.maxDelay` | Maximum delay for http client retries.           |               | true     |
+| `wave.httpclient.retry.jitter` | Jitter fot http client retries.                  | `0.25`        | false    |
+| `wave.httpclient.retry.multiplier` | Multiplier for http client retries.              | `1.0`         | false    |
+| `micronaut.http.services.stream-client.read-timeout` | Read timeout for the streaming http client.      | `30s`                                | false    |
+| `micronaut.http.services.stream-client.read-idle-timeout` | Read idle timeout for the streaming http client. | `120s`                           | false    |
 
 ## Container Build process Configurations
 
