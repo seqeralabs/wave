@@ -1,14 +1,14 @@
 # Wave Application Configurations
 
-| Variable                      | Description                                     | Default Value        | Optional |
-|-------------------------------|-------------------------------------------------|----------------------|----------|
-| `micronaut.application.name`| The name of wave application.                   | `wave-app`           | true     |
-| `micronaut.server.port`      | The port for wave server.                       | `8080`               | true     |
-| `wave.allowAnonymous`         | Allow anonymous access in the Wave application. | `true`               | false    |
-| `wave.server.url`             | URL for the Wave server.                        | `${WAVE_SERVER_URL}` | true     |
-| `wave.tokens.cache.duration`          | Duration for caching tokens.                    |                      | true     |
-| `tower.endpoint.url`                 | URL for the seqera platform API.                |                      | true     |
-| `logger.levels.io.seqera`     | Log level for `io.seqera` package.           | `TRACE`              | true     |
+| Variable                      | Description                            | Default Value        | Optional |
+|-------------------------------|----------------------------------------|----------------------|----------|
+| `micronaut.application.name`| The name of wave application.          | `wave-app`           | true     |
+| `micronaut.server.port`      | The port for wave server.              | `8080`               | true     |
+| `wave.allowAnonymous`         | Allow anonymous access to wave server. | `false`              | false    |
+| `wave.server.url`             | URL for the Wave server.               | `${WAVE_SERVER_URL}` | true     |
+| `wave.tokens.cache.duration`          | Duration for caching tokens.           |                      | true     |
+| `tower.endpoint.url`                 | URL for the seqera platform API.       |                      | true     |
+| `logger.levels.io.seqera`     | Log level for `io.seqera` package.     | `TRACE`              | true     |
 
 # Wave Docker Registry Configurations
 
@@ -53,12 +53,17 @@
 | `wave.build.timeout`          | Timeout for the Wave build process.                                  | `900s`                                               | false    |
 | `wave.build.status.delay`     | Delay for build status checks.                                       | `5s`                                                 | false    |
 | `wave.build.status.duration`  | Duration for build status checks.                                    | `1d`                                                 | false    |
+| `wave.build.public`                  | Deafult public re[ository for wave.                                  |                                                      | true     |
+| `wave.build.compress-caching`                  | wave caching compression for build process.                          | true                                                 | false    |
+
+## Spack  Configurations for wave build process(Note: these configuration are mandatory if you want to support spack in you wave installation)
+
+| Variable                                   | Description                                              | Default Value                         | Optional |
+|--------------------------------------------|----------------------------------------------------------|---------------------------------------|----------|
 | `wave.build.spack.cacheDirectory`     | Cache directory for Spack. e.g. `/efs/wave/spack/cache`              |                                                      | false    |
 | `wave.build.spack.cacheMountPath`     | Cache mount path for Spack. e.g. `/var/seqera/spack/cache`           |                                                      | false    |
 | `wave.build.spack.secretKeyFile`      | Secret key file for Spack. e.g. `/efs/wave/spack/key`                |                                                      | false    |
 | `wave.build.spack.secretMountPath`    | Secret mount path for Spack. e.g. `/var/seqera/spack/key`            |                                                      | false    |
-| `wave.build.public`                  | Deafult public re[ository for wave.                                  |                                                      | true     |
-| `wave.build.compress-caching`                  | wave caching compression for build process.                          | true                                                 | false    |
 
 # Kubernetes Configurations for Wave build process (Note: If you will use kubernetes)
 
