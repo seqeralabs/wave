@@ -32,6 +32,7 @@ import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.api.ContainerLayer
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.model.ContainerCoordinates
 import org.yaml.snakeyaml.Yaml
 /**
@@ -221,6 +222,11 @@ class RegHelper {
         try {
             final yaml = new Yaml().load(spackFileContent) as Map
             final spack = yaml.spack as Map
+
+            if( !spack ){
+                throw new BadRequestException("Spack recipe is empty or invalid, please check your recipe and try again")
+            }
+
             if( spack.specs instanceof List ) {
                 final LinkedHashSet<String> result = new LinkedHashSet()
                 for( String it : spack.specs ) {
