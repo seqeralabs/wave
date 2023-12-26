@@ -1,14 +1,14 @@
 # Wave Application Configurations
 
-| Variable                      | Description                                     | Default Value                                        | Optional |
-|-------------------------------|-------------------------------------------------|------------------------------------------------------|----------|
-| `micronaut.application.name`| The name of wave application.                   | `wave-app`                                | false    |
-| `micronaut.server.port`      | The port for wave server.                       | `9090`                                    | false    |
-| `wave.allowAnonymous`         | Allow anonymous access in the Wave application. | `true`                                               | false    |
-| `wave.server.url`             | URL for the Wave server.                        | `${WAVE_SERVER_URL}`         | false    |
-| `wave.tokens.cache.duration`          | Duration for caching tokens.                    |                                                      | false    |
-| `tower.endpoint.url`                 | URL for the seqera platform API.                |                | false    |
-| `logger.levels.io.seqera`     | Log level for `io.seqera` package.           | `DEBUG`                                   | false    |
+| Variable                      | Description                                     | Default Value        | Optional |
+|-------------------------------|-------------------------------------------------|----------------------|----------|
+| `micronaut.application.name`| The name of wave application.                   | `wave-app`           | true     |
+| `micronaut.server.port`      | The port for wave server.                       | `8080`               | true     |
+| `wave.allowAnonymous`         | Allow anonymous access in the Wave application. | `true`               | false    |
+| `wave.server.url`             | URL for the Wave server.                        | `${WAVE_SERVER_URL}` | true     |
+| `wave.tokens.cache.duration`          | Duration for caching tokens.                    |                      | true     |
+| `tower.endpoint.url`                 | URL for the seqera platform API.                |                      | true     |
+| `logger.levels.io.seqera`     | Log level for `io.seqera` package.           | `TRACE`              | true     |
 
 # Wave Docker Registry Configurations
 
