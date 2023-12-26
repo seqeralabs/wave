@@ -165,16 +165,16 @@ singularity exec $container bamtools --version
 
 ### Development
 
-1. Install GraalVM-Java 20.0.2
+1. Install GraalVM-Java 21.0.1
 
     ```bash
-    sdk install java 20.0.2-graal
+    sdk install java 21.0.1-graal
     ```
 
     or if it's already installed
 
    ```bash
-   sdk use java 20.0.2-graal
+   sdk use java 21.0.1-graal
    ```
 
 2. Compile & run tests 
