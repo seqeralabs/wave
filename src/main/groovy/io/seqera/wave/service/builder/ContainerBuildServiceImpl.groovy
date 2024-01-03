@@ -265,6 +265,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             return
         }else{
             submitBuildRequest(request)
+            return
         }
         // invalid state
         throw new IllegalStateException("Unable to determine build status for '$request.targetImage'")
