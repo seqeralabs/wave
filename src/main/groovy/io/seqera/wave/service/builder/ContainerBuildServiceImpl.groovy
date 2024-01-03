@@ -275,7 +275,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         throw new IllegalStateException("Unable to determine build status for '$request.targetImage'")
     }
 
-    void submitBuildRequest(BuildRequest request){
+   private void submitBuildRequest(BuildRequest request){
         // flag it as a new build
         request.uncached = true
         // go ahead
