@@ -249,6 +249,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     }
 
     protected void checkOrSubmit(BuildRequest request) {
+
         // try to store a new build status for the given target image
         // this returns true if and only if such container image was not set yet
         final ret1 = BuildResult.create(request)
@@ -256,17 +257,20 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             submitBuildRequest(request)
             return
         }
+
         // since it was unable to initialise the build result status
         // this means the build status already exists, retrieve it
         final ret2 = buildStore.getBuild(request.targetImage)
-        log.info "+++"+ret2
+        //check if the build is succeeded and submit a build request
         if( ret2.succeeded() ) {
             log.info "== Hit build cache for request: $request"
             return
         }else{
+            buildStore.storeBuild(request.targetImage,ret1)
             submitBuildRequest(request)
             return
         }
+
         // invalid state
         throw new IllegalStateException("Unable to determine build status for '$request.targetImage'")
     }
