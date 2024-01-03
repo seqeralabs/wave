@@ -253,22 +253,29 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         // this returns true if and only if such container image was not set yet
         final ret1 = BuildResult.create(request)
         if( buildStore.storeIfAbsent(request.targetImage, ret1) ) {
-            // flag it as a new build
-            request.uncached = true
-            // go ahead
-            log.info "== Submit build request: $request"
-            launchAsync(request)
+            submitBuildRequest(request)
             return
         }
         // since it was unable to initialise the build result status
         // this means the build status already exists, retrieve it
         final ret2 = buildStore.getBuild(request.targetImage)
-        if( ret2 ) {
+        log.info "+++"+ret2
+        if( ret2.succeeded() ) {
             log.info "== Hit build cache for request: $request"
             return
+        }else{
+            submitBuildRequest(request)
         }
         // invalid state
         throw new IllegalStateException("Unable to determine build status for '$request.targetImage'")
+    }
+
+    void submitBuildRequest(BuildRequest request){
+        // flag it as a new build
+        request.uncached = true
+        // go ahead
+        log.info "== Submit build request: $request"
+        launchAsync(request)
     }
 
     protected void saveLayersToContext(BuildRequest req, Path contextDir) {
