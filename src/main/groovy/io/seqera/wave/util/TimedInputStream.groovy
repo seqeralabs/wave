@@ -19,9 +19,7 @@
 package io.seqera.wave.util
 
 import java.time.Duration
-import java.util.concurrent.Callable
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
 import groovy.transform.CompileStatic
@@ -33,6 +31,7 @@ import io.seqera.wave.exception.UnexpectedReadException
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Deprecated
 @CompileStatic
 class TimedInputStream extends FilterInputStream {
 
@@ -42,8 +41,6 @@ class TimedInputStream extends FilterInputStream {
 
     private final RoutePath route
 
-    private final ExecutorService executor
-
     private volatile boolean closed
 
     TimedInputStream(InputStream inputStream, Duration timeout, RoutePath route) {
@@ -51,12 +48,11 @@ class TimedInputStream extends FilterInputStream {
         this.target = inputStream
         this.timeoutMillis = (int)timeout.toMillis()
         this.route = route
-        this.executor = Executors.newVirtualThreadPerTaskExecutor()
     }
 
     @Override
     int read() throws IOException {
-        final result = executor.submit((Callable<Integer>)(() -> target.read()))
+        final result = CompletableFuture<Integer>.supplyAsync(() -> target.read())
         try {
             return result.get(timeoutMillis, TimeUnit.MILLISECONDS)
         }
@@ -68,7 +64,7 @@ class TimedInputStream extends FilterInputStream {
 
     @Override
     int read(byte[] b, int off, int len) throws IOException {
-        final result = executor.submit((Callable<Integer>)(() -> target.read(b,off,len)))
+        final result = CompletableFuture<Integer>.supplyAsync(() -> target.read(b,off,len))
         try {
             return result.get(timeoutMillis, TimeUnit.MILLISECONDS)
         }

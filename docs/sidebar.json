@@ -5,8 +5,11 @@
       "type": "category",
       "label": "Wave CLI",
       "collapsed": false,
+      "link": {
+        "type": "doc",
+        "id": "cli/index"
+      },
       "items": [
-        "cli/index",
         "cli/install",
         "cli/build-directory",
         "cli/build-docker",
