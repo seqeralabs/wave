@@ -103,7 +103,7 @@ micronaut {
     testRuntime("spock2")
     processing {
         incremental(true)
-        annotations("io.seqera.*")
+        annotations("com.example.*")
     }
 }
 
