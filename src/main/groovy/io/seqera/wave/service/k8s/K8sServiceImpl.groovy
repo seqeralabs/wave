@@ -97,6 +97,10 @@ class K8sServiceImpl implements K8sService {
     @Nullable
     private String requestsMemory
 
+    @Value('${wave.build.k8s.toleration.arm64.enabled:false}')
+    @Nullable
+    private boolean tolerationARM64Enabled
+
     @Value('${wave.build.k8s.toleration.arm64.key}')
     @Nullable
     private String tolerationARM64Key
@@ -135,6 +139,14 @@ class K8sServiceImpl implements K8sService {
                 throw new IllegalArgumentException("Missing 'wave.build.workspace' configuration attribute")
             if( !Path.of(buildConfig.buildWorkspace).startsWith(storageMountPath) )
                 throw new IllegalArgumentException("Build workspace should be a sub-directory of 'wave.build.k8s.storage.mountPath' - offending value: '$buildConfig.buildWorkspace' - expected value: '$storageMountPath'")
+        }
+        if( tolerationARM64Enabled ){
+            if( !tolerationARM64Key ){
+                throw new IllegalArgumentException("Missing 'wave.build.k8s.toleration.arm64.key' configuration attribute because AR<64 toleration is enabled")
+            }
+            if( !tolerationARM64Value ){
+                throw new IllegalArgumentException("Missing 'wave.build.k8s.toleration.arm64.value' configuration attribute because AR<64 toleration is enabled")
+            }
         }
         // validate node selectors
         final platforms = nodeSelectorMap ?: Collections.<String,String>emptyMap()
@@ -391,7 +403,7 @@ class K8sServiceImpl implements K8sService {
                 .addAllToVolumes(volumes)
 
         //set toleration for ARM 64 builds
-        if( platform && platform.isARM64() ){
+        if( tolerationARM64Enabled && platform && platform.isARM64() ){
             spec.withTolerations(getTolerationArm64())
         }
 
@@ -535,7 +547,7 @@ class K8sServiceImpl implements K8sService {
                 .addAllToVolumes(volumes)
 
         //set toleration for ARM 64 builds
-        if( platform &&platform.isARM64() ){
+        if( tolerationARM64Enabled && platform && platform.isARM64() ){
             spec.withTolerations(getTolerationArm64())
         }
 
