@@ -1,5 +1,6 @@
-# Wave Application Configuration Parameters
+# Wave Application Configuration
 
+Set Wave configuration values using environment variables, or in config.yml configuration file
 
 ## General configuration
 
@@ -16,7 +17,7 @@
 
 ## Container registry configuration
 
-**Note**: you will find them in `config.yml` in the root directory of the project.
+**Note**: you will find them in `config.yml` in the root directory of the project. These configurations are important for the authentication of wave to the repositories used to push or pull artifacts by wave 
 
 | Variable                                     | Description                                   | Default Value / Environment Variable   | Optional |
 |----------------------------------------------|-----------------------------------------------|-----------------|----------|
@@ -48,33 +49,33 @@
 
 ## Container build process configuration
 
-| Variable                      | Description                                                          | Default Value / Environment Variable                  | Optional |
-|-------------------------------|----------------------------------------------------------------------|------------------------------------------------------|----------|
-| `wave.build.timeout`                  | Timeout for the build process.                                       | `5m `                                                | false    |
-| `wave.build.workspace`                | Path to workspace for the build process. e.g. /efs/wave/build        |                                                      | false    |
-| `wave.build.cleanup`                  | Cleanup strategy after the build process. Options: `OnSuccess`.    |                                                      | true     |
-| `wave.build.kaniko-image`     | Docker image for Kaniko for build process.                           | `gcr.io/kaniko-project/executor:v1.19.2`             | false    |
-| `wave.build.singularity-image` | Singularity image for the build process.                             | `quay.io/singularity/singularity:v3.11.4-slim`       | false    |
-| `wave.build.singularity-image-arm64` | Singularity ARM64 image for the build process.                       | `quay.io/singularity/singularity:v3.11.4-slim-arm64` | true     |
-| `wave.build.repo`             | Docker container repository for the docker images build by wave.     |                | false    |
-| `wave.build.cache`            | Docker container repository to cache layers of images build by wave. |               | false    |
-| `wave.build.status.delay`     | Delay for build status checks.                                       | `5s`    | false    |
-| `wave.build.status.duration`  | Duration for build status checks.                                    | `1d`              | false    |
-| `wave.build.public`                  | Deafult public re[ository for wave.                                  |                | true     |
-| `wave.build.compress-caching`                  | Wave caching compression for build process.                          | `true`     | false    |
+| Variable                      | Description                                                                                             | Default Value / Environment Variable                 | Optional |
+|-------------------------------|---------------------------------------------------------------------------------------------------------|-----------------------------------------------------|----------|
+| `wave.build.timeout`                  | Timeout for the build process.                                                                          | `5m`                                                | false    |
+| `wave.build.workspace`                | Path to workspace for the build process. e.g. `/efs/wave/build`                                         |                                                     | false    |
+| `wave.build.cleanup`                  | Cleanup strategy after the build process. Options: `OnSuccess`.                                         |                                                     | true     |
+| `wave.build.kaniko-image`     | [Kaniko](https://github.com/GoogleContainerTools/kaniko) docker image to use in the wave build process. | `gcr.io/kaniko-project/executor:v1.19.2`            | false    |
+| `wave.build.singularity-image` | Singularity image for the build process.                                                                | `quay.io/singularity/singularity:v3.11.4-slim`      | false    |
+| `wave.build.singularity-image-arm64` | Singularity ARM64 image for the build process.                                                          | `quay.io/singularity/singularity:v3.11.4-slim-arm64` | true     |
+| `wave.build.repo`             | Docker container repository for the docker images build by wave.                                        |                | false    |
+| `wave.build.cache`            | Docker container repository to cache layers of images build by wave.                                    |               | false    |
+| `wave.build.status.delay`     | Delay between build status checks.                                                                      | `5s`    | false    |
+| `wave.build.status.duration`  | Duration for build status checks.                                                                       | `1d`              | false    |
+| `wave.build.public`                  | Default public repository for wave.                                                                     |                | true     |
+| `wave.build.compress-caching`                  | Whether to compress cache layers produced by the build process.                                                             | `true`     | false    |
 
 
-### Spack configuration for container build process
+### Spack configuration for wave build process
 
-**Note**: these configuration are mandatory if you want to support Spack in you wave installation.
+**Note**: these configuration are mandatory to support Spack in a wave installation.
 
-| Variable                                   | Description                                              | Default Value  / Environment Variable | Optional |
-|--------------------------------------------|----------------------------------------------------------|---------------------------------------|----------|
-| `wave.build.spack.cacheDirectory`     | Cache directory for Spack. e.g. `/efs/wave/spack/cache`.              |               | false    |
-| `wave.build.spack.cacheMountPath`     | Cache mount path for Spack. e.g. `/var/seqera/spack/cache`.           |                 | false    |
-| `wave.build.spack.secretKeyFile`      | Secret key file for Spack. e.g. `/efs/wave/spack/key`.                |                 | false    |
-| `wave.build.spack.secretMountPath`    | Secret mount path for Spack. e.g. `/var/seqera/spack/key`.            |                   | false    |
-
+| Variable                           | Description                                                                                                                                                                                    | Default Value  / Environment Variable | Optional |
+|------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------|----------|
+| `wave.build.spack.cacheDirectory`  | Path to the directory to cache spack packages. e.g. `/efs/wave/spack/cache`.                                                                                                                   |               | false    |
+| `wave.build.spack.cacheMountPath`  | Path to local directory where to save spack build cache files, e.g. `/efs/wave/spack/cache`.                                                                                                   |                 | false    |
+| `wave.build.spack.secretKeyFile`   | Path to file containing the PGP private key to [sign Spack packages built by wave](https://spack.readthedocs.io/en/latest/binary_caches.html#build-cache-signing), e.g. `/efs/wave/spack/key`. |                 | false    |
+| `wave.build.spack.secretMountPath` | Path mounted inside spack docker image for PGP private key mentioned specified by `wave.build.spack.secretKeyFile`. e.g. `/var/seqera/spack/key`.                                              |                   | false    |
+| `wave.build.spack.cacheBucket`     | S3 bucket for spack binary cache e.g. `s3://spack-binarycache`.                                                                                                                                |                   | true     |
 
 ### Build process logs configuration
 
@@ -96,17 +97,17 @@
 | `wave.build.k8s.labels`                    | Labels wave kubernetes pod.                              |  | true     |
 | `wave.build.k8s.node-selector`             | Node selector for wave kubernetes pod.                   |  | true     |
 | `wave.build.k8s.service-account`           | Service account name for wve kubernetes cluster.         |  | true     |
-| `wave.build.k8s.resources.requests.cpu`    | Allocate number of CPUs for build process in kubernetes. |                        | true     |
-| `wave.build.k8s.resources.requests.memory` | Allocate memory for build process in kubernetes. e.g. `2000Mi`.           |                        | true     |
+| `wave.build.k8s.resources.requests.cpu`    | Amount of [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) to allocate to wave build processes, e.g. `2` or `1500m`. |                        | true     |
+| `wave.build.k8s.resources.requests.memory` | Amount of [memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) to allocate to wave build processes, e.g. `3Gi` or `2000Mi`.           |                        | true     |
 
 
 ## Container scan process configuration
 
 | Variable                      | Description                                                            | Default Value  / Environment Variable | Optional |
-|-------------------------------|------------------------------------------------------------------------|------------------------|----------|
-| `wave.scan.enabled`                   | Enable or disable vulnerability scanning.                              | `false`                | false    |
-| `wave.scan.severity`                  | Severity level for vulnerability scanning. e.g. `MEDIUM,HIGH,CRITICAL`. |                        | true     |
-| `wave.scan.image.name`        | Docker Image used for container securioty scanning.                    | `aquasec/trivy:0.47.0` | false    |
+|-------------------------------|------------------------------------------------------------------------|---------------------------------------|----------|
+| `wave.scan.enabled`                   | Enable or disable vulnerability scanning.                              | `false`                               | false    |
+| `wave.scan.severity`                  | Severity level for vulnerability scanning. e.g. `MEDIUM,HIGH,CRITICAL`. | `LOW,MEDIUM,HIGH,CRITICAL`            | true     |
+| `wave.scan.image.name`        | Docker Image used for container securioty scanning.                    | `aquasec/trivy:0.47.0`                | false    |
 
 
 ### Kubernetes configuration for Wave scan process
@@ -180,5 +181,4 @@
 
 
 ## Notes
-- Customize these configurations based on your application's requirements.
 - Refer to the official Micronaut documentation for more details on available configuration properties: [Micronaut Configuration Reference](https://docs.micronaut.io/latest/guide/index.html#config)
