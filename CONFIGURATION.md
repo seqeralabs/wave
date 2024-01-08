@@ -79,10 +79,11 @@ Set Wave configuration values using environment variables, or in config.yml conf
 
 ### Build process logs configuration
 
-| Variable                      | Description                                              | Default Value / Environment Variable | Optional |
-|-------------------------------|----------------------------------------------------------|-------------------------------------------|----------|
-| `logger.levels.io.micronaut.retry.intercept.RecoveryInterceptor` | Log level for `RecoveryInterceptor`.                     | `OFF` | false    |
-| `micronaut.object-storage.aws.build-logs.bucket` | AWS S3 bucket, where wave will store build process logs. | `${wave.build.logs.bucket}`         | false    |
+| Variable                      | Description                                                  | Default Value / Environment Variable | Optional |
+|-------------------------------|--------------------------------------------------------------|------------------------------------------|----------|
+| `wave.build.logs.bucket` | AWS S3 bucket, where wave will store build process logs.     |         | false    |
+| `wave.build.logs.prefix` | Prefix to be used for build process logs files in S3 bucket. |        | true     |
+| `wave.build.logs.maxLength` | Maximu length of build process logs.                         | `100000`        | false    |
 
 
 ### Kubernetes configuration for container build process
@@ -96,7 +97,7 @@ Set Wave configuration values using environment variables, or in config.yml conf
 | `wave.build.k8s.storage.mountPath`         | Volume mount path on wave build Kubernetes pods.              |        | true     |
 | `wave.build.k8s.labels`                    | Labels to set on wave build kubernetes pods.                              |  | true     |
 | `wave.build.k8s.node-selector`             | Node selector configuration for wave build kubernetes pods.                   |  | true     |
-| `wave.build.k8s.service-account`           | Service account name for wve kubernetes cluster.         |  | true     |
+| `wave.build.k8s.service-account`           | Kubernetes service account name to be used by wave.        |  | true     |
 | `wave.build.k8s.resources.requests.cpu`    | Amount of [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) to allocate to wave build processes, e.g. `2` or `1500m`. |                        | true     |
 | `wave.build.k8s.resources.requests.memory` | Amount of [memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) to allocate to wave build processes, e.g. `3Gi` or `2000Mi`.           |                        | true     |
 
@@ -112,17 +113,16 @@ Set Wave configuration values using environment variables, or in config.yml conf
 
 ### Kubernetes configuration for Wave scan process
 
-**Note**: If you will use Kubernetes.
+**Note**: only applies when using Kubernetes.
 
 | Variable                      | Description                                                      | Default Value / Environment Variable  | Optional |
 |-------------------------------|------------------------------------------------------------------|--------------------------------------|----------|
-| `wave.scan.k8s.resources.requests.cpu`        | Allocate number of CPUs for scanning process in kubernetes        |                                      | true     |
-| `wave.scan.k8s.resources.requests.memory`        | Allocate memory for scanning process in kubernetes. e.g. `1000Mi`. |                                      | true     |
-
+| `wave.scan.k8s.resources.requests.cpu`        | Amount of [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) to allocate to wave build processes, e.g. `2` or `1500m`.        |                                      | true     |
+| `wave.scan.k8s.resources.requests.memory`        | Amount of [memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) to allocate to wave build processes, e.g. `3Gi` or `2000Mi`.  |                                      | true     |
 
 ## Rate limit configuration
 
-**Note**: If you enable rate limiting in wave by adding `rate-limit` in micronaut environment.
+**Note**: Set these properties to enable rate limiting in wave by adding `rate-limit` in micronaut environment.
 
 | Variable                      | Description                                         | Default Value / Environment Variable | Optional |
 |-------------------------------|-----------------------------------------------------|-----------------------------------|----------|
@@ -143,21 +143,21 @@ Set Wave configuration values using environment variables, or in config.yml conf
 | `surrealdb.url`      | Surreal database url.        | `${SURREALDB_URL}`                               | false    |
 | `surrealdb.user`     | Surreal database username.   | `${SURREALDB_USER}`                              | false    |
 | `surrealdb.password` | Surreal database password.    | `${SURREALDB_PASSWORD`                               | false    |
-| `surrealdb.init-db`  | Should initiate surreal DB.   |                           | true     |
+| `surrealdb.init-db`  | Whether to initiate the surreal DB using the `user`, `password`, `url`, `ns` and `db` values.    |                           | true     |
 
 
 ## Email configuration
 
 | Variable                      | Description                                         | Default Value / Environment Variable | Optional |
 |-------------------------------|-----------------------------------------------------|-------------------------------------------|----------|
-| `mail.from`                          | Email address for sending mail from wave.                         |       | false    |
+| `mail.from`                          | Sender email address for wave notifications.  |       | false    |
 
 
 ## Jackson configuration
 
 | Variable                      | Description                                         | Default Value / Environment Variable | Optional |
 |-------------------------------|-----------------------------------------------------|-------------------------------------------|----------|
-| `jackson.serialization.writeDatesAsTimestamps` | Write dates as timestamps in jackson serialization. | `false`                                  | false    |
+| `jackson.serialization.writeDatesAsTimestamps` | Whether to write dates as timestamps in jackson serialization. | `false`                                  | false    |
 
 
 ## Micronaut specific Configuration
@@ -178,7 +178,7 @@ Set Wave configuration values using environment variables, or in config.yml conf
 | `micronaut.executors.stream-executor.type` | Executor type for the stream executor.                                                      | `FIXED`                                  | false    |
 | `micronaut.executors.stream-executor.number-of-threads` | Number of threads for the stream executor.                                                  | `16`                     | false    |
 | `micronaut.netty.event-loops.stream-pool.executor` | Executor for the stream pool event loops.                                                   | `stream-executor`                  | false    |
-
+| `logger.levels.io.micronaut.retry.intercept.RecoveryInterceptor` | Log level for `io.micronaut.retry.intercept.RecoveryInterceptor`. by default these logs are disabled, as they have been found to be noisy. | `OFF` | false    |
 
 ## Notes
 - Refer to the official Micronaut documentation for more details on available configuration properties: [Micronaut Configuration Reference](https://docs.micronaut.io/latest/guide/index.html#config)
