@@ -70,7 +70,7 @@ class KubeScanStrategyTest extends Specification {
         then:
         scanResult
         and:
-        1 * k8sService.scanContainer(_, _, _, _, _, _, [service:'wave-scan']) >> null
+        1 * k8sService.scanContainer(_, _, _, _, _, _, [service:'wave-scan'],_) >> null
 
         when:
         def request2 = new ScanRequest('100', 'abc', null, 'ubuntu', ContainerPlatform.of('arm64'), folder.resolve('bar'))
@@ -80,7 +80,7 @@ class KubeScanStrategyTest extends Specification {
         then:
         scanResult2
         and:
-        1 * k8sService.scanContainer(_, _, _, _, _, _, [service:'wave-scan-arm64']) >> null
+        1 * k8sService.scanContainer(_, _, _, _, _, _, [service:'wave-scan-arm64'],_) >> null
 
         cleanup:
         folder?.deleteDir()

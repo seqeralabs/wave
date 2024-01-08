@@ -131,4 +131,7 @@ class ContainerPlatform {
         }
         return variant
     }
+    boolean isARM64(){
+        return ARM64.contains(arch)
+    }
 }
