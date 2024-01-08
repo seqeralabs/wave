@@ -91,7 +91,7 @@ Set Wave configuration values using environment variables, or in config.yml conf
 
 | Variable                                   | Description                                              | Default Value / Environment Variable | Optional |
 |--------------------------------------------|----------------------------------------------------------|---------------------------------------|----------|
-| `wave.build.k8s.namespace`                 | Kubernetes namespace for wave.                           | | false    |
+| `wave.build.k8s.namespace`                 | Kubernetes namespace where to run wave build pods. | | false    |
 | `wave.build.k8s.storage.claimName`         | Claim name for wave kubernetes pod storage.              |     | true     |
 | `wave.build.k8s.storage.mountPath`         | Mount path for wave kubernetes pod storage.              |        | true     |
 | `wave.build.k8s.labels`                    | Labels wave kubernetes pod.                              |  | true     |
