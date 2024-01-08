@@ -87,7 +87,7 @@ Set Wave configuration values using environment variables, or in config.yml conf
 
 ### Kubernetes configuration for container build process
 
-**Note**: If you will use Kubernetes.
+**Note**: only applies when using Kubernetes.
 
 | Variable                                   | Description                                              | Default Value / Environment Variable | Optional |
 |--------------------------------------------|----------------------------------------------------------|---------------------------------------|----------|
