@@ -94,7 +94,7 @@ Set Wave configuration values using environment variables, or in config.yml conf
 | `wave.build.k8s.namespace`                 | Kubernetes namespace where to run wave build pods. | | false    |
 | `wave.build.k8s.storage.claimName`         | Volume claim name for wave build kubernetes pods.              |     | true     |
 | `wave.build.k8s.storage.mountPath`         | Mount path for wave kubernetes pod storage.              |        | true     |
-| `wave.build.k8s.labels`                    | Labels wave kubernetes pod.                              |  | true     |
+| `wave.build.k8s.labels`                    | Labels to set on wave build kubernetes pods.                              |  | true     |
 | `wave.build.k8s.node-selector`             | Node selector for wave kubernetes pod.                   |  | true     |
 | `wave.build.k8s.service-account`           | Service account name for wve kubernetes cluster.         |  | true     |
 | `wave.build.k8s.resources.requests.cpu`    | Amount of [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) to allocate to wave build processes, e.g. `2` or `1500m`. |                        | true     |
