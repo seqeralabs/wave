@@ -176,40 +176,8 @@ Rate limit configuration control the limits of anonymous and authenticated users
 
 ## Email configuration
 
+Email id to send emails on the behave of wave
+
 | Variable     | Description                                  | Default Value / Environment Variable | Optional |
 |--------------|----------------------------------------------|--------------------------------------|----------|
 | `mail.from`  | Sender email address for wave notifications. |                                      | false    |
-
-
-## Jackson configuration
-
-| Variable                                       | Description                                                    | Default Value / Environment Variable | Optional |
-|------------------------------------------------|----------------------------------------------------------------|--------------------------------------|----------|
-| `jackson.serialization.writeDatesAsTimestamps` | Whether to write dates as timestamps in jackson serialization. | `false`                              | false    |
-
-
-## Micronaut specific Configuration
-
-Micronaut specific Configuration controls the internals of wave application, like netty server config, executors. please got through micronaut documentation before chag. 
-
-
-| Variable                                                         | Description                                                                                                                                                                                                                                                                   | Default Value / Environment Variable | Optional |
-|------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------|----------|
-| `micronaut.caches.cache-20sec.expire-after-access`               | Cache with a 20-second expire-after-access policy.                                                                                                                                                                                                                            | `20s`                                | false    |
-| `micronaut.caches.cache-1min.expire-after-access`                | Cache with a 1-minute expire-after-access policy.                                                                                                                                                                                                                             | `1m`                                 | false    |
-| `micronaut.server.thread-selection`                              | Thread selection strategy.                                                                                                                                                                                                                                                    | `AUTO`                               | false    |
-| `micronaut.server.idle-timeout`                                  | Idle timeout for the server. note that this should be greater thean or equal the build timeout (which is 15 minutes)                                                                                                                                                          | `910s`                               | false    |
-| `micronaut.views.folder`                                         | Folder for Micronaut views.                                                                                                                                                                                                                                                   | `io/seqera/wave`                     | false    |
-| `micronaut.router.static-resources.css.paths`                    | CSS static resource paths.                                                                                                                                                                                                                                                    | `classpath:io/seqera/wave/css`       | false    |
-| `micronaut.router.static-resources.css.mapping`                  | Mapping for CSS resources.                                                                                                                                                                                                                                                    | `/css/**`                            | false    |
-| `micronaut.router.static-resources.css.enabled`                  | Enable or disable CSS resources.                                                                                                                                                                                                                                              | `true`                               | false    |
-| `micronaut.router.static-resources.assets.paths`                 | Assets static resource paths.                                                                                                                                                                                                                                                 | `classpath:io/seqera/wave/assets`    | false    |
-| `micronaut.router.static-resources.assets.mapping`               | Mapping for assets resources.                                                                                                                                                                                                                                                 | `/assets/**`                         | false    |
-| `micronaut.router.static-resources.assets.enabled`               | Enable or disable assets resources.                                                                                                                                                                                                                                           | `true`                               | false    |
-| `micronaut.executors.stream-executor.type`                       | Executor type for the stream executor.                                                                                                                                                                                                                                        | `FIXED`                              | false    |
-| `micronaut.executors.stream-executor.number-of-threads`          | Number of threads for the stream executor.                                                                                                                                                                                                                                    | `16`                                 | false    |
-| `micronaut.netty.event-loops.stream-pool.executor`               | Executor for the stream pool event loops.                                                                                                                                                                                                                                     | `stream-executor`                    | false    |
-| `logger.levels.io.micronaut.retry.intercept.RecoveryInterceptor` | [Logger level](https://logging.apache.org/log4j/2.x/manual/customloglevels.html) for `io.micronaut.retry.intercept.RecoveryInterceptor`. by default these logs are disabled, as they have been found to be noisy. Options: `OFF, ALL, TRACE, FATAL, DEBUG, INFO, WARN, ERROR` | `OFF`                                | false    |
-
-## Notes
-- Refer to the official Micronaut documentation for more details on available configuration properties: [Micronaut Configuration Reference](https://docs.micronaut.io/latest/guide/index.html#config)
