@@ -19,7 +19,6 @@
 package io.seqera.wave.service.k8s
 
 import java.nio.file.Path
-import java.time.Duration
 
 import io.kubernetes.client.openapi.models.V1Toleration
 import io.kubernetes.client.openapi.models.V1TolerationBuilder
@@ -97,25 +96,8 @@ class K8sServiceImpl implements K8sService {
     @Nullable
     private String requestsMemory
 
-    @Value('${wave.build.k8s.toleration.arm64.enabled:false}')
-    @Nullable
-    private boolean tolerationARM64Enabled
-
-    @Value('${wave.build.k8s.toleration.arm64.key}')
-    @Nullable
-    private String tolerationARM64Key
-
-    @Value('${wave.build.k8s.toleration.arm64.value}')
-    @Nullable
-    private String tolerationARM64Value
-
-    @Value('${wave.build.k8s.toleration.arm64.operator:`Equal`}')
-    @Nullable
-    private String tolerationARM64Operator
-
-    @Value('${wave.build.k8s.toleration.arm64.effect:`NoSchedule`}')
-    @Nullable
-    private String tolerationARM64Effect
+    @Inject
+    private K8sTolerationsConfig k8sTolerationsConfig
 
     @Inject
     private SpackConfig spackConfig
@@ -139,14 +121,6 @@ class K8sServiceImpl implements K8sService {
                 throw new IllegalArgumentException("Missing 'wave.build.workspace' configuration attribute")
             if( !Path.of(buildConfig.buildWorkspace).startsWith(storageMountPath) )
                 throw new IllegalArgumentException("Build workspace should be a sub-directory of 'wave.build.k8s.storage.mountPath' - offending value: '$buildConfig.buildWorkspace' - expected value: '$storageMountPath'")
-        }
-        if( tolerationARM64Enabled ){
-            if( !tolerationARM64Key ){
-                throw new IllegalArgumentException("Missing 'wave.build.k8s.toleration.arm64.key' configuration attribute because AR<64 toleration is enabled")
-            }
-            if( !tolerationARM64Value ){
-                throw new IllegalArgumentException("Missing 'wave.build.k8s.toleration.arm64.value' configuration attribute because AR<64 toleration is enabled")
-            }
         }
         // validate node selectors
         final platforms = nodeSelectorMap ?: Collections.<String,String>emptyMap()
@@ -402,11 +376,14 @@ class K8sServiceImpl implements K8sService {
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
 
-        //set toleration for ARM 64 builds
-        if( tolerationARM64Enabled && platform && platform.isARM64() ){
-            spec.withTolerations(getTolerationArm64())
+        //set toleration for build pods
+        if( k8sTolerationsConfig.enabled && platform ) {
+            if ( platform.isARM64() ) {
+                spec.withTolerations(buildTolerations(k8sTolerationsConfig.arm64))
+            } else if ( platform.isAMD64() ) {
+                spec.withTolerations(buildTolerations(k8sTolerationsConfig.amd64))
+            }
         }
-
 
         final requests = new V1ResourceRequirements()
         if( requestsCpu )
@@ -546,9 +523,13 @@ class K8sServiceImpl implements K8sService {
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
 
-        //set toleration for ARM 64 builds
-        if( tolerationARM64Enabled && platform && platform.isARM64() ){
-            spec.withTolerations(getTolerationArm64())
+        //set toleration for scan pods
+        if( k8sTolerationsConfig.enabled && platform ) {
+            if ( platform.isARM64() ) {
+                spec.withTolerations(buildTolerations(k8sTolerationsConfig.arm64))
+            } else if ( platform.isAMD64() ) {
+                spec.withTolerations(buildTolerations(k8sTolerationsConfig.amd64))
+            }
         }
 
         final requests = new V1ResourceRequirements()
@@ -571,14 +552,20 @@ class K8sServiceImpl implements K8sService {
     }
 
     /**
-     * Defines the toleration for ARM64 pods
+     * Creates List of Tolerations
      */
-    V1Toleration getTolerationArm64(){
+    List<V1Toleration> buildTolerations(List<K8sTolerationsConfig.Toleration> tolerations){
+        if( !tolerations )
+            return null;
         V1TolerationBuilder builder = new V1TolerationBuilder();
-        return builder.withKey(tolerationARM64Key)
-                .withOperator(tolerationARM64Operator)
-                .withValue(tolerationARM64Value)
-                .withEffect(tolerationARM64Effect)
-                .build()
+        List<V1Toleration> v1Tolerations = new ArrayList<>();
+        for(def toleration: tolerations) {
+            v1Tolerations.add(builder.withKey(toleration.key)
+                    .withOperator(toleration.operator)
+                    .withValue(toleration.value)
+                    .withEffect(toleration.effect)
+                    .build())
+        }
+        return  v1Tolerations
     }
 }

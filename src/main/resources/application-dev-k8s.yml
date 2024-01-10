@@ -16,4 +16,18 @@ wave:
       namespace: 'wave-local'
       storage:
         mountPath: "${HOME}/.wave/build-workspace"
+      resources:
+        requests:
+          memory: '2400Mi'
+      tolerations:
+        enabled: true
+        arm64:
+          - key : 'arch'
+            value : 'arm64'
+            operator : 'Equal'
+            effect : 'NoSchedule'
+          - key : 'arch'
+            value : 'aarch64'
+            operator : 'Equal'
+            effect : 'NoSchedule'
 ...
