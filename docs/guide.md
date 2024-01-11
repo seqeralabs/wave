@@ -49,7 +49,7 @@ If an access token is provided, the following rate limits apply:
 - 100 container images per hour
 - 1,000 container images per minute
 
-If an access token isn't provided, the following rate limits apply:
+If an access token is not provided, the following rate limits apply:
 
 - 25 container builds per day
 - 250 container pulls per hour
