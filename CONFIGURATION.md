@@ -1,6 +1,6 @@
 # Wave Application Configuration
 
-Set Wave configuration values using environment variables, or in [`config.yml`](./config.yml) configuration file
+Set Wave configuration values using environment variables or in [`config.yml`](./config.yml) configuration file
 
 ### config.yml configuration
 
@@ -16,7 +16,7 @@ Environment variables for various attributes has been listed in third column, ei
 
 ## General configuration
 
-General configuration options such as wave application name, port, whether to allow anonymous access (without tower token), wave and seqera platform url.   
+General configuration options such as wave application name, port, whether to allow anonymous access (without tower token), wave and Seqera platform url.   
 
 | Variable                      | Description                                                                                               | Default Value / Environment Variable | Optional |
 |-------------------------------|-----------------------------------------------------------------------------------------------------------|--------------------------------------|----------|
@@ -31,7 +31,7 @@ General configuration options such as wave application name, port, whether to al
 
 ## Container registry configuration
 
-Container registry configuration options mainly used for authentication purpose.
+Container registry configuration options mainly used for authentication purposes.
 The generic format for the attributes is `wave.registries.<registry_name>.username` and `wave.registries.<registry_name>.password`.
 You need to specify all the repositories you will use in the respective wave installation.
 Below are the standard format for known registries, but you can change registry name `(azurecr.io)` to specific one like `seqeralabs.azurecr.io `.
@@ -60,7 +60,7 @@ Below are the standard format for known registries, but you can change registry 
 | `wave.httpclient.retry.delay`                             | Delay for http client retries.                   | `1s`                                 | false    |
 | `wave.httpclient.retry.attempts`                          | Number of http client retry attempts.            | `5`                                  | false    |
 | `wave.httpclient.retry.maxDelay`                          | Maximum delay for http client retries.           |                                      | true     |
-| `wave.httpclient.retry.jitter`                            | Jitter fot http client retries.                  | `0.25`                               | false    |
+| `wave.httpclient.retry.jitter`                            | Jitter for http client retries.                  | `0.25`                               | false    |
 | `wave.httpclient.retry.multiplier`                        | Multiplier for http client retries.              | `1.0`                                | false    |
 | `micronaut.http.services.stream-client.read-timeout`      | Read timeout for the streaming http client.      | `30s`                                | false    |
 | `micronaut.http.services.stream-client.read-idle-timeout` | Read idle timeout for the streaming http client. | `120s`                               | false    |
@@ -80,13 +80,13 @@ Below are the standard format for known registries, but you can change registry 
 | `wave.build.cache`                   | Docker container repository where to cache layers of images built by wave.                                                                                              |                                                     | false    |
 | `wave.build.status.delay`            | Delay between build status checks.                                                                                                                                      | `5s`                                                | false    |
 | `wave.build.status.duration`         | Duration for build status checks.                                                                                                                                       | `1d`                                                | false    |
-| `wave.build.public`                  | This is public reposiroty, Wave freeze will prefer this public reposiroty over `wave.build.repo`.                                                                       |                                                     | true     |
+| `wave.build.public`                  | This is public repository; Wave freeze will prefer this public repository over `wave.build.repo`.                                                                       |                                                     | true     |
 | `wave.build.compress-caching`        | Whether to compress cache layers produced by the build process.                                                                                                         | `true`                                              | false    |
 
 
 ### Spack configuration for wave build process
 
-Spack configuration consists of path of its secret file, mount path for the secret file in spack container and optional S3 bucket name for spack binary cache. 
+Spack configuration consists of the path of its secret file, the mount path for the secret file in the spack container, and the optional S3 bucket name for the spack binary cache.
 
 **Note**: these configuration are mandatory to support Spack in a wave installation.
 
@@ -98,7 +98,7 @@ Spack configuration consists of path of its secret file, mount path for the secr
 
 ### Build process logs configuration
 
-This configuration specify attributes for the persistence of the logs fetched from containers or k8s pods used for building requested images, which can be accessed later and also got attached to build completion email.
+This configuration specifies attributes for the persistence of the logs fetched from containers or k8s pods used for building requested images, which can be accessed later and also attached to the build completion email.
 
 | Variable                       | Description                                                                                       | Default Value / Environment Variable      | Optional |
 |--------------------------------|---------------------------------------------------------------------------------------------------|-------------------------------------------|----------|
@@ -109,7 +109,7 @@ This configuration specify attributes for the persistence of the logs fetched fr
 
 ### Kubernetes configuration for container build process
 
-Kubernetes configuration have options specific for k8s and most of them except cpu and memory are same for build and scan process.
+Kubernetes configuration has options specific for k8s, and most of them, except CPU and memory, are the same for the build and scan process.
 
 **Note**: only applies when using Kubernetes.
 
@@ -127,7 +127,7 @@ Kubernetes configuration have options specific for k8s and most of them except c
 
 ## Container scan process configuration
 
-Scan process configuration lets developer to provide trivy image with any tag and severity levels of vulnerability needs to be scanned. 
+Scan process configuration lets the user provide a [Trivy docker image](https://hub.docker.com/r/aquasec/trivy) with any tag and severity levels of vulnerability that need to be scanned.
 
 | Variable                      | Description                                                                                                                                                      | Default Value  / Environment Variable | Optional |
 |-------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------|----------|
@@ -138,7 +138,8 @@ Scan process configuration lets developer to provide trivy image with any tag an
 
 ### Kubernetes configuration for Wave scan process
 
-Wave scan process use same k8s configuration of build process except cpu and memory requirement for k8s pod. 
+Wave scan process uses the same k8s configuration of the build process except for CPU and memory requirements for the k8s pod.
+
 **Note**: only applies when using Kubernetes.
 
 | Variable                      | Description                                                                                                                                                                                           | Default Value / Environment Variable  | Optional |
@@ -148,7 +149,7 @@ Wave scan process use same k8s configuration of build process except cpu and mem
 
 ## Rate limit configuration
 
-Rate limit configuration control the limits of anonymous and authenticated users access to wave.  
+Rate limit configuration controls the limits of anonymous and authenticated users' access to Wave.
 
 **Note**: Change these properties to tweak rate limits in wave.
 
