@@ -17,7 +17,6 @@
  */
 package io.seqera.wave.service.k8s
 
-import groovy.transform.ToString
 import io.micronaut.context.annotation.ConfigurationProperties
 import io.micronaut.core.annotation.Introspected
 /**
