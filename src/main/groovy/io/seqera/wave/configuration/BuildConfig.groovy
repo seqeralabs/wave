@@ -53,7 +53,7 @@ class BuildConfig {
     String defaultCacheRepository
 
     @Nullable
-    @Value('${wave.build.publicRepo}')
+    @Value('${wave.build.public-repo}')
     String defaultPublicRepository
 
     /**
