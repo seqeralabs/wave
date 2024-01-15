@@ -28,10 +28,7 @@ import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
@@ -73,9 +70,15 @@ class BlobCacheServiceImpl implements BlobCacheService {
 
     private HttpClient httpClient
 
+    private S3Presigner presigner
+
     @PostConstruct
     private void init() {
         httpClient = HttpClientFactory.followRedirectsHttpClient()
+        presigner = S3Presigner.builder()
+                .region(  Region.of(blobConfig.storageRegion.toUpperCase()) )
+                .credentialsProvider(DefaultCredentialsProvider.create())
+                .build()
         log.info "Creating Blob cache service - $blobConfig"
     }
 
@@ -229,12 +232,6 @@ class BlobCacheServiceImpl implements BlobCacheService {
      *  @return pre signed URL
      */
     private String createPresignedGetUrl(String bucketName, String keyName) {
-        try (S3Presigner presigner = S3Presigner.builder()
-                .region(  Region.of(blobConfig.storageRegion.toUpperCase()) )
-                .credentialsProvider(DefaultCredentialsProvider.create())
-                .build()){
-
-
             GetObjectRequest objectRequest = GetObjectRequest.builder()
                     .bucket(bucketName)
                     .key(keyName)
@@ -247,10 +244,9 @@ class BlobCacheServiceImpl implements BlobCacheService {
 
             PresignedGetObjectRequest presignedRequest = presigner.presignGetObject(presignRequest);
 
-            log.trace "Presigned URL: [{}]", presignedRequest.url().toString()
+            log.trace "Presigned URL: [${presignedRequest.url()}]"
 
             return presignedRequest.url().toExternalForm()
-        }
     }
 
     /**
