@@ -63,7 +63,7 @@ class BlobCacheConfig {
     String requestsMemory
 
     @Nullable
-    @Value('${wave.blobCache.url-signature-duration:10m}')
+    @Value('${wave.blobCache.url-signature-duration:30m}')
     Duration urlSignatureDuration
 
     Map<String,String> getEnvironment() {
