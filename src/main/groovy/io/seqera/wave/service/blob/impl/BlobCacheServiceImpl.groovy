@@ -47,7 +47,6 @@ import jakarta.inject.Singleton
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
-import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest
 import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
 /**
  * Implements cache for container image layer blobs
@@ -244,20 +243,18 @@ class BlobCacheServiceImpl implements BlobCacheService {
      *  @return pre signed URL
      */
     private String createPresignedGetUrl(String bucketName, String keyName) {
-            GetObjectRequest objectRequest = GetObjectRequest.builder()
+            final objectRequest = (GetObjectRequest) GetObjectRequest.builder()
                     .bucket(bucketName)
                     .key(keyName)
-                    .build() as GetObjectRequest
+                    .build()
 
-            GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+            final presignRequest = GetObjectPresignRequest.builder()
                     .signatureDuration(blobConfig.urlSignatureDuration)
                     .getObjectRequest(objectRequest)
                     .build()
 
-            PresignedGetObjectRequest presignedRequest = presigner.presignGetObject(presignRequest);
-
+            final presignedRequest = presigner.presignGetObject(presignRequest);
             log.trace "Presigned URL: [${presignedRequest.url()}]"
-
             return presignedRequest.url().toExternalForm()
     }
 
