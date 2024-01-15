@@ -39,12 +39,12 @@ class BlobCacheServiceImplTest extends Specification {
         when:
         def result = service.s5cmd(route, Mock(BlobCacheInfo))
         then:
-        result == ['s5cmd', '--json', 'pipe', '--acl', 'public-read', 's3://store/blobs/docker.io/v2/library/ubuntu/manifests/sha256:aabbcc']
+        result == ['s5cmd', '--json', 'pipe',  's3://store/blobs/docker.io/v2/library/ubuntu/manifests/sha256:aabbcc']
 
         when:
         result = service.s5cmd(route, BlobCacheInfo.create('http://foo', ['Content-Type':['foo'], 'Cache-Control': ['bar']]))
         then:
-        result == ['s5cmd', '--json', 'pipe', '--acl', 'public-read', '--content-type', 'foo', '--cache-control', 'bar', 's3://store/blobs/docker.io/v2/library/ubuntu/manifests/sha256:aabbcc']
+        result == ['s5cmd', '--json', 'pipe', '--content-type', 'foo', '--cache-control', 'bar', 's3://store/blobs/docker.io/v2/library/ubuntu/manifests/sha256:aabbcc']
 
     }
 
@@ -57,7 +57,7 @@ class BlobCacheServiceImplTest extends Specification {
         when:
         def result = service.s5cmd(route, new BlobCacheInfo())
         then:
-        result == ['s5cmd', '--endpoint-url', 'https://foo.com', '--json', 'pipe', '--acl', 'public-read', 's3://store/blobs/docker.io/v2/library/ubuntu/manifests/sha256:aabbcc']
+        result == ['s5cmd', '--endpoint-url', 'https://foo.com', '--json', 'pipe', 's3://store/blobs/docker.io/v2/library/ubuntu/manifests/sha256:aabbcc']
     }
 
     def 'should get transfer command' () {
@@ -77,7 +77,7 @@ class BlobCacheServiceImplTest extends Specification {
         result == [
                 'sh',
                 '-c',
-                "curl -X GET 'http://foo' | s5cmd --json pipe --acl public-read --content-type something 's3://store/blobs/docker.io/v2/library/ubuntu/manifests/sha256:aabbcc'"
+                "curl -X GET 'http://foo' | s5cmd --json pipe --content-type something 's3://store/blobs/docker.io/v2/library/ubuntu/manifests/sha256:aabbcc'"
         ]
     }
 }
