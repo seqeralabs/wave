@@ -3,7 +3,6 @@ package io.seqera.wave.service.blob.impl
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import java.time.Duration
 import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
@@ -84,11 +83,11 @@ class BlobCacheServiceImpl implements BlobCacheService {
 
     @Override
     BlobCacheInfo retrieveBlobCache(RoutePath route, Map<String,List<String>> headers) {
-        final uri = blobDownloadUri(route)
-        final info = BlobCacheInfo.create(uri, headers)
+        final info = BlobCacheInfo.create(headers)
         final target = route.targetPath
         if( blobStore.storeIfAbsent(target, info) ) {
             // start download and caching job
+            info.locationUri = blobDownloadUri(route)
             return storeIfAbsent(route, info)
         }
         else {

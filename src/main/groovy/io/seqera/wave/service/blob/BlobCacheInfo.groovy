@@ -19,7 +19,7 @@ class BlobCacheInfo {
     /**
      * The HTTP location from the where the cached container blob can be retrieved
      */
-    final String locationUri
+    String locationUri
 
     /**
      * The request http headers
@@ -64,12 +64,20 @@ class BlobCacheInfo {
         headers?.find(it-> it.key.toLowerCase()=='cache-control')?.value
     }
 
+    static BlobCacheInfo create(Map<String,List<String>> headers) {
+        final headers0 = new LinkedHashMap<String,String>()
+        for( Map.Entry<String,List<String>> it : headers )
+            headers0.put( it.key, it.value.join(',') )
+        new BlobCacheInfo(null, headers0, Instant.now())
+    }
+
     static BlobCacheInfo create(String locationUrl, Map<String,List<String>> headers) {
         final headers0 = new LinkedHashMap<String,String>()
         for( Map.Entry<String,List<String>> it : headers )
             headers0.put( it.key, it.value.join(',') )
         new BlobCacheInfo(locationUrl, headers0, Instant.now())
     }
+
 
     static BlobCacheInfo create1(String locationUrl, Map<String,String> headers) {
         new BlobCacheInfo(locationUrl, headers, Instant.now())
