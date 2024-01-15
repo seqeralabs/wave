@@ -83,15 +83,15 @@ class BlobCacheServiceImpl implements BlobCacheService {
 
     @Override
     BlobCacheInfo retrieveBlobCache(RoutePath route, Map<String,List<String>> headers) {
-        final info = BlobCacheInfo.create(headers)
+        final uri = blobDownloadUri(route)
+        final info = BlobCacheInfo.create(uri, headers)
         final target = route.targetPath
         if( blobStore.storeIfAbsent(target, info) ) {
             // start download and caching job
-            info.locationUri = blobDownloadUri(route)
             return storeIfAbsent(route, info)
         }
         else {
-            return awaitCacheStore(target)
+            return awaitCacheStore(target, uri)
         }
     }
 
@@ -260,6 +260,22 @@ class BlobCacheServiceImpl implements BlobCacheService {
      */
     BlobCacheInfo awaitCacheStore(String key) {
         final result = blobStore.getBlob(key)
+        return result ? Waiter.awaitCompletion(blobStore, key, result) : null
+    }
+
+    /**
+     * Await for the container layer blob download
+     *
+     * @param key
+     *      The container blob unique key
+     * @return
+     *      the {@link java.util.concurrent.CompletableFuture} holding the {@link BlobCacheInfo} associated with
+     *      specified blob key or {@code null} if no blob record is associated for the
+     *      given key
+     */
+    BlobCacheInfo awaitCacheStore(String key, String uri) {
+        final result = blobStore.getBlob(key)
+        result.locationUri = uri
         return result ? Waiter.awaitCompletion(blobStore, key, result) : null
     }
 
