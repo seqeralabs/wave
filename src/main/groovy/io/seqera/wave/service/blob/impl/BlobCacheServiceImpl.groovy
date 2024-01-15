@@ -234,7 +234,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
      * @return The HTTP URI from the cached layer blob is going to be downloaded
      */
     protected String blobDownloadUri(RoutePath route) {
-        createPresignedGetUrl(blobConfig.storageBucket, route.targetPath)
+        createPresignedGetUrl(blobConfig.getStorageBucketName(), route.targetPath)
     }
 
     /**

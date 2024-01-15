@@ -81,4 +81,10 @@ class BlobCacheConfig {
         return result
     }
 
+    String getStorageBucketName(){
+        if(storageBucket.toLowerCase().contains("s3://"))
+            return storageBucket.toLowerCase().replace("s3://","")
+        else
+            return storageBucket
+    }
 }
