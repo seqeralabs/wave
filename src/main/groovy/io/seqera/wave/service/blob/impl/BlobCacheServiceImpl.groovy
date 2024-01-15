@@ -3,6 +3,7 @@ package io.seqera.wave.service.blob.impl
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.time.Duration
 import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
@@ -27,6 +28,15 @@ import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+import software.amazon.awssdk.auth.credentials.AwsCredentials
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.s3.model.GetObjectRequest
+import software.amazon.awssdk.services.s3.presigner.S3Presigner
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest
 import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
 /**
  * Implements cache for container image layer blobs
@@ -209,9 +219,39 @@ class BlobCacheServiceImpl implements BlobCacheService {
      * @return The HTTP URI from the cached layer blob is going to be downloaded
      */
     protected String blobDownloadUri(RoutePath route) {
-        StringUtils.pathConcat(blobConfig.baseUrl, route.targetPath)
+        createPresignedGetUrl(blobConfig.storageBucket, route.targetPath)
     }
 
+    /**
+     *  Create a pre-signed URL to download an object in a subsequent GET request.
+     *  @param s3 bucket name
+     *  @param key in the s3 bucket
+     *  @return pre signed URL
+     */
+    private String createPresignedGetUrl(String bucketName, String keyName) {
+        try (S3Presigner presigner = S3Presigner.builder()
+                .region(  Region.of(blobConfig.storageRegion.toUpperCase()) )
+                .credentialsProvider(DefaultCredentialsProvider.create())
+                .build()){
+
+
+            GetObjectRequest objectRequest = GetObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(keyName)
+                    .build()
+
+            GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                    .signatureDuration(Duration.ofMinutes(blobConfig.urlSignatureDuration))
+                    .getObjectRequest(objectRequest)
+                    .build()
+
+            PresignedGetObjectRequest presignedRequest = presigner.presignGetObject(presignRequest);
+
+            log.trace "Presigned URL: [{}]", presignedRequest.url().toString()
+
+            return presignedRequest.url().toExternalForm()
+        }
+    }
 
     /**
      * Await for the container layer blob download
