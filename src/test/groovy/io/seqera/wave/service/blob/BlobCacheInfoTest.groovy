@@ -135,5 +135,18 @@ class BlobCacheInfoTest extends Specification {
         and:
         !result.done()
         !result.succeeded()
+
+        and:
+        result.withLocation('http://foo').locationUri == null
+    }
+
+    def 'should change location uri' () {
+        given:
+        def result = BlobCacheInfo.create('http://foo.com', [:])
+
+        expect:
+        result.locationUri == 'http://foo.com'
+        result.withLocation('http://bar.com')
+                .locationUri == 'http://bar.com'
     }
 }

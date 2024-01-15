@@ -87,8 +87,6 @@ class BlobCacheServiceImpl implements BlobCacheService {
 
     private HttpClient httpClient
 
-
-
     @PostConstruct
     private void init() {
         httpClient = HttpClientFactory.followRedirectsHttpClient()
@@ -105,7 +103,9 @@ class BlobCacheServiceImpl implements BlobCacheService {
             return storeIfAbsent(route, info)
         }
         else {
-            return awaitCacheStore(target, uri)
+            final result = awaitCacheStore(target)
+            // update the download signed uri
+            return result?.withLocation(uri)
         }
     }
 
@@ -267,17 +267,13 @@ class BlobCacheServiceImpl implements BlobCacheService {
      *
      * @param key
      *      The container blob unique key
-     * @param uri
-     *      uri pointing to blob0
-     *
      * @return
      *      the {@link java.util.concurrent.CompletableFuture} holding the {@link BlobCacheInfo} associated with
      *      specified blob key or {@code null} if no blob record is associated for the
      *      given key
      */
-    BlobCacheInfo awaitCacheStore(String key, String uri) {
+    BlobCacheInfo awaitCacheStore(String key) {
         final result = blobStore.getBlob(key)
-        result.locationUri = uri
         return result ? Waiter.awaitCompletion(blobStore, key, result) : null
     }
 

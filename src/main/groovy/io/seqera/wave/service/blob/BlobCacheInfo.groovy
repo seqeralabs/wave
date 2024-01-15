@@ -36,7 +36,7 @@ class BlobCacheInfo {
     /**
      * The HTTP location from the where the cached container blob can be retrieved
      */
-    String locationUri
+    final String locationUri
 
     /**
      * The request http headers
@@ -121,9 +121,25 @@ class BlobCacheInfo {
                 logs)
     }
 
+    BlobCacheInfo withLocation(String uri) {
+        new BlobCacheInfo(
+                uri,
+                headers,
+                creationTime,
+                completionTime,
+                exitStatus,
+                logs)
+    }
+
     @Memoized
     static BlobCacheInfo unknown() {
-        new BlobCacheInfo(null, null, Instant.ofEpochMilli(0), Instant.ofEpochMilli(0), null)
+        new BlobCacheInfo(null, null, Instant.ofEpochMilli(0), Instant.ofEpochMilli(0), null) {
+            @Override
+            BlobCacheInfo withLocation(String uri) {
+                // prevent the change of location for unknown status
+                return null
+            }
+        }
     }
 
 }
