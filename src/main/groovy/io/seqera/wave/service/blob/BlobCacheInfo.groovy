@@ -137,7 +137,7 @@ class BlobCacheInfo {
             @Override
             BlobCacheInfo withLocation(String uri) {
                 // prevent the change of location for unknown status
-                return null
+                return this
             }
         }
     }
