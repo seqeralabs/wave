@@ -1,3 +1,20 @@
+/*
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2024, Seqera Labs
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 package io.seqera.wave.service.blob.impl
 
 import java.net.http.HttpClient
@@ -27,8 +44,6 @@ import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
-import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
@@ -65,19 +80,18 @@ class BlobCacheServiceImpl implements BlobCacheService {
     private TransferStrategy transferStrategy
 
     @Inject
+    private S3Presigner presigner
+
+    @Inject
     private HttpClientConfig httpConfig
 
     private HttpClient httpClient
 
-    private S3Presigner presigner
+
 
     @PostConstruct
     private void init() {
         httpClient = HttpClientFactory.followRedirectsHttpClient()
-        presigner = S3Presigner.builder()
-                .region(  Region.of(blobConfig.storageRegion.toUpperCase()) )
-                .credentialsProvider(DefaultCredentialsProvider.create())
-                .build()
         log.info "Creating Blob cache service - $blobConfig"
     }
 
@@ -246,21 +260,6 @@ class BlobCacheServiceImpl implements BlobCacheService {
             log.trace "Presigned URL: [${presignedRequest.url()}]"
 
             return presignedRequest.url().toExternalForm()
-    }
-
-    /**
-     * Await for the container layer blob download
-     *
-     * @param key
-     *      The container blob unique key
-     * @return
-     *      the {@link java.util.concurrent.CompletableFuture} holding the {@link BlobCacheInfo} associated with
-     *      specified blob key or {@code null} if no blob record is associated for the
-     *      given key
-     */
-    BlobCacheInfo awaitCacheStore(String key) {
-        final result = blobStore.getBlob(key)
-        return result ? Waiter.awaitCompletion(blobStore, key, result) : null
     }
 
     /**
