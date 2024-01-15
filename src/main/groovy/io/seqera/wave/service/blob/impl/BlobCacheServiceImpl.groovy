@@ -238,7 +238,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
                     .build()
 
             GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
-                    .signatureDuration(Duration.ofMinutes(blobConfig.urlSignatureDuration))
+                    .signatureDuration(blobConfig.urlSignatureDuration)
                     .getObjectRequest(objectRequest)
                     .build()
 
