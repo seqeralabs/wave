@@ -268,6 +268,9 @@ class BlobCacheServiceImpl implements BlobCacheService {
      *
      * @param key
      *      The container blob unique key
+     * @param uri
+     *      uri pointing to blob0
+     *
      * @return
      *      the {@link java.util.concurrent.CompletableFuture} holding the {@link BlobCacheInfo} associated with
      *      specified blob key or {@code null} if no blob record is associated for the
