@@ -71,7 +71,6 @@ class BlobCacheInfo {
         new BlobCacheInfo(locationUrl, headers0, Instant.now())
     }
 
-
     static BlobCacheInfo create1(String locationUrl, Map<String,String> headers) {
         new BlobCacheInfo(locationUrl, headers, Instant.now())
     }
