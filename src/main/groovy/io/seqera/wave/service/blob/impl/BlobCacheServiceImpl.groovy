@@ -145,7 +145,6 @@ class BlobCacheServiceImpl implements BlobCacheService {
 
         result << '--json'
         result << 'pipe'
-        result << '--acl' << 'public-read'
 
         if( info.contentType ) {
             result << '--content-type'
@@ -248,7 +247,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
             GetObjectRequest objectRequest = GetObjectRequest.builder()
                     .bucket(bucketName)
                     .key(keyName)
-                    .build()
+                    .build() as GetObjectRequest
 
             GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
                     .signatureDuration(blobConfig.urlSignatureDuration)
