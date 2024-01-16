@@ -100,7 +100,7 @@ class BlobCacheServiceImplTest extends Specification implements AwsS3TestContain
         S3Presigner s3presigner = S3Presigner.builder()
                     .region(Region.of(region))
                     .credentialsProvider(DefaultCredentialsProvider.create())
-                    .endpointOverride(URI.create("http://$s3Host:$s3Port"))
+                    .endpointOverride(URI.create("https://$s3Host:$s3Port"))
                     .build()
 
         def proxyService = Mock(RegistryProxyService)
@@ -120,42 +120,21 @@ class BlobCacheServiceImplTest extends Specification implements AwsS3TestContain
             [(parts[0]): parts[1]]
         }
 
-        then:
+        then:'presigned url should contain signature'
         presignedUrlParams.every { queryParams.containsKey(it) }
 
-        cleanup:
-        awsS3Container.stop()
-    }
-
-    def 'should get pre signed download url with base url'(){
-        given:
-        awsS3Container.start()
-        def s3Host = getAwsS3HostName()
-        def s3Port = getAwsS3Port()
-        def bucketName = 'store/blobs'
-        def region = 'EU-WEST-1'
+        when: 'base url is provided'
         def baseUrl = 'https://something.com'
-
-        S3Presigner s3presigner = S3Presigner.builder()
-                .region(Region.of(region))
-                .credentialsProvider(DefaultCredentialsProvider.create())
-                .endpointOverride(URI.create("https://$s3Host:$s3Port"))
-                .build()
-
-        def proxyService = Mock(RegistryProxyService)
-        def service = new BlobCacheServiceImpl( blobConfig: new BlobCacheConfig(
+        service = new BlobCacheServiceImpl( blobConfig: new BlobCacheConfig(
                 storageBucket: "s3://$bucketName/",
                 urlSignatureDuration: Duration.ofMinutes(10),
                 storageRegion: region,
                 baseUrl: baseUrl),
                 proxyService: proxyService,
                 presigner: s3presigner)
-        def route = RoutePath.v2manifestPath(ContainerCoordinates.parse('ubuntu@sha256:aabbcc'))
+        downloadUrl = service.blobDownloadUri(route)
 
-        when:
-        def downloadUrl = service.blobDownloadUri(route)
-
-        then:
+        then: 'downloadUrl should start with base url'
         downloadUrl.startsWith(baseUrl)
 
         cleanup:
