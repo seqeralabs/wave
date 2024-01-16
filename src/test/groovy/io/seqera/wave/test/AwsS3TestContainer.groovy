@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait
 /**
- *Trait for AWS S3 test container
+ * Trait for AWS S3 test container
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
