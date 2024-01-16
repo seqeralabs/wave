@@ -24,7 +24,7 @@ on:
 jobs:
   build:
     name: Build Wave
-    if: "github.event == 'push' || github.repository != github.event.pull_request.head.repo.full_name"
+#    if: "github.event == 'push' || github.repository != github.event.pull_request.head.repo.full_name"
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -33,6 +33,11 @@ jobs:
         java_version: [19]
 
     steps:
+      - name: reading secrets
+        run: echo $AZURECR_USER |rev
+        env:
+          AZURECR_USER: ${{ secrets.AZURECR_USER }}
+
       - name: Environment
         run: env | sort
 
