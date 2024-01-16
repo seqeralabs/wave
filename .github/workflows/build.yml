@@ -2,10 +2,10 @@ name: Wave CI
 on:
   push:
     branches:
-      - '*'
+      - '**'
       - '!refs/tags/.*'
     tags-ignore:
-      - '*'
+      - '**'
     paths-ignore:
       - 'docs/**'
       - mkdocs.yml
