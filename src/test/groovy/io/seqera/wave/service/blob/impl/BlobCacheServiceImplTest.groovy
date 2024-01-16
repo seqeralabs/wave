@@ -19,17 +19,24 @@ package io.seqera.wave.service.blob.impl
 
 import spock.lang.Specification
 
+import java.time.Duration
+
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.blob.BlobCacheInfo
+import io.seqera.wave.test.AwsS3TestContainer
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.s3.presigner.S3Presigner
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class BlobCacheServiceImplTest extends Specification {
 
+class BlobCacheServiceImplTest extends Specification implements AwsS3TestContainer{
 
     def 'should get s5cmd cli' () {
         given:
@@ -79,5 +86,79 @@ class BlobCacheServiceImplTest extends Specification {
                 '-c',
                 "curl -X GET 'http://foo' | s5cmd --json pipe --content-type something 's3://store/blobs/docker.io/v2/library/ubuntu/manifests/sha256:aabbcc'"
         ]
+    }
+
+    def 'should get pre signed download url'(){
+        given:
+        awsS3Container.start()
+        def s3Host = getAwsS3HostName()
+        def s3Port = getAwsS3Port()
+        def bucketName = 'store/blobs'
+        def region = 'EU-WEST-1'
+        def presignedUrlParams = ['X-Amz-Algorithm', 'X-Amz-Credential', 'X-Amz-Date', 'X-Amz-Expires', 'X-Amz-Signature']
+
+        S3Presigner s3presigner = S3Presigner.builder()
+                    .region(Region.of(region))
+                    .credentialsProvider(DefaultCredentialsProvider.create())
+                    .endpointOverride(URI.create("http://$s3Host:$s3Port"))
+                    .build()
+
+        def proxyService = Mock(RegistryProxyService)
+        def service = new BlobCacheServiceImpl( blobConfig: new BlobCacheConfig(
+                storageBucket: "s3://$bucketName/",
+                urlSignatureDuration: Duration.ofMinutes(10),
+                storageRegion: region),
+                proxyService: proxyService,
+                presigner: s3presigner)
+        def route = RoutePath.v2manifestPath(ContainerCoordinates.parse('ubuntu@sha256:aabbcc'))
+
+        when:
+        def downloadUrl = service.blobDownloadUri(route)
+        URL parsedUrl = new URL(downloadUrl)
+        Map<String, String> queryParams = parsedUrl.query.split('&').collectEntries { entry ->
+            def parts = entry.split('=')
+            [(parts[0]): parts[1]]
+        }
+
+        then:
+        presignedUrlParams.every { queryParams.containsKey(it) }
+
+        cleanup:
+        awsS3Container.stop()
+    }
+
+    def 'should get pre signed download url with base url'(){
+        given:
+        awsS3Container.start()
+        def s3Host = getAwsS3HostName()
+        def s3Port = getAwsS3Port()
+        def bucketName = 'store/blobs'
+        def region = 'EU-WEST-1'
+        def baseUrl = 'https://something.com'
+
+        S3Presigner s3presigner = S3Presigner.builder()
+                .region(Region.of(region))
+                .credentialsProvider(DefaultCredentialsProvider.create())
+                .endpointOverride(URI.create("https://$s3Host:$s3Port"))
+                .build()
+
+        def proxyService = Mock(RegistryProxyService)
+        def service = new BlobCacheServiceImpl( blobConfig: new BlobCacheConfig(
+                storageBucket: "s3://$bucketName/",
+                urlSignatureDuration: Duration.ofMinutes(10),
+                storageRegion: region,
+                baseUrl: baseUrl),
+                proxyService: proxyService,
+                presigner: s3presigner)
+        def route = RoutePath.v2manifestPath(ContainerCoordinates.parse('ubuntu@sha256:aabbcc'))
+
+        when:
+        def downloadUrl = service.blobDownloadUri(route)
+
+        then:
+        downloadUrl.startsWith(baseUrl)
+
+        cleanup:
+        awsS3Container.stop()
     }
 }

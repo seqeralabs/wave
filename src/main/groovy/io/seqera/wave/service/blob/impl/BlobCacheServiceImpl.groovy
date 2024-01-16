@@ -237,13 +237,12 @@ class BlobCacheServiceImpl implements BlobCacheService {
         def downloadUrl
 
         if( blobConfig.baseUrl ){
-            downloadUrl = url.replace("https://${blobConfig.storageBucketName}.s3.${blobConfig.storageRegion.toUpperCase()}.amazonaws.com",blobConfig.baseUrl)
-            log.info "Download URL with base url: $downloadUrl"
+            downloadUrl = url.replaceFirst(/^(https:\/\/[^\/]+)/,blobConfig.baseUrl)
         }else{
             downloadUrl = url
         }
 
-        log.info "Download URL: $downloadUrl"
+        log.trace "Download URL: $downloadUrl"
         return downloadUrl
     }
 
