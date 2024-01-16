@@ -23,4 +23,16 @@ class BlobCacheConfigTest extends Specification {
                 AWS_SECRET_ACCESS_KEY: 'secret'
         ]
     }
+
+    def 'should get bucket name' (){
+        when:
+        def config = new BlobCacheConfig(storageBucket: 's3://some-bucket')
+        then:
+        config.storageBucketName == 'some-bucket'
+
+        when:
+        config = new BlobCacheConfig(storageBucket: 's3://some-bucket/sub/path')
+        then:
+        config.storageBucketName == 'some-bucket'
+    }
 }

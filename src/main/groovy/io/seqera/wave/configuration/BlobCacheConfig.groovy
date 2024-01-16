@@ -1,12 +1,15 @@
 package io.seqera.wave.configuration
 
 import java.time.Duration
+import java.util.regex.Matcher
 import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import jakarta.annotation.PostConstruct
+
 /**
  * Model blob cache settings
  *
@@ -66,6 +69,8 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.url-signature-duration:30m}')
     Duration urlSignatureDuration
 
+    String storageBucketName
+
     Map<String,String> getEnvironment() {
         final result = new HashMap<String,String>(10)
         if( storageRegion ) {
@@ -81,10 +86,9 @@ class BlobCacheConfig {
         return result
     }
 
+    @PostConstruct
     String getStorageBucketName(){
-        if(storageBucket.toLowerCase().contains("s3://"))
-            return storageBucket.toLowerCase().replace("s3://","")
-        else
-            return storageBucket
+        Matcher matcher = storageBucket =~ /^s3:\/\/([^\/]+)/
+        storageBucketName =  matcher ? matcher.group(1) : storageBucket
     }
 }

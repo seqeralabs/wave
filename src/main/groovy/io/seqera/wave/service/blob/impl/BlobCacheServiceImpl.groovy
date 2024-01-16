@@ -233,7 +233,18 @@ class BlobCacheServiceImpl implements BlobCacheService {
      * @return The HTTP URI from the cached layer blob is going to be downloaded
      */
     protected String blobDownloadUri(RoutePath route) {
-        createPresignedGetUrl(blobConfig.getStorageBucketName(), route.targetPath)
+        def url = createPresignedGetUrl(blobConfig.storageBucketName, route.targetPath)
+        def downloadUrl
+
+        if( blobConfig.baseUrl ){
+            downloadUrl = url.replace("https://${blobConfig.storageBucketName}.s3.${blobConfig.storageRegion.toUpperCase()}.amazonaws.com",blobConfig.baseUrl)
+            log.info "Download URL with base url: $downloadUrl"
+        }else{
+            downloadUrl = url
+        }
+
+        log.info "Download URL: $downloadUrl"
+        return downloadUrl
     }
 
     /**
