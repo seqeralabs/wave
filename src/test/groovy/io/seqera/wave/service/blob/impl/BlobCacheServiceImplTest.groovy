@@ -82,4 +82,20 @@ class BlobCacheServiceImplTest extends Specification implements AwsS3TestContain
         ]
     }
 
+    def 'should unescape uri' () {
+        given:
+        def config = new BlobCacheConfig( storageBucket: 's3://store/blobs/', storageEndpoint: 'https://foo.com' )
+        def service = new BlobCacheServiceImpl(blobConfig: config)
+
+        expect:
+        service.unescapeUriPath(PATH) == EXPECTED
+
+        where:
+        PATH                        | EXPECTED
+        null                        | null
+        'http:/foo.com/bar'         | 'http:/foo.com/bar'
+        'http:/foo.com/this?that'   | 'http:/foo.com/this?that'
+        'http:/foo.com/x%3Ay%3Az'   | 'http:/foo.com/x:y:z'
+        'http:/foo.com/?x%3Ay%3Az'  | 'http:/foo.com/?x%3Ay%3Az'
+    }
 }

@@ -229,6 +229,16 @@ class BlobCacheServiceImpl implements BlobCacheService {
         StringUtils.pathConcat(blobConfig.storageBucket, route.targetPath)
     }
 
+    protected String unescapeUriPath(String uri) {
+        if( !uri )
+            return null
+        final p = uri.indexOf('?')
+        if( p==-1 )
+            return URLDecoder.decode(uri, 'UTF-8')
+        final base = uri.substring(0,p)
+        return URLDecoder.decode(base, 'UTF-8') + uri.substring(p)
+    }
+
     /**
      * The HTTP URI from there the cached layer blob is going to be downloaded
      *
@@ -237,7 +247,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
      */
     protected String blobDownloadUri(RoutePath route) {
         final bucketPath = StringUtils.pathConcat(blobConfig.storageBucket, route.targetPath)
-        final presignedUrl = createPresignedGetUrl(bucketPath).replaceAll(/%3A/,':')
+        final presignedUrl = unescapeUriPath(createPresignedGetUrl(bucketPath))
 
         if( blobConfig.baseUrl ) {
             final p = presignedUrl.indexOf(route.targetPath)
