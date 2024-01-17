@@ -1,15 +1,12 @@
 package io.seqera.wave.configuration
 
 import java.time.Duration
-import java.util.regex.Matcher
-import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
-import jakarta.annotation.PostConstruct
-
+import io.micronaut.core.annotation.Nullable
 /**
  * Model blob cache settings
  *
@@ -32,7 +29,7 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.status.duration:5d}')
     Duration statusDuration
 
-    @Value('${wave.blobCache.storage.bucket:}')
+    @Value('${wave.blobCache.storage.bucket}')
     String storageBucket
 
     @Nullable
@@ -51,6 +48,7 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.storage.secretKey}')
     String storageSecretKey
 
+    @Nullable
     @Value('${wave.blobCache.baseUrl}')
     String baseUrl
 
@@ -69,8 +67,6 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.url-signature-duration:30m}')
     Duration urlSignatureDuration
 
-    String storageBucketName
-
     Map<String,String> getEnvironment() {
         final result = new HashMap<String,String>(10)
         if( storageRegion ) {
@@ -86,9 +82,11 @@ class BlobCacheConfig {
         return result
     }
 
-    @PostConstruct
-    String getStorageBucketName(){
-        Matcher matcher = storageBucket =~ /^s3:\/\/([^\/]+)/
-        storageBucketName =  matcher ? matcher.group(1) : storageBucket
+    String getStorageBucket() {
+        if( !storageBucket )
+            return null
+        return storageBucket.startsWith('s3://')
+                ? storageBucket
+                : 's3://' + storageBucket
     }
 }

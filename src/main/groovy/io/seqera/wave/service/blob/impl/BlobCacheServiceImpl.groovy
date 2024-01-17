@@ -37,6 +37,7 @@ import io.seqera.wave.service.blob.BlobCacheService
 import io.seqera.wave.service.blob.BlobStore
 import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.blob.TransferTimeoutException
+import io.seqera.wave.util.BucketTokenizer
 import io.seqera.wave.util.Escape
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.StringUtils
@@ -95,6 +96,8 @@ class BlobCacheServiceImpl implements BlobCacheService {
     @Override
     BlobCacheInfo retrieveBlobCache(RoutePath route, Map<String,List<String>> headers) {
         final uri = blobDownloadUri(route)
+        log.trace "Container blob download uri: $uri"
+
         final info = BlobCacheInfo.create(uri, headers)
         final target = route.targetPath
         if( blobStore.storeIfAbsent(target, info) ) {
@@ -233,17 +236,17 @@ class BlobCacheServiceImpl implements BlobCacheService {
      * @return The HTTP URI from the cached layer blob is going to be downloaded
      */
     protected String blobDownloadUri(RoutePath route) {
-        def url = createPresignedGetUrl(blobConfig.storageBucketName, route.targetPath)
-        def downloadUrl
+        final bucketPath = StringUtils.pathConcat(blobConfig.storageBucket, route.targetPath)
+        final presignedUrl = createPresignedGetUrl(bucketPath).replaceAll(/%3A/,':')
 
-        if( blobConfig.baseUrl ){
-            downloadUrl = url.replaceFirst(/^(https:\/\/[^\/]+)/,blobConfig.baseUrl)
-        }else{
-            downloadUrl = url
+        if( blobConfig.baseUrl ) {
+            final p = presignedUrl.indexOf(route.targetPath)
+            if( p==-1 )
+                throw new IllegalStateException("Unable to match blob target path in the presigned url: $presignedUrl - target path: $route.targetPath")
+            return StringUtils.pathConcat(blobConfig.baseUrl, presignedUrl.substring(p))
         }
-
-        log.trace "Download URL: $downloadUrl"
-        return downloadUrl
+        else
+            return presignedUrl
     }
 
     /**
@@ -252,20 +255,21 @@ class BlobCacheServiceImpl implements BlobCacheService {
      *  @param key in the s3 bucket
      *  @return pre signed URL
      */
-    private String createPresignedGetUrl(String bucketName, String keyName) {
-            final objectRequest = (GetObjectRequest) GetObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(keyName)
-                    .build()
+    private String createPresignedGetUrl(String bucketPath) {
+        final parsed = BucketTokenizer.from(bucketPath)
+        final objectRequest = (GetObjectRequest) GetObjectRequest.builder()
+                .bucket(parsed.bucket)
+                .key(parsed.key)
+                .build()
 
-            final presignRequest = GetObjectPresignRequest.builder()
-                    .signatureDuration(blobConfig.urlSignatureDuration)
-                    .getObjectRequest(objectRequest)
-                    .build()
+        final presignRequest = GetObjectPresignRequest.builder()
+                .signatureDuration(blobConfig.urlSignatureDuration)
+                .getObjectRequest(objectRequest)
+                .build()
 
-            final presignedRequest = presigner.presignGetObject(presignRequest);
-            log.trace "Presigned URL: [${presignedRequest.url()}]"
-            return presignedRequest.url().toExternalForm()
+        final presignedRequest = presigner.presignGetObject(presignRequest);
+        log.trace "Presigned URL: [${presignedRequest.url()}]"
+        return presignedRequest.url().toExternalForm()
     }
 
     /**

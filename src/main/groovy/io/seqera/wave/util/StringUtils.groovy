@@ -77,7 +77,7 @@ class StringUtils {
         while( base.endsWith('/') && !base.endsWith('://') )
             base = base.substring(0,base.length()-1)
         if( base.endsWith('/') )
-            throw new IllegalArgumentException("Invalid base path- offending value: '$base'")
+            throw new IllegalArgumentException("Invalid base path - offending value: '$base'")
         // add leading slash
         if( !path.startsWith('/') )
             path = '/' + path
