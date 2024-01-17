@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave
+package io.seqera.wave.util
 
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -25,6 +25,7 @@ import java.util.concurrent.CompletableFuture
 
 import com.google.common.hash.Hashing
 import groovy.util.logging.Slf4j
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.test.ManifestConst
 import io.seqera.wave.util.RegHelper
 import io.seqera.wave.util.ZipUtils
@@ -235,6 +236,25 @@ class RegHelperTest extends Specification {
         RegHelper.guessSpackRecipeName(SPACK) == 'bwa-0.7.15_salmon-1.1.1_nano-1.0'
     }
 
+    def 'should return null whenspack section is not present in spack yaml file' () {
+        def SPACK = '''\
+              specs: [bwa@0.7.15, salmon@1.1.1, nano@1.0 x=one]
+              concretizer: {unify: true, reuse: true}
+            '''.stripIndent(true)
+
+        expect:
+        RegHelper.guessSpackRecipeName(SPACK) == null
+    }
+
+    def 'should return null when spack.specs section is not present in spack yaml file' () {
+        def SPACK = '''\
+            spack:
+              concretizer: {unify: true, reuse: true}
+            '''.stripIndent(true)
+
+        expect:
+        RegHelper.guessSpackRecipeName(SPACK) == null
+    }
 
     def 'should compute sip hash' () {
         given:
