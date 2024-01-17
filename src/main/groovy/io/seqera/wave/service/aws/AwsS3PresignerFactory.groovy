@@ -18,32 +18,32 @@
 package io.seqera.wave.service.aws
 
 import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Factory
+import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.BlobCacheConfig
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
-
 /**
  * Factory implementation for S3Presigner
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 
-@Slf4j
-@CompileStatic
 @Factory
+@Requires(notEnv = 'test')
+@CompileStatic
 class AwsS3PresignerFactory {
+
     @Inject
     private BlobCacheConfig blobConfig
 
-    @Singleton
+    @Singleton()
     S3Presigner s3presigner() {
             return S3Presigner.builder()
-                    .region(Region.of(blobConfig.storageRegion.toUpperCase()))
+                    .region(Region.of(blobConfig.storageRegion))
                     .credentialsProvider(DefaultCredentialsProvider.create())
                     .build()
     }

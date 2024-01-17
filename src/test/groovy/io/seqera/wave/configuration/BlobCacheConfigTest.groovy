@@ -26,13 +26,15 @@ class BlobCacheConfigTest extends Specification {
 
     def 'should get bucket name' (){
         when:
-        def config = new BlobCacheConfig(storageBucket: 's3://some-bucket')
+        def config = new BlobCacheConfig(storageBucket: BUCKET)
         then:
-        config.storageBucketName == 'some-bucket'
+        config.storageBucket == EXPECTED
 
-        when:
-        config = new BlobCacheConfig(storageBucket: 's3://some-bucket/sub/path')
-        then:
-        config.storageBucketName == 'some-bucket'
+        where:
+        BUCKET                  | EXPECTED
+        null                    | null
+        'foo'                   | 's3://foo'
+        's3://foo'              | 's3://foo'
+        's3://foo/bar'          | 's3://foo/bar'
     }
 }
