@@ -40,7 +40,7 @@ class AwsS3PresignerFactory {
     @Inject
     private BlobCacheConfig blobConfig
 
-    @Singleton()
+    @Singleton
     S3Presigner s3presigner() {
             return S3Presigner.builder()
                     .region(Region.of(blobConfig.storageRegion))
