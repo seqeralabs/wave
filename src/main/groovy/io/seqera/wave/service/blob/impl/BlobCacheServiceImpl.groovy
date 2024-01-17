@@ -1,3 +1,20 @@
+/*
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2024, Seqera Labs
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 package io.seqera.wave.service.blob.impl
 
 import java.net.http.HttpClient
@@ -20,6 +37,7 @@ import io.seqera.wave.service.blob.BlobCacheService
 import io.seqera.wave.service.blob.BlobStore
 import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.blob.TransferTimeoutException
+import io.seqera.wave.util.BucketTokenizer
 import io.seqera.wave.util.Escape
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.StringUtils
@@ -27,6 +45,9 @@ import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
+import software.amazon.awssdk.services.s3.model.GetObjectRequest
+import software.amazon.awssdk.services.s3.presigner.S3Presigner
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
 import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
 /**
  * Implements cache for container image layer blobs
@@ -59,6 +80,9 @@ class BlobCacheServiceImpl implements BlobCacheService {
     private TransferStrategy transferStrategy
 
     @Inject
+    private S3Presigner presigner
+
+    @Inject
     private HttpClientConfig httpConfig
 
     private HttpClient httpClient
@@ -72,6 +96,8 @@ class BlobCacheServiceImpl implements BlobCacheService {
     @Override
     BlobCacheInfo retrieveBlobCache(RoutePath route, Map<String,List<String>> headers) {
         final uri = blobDownloadUri(route)
+        log.trace "Container blob download uri: $uri"
+
         final info = BlobCacheInfo.create(uri, headers)
         final target = route.targetPath
         if( blobStore.storeIfAbsent(target, info) ) {
@@ -79,7 +105,9 @@ class BlobCacheServiceImpl implements BlobCacheService {
             return storeIfAbsent(route, info)
         }
         else {
-            return awaitCacheStore(target)
+            final result = awaitCacheStore(target)
+            // update the download signed uri
+            return result?.withLocation(uri)
         }
     }
 
@@ -119,7 +147,6 @@ class BlobCacheServiceImpl implements BlobCacheService {
 
         result << '--json'
         result << 'pipe'
-        result << '--acl' << 'public-read'
 
         if( info.contentType ) {
             result << '--content-type'
@@ -202,6 +229,16 @@ class BlobCacheServiceImpl implements BlobCacheService {
         StringUtils.pathConcat(blobConfig.storageBucket, route.targetPath)
     }
 
+    protected String unescapeUriPath(String uri) {
+        if( !uri )
+            return null
+        final p = uri.indexOf('?')
+        if( p==-1 )
+            return URLDecoder.decode(uri, 'UTF-8')
+        final base = uri.substring(0,p)
+        return URLDecoder.decode(base, 'UTF-8') + uri.substring(p)
+    }
+
     /**
      * The HTTP URI from there the cached layer blob is going to be downloaded
      *
@@ -209,9 +246,40 @@ class BlobCacheServiceImpl implements BlobCacheService {
      * @return The HTTP URI from the cached layer blob is going to be downloaded
      */
     protected String blobDownloadUri(RoutePath route) {
-        StringUtils.pathConcat(blobConfig.baseUrl, route.targetPath)
+        final bucketPath = StringUtils.pathConcat(blobConfig.storageBucket, route.targetPath)
+        final presignedUrl = unescapeUriPath(createPresignedGetUrl(bucketPath))
+
+        if( blobConfig.baseUrl ) {
+            final p = presignedUrl.indexOf(route.targetPath)
+            if( p==-1 )
+                throw new IllegalStateException("Unable to match blob target path in the presigned url: $presignedUrl - target path: $route.targetPath")
+            return StringUtils.pathConcat(blobConfig.baseUrl, presignedUrl.substring(p))
+        }
+        else
+            return presignedUrl
     }
 
+    /**
+     *  Create a pre-signed URL to download an object in a subsequent GET request.
+     *  @param s3 bucket name
+     *  @param key in the s3 bucket
+     *  @return pre signed URL
+     */
+    private String createPresignedGetUrl(String bucketPath) {
+        final parsed = BucketTokenizer.from(bucketPath)
+        final objectRequest = (GetObjectRequest) GetObjectRequest.builder()
+                .bucket(parsed.bucket)
+                .key(parsed.key)
+                .build()
+
+        final presignRequest = GetObjectPresignRequest.builder()
+                .signatureDuration(blobConfig.urlSignatureDuration)
+                .getObjectRequest(objectRequest)
+                .build()
+
+        final presignedRequest = presigner.presignGetObject(presignRequest);
+        return presignedRequest.url().toExternalForm()
+    }
 
     /**
      * Await for the container layer blob download

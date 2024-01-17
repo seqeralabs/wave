@@ -1,12 +1,12 @@
 package io.seqera.wave.configuration
 
 import java.time.Duration
-import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
 /**
  * Model blob cache settings
  *
@@ -29,14 +29,13 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.status.duration:5d}')
     Duration statusDuration
 
-    @Value('${wave.blobCache.storage.bucket:}')
+    @Value('${wave.blobCache.storage.bucket}')
     String storageBucket
 
     @Nullable
     @Value('${wave.blobCache.storage.endpoint}')
     String storageEndpoint
 
-    @Nullable
     @Value('${wave.blobCache.storage.region}')
     String storageRegion
 
@@ -48,6 +47,7 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.storage.secretKey}')
     String storageSecretKey
 
+    @Nullable
     @Value('${wave.blobCache.baseUrl}')
     String baseUrl
 
@@ -62,6 +62,9 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.requestsMemory}')
     String requestsMemory
 
+    @Nullable
+    @Value('${wave.blobCache.url-signature-duration:30m}')
+    Duration urlSignatureDuration
 
     Map<String,String> getEnvironment() {
         final result = new HashMap<String,String>(10)
@@ -78,4 +81,11 @@ class BlobCacheConfig {
         return result
     }
 
+    String getStorageBucket() {
+        if( !storageBucket )
+            return null
+        return storageBucket.startsWith('s3://')
+                ? storageBucket
+                : 's3://' + storageBucket
+    }
 }

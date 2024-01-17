@@ -1,3 +1,20 @@
+/*
+ *  Wave, containers provisioning service
+ *  Copyright (c) 2024, Seqera Labs
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 package io.seqera.wave.service.blob.impl
 
 import spock.lang.Specification
@@ -7,12 +24,13 @@ import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.blob.BlobCacheInfo
+import io.seqera.wave.test.AwsS3TestContainer
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class BlobCacheServiceImplTest extends Specification {
 
+class BlobCacheServiceImplTest extends Specification implements AwsS3TestContainer{
 
     def 'should get s5cmd cli' () {
         given:
@@ -22,12 +40,12 @@ class BlobCacheServiceImplTest extends Specification {
         when:
         def result = service.s5cmd(route, Mock(BlobCacheInfo))
         then:
-        result == ['s5cmd', '--json', 'pipe', '--acl', 'public-read', 's3://store/blobs/docker.io/v2/library/ubuntu/manifests/sha256:aabbcc']
+        result == ['s5cmd', '--json', 'pipe',  's3://store/blobs/docker.io/v2/library/ubuntu/manifests/sha256:aabbcc']
 
         when:
         result = service.s5cmd(route, BlobCacheInfo.create('http://foo', ['Content-Type':['foo'], 'Cache-Control': ['bar']]))
         then:
-        result == ['s5cmd', '--json', 'pipe', '--acl', 'public-read', '--content-type', 'foo', '--cache-control', 'bar', 's3://store/blobs/docker.io/v2/library/ubuntu/manifests/sha256:aabbcc']
+        result == ['s5cmd', '--json', 'pipe', '--content-type', 'foo', '--cache-control', 'bar', 's3://store/blobs/docker.io/v2/library/ubuntu/manifests/sha256:aabbcc']
 
     }
 
@@ -40,7 +58,7 @@ class BlobCacheServiceImplTest extends Specification {
         when:
         def result = service.s5cmd(route, new BlobCacheInfo())
         then:
-        result == ['s5cmd', '--endpoint-url', 'https://foo.com', '--json', 'pipe', '--acl', 'public-read', 's3://store/blobs/docker.io/v2/library/ubuntu/manifests/sha256:aabbcc']
+        result == ['s5cmd', '--endpoint-url', 'https://foo.com', '--json', 'pipe', 's3://store/blobs/docker.io/v2/library/ubuntu/manifests/sha256:aabbcc']
     }
 
     def 'should get transfer command' () {
@@ -60,7 +78,24 @@ class BlobCacheServiceImplTest extends Specification {
         result == [
                 'sh',
                 '-c',
-                "curl -X GET 'http://foo' | s5cmd --json pipe --acl public-read --content-type something 's3://store/blobs/docker.io/v2/library/ubuntu/manifests/sha256:aabbcc'"
+                "curl -X GET 'http://foo' | s5cmd --json pipe --content-type something 's3://store/blobs/docker.io/v2/library/ubuntu/manifests/sha256:aabbcc'"
         ]
+    }
+
+    def 'should unescape uri' () {
+        given:
+        def config = new BlobCacheConfig( storageBucket: 's3://store/blobs/', storageEndpoint: 'https://foo.com' )
+        def service = new BlobCacheServiceImpl(blobConfig: config)
+
+        expect:
+        service.unescapeUriPath(PATH) == EXPECTED
+
+        where:
+        PATH                        | EXPECTED
+        null                        | null
+        'http:/foo.com/bar'         | 'http:/foo.com/bar'
+        'http:/foo.com/this?that'   | 'http:/foo.com/this?that'
+        'http:/foo.com/x%3Ay%3Az'   | 'http:/foo.com/x:y:z'
+        'http:/foo.com/?x%3Ay%3Az'  | 'http:/foo.com/?x%3Ay%3Az'
     }
 }
