@@ -42,9 +42,17 @@ class AwsS3PresignerFactory {
 
     @Singleton
     S3Presigner s3presigner() {
+        if ( blobConfig.storageEndpoint ) {
+            return S3Presigner.builder()
+                    .region(Region.of(blobConfig.storageRegion))
+                    .credentialsProvider(DefaultCredentialsProvider.create())
+                    .endpointOverride(URI.create(blobConfig.storageEndpoint))
+                    .build()
+        }else{
             return S3Presigner.builder()
                     .region(Region.of(blobConfig.storageRegion))
                     .credentialsProvider(DefaultCredentialsProvider.create())
                     .build()
+        }
     }
 }
