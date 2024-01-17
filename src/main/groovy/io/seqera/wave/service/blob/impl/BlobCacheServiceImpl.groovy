@@ -278,7 +278,6 @@ class BlobCacheServiceImpl implements BlobCacheService {
                 .build()
 
         final presignedRequest = presigner.presignGetObject(presignRequest);
-        log.trace "Presigned URL: [${presignedRequest.url()}]"
         return presignedRequest.url().toExternalForm()
     }
 
