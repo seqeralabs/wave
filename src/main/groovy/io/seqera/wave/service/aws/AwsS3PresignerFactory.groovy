@@ -19,7 +19,6 @@ package io.seqera.wave.service.aws
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Factory
-import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.BlobCacheConfig
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -33,7 +32,6 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner
  */
 
 @Factory
-@Requires(notEnv = 'test')
 @CompileStatic
 class AwsS3PresignerFactory {
 
@@ -42,17 +40,12 @@ class AwsS3PresignerFactory {
 
     @Singleton
     S3Presigner s3presigner() {
+        final builder = S3Presigner.builder()
+                .region(Region.of(blobConfig.storageRegion))
+                .credentialsProvider(DefaultCredentialsProvider.create())
         if ( blobConfig.storageEndpoint ) {
-            return S3Presigner.builder()
-                    .region(Region.of(blobConfig.storageRegion))
-                    .credentialsProvider(DefaultCredentialsProvider.create())
-                    .endpointOverride(URI.create(blobConfig.storageEndpoint))
-                    .build()
-        }else{
-            return S3Presigner.builder()
-                    .region(Region.of(blobConfig.storageRegion))
-                    .credentialsProvider(DefaultCredentialsProvider.create())
-                    .build()
+            builder.endpointOverride(URI.create(blobConfig.storageEndpoint))
         }
+        return builder.build()
     }
 }
