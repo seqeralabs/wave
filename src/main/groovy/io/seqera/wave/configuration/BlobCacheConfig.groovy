@@ -36,7 +36,6 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.storage.endpoint}')
     String storageEndpoint
 
-    @Nullable
     @Value('${wave.blobCache.storage.region}')
     String storageRegion
 
