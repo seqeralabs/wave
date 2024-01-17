@@ -23,7 +23,7 @@ class BlobCacheServiceImplTest2 extends Specification {
         ]
         def ctx = ApplicationContext.run(PROPS)
         def service = ctx.getBean(BlobCacheServiceImpl)
-        def route = RoutePath.v2manifestPath(ContainerCoordinates.parse('library/ubuntu:22.04'))
+        def route = RoutePath.v2manifestPath(ContainerCoordinates.parse(IMAGE))
 
         when:
         def downloadUrl = service.blobDownloadUri(route)
@@ -38,14 +38,16 @@ class BlobCacheServiceImplTest2 extends Specification {
         ctx.close()
 
         where:
-        BUCKET              | BASE_URL              | EX_SCHEME     | EX_HOST       | EX_PATH
-        's3://foo'          | null                  | 'https'       | 'foo.localhost' | '/docker.io/v2/library/ubuntu/manifests/22.04'
-        's3://foo/x/y'      | null                  | 'https'       | 'foo.localhost' | '/x/y/docker.io/v2/library/ubuntu/manifests/22.04'
+        IMAGE                   | BUCKET              | BASE_URL              | EX_SCHEME     | EX_HOST       | EX_PATH
+        'library/ubuntu:22.04'  | 's3://foo'          | null                  | 'https'       | 'foo.localhost' | '/docker.io/v2/library/ubuntu/manifests/22.04'
+        'library/ubuntu:22.04'  | 's3://foo/x/y'      | null                  | 'https'       | 'foo.localhost' | '/x/y/docker.io/v2/library/ubuntu/manifests/22.04'
         and:
-        's3://foo'          | 'http://bar.com'      | 'http'        | 'bar.com'     | '/docker.io/v2/library/ubuntu/manifests/22.04'
-        's3://foo'          | 'https://bar.com'     | 'https'       | 'bar.com'     | '/docker.io/v2/library/ubuntu/manifests/22.04'
-        's3://foo'          | 'https://bar.com/y'   | 'https'       | 'bar.com'     | '/y/docker.io/v2/library/ubuntu/manifests/22.04'
-
+        'library/ubuntu:22.04'  | 's3://foo'          | 'http://bar.com'      | 'http'        | 'bar.com'     | '/docker.io/v2/library/ubuntu/manifests/22.04'
+        'library/ubuntu:22.04'  | 's3://foo'          | 'https://bar.com'     | 'https'       | 'bar.com'     | '/docker.io/v2/library/ubuntu/manifests/22.04'
+        'library/ubuntu:22.04'  | 's3://foo'          | 'https://bar.com/y'   | 'https'       | 'bar.com'     | '/y/docker.io/v2/library/ubuntu/manifests/22.04'
+        and:
+        'library/ubuntu:22.04'  | 's3://foo'          | 'https://bar.com/y'   | 'https'       | 'bar.com'     | '/y/docker.io/v2/library/ubuntu/manifests/22.04'
+        'ubuntu@sha256:32353'   | 's3://foo'          | 'https://bar.com/'    | 'https'       | 'bar.com'     | '/docker.io/v2/library/ubuntu/manifests/sha256:32353'
     }
 
 }

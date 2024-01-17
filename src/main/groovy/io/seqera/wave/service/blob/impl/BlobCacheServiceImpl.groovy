@@ -237,7 +237,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
      */
     protected String blobDownloadUri(RoutePath route) {
         final bucketPath = StringUtils.pathConcat(blobConfig.storageBucket, route.targetPath)
-        final presignedUrl = createPresignedGetUrl(bucketPath)
+        final presignedUrl = createPresignedGetUrl(bucketPath).replaceAll(/%3A/,':')
 
         if( blobConfig.baseUrl ) {
             final p = presignedUrl.indexOf(route.targetPath)
