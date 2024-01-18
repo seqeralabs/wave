@@ -32,6 +32,7 @@ import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.openapi.models.V1ContainerBuilder
 import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1DeleteOptions
+import io.kubernetes.client.openapi.models.V1EnvVar
 import io.kubernetes.client.openapi.models.V1HostPathVolumeSource
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1JobBuilder
@@ -44,6 +45,8 @@ import io.kubernetes.client.openapi.models.V1VolumeMount
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
+import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.SpackConfig
@@ -554,7 +557,7 @@ class K8sServiceImpl implements K8sService {
     /**
      * Creates List of Tolerations
      */
-    List<V1Toleration> buildTolerations(List<K8sTolerationsConfig.Toleration> tolerations){
+    protected List<V1Toleration> buildTolerations(List<K8sTolerationsConfig.Toleration> tolerations){
         if( !tolerations )
             return null;
         V1TolerationBuilder builder = new V1TolerationBuilder();
@@ -567,5 +570,57 @@ class K8sServiceImpl implements K8sService {
                     .build())
         }
         return  v1Tolerations
+    }
+  
+    @Override
+    V1Pod transferContainer(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
+        final spec = transferSpec(name, containerImage, args, blobConfig)
+        return k8sClient
+                .coreV1Api()
+                .createNamespacedPod(namespace, spec, null, null, null,null)
+    }
+
+    V1Pod transferSpec(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
+
+        V1PodBuilder builder = new V1PodBuilder()
+
+        //metadata section
+        builder.withNewMetadata()
+                .withNamespace(namespace)
+                .withName(name)
+                .addToLabels(labels)
+                .endMetadata()
+
+        //spec section
+        def spec = builder
+                .withNewSpec()
+                .withServiceAccount(serviceAccount)
+                .withActiveDeadlineSeconds( blobConfig.transferTimeout.toSeconds() )
+                .withRestartPolicy("Never")
+
+        final requests = new V1ResourceRequirements()
+        if( blobConfig.requestsCpu )
+            requests.putRequestsItem('cpu', new Quantity(blobConfig.requestsCpu))
+        if( blobConfig.requestsMemory )
+            requests.putRequestsItem('memory', new Quantity(blobConfig.requestsMemory))
+
+        //container section
+        spec.addNewContainer()
+                .withName(name)
+                .withImage(containerImage)
+                .withEnv(toEnvList(blobConfig.getEnvironment()))
+                .withArgs(args)
+                .withResources(requests)
+                .endContainer()
+                .endSpec()
+
+        builder.build()
+    }
+
+    protected List<V1EnvVar> toEnvList(Map<String,String> env) {
+        final result = new ArrayList<V1EnvVar>(env.size())
+        for( Map.Entry<String,String> it : env )
+            result.add( new V1EnvVar().name(it.key).value(it.value) )
+        return result
     }
 }
