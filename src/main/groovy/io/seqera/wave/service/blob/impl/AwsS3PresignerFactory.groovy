@@ -15,10 +15,11 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package io.seqera.wave.service.aws
+package io.seqera.wave.service.blob.impl
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Factory
+import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.BlobCacheConfig
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -30,9 +31,9 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-
 @Factory
 @CompileStatic
+@Requires(property = 'wave.blobCache.enabled', value = 'true')
 class AwsS3PresignerFactory {
 
     @Inject
