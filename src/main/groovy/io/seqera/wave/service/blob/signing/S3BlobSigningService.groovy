@@ -1,21 +1,23 @@
 package io.seqera.wave.service.blob.signing
 
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.service.blob.BlobSigningService
 import io.seqera.wave.util.BucketTokenizer
+import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
-
 /**
  * Implements a signed strategy based on AWS s3 pre-signed url
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @Requires(property = 'wave.blobCache.signing-strategy', value = 'aws-presigned-url')
 @Singleton
 @CompileStatic
@@ -26,6 +28,11 @@ class S3BlobSigningService implements BlobSigningService {
 
     @Inject
     private S3Presigner presigner
+
+    @PostConstruct
+    private void init() {
+        log.debug "Creating AWS S3 signing service - config=$blobConfig"
+    }
 
     @Override
     String createSignedUri(String uri) {
