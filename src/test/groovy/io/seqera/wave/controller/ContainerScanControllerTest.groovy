@@ -76,11 +76,11 @@ class ContainerScanControllerTest extends Specification {
         persistenceService.createScanRecord(scanRecord)
 
         when:
-        def req = HttpRequest.GET("/v1alpha1/scans/${scanRecord.id}")
+        def req = HttpRequest.GET("/v1alpha1/scans/${scanRecord.scanId}")
         def res = client.toBlocking().exchange(req, WaveScanRecord)
 
         then:
-        res.body().id == scanRecord.id
+        res.body().scanId == scanRecord.scanId
         res.body().buildId == scanRecord.buildId
     }
 

@@ -174,7 +174,7 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     void createScanRecord(WaveScanRecord scanRecord) {
-        final result = surrealDb.insertScanRecord(authorization, scanRecord.id, scanRecord)
+        final result = surrealDb.insertScanRecord(authorization, scanRecord.scanId, scanRecord)
         log.trace "Scan create result=$result"
     }
 
@@ -184,17 +184,17 @@ class SurrealPersistenceService implements PersistenceService {
 
         // save all vulnerabilities
         for( ScanVulnerability it : vulnerabilities ) {
-            surrealDb.insertScanVulnerability(authorization, it.id, it)
+            surrealDb.insertScanVulnerability(authorization, it.vulnerabilityId, it)
         }
 
         // compose the list of ids
         final ids = vulnerabilities
-                .collect(it-> "wave_scan_vuln:⟨$it.id⟩")
+                .collect(it-> "wave_scan_vuln:⟨$it.vulnerabilityId⟩")
                 .join(', ')
 
         // create the scan record
         final statement = """\
-                                UPDATE wave_scan:${scanRecord.id} 
+                                UPDATE wave_scan:${scanRecord.scanId} 
                                 SET 
                                     status = '${scanRecord.status}',
                                     duration = '${scanRecord.duration}',
@@ -207,9 +207,9 @@ class SurrealPersistenceService implements PersistenceService {
     @Override
     WaveScanRecord loadScanRecord(String scanId) {
         if( !scanId )
-            throw new IllegalArgumentException("Missing 'buildId' argument")
+            throw new IllegalArgumentException("Missing 'scanId' argument")
         final statement = "SELECT * FROM wave_scan:$scanId FETCH vulnerabilities"
-        final json = surrealDb.sqlAsString(getAuthorization(), statement)
+        final json = surrealDb.sqlAsString(authorization, statement)
         final type = new TypeReference<ArrayList<SurrealResult<WaveScanRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(patchDuration(json), type) : null
         final result = data && data[0].result ? data[0].result[0] : null
