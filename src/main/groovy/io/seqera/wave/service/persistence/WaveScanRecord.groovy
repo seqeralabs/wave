@@ -38,7 +38,7 @@ import io.seqera.wave.util.StringUtils
 @EqualsAndHashCode
 @CompileStatic
 class WaveScanRecord {
-    String scanId
+    String id
     String buildId
     Instant startTime
     Duration duration
@@ -48,14 +48,14 @@ class WaveScanRecord {
     /* required by jackson deserialization - do not remove */
     WaveScanRecord() {}
 
-    WaveScanRecord(String scanId, String buildId, Instant startTime) {
-        this.scanId = StringUtils.surrealId(scanId)
+    WaveScanRecord(String id, String buildId, Instant startTime) {
+        this.id = StringUtils.surrealId(id)
         this.buildId = buildId
         this.startTime = startTime
     }
 
-    WaveScanRecord(String scanId, String buildId, Instant startTime, Duration duration, String status, List<ScanVulnerability> vulnerabilities) {
-        this.scanId = StringUtils.surrealId(scanId)
+    WaveScanRecord(String id, String buildId, Instant startTime, Duration duration, String status, List<ScanVulnerability> vulnerabilities) {
+        this.id = StringUtils.surrealId(id)
         this.buildId = buildId
         this.startTime = startTime
         this.duration = duration
@@ -65,8 +65,8 @@ class WaveScanRecord {
                 : List.<ScanVulnerability>of()
     }
 
-    WaveScanRecord(String scanId, ScanResult scanResult) {
-        this.scanId = StringUtils.surrealId(scanId)
+    WaveScanRecord(String id, ScanResult scanResult) {
+        this.id = StringUtils.surrealId(id)
         this.buildId = scanResult.buildId
         this.startTime = scanResult.startTime
         this.duration = scanResult.duration
@@ -76,7 +76,7 @@ class WaveScanRecord {
                 : List.<ScanVulnerability>of()
     }
 
-    void setScanId(String id) {
-        this.scanId = StringUtils.surrealId(id)
+    void setId(String id) {
+        this.id = StringUtils.surrealId(id)
     }
 }

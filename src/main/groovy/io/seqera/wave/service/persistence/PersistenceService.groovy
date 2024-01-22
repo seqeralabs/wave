@@ -115,7 +115,7 @@ interface PersistenceService {
             throw new NotFoundException("No scan report exists with id: ${scanId}")
 
         return ScanResult.create(
-                scanRecord.scanId,
+                scanRecord.id,
                 scanRecord.buildId,
                 scanRecord.startTime,
                 scanRecord.duration,

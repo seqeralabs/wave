@@ -174,7 +174,7 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     void createScanRecord(WaveScanRecord scanRecord) {
-        final result = surrealDb.insertScanRecord(authorization, scanRecord.scanId, scanRecord)
+        final result = surrealDb.insertScanRecord(authorization, scanRecord)
         log.trace "Scan create result=$result"
     }
 
@@ -184,17 +184,17 @@ class SurrealPersistenceService implements PersistenceService {
 
         // save all vulnerabilities
         for( ScanVulnerability it : vulnerabilities ) {
-            surrealDb.insertScanVulnerability(authorization, it.vulnerabilityId, it)
+            surrealDb.insertScanVulnerability(authorization, it)
         }
 
         // compose the list of ids
         final ids = vulnerabilities
-                .collect(it-> "wave_scan_vuln:⟨$it.vulnerabilityId⟩")
+                .collect(it-> "wave_scan_vuln:⟨$it.id⟩")
                 .join(', ')
 
         // create the scan record
         final statement = """\
-                                UPDATE wave_scan:${scanRecord.scanId} 
+                                UPDATE wave_scan:${scanRecord.id} 
                                 SET 
                                     status = '${scanRecord.status}',
                                     duration = '${scanRecord.duration}',

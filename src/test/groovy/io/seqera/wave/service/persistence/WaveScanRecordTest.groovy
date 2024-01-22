@@ -66,7 +66,7 @@ class WaveScanRecordTest extends Specification {
         def scanRecord = new WaveScanRecord(scanId, scanResult)
 
         then:
-        scanRecord.scanId == scanId
+        scanRecord.id == scanId
         scanRecord.buildId == buildId
         scanRecord.vulnerabilities[0] == scanVulnerability
     }
