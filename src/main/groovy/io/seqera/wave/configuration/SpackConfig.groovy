@@ -61,7 +61,7 @@ class SpackConfig {
     /**
      * The container image used for Spack builds
      */
-    @Value('${wave.build.spack.builderImage:`spack/ubuntu-jammy:v0.20.0`}')
+    @Value('${wave.build.spack.builderImage:`spack/ubuntu-jammy:v0.20.3`}')
     private String builderImage
 
     /**
