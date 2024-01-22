@@ -34,10 +34,10 @@ import io.seqera.wave.core.RoutePath
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.BlobCacheService
+import io.seqera.wave.service.blob.BlobSigningService
 import io.seqera.wave.service.blob.BlobStore
 import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.blob.TransferTimeoutException
-import io.seqera.wave.util.BucketTokenizer
 import io.seqera.wave.util.Escape
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.StringUtils
@@ -45,9 +45,6 @@ import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
-import software.amazon.awssdk.services.s3.model.GetObjectRequest
-import software.amazon.awssdk.services.s3.presigner.S3Presigner
-import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
 import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
 /**
  * Implements cache for container image layer blobs
@@ -80,7 +77,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
     private TransferStrategy transferStrategy
 
     @Inject
-    private S3Presigner presigner
+    private BlobSigningService signingService
 
     @Inject
     private HttpClientConfig httpConfig
@@ -229,15 +226,6 @@ class BlobCacheServiceImpl implements BlobCacheService {
         StringUtils.pathConcat(blobConfig.storageBucket, route.targetPath)
     }
 
-    protected String unescapeUriPath(String uri) {
-        if( !uri )
-            return null
-        final p = uri.indexOf('?')
-        if( p==-1 )
-            return URLDecoder.decode(uri, 'UTF-8')
-        final base = uri.substring(0,p)
-        return URLDecoder.decode(base, 'UTF-8') + uri.substring(p)
-    }
 
     /**
      * The HTTP URI from there the cached layer blob is going to be downloaded
@@ -247,7 +235,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
      */
     protected String blobDownloadUri(RoutePath route) {
         final bucketPath = StringUtils.pathConcat(blobConfig.storageBucket, route.targetPath)
-        final presignedUrl = unescapeUriPath(createPresignedGetUrl(bucketPath))
+        final presignedUrl = signingService.createSignedUri(bucketPath)
 
         if( blobConfig.baseUrl ) {
             final p = presignedUrl.indexOf(route.targetPath)
@@ -259,27 +247,6 @@ class BlobCacheServiceImpl implements BlobCacheService {
             return presignedUrl
     }
 
-    /**
-     *  Create a pre-signed URL to download an object in a subsequent GET request.
-     *  @param s3 bucket name
-     *  @param key in the s3 bucket
-     *  @return pre signed URL
-     */
-    private String createPresignedGetUrl(String bucketPath) {
-        final parsed = BucketTokenizer.from(bucketPath)
-        final objectRequest = (GetObjectRequest) GetObjectRequest.builder()
-                .bucket(parsed.bucket)
-                .key(parsed.key)
-                .build()
-
-        final presignRequest = GetObjectPresignRequest.builder()
-                .signatureDuration(blobConfig.urlSignatureDuration)
-                .getObjectRequest(objectRequest)
-                .build()
-
-        final presignedRequest = presigner.presignGetObject(presignRequest);
-        return presignedRequest.url().toExternalForm()
-    }
 
     /**
      * Await for the container layer blob download
