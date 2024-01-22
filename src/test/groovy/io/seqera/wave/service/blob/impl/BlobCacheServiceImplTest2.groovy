@@ -21,6 +21,7 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
         and:
         def PROPS = [
                 'wave.blobCache.enabled': 'true',
+                'wave.blobCache.signing-strategy': 'aws-presigned-url',
                 'wave.blobCache.storage.bucket': BUCKET,
                 'wave.blobCache.baseUrl': BASE_URL,
                 'wave.blobCache.storage.region': 'eu-west-1',
