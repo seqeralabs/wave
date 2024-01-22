@@ -21,7 +21,7 @@ import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignReques
 @Requires(property = 'wave.blobCache.signing-strategy', value = 'aws-presigned-url')
 @Singleton
 @CompileStatic
-class S3BlobSigningService implements BlobSigningService {
+class AwsS3BlobSigningService implements BlobSigningService {
 
     @Inject
     private BlobCacheConfig blobConfig

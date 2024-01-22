@@ -5,11 +5,11 @@ import spock.lang.Specification
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class S3BlobSigningServiceTest extends Specification {
+class AwsS3BlobSigningServiceTest extends Specification {
 
     def 'should unescape uri' () {
         given:
-        def service = new S3BlobSigningService()
+        def service = new AwsS3BlobSigningService()
 
         expect:
         service.unescapeUriPath(PATH) == EXPECTED
