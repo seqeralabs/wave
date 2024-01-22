@@ -56,4 +56,46 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
         'ubuntu@sha256:32353'   | 's3://foo'          | 'https://bar.com/'    | 'https'       | 'bar.com'     | '/docker.io/v2/library/ubuntu/manifests/sha256:32353'
     }
 
+
+    @Unroll
+    def 'should create service' () {
+        given:
+        String testEndpoint = "https://${getAwsS3HostName()}:${getAwsS3Port()}"
+        and:
+        def PROPS = [
+                'wave.blobCache.enabled': 'true',
+                'wave.blobCache.signing-strategy': 'cloudflare-waf-token',
+                'wave.blobCache.cloudflare.secret-key': 'foo',
+                'wave.blobCache.cloudflare.lifetime': '1h',
+                'wave.blobCache.storage.bucket': BUCKET,
+                'wave.blobCache.baseUrl': BASE_URL,
+                'wave.blobCache.storage.region': 'eu-west-1',
+                'wave.blobCache.storage.endpoint': testEndpoint
+        ]
+        def ctx = ApplicationContext.run(PROPS)
+        def service = ctx.getBean(BlobCacheServiceImpl)
+        def route = RoutePath.v2manifestPath(ContainerCoordinates.parse(IMAGE))
+
+        when:
+        def result = service.blobDownloadUri(route)
+        then:
+        def uri = URI.create(result)
+        uri.scheme == EX_SCHEME
+        uri.host == EX_HOST
+        uri.path == EX_PATH
+        uri.query.startsWith('verify=')
+
+        cleanup:
+        ctx.close()
+
+        where:
+        IMAGE                   | BUCKET              | BASE_URL              | EX_SCHEME     | EX_HOST       | EX_PATH
+        'library/ubuntu:22.04'  | 's3://foo'          | 'http://bar.com'      | 'http'        | 'bar.com'     | '/docker.io/v2/library/ubuntu/manifests/22.04'
+        'library/ubuntu:22.04'  | 's3://foo'          | 'https://bar.com'     | 'https'       | 'bar.com'     | '/docker.io/v2/library/ubuntu/manifests/22.04'
+        'library/ubuntu:22.04'  | 's3://foo'          | 'https://bar.com/y'   | 'https'       | 'bar.com'     | '/y/docker.io/v2/library/ubuntu/manifests/22.04'
+        and:
+        'library/ubuntu:22.04'  | 's3://foo'          | 'https://bar.com/y'   | 'https'       | 'bar.com'     | '/y/docker.io/v2/library/ubuntu/manifests/22.04'
+        'ubuntu@sha256:32353'   | 's3://foo'          | 'https://bar.com/'    | 'https'       | 'bar.com'     | '/docker.io/v2/library/ubuntu/manifests/sha256:32353'
+    }
+
 }

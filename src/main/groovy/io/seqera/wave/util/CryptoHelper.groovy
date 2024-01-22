@@ -30,4 +30,8 @@ class CryptoHelper {
         return Base64.getEncoder().encodeToString(hashBytes);
     }
 
+    static String computeCloudflareWafToken(URI uri, long now, String secret) {
+        final message = uri.path + now.toString()
+        return computeHmacSha256(message, secret)
+    }
 }
