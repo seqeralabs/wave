@@ -330,9 +330,7 @@ class ContainerTokenControllerTest extends Specification {
         given:
         def validation = new ValidationServiceImpl()
         def pairing = Mock(PairingService)
-        def channel = Mock(PairingChannel) {
-            canHandle(_, _) >> false
-        }
+        def channel = Mock(PairingChannel)
         def controller = new ContainerTokenController(validationService: validation, pairingService: pairing, pairingChannel: channel)
         def msg
 
@@ -407,9 +405,7 @@ class ContainerTokenControllerTest extends Specification {
         def registeredUri = 'ftp://127.0.0.1'
         def validation = new ValidationServiceImpl()
         def pairing = Mock(PairingService)
-        def channel = Mock(PairingChannel) {
-            canHandle('tower', registeredUri) >> true
-        }
+        def channel = Mock(PairingChannel)
         def controller = new ContainerTokenController(validationService: validation, pairingService: pairing, pairingChannel: channel)
         def msg
 

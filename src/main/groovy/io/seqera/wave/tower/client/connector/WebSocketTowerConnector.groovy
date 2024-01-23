@@ -41,10 +41,6 @@ class WebSocketTowerConnector extends TowerConnector {
     @Inject
     private PairingChannel channel
 
-    boolean isEndpointRegistered(String endpoint) {
-        return channel.canHandle(TOWER_SERVICE, endpoint)
-    }
-
     @Override
     CompletableFuture<ProxyHttpResponse> sendAsync(String endpoint, ProxyHttpRequest request) {
         return channel
