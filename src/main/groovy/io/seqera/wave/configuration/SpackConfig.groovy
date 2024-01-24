@@ -67,7 +67,7 @@ class SpackConfig {
     /**
      * The container image used for Spack container
      */
-    @Value('${wave.build.spack.runnerImage:`ubuntu:22.04`}')
+    @Value('${wave.build.spack.runnerImage:`ubuntu:jammy`}')
     private String runnerImage
 
     String getCacheBucket() {
