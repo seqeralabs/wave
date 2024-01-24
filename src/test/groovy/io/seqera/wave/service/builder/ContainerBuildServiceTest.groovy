@@ -274,7 +274,7 @@ class ContainerBuildServiceTest extends Specification {
         1* spack.getCacheBucket() >> 's3://bucket/cache'
         1* spack.getSecretMountPath() >> '/mnt/key'
         1* spack.getBuilderImage() >> 'spack-builder:2.0'
-        1* spack.getRunnerImage() >> 'ubuntu:22.04'
+        1* spack.getRunnerImage() >> 'ubuntu:jammy'
         and:
         result.contains('FROM spack-builder:2.0 as builder')
         result.contains('spack config add packages:all:target:[x86_64]')
@@ -303,7 +303,7 @@ class ContainerBuildServiceTest extends Specification {
         1* spack.getCacheBucket() >> 's3://bucket/cache'
         1* spack.getSecretMountPath() >> '/mnt/key'
         1* spack.getBuilderImage() >> 'spack-builder:2.0'
-        1* spack.getRunnerImage() >> 'ubuntu:22.04'
+        1* spack.getRunnerImage() >> 'ubuntu:jammy'
         and:
         result.contains('Bootstrap: docker\n' +
                 'From: spack-builder:2.0\n' +
