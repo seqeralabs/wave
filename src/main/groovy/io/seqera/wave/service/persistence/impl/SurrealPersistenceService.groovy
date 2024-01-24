@@ -29,11 +29,12 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
-import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.persistence.legacy.SurrealLegacyService
+import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -62,6 +63,9 @@ class SurrealPersistenceService implements PersistenceService {
     @Nullable
     @Value('${surrealdb.init-db}')
     private Boolean initDb
+
+    @Inject
+    SurrealLegacyService legacy
 
     @EventListener
     void onApplicationStartup(ApplicationStartupEvent event) {
@@ -118,6 +122,8 @@ class SurrealPersistenceService implements PersistenceService {
         final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(patchDuration(json), type) : null
         final result = data && data[0].result ? data[0].result[0] : null
+        if( !result )
+            return legacy.loadBuild(buildId)
         return result
     }
 
@@ -170,6 +176,8 @@ class SurrealPersistenceService implements PersistenceService {
         final type = new TypeReference<ArrayList<SurrealResult<WaveContainerRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null
+        if( !result )
+            return legacy.loadContainerRequest(token)
         return result
     }
 
@@ -213,6 +221,8 @@ class SurrealPersistenceService implements PersistenceService {
         final type = new TypeReference<ArrayList<SurrealResult<WaveScanRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(patchDuration(json), type) : null
         final result = data && data[0].result ? data[0].result[0] : null
+        if( !result )
+            legacy.loadScanRecord(scanId)
         return result
     }
 
