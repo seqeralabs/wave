@@ -116,16 +116,9 @@ class SurrealPersistenceService implements PersistenceService {
         final query = "select * from wave_build where buildId = '$buildId'"
         final json = surrealDb.sqlAsString(getAuthorization(), query)
         final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
-        final data= json ? JacksonHelper.fromJson(patchDuration(json), type) : null
+        final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null
         return result
-    }
-
-    static protected String patchDuration(String value) {
-        if( !value )
-            return value
-        // Yet another SurrealDB bug: it wraps number values with double quotes as a string
-        value.replaceAll(/"duration":"(\d+\.\d+)"/,'"duration":$1')
     }
 
     @Override
@@ -174,8 +167,26 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     void createScanRecord(WaveScanRecord scanRecord) {
-        final result = surrealDb.insertScanRecord(authorization, scanRecord)
+
+        def result = (List) surrealDb.getScanRecord(authorization,"wave_scan:⟨$scanRecord.id⟩" ).get("result")
+
+        if(result && !result.isEmpty())
+            result = surrealDb.updateScanRecord(authorization, scanRecord)
+        else
+            result = surrealDb.insertScanRecord(authorization, scanRecord)
+
         log.trace "Scan create result=$result"
+    }
+
+    private void createScanVulnerability(ScanVulnerability scanVulnerability){
+        def result = (List) surrealDb.getScanVulnerability(authorization, "wave_scan_vuln:⟨$scanVulnerability.id⟩").get("result")
+
+        if( result && !result.isEmpty())
+            result = surrealDb.updateScanVulnerability(authorization, scanVulnerability)
+        else
+            result = surrealDb.insertScanVulnerability(authorization, scanVulnerability)
+
+        log.trace "Scan vulnerability create result=$result"
     }
 
     @Override
@@ -183,8 +194,8 @@ class SurrealPersistenceService implements PersistenceService {
         final vulnerabilities = scanRecord.vulnerabilities ?: List.<ScanVulnerability>of()
 
         // save all vulnerabilities
-        for( ScanVulnerability it : vulnerabilities ) {
-            surrealDb.insertScanVulnerability(authorization, it)
+        for( def vulnerability : vulnerabilities ) {
+            createScanVulnerability(vulnerability)
         }
 
         // compose the list of ids
@@ -211,7 +222,7 @@ class SurrealPersistenceService implements PersistenceService {
         final statement = "SELECT * FROM wave_scan:$scanId FETCH vulnerabilities"
         final json = surrealDb.sqlAsString(authorization, statement)
         final type = new TypeReference<ArrayList<SurrealResult<WaveScanRecord>>>() {}
-        final data= json ? JacksonHelper.fromJson(patchDuration(json), type) : null
+        final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null
         return result
     }

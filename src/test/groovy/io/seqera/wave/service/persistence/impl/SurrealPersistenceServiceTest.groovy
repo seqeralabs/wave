@@ -226,15 +226,6 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         loaded == record
     }
 
-    def 'should patch duration field' () {
-        expect:
-        SurrealPersistenceService.patchDuration('foo') == 'foo'
-        SurrealPersistenceService.patchDuration('"duration":3.00') == '"duration":3.00'
-        SurrealPersistenceService.patchDuration('"duration":"3.00"') == '"duration":3.00'
-        SurrealPersistenceService.patchDuration('aaa,"duration":"300.1234",zzz') == 'aaa,"duration":300.1234,zzz'
-    }
-
-
     def 'should load a request record' () {
         given:
         def persistence = applicationContext.getBean(SurrealPersistenceService)
@@ -323,4 +314,20 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         result2 == scanRecord2
     }
 
+    def 'should update existing scan record' () {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def NOW = Instant.now()
+        def SCAN_ID = 'a1'
+        def BUILD_ID = '100'
+        persistence.createScanRecord(new WaveScanRecord(SCAN_ID, BUILD_ID, NOW))
+        when:
+        def NOW2 = Instant.now()
+        persistence.createScanRecord(new WaveScanRecord(SCAN_ID, BUILD_ID, NOW2))
+        def res = persistence.loadScanRecord(SCAN_ID)
+        then:
+        res.id == SCAN_ID
+        res.buildId == BUILD_ID
+        res.startTime == NOW2
+    }
 }
