@@ -16,32 +16,47 @@ ENV \
   AWS_ROLE_ARN=${AWS_ROLE_ARN} \
   AWS_WEB_IDENTITY_TOKEN_FILE=${AWS_WEB_IDENTITY_TOKEN_FILE}
 
-RUN mkdir -p /opt/spack-env \
-&&  sed -i -e 's;compilers:;compilers::;' \
-         -e 's;^ *flags: *{};    flags:\n      cflags: -O3\n      cxxflags: -O3\n      fflags: -O3;' \
-         /root/.spack/linux/compilers.yaml \
-&& cd /opt/spack-env \
-&& spack config add config:install_tree:/opt/software \
-&& spack config add concretizer:unify:true \
-&& spack config add concretizer:reuse:true \
-&& spack config add packages:all:target:[{{spack_arch}}] \
-&& printf "  view: /opt/view\n" >> /opt/spack-env/spack.yaml
+# Set up Spack environment
+RUN cd /opt/spack-env \
+&& sed -e 's;compilers:;compilers::;' \
+       -e 's;^ *flags: *{};    flags:\n      cflags: -O3\n      cxxflags: -O3\n      fflags: -O3;' \
+       /root/.spack/linux/compilers.yaml > compilers.yaml \
+&& sed -i '/^spack:/a\  include: [compilers.yaml]' spack.yaml \
+&& spack -e . config add config:install_tree:/opt/software \
+&& spack -e . config add concretizer:unify:true \
+&& spack -e . config add concretizer:reuse:true \
+&& spack -e . config add packages:all:target:[{{spack_arch}}] \
+&& spack -e . config add packages:all:providers:blas:[openblas] \
+&& spack -e . config add packages:all:providers:mkl:[intel-oneapi-mkl] \
+&& spack -e . config add packages:binutils:variants:"+ld +gold +headers +libiberty ~nls" \
+&& spack -e . config add packages:elfutils:variants:"+bzip2 ~nls +xz" \
+&& spack -e . config add packages:hdf5:variants:"+fortran +hl +shared" \
+&& spack -e . config add packages:libunwind:variants:"+pic +xz" \
+&& spack -e . config add packages:mesa:variants:~llvm \
+&& spack -e . config add packages:mesa18:variants:~llvm \
+&& spack -e . config add packages:ncurses:variants:+termlib \
+&& spack -e . config add packages:openblas:variants:threads=openmp \
+&& spack -e . config add packages:tbb:require:intel-tbb \
+&& spack -e . config add packages:xz:variants:+pic \
+&& spack -e . env view enable /opt/view
+# Above, additional defaults for packages are from e4s/ and aws-isc/ in
+# https://github.com/spack/spack/blob/develop/share/spack/gitlab/cloud_pipelines/stacks/
 
 # Install packages, clean afterward, finally strip binaries
 RUN cd /opt/spack-env \
 && fingerprint="$(spack gpg trust {{spack_key_file}} 2>&1 | tee /dev/stderr | sed -nr "s/^gpg: key ([0-9A-F]{16}): secret key imported$/\1/p")" \
-&& spack mirror add seqera-spack {{spack_cache_bucket}} \
-&& spack mirror add binary_mirror  https://binaries.spack.io/releases/develop \
+&& spack -e . mirror add seqera_spack {{spack_cache_bucket}} \
+&& spack -e . mirror add binary_mirror  https://binaries.spack.io/releases/develop \
 && spack buildcache keys --install --trust \
 && spack -e . concretize -f \
-&& spack --env . install \
+&& spack -e . install \
 && spack -e . buildcache push --allow-root --key "$fingerprint" {{spack_cache_bucket}} \
 && spack gc -y \
-&& ( find -L /opt/._view/* -type f -exec readlink -f '{}' \; | \
+&& ( ( find -L /opt/._view/* -type f -exec readlink -f '{}' \; | \
     xargs file -i | \
     grep 'charset=binary' | \
     grep 'x-executable\|x-archive\|x-sharedlib' | \
-    awk -F: '{print $1}' | xargs strip -s ) || true
+    awk -F: '{print $1}' | xargs strip -s ) || true )
 
 RUN cd /opt/spack-env && \
     spack env activate --sh -d . >> /opt/spack-env/z10_spack_environment.sh && \
