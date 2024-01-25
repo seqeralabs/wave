@@ -38,7 +38,7 @@ import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
- * Implements a persistince service based based on SurrealDB
+ * Implements a persistence service based based on SurrealDB
  *
  * @author : jorge <jorge.aguilera@seqera.io>
  *

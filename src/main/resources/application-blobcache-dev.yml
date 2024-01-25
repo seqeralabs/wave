@@ -1,0 +1,6 @@
+wave:
+  blobCache:
+    enabled: true
+    baseUrl: "https://nextflow-ci.s3.eu-west-1.amazonaws.com/blobs"
+    storage:
+      bucket: "s3://nextflow-ci/blobs"
