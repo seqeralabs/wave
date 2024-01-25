@@ -237,13 +237,13 @@ Wave offers a feature to provide a cache for docker blobs, which improves the pe
 
 - The **`wave.blobCache.storage.bucket`** variable contains the name of cloudflare or s3 bucket. for example, `s3://wave-blob-cache`. (*Optional: false*)
 
-- The **`wave.blobCache.storage.region`** variable specify the AWS region where the bucket is created. (*Optional: false*)
+- The **`wave.blobCache.storage.region`** variable specifies the AWS region where the bucket is created. (*Optional: false*)
 
-- The **`wave.blobCache.storage.endpoint`** variable contains the URL for storage location. Which will be used in download or upload blob. (*Optional: true*)
+- The **`wave.blobCache.storage.endpoint`** variable contains the URL for storage location. Which will be used in download or upload of the blob's binary. (*Optional: true*)
 
-- The **`wave.blobCache.storage.accessKey`** variable contains access key (part of credentials) to access the resources of service used for caching. (*Optional: true*)
+- The **`wave.blobCache.storage.accessKey`** variable contains access key (part of credentials) to access the resources of the service used for caching. (*Optional: true*)
 
-- The **`wave.blobCache.storage.secretKey`** variable contains secret key (part of credentials) to access the resources of service used for caching. (*Optional: true*)
+- The **`wave.blobCache.storage.secretKey`** variable contains secret key (part of credentials) to access the resources of the service used for caching. (*Optional: true*)
 
 - The **`wave.blobCache.requestsCpu`** variable specifies the amount of [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to k8s pod used for blob binaries transfer. (*Optional: true*)
 
@@ -253,4 +253,4 @@ Wave offers a feature to provide a cache for docker blobs, which improves the pe
 
 Email id to send emails on the behave of wave
 
-- The **`mail.from`** variable is used to specify the sender's email address for Wave notifications. This email address serves as the point of origin for any emails sent by Wave, providing a recognizable source for notifications. This setting is crucial for configuring the sender identity when Wave sends email notifications. (*Optional: false.*)
+- The **`mail.from`** variable is used to specifies the sender's email address for Wave notifications. This email address serves as the point of origin for any emails sent by Wave, providing a recognizable source for notifications. This setting is crucial for configuring the sender identity when Wave sends email notifications. (*Optional: false.*)
