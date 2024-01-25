@@ -63,25 +63,25 @@ Below are the standard format for known registries, but you can change registry 
 
 ## HTTP client configuration
 
-- The **`wave.httpclient.connectTimeout`** sets the connection timeout for the HTTP client. It's default value is `20s`. (*Optional: false*)
+- The **`wave.httpclient.connectTimeout`** sets the connection timeout for the HTTP client. Its default value is `20s`. (*Optional: false*)
 
-- The **`wave.httpclient.retry.delay`** sets the delay for HTTP client retries. It's default value is `1s`. (*Optional: false*)
+- The **`wave.httpclient.retry.delay`** sets the delay for HTTP client retries. Its default value is `1s`. (*Optional: false*)
 
-- The **`wave.httpclient.retry.attempts`** defines the number of HTTP client retry attempts. It's default value is `5`. (*Optional: false*)
+- The **`wave.httpclient.retry.attempts`** defines the number of HTTP client retry attempts. Its default value is `5`. (*Optional: false*)
 
 - The **`wave.httpclient.retry.maxDelay`** sets the maximum delay for HTTP client retries. (*Optional: true*)
 
-- The **`wave.httpclient.retry.jitter`** introduces jitter for HTTP client retries. It's default value is `0.25`. (*Optional: false*)
+- The **`wave.httpclient.retry.jitter`** introduces jitter for HTTP client retries. Its default value is `0.25`. (*Optional: false*)
 
-- The **`wave.httpclient.retry.multiplier`** defines the multiplier for HTTP client retries. It's default value is `1.0`. (*Optional: false*)
+- The **`wave.httpclient.retry.multiplier`** defines the multiplier for HTTP client retries. Its default value is `1.0`. (*Optional: false*)
 
-- The **`micronaut.http.services.stream-client.read-timeout`** sets the read timeout for the streaming HTTP client. It's default value is `30s`. (*Optional: false*)
+- The **`micronaut.http.services.stream-client.read-timeout`** sets the read timeout for the streaming HTTP client. Its default value is `30s`. (*Optional: false*)
 
-- The **`micronaut.http.services.stream-client.read-idle-timeout`** configures the read idle timeout for the streaming HTTP client. It's default value is `120s`. (*Optional: false*)
+- The **`micronaut.http.services.stream-client.read-idle-timeout`** configures the read idle timeout for the streaming HTTP client. Its default value is `120s`. (*Optional: false*)
 
 ## Container build process configuration
 
-- The **`wave.build.timeout`** variable sets the timeout for the build process. It's default value is `5m` (5 minutes), providing a reasonable time frame for the build operation. (*Optional: false*)
+- The **`wave.build.timeout`** variable sets the timeout for the build process. Its default value is `5m` (5 minutes), providing a reasonable time frame for the build operation. (*Optional: false*)
 
 - The **`wave.build.workspace`** defines the path to the directory used by Wave to store artifacts such as Dockerfiles, Trivy cache for scan, Kaniko context, authentication configuration files, etc. For example, `/efs/wave/build`. (*Optional: false*)
 
@@ -97,9 +97,9 @@ Below are the standard format for known registries, but you can change registry 
 
 - The **`wave.build.cache`** determines the Docker container repository used to cache layers of images built by Wave. (*Optional: false*)
 
-- The **`wave.build.status.delay`** sets the delay between build status checks. It's default value is `5s`, providing a reasonable interval for status checks. (*Optional: false*)
+- The **`wave.build.status.delay`** sets the delay between build status checks. Its default value is `5s`, providing a reasonable interval for status checks. (*Optional: false*)
 
-- The **`wave.build.status.duration`** defines the duration for build status checks. It's default value is `1d` (1 day), indicating how long the system should check the build status. (*Optional: false*)
+- The **`wave.build.status.duration`** defines the duration for build status checks. Its default value is `1d` (1 day), indicating how long the system should check the build status. (*Optional: false*)
 
 - The **`wave.build.public`** indicates whether the Docker container repository is public. If set to true, Wave freeze will prefer this public repository over `wave.build.repo`. (*Optional: true*)
 
@@ -171,9 +171,9 @@ Wave scan process uses the same k8s configuration of the build process except fo
 
 Certainly! Here's the information for the provided variables in a natural and descriptive paragraph format:
 
-- The **`wave.scan.k8s.resources.requests.cpu`** variable specifies the amount of [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocate to Wave scan processes. For instance, you can set it to `2` or `1500Mi` (1.5 CPU cores). (*Optional: true*)
+- The **`wave.scan.k8s.resources.requests.cpu`** variable specifies the amount of [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to Wave scan processes. For instance, you can set it to `2` or `1500Mi` (1.5 CPU cores). (*Optional: true*)
 
-- The **`wave.scan.k8s.resources.requests.memory`** variable specifies the amount of [memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocate to Wave scan processes. For example, it could be set to `3Gi` or `2000Mi` (3 or 2000 Megabytes). (*Optional: true*)
+- The **`wave.scan.k8s.resources.requests.memory`** variable specifies the [memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to Wave scan processes. For example, it could be set to `3Gi` or `2000Mi` (3 or 2000 Megabytes). (*Optional: true*)
 
 ## Rate limit configuration
 
@@ -213,25 +213,25 @@ Certainly! Here's the information for the provided variables in a natural and de
 
 ## Blob Cache configuration
 
-Wave offers a feature to provide cache for docker blobs, which improves the performance of supplying blobs to client. If you use, Wave can also use k8s pod to delegate the transfer task for scalability purposes. 
+Wave offers a feature to provide a cache for docker blobs, which improves the performance of supplying blobs to the client. If you use Kubernetes, Wave can also use the k8s pod to delegate the transfer task for scalability.
 
 - The **`wave.blobCache.enabled`** variable determines whether to enable the blob cache. It is `false` by default. (*Optional: false*)
 
-- The **`wave.blobCache.s5cmdImage`** variable specifies the docker image of [s5cmd tool] (https://github.com/peak/s5cmd). This tool is used to upload blob's binaries to s3 bucket. Default image used by wae is `cr.seqera.io/public/wave/s5cmd:v2.2.2`. (*Optional: false*)
+- The **`wave.blobCache.s5cmdImage`** variable specifies the docker image of [s5cmd tool](https://github.com/peak/s5cmd). This tool is used to upload blob binaries to s3 bucket. the default image used by Wave is `cr.seqera.io/public/wave/s5cmd:v2.2.2`. (*Optional: false*)
 
-- The **`wave.blobCache.status.delay`** variable defines the delay in checkin the status of transfer of blob's binary from repository to cache. It's default value is `5s`. (*Optional: false*)
+- The **`wave.blobCache.status.delay`** variable defines the time delay in checking the status of the transfer of the blob's binary from the repository to the cache. Its default value is `5s`. (*Optional: false*)
 
-- The **`wave.blobCache.status.duration`** variable defines time for which Wave will store the blob's binary in cache. It's default value is `5d`. (*Optional: false*)
+- The **`wave.blobCache.status.duration`** variable defines time for which Wave will store the blob's binary in cache. Its default value is `5d`. (*Optional: false*)
 
-- The **`wave.blobCache.timeout`** variable contains timeout for blob's binary transfer after which Wave will through `TransferTimeoutException` exception. It's default value is `5m`. (*Optional: false*)
+- The **`wave.blobCache.timeout`** variable contains timeout for blob's binary transfer after which Wave will through `TransferTimeoutException` exception. Its default value is `5m`. (*Optional: false*)
 
-- The **`wave.blobCache.baseUrl`** variable defines the URL, which will override the base url (part of URL before the blob path) of blob sent to the end client. (*Optional: true*)
+- The **`wave.blobCache.baseUrl`** variable defines the URL, which will override the base URL (part of URL before the blob path) of blob sent to the end client. (*Optional: true*)
 
 - The **`wave.blobCache.signing-strategy`** variable defines the URL signing strategy for different services. Currently, Wave offers it for aws s3 and cloudflare and you can use the respective values to enable them `aws-presigned-url` and `cloudflare-waf-token`. (*Optional: false*) 
 
 - The **`wave.blobCache.cloudflare.lifetime`** variable defines the validity of the cloud flare WAF token. (*Optional: false*)
 
-- The **`wave.blobCache.cloudflare.urlSignatureDuration`** variable defines the validity of the AWS s3 URL signature. It's default value is 30m. (*Optional: false*)
+- The **`wave.blobCache.cloudflare.urlSignatureDuration`** variable defines the validity of the AWS s3 URL signature. Its default value is 30m. (*Optional: false*)
 
 - The **`wave.blobCache.cloudflare.secret-key`** variable contains the [cloudflare secret](https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/) to create WAF token. (*Optional: false*)
 
@@ -245,9 +245,9 @@ Wave offers a feature to provide cache for docker blobs, which improves the perf
 
 - The **`wave.blobCache.storage.secretKey`** variable contains secret key (part of credentials) to access the resources of service used for caching. (*Optional: true*)
 
-- The **`wave.blobCache.requestsCpu`** variable specifies the amount of [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocate to k8s pod used for blob's binaries transfer. (*Optional: true*)
+- The **`wave.blobCache.requestsCpu`** variable specifies the amount of [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to k8s pod used for blob binaries transfer. (*Optional: true*)
 
-- The **`wave.blobCache.requestsMemory`** variable specifies the amount of [memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocate to k8s pod used for blob's binaries transfer. (*Optional: true*)
+- The **`wave.blobCache.requestsMemory`** variable specifies the [memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to k8s pod used for blob binaries transfer. (*Optional: true*)
 
 ## Email configuration
 
