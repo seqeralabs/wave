@@ -171,9 +171,9 @@ Wave scan process uses the same k8s configuration of the build process except fo
 
 Certainly! Here's the information for the provided variables in a natural and descriptive paragraph format:
 
-- The **`wave.scan.k8s.resources.requests.cpu`** variable specifies the amount of [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) to allocate to Wave scan processes. For instance, you can set it to `2` or `1500Mi` (1.5 CPU cores). (*Optional: true*)
+- The **`wave.scan.k8s.resources.requests.cpu`** variable specifies the amount of [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocate to Wave scan processes. For instance, you can set it to `2` or `1500Mi` (1.5 CPU cores). (*Optional: true*)
 
-- The **`wave.scan.k8s.resources.requests.memory`** variable determines the amount of [memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) to allocate to Wave scan processes. For example, it could be set to `3Gi` or `2000Mi` (3 or 2000 Megabytes). (*Optional: true*)
+- The **`wave.scan.k8s.resources.requests.memory`** variable specifies the amount of [memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocate to Wave scan processes. For example, it could be set to `3Gi` or `2000Mi` (3 or 2000 Megabytes). (*Optional: true*)
 
 ## Rate limit configuration
 
@@ -210,6 +210,44 @@ Certainly! Here's the information for the provided variables in a natural and de
 - The **`surrealdb.password`** variable holds the password used for authentication when connecting to the Surreal database. It can be set using `${SURREALDB_PASSWORD}` environment variable. (*Optional: false*)
 
 - The **`surrealdb.init-db`** variable determines whether to initiate the Surreal database using the specified values for `user`, `password`, `url`, `ns`, and `db`. (*Optional: true*)
+
+## Blob Cache configuration
+
+Wave offers a feature to provide cache for docker blobs, which improves the performance of supplying blobs to client. If you use, Wave can also use k8s pod to delegate the transfer task for scalability purposes. 
+
+- The **`wave.blobCache.enabled`** variable determines whether to enable the blob cache. It is `false` by default. (*Optional: false*)
+
+- The **`wave.blobCache.s5cmdImage`** variable specifies the docker image of [s5cmd tool] (https://github.com/peak/s5cmd). This tool is used to upload blob's binaries to s3 bucket. Default image used by wae is `cr.seqera.io/public/wave/s5cmd:v2.2.2`. (*Optional: false*)
+
+- The **`wave.blobCache.status.delay`** variable defines the delay in checkin the status of transfer of blob's binary from repository to cache. It's default value is `5s`. (*Optional: false*)
+
+- The **`wave.blobCache.status.duration`** variable defines time for which Wave will store the blob's binary in cache. It's default value is `5d`. (*Optional: false*)
+
+- The **`wave.blobCache.timeout`** variable contains timeout for blob's binary transfer after which Wave will through `TransferTimeoutException` exception. It's default value is `5m`. (*Optional: false*)
+
+- The **`wave.blobCache.baseUrl`** variable defines the URL, which will override the base url (part of URL before the blob path) of blob sent to the end client. (*Optional: true*)
+
+- The **`wave.blobCache.signing-strategy`** variable defines the URL signing strategy for different services. Currently, Wave offers it for aws s3 and cloudflare and you can use the respective values to enable them `aws-presigned-url` and `cloudflare-waf-token`. (*Optional: false*) 
+
+- The **`wave.blobCache.cloudflare.lifetime`** variable defines the validity of the cloud flare WAF token. (*Optional: false*)
+
+- The **`wave.blobCache.cloudflare.urlSignatureDuration`** variable defines the validity of the AWS s3 URL signature. It's default value is 30m. (*Optional: false*)
+
+- The **`wave.blobCache.cloudflare.secret-key`** variable contains the [cloudflare secret](https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/) to create WAF token. (*Optional: false*)
+
+- The **`wave.blobCache.storage.bucket`** variable contains the name of cloudflare or s3 bucket. for example, `s3://wave-blob-cache`. (*Optional: false*)
+
+- The **`wave.blobCache.storage.region`** variable specify the AWS region where the bucket is created. (*Optional: false*)
+
+- The **`wave.blobCache.storage.endpoint`** variable contains the URL for storage location. Which will be used in download or upload blob. (*Optional: true*)
+
+- The **`wave.blobCache.storage.accessKey`** variable contains access key (part of credentials) to access the resources of service used for caching. (*Optional: true*)
+
+- The **`wave.blobCache.storage.secretKey`** variable contains secret key (part of credentials) to access the resources of service used for caching. (*Optional: true*)
+
+- The **`wave.blobCache.requestsCpu`** variable specifies the amount of [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocate to k8s pod used for blob's binaries transfer. (*Optional: true*)
+
+- The **`wave.blobCache.requestsMemory`** variable specifies the amount of [memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocate to k8s pod used for blob's binaries transfer. (*Optional: true*)
 
 ## Email configuration
 
