@@ -1,8 +1,9 @@
 ---
-surrealdb :
-  ns : ${SURREALDB_NS:seqera}
-  db : ${SURREALDB_DB:wave}
-  url: ${SURREALDB_URL:`http://surrealdb:8000`}
-  user: "${SURREALDB_USER:root}"
-  password: "${SURREALDB_PASSWORD:root}"
+surreal:
+  default:
+    ns : "seqera"
+    db : "wave"
+    url: "http://surrealdb:8000"
+    user: "root"
+    password: "root"
 ...

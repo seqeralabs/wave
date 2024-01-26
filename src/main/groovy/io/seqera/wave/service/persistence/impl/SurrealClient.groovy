@@ -41,9 +41,9 @@ import reactor.core.publisher.Flux
 @Requires(env='surrealdb')
 @CompileStatic
 @Header(name = "Content-type", value = "application/json")
-@Header(name = "ns", value = '${surrealdb.ns}')
-@Header(name = "db", value = '${surrealdb.db}')
-@Client(value = '${surrealdb.url}')
+@Header(name = "ns", value = '${surreal.default.ns}')
+@Header(name = "db", value = '${surreal.default.db}')
+@Client(value = '${surreal.default.url}')
 @Retryable(
         delay = '${wave.surreal.retry.delay:1s}',
         maxDelay = '${wave.surreal.retry.maxDelay:10s}',

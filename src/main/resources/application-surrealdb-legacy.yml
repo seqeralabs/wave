@@ -1,8 +1,9 @@
 ---
-surrealdb-legacy:
-  ns : ${SURREALDB_LEGACY_NS:seqera}
-  db : ${SURREALDB_LEGACY_DB:wave}
-  url: ${SURREALDB_LEGACY_URL:`http://surrealdb:8000`}
-  user: "${SURREALDB_LEGACY_USER:root}"
-  password: "${SURREALDB_LEGACY_PASSWORD:root}"
+surreal:
+  legacy:
+    ns: "seqera"
+    db: "wave"
+    url: "http://surrealdb:8000"
+    user: "root"
+    password: "root"
 ...

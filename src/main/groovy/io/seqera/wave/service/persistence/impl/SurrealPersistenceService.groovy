@@ -54,14 +54,14 @@ class SurrealPersistenceService implements PersistenceService {
     @Inject
     private SurrealClient surrealDb
 
-    @Value('${surrealdb.user}')
+    @Value('${surreal.default.user}')
     private String user
 
-    @Value('${surrealdb.password}')
+    @Value('${surreal.default.password}')
     private String password
 
     @Nullable
-    @Value('${surrealdb.init-db}')
+    @Value('${surreal.default.init-db}')
     private Boolean initDb
 
     @Inject

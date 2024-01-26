@@ -34,12 +34,12 @@ import io.seqera.wave.service.persistence.impl.RetryOnIOException
  * @author : Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  *
  */
-@Requires(property = 'surrealdb-legacy.url')
+@Requires(property = 'surreal.legacy.url')
 @CompileStatic
 @Header(name = "Content-type", value = "application/json")
-@Header(name = "ns", value = '${surrealdb-legacy.ns}')
-@Header(name = "db", value = '${surrealdb-legacy.db}')
-@Client(value = '${surrealdb-legacy.url}')
+@Header(name = "ns", value = '${surreal.legacy.ns}')
+@Header(name = "db", value = '${surreal.legacy.db}')
+@Client(value = '${surreal.legacy.url}')
 @Retryable(
         delay = '${wave.surreal-legacy.retry.delay:1s}',
         maxDelay = '${wave.surreal-legacy.retry.maxDelay:10s}',

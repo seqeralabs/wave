@@ -37,7 +37,7 @@ import jakarta.inject.Singleton
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
-@Requires(property = 'surrealdb-legacy.url')
+@Requires(property = 'surreal.legacy.url')
 @Primary
 @Slf4j
 @Singleton
@@ -47,10 +47,10 @@ class SurrealLegacyService  {
     @Inject
     private SurrealLegacyClient surrealDb
 
-    @Value('${surrealdb-legacy.user}')
+    @Value('${surreal.legacy.user}')
     private String user
 
-    @Value('${surrealdb-legacy.password}')
+    @Value('${surreal.legacy.password}')
     private String password
 
 
