@@ -321,9 +321,11 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def SCAN_ID = 'a1'
         def BUILD_ID = '100'
         persistence.createScanRecord(new WaveScanRecord(SCAN_ID, BUILD_ID, NOW))
+        sleep 100
         when:
         def NOW2 = Instant.now()
         persistence.createScanRecord(new WaveScanRecord(SCAN_ID, BUILD_ID, NOW2))
+        sleep 100
         def res = persistence.loadScanRecord(SCAN_ID)
         then:
         res.id == SCAN_ID

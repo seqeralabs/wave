@@ -168,14 +168,23 @@ class SurrealPersistenceService implements PersistenceService {
 
     void createScanRecord(WaveScanRecord scanRecord) {
 
-        def result = (List) surrealDb.getScanRecord(authorization,"wave_scan:⟨$scanRecord.id⟩" ).get("result")
+        def record = (List) surrealDb.getScanRecord(authorization,"wave_scan:⟨$scanRecord.id⟩" ).get("result")
 
-        if(result && !result.isEmpty())
-            result = surrealDb.updateScanRecord(authorization, scanRecord)
+        def result
+        if(record && !record.isEmpty())
+            result = surrealDb.updateScanRecordAsync(authorization, scanRecord)
         else
-            result = surrealDb.insertScanRecord(authorization, scanRecord)
+            result = surrealDb.insertScanRecordAsync(authorization, scanRecord)
 
-        log.trace "Scan create result=$result"
+        result.subscribe({ res ->
+            log.trace "Scan create result=$res"
+        }, { error ->
+            def msg = error.message
+            if (error instanceof HttpClientResponseException) {
+                msg += ":\n $error.response.body"
+            }
+            log.error "Error saving scan record ${msg}\n${scanRecord}", error
+        })
     }
 
     private void createScanVulnerability(ScanVulnerability scanVulnerability){
