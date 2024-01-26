@@ -66,7 +66,7 @@ class SurrealPersistenceService implements PersistenceService {
 
     @Inject
     @Nullable
-    SurrealLegacyService legacy
+    private SurrealLegacyService legacy
 
     @EventListener
     void onApplicationStartup(ApplicationStartupEvent event) {
