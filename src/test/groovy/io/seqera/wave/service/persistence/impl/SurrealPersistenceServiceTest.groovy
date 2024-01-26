@@ -57,14 +57,14 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
     def setup() {
         restartDb()
         applicationContext = ApplicationContext.run([
-                        surrealdb: [
+                        surreal:['default': [
                                 user     : 'root',
                                 password : 'root',
                                 ns       : 'test',
                                 db       : 'test',
                                 url      : surrealDbURL,
                                 'init-db': false
-                        ]]
+                        ]]]
         , 'test', 'surrealdb')
     }
 
