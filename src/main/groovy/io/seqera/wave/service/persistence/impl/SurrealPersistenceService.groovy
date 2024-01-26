@@ -216,7 +216,7 @@ class SurrealPersistenceService implements PersistenceService {
         final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null
         if( !result && legacy )
-            legacy.loadScanRecord(scanId)
+            return legacy.loadScanRecord(scanId)
         return result
     }
 
