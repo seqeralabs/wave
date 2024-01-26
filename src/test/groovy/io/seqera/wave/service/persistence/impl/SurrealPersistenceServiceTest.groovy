@@ -226,15 +226,6 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         loaded == record
     }
 
-    def 'should patch duration field' () {
-        expect:
-        SurrealPersistenceService.patchDuration('foo') == 'foo'
-        SurrealPersistenceService.patchDuration('"duration":3.00') == '"duration":3.00'
-        SurrealPersistenceService.patchDuration('"duration":"3.00"') == '"duration":3.00'
-        SurrealPersistenceService.patchDuration('aaa,"duration":"300.1234",zzz') == 'aaa,"duration":300.1234,zzz'
-    }
-
-
     def 'should load a request record' () {
         given:
         def persistence = applicationContext.getBean(SurrealPersistenceService)
