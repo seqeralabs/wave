@@ -37,7 +37,7 @@ import jakarta.inject.Singleton
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
-@Requires(env='surrealdb')
+@Requires(property = 'surrealdb-legacy.url')
 @Primary
 @Slf4j
 @Singleton

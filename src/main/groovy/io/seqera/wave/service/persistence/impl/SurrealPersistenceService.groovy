@@ -65,6 +65,7 @@ class SurrealPersistenceService implements PersistenceService {
     private Boolean initDb
 
     @Inject
+    @Nullable
     SurrealLegacyService legacy
 
     @EventListener
@@ -122,7 +123,7 @@ class SurrealPersistenceService implements PersistenceService {
         final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(patchDuration(json), type) : null
         final result = data && data[0].result ? data[0].result[0] : null
-        if( !result )
+        if( !result && legacy )
             return legacy.loadBuild(buildId)
         return result
     }
@@ -176,7 +177,7 @@ class SurrealPersistenceService implements PersistenceService {
         final type = new TypeReference<ArrayList<SurrealResult<WaveContainerRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null
-        if( !result )
+        if( !result && legacy )
             return legacy.loadContainerRequest(token)
         return result
     }
@@ -221,7 +222,7 @@ class SurrealPersistenceService implements PersistenceService {
         final type = new TypeReference<ArrayList<SurrealResult<WaveScanRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(patchDuration(json), type) : null
         final result = data && data[0].result ? data[0].result[0] : null
-        if( !result )
+        if( !result && legacy )
             legacy.loadScanRecord(scanId)
         return result
     }

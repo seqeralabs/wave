@@ -28,12 +28,13 @@ import io.micronaut.http.client.annotation.Client
 import io.micronaut.retry.annotation.Retryable
 import io.seqera.wave.service.persistence.impl.RetryOnIOException
 /**
- * Declarative http client for SurrealDB
+ * Declarative http client for SurrealDB. This is only meant to be used for backward
+ * compatibility with Surreal pre-1.0 version
  *
- * @author : jorge <jorge.aguilera@seqera.io>
+ * @author : Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  *
  */
-@Requires(env='surrealdb')
+@Requires(property = 'surrealdb-legacy.url')
 @CompileStatic
 @Header(name = "Content-type", value = "application/json")
 @Header(name = "ns", value = '${surrealdb-legacy.ns}')
@@ -46,10 +47,6 @@ import io.seqera.wave.service.persistence.impl.RetryOnIOException
         multiplier = '${wave.surreal-legacy.retry.multiplier:1.5}',
         predicate = RetryOnIOException )
 interface SurrealLegacyClient {
-
-
-    @Post("/sql")
-    Map<String, Object> sqlAsMap(@Header String authorization, @Body String body)
 
     @Post("/sql")
     String sqlAsString(@Header String authorization, @Body String body)
