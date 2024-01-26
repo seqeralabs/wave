@@ -24,7 +24,6 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
-import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
@@ -48,15 +47,11 @@ class SurrealLegacyService  {
     @Inject
     private SurrealLegacyClient surrealDb
 
-    @Value('${surrealdb.user}')
+    @Value('${surrealdb-legacy.user}')
     private String user
 
-    @Value('${surrealdb.password}')
+    @Value('${surrealdb-legacy.password}')
     private String password
-
-    @Nullable
-    @Value('${surrealdb.init-db}')
-    private Boolean initDb
 
 
     private String getAuthorization() {
