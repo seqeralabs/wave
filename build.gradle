@@ -183,8 +183,3 @@ task buildInfo { doLast {
 buildInfo.dependsOn processResources
 compileGroovy.dependsOn buildInfo
 
-asciidoctorj {
-    modules {
-        diagram.use()
-    }
-}
