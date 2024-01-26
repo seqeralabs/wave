@@ -216,7 +216,7 @@ class SurrealPersistenceService implements PersistenceService {
     @Override
     WaveScanRecord loadScanRecord(String scanId) {
         if( !scanId )
-            throw new IllegalArgumentException("Missing 'buildId' argument")
+            throw new IllegalArgumentException("Missing 'scanId' argument")
         final statement = "SELECT * FROM wave_scan:$scanId FETCH vulnerabilities"
         final json = surrealDb.sqlAsString(getAuthorization(), statement)
         final type = new TypeReference<ArrayList<SurrealResult<WaveScanRecord>>>() {}
