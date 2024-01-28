@@ -121,6 +121,10 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"com.sun.crypto.provider.HmacCore$HmacSHA384",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
   "name":"com.sun.crypto.provider.TlsKeyMaterialGenerator",
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
@@ -256,6 +260,9 @@
 },
 {
   "name":"java.security.SecurityPermission"
+},
+{
+  "name":"java.security.cert.CertStoreParameters"
 },
 {
   "name":"java.security.interfaces.ECPrivateKey"
@@ -448,7 +455,15 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"sun.security.provider.certpath.CollectionCertStore",
+  "methods":[{"name":"<init>","parameterTypes":["java.security.cert.CertStoreParameters"] }]
+},
+{
   "name":"sun.security.provider.certpath.PKIXCertPathValidator",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.certpath.SunCertPathBuilder",
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
