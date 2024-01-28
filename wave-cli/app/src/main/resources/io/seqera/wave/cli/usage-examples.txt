@@ -15,6 +15,9 @@ Examples:
   # Build a container based on Conda lock file served via prefix.dev service
   wave --conda-package https://prefix.dev/envs/pditommaso/wave/conda-lock.yml
 
+  # Build a container based on Conda packages
+  wave --pip-package numpy --pip-package pandas
+
   # Build a container based on Spack packages
   wave --spack-package cowsay
 
