@@ -53,6 +53,7 @@ import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.exchange.RegistryErrorResponse
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
+import io.seqera.wave.service.blob.BlobCacheService
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.storage.DigestKey
 import io.seqera.wave.storage.DigestStore
@@ -74,23 +75,44 @@ import reactor.core.publisher.Mono
 @ExecuteOn(TaskExecutors.IO)
 class RegistryProxyController {
 
-    @Inject HttpClientAddressResolver addressResolver
-    @Inject RegistryProxyService proxyService
-    @Inject Storage storage
-    @Inject RouteHandler routeHelper
-    @Inject ContainerBuildService containerBuildService
-    @Inject @Nullable RateLimiterService rateLimiterService
-    @Inject ErrorHandler errorHandler
+    @Inject
+    private HttpClientAddressResolver addressResolver
 
-    @Inject MeterRegistry meterRegistry
-    @Inject HttpClientConfig httpConfig
+    @Inject
+    private RegistryProxyService proxyService
+
+    @Inject
+    private Storage storage
+
+    @Inject
+    private RouteHandler routeHelper
+
+    @Inject
+    private ContainerBuildService containerBuildService
+
+    @Inject
+    @Nullable
+    private RateLimiterService rateLimiterService
+
+    @Inject
+    private ErrorHandler errorHandler
+
+    @Inject
+    private MeterRegistry meterRegistry
+
+    @Inject
+    private HttpClientConfig httpConfig
+
+    @Inject
+    @Nullable
+    private BlobCacheService blobCacheService
 
     @Value('${wave.cache.digestStore.maxWeightMb:350}')
     int cacheMaxWeightMb
 
-    private static final int _1MB = 1024*1024
+    private static final int _1MB = 1024 * 1024
 
-    private LoadingCache<DigestKey,byte[]> digestsCache
+    private LoadingCache<DigestKey, byte[]> digestsCache
 
     @PostConstruct
     private void init() {
@@ -98,7 +120,7 @@ class RegistryProxyController {
         // initialize the cache builder
         digestsCache = CacheBuilder
                 .newBuilder()
-                .maximumWeight(cacheMaxWeightMb  * _1MB)
+                .maximumWeight(cacheMaxWeightMb * _1MB)
                 .weigher(new Weigher<DigestKey, byte[]>() {
                     @Override
                     int weigh(DigestKey key, byte[] value) {
@@ -248,6 +270,10 @@ class RegistryProxyController {
             log.debug "Returning ${route.type} from repository: '${route.getTargetContainer()}'"
             return fromContentResponse(resp, route)
         }
+        else if( blobCacheService ) {
+            log.debug "Forwarding ${route.type} cache request '${route.getTargetContainer()}'"
+            return fromDownloadResponse(resp, route, headers)
+        }
         else {
             log.debug "Pulling stream from repository: '${route.getTargetContainer()}'"
             return fromStreamResponse(resp, route, headers)
@@ -331,6 +357,24 @@ class RegistryProxyController {
                     'Connection', 'close' ) // <-- make sure to return connection: close header otherwise docker hangs
         return HttpResponse
                 .status(HttpStatus.valueOf(resp.statusCode))
+                .headers(toMutableHeaders(resp.headers, override))
+    }
+
+    MutableHttpResponse<?> fromDownloadResponse(final DelegateResponse resp, RoutePath route, Map<String, List<String>> headers) {
+        final blobCache = blobCacheService .retrieveBlobCache(route, headers)
+        log.debug "Blob cache $blobCache"
+        if( !blobCache.succeeded() ) {
+            final String msg = blobCache.logs ?: "Unable to cache blob ${blobCache.locationUri}"
+            return badRequest(msg)
+        }
+
+        final override = Map.of(
+                'Location', blobCache.locationUri,   // <-- the location can be relative to the origin host, override it to always return a fully qualified URI
+                'Content-Length', '0',      // <-- make sure to set content length to zero, some services return some content even with the redirect header that's discarded by this response
+                'Connection', 'close' )     // <-- make sure to return connection: close header otherwise docker hangs
+
+        HttpResponse
+                .status(HttpStatus.TEMPORARY_REDIRECT)
                 .headers(toMutableHeaders(resp.headers, override))
     }
 
