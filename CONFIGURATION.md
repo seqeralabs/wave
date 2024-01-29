@@ -41,9 +41,7 @@ Below are the standard format for known registries, but you can change registry 
 
 **Note**: Container registry credentials can be defined in [`config.yml`](./config.yml) too. These configurations are important for the wave authentication to the repositories used to push or pull artifacts.
 
-- The **`wave.arch`** variable specifies the architecture for Wave. The default is `x86_64`. *Mandatory*.
-
-- The **`wave.registries.default`** variable sets the default Docker registry for Wave. The default is `docker.io`, and it represents the Docker Hub. *Mandatory*.
+- The **`wave.registries.default`** variable sets the default Docker registry for Wave. The default is `docker.io`, and it represents the Docker Hub. *Optional*.
 
 - The **`wave.registries.docker.io.username`** is the Docker Hub username for authentication. It can be set using `${DOCKER_USER}` environment variable. *Optional*.
 
@@ -63,33 +61,33 @@ Below are the standard format for known registries, but you can change registry 
 
 ## HTTP client configuration
 
-- The **`wave.httpclient.connectTimeout`** sets the connection timeout for the HTTP client. Its default value is `20s`. *Mandatory*.
+- The **`wave.httpclient.connectTimeout`** sets the connection timeout for the HTTP client. Its default value is `20s`. *Optional*.
 
-- The **`wave.httpclient.retry.delay`** sets the delay for HTTP client retries. Its default value is `1s`. *Mandatory*.
+- The **`wave.httpclient.retry.delay`** sets the delay for HTTP client retries. Its default value is `1s`. *Optional*.
 
-- The **`wave.httpclient.retry.attempts`** defines the number of HTTP client retry attempts. Its default value is `5`. *Mandatory*.
+- The **`wave.httpclient.retry.attempts`** defines the number of HTTP client retry attempts. Its default value is `5`. *Optional*.
 
 - The **`wave.httpclient.retry.maxDelay`** sets the maximum delay for HTTP client retries. *Optional*.
 
-- The **`wave.httpclient.retry.jitter`** introduces jitter for HTTP client retries. Its default value is `0.25`. *Mandatory*.
+- The **`wave.httpclient.retry.jitter`** introduces jitter for HTTP client retries. Its default value is `0.25`. *Optional*.
 
-- The **`wave.httpclient.retry.multiplier`** defines the multiplier for HTTP client retries. Its default value is `1.0`. *Mandatory*.
+- The **`wave.httpclient.retry.multiplier`** defines the multiplier for HTTP client retries. Its default value is `1.0`. *Optional*.
 
-- The **`micronaut.http.services.stream-client.read-timeout`** sets the read timeout for the streaming HTTP client. Its default value is `30s`. *Mandatory*.
+- The **`micronaut.http.services.stream-client.read-timeout`** sets the read timeout for the streaming HTTP client. Its default value is `30s`. *Optional*.
 
-- The **`micronaut.http.services.stream-client.read-idle-timeout`** configures the read idle timeout for the streaming HTTP client. Its default value is `120s`. *Mandatory*.
+- The **`micronaut.http.services.stream-client.read-idle-timeout`** configures the read idle timeout for the streaming HTTP client. Its default value is `120s`. *Optional*.
 
 ## Container build process configuration
 
-- The **`wave.build.timeout`** variable sets the timeout for the build process. Its default value is `5m` (5 minutes), providing a reasonable time frame for the build operation. *Mandatory*.
+- The **`wave.build.timeout`** variable sets the timeout for the build process. Its default value is `5m` (5 minutes), providing a reasonable time frame for the build operation. *Optional*.
 
 - The **`wave.build.workspace`** defines the path to the directory used by Wave to store artifacts such as Dockerfiles, Trivy cache for scan, Kaniko context, authentication configuration files, etc. For example, `/efs/wave/build`. *Mandatory*.
 
 - The **`wave.build.cleanup`** determines the cleanup strategy after the build process. Options include `OnSuccess`, meaning cleanup occurs only if the build is successful. *Optional*.
 
-- The **`wave.build.kaniko-image`** specifies the [Kaniko](https://github.com/GoogleContainerTools/kaniko) Docker image used in the Wave build process. The default is `gcr.io/kaniko-project/executor:v1.19.2`. *Mandatory*.
+- The **`wave.build.kaniko-image`** specifies the [Kaniko](https://github.com/GoogleContainerTools/kaniko) Docker image used in the Wave build process. The default is `gcr.io/kaniko-project/executor:v1.19.2`. *Optional*.
 
-- The **`wave.build.singularity-image`** sets the [Singularity](https://quay.io/repository/singularity/singularity?tab=tags) image used in the build process. The default is `quay.io/singularity/singularity:v3.11.4-slim`. *Mandatory*.
+- The **`wave.build.singularity-image`** sets the [Singularity](https://quay.io/repository/singularity/singularity?tab=tags) image used in the build process. The default is `quay.io/singularity/singularity:v3.11.4-slim`. *Optional*.
 
 - The **`wave.build.singularity-image-arm64`** is the ARM64 version of the Singularity image for the build process. The default is `quay.io/singularity/singularity:v3.11.4-slim-arm64`. *Optional*.
 
@@ -97,13 +95,13 @@ Below are the standard format for known registries, but you can change registry 
 
 - The **`wave.build.cache`** determines the Docker container repository used to cache layers of images built by Wave. *Mandatory*.
 
-- The **`wave.build.status.delay`** sets the delay between build status checks. Its default value is `5s`, providing a reasonable interval for status checks. *Mandatory*.
+- The **`wave.build.status.delay`** sets the delay between build status checks. Its default value is `5s`, providing a reasonable interval for status checks. *Optional*.
 
-- The **`wave.build.status.duration`** defines the duration for build status checks. Its default value is `1d` (1 day), indicating how long the system should check the build status. *Mandatory*.
+- The **`wave.build.status.duration`** defines the duration for build status checks. Its default value is `1d` (1 day), indicating how long the system should check the build status. *Optional*.
 
 - The **`wave.build.public`** indicates whether the Docker container repository is public. If set to true, Wave freeze will prefer this public repository over `wave.build.repo`. *Optional*.
 
-- The **`wave.build.compress-caching`** determines whether to compress cache layers produced by the build process. The default is `true`, enabling compression for more efficient storage. *Mandatory*.
+- The **`wave.build.compress-caching`** determines whether to compress cache layers produced by the build process. The default is `true`, enabling compression for more efficient storage. *Optional*.
 
 
 ### Spack configuration for wave build process
@@ -116,7 +114,7 @@ Spack configuration consists of the path of its secret file, the mount path for 
 
 - The **`wave.build.spack.secretMountPath`** sets the mount path inside the Spack Docker image for the PGP private key specified by `wave.build.spack.secretKeyFile`. For instance `/var/seqera/spack/key`. Indicating where the PGP private key should be mounted inside the Spack Docker image. *Mandatory*.
 
-- The **`wave.build.spack.cacheBucket`** specifies the S3 bucket for the Spack binary cache, for example, `s3://spack-binarycache`. This is an optional setting, allowing you to configure a specific S3 bucket for the Spack binary cache. *Optional*.
+- The **`wave.build.spack.cacheBucket`** specifies the S3 bucket for the Spack binary cache, for example, `s3://spack-binarycache`. *Optional*.
 
 ### Build process logs configuration
 
@@ -126,7 +124,7 @@ This configuration specifies attributes for the persistence of the logs fetched 
 
 - The **`wave.build.logs.prefix`** sets the prefix to be used for build process log files in the specified S3 bucket. *Optional*.
 
-- The **`wave.build.logs.maxLength`** determines the maximum number of bytes that can be read from a log file. If a log file exceeds this limit, it will be truncated. The default value is `100000` (100 KB). *Mandatory*.
+- The **`wave.build.logs.maxLength`** determines the maximum number of bytes that can be read from a log file. If a log file exceeds this limit, it will be truncated. The default value is `100000` (100 KB). *Optional*.
 
 
 ### Kubernetes configuration for container build process
@@ -156,11 +154,11 @@ Kubernetes configuration has options specific for k8s, and most of them, except 
 
 Scan process configuration lets the user provide a [Trivy docker image](https://hub.docker.com/r/aquasec/trivy) with any tag and severity levels of vulnerability that need to be scanned.
 
-- The **`wave.scan.enabled`** variable determines whether vulnerability scanning is enabled or disabled. If set to `true`, vulnerability scanning is enabled; if set to `false`, it is disabled. *Mandatory*.
+- The **`wave.scan.enabled`** variable determines whether vulnerability scanning is enabled or disabled. It's `false` by default and can be enabled by changing it to `true`. *Optional*.
 
 - The **`wave.scan.severity`** variable specifies the [severity levels](https://aquasecurity.github.io/trivy/v0.22.0/vulnerability/examples/filter/) to report in vulnerability scanning. For example, you can configure it with `MEDIUM,HIGH,CRITICAL` to include vulnerabilities of these severity levels in the scan report. *Optional*.
 
-- The **`wave.scan.image.name`** variable sets the [Trivy docker image](https://hub.docker.com/r/aquasec/trivy) used for container security scanning. The default value is `aquasec/trivy:0.47.0`. This is the image that Wave will use to perform vulnerability scanning on containers. *Mandatory*.
+- The **`wave.scan.image.name`** variable sets the [Trivy docker image](https://hub.docker.com/r/aquasec/trivy) used for container security scanning. The default value is `aquasec/trivy:0.47.0`. This is the image that Wave will use to perform vulnerability scanning on containers. *Optional*.
 
 
 ### Kubernetes configuration for Wave scan process
@@ -215,15 +213,15 @@ Certainly! Here's the information for the provided variables in a natural and de
 
 Wave offers a feature to provide a cache for Docker blobs, which improves the performance of supplying blobs to the client. If you use Kubernetes, Wave can also use the k8s pod to delegate the transfer task for scalability.
 
-- The **`wave.blobCache.enabled`** variable determines whether to enable the blob cache. It is `false` by default. *Mandatory*.
+- The **`wave.blobCache.enabled`** variable determines whether to enable the blob cache. It is `false` by default. *Optional*.
 
-- The **`wave.blobCache.s5cmdImage`** variable specifies the Docker image that supplies the [s5cmd tool](https://github.com/peak/s5cmd). This tool is used to upload blob binaries to the S3 bucket. The default image used by Wave is `cr.seqera.io/public/wave/s5cmd:v2.2.2`. *Mandatory*.
+- The **`wave.blobCache.s5cmdImage`** variable specifies the Docker image that supplies the [s5cmd tool](https://github.com/peak/s5cmd). This tool is used to upload blob binaries to the S3 bucket. The default image used by Wave is `cr.seqera.io/public/wave/s5cmd:v2.2.2`. *Optional*.
 
-- The **`wave.blobCache.status.delay`** variable defines the time delay in checking the status of the transfer of the blob binary from the repository to the cache. Its default value is `5s`. *Mandatory*.
+- The **`wave.blobCache.status.delay`** variable defines the time delay in checking the status of the transfer of the blob binary from the repository to the cache. Its default value is `5s`. *Optional*.
 
-- The **`wave.blobCache.status.duration`** variable defines the time for which Wave will store the blob binary in cache. Its default value is `5d`. *Mandatory*.
+- The **`wave.blobCache.status.duration`** variable defines the time for which Wave will store the blob binary in cache. Its default value is `5d`. *Optional*.
 
-- The **`wave.blobCache.timeout`** variable contains timeout for blob binary transfer, after which Wave will throw a `TransferTimeoutException` exception. Its default value is `5m`. *Mandatory*.
+- The **`wave.blobCache.timeout`** variable contains timeout for blob binary transfer, after which Wave will throw a `TransferTimeoutException` exception. Its default value is `5m`. *Optional*.
 
 - The **`wave.blobCache.baseUrl`** variable defines the URL, which will override the base URL (part of URL before the blob path) of blobs sent to the end client. *Optional*.
 
@@ -231,7 +229,7 @@ Wave offers a feature to provide a cache for Docker blobs, which improves the pe
 
 - The **`wave.blobCache.cloudflare.lifetime`** variable defines the validity of the cloud flare WAF token. *Mandatory*.
 
-- The **`wave.blobCache.cloudflare.urlSignatureDuration`** variable defines the validity of the AWS S3 URL signature. Its default value is `30m`. *Mandatory*.
+- The **`wave.blobCache.cloudflare.urlSignatureDuration`** variable defines the validity of the AWS S3 URL signature. Its default value is `30m`. *Optional*.
 
 - The **`wave.blobCache.cloudflare.secret-key`** variable contains the [Cloudflare secret](https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/) to create the WAF token. *Mandatory*.
 
