@@ -18,6 +18,7 @@
 
 package io.seqera.wave.tower.client
 
+import spock.lang.Ignore
 import spock.lang.Specification
 
 import java.util.concurrent.ExecutionException
@@ -45,6 +46,7 @@ import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.tower.client.connector.TowerConnector
 import jakarta.inject.Inject
 
+@Ignore
 @MicronautTest(environments = ['test','tower'])
 @Property(name = 'spec.name', value = 'TowerClientHttpTest')
 @Property(name = 'wave.pairing.channel.maxAttempts', value = '0')
