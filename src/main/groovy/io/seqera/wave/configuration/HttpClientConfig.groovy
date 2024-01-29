@@ -56,9 +56,12 @@ class HttpClientConfig implements Retryable.Config {
     @Value('${wave.httpclient.retry.jitter:0.25}')
     double retryJitter
 
+    @Value('${wave.httpclient.streamThreshold:65536}')
+    private int streamThreshold
+
     @PostConstruct
     private void init() {
-        log.info "Http client config: connectTimeout=$connectTimeout; retryAttempts=$retryAttempts; retryDelay=$retryDelay; retryMaxDelay=$retryMaxDelay; retryMultiplier=$retryMultiplier"
+        log.info "Http client config: connectTimeout=$connectTimeout; retryAttempts=$retryAttempts; retryDelay=$retryDelay; retryMaxDelay=$retryMaxDelay; retryMultiplier=$retryMultiplier; streamThreshold=$streamThreshold"
     }
 
     Duration getDelay() { retryDelay }
@@ -69,4 +72,5 @@ class HttpClientConfig implements Retryable.Config {
 
     double getJitter() { retryJitter }
 
+    int getStreamThreshold() { streamThreshold }
 }
