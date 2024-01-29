@@ -57,14 +57,14 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
     def setup() {
         restartDb()
         applicationContext = ApplicationContext.run([
-                        surrealdb: [
+                        surreal:['default': [
                                 user     : 'root',
                                 password : 'root',
                                 ns       : 'test',
                                 db       : 'test',
                                 url      : surrealDbURL,
                                 'init-db': false
-                        ]]
+                        ]]]
         , 'test', 'surrealdb')
     }
 
@@ -225,15 +225,6 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         then:
         loaded == record
     }
-
-    def 'should patch duration field' () {
-        expect:
-        SurrealPersistenceService.patchDuration('foo') == 'foo'
-        SurrealPersistenceService.patchDuration('"duration":3.00') == '"duration":3.00'
-        SurrealPersistenceService.patchDuration('"duration":"3.00"') == '"duration":3.00'
-        SurrealPersistenceService.patchDuration('aaa,"duration":"300.1234",zzz') == 'aaa,"duration":300.1234,zzz'
-    }
-
 
     def 'should load a request record' () {
         given:

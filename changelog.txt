@@ -1,4 +1,18 @@
 # Wave changelog
+1.2.1 - 28 Jan 2024
+- Add support for SurrealDB v1.x (stable)  (#388) [e8ba40c7]
+- Remove TimedInputStream class [f59b02b3]
+- Remove unused setting [73cbbd29]
+- Bump nf-jdk:corretto-17.0.10-jemalloc as base image [a426d67e]
+
+1.2.0 - 22 Jan 2024
+- Add support for Cloudflare WAF token  (#383) [565ed112]
+- Add support for blob caching (#359) [627229ba]
+- Fix bootstrap error when blobCache is disabled [cf4e60dc]
+- Fix annotations processing package (#364) [e6adb98d]
+- Changed wave.build.public to wave.build.public-repo (#372) [842e655d]
+- Bump kaniko 1.19.2 [f1c5fd38]
+
 v1.1.7 - 19 Dec 2023
 - Improve usage of thread pools for build and scan service [1cd2dc90]
 - Implements streaming client for large binary downloads (#358) [592ce522]

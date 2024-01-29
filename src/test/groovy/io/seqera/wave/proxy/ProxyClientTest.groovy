@@ -245,4 +245,35 @@ class ProxyClientTest extends Specification {
         then:
         resp.statusCode() == 200
     }
+
+    def 'should return curl command' () {
+        given:
+        def REG = 'docker.io'
+        def IMAGE = 'library/hello-world'
+        def PATH = '/v2/library/hello-world/manifests/sha256:aa0cc8055b82dc2509bed2e19b275c8f463506616377219d9642221ab53cf9fe'
+        def HEADERS = ['content-type': 'application/octet-stream']
+        and:
+        def registry = lookupService.lookup(REG)
+        def creds = credentialsProvider.getDefaultCredentials(REG)
+        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
+        and:
+        def proxy = new ProxyClient(httpClient, httpConfig)
+                .withImage(IMAGE)
+                .withRegistry(registry)
+                .withLoginService(loginService)
+                .withCredentials(creds)
+
+        when:
+        def cli = proxy.curl(PATH, HEADERS)
+        then:
+        cli[0] == 'curl'
+        cli[1] == '-s'
+        cli[2] == '-X'
+        cli[3] == 'GET'
+        cli[4] == '-H'
+        cli[5] == 'content-type: application/octet-stream'
+        cli[6] == '-H'
+        cli[7] =~ /Authorization: Bearer.*/
+        cli[8] == 'https://registry-1.docker.io/v2/library/hello-world/manifests/sha256:aa0cc8055b82dc2509bed2e19b275c8f463506616377219d9642221ab53cf9fe'
+    }
 }

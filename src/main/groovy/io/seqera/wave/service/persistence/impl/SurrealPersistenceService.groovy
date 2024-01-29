@@ -29,19 +29,20 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
-import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.persistence.legacy.SurrealLegacyService
+import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
- * Implements a persistince service based based on SurrealDB
+ * Implements a persistence service based based on SurrealDB
  *
  * @author : jorge <jorge.aguilera@seqera.io>
- *
+ * @author : Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Requires(env='surrealdb')
 @Primary
@@ -53,15 +54,19 @@ class SurrealPersistenceService implements PersistenceService {
     @Inject
     private SurrealClient surrealDb
 
-    @Value('${surrealdb.user}')
+    @Value('${surreal.default.user}')
     private String user
 
-    @Value('${surrealdb.password}')
+    @Value('${surreal.default.password}')
     private String password
 
     @Nullable
-    @Value('${surrealdb.init-db}')
+    @Value('${surreal.default.init-db}')
     private Boolean initDb
+
+    @Inject
+    @Nullable
+    private SurrealLegacyService legacy
 
     @EventListener
     void onApplicationStartup(ApplicationStartupEvent event) {
@@ -116,16 +121,11 @@ class SurrealPersistenceService implements PersistenceService {
         final query = "select * from wave_build where buildId = '$buildId'"
         final json = surrealDb.sqlAsString(getAuthorization(), query)
         final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
-        final data= json ? JacksonHelper.fromJson(patchDuration(json), type) : null
+        final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null
+        if( !result && legacy )
+            return legacy.loadBuild(buildId)
         return result
-    }
-
-    static protected String patchDuration(String value) {
-        if( !value )
-            return value
-        // Yet another SurrealDB bug: it wraps number values with double quotes as a string
-        value.replaceAll(/"duration":"(\d+\.\d+)"/,'"duration":$1')
     }
 
     @Override
@@ -170,11 +170,13 @@ class SurrealPersistenceService implements PersistenceService {
         final type = new TypeReference<ArrayList<SurrealResult<WaveContainerRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null
+        if( !result && legacy )
+            return legacy.loadContainerRequest(token)
         return result
     }
 
     void createScanRecord(WaveScanRecord scanRecord) {
-        final result = surrealDb.insertScanRecord(authorization, scanRecord.id, scanRecord)
+        final result = surrealDb.insertScanRecord(authorization, scanRecord)
         log.trace "Scan create result=$result"
     }
 
@@ -184,7 +186,7 @@ class SurrealPersistenceService implements PersistenceService {
 
         // save all vulnerabilities
         for( ScanVulnerability it : vulnerabilities ) {
-            surrealDb.insertScanVulnerability(authorization, it.id, it)
+            surrealDb.insertScanVulnerability(authorization, it)
         }
 
         // compose the list of ids
@@ -207,12 +209,14 @@ class SurrealPersistenceService implements PersistenceService {
     @Override
     WaveScanRecord loadScanRecord(String scanId) {
         if( !scanId )
-            throw new IllegalArgumentException("Missing 'buildId' argument")
+            throw new IllegalArgumentException("Missing 'scanId' argument")
         final statement = "SELECT * FROM wave_scan:$scanId FETCH vulnerabilities"
         final json = surrealDb.sqlAsString(getAuthorization(), statement)
         final type = new TypeReference<ArrayList<SurrealResult<WaveScanRecord>>>() {}
-        final data= json ? JacksonHelper.fromJson(patchDuration(json), type) : null
+        final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null
+        if( !result && legacy )
+            return legacy.loadScanRecord(scanId)
         return result
     }
 
