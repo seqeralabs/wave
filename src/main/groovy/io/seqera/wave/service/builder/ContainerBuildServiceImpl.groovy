@@ -266,6 +266,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             log.info "== Hit build cache for request: $request"
             return
         }else{
+            log.info "== Entry in build cache is invalid, building again: $request"
             buildStore.storeBuild(request.targetImage,ret1)
             submitBuildRequest(request)
             return
