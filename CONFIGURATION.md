@@ -213,41 +213,41 @@ Certainly! Here's the information for the provided variables in a natural and de
 
 ## Blob Cache configuration
 
-Wave offers a feature to provide a cache for docker blobs, which improves the performance of supplying blobs to the client. If you use Kubernetes, Wave can also use the k8s pod to delegate the transfer task for scalability.
+Wave offers a feature to provide a cache for Docker blobs, which improves the performance of supplying blobs to the client. If you use Kubernetes, Wave can also use the k8s pod to delegate the transfer task for scalability.
 
 - The **`wave.blobCache.enabled`** variable determines whether to enable the blob cache. It is `false` by default. (*Optional: false*)
 
-- The **`wave.blobCache.s5cmdImage`** variable specifies the docker image of [s5cmd tool](https://github.com/peak/s5cmd). This tool is used to upload blob binaries to s3 bucket. the default image used by Wave is `cr.seqera.io/public/wave/s5cmd:v2.2.2`. (*Optional: false*)
+- The **`wave.blobCache.s5cmdImage`** variable specifies the Docker image that supplies the [s5cmd tool](https://github.com/peak/s5cmd). This tool is used to upload blob binaries to the S3 bucket. The default image used by Wave is `cr.seqera.io/public/wave/s5cmd:v2.2.2`. (*Optional: false*)
 
-- The **`wave.blobCache.status.delay`** variable defines the time delay in checking the status of the transfer of the blob's binary from the repository to the cache. Its default value is `5s`. (*Optional: false*)
+- The **`wave.blobCache.status.delay`** variable defines the time delay in checking the status of the transfer of the blob binary from the repository to the cache. Its default value is `5s`. (*Optional: false*)
 
-- The **`wave.blobCache.status.duration`** variable defines time for which Wave will store the blob's binary in cache. Its default value is `5d`. (*Optional: false*)
+- The **`wave.blobCache.status.duration`** variable defines the time for which Wave will store the blob binary in cache. Its default value is `5d`. (*Optional: false*)
 
-- The **`wave.blobCache.timeout`** variable contains timeout for blob's binary transfer after which Wave will through `TransferTimeoutException` exception. Its default value is `5m`. (*Optional: false*)
+- The **`wave.blobCache.timeout`** variable contains timeout for blob binary transfer, after which Wave will throw a `TransferTimeoutException` exception. Its default value is `5m`. (*Optional: false*)
 
-- The **`wave.blobCache.baseUrl`** variable defines the URL, which will override the base URL (part of URL before the blob path) of blob sent to the end client. (*Optional: true*)
+- The **`wave.blobCache.baseUrl`** variable defines the URL, which will override the base URL (part of URL before the blob path) of blobs sent to the end client. (*Optional: true*)
 
-- The **`wave.blobCache.signing-strategy`** variable defines the URL signing strategy for different services. Currently, Wave offers it for aws s3 and cloudflare and you can use the respective values to enable them `aws-presigned-url` and `cloudflare-waf-token`. (*Optional: false*) 
+- The **`wave.blobCache.signing-strategy`** variable defines the URL signing strategy for different services. Currently, Wave offers it for AWS S3 and Cloudflare and you can use the respective values to enable them `aws-presigned-url` and `cloudflare-waf-token`. (*Optional: false*) 
 
 - The **`wave.blobCache.cloudflare.lifetime`** variable defines the validity of the cloud flare WAF token. (*Optional: false*)
 
-- The **`wave.blobCache.cloudflare.urlSignatureDuration`** variable defines the validity of the AWS s3 URL signature. Its default value is 30m. (*Optional: false*)
+- The **`wave.blobCache.cloudflare.urlSignatureDuration`** variable defines the validity of the AWS S3 URL signature. Its default value is `30m`. (*Optional: false*)
 
-- The **`wave.blobCache.cloudflare.secret-key`** variable contains the [cloudflare secret](https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/) to create WAF token. (*Optional: false*)
+- The **`wave.blobCache.cloudflare.secret-key`** variable contains the [Cloudflare secret](https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/) to create the WAF token. (*Optional: false*)
 
-- The **`wave.blobCache.storage.bucket`** variable contains the name of cloudflare or s3 bucket. for example, `s3://wave-blob-cache`. (*Optional: false*)
+- The **`wave.blobCache.storage.bucket`** variable contains the name of Cloudflare or S3 bucket. For example, `s3://wave-blob-cache`. (*Optional: false*)
 
 - The **`wave.blobCache.storage.region`** variable specifies the AWS region where the bucket is created. (*Optional: false*)
 
-- The **`wave.blobCache.storage.endpoint`** variable contains the URL for storage location. Which will be used in download or upload of the blob's binary. (*Optional: true*)
+- The **`wave.blobCache.storage.endpoint`** variable contains the URL for the storage location. This will be used for the download or upload of blob binaries. (*Optional: true*)
 
-- The **`wave.blobCache.storage.accessKey`** variable contains access key (part of credentials) to access the resources of the service used for caching. (*Optional: true*)
+- The **`wave.blobCache.storage.accessKey`** variable contains the access key (part of credentials) to access the resources of the service used for caching. (*Optional: true*)
 
-- The **`wave.blobCache.storage.secretKey`** variable contains secret key (part of credentials) to access the resources of the service used for caching. (*Optional: true*)
+- The **`wave.blobCache.storage.secretKey`** variable contains the secret key (part of credentials) to access the resources of the service used for caching. (*Optional: true*)
 
-- The **`wave.blobCache.requestsCpu`** variable specifies the amount of [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to k8s pod used for blob binaries transfer. (*Optional: true*)
+- The **`wave.blobCache.requestsCpu`** variable specifies the amount of [CPU resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to the k8s pod used for blob binary transfers. (*Optional: true*)
 
-- The **`wave.blobCache.requestsMemory`** variable specifies the [memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to k8s pod used for blob binaries transfer. (*Optional: true*)
+- The **`wave.blobCache.requestsMemory`** variable specifies the [memory resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) allocated to the k8s pod used for blob binary transfers. (*Optional: true*)
 
 ## Email configuration
 
