@@ -24,8 +24,10 @@ import java.nio.file.Path
 import java.time.Duration
 
 import io.kubernetes.client.custom.Quantity
+import io.kubernetes.client.openapi.models.V1EnvVar
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.SpackConfig
 /**
@@ -492,6 +494,82 @@ class K8sServiceImplTest extends Specification {
         and:
         result.spec.volumes.get(0).name == 'build-data'
         result.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
+
+        cleanup:
+        ctx.close()
+    }
+
+    def 'should create transfer spec with defaults' () {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'my-ns',
+                'wave.build.k8s.configPath': '/home/kube.config' ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def config = Mock(BlobCacheConfig) {
+            getTransferTimeout() >> Duration.ofSeconds(20)
+            getEnvironment() >> [:]
+        }
+
+        when:
+        def result = k8sService.transferSpec('foo', 'my-image:latest', ['this','that'], config)
+        then:
+        result.metadata.name == 'foo'
+        result.metadata.namespace == 'my-ns'
+        and:
+        result.spec.activeDeadlineSeconds == 20
+        result.spec.serviceAccount == null
+        and:
+        result.spec.containers.get(0).name == 'foo'
+        result.spec.containers.get(0).image == 'my-image:latest'
+        result.spec.containers.get(0).args ==  ['this','that']
+        and:
+        !result.spec.containers.get(0).getEnv()
+        !result.spec.containers.get(0).getResources().limits
+        !result.spec.containers.get(0).getResources().requests
+
+        cleanup:
+        ctx.close()
+    }
+
+    def 'should create transfer spec with custom settings' () {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'my-ns',
+                'wave.build.k8s.service-account': 'foo-sa',
+                'wave.build.k8s.configPath': '/home/kube.config' ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def config = Mock(BlobCacheConfig) {
+            getTransferTimeout() >> Duration.ofSeconds(20)
+            getEnvironment() >> ['FOO':'one', 'BAR':'two']
+            getRequestsCpu() >> '2'
+            getRequestsMemory() >> '8Gi'
+        }
+
+        when:
+        def result = k8sService.transferSpec('foo', 'my-image:latest', ['this','that'], config)
+        then:
+        result.metadata.name == 'foo'
+        result.metadata.namespace == 'my-ns'
+        and:
+        result.spec.activeDeadlineSeconds == 20
+        result.spec.serviceAccount == 'foo-sa'
+        and:
+        result.spec.containers.get(0).name == 'foo'
+        result.spec.containers.get(0).image == 'my-image:latest'
+        result.spec.containers.get(0).args ==  ['this','that']
+        result.spec.containers.get(0).getEnv().get(0) == new V1EnvVar().name('FOO').value('one')
+        result.spec.containers.get(0).getEnv().get(1) == new V1EnvVar().name('BAR').value('two')
+        and:
+        result.spec.containers.get(0).getResources().requests.get('cpu') == new Quantity('2')
+        result.spec.containers.get(0).getResources().requests.get('memory') == new Quantity('8Gi')
+        and:
+        !result.spec.containers.get(0).getResources().limits
 
         cleanup:
         ctx.close()

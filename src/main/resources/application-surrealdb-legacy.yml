@@ -1,8 +1,8 @@
 ---
 surreal:
-  default:
-    ns : "seqera"
-    db : "wave"
+  legacy:
+    ns: "seqera"
+    db: "wave"
     url: "http://surrealdb:8000"
     user: "root"
     password: "root"
