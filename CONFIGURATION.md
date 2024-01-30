@@ -197,17 +197,17 @@ Certainly! Here's the information for the provided variables in a natural and de
 
 - The **`redis.pool.enabled`** variable determines whether to enable the Redis pool. It is set to `true` by default, enabling the use of a connection pool for efficient management of connections to the Redis server. *Optional*.
 
-- The **`surrealdb.ns`** variable represents the namespace for the Surreal database. It can be set using `${SURREALDB_NS}` environment variable. *Mandatory*.
+- The **`surreal.default.ns`** variable represents the namespace for the Surreal database. It can be set using `${SURREALDB_NS}` environment variable. *Mandatory*.
 
-- The **`surrealdb.db`** variable specifies the name of the Surreal database. It can be set using`${SURREALDB_DB}` environment variable. This setting defines the target database within the Surreal database system that Wave should interact with. *Mandatory*.
+- The **`surreal.default.db`** variable specifies the name of the Surreal database. It can be set using`${SURREALDB_DB}` environment variable. This setting defines the target database within the Surreal database system that Wave should interact with. *Mandatory*.
 
-- The **`surrealdb.url`** variable holds the URL for connecting to the Surreal database. It can be set using `${SURREALDB_URL}` environment variable. This URL defines the endpoint that Wave uses to establish a connection with the Surreal database. *Mandatory*.
+- The **`surreal.default.url`** variable holds the URL for connecting to the Surreal database. It can be set using `${SURREALDB_URL}` environment variable. This URL defines the endpoint that Wave uses to establish a connection with the Surreal database. *Mandatory*.
 
-- The **`surrealdb.user`** variable represents the username used for authentication when connecting to the Surreal database. It can be set using `${SURREALDB_USER}` environment variable. *Mandatory*.
+- The **`surreal.default.user`** variable represents the username used for authentication when connecting to the Surreal database. It can be set using `${SURREALDB_USER}` environment variable. *Mandatory*.
 
-- The **`surrealdb.password`** variable holds the password used for authentication when connecting to the Surreal database. It can be set using `${SURREALDB_PASSWORD}` environment variable. *Mandatory*.
+- The **`surreal.default.password`** variable holds the password used for authentication when connecting to the Surreal database. It can be set using `${SURREALDB_PASSWORD}` environment variable. *Mandatory*.
 
-- The **`surrealdb.init-db`** variable determines whether to initiate the Surreal database using the specified values for `user`, `password`, `url`, `ns`, and `db`. *Optional*.
+- The **`surreal.default.init-db`** variable determines whether to initiate the Surreal database using the specified values for `user`, `password`, `url`, `ns`, and `db`. *Optional*.
 
 ## Blob Cache configuration
 
