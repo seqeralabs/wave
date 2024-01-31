@@ -207,7 +207,7 @@ Certainly! Here's the information for the provided variables in a natural and de
 
 - The **`surreal.default.password`** variable holds the password used for authentication when connecting to the Surreal database. It can be set using `${SURREALDB_PASSWORD}` environment variable. *Mandatory*.
 
-- The **`surreal.default.init-db`** variable determines whether to initiate the Surreal database using the specified values for `user`, `password`, `url`, `ns`, and `db`. *Optional*.
+- The **`surreal.default.init-db`** variable determines whether to create database tables, records and indices at application startup  and `db`. *Optional*.
 
 ## Blob Cache configuration
 
