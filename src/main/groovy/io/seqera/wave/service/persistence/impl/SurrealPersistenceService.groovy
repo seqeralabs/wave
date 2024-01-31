@@ -97,11 +97,14 @@ class SurrealPersistenceService implements PersistenceService {
         try {
             // create wave_matrics_pull  table
             surrealDb.sqlAsString(authorization, "DEFINE TABLE wave_metrics_pull SCHEMAFULL;" +
-                    "DEFINE FIELD count ON TABLE wave_metrics_pull TYPE number;" +
-                    "DEFINE FIELD ip ON TABLE wave_metrics_pull TYPE string; DEFINE FIELD userid ON TABLE wave_metrics_pull TYPE number;" +
-                    "DEFINE FIELD imagename ON TABLE wave_metrics_pull TYPE string; DEFINE FIELD date ON TABLE wave_metrics_pull TYPE datetime;" +
-                    "DEFINE INDEX indexip ON TABLE wave_metrics_pull COLUMNS ip; DEFINE INDEX indexuserid ON TABLE wave_metrics_pull COLUMNS userid;" +
-                    "DEFINE INDEX indeximagename ON TABLE wave_metrics_pull COLUMNS imagename;")
+                                                "DEFINE FIELD count ON TABLE wave_metrics_pull TYPE number;" +
+                                                "DEFINE FIELD ip ON TABLE wave_metrics_pull TYPE string; " +
+                                                "DEFINE FIELD userid ON TABLE wave_metrics_pull TYPE number;" +
+                                                "DEFINE FIELD imagename ON TABLE wave_metrics_pull TYPE string; " +
+                                                "DEFINE FIELD date ON TABLE wave_metrics_pull TYPE datetime;" +
+                                                "DEFINE INDEX indexip ON TABLE wave_metrics_pull COLUMNS ip; " +
+                                                "DEFINE INDEX indexuserid ON TABLE wave_metrics_pull COLUMNS userid;" +
+                                                "DEFINE INDEX indeximagename ON TABLE wave_metrics_pull COLUMNS imagename;")
         }catch(Exception e){
                 throw new IllegalStateException("Unable to define SurrealDB table wave_metrics_pull - cause: ${e.getCause()}")
         }
@@ -109,12 +112,15 @@ class SurrealPersistenceService implements PersistenceService {
         try{
         // create wave_matrics_build  table
         surrealDb.sqlAsString(authorization, "DEFINE TABLE wave_metrics_build SCHEMAFULL; " +
-                "DEFINE FIELD count ON TABLE wave_metrics_build TYPE number;" +
-                "DEFINE FIELD ip ON TABLE wave_metrics_build TYPE string; DEFINE FIELD userid ON TABLE wave_metrics_build TYPE number; " +
-                "DEFINE FIELD date ON TABLE wave_metrics_build TYPE datetime;" +
-                "DEFINE FIELD imagename ON TABLE wave_metrics_build TYPE string; DEFINE FIELD success ON TABLE wave_metrics_build TYPE bool;" +
-                "DEFINE INDEX indexip ON TABLE wave_metrics_build COLUMNS ip; DEFINE INDEX indexuserid ON TABLE wave_metrics_build COLUMNS userid;" +
-                "DEFINE INDEX indeximagename ON TABLE wave_metrics_build COLUMNS imagename;")
+                                            "DEFINE FIELD count ON TABLE wave_metrics_build TYPE number;" +
+                                            "DEFINE FIELD ip ON TABLE wave_metrics_build TYPE string; " +
+                                            "DEFINE FIELD userid ON TABLE wave_metrics_build TYPE number; " +
+                                            "DEFINE FIELD date ON TABLE wave_metrics_build TYPE datetime;" +
+                                            "DEFINE FIELD imagename ON TABLE wave_metrics_build TYPE string; " +
+                                            "DEFINE FIELD success ON TABLE wave_metrics_build TYPE bool;" +
+                                            "DEFINE INDEX indexip ON TABLE wave_metrics_build COLUMNS ip; " +
+                                            "DEFINE INDEX indexuserid ON TABLE wave_metrics_build COLUMNS userid;" +
+                                            "DEFINE INDEX indeximagename ON TABLE wave_metrics_build COLUMNS imagename;")
         }catch(Exception e) {
             throw new IllegalStateException("Unable to define SurrealDB table wave_matrics_build - cause: ${e.getCause()}")
         }

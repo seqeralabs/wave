@@ -55,7 +55,6 @@ import io.seqera.wave.exchange.RegistryErrorResponse
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.blob.BlobCacheService
-import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.metrics.event.PullEvent
 import io.seqera.wave.storage.DigestKey

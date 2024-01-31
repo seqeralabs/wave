@@ -24,7 +24,6 @@ import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.metrics.MetricsService
 import io.seqera.wave.service.metrics.event.PullEvent
-import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildCountRecord
 import io.seqera.wave.service.persistence.WavePullCountRecord
 import io.seqera.wave.service.persistence.impl.SurrealPersistenceService

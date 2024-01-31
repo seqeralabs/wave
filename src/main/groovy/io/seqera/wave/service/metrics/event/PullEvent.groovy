@@ -22,7 +22,7 @@ import groovy.transform.CompileStatic
 import io.seqera.wave.service.ContainerRequestData
 
 /**
- * An event fired for pull request
+ * An event for pull request
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
