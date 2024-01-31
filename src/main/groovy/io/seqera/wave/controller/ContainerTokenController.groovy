@@ -192,6 +192,7 @@ class ContainerTokenController {
         final containerSpec = new String(req.containerFile.decodeBase64())
         final condaContent = req.condaFile ? new String(req.condaFile.decodeBase64()) : null as String
         final spackContent = req.spackFile ? new String(req.spackFile.decodeBase64()) : null as String
+        final spackArch = req.spackFile ? req.spackArch : null as String
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
         final build = req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository ? buildConfig.defaultPublicRepository : buildConfig.defaultBuildRepository)
@@ -207,6 +208,7 @@ class ContainerTokenController {
                 build,
                 condaContent,
                 spackContent,
+                spackArch,
                 format,
                 user,
                 containerConfig,

@@ -51,12 +51,14 @@ class MailServiceImplTest extends Specification {
         1* request.getPlatform() >> ContainerPlatform.DEFAULT
         1* request.getCondaFile() >> null
         1* request.getSpackFile() >> null
+        1* request.getSpackArch() >> null
         and:
         mail.to == recipient
         mail.body.contains('from foo')
         and:
         !mail.body.contains('Conda file')
         !mail.body.contains('Spack file')
+        !mail.body.contains('Spack target architecture')
 
         // check it adds the Conda file content
         when:
@@ -76,11 +78,14 @@ class MailServiceImplTest extends Specification {
         then:
         1* request.getTargetImage() >> 'wave/build:xyz'
         1* request.getPlatform() >> ContainerPlatform.DEFAULT
-        1* request.getSpackFile() >> 'some-spac-recipe'
+        1* request.getSpackFile() >> 'some-spack-recipe'
+        1* request.getSpackArch() >> 'zen3'
         and:
         mail.to == recipient
         mail.body.contains('Spack file')
-        mail.body.contains('some-spac-recipe')
+        mail.body.contains('some-spack-recipe')
+        mail.body.contains('Spack target architecture')
+        mail.body.contains('zen3')
     }
 
 }

@@ -71,6 +71,7 @@ class ViewControllerTest extends Specification {
                 dockerFile: 'FROM foo',
                 condaFile: 'conda::foo',
                 spackFile: 'some-spack-recipe',
+                spackArch: 'zen3',
                 targetImage: 'docker.io/some:image',
                 userName: 'paolo',
                 userEmail: 'paolo@seqera.io',
@@ -97,6 +98,7 @@ class ViewControllerTest extends Specification {
         binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
         binding.build_spackfile == 'some-spack-recipe'
+        binding.build_spackarch == 'zen3'
         binding.build_format == 'Docker'
         binding.build_log_data == 'log content'
         binding.build_log_truncated == false
@@ -130,6 +132,7 @@ class ViewControllerTest extends Specification {
         and:
         !response.body().contains('Conda file')
         !response.body().contains('Spack file')
+        !response.body().contains('Spack target architecture')
     }
 
     def 'should render a build page with conda file' () {
@@ -161,13 +164,15 @@ class ViewControllerTest extends Specification {
         response.body().contains('conda::foo')
         and:
         !response.body().contains('Spack file')
+        !response.body().contains('Spack target architecture')
     }
 
     def 'should render a build page with spack file' () {
         given:
         def record1 = new WaveBuildRecord(
                 buildId: 'test',
-                spackFile: 'foo/conda/recipe',
+                spackFile: 'foo/spack/recipe',
+                spackArch: 'zen3',
                 targetImage: 'test',
                 userName: 'test',
                 userEmail: 'test',
@@ -191,7 +196,8 @@ class ViewControllerTest extends Specification {
         !response.body().contains('Conda file')
         and:
         response.body().contains('Spack file')
-        response.body().contains('foo/conda/recipe')
+        response.body().contains('Spack target architecture')
+        response.body().contains('foo/spack/recipe')
     }
 
     def 'should render container view page' () {

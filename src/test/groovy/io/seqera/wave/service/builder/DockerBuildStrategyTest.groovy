@@ -88,7 +88,7 @@ class DockerBuildStrategyTest extends Specification {
         def work = Path.of('/work/foo')
         def creds = Path.of('/work/creds.json')
         def cache = 'reg.io/wave/build/cache'
-        def req = new BuildRequest('from foo', work, 'repo', null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "1.2.3.4", null)
+        def req = new BuildRequest('from foo', work, 'repo', null, null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "1.2.3.4", null)
         when:
         def cmd = service.buildCmd(req, creds)
         then:
@@ -117,7 +117,7 @@ class DockerBuildStrategyTest extends Specification {
         and:
         def work = Path.of('/work/foo')
         def cache    = 'reg.io/wave/build/cache'
-        def req = new BuildRequest('from foo', work, 'repo', null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "1.2.3.4", null)
+        def req = new BuildRequest('from foo', work, 'repo', null, null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "1.2.3.4", null)
         when:
         def cmd = service.launchCmd(req)
         then:
@@ -147,7 +147,7 @@ class DockerBuildStrategyTest extends Specification {
         def work = Path.of('/work/foo')
         def creds = Path.of('/work/creds.json')
         def spackFile = '/work/spack.yaml'
-        def req = new BuildRequest('from foo', work, 'repo', null, spackFile, BuildFormat.SINGULARITY, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', null, null, "1.2.3.4", null)
+        def req = new BuildRequest('from foo', work, 'repo', null, spackFile, null, BuildFormat.SINGULARITY, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', null, null, "1.2.3.4", null)
         when:
         def cmd = service.buildCmd(req, creds)
         then:
@@ -184,7 +184,7 @@ class DockerBuildStrategyTest extends Specification {
         def work = Path.of('/work/foo')
         def creds = Path.of('/work/creds.json')
         def spackFile = '/work/spack.yaml'
-        def req = new BuildRequest('from foo', work, 'repo', null, spackFile, BuildFormat.SINGULARITY, Mock(User), null, null, ContainerPlatform.of('arm64'),'{auth}', null, null, "1.2.3.4", null)
+        def req = new BuildRequest('from foo', work, 'repo', null, spackFile, null, BuildFormat.SINGULARITY, Mock(User), null, null, ContainerPlatform.of('arm64'),'{auth}', null, null, "1.2.3.4", null)
         when:
         def cmd = service.buildCmd(req, creds)
         then:

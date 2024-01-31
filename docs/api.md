@@ -60,7 +60,8 @@ The endpoint returns the name of the container request made available by Wave.
 | `containerFile`                     | Dockerfile used for building a new container encoded in base64 (optional). When provided, the attribute `containerImage` should be omitted.                    |
 | `condaFile`                         | Conda environment file encoded as base64 string.                                                                                                               |
 | `spackFile`                         | Spack recipe file encoded as base64 string.                                                                                                                    |
-| `containerPlatform`                 | Target container architecture of the built container e.g. `linux/amd64` (optional). Currently only supporting amd64 and arm64.                                 |
+| `spackArch`                         | Target CPU architecture for Spack builds e.g. `x86_64_v3` (optional).                                                                                          |
+| `containerPlatform`                 | Target container platform of the built container e.g. `linux/amd64` (optional). Currently only supporting amd64 and arm64.                                     |
 | `buildRepository`                   | Container repository where container builds should be pushed e.g. `docker.io/user/my-image` (optional).                                                        |
 | `cacheRepository`                   | Container repository used to cache build layers `docker.io/user/my-cache` (optional).                                                                          |
 | `timestamp`                         | Request submission timestap using ISO-8601.                                                                                                                    |

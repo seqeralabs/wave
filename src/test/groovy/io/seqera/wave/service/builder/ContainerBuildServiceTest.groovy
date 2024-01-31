@@ -76,7 +76,7 @@ class ContainerBuildServiceTest extends Specification {
         '''.stripIndent()
         and:
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, cacheRepo, null, null,null,null)
-        def REQ = new BuildRequest(dockerFile, folder, buildRepo, null, null, BuildFormat.DOCKER,Mock(User), null, null, ContainerPlatform.of('amd64'), cfg, cacheRepo, null, "", null)
+        def REQ = new BuildRequest(dockerFile, folder, buildRepo, null, null, null, BuildFormat.DOCKER,Mock(User), null, null, ContainerPlatform.of('amd64'), cfg, cacheRepo, null, "", null)
 
         when:
         def result = service.launch(REQ)
@@ -107,7 +107,7 @@ class ContainerBuildServiceTest extends Specification {
         buildRepo = "docker.io/pditommaso/wave-tests"
         and:
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, null, null,null,null)
-        def REQ = new BuildRequest(dockerFile, folder, buildRepo, null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),cfg, null, null, null, null)
+        def REQ = new BuildRequest(dockerFile, folder, buildRepo, null, null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),cfg, null, null, null, null)
 
         when:
         def result = service.launch(REQ)
@@ -137,7 +137,7 @@ class ContainerBuildServiceTest extends Specification {
         and:
         buildRepo = "quay.io/pditommaso/wave-tests"
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, null, null, null, null)
-        def REQ = new BuildRequest(dockerFile, folder, buildRepo, null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),cfg, null, null, "", null)
+        def REQ = new BuildRequest(dockerFile, folder, buildRepo, null, null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),cfg, null, null, "", null)
 
         when:
         def result = service.launch(REQ)
@@ -167,7 +167,7 @@ class ContainerBuildServiceTest extends Specification {
         and:
         buildRepo = "seqeralabs.azurecr.io/wave-tests"
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, null, null, null, null)
-        def REQ = new BuildRequest(dockerFile, folder, buildRepo, null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),cfg, null, null, "", null)
+        def REQ = new BuildRequest(dockerFile, folder, buildRepo, null, null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),cfg, null, null, "", null)
 
         when:
         def result = service.launch(REQ)
@@ -207,9 +207,10 @@ class ContainerBuildServiceTest extends Specification {
                   specs: [bwa@0.7.15, salmon@1.1.1]
                   concretizer: {unify: true, reuse: true}
                 '''
+        def spackArch = 'zen3'
         and:
         def spackConfig = new SpackConfig(cacheBucket: 's3://bucket/cache', secretMountPath: '/mnt/secret')
-        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', condaFile, spackFile, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'), cfg, null, null, "", null)
+        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', condaFile, spackFile, spackArch, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'), cfg, null, null, "", null)
         and:
         def store = Mock(BuildStore)
         def strategy = Mock(BuildStrategy)
@@ -240,7 +241,7 @@ class ContainerBuildServiceTest extends Specification {
         def cacheRepo = buildConfig.defaultCacheRepository
         and:
         def dockerFile = 'FROM something; {{foo}}'
-        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'), null, null, null, "", null)
+        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', null, null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'), null, null, null, "", null)
         and:
         def spack = Mock(SpackConfig)
 
@@ -264,7 +265,8 @@ class ContainerBuildServiceTest extends Specification {
         and:
         def dockerFile = SpackHelper.builderDockerTemplate()
         def spackFile = 'some spack packages'
-        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', null, spackFile, BuildFormat.DOCKER, Mock(User),null, null,  ContainerPlatform.of('amd64'), null, null, null, "", null)
+        def spackArch = 'zen3'
+        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', null, spackFile, spackArch, BuildFormat.DOCKER, Mock(User),null, null,  ContainerPlatform.of('amd64'), null, null, null, "", null)
         and:
         def spack = Mock(SpackConfig)
 
@@ -277,7 +279,7 @@ class ContainerBuildServiceTest extends Specification {
         1* spack.getRunnerImage() >> 'ubuntu:22.04'
         and:
         result.contains('FROM spack-builder:2.0 as builder')
-        result.contains('spack config add packages:all:target:[x86_64]')
+        result.contains('spack config add packages:all:target:[zen3]')
         result.contains('spack mirror add seqera-spack s3://bucket/cache')
         result.contains('fingerprint="$(spack gpg trust /mnt/key 2>&1 | tee /dev/stderr | sed -nr "s/^gpg: key ([0-9A-F]{16}): secret key imported$/\\1/p")"')
 
@@ -293,7 +295,8 @@ class ContainerBuildServiceTest extends Specification {
         def context = Path.of('/some/context/dir')
         def dockerFile = SpackHelper.builderSingularityTemplate()
         def spackFile = 'some spack packages'
-        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', null, spackFile, BuildFormat.SINGULARITY, Mock(User),null, null,  ContainerPlatform.of('amd64'), null, null, null, "", null)
+        def spackArch = 'zen3'
+        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', null, spackFile, spackArch, BuildFormat.SINGULARITY, Mock(User),null, null,  ContainerPlatform.of('amd64'), null, null, null, "", null)
         and:
         def spack = Mock(SpackConfig)
 
@@ -308,7 +311,7 @@ class ContainerBuildServiceTest extends Specification {
         result.contains('Bootstrap: docker\n' +
                 'From: spack-builder:2.0\n' +
                 'Stage: build')
-        result.contains('spack config add packages:all:target:[x86_64]')
+        result.contains('spack config add packages:all:target:[zen3]')
         result.contains('spack mirror add seqera-spack s3://bucket/cache')
         result.contains('fingerprint="$(spack gpg trust /mnt/key 2>&1 | tee /dev/stderr | sed -nr "s/^gpg: key ([0-9A-F]{16}): secret key imported$/\\1/p")"')
         result.contains('/some/context/dir/spack.yaml /opt/spack-env/spack.yaml')
@@ -328,7 +331,7 @@ class ContainerBuildServiceTest extends Specification {
         '''.stripIndent()
         and:
         def builder = new ContainerBuildServiceImpl()
-        def REQ = new BuildRequest(containerFile, folder, 'box:latest', null, null, BuildFormat.SINGULARITY, Mock(User),null, null,  ContainerPlatform.of('amd64'), null, null, null, "", null)
+        def REQ = new BuildRequest(containerFile, folder, 'box:latest', null, null, null, BuildFormat.SINGULARITY, Mock(User),null, null,  ContainerPlatform.of('amd64'), null, null, null, "", null)
 
         when:
         def result = builder.containerFile0(REQ, Path.of('/some/context/'), null)
@@ -363,7 +366,7 @@ class ContainerBuildServiceTest extends Specification {
         buildRepo = "docker.io/pditommaso/wave-tests"
         and:
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, null, null,null,null)
-        def REQ = new BuildRequest(dockerFile, context, buildRepo, null, null, BuildFormat.DOCKER, Mock(User), containerConfig, null, ContainerPlatform.of('amd64'),cfg, null, null, null, null)
+        def REQ = new BuildRequest(dockerFile, context, buildRepo, null, null, null, BuildFormat.DOCKER, Mock(User), containerConfig, null, ContainerPlatform.of('amd64'),cfg, null, null, null, null)
 
         when:
         def result = service.launch(REQ)
@@ -433,7 +436,7 @@ class ContainerBuildServiceTest extends Specification {
         server.createContext("/", handler);
         server.start()
         and:
-        def req = new BuildRequest('from foo', Path.of('/wsp'), 'quay.io/org/name', null, null, BuildFormat.DOCKER, Mock(User), config, null, ContainerPlatform.of('amd64'),'{auth}', null, null, "127.0.0.1", null)
+        def req = new BuildRequest('from foo', Path.of('/wsp'), 'quay.io/org/name', null, null, null, BuildFormat.DOCKER, Mock(User), config, null, ContainerPlatform.of('amd64'),'{auth}', null, null, "127.0.0.1", null)
         and:
         def service = new ContainerBuildServiceImpl(httpClientConfig: httpClientConfig)
 
