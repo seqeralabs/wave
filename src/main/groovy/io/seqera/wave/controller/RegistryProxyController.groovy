@@ -29,6 +29,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.annotation.Value
+import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.core.io.buffer.ReferenceCounted
 import io.micronaut.http.HttpMethod
@@ -54,7 +55,9 @@ import io.seqera.wave.exchange.RegistryErrorResponse
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.blob.BlobCacheService
+import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.ContainerBuildService
+import io.seqera.wave.service.metrics.event.PullEvent
 import io.seqera.wave.storage.DigestKey
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
@@ -106,6 +109,9 @@ class RegistryProxyController {
     @Inject
     @Nullable
     private BlobCacheService blobCacheService
+
+    @Inject
+    private ApplicationEventPublisher<PullEvent> eventPublisher
 
     @Value('${wave.cache.digestStore.maxWeightMb:350}')
     int cacheMaxWeightMb
@@ -199,8 +205,12 @@ class RegistryProxyController {
         log.info "> Request [$httpRequest.method] $httpRequest.path"
         final route = routeHelper.parse("/v2/" + url)
 
+        String ip = addressResolver.resolve(httpRequest)
+        //fire a pull event
+        if( httpRequest.method == HttpMethod.GET )
+            eventPublisher.publishEvent(new PullEvent(route.request, ip),)
+
         if( route.manifest && route.digest ){
-            String ip = addressResolver.resolve(httpRequest)
             rateLimiterService?.acquirePull( new AcquireRequest(route.request?.userId?.toString(), ip) )
         }
 

@@ -30,8 +30,10 @@ import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.persistence.WaveBuildCountRecord
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
+import io.seqera.wave.service.persistence.WavePullCountRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.persistence.legacy.SurrealLegacyService
 import io.seqera.wave.service.scan.ScanVulnerability
@@ -76,21 +78,46 @@ class SurrealPersistenceService implements PersistenceService {
 
     void initializeDb(){
         // create wave_build table
-        final ret1 = surrealDb.sqlAsMap(authorization, "define table wave_build SCHEMALESS")
+        final ret1 = surrealDb.sqlAsMap(authorization, "DEFINE TABLE wave_build SCHEMALESS")
         if( ret1.status != "OK")
             throw new IllegalStateException("Unable to define SurrealDB table wave_build - cause: $ret1")
         // create wave_request table
-        final ret2 = surrealDb.sqlAsMap(authorization, "define table wave_request SCHEMALESS")
+        final ret2 = surrealDb.sqlAsMap(authorization, "DEFINE TABLE wave_request SCHEMALESS")
         if( ret2.status != "OK")
             throw new IllegalStateException("Unable to define SurrealDB table wave_request - cause: $ret2")
         // create wave_scan table
-        final ret3 = surrealDb.sqlAsMap(authorization, "define table wave_scan SCHEMALESS")
+        final ret3 = surrealDb.sqlAsMap(authorization, "DEFINE TABLE wave_scan SCHEMALESS")
         if( ret3.status != "OK")
             throw new IllegalStateException("Unable to define SurrealDB table wave_scan - cause: $ret3")
         // create wave_scan table
-        final ret4 = surrealDb.sqlAsMap(authorization, "define table wave_scan_vuln SCHEMALESS")
+        final ret4 = surrealDb.sqlAsMap(authorization, "DEFINE TABLE wave_scan_vuln SCHEMALESS")
         if( ret4.status != "OK")
-            throw new IllegalStateException("Unable to define SurrealDB table wave_scan_vuln - cause: $ret3")
+            throw new IllegalStateException("Unable to define SurrealDB table wave_scan_vuln - cause: $ret4")
+
+        try {
+            // create wave_matrics_pull  table
+            surrealDb.sqlAsString(authorization, "DEFINE TABLE wave_metrics_pull SCHEMAFULL;" +
+                    "DEFINE FIELD count ON TABLE wave_metrics_pull TYPE number;" +
+                    "DEFINE FIELD ip ON TABLE wave_metrics_pull TYPE string; DEFINE FIELD userid ON TABLE wave_metrics_pull TYPE number;" +
+                    "DEFINE FIELD imagename ON TABLE wave_metrics_pull TYPE string; DEFINE FIELD date ON TABLE wave_metrics_pull TYPE datetime;" +
+                    "DEFINE INDEX indexip ON TABLE wave_metrics_pull COLUMNS ip; DEFINE INDEX indexuserid ON TABLE wave_metrics_pull COLUMNS userid;" +
+                    "DEFINE INDEX indeximagename ON TABLE wave_metrics_pull COLUMNS imagename;")
+        }catch(Exception e){
+                throw new IllegalStateException("Unable to define SurrealDB table wave_metrics_pull - cause: ${e.getCause()}")
+        }
+
+        try{
+        // create wave_matrics_build  table
+        surrealDb.sqlAsString(authorization, "DEFINE TABLE wave_metrics_build SCHEMAFULL; " +
+                "DEFINE FIELD count ON TABLE wave_metrics_build TYPE number;" +
+                "DEFINE FIELD ip ON TABLE wave_metrics_build TYPE string; DEFINE FIELD userid ON TABLE wave_metrics_build TYPE number; " +
+                "DEFINE FIELD date ON TABLE wave_metrics_build TYPE datetime;" +
+                "DEFINE FIELD imagename ON TABLE wave_metrics_build TYPE string; DEFINE FIELD success ON TABLE wave_metrics_build TYPE bool;" +
+                "DEFINE INDEX indexip ON TABLE wave_metrics_build COLUMNS ip; DEFINE INDEX indexuserid ON TABLE wave_metrics_build COLUMNS userid;" +
+                "DEFINE INDEX indeximagename ON TABLE wave_metrics_build COLUMNS imagename;")
+        }catch(Exception e) {
+            throw new IllegalStateException("Unable to define SurrealDB table wave_matrics_build - cause: ${e.getCause()}")
+        }
 
     }
 
@@ -220,4 +247,39 @@ class SurrealPersistenceService implements PersistenceService {
         return result
     }
 
+    void incrementPullCount(WavePullCountRecord record) {
+        final statement = "insert into wave_metrics_pull " +
+                "(id, count, ip, userid, imagename, date) " +
+                "values " +
+                "('${record.hashCode()}', 1, '${record.ip}', ${record.userId}, '${record.imageName}', '${record.date}') " +
+                "ON DUPLICATE KEY UPDATE count += 1"
+
+        surrealDb.sqlAsync(getAuthorization(), statement).subscribe({ result->
+            log.trace "pull count ${result}"
+        }, {error->
+            def msg = error.message
+            if( error instanceof HttpClientResponseException ){
+                msg += ":\n $error.response.body"
+            }
+            log.error "Error saving pull count ${msg}", error
+        })
+    }
+
+    void incrementBuildCount(WaveBuildCountRecord record) {
+        final statement = "insert into wave_metrics_build " +
+                "(id, count, ip, userid, imagename, success, date) " +
+                "values " +
+                "('${record.hashCode()}', 1, '${record.ip}', ${record.userId}, '${record.imageName}',${record.success}, '${record.date}') " +
+                "ON DUPLICATE KEY UPDATE count += 1"
+
+        surrealDb.sqlAsync(getAuthorization(), statement).subscribe({ result->
+            log.trace "Build count ${result}"
+        }, {error->
+            def msg = error.message
+            if( error instanceof HttpClientResponseException ){
+                msg += ":\n $error.response.body"
+            }
+            log.error "Error saving build coun ${msg}", error
+        })
+    }
 }
