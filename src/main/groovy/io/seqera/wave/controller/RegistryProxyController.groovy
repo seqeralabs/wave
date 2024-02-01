@@ -164,7 +164,9 @@ class RegistryProxyController {
         )
     }
 
-    protected void increaseWavePullsCounter(RoutePath route) {
+    protected void increaseWavePullsCounter(RoutePath route, HttpRequest httpRequest) {
+        //fire a pull event
+        eventPublisher.publishEvent(new PullEvent(route.request, addressResolver.resolve(httpRequest)))
         try {
             final tags = new ArrayList<String>(20)
             tags.add('registry'); tags.add(route.registry)
@@ -204,12 +206,8 @@ class RegistryProxyController {
         log.info "> Request [$httpRequest.method] $httpRequest.path"
         final route = routeHelper.parse("/v2/" + url)
 
-        String ip = addressResolver.resolve(httpRequest)
-        //fire a pull event
-        if( httpRequest.method == HttpMethod.GET )
-            eventPublisher.publishEvent(new PullEvent(route.request, ip),)
-
         if( route.manifest && route.digest ){
+            String ip = addressResolver.resolve(httpRequest)
             rateLimiterService?.acquirePull( new AcquireRequest(route.request?.userId?.toString(), ip) )
         }
 
@@ -291,7 +289,7 @@ class RegistryProxyController {
 
     protected DigestStore manifestForPath(RoutePath route, HttpRequest httpRequest) {
         // increase the quest counters
-        increaseWavePullsCounter(route)
+        increaseWavePullsCounter(route, httpRequest)
         increaseFusionPullsCounter(route)
         // when the request contains a wave token and the manifest is specified
         // using a container 'tag' instead of a 'digest' the request path is used as storage key
