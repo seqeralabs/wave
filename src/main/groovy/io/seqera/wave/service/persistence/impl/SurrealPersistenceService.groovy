@@ -18,6 +18,8 @@
 
 package io.seqera.wave.service.persistence.impl
 
+import java.time.Instant
+
 import com.fasterxml.jackson.core.type.TypeReference
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -291,5 +293,35 @@ class SurrealPersistenceService implements PersistenceService {
             }
             log.error "Error saving build coun ${msg}", error
         })
+    }
+
+     Map<String, Long> getBuildCountByIp(Instant startdate, Instant enddate) {
+         def dates=""
+         if( startdate && enddate ){
+             dates = "where date >= '$startdate' and date < '$enddate'"
+         }
+         final statement = "SELECT ip,  math::sum(count) as total_count FROM wave_metrics_build $dates GROUP BY ip"
+         final map = surrealDb.sqlAsMap(getAuthorization(), statement)
+         def results = map.get("result") as List<Map>
+         Map<String, Long> counts = new HashMap<>()
+         for(def result : results){
+             counts.put(result.get("ip") as String, result.get("total_count") as Long)
+         }
+         return counts
+    }
+
+    Map<String, Long> getPullCountByIp(Instant startdate, Instant enddate) {
+        def dates=""
+        if( startdate && enddate ){
+            dates = "where date >= '$startdate' and date <= '$enddate'"
+        }
+        final statement = "SELECT ip,  math::sum(count) as total_count  FROM wave_metrics_pull $dates GROUP BY ip"
+        final map = surrealDb.sqlAsMap(getAuthorization(), statement)
+        def results = map.get("result") as List<Map>
+        Map<String, Long> counts = new HashMap<>()
+        for(def result : results){
+            counts.put(result.get("ip") as String, result.get("total_count") as Long)
+        }
+        return counts
     }
 }

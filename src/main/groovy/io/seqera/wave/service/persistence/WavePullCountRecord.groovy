@@ -47,4 +47,11 @@ class WavePullCountRecord {
         this.imageName = event.request.containerImage
         this.date = Instant.now().truncatedTo(ChronoUnit.DAYS)
     }
+
+    WavePullCountRecord(String ip, long userId, String imageName, Instant date) {
+        this.ip = ip
+        this.userId = userId
+        this.imageName = imageName
+        this.date = date
+    }
 }

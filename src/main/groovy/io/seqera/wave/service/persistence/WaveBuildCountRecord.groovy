@@ -53,4 +53,12 @@ class WaveBuildCountRecord {
         this.success = event.result.succeeded()
         this.date = Instant.now().truncatedTo(ChronoUnit.DAYS)
     }
+
+    WaveBuildCountRecord(String ip, long userId, String imageName, boolean success, Instant date) {
+        this.ip = ip
+        this.userId = userId
+        this.imageName = imageName
+        this.success = success
+        this.date = date
+    }
 }

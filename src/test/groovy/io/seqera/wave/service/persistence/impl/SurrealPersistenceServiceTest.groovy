@@ -23,6 +23,7 @@ import spock.lang.Specification
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
@@ -32,6 +33,8 @@ import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.builder.BuildFormat
+import io.seqera.wave.service.persistence.WaveBuildCountRecord
+import io.seqera.wave.service.persistence.WavePullCountRecord
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.BuildEvent
@@ -314,4 +317,80 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         result2 == scanRecord2
     }
 
+    def 'should return the correct build counts by ip' () {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def record1 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', false, Instant.now())
+        def record2 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', true, Instant.now())
+        def record3 = new WaveBuildCountRecord( '127.0.0.2',2, 'reg/repo:hash', true, Instant.now())
+
+        when:
+        persistence.incrementBuildCount(record1)
+        persistence.incrementBuildCount(record2)
+        persistence.incrementBuildCount(record3)
+
+        then:
+        sleep 300
+        persistence.getBuildCountByIp(null, null)['127.0.0.1'] == 2
+        persistence.getBuildCountByIp(null, null)['127.0.0.2'] == 1
+
+    }
+
+    def 'should return the correct build counts by ip between start and end date' () {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def record1 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', false, Instant.now().minus(1, ChronoUnit.DAYS))
+        def record2 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', true, Instant.now())
+        def record3 = new WaveBuildCountRecord( '127.0.0.2',2, 'reg/repo:hash', true, Instant.now())
+
+        when:
+        persistence.incrementBuildCount(record1)
+        persistence.incrementBuildCount(record2)
+        persistence.incrementBuildCount(record3)
+
+        then:
+        sleep 300
+        persistence.getBuildCountByIp(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['127.0.0.1'] == 1
+        persistence.getBuildCountByIp(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['127.0.0.2'] == 1
+
+    }
+
+
+    def 'should return the correct pull counts by ip' () {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def record1 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now())
+        def record2 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now())
+        def record3 = new WavePullCountRecord( '127.0.0.2',2, 'reg/repo:hash', Instant.now())
+
+        when:
+        persistence.incrementPullCount(record1)
+        persistence.incrementPullCount(record2)
+        persistence.incrementPullCount(record3)
+
+        then:
+        sleep 300
+        persistence.getPullCountByIp(null, null)['127.0.0.1'] == 2
+        persistence.getPullCountByIp(null, null)['127.0.0.2'] == 1
+
+    }
+
+    def 'should return the correct pull counts by ip between start and end date' () {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def record1 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now().minus(1, ChronoUnit.DAYS))
+        def record2 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now())
+        def record3 = new WavePullCountRecord( '127.0.0.2',2, 'reg/repo:hash', Instant.now())
+
+        when:
+        persistence.incrementPullCount(record1)
+        persistence.incrementPullCount(record2)
+        persistence.incrementPullCount(record3)
+
+        then:
+        sleep 300
+        persistence.getPullCountByIp(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['127.0.0.1'] == 1
+        persistence.getPullCountByIp(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['127.0.0.2'] == 1
+
+    }
 }
