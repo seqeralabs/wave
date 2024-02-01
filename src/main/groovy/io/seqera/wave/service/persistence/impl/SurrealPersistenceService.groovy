@@ -31,6 +31,7 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
+import io.seqera.wave.service.metrics.Metrics
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildCountRecord
 import io.seqera.wave.service.persistence.WaveBuildRecord
@@ -295,62 +296,32 @@ class SurrealPersistenceService implements PersistenceService {
         })
     }
 
-     Map<String, Long> getBuildCountByIp(Instant startdate, Instant enddate) {
+     Map<String, Long> getBuildCount(Metrics metrics, Instant startdate, Instant enddate) {
          def dates=""
          if( startdate && enddate ){
              dates = "where date >= '$startdate' and date < '$enddate'"
          }
-         final statement = "SELECT ip,  math::sum(count) as total_count FROM wave_metrics_build $dates GROUP BY ip"
+         final statement = "SELECT $metrics,  math::sum(count) as total_count FROM wave_metrics_build $dates GROUP BY $metrics"
          final map = surrealDb.sqlAsMap(getAuthorization(), statement)
          def results = map.get("result") as List<Map>
          Map<String, Long> counts = new HashMap<>()
          for(def result : results){
-             counts.put(result.get("ip") as String, result.get("total_count") as Long)
+             counts.put(result.get(metrics.toString()) as String, result.get("total_count") as Long)
          }
          return counts
     }
 
-    Map<String, Long> getPullCountByIp(Instant startdate, Instant enddate) {
+    Map<String, Long> getPullCount(Metrics metrics, Instant startdate, Instant enddate) {
         def dates=""
         if( startdate && enddate ){
             dates = "where date >= '$startdate' and date <= '$enddate'"
         }
-        final statement = "SELECT ip,  math::sum(count) as total_count  FROM wave_metrics_pull $dates GROUP BY ip"
+        final statement = "SELECT $metrics,  math::sum(count) as total_count  FROM wave_metrics_pull $dates GROUP BY $metrics"
         final map = surrealDb.sqlAsMap(getAuthorization(), statement)
         def results = map.get("result") as List<Map>
         Map<String, Long> counts = new HashMap<>()
         for(def result : results){
-            counts.put(result.get("ip") as String, result.get("total_count") as Long)
-        }
-        return counts
-    }
-
-    Map<String, Long> getBuildCountByUserid(Instant startdate, Instant enddate) {
-        def dates=""
-        if( startdate && enddate ){
-            dates = "where date >= '$startdate' and date < '$enddate'"
-        }
-        final statement = "SELECT userid,  math::sum(count) as total_count FROM wave_metrics_build $dates GROUP BY userid"
-        final map = surrealDb.sqlAsMap(getAuthorization(), statement)
-        def results = map.get("result") as List<Map>
-        Map<String, Long> counts = new HashMap<>()
-        for(def result : results){
-            counts.put(result.get("userid") as String, result.get("total_count") as Long)
-        }
-        return counts
-    }
-
-    Map<String, Long> getPullCountByUserid(Instant startdate, Instant enddate) {
-        def dates=""
-        if( startdate && enddate ){
-            dates = "where date >= '$startdate' and date <= '$enddate'"
-        }
-        final statement = "SELECT userid,  math::sum(count) as total_count  FROM wave_metrics_pull $dates GROUP BY userid"
-        final map = surrealDb.sqlAsMap(getAuthorization(), statement)
-        def results = map.get("result") as List<Map>
-        Map<String, Long> counts = new HashMap<>()
-        for(def result : results){
-            counts.put(result.get("userid") as String, result.get("total_count") as Long)
+            counts.put(result.get(metrics.toString()) as String, result.get("total_count") as Long)
         }
         return counts
     }

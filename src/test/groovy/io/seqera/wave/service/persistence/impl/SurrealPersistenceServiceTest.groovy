@@ -33,6 +33,7 @@ import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.builder.BuildFormat
+import io.seqera.wave.service.metrics.Metrics
 import io.seqera.wave.service.persistence.WaveBuildCountRecord
 import io.seqera.wave.service.persistence.WavePullCountRecord
 import io.seqera.wave.service.scan.ScanVulnerability
@@ -331,8 +332,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         then:
         sleep 300
-        persistence.getBuildCountByIp(null, null)['127.0.0.1'] == 2
-        persistence.getBuildCountByIp(null, null)['127.0.0.2'] == 1
+        persistence.getBuildCount(Metrics.ip, null, null)['127.0.0.1'] == 2
+        persistence.getBuildCount(Metrics.ip, null, null)['127.0.0.2'] == 1
 
     }
 
@@ -350,8 +351,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         then:
         sleep 300
-        persistence.getBuildCountByIp(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['127.0.0.1'] == 1
-        persistence.getBuildCountByIp(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['127.0.0.2'] == 1
+        persistence.getBuildCount(Metrics.ip, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['127.0.0.1'] == 1
+        persistence.getBuildCount(Metrics.ip, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['127.0.0.2'] == 1
 
     }
 
@@ -370,8 +371,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         then:
         sleep 300
-        persistence.getPullCountByIp(null, null)['127.0.0.1'] == 2
-        persistence.getPullCountByIp(null, null)['127.0.0.2'] == 1
+        persistence.getPullCount(Metrics.ip, null, null)['127.0.0.1'] == 2
+        persistence.getPullCount(Metrics.ip, null, null)['127.0.0.2'] == 1
 
     }
 
@@ -389,8 +390,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         then:
         sleep 300
-        persistence.getPullCountByIp(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['127.0.0.1'] == 1
-        persistence.getPullCountByIp(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['127.0.0.2'] == 1
+        persistence.getPullCount(Metrics.ip, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['127.0.0.1'] == 1
+        persistence.getPullCount(Metrics.ip, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['127.0.0.2'] == 1
 
     }
 
@@ -408,8 +409,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         then:
         sleep 300
-        persistence.getBuildCountByUserid(null, null)['1'] == 2
-        persistence.getBuildCountByUserid(null, null)['2'] == 1
+        persistence.getBuildCount(Metrics.userid, null, null)['1'] == 2
+        persistence.getBuildCount(Metrics.userid, null, null)['2'] == 1
 
     }
 
@@ -427,8 +428,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         then:
         sleep 300
-        persistence.getBuildCountByUserid(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['1'] == 1
-        persistence.getBuildCountByUserid(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['2'] == 1
+        persistence.getBuildCount(Metrics.userid, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['1'] == 1
+        persistence.getBuildCount(Metrics.userid, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['2'] == 1
 
     }
 
@@ -447,8 +448,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         then:
         sleep 300
-        persistence.getPullCountByUserid(null, null)['1'] == 2
-        persistence.getPullCountByUserid(null, null)['2'] == 1
+        persistence.getPullCount(Metrics.userid, null, null)['1'] == 2
+        persistence.getPullCount(Metrics.userid, null, null)['2'] == 1
 
     }
 
@@ -466,8 +467,84 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         then:
         sleep 300
-        persistence.getPullCountByUserid(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['1'] == 1
-        persistence.getPullCountByUserid(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['2'] == 1
+        persistence.getPullCount(Metrics.userid, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['1'] == 1
+        persistence.getPullCount(Metrics.userid, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['2'] == 1
+
+    }
+
+    def 'should return the correct build counts by imagename' () {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def record1 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', false, Instant.now())
+        def record2 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', true, Instant.now())
+        def record3 = new WaveBuildCountRecord( '127.0.0.2',2, 'reg/repo:hash2', true, Instant.now())
+
+        when:
+        persistence.incrementBuildCount(record1)
+        persistence.incrementBuildCount(record2)
+        persistence.incrementBuildCount(record3)
+
+        then:
+        sleep 300
+        persistence.getBuildCount(Metrics.imagename, null, null)['reg/repo:hash'] == 2
+        persistence.getBuildCount(Metrics.imagename, null, null)['reg/repo:hash2'] == 1
+
+    }
+
+    def 'should return the correct build counts by imagename between start and end date' () {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def record1 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', false, Instant.now().minus(1, ChronoUnit.DAYS))
+        def record2 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', true, Instant.now())
+        def record3 = new WaveBuildCountRecord( '127.0.0.2',2, 'reg/repo:hash2', true, Instant.now())
+
+        when:
+        persistence.incrementBuildCount(record1)
+        persistence.incrementBuildCount(record2)
+        persistence.incrementBuildCount(record3)
+
+        then:
+        sleep 300
+        persistence.getBuildCount(Metrics.imagename, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['reg/repo:hash'] == 1
+        persistence.getBuildCount(Metrics.imagename, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['reg/repo:hash2'] == 1
+
+    }
+
+    def 'should return the correct pull counts by imagename' () {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def record1 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now())
+        def record2 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now())
+        def record3 = new WavePullCountRecord( '127.0.0.2',2, 'reg/repo:hash2', Instant.now())
+
+        when:
+        persistence.incrementPullCount(record1)
+        persistence.incrementPullCount(record2)
+        persistence.incrementPullCount(record3)
+
+        then:
+        sleep 300
+        persistence.getPullCount(Metrics.imagename, null, null)['reg/repo:hash'] == 2
+        persistence.getPullCount(Metrics.imagename, null, null)['reg/repo:hash2'] == 1
+
+    }
+
+    def 'should return the correct pull counts by imagename between start and end date' () {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def record1 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now().minus(1, ChronoUnit.DAYS))
+        def record2 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now())
+        def record3 = new WavePullCountRecord( '127.0.0.2',2, 'reg/repo:hash2', Instant.now())
+
+        when:
+        persistence.incrementPullCount(record1)
+        persistence.incrementPullCount(record2)
+        persistence.incrementPullCount(record3)
+
+        then:
+        sleep 300
+        persistence.getPullCount(Metrics.imagename, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['reg/repo:hash'] == 1
+        persistence.getPullCount(Metrics.imagename, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['reg/repo:hash2'] == 1
 
     }
 }
