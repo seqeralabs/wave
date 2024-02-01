@@ -324,4 +324,34 @@ class SurrealPersistenceService implements PersistenceService {
         }
         return counts
     }
+
+    Map<String, Long> getBuildCountByUserid(Instant startdate, Instant enddate) {
+        def dates=""
+        if( startdate && enddate ){
+            dates = "where date >= '$startdate' and date < '$enddate'"
+        }
+        final statement = "SELECT userid,  math::sum(count) as total_count FROM wave_metrics_build $dates GROUP BY userid"
+        final map = surrealDb.sqlAsMap(getAuthorization(), statement)
+        def results = map.get("result") as List<Map>
+        Map<String, Long> counts = new HashMap<>()
+        for(def result : results){
+            counts.put(result.get("userid") as String, result.get("total_count") as Long)
+        }
+        return counts
+    }
+
+    Map<String, Long> getPullCountByUserid(Instant startdate, Instant enddate) {
+        def dates=""
+        if( startdate && enddate ){
+            dates = "where date >= '$startdate' and date <= '$enddate'"
+        }
+        final statement = "SELECT userid,  math::sum(count) as total_count  FROM wave_metrics_pull $dates GROUP BY userid"
+        final map = surrealDb.sqlAsMap(getAuthorization(), statement)
+        def results = map.get("result") as List<Map>
+        Map<String, Long> counts = new HashMap<>()
+        for(def result : results){
+            counts.put(result.get("userid") as String, result.get("total_count") as Long)
+        }
+        return counts
+    }
 }
