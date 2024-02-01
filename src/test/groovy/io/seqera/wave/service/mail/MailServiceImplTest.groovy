@@ -51,7 +51,7 @@ class MailServiceImplTest extends Specification {
         1* request.getPlatform() >> ContainerPlatform.DEFAULT
         1* request.getCondaFile() >> null
         1* request.getSpackFile() >> null
-        1* request.getSpackArch() >> null
+        1* request.getSpackTarget() >> null
         and:
         mail.to == recipient
         mail.body.contains('from foo')
@@ -79,7 +79,7 @@ class MailServiceImplTest extends Specification {
         1* request.getTargetImage() >> 'wave/build:xyz'
         1* request.getPlatform() >> ContainerPlatform.DEFAULT
         1* request.getSpackFile() >> 'some-spack-recipe'
-        1* request.getSpackArch() >> 'zen3'
+        1* request.getSpackTarget() >> 'zen3'
         and:
         mail.to == recipient
         mail.body.contains('Spack file')

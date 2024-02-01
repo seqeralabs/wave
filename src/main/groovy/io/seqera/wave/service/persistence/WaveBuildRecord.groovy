@@ -42,7 +42,7 @@ class WaveBuildRecord {
     String dockerFile
     String condaFile
     String spackFile
-    String spackArch
+    String spackTarget
     String targetImage
     String userName
     String userEmail
@@ -66,7 +66,7 @@ class WaveBuildRecord {
                 dockerFile: event.request.containerFile,
                 condaFile: event.request.condaFile,
                 spackFile: event.request.spackFile,
-                spackArch: event.request.spackArch,
+                spackTarget: event.request.spackTarget,
                 targetImage: event.request.targetImage,
                 userName: event.request.user?.userName,
                 userEmail: event.request.user?.email,

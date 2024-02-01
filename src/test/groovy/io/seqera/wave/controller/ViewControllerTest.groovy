@@ -71,7 +71,7 @@ class ViewControllerTest extends Specification {
                 dockerFile: 'FROM foo',
                 condaFile: 'conda::foo',
                 spackFile: 'some-spack-recipe',
-                spackArch: 'zen3',
+                spackTarget: 'zen3',
                 targetImage: 'docker.io/some:image',
                 userName: 'paolo',
                 userEmail: 'paolo@seqera.io',
@@ -98,7 +98,7 @@ class ViewControllerTest extends Specification {
         binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
         binding.build_spackfile == 'some-spack-recipe'
-        binding.build_spackarch == 'zen3'
+        binding.build_spacktarget == 'zen3'
         binding.build_format == 'Docker'
         binding.build_log_data == 'log content'
         binding.build_log_truncated == false
@@ -172,7 +172,7 @@ class ViewControllerTest extends Specification {
         def record1 = new WaveBuildRecord(
                 buildId: 'test',
                 spackFile: 'foo/spack/recipe',
-                spackArch: 'zen3',
+                spackTarget: 'zen3',
                 targetImage: 'test',
                 userName: 'test',
                 userEmail: 'test',

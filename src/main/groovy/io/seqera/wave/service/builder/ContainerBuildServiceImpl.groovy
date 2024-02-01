@@ -143,7 +143,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             final binding = new HashMap(2)
             binding.spack_builder_image = config.builderImage
             binding.spack_runner_image = config.runnerImage
-            binding.spack_arch = req.getSpackArch()
+            binding.spack_arch = req.getSpackTarget()
             binding.spack_cache_bucket = config.cacheBucket
             binding.spack_key_file = config.secretMountPath
             return new TemplateRenderer().render(containerFile, binding)

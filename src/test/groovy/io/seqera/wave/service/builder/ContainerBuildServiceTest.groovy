@@ -207,10 +207,10 @@ class ContainerBuildServiceTest extends Specification {
                   specs: [bwa@0.7.15, salmon@1.1.1]
                   concretizer: {unify: true, reuse: true}
                 '''
-        def spackArch = 'zen3'
+        def spackTarget = 'zen3'
         and:
         def spackConfig = new SpackConfig(cacheBucket: 's3://bucket/cache', secretMountPath: '/mnt/secret')
-        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', condaFile, spackFile, spackArch, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'), cfg, null, null, "", null)
+        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', condaFile, spackFile, spackTarget, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'), cfg, null, null, "", null)
         and:
         def store = Mock(BuildStore)
         def strategy = Mock(BuildStrategy)
@@ -265,8 +265,8 @@ class ContainerBuildServiceTest extends Specification {
         and:
         def dockerFile = SpackHelper.builderDockerTemplate()
         def spackFile = 'some spack packages'
-        def spackArch = 'zen3'
-        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', null, spackFile, spackArch, BuildFormat.DOCKER, Mock(User),null, null,  ContainerPlatform.of('amd64'), null, null, null, "", null)
+        def spackTarget = 'zen3'
+        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', null, spackFile, spackTarget, BuildFormat.DOCKER, Mock(User),null, null,  ContainerPlatform.of('amd64'), null, null, null, "", null)
         and:
         def spack = Mock(SpackConfig)
 
@@ -295,8 +295,8 @@ class ContainerBuildServiceTest extends Specification {
         def context = Path.of('/some/context/dir')
         def dockerFile = SpackHelper.builderSingularityTemplate()
         def spackFile = 'some spack packages'
-        def spackArch = 'zen3'
-        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', null, spackFile, spackArch, BuildFormat.SINGULARITY, Mock(User),null, null,  ContainerPlatform.of('amd64'), null, null, null, "", null)
+        def spackTarget = 'zen3'
+        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', null, spackFile, spackTarget, BuildFormat.SINGULARITY, Mock(User),null, null,  ContainerPlatform.of('amd64'), null, null, null, "", null)
         and:
         def spack = Mock(SpackConfig)
 

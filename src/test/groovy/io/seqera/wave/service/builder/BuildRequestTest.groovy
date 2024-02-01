@@ -77,7 +77,7 @@ class BuildRequestTest extends Specification {
         req.format == BuildFormat.DOCKER
         req.condaFile == null
         req.spackFile == null
-        req.spackArch == null
+        req.spackTarget == null
         req.platform == ContainerPlatform.of('amd64')
         req.configJson == '{auth}'
         req.scanId == SCAN_ID
@@ -117,7 +117,7 @@ class BuildRequestTest extends Specification {
         req.targetImage == 'docker.io/wave:samtools-1.0--8026e3a63b5c863f'
         req.condaFile == CONDA_RECIPE
         req.spackFile == null
-        req.spackArch == null
+        req.spackTarget == null
         and:
         !req.isSpackBuild
 
@@ -147,10 +147,10 @@ class BuildRequestTest extends Specification {
                 IP_ADDR,
                 OFFSET)
         then:
-        req.id == '69319bfaa5818518'
-        req.targetImage == 'docker.io/wave:bwa-0.7.15--69319bfaa5818518'
+        req.id == '405a13bb5260e88e'
+        req.targetImage == 'docker.io/wave:bwa-0.7.15--405a13bb5260e88e'
         req.spackFile == SPACK_RECIPE
-        req.spackArch == SPACK_ARCH
+        req.spackTarget == SPACK_ARCH
         req.condaFile == null
         and:
         req.isSpackBuild

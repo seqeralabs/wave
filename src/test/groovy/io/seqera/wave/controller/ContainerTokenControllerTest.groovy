@@ -258,16 +258,16 @@ class ContainerTokenControllerTest extends Specification {
         build.platform == ContainerPlatform.of('arm64')
 
         when:
-        submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), spackFile: encode('some::spack-recipe'), spackArch: 'neoverse_v1', containerPlatform: 'arm64')
+        submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), spackFile: encode('some::spack-recipe'), spackTarget: 'neoverse_v1', containerPlatform: 'arm64')
         build = controller.makeBuildRequest(submit, null, "")
         then:
-        build.id == '058696cf7b89f4a3'
+        build.id == '55f13a399562dfa9'
         build.containerFile.endsWith('\nFROM foo')
         build.containerFile.startsWith('# Builder image\n')
         build.condaFile == null
         build.spackFile == 'some::spack-recipe'
-        build.spackArch == 'neoverse_v1'
-        build.targetImage == 'wave/build:058696cf7b89f4a3'
+        build.spackTarget == 'neoverse_v1'
+        build.targetImage == 'wave/build:55f13a399562dfa9'
         build.workDir == Path.of('/some/wsp').resolve(build.id)
         build.platform == ContainerPlatform.of('arm64')
     }
