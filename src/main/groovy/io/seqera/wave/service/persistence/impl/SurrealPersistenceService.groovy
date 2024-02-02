@@ -296,7 +296,7 @@ class SurrealPersistenceService implements PersistenceService {
         })
     }
 
-     Map<String, Long> getBuildCount(Metrics metrics, Instant startdate, Instant enddate) {
+     Map<String, Long> getBuildCountByMetrics(Metrics metrics, Instant startdate, Instant enddate) {
          def dates=""
          if( startdate && enddate ){
              dates = "where date >= '$startdate' and date < '$enddate'"
@@ -311,7 +311,7 @@ class SurrealPersistenceService implements PersistenceService {
          return counts
     }
 
-    Map<String, Long> getPullCount(Metrics metrics, Instant startdate, Instant enddate) {
+    Map<String, Long> getPullCountByMetrics(Metrics metrics, Instant startdate, Instant enddate) {
         def dates=""
         if( startdate && enddate ){
             dates = "where date >= '$startdate' and date <= '$enddate'"
@@ -324,5 +324,14 @@ class SurrealPersistenceService implements PersistenceService {
             counts.put(result.get(metrics.toString()) as String, result.get("total_count") as Long)
         }
         return counts
+    }
+
+    void getTotalBuildCount(Instant startdate, Instant enddate){
+        def dates=""
+        if( startdate && enddate ){
+            dates = "date >= '$startdate' and date <= '$enddate' and"
+        }
+        final statement = "SELECT math::sum(count) as total_count FROM wave_metrics_build where $dates"
+        final map = surrealDb.sqlAsMap(getAuthorization(), statement)
     }
 }
