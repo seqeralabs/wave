@@ -547,4 +547,112 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.getPullCountByMetrics(Metrics.imagename, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['reg/repo:hash2'] == 1
 
     }
+
+    def 'should return the total build count' () {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def record1 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', false, Instant.now())
+        def record2 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', true, Instant.now())
+        def record3 = new WaveBuildCountRecord( '127.0.0.2',2, 'reg/repo:hash2', true, Instant.now())
+
+        when:
+        persistence.incrementBuildCount(record1)
+        persistence.incrementBuildCount(record2)
+        persistence.incrementBuildCount(record3)
+
+        then:
+        sleep 300
+        persistence.getBuildCount(null, null) == 3
+
+    }
+
+    def 'should return the total build count between start and end date' () {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def record1 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', false, Instant.now().minus(1, ChronoUnit.DAYS))
+        def record2 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', true, Instant.now())
+        def record3 = new WaveBuildCountRecord( '127.0.0.2',2, 'reg/repo:hash2', true, Instant.now())
+
+        when:
+        persistence.incrementBuildCount(record1)
+        persistence.incrementBuildCount(record2)
+        persistence.incrementBuildCount(record3)
+
+        then:
+        sleep 300
+        persistence.getBuildCount(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == 2
+
+    }
+
+    def 'should return the total pull count' () {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def record1 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now())
+        def record2 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now())
+        def record3 = new WavePullCountRecord( '127.0.0.2',2, 'reg/repo:hash2', Instant.now())
+
+        when:
+        persistence.incrementPullCount(record1)
+        persistence.incrementPullCount(record2)
+        persistence.incrementPullCount(record3)
+
+        then:
+        sleep 300
+        persistence.getPullCount(null, null) == 3
+
+    }
+
+    def 'should return the total pull count between start and end date' () {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def record1 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now().minus(1, ChronoUnit.DAYS))
+        def record2 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now())
+        def record3 = new WavePullCountRecord( '127.0.0.2',2, 'reg/repo:hash2', Instant.now())
+
+        when:
+        persistence.incrementPullCount(record1)
+        persistence.incrementPullCount(record2)
+        persistence.incrementPullCount(record3)
+
+        then:
+        sleep 300
+        persistence.getPullCount(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == 2
+
+    }
+
+    def 'should return the total count of successful builds' () {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def record1 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', false, Instant.now())
+        def record2 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', true, Instant.now())
+        def record3 = new WaveBuildCountRecord( '127.0.0.2',2, 'reg/repo:hash2', true, Instant.now())
+
+        when:
+        persistence.incrementBuildCount(record1)
+        persistence.incrementBuildCount(record2)
+        persistence.incrementBuildCount(record3)
+
+        then:
+        sleep 300
+        persistence.getSuccessBuildCount(null, null) == 2
+
+    }
+
+    def 'should return the total count of successful builds between start and end date' () {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def record1 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', false, Instant.now().minus(1, ChronoUnit.DAYS))
+        def record2 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', true, Instant.now())
+        def record3 = new WaveBuildCountRecord( '127.0.0.2',2, 'reg/repo:hash2', false, Instant.now())
+
+        when:
+        persistence.incrementBuildCount(record1)
+        persistence.incrementBuildCount(record2)
+        persistence.incrementBuildCount(record3)
+
+        then:
+        sleep 300
+        persistence.getSuccessBuildCount(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == 1
+
+    }
 }

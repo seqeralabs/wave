@@ -302,7 +302,7 @@ class SurrealPersistenceService implements PersistenceService {
              dates = "where date >= '$startdate' and date < '$enddate'"
          }
          final statement = "SELECT $metrics,  math::sum(count) as total_count FROM wave_metrics_build $dates GROUP BY $metrics"
-         final map = surrealDb.sqlAsMap(getAuthorization(), statement)
+         final map = surrealDb.sqlAsMap(authorization, statement)
          def results = map.get("result") as List<Map>
          Map<String, Long> counts = new HashMap<>()
          for(def result : results){
@@ -317,7 +317,7 @@ class SurrealPersistenceService implements PersistenceService {
             dates = "where date >= '$startdate' and date <= '$enddate'"
         }
         final statement = "SELECT $metrics,  math::sum(count) as total_count  FROM wave_metrics_pull $dates GROUP BY $metrics"
-        final map = surrealDb.sqlAsMap(getAuthorization(), statement)
+        final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
         Map<String, Long> counts = new HashMap<>()
         for(def result : results){
@@ -326,12 +326,36 @@ class SurrealPersistenceService implements PersistenceService {
         return counts
     }
 
-    void getTotalBuildCount(Instant startdate, Instant enddate){
+    Long getBuildCount(Instant startdate, Instant enddate){
         def dates=""
         if( startdate && enddate ){
-            dates = "date >= '$startdate' and date <= '$enddate' and"
+            dates = "where date >= '$startdate' and date <= '$enddate'"
         }
-        final statement = "SELECT math::sum(count) as total_count FROM wave_metrics_build where $dates"
-        final map = surrealDb.sqlAsMap(getAuthorization(), statement)
+        final statement = "SELECT math::sum(count) as total_count FROM wave_metrics_build $dates GROUP ALL"
+        final map = surrealDb.sqlAsMap(authorization, statement)
+        def results = map.get("result") as List<Map>
+        return results[0].get("total_count")? results[0].get("total_count") as Long : 0
+    }
+
+    Long getSuccessBuildCount(Instant startdate, Instant enddate){
+        def dates=""
+        if( startdate && enddate ){
+            dates = "and date >= '$startdate' and date <= '$enddate'"
+        }
+        final statement = "SELECT math::sum(count) as total_count FROM wave_metrics_build where success = true $dates GROUP ALL"
+        final map = surrealDb.sqlAsMap(authorization, statement)
+        def results = map.get("result") as List<Map>
+        return results[0].get("total_count")? results[0].get("total_count") as Long : 0
+    }
+
+    Long getPullCount(Instant startdate, Instant enddate){
+        def dates=""
+        if( startdate && enddate ){
+            dates = "where date >= '$startdate' and date <= '$enddate'"
+        }
+        final statement = "SELECT math::sum(count) as total_count FROM wave_metrics_pull $dates GROUP ALL"
+        final map = surrealDb.sqlAsMap(authorization, statement)
+        def results = map.get("result") as List<Map>
+        return results[0].get("total_count")? results[0].get("total_count") as Long : 0
     }
 }
