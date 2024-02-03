@@ -132,6 +132,10 @@ class ManifestSpecTest extends Specification {
         and:
         manifest.config.entrypoint == ['entry.sh']
         manifest.config.workingDir == '/some/work/dir'
+        and:
+        manifest.layers == ['sha256:10c3bb32200bdb5006b484c59b5f0c71b4dbab611d33fca816cd44f9f5ce9e3c',
+                            'sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4',
+                            'sha256:6d92b3a49ebfad5fe895550c2cb24b6370d61783aa4f979702a94892cbd19077']
 
     }
 

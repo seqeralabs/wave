@@ -39,6 +39,7 @@ class ManifestSpec {
     ConfigSpec config
     String container
     Instant created
+    List<String> layers
 
     ManifestSpec() {
         this(Map.of())
@@ -49,6 +50,7 @@ class ManifestSpec {
         this.container = opts.container
         this.config = new ConfigSpec( opts.config as Map ?: Map.of() )
         this.created = opts.created ? Instant.parse(opts.created as String) : null
+        this.layers = parseLayers(opts.rootfs as Map ?: Map.of())
     }
 
     static ManifestSpec parse(String manifest) {
@@ -60,13 +62,29 @@ class ManifestSpec {
         // parse the content
         final opts = new JsonSlurper().parseText(manifest) as Map
 
+        // fetch layers
+        final layers = (opts.fsLayers as List<Map>)
+                ?.reverse()
+                ?.collect(it-> it.blobSum)
         // fetch the history from the v1 manifest
         final history = opts.history as List<Map<String,String>>
         if( history ) {
             final configJson = history.get(0).v1Compatibility
             final configObj = new JsonSlurper().parseText(configJson) as Map
+            // add layers
+            configObj.put('rootfs', [diff_ids: layers])
             return new ManifestSpec( configObj )
         }
         throw new IllegalArgumentException("Invalid Docker v1 manifest")
+    }
+
+    static List<String> parseLayers(Map<String,List> rootfs) {
+        final ids = rootfs?.diff_ids
+        if( !ids )
+            return List.<String>of()
+        final result = new ArrayList(10)
+        for( String it : ids )
+            result.add(it)
+        return result
     }
 }

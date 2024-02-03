@@ -29,6 +29,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.http.HttpStatus
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
+import io.seqera.wave.core.spec.ContainerSpec
 import io.seqera.wave.core.spec.ManifestSpec
 import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.proxy.ProxyClient
@@ -42,7 +43,6 @@ import static io.seqera.wave.model.ContentType.DOCKER_MANIFEST_V2_TYPE
 import static io.seqera.wave.model.ContentType.OCI_IMAGE_CONFIG_V1
 import static io.seqera.wave.model.ContentType.OCI_IMAGE_INDEX_V1
 import static io.seqera.wave.model.ContentType.OCI_IMAGE_MANIFEST_V1
-
 /**
  * Implement the logic of container manifest manipulation and
  * layers injections
@@ -92,7 +92,7 @@ class ContainerAugmenter {
         if( route.request?.platform )
             this.platform = route.request.platform
         // note: do not propagate container config when "freeze" mode is enabled, because it has been already
-        // during the container build phase, and therefore it should be ignored by the augmenter
+        // applied during the container build phase, and therefore it should be ignored by the augmenter
         if( route.request?.containerConfig && !route.request.freeze )
             this.containerConfig = route.request.containerConfig
         return resolve(route.image, route.reference, headers)
@@ -538,5 +538,11 @@ class ContainerAugmenter {
         log.trace "Config (4): image $imageName:$tag => image config=\n${JsonOutput.prettyPrint(imageConfig)}"
 
         return ManifestSpec.parse(imageConfig)
+    }
+
+    ContainerSpec getContainerSpec(String imageName, String tag, Map<String,List<String>> headers) {
+        final manifest = getImageConfig(imageName, tag, headers)
+        final urls = manifest.layers.collect(it-> client.makeUri("/v2/$imageName/blobs/$it").toString())
+        return new ContainerSpec(client.registry.name, imageName, manifest, urls)
     }
 }

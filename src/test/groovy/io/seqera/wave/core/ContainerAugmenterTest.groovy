@@ -788,6 +788,7 @@ class ContainerAugmenterTest extends Specification {
         given:
         def REGISTRY = 'docker.io'
         def IMAGE = 'library/busybox'
+        def REFERENCE = 'sha256:6d9ac9237a84afe1516540f40a0fafdc86859b2141954b4d643af7066d598b74'
         def registry = lookupService.lookup(REGISTRY)
         def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
         def httpClient = HttpClientFactory.neverRedirectsHttpClient()
@@ -805,11 +806,21 @@ class ContainerAugmenterTest extends Specification {
                 .withPlatform('amd64')
 
         when:
-        def manifest = scanner.getImageConfig(IMAGE, 'latest', WaveDefault.ACCEPT_HEADERS)
+        def manifest = scanner.getImageConfig(IMAGE, REFERENCE, WaveDefault.ACCEPT_HEADERS)
         then:
         manifest.architecture == 'amd64'
         manifest.config.cmd == ['sh']
+        manifest.layers == ['sha256:2e112031b4b923a873c8b3d685d48037e4d5ccd967b658743d93a6e56c3064b9']
+
+        when:
+        def container = scanner.getContainerSpec(IMAGE, REFERENCE, WaveDefault.ACCEPT_HEADERS)
+        then:
+        container.registry == 'docker.io'
+        container.imageName == 'library/busybox'
+        container.manifestSpec == manifest
+        container.layerUrls == ['https://registry-1.docker.io/v2/library/busybox/blobs/sha256:2e112031b4b923a873c8b3d685d48037e4d5ccd967b658743d93a6e56c3064b9']
     }
+
 
     def 'should fetch container manifest for legacy image' () {
         given:
@@ -837,6 +848,19 @@ class ContainerAugmenterTest extends Specification {
         then:
         manifest.architecture == 'amd64'
         manifest.config.cmd == ['/bin/sh']
+        and:
+        manifest.layers.size() == 12
+        manifest.layers[0] == 'sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4'
+        manifest.layers[11] == 'sha256:6d92b3a49ebfad5fe895550c2cb24b6370d61783aa4f979702a94892cbd19077'
+
+        when:
+        def container = scanner.getContainerSpec(IMAGE, TAG, WaveDefault.ACCEPT_HEADERS)
+        then:
+        container.registry == 'quay.io'
+        container.imageName == 'biocontainers/fastqc'
+        container.manifestSpec == manifest
+        container.layerUrls[0] == 'https://quay.io/v2/biocontainers/fastqc/blobs/sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4'
+        container.layerUrls[11] == 'https://quay.io/v2/biocontainers/fastqc/blobs/sha256:6d92b3a49ebfad5fe895550c2cb24b6370d61783aa4f979702a94892cbd19077'
     }
 
 }
