@@ -1,5 +1,10 @@
 WAVE CLI CHANGE-LOG
 ===================
+1.1.3 - 4 Feb 2024 
+- Add preserve timestamp option [4b710ea9]
+- Bump reflect and resource configs for native-image build [8875dd9d]
+- Bump Moshi 1.15.0 [e4c8c7c7]
+
 1.1.2 - 20 Dec 2023
 - Add static compilation based on musl (#30) [f880d302]
 - Add multiplatform brew support (#49) [aa618329]
