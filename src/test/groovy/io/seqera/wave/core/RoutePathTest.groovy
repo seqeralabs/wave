@@ -79,4 +79,21 @@ class RoutePathTest extends Specification {
         'quay.io/foo/bar:v1.0' | '/v2/foo/bar/manifests/v1.0'
     }
 
+    def 'should parse location' () {
+        expect:
+        RoutePath.parse(GIVEN) == RoutePath.v2path(TYPE, REG, IMAGE, REF)
+
+        where:
+        GIVEN                                                   | TYPE          | REG           | IMAGE         | REF
+        '/v2/hello-world/manifests/latest'                      | 'manifests'   | 'docker.io'   | 'hello-world' | 'latest'
+        'docker.io/v2/hello-world/manifests/latest'             | 'manifests'   | 'docker.io'   | 'hello-world' | 'latest'
+        'quay.io/v2/hello-world/manifests/sha256:123456'        | 'manifests'   | 'quay.io'     | 'hello-world' | 'sha256:123456'
+        and:
+        '/v2/hello-world/blobs/latest'                          | 'blobs'   | 'docker.io'       | 'hello-world' | 'latest'
+        'docker.io/v2/hello-world/blobs/latest'                 | 'blobs'   | 'docker.io'       | 'hello-world' | 'latest'
+        'quay.io/v2/hello-world/blobs/sha256:123456'            | 'blobs'   | 'quay.io'         | 'hello-world' | 'sha256:123456'
+        and:
+        'foo.com:5000/v2/hello-world/blobs/latest'              | 'blobs'   | 'foo.com:5000'    | 'hello-world' | 'latest'
+        'foo.com:5000/v2/hello-world/blobs/sha256:123456'       | 'blobs'   | 'foo.com:5000'    | 'hello-world' | 'sha256:123456'
+    }
 }

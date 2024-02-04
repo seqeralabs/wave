@@ -18,16 +18,15 @@
 
 package io.seqera.wave.core
 
-import io.micronaut.core.annotation.Nullable
+import java.util.regex.Pattern
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
+import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.ContainerRequestData
-
 import static io.seqera.wave.WaveDefault.DOCKER_IO
-
 /**
  * Model a container registry route path
  *
@@ -39,6 +38,8 @@ import static io.seqera.wave.WaveDefault.DOCKER_IO
 class RoutePath implements ContainerPath {
 
     static final private List<String> ALLOWED_TYPES = ['manifests','blobs','tags']
+
+    static final private Pattern REGEX = ~/([^:\\/]+(?::[0-9]+)?)?\\/v2\\/([a-z0-9][a-z0-9_.-]+(?:\\/[a-z0-9][a-z0-9_.-]+)?(?:\[a-zA-Z0-9][a-zA-Z0-9_.-]+)*)\\/(manifests|blobs)\\/(.+)/
 
     /**
      * Route type, either {@code manifests} or {@code blobs}
@@ -124,5 +125,18 @@ class RoutePath implements ContainerPath {
 
     static RoutePath empty() {
         new RoutePath(null, null, null, null, null)
+    }
+
+    static RoutePath parse(String location) {
+        final m = REGEX.matcher(location)
+        if( m.matches() ) {
+            final registry = m.group(1)
+            final image = m.group(2)
+            final type = m.group(3)
+            final reference = m.group(4)
+            return v2path(type, registry, image, reference)
+        }
+        else
+            throw new IllegalArgumentException("Not a valid container path - offending value: '$location'")
     }
 }

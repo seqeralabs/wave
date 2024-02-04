@@ -33,7 +33,8 @@ import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.ContainerAugmenter
 import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.core.RegistryProxyService
-import io.seqera.wave.core.spec.ManifestSpec
+import io.seqera.wave.core.spec.ConfigSpec
+import io.seqera.wave.core.spec.ContainerSpec
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.proxy.ProxyClient
@@ -182,7 +183,7 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
                         : credentialsProvider.getUserCredentials(path, userId, workspaceId, towerToken, towerEndpoint)
                 log.debug "Config credentials for repository: ${item.getImage()} => $creds"
 
-                final entry = fetchManifest0(path, creds).config?.entrypoint
+                final entry = fetchConfig0(path, creds).config?.entrypoint
                 if( entry )
                     return entry
             }
@@ -206,12 +207,28 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
                 .withLoginService(loginService)
     }
 
-    private ManifestSpec fetchManifest0(ContainerPath path, RegistryCredentials creds) {
+    private ConfigSpec fetchConfig0(ContainerPath path, RegistryCredentials creds) {
         final client = client0(path, creds)
 
         return new ContainerAugmenter()
                 .withClient(client)
-                .getImageConfig(path.image, path.getReference(), WaveDefault.ACCEPT_HEADERS)
+                .getContainerSpec(path.image, path.getReference(), WaveDefault.ACCEPT_HEADERS)
+                .getConfig()
     }
 
+    @Override
+    ContainerSpec containerSpec(String repo, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint) {
+        final path = ContainerCoordinates.parse(repo)
+
+        final creds = !userId
+                ? credentialsProvider.getDefaultCredentials(path)
+                : credentialsProvider.getUserCredentials(path, userId, workspaceId, towerToken, towerEndpoint)
+        log.debug "Inspect credentials for repository: ${repo} => $creds"
+
+        final client = client0(path, creds)
+
+        return new ContainerAugmenter()
+                .withClient(client)
+                .getContainerSpec(path.image, path.getReference(), WaveDefault.ACCEPT_HEADERS)
+    }
 }

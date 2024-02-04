@@ -98,7 +98,7 @@ class ProxyClient {
 
     URI makeUri(String path) {
         assert path.startsWith('/'), "Request past should start with a slash character — offending path: $path"
-        URI.create(registry.host.toString() + path)
+        return URI.create(registry.host.toString() + path)
     }
 
     HttpResponse<String> getString(String path, Map<String,List<String>> headers=null, boolean followRedirect=true) {

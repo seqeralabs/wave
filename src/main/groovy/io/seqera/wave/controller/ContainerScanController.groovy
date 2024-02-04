@@ -45,7 +45,6 @@ class ContainerScanController {
     @Inject
     private ContainerScanService containerScanService
 
-
     @Get("/v1alpha1/scans/{scanId}")
     HttpResponse<WaveScanRecord> scanImage(String scanId){
         final record = containerScanService.getScanResult(scanId)

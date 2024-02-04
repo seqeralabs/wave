@@ -41,6 +41,7 @@ import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContentType
 import io.seqera.wave.proxy.ProxyClient
+import io.seqera.wave.storage.LayerDigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.test.ManifestConst
 import io.seqera.wave.util.ContainerConfigFactory
@@ -152,7 +153,7 @@ class ContainerAugmenterTest extends Specification {
         layerJson.text = JsonOutput.prettyPrint(JsonOutput.toJson(layerConfig))
     }
 
-    def 'create the layer' () {
+    def 'create digest store' () {
         given:
         def IMAGE = 'hello-world'
         def REGISTRY = 'docker.io'
@@ -188,6 +189,37 @@ class ContainerAugmenterTest extends Specification {
 
         cleanup:
         folder?.toFile()?.deleteDir()
+    }
+
+    def 'create digest store with docker mapping' () {
+        given:
+        def IMAGE = 'hello-world'
+        def REGISTRY = 'docker.io'
+
+        def info = new RegistryInfo(REGISTRY, new URI('http://docker.io'), Mock(RegistryAuth))
+        def client = Mock(ProxyClient) { getRegistry()>>info }
+        def augumenter = new ContainerAugmenter()
+                .withStorage(storage)
+                .withClient(client)
+
+        and:
+        def TARGET = 'quay.io/v2/foo/blobs/1234567890'
+        def layer = new ContainerLayer("layer://$TARGET", 'sha256:1234567890', 100)
+
+        when:
+        def blob = augumenter.layerBlob(IMAGE, layer)
+
+        then:
+        blob.get('mediaType') == 'application/vnd.docker.image.rootfs.diff.tar.gzip'
+        blob.get('digest') == 'sha256:1234567890'
+        blob.get('size') == 100
+
+        and:
+        def entry = storage.getBlob("$REGISTRY/v2/$IMAGE/blobs/sha256:1234567890").get()
+        entry instanceof LayerDigestStore
+        entry.mediaType == ContentType.DOCKER_IMAGE_TAR_GZIP
+        entry.digest == 'sha256:1234567890'
+        (entry as LayerDigestStore).location == TARGET
     }
 
     def 'should update image manifest' () {
@@ -311,33 +343,6 @@ class ContainerAugmenterTest extends Specification {
 
         cleanup:
         folder?.toFile()?.deleteDir()
-    }
-
-    def 'should find image config digest' () {
-        given:
-        def scanner = new ContainerAugmenter()
-        def CONFIG = '''
-          {
-            "schemaVersion": 2,
-            "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
-            "config": {
-                "mediaType": "application/vnd.docker.container.image.v1+json",
-                "size": 1469,
-                "digest": "sha256:feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412"
-            },
-            "layers": [
-                {
-                  "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
-                  "size": 2479,
-                  "digest": "sha256:2db29710123e3e53a794f2694094b9b4338aa9ee5c40b930cb8063a1be392c54"
-                }
-            ]
-          }
-        '''
-        when:
-        def result = scanner.findImageConfigDigest(CONFIG)
-        then:
-        result == 'sha256:feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412'
     }
 
     def 'should update image config with new layer' () {
@@ -806,19 +811,27 @@ class ContainerAugmenterTest extends Specification {
                 .withPlatform('amd64')
 
         when:
-        def manifest = scanner.getImageConfig(IMAGE, REFERENCE, WaveDefault.ACCEPT_HEADERS)
+        def spec = scanner.getContainerSpec(IMAGE, REFERENCE, WaveDefault.ACCEPT_HEADERS)
         then:
-        manifest.architecture == 'amd64'
-        manifest.config.cmd == ['sh']
-        manifest.layers == ['sha256:2e112031b4b923a873c8b3d685d48037e4d5ccd967b658743d93a6e56c3064b9']
-
-        when:
-        def container = scanner.getContainerSpec(IMAGE, REFERENCE, WaveDefault.ACCEPT_HEADERS)
-        then:
-        container.registry == 'docker.io'
-        container.imageName == 'library/busybox'
-        container.manifestSpec == manifest
-        container.layerUrls == ['https://registry-1.docker.io/v2/library/busybox/blobs/sha256:2e112031b4b923a873c8b3d685d48037e4d5ccd967b658743d93a6e56c3064b9']
+        spec.registry == 'docker.io'
+        spec.imageName == 'library/busybox'
+        spec.reference == 'sha256:6d9ac9237a84afe1516540f40a0fafdc86859b2141954b4d643af7066d598b74'
+        spec.digest == 'sha256:6d9ac9237a84afe1516540f40a0fafdc86859b2141954b4d643af7066d598b74'
+        and:
+        !spec.isV1()
+        spec.isV2()
+        spec.isOci()
+        and:
+        spec.config.architecture == 'amd64'
+        spec.config.config.cmd == ['sh']
+        and:
+        spec.manifest.schemaVersion == 2
+        spec.manifest.mediaType == 'application/vnd.oci.image.manifest.v1+json'
+        spec.manifest.config.mediaType == 'application/vnd.oci.image.config.v1+json'
+        spec.manifest.config.digest == 'sha256:3f57d9401f8d42f986df300f0c69192fc41da28ccc8d797829467780db3dd741'
+        spec.manifest.config.size == 581
+        and:
+        spec.layerUrls == ['https://registry-1.docker.io/v2/library/busybox/blobs/sha256:9ad63333ebc97e32b987ae66aa3cff81300e4c2e6d2f2395cef8a3ae18b249fe']
     }
 
 
@@ -844,23 +857,26 @@ class ContainerAugmenterTest extends Specification {
                 .withPlatform('amd64')
 
         when:
-        def manifest = scanner.getImageConfig(IMAGE, TAG, WaveDefault.ACCEPT_HEADERS)
+        def spec = scanner.getContainerSpec(IMAGE, TAG, WaveDefault.ACCEPT_HEADERS)
         then:
-        manifest.architecture == 'amd64'
-        manifest.config.cmd == ['/bin/sh']
+        spec.registry == 'quay.io'
+        spec.imageName == 'biocontainers/fastqc'
+        spec.reference == '0.11.9--0'
+        spec.digest == 'sha256:319b8d4eca0fc0367d192941f221f7fcd29a6b96996c63cbf8931dbb66e53348'
         and:
-        manifest.layers.size() == 12
-        manifest.layers[0] == 'sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4'
-        manifest.layers[11] == 'sha256:6d92b3a49ebfad5fe895550c2cb24b6370d61783aa4f979702a94892cbd19077'
-
-        when:
-        def container = scanner.getContainerSpec(IMAGE, TAG, WaveDefault.ACCEPT_HEADERS)
-        then:
-        container.registry == 'quay.io'
-        container.imageName == 'biocontainers/fastqc'
-        container.manifestSpec == manifest
-        container.layerUrls[0] == 'https://quay.io/v2/biocontainers/fastqc/blobs/sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4'
-        container.layerUrls[11] == 'https://quay.io/v2/biocontainers/fastqc/blobs/sha256:6d92b3a49ebfad5fe895550c2cb24b6370d61783aa4f979702a94892cbd19077'
+        spec.isV1()
+        !spec.isV2()
+        !spec.isOci()
+        and:
+        spec.config.architecture == 'amd64'
+        spec.config.config.cmd == ['/bin/sh']
+        and:
+        spec.manifest.schemaVersion == 1
+        spec.manifest.mediaType == 'application/vnd.docker.distribution.manifest.v1+prettyjws'
+        spec.manifest.config == null
+        and:
+        spec.layerUrls[0] == 'https://quay.io/v2/biocontainers/fastqc/blobs/sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4'
+        spec.layerUrls[11] == 'https://quay.io/v2/biocontainers/fastqc/blobs/sha256:6d92b3a49ebfad5fe895550c2cb24b6370d61783aa4f979702a94892cbd19077'
     }
 
 }

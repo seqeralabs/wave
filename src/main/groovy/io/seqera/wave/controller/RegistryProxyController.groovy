@@ -53,6 +53,7 @@ import io.seqera.wave.service.blob.BlobCacheService
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.HttpResource
+import io.seqera.wave.storage.LayerDigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.util.Retryable
 import jakarta.inject.Inject
@@ -209,10 +210,15 @@ class RegistryProxyController {
         }
 
         if( route.blob ) {
-            final entry = storage.getBlob(route.getTargetPath())
-            if (entry.present) {
+            final entry = storage.getBlob(route.getTargetPath()).orElse(null)
+            if( entry instanceof LayerDigestStore ) {
+                log.info "Blob found in the cache: $route.path ==> mapping to: ${entry.location}"
+                final target = RoutePath.parse(entry.location)
+                return handleDelegate0(target, httpRequest)
+            }
+            else if (entry) {
                 log.info "Blob found in the cache: $route.path"
-                return fromCache(entry.get())
+                return fromCache(entry)
             }
         }
 
@@ -221,6 +227,10 @@ class RegistryProxyController {
             return handleTagList(route, httpRequest)
         }
 
+        return handleDelegate0(route, httpRequest)
+    }
+
+    protected MutableHttpResponse<?> handleDelegate0(RoutePath route, HttpRequest httpRequest) {
         final headers = httpRequest.headers.asMap() as Map<String, List<String>>
         final resp = proxyService.handleRequest(route, headers)
         if( resp.isRedirect() ) {

@@ -1,90 +1,96 @@
-/*
- *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Affero General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Affero General Public License for more details.
- *
- *  You should have received a copy of the GNU Affero General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package io.seqera.wave.core.spec
 
-import java.time.Instant
-
 import groovy.json.JsonSlurper
+import groovy.transform.Canonical
 import groovy.transform.CompileStatic
-import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
+import io.seqera.wave.model.ContentType
 
 /**
- * Model a container manifest specification
+ * Model a manifest reference having the following structure
+ *
+ * <pre>
+ *     {
+ *      "schemaVersion": 2,
+ *      "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+ *      "config": {
+ *              "mediaType": "application/vnd.docker.container.image.v1+json",
+ *              "size": 1469,
+ *              "digest": "sha256:feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412"
+ *          },
+ *      "layers": [
+ *          {
+ *              "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+ *              "size": 2479,
+ *              "digest": "sha256:2db29710123e3e53a794f2694094b9b4338aa9ee5c40b930cb8063a1be392c54"
+ *          }
+ *      ]
+ *    }
+ * </pre>
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@EqualsAndHashCode
+@Canonical
 @ToString(includePackage = false, includeNames = true)
 @CompileStatic
 class ManifestSpec {
 
-    String architecture
-    ConfigSpec config
-    String container
-    Instant created
-    List<String> layers
+    /**
+     * The manifest schema version either 1 or 2
+     */
+    Integer schemaVersion
 
-    ManifestSpec() {
-        this(Map.of())
+    /**
+     * The manifest schema type
+     */
+    String mediaType
+
+    /**
+     * The object (manifest) reference where the container config is stored.
+     * NOTE: This is only available for schema version 2
+     */
+    ObjectRef config
+
+    /**
+     * The container blob layers reference
+     */
+    List<ObjectRef> layers
+
+    /**
+     * The container annotations
+     * NOTE: This is only available for schema version 2
+     */
+    Map<String,String> annotations
+
+    static ManifestSpec of(String json) {
+        return of(new JsonSlurper().parseText(json) as Map)
     }
 
-    ManifestSpec(Map opts) {
-        this.architecture = opts.architecture
-        this.container = opts.container
-        this.config = new ConfigSpec( opts.config as Map ?: Map.of() )
-        this.created = opts.created ? Instant.parse(opts.created as String) : null
-        this.layers = parseLayers(opts.rootfs as Map ?: Map.of())
+    static ManifestSpec of(Map<String,?> object) {
+        return new ManifestSpec(
+                object.get('schemaVersion') as Integer,
+                object.get('mediaType') as String,
+                ObjectRef.of(object.get('config') as Map ?: Map.of()),
+                ObjectRef.of(object.get('layers') as List<Map>),
+                object.get('annotations') as Map ?: Map.of()
+        )
     }
 
-    static ManifestSpec parse(String manifest) {
-        final payload = new JsonSlurper().parseText(manifest) as Map
-        return new ManifestSpec(payload)
-    }
-
-    static ManifestSpec parseV1(String manifest) {
-        // parse the content
-        final opts = new JsonSlurper().parseText(manifest) as Map
-
+    static ManifestSpec parseV1(Map<String,Object> opts) {
         // fetch layers
         final layers = (opts.fsLayers as List<Map>)
                 ?.reverse()
-                ?.collect(it-> it.blobSum)
-        // fetch the history from the v1 manifest
-        final history = opts.history as List<Map<String,String>>
-        if( history ) {
-            final configJson = history.get(0).v1Compatibility
-            final configObj = new JsonSlurper().parseText(configJson) as Map
-            // add layers
-            configObj.put('rootfs', [diff_ids: layers])
-            return new ManifestSpec( configObj )
-        }
-        throw new IllegalArgumentException("Invalid Docker v1 manifest")
+                ?.collect(it-> ObjectRef.of(Map.of('digest', it.blobSum)))
+
+        return new ManifestSpec(
+                1,
+                ContentType.DOCKER_MANIFEST_V1_JWS_TYPE,
+                null,
+                layers,
+                Map.of() )
     }
 
-    static List<String> parseLayers(Map<String,List> rootfs) {
-        final ids = rootfs?.diff_ids
-        if( !ids )
-            return List.<String>of()
-        final result = new ArrayList(10)
-        for( String it : ids )
-            result.add(it)
-        return result
+    static ManifestSpec parseV1(String json) {
+        return parseV1(new JsonSlurper().parseText(json) as Map)
     }
 }

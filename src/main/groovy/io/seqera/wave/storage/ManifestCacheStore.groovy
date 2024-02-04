@@ -104,4 +104,12 @@ class ManifestCacheStore extends AbstractCacheStore<DigestStore> implements Stor
         return result
     }
 
+    @Override
+    DigestStore saveBlob(String path, String targetLayer, String type, String digest, int size) {
+        log.trace "Save Blob [target=$targetLayer] ==> $path"
+        final result = new LayerDigestStore(targetLayer, type, digest, size)
+        this.put(path, result)
+        return result
+    }
+
 }

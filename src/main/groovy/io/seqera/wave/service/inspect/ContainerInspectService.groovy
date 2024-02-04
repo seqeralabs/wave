@@ -19,6 +19,8 @@
 package io.seqera.wave.service.inspect
 
 import io.micronaut.core.annotation.Nullable
+import io.seqera.wave.core.spec.ContainerSpec
+
 /**
  * Define container inspect service
  *
@@ -72,4 +74,6 @@ interface ContainerInspectService {
      */
     List<String> containerEntrypoint(String containerFile, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint)
 
+
+    ContainerSpec containerSpec(String repository, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint)
 }
