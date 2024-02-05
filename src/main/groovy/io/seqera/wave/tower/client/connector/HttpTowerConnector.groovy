@@ -42,8 +42,7 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-@Deprecated
-@Requires(env = 'deprecated')
+@Requires(env = 'legacy-http-connector')
 class HttpTowerConnector extends TowerConnector {
 
     @Inject

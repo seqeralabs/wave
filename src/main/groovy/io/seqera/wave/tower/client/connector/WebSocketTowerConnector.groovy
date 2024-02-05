@@ -22,6 +22,7 @@ import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
@@ -36,6 +37,7 @@ import static io.seqera.wave.service.pairing.PairingService.TOWER_SERVICE
  */
 @Slf4j
 @Singleton
+@Requires(notEnv = 'legacy-http-connector')
 @CompileStatic
 class WebSocketTowerConnector extends TowerConnector {
 

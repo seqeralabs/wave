@@ -38,12 +38,12 @@ import org.apache.commons.lang3.StringUtils
 class TowerClient {
 
     @Inject
-    private TowerConnector socketClient
+    private TowerConnector connector
 
     protected <T> CompletableFuture<T> getAsync(URI uri, String endpoint, @Nullable String authorization, Class<T> type) {
         assert uri, "Missing uri argument"
         assert endpoint, "Missing endpoint argument"
-        return socketClient.sendAsync(endpoint, uri, authorization, type)
+        return connector.sendAsync(endpoint, uri, authorization, type)
     }
 
     @Cacheable('cache-20sec')
