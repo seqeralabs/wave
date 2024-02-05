@@ -44,7 +44,7 @@ import jakarta.inject.Inject
  */
 @Slf4j
 @CompileStatic
-@Secured(SecurityRule.IS_ANONYMOUS)
+@Secured(SecurityRule.IS_AUTHENTICATED)
 @Controller
 class MetricController {
     @Inject

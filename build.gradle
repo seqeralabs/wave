@@ -44,6 +44,7 @@ dependencies {
     implementation("io.micronaut.reactor:micronaut-reactor-http-client")
     implementation("jakarta.annotation:jakarta.annotation-api")
     implementation("io.micronaut:micronaut-validation")
+    implementation 'io.micronaut.security:micronaut-security'
     implementation "org.codehaus.groovy:groovy-json"
     implementation "org.codehaus.groovy:groovy-nio"
     implementation 'com.google.guava:guava:32.1.2-jre'

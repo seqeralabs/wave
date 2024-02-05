@@ -1,0 +1,7 @@
+wave:
+  auth:
+    basic:
+      enabled: false
+      username: 'username'
+      password: 'password'
+
