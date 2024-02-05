@@ -15,17 +15,17 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package io.seqera.wave.service.metrics
-
-import io.seqera.wave.service.builder.BuildEvent
-import io.seqera.wave.service.metrics.event.PullEvent
+package io.seqera.wave.service.metric
 
 /**
- * Metrics Service
+ * enum for Metrics
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-interface MetricsService {
-    void storeBuild(BuildEvent event)
-    void storePull(PullEvent event)
+
+enum Metric {
+    ip,
+    userid,
+    imagename,
+    success
 }

@@ -15,15 +15,18 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package io.seqera.wave.service.metrics.impl
+package io.seqera.wave.service.metric.impl
+
+import java.time.Instant
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.service.builder.BuildEvent
-import io.seqera.wave.service.metrics.MetricsService
-import io.seqera.wave.service.metrics.event.PullEvent
+import io.seqera.wave.service.metric.Metric
+import io.seqera.wave.service.metric.MetricService
+import io.seqera.wave.service.metric.event.PullEvent
 import io.seqera.wave.service.persistence.WaveBuildCountRecord
 import io.seqera.wave.service.persistence.WavePullCountRecord
 import io.seqera.wave.service.persistence.impl.SurrealPersistenceService
@@ -40,7 +43,7 @@ import jakarta.inject.Singleton
 @Requires(env='surrealdb')
 @Singleton
 @CompileStatic
-class MetricsServiceImpl implements MetricsService{
+class MetricServiceImpl implements MetricService{
     @Inject
     private SurrealPersistenceService persistenceService
 
@@ -72,4 +75,25 @@ class MetricsServiceImpl implements MetricsService{
     void storePull(PullEvent event) {
         persistenceService.incrementPullCount(new WavePullCountRecord(event))
     }
+
+    @Override
+    Map getBuildMetrics(Metric metrics, Instant startdate, Instant enddate) {
+        persistenceService.getBuildCountByMetrics(metrics, startdate, enddate)
+    }
+
+    @Override
+    Map getPullMetrics(Metric metrics, Instant startdate, Instant enddate) {
+        persistenceService.getBuildCountByMetrics(metrics, startdate, enddate)
+    }
+
+    @Override
+    Long getPullCount(Instant startdate, Instant enddate) {
+        persistenceService.getPullCount(startdate, enddate)
+    }
+
+    @Override
+    Long getBuildCount(boolean success, Instant startdate, Instant enddate) {
+        persistenceService.getBuildCount(success, startdate, enddate)
+    }
+
 }

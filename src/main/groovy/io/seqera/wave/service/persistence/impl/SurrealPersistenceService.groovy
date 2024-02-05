@@ -31,7 +31,7 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
-import io.seqera.wave.service.metrics.Metrics
+import io.seqera.wave.service.metric.Metric
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildCountRecord
 import io.seqera.wave.service.persistence.WaveBuildRecord
@@ -296,7 +296,7 @@ class SurrealPersistenceService implements PersistenceService {
         })
     }
 
-     Map<String, Long> getBuildCountByMetrics(Metrics metrics, Instant startdate, Instant enddate) {
+     Map<String, Long> getBuildCountByMetrics(Metric metrics, Instant startdate, Instant enddate) {
          def dates=""
          if( startdate && enddate ){
              dates = "where date >= '$startdate' and date < '$enddate'"
@@ -311,7 +311,7 @@ class SurrealPersistenceService implements PersistenceService {
          return counts
     }
 
-    Map<String, Long> getPullCountByMetrics(Metrics metrics, Instant startdate, Instant enddate) {
+    Map<String, Long> getPullCountByMetrics(Metric metrics, Instant startdate, Instant enddate) {
         def dates=""
         if( startdate && enddate ){
             dates = "where date >= '$startdate' and date <= '$enddate'"
@@ -326,23 +326,17 @@ class SurrealPersistenceService implements PersistenceService {
         return counts
     }
 
-    Long getBuildCount(Instant startdate, Instant enddate){
-        def dates=""
-        if( startdate && enddate ){
-            dates = "where date >= '$startdate' and date <= '$enddate'"
+    Long getBuildCount(boolean success, Instant startdate, Instant enddate){
+        def filter=""
+        if( startdate && enddate && success){
+            filter = "where date >= '$startdate' and date <= '$enddate' and success = $success"
+        }else if( startdate && enddate ){
+            filter = "where date >= '$startdate' and date <= '$enddate'"
+        }else if( success ){
+            filter = "where success = $success"
         }
-        final statement = "SELECT math::sum(count) as total_count FROM wave_metrics_build $dates GROUP ALL"
-        final map = surrealDb.sqlAsMap(authorization, statement)
-        def results = map.get("result") as List<Map>
-        return results[0].get("total_count")? results[0].get("total_count") as Long : 0
-    }
 
-    Long getSuccessBuildCount(Instant startdate, Instant enddate){
-        def dates=""
-        if( startdate && enddate ){
-            dates = "and date >= '$startdate' and date <= '$enddate'"
-        }
-        final statement = "SELECT math::sum(count) as total_count FROM wave_metrics_build where success = true $dates GROUP ALL"
+        final statement = "SELECT math::sum(count) as total_count FROM wave_metrics_build $filter GROUP ALL"
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
         return results[0].get("total_count")? results[0].get("total_count") as Long : 0

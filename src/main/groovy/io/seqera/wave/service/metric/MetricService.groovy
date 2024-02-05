@@ -15,25 +15,23 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package io.seqera.wave.service.metrics.event
+package io.seqera.wave.service.metric
 
-import groovy.transform.Canonical
-import groovy.transform.CompileStatic
-import io.seqera.wave.service.ContainerRequestData
+import java.time.Instant
+
+import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.metric.event.PullEvent
 
 /**
- * An event for pull request
+ * Metrics Service
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-@Canonical
-@CompileStatic
-class PullEvent {
-    ContainerRequestData request
-    String ip
-
-    PullEvent(ContainerRequestData request, String ip) {
-        this.request = request
-        this.ip = ip
-    }
+interface MetricService {
+    void storeBuild(BuildEvent event)
+    void storePull(PullEvent event)
+    Map getBuildMetrics(Metric metrics, Instant startdate, Instant enddate)
+    Map getPullMetrics(Metric metrics, Instant startdate, Instant enddate)
+    Long getPullCount(Instant startdate, Instant enddate)
+    Long getBuildCount(boolean success, Instant startdate, Instant enddate)
 }

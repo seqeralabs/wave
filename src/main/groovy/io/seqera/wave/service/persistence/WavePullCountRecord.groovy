@@ -24,7 +24,7 @@ import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
-import io.seqera.wave.service.metrics.event.PullEvent
+import io.seqera.wave.service.metric.event.PullEvent
 
 /**
  * Model a Wave pull count

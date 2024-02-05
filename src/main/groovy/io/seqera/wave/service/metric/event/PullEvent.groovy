@@ -15,17 +15,25 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package io.seqera.wave.service.metrics
+package io.seqera.wave.service.metric.event
+
+import groovy.transform.Canonical
+import groovy.transform.CompileStatic
+import io.seqera.wave.service.ContainerRequestData
 
 /**
- * enum for Metrics
+ * An event for pull request
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
+@Canonical
+@CompileStatic
+class PullEvent {
+    ContainerRequestData request
+    String ip
 
-enum Metrics {
-    ip,
-    userid,
-    imagename,
-    success
+    PullEvent(ContainerRequestData request, String ip) {
+        this.request = request
+        this.ip = ip
+    }
 }
