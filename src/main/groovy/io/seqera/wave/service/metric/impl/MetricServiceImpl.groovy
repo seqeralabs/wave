@@ -77,23 +77,23 @@ class MetricServiceImpl implements MetricService{
     }
 
     @Override
-    Map getBuildMetrics(Metric metrics, Instant startdate, Instant enddate) {
-        persistenceService.getBuildCountByMetrics(metrics, startdate, enddate)
+    Map getBuildMetrics(Metric metrics, Instant startDate, Instant endDate) {
+        persistenceService.getBuildCountByMetrics(metrics, startDate, endDate)
     }
 
     @Override
-    Map getPullMetrics(Metric metrics, Instant startdate, Instant enddate) {
-        persistenceService.getBuildCountByMetrics(metrics, startdate, enddate)
+    Map getPullMetrics(Metric metrics, Instant startDate, Instant endDate) {
+        persistenceService.getPullCountByMetrics(metrics, startDate, endDate)
     }
 
     @Override
-    Long getPullCount(Instant startdate, Instant enddate) {
-        persistenceService.getPullCount(startdate, enddate)
+    Long getPullCount(Instant startDate, Instant endDate) {
+        persistenceService.getPullCount(startDate, endDate)
     }
 
     @Override
-    Long getBuildCount(Boolean success, Instant startdate, Instant enddate) {
-        persistenceService.getBuildCount(success, startdate, enddate)
+    Long getBuildCount(Boolean success, Instant startDate, Instant endDate) {
+        persistenceService.getBuildCount(success, startDate, endDate)
     }
 
 }

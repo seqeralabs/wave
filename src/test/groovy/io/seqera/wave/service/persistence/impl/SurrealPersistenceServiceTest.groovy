@@ -409,8 +409,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         then:
         sleep 300
-        persistence.getBuildCountByMetrics(Metric.userid, null, null)['1'] == 2
-        persistence.getBuildCountByMetrics(Metric.userid, null, null)['2'] == 1
+        persistence.getBuildCountByMetrics(Metric.user, null, null)['1'] == 2
+        persistence.getBuildCountByMetrics(Metric.user, null, null)['2'] == 1
 
     }
 
@@ -428,8 +428,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         then:
         sleep 300
-        persistence.getBuildCountByMetrics(Metric.userid, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['1'] == 1
-        persistence.getBuildCountByMetrics(Metric.userid, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['2'] == 1
+        persistence.getBuildCountByMetrics(Metric.user, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['1'] == 1
+        persistence.getBuildCountByMetrics(Metric.user, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['2'] == 1
 
     }
 
@@ -448,8 +448,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         then:
         sleep 300
-        persistence.getPullCountByMetrics(Metric.userid, null, null)['1'] == 2
-        persistence.getPullCountByMetrics(Metric.userid, null, null)['2'] == 1
+        persistence.getPullCountByMetrics(Metric.user, null, null)['1'] == 2
+        persistence.getPullCountByMetrics(Metric.user, null, null)['2'] == 1
 
     }
 
@@ -467,8 +467,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         then:
         sleep 300
-        persistence.getPullCountByMetrics(Metric.userid, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['1'] == 1
-        persistence.getPullCountByMetrics(Metric.userid, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['2'] == 1
+        persistence.getPullCountByMetrics(Metric.user, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['1'] == 1
+        persistence.getPullCountByMetrics(Metric.user, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['2'] == 1
 
     }
 
@@ -486,8 +486,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         then:
         sleep 300
-        persistence.getBuildCountByMetrics(Metric.imagename, null, null)['reg/repo:hash'] == 2
-        persistence.getBuildCountByMetrics(Metric.imagename, null, null)['reg/repo:hash2'] == 1
+        persistence.getBuildCountByMetrics(Metric.image, null, null)['reg/repo:hash'] == 2
+        persistence.getBuildCountByMetrics(Metric.image, null, null)['reg/repo:hash2'] == 1
 
     }
 
@@ -505,8 +505,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         then:
         sleep 300
-        persistence.getBuildCountByMetrics(Metric.imagename, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['reg/repo:hash'] == 1
-        persistence.getBuildCountByMetrics(Metric.imagename, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['reg/repo:hash2'] == 1
+        persistence.getBuildCountByMetrics(Metric.image, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['reg/repo:hash'] == 1
+        persistence.getBuildCountByMetrics(Metric.image, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['reg/repo:hash2'] == 1
 
     }
 
@@ -524,8 +524,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         then:
         sleep 300
-        persistence.getPullCountByMetrics(Metric.imagename, null, null)['reg/repo:hash'] == 2
-        persistence.getPullCountByMetrics(Metric.imagename, null, null)['reg/repo:hash2'] == 1
+        persistence.getPullCountByMetrics(Metric.image, null, null)['reg/repo:hash'] == 2
+        persistence.getPullCountByMetrics(Metric.image, null, null)['reg/repo:hash2'] == 1
 
     }
 
@@ -543,8 +543,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         then:
         sleep 300
-        persistence.getPullCountByMetrics(Metric.imagename, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['reg/repo:hash'] == 1
-        persistence.getPullCountByMetrics(Metric.imagename, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['reg/repo:hash2'] == 1
+        persistence.getPullCountByMetrics(Metric.image, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['reg/repo:hash'] == 1
+        persistence.getPullCountByMetrics(Metric.image, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['reg/repo:hash2'] == 1
 
     }
 

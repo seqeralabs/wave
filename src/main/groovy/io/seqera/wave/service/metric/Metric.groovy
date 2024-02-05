@@ -24,8 +24,12 @@ package io.seqera.wave.service.metric
  */
 
 enum Metric {
-    ip,
-    userid,
-    imagename,
-    success
+    ip('ip'),
+    user('userid'),
+    image('imagename')
+
+    String label
+    Metric(String label){
+        this.label = label
+    }
 }

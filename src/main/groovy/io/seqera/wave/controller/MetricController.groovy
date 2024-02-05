@@ -50,15 +50,10 @@ class MetricController {
     @Inject
     MetricService metricsService
 
-    @Get(uri="/pull/{metric}/count", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<Map> getPullMetrics(@PathVariable String metric, @Nullable @QueryValue String startdate, @Nullable @QueryValue String enddate) {
+    @Get(uri="/pull/{metric}", produces = MediaType.APPLICATION_JSON)
+    HttpResponse<Map> getPullMetrics(@PathVariable String metric, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
         try {
-            def result
-            if(startdate && enddate) {
-                result = metricsService.getPullMetrics(Metric.valueOf(metric), parseDate(startdate), parseDate(enddate))
-            }else{
-                result = metricsService.getPullMetrics(Metric.valueOf(metric),null, null)
-            }
+            def result = metricsService.getPullMetrics(Metric.valueOf(metric), parseDate(startDate), parseDate(endDate))
             if( result && result.size() > 0)
                 return HttpResponse.ok(result)
             else
@@ -68,15 +63,10 @@ class MetricController {
         }
     }
 
-    @Get(uri="/build/{metric}/count", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<Map> getBuildMetrics(@PathVariable String metric, @Nullable @QueryValue String startdate, @Nullable @QueryValue String enddate) {
+    @Get(uri="/build/{metric}", produces = MediaType.APPLICATION_JSON)
+    HttpResponse<Map> getBuildMetrics(@PathVariable String metric, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
         try {
-            def result
-            if(startdate && enddate) {
-                result = metricsService.getBuildMetrics(Metric.valueOf(metric), parseDate(startdate), parseDate(enddate))
-            }else{
-                result = metricsService.getBuildMetrics(Metric.valueOf(metric),null, null)
-            }
+            def result = metricsService.getBuildMetrics(Metric.valueOf(metric), parseDate(startDate), parseDate(endDate))
             if( result && result.size() > 0)
                 return HttpResponse.ok(result)
             else
@@ -87,32 +77,26 @@ class MetricController {
     }
 
     @Get(uri="/pull/count", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<LinkedHashMap> getPullCount(@Nullable @QueryValue String startdate, @Nullable @QueryValue String enddate) {
+    HttpResponse<LinkedHashMap> getPullCount(@Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
         try {
-            if(startdate && enddate) {
-                return HttpResponse.ok([count: metricsService.getPullCount(parseDate(startdate), parseDate(enddate))])
-            }else{
-                return HttpResponse.ok([count: metricsService.getPullCount(null, null)])
-            }
+            return HttpResponse.ok([count: metricsService.getPullCount(parseDate(startDate), parseDate(endDate))])
         }catch (IllegalArgumentException | DateTimeParseException e) {
             return HttpResponse.badRequest([message: e.message])
         }
     }
 
     @Get(uri="/build/count", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<LinkedHashMap> getBuildCount(@Nullable @QueryValue Boolean success, @Nullable @QueryValue String startdate, @Nullable @QueryValue String enddate) {
+    HttpResponse<LinkedHashMap> getBuildCount(@Nullable @QueryValue Boolean success, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
         try {
-            if(startdate && enddate) {
-                return HttpResponse.ok([count: metricsService.getBuildCount(success, parseDate(startdate), parseDate(enddate))])
-            }else{
-                return HttpResponse.ok([count: metricsService.getBuildCount(success, null, null)])
-            }
+            return HttpResponse.ok([count: metricsService.getBuildCount(success, parseDate(startDate), parseDate(endDate))])
         }catch (IllegalArgumentException | DateTimeParseException e) {
             return HttpResponse.badRequest([message: e.message])
         }
     }
 
     private Instant parseDate(String date) {
+        if( !date )
+            return null
         LocalDate localDate = LocalDate.parse(date);
         return localDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
     }

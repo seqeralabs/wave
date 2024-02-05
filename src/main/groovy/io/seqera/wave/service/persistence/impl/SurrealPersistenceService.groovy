@@ -296,60 +296,67 @@ class SurrealPersistenceService implements PersistenceService {
         })
     }
 
-     Map<String, Long> getBuildCountByMetrics(Metric metrics, Instant startdate, Instant enddate) {
+     Map<String, Long> getBuildCountByMetrics(Metric metric, Instant startDate, Instant endDate) {
          def dates=""
-         if( startdate && enddate ){
-             dates = "where date >= '$startdate' and date < '$enddate'"
+         if( startDate && endDate ){
+             dates = "where date >= '$startDate' and date < '$endDate'"
          }
-         final statement = "SELECT $metrics,  math::sum(count) as total_count FROM wave_metrics_build $dates GROUP BY $metrics"
+         final statement = "SELECT ${metric.label},  math::sum(count) as total_count FROM wave_metrics_build $dates GROUP BY ${metric.label}"
          final map = surrealDb.sqlAsMap(authorization, statement)
          def results = map.get("result") as List<Map>
          Map<String, Long> counts = new HashMap<>()
          for(def result : results){
-             counts.put(result.get(metrics.toString()) as String, result.get("total_count") as Long)
+             counts.put(result.get(metric.label) as String, result.get("total_count") as Long)
          }
          return counts
     }
 
-    Map<String, Long> getPullCountByMetrics(Metric metrics, Instant startdate, Instant enddate) {
+    Map<String, Long> getPullCountByMetrics(Metric metric, Instant startDate, Instant endDate) {
         def dates=""
-        if( startdate && enddate ){
-            dates = "where date >= '$startdate' and date <= '$enddate'"
+        if( startDate && endDate ){
+            dates = "where date >= '$startDate' and date <= '$endDate'"
         }
-        final statement = "SELECT $metrics,  math::sum(count) as total_count  FROM wave_metrics_pull $dates GROUP BY $metrics"
+        final statement = "SELECT ${metric.label},  math::sum(count) as total_count  FROM wave_metrics_pull $dates GROUP BY ${metric.label}"
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
         Map<String, Long> counts = new HashMap<>()
         for(def result : results){
-            counts.put(result.get(metrics.toString()) as String, result.get("total_count") as Long)
+            counts.put(result.get(metric.label) as String, result.get("total_count") as Long)
         }
         return counts
     }
 
-    Long getBuildCount(Boolean success, Instant startdate, Instant enddate){
+    Long getBuildCount(Boolean success, Instant startDate, Instant endDate){
         def filter=""
-        if( startdate && enddate && success){
-            filter = "where date >= '$startdate' and date <= '$enddate' and success = $success"
-        }else if( startdate && enddate ){
-            filter = "where date >= '$startdate' and date <= '$enddate'"
+        if( startDate && endDate && success){
+            filter = "where date >= '$startDate' and date <= '$endDate' and success = $success"
+        }else if( startDate && endDate ){
+            filter = "where date >= '$startDate' and date <= '$endDate'"
         }else if( success ){
             filter = "where success = $success"
         }
 
         final statement = "SELECT math::sum(count) as total_count FROM wave_metrics_build $filter GROUP ALL"
+        log.info("SQL: $statement")
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
-        return results[0].get("total_count")? results[0].get("total_count") as Long : 0
+        if( results && results.size() > 0)
+            return results[0].get("total_count")? results[0].get("total_count") as Long : 0
+        else
+            return 0
     }
 
-    Long getPullCount(Instant startdate, Instant enddate){
+    Long getPullCount(Instant startDate, Instant endDate){
         def dates=""
-        if( startdate && enddate ){
-            dates = "where date >= '$startdate' and date <= '$enddate'"
+        if( startDate && endDate ){
+            dates = "where date >= '$startDate' and date <= '$endDate'"
         }
         final statement = "SELECT math::sum(count) as total_count FROM wave_metrics_pull $dates GROUP ALL"
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
-        return results[0].get("total_count")? results[0].get("total_count") as Long : 0
+        if( results && results.size() > 0)
+            return results[0].get("total_count")? results[0].get("total_count") as Long : 0
+        else
+            return 0
     }
 }
