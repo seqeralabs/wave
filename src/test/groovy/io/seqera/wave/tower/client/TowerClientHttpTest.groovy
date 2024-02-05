@@ -18,14 +18,15 @@
 
 package io.seqera.wave.tower.client
 
+
 import spock.lang.Specification
 
 import java.util.concurrent.ExecutionException
-import io.micronaut.core.annotation.Nullable
 
 import io.micronaut.cache.CacheManager
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
+import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.MediaType
@@ -45,7 +46,7 @@ import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.tower.client.connector.TowerConnector
 import jakarta.inject.Inject
 
-@MicronautTest(environments = ['test','tower'])
+@MicronautTest(environments = ['test', 'legacy-http-connector'])
 @Property(name = 'spec.name', value = 'TowerClientHttpTest')
 @Property(name = 'wave.pairing.channel.maxAttempts', value = '0')
 class TowerClientHttpTest extends Specification{
@@ -122,7 +123,7 @@ class TowerClientHttpTest extends Specification{
     JwtAuthStore jwtAuthStore
 
     @Inject
-    CacheManager cacheManager;
+    CacheManager cacheManager
 
     def setup() {
         cacheManager.getCache("cache-20sec").invalidateAll()
@@ -293,7 +294,5 @@ class TowerClientHttpTest extends Specification{
     private static String cookie(String name, String value) {
         return new HttpCookie(name, value).toString()
     }
-
-
 
 }
