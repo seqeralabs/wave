@@ -33,8 +33,6 @@ import io.micronaut.http.annotation.Post
 import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
-import io.micronaut.security.annotation.Secured
-import io.micronaut.security.rules.SecurityRule
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.configuration.BuildConfig

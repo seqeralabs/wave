@@ -23,8 +23,4 @@ class AuthConfig {
     @Nullable
     @Value('${wave.auth.basic.password}')
     String password
-
-    @Nullable
-    @Value('${wave.auth.basic.enabled:false}')
-    boolean enabled
 }
