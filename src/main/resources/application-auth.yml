@@ -1,7 +1,7 @@
 wave:
   auth:
     basic:
-      enabled: false
+      enabled: true
       username: 'username'
       password: 'password'
 

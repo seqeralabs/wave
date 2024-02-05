@@ -25,6 +25,8 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Error
 import io.micronaut.http.hateoas.JsonError
+import io.micronaut.security.annotation.Secured
+import io.micronaut.security.rules.SecurityRule
 import io.seqera.wave.ErrorHandler
 import jakarta.inject.Inject
 /**
@@ -34,6 +36,7 @@ import jakarta.inject.Inject
  */
 @Slf4j
 @CompileStatic
+@Secured(SecurityRule.IS_ANONYMOUS)
 @Controller('/error')
 class ErrorController {
 

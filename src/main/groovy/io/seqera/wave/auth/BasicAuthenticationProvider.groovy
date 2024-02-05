@@ -1,12 +1,12 @@
 package io.seqera.wave.auth
 
 import io.micronaut.context.annotation.Requires
+import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpRequest
 import io.micronaut.security.authentication.AuthenticationProvider
 import io.micronaut.security.authentication.AuthenticationRequest
 import io.micronaut.security.authentication.AuthenticationResponse
 import io.seqera.wave.configuration.AuthConfig
-import jakarta.annotation.Nullable
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import org.reactivestreams.Publisher
@@ -15,7 +15,7 @@ import reactor.core.publisher.FluxSink
 
 @Singleton
 @Requires(property = "wave.auth.basic.enabled", value = "true")
-class AuthenticationProviderUserPassword implements AuthenticationProvider {
+class BasicAuthenticationProvider implements AuthenticationProvider {
     @Inject
     AuthConfig authConfig
 

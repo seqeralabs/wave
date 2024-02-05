@@ -45,12 +45,12 @@ import jakarta.inject.Inject
 @Slf4j
 @CompileStatic
 @Secured(SecurityRule.IS_AUTHENTICATED)
-@Controller
+@Controller("/metrics")
 class MetricController {
     @Inject
     MetricService metricsService
 
-    @Get(uri="/pull/metrics/{metric}/count", produces = MediaType.APPLICATION_JSON)
+    @Get(uri="/pull/{metric}/count", produces = MediaType.APPLICATION_JSON)
     HttpResponse<Map> getPullMetrics(@PathVariable String metric, @Nullable @QueryValue String startdate, @Nullable @QueryValue String enddate) {
         try {
             def result
@@ -68,7 +68,7 @@ class MetricController {
         }
     }
 
-    @Get(uri="/build/metrics/{metric}/count", produces = MediaType.APPLICATION_JSON)
+    @Get(uri="/build/{metric}/count", produces = MediaType.APPLICATION_JSON)
     HttpResponse<Map> getBuildMetrics(@PathVariable String metric, @Nullable @QueryValue String startdate, @Nullable @QueryValue String enddate) {
         try {
             def result
