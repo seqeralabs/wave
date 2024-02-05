@@ -64,9 +64,9 @@ class MetricController {
     }
 
     @Get(uri="/build/{metric}", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<Map> getBuildMetrics(@PathVariable String metric, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
+    HttpResponse<Map> getBuildMetrics(@PathVariable String metric, @Nullable @QueryValue Boolean success, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
         try {
-            def result = metricsService.getBuildMetrics(Metric.valueOf(metric), parseDate(startDate), parseDate(endDate))
+            def result = metricsService.getBuildMetrics(Metric.valueOf(metric), success, parseDate(startDate), parseDate(endDate))
             if( result && result.size() > 0)
                 return HttpResponse.ok(result)
             else

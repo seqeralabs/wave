@@ -77,8 +77,8 @@ class MetricServiceImpl implements MetricService{
     }
 
     @Override
-    Map getBuildMetrics(Metric metrics, Instant startDate, Instant endDate) {
-        persistenceService.getBuildCountByMetrics(metrics, startDate, endDate)
+    Map getBuildMetrics(Metric metrics, Boolean success, Instant startDate, Instant endDate) {
+        persistenceService.getBuildCountByMetrics(metrics, success, startDate, endDate)
     }
 
     @Override

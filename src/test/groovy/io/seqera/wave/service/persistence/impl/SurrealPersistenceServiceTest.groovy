@@ -318,31 +318,12 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         result2 == scanRecord2
     }
 
-    def 'should return the correct build counts by ip' () {
-        given:
-        def persistence = applicationContext.getBean(SurrealPersistenceService)
-        def record1 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', false, Instant.now())
-        def record2 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', true, Instant.now())
-        def record3 = new WaveBuildCountRecord( '127.0.0.2',2, 'reg/repo:hash', true, Instant.now())
-
-        when:
-        persistence.incrementBuildCount(record1)
-        persistence.incrementBuildCount(record2)
-        persistence.incrementBuildCount(record3)
-
-        then:
-        sleep 300
-        persistence.getBuildCountByMetrics(Metric.ip, null, null)['127.0.0.1'] == 2
-        persistence.getBuildCountByMetrics(Metric.ip, null, null)['127.0.0.2'] == 1
-
-    }
-
-    def 'should return the correct build counts by ip between start and end date' () {
+    def 'should return the correct build counts per metrics' () {
         given:
         def persistence = applicationContext.getBean(SurrealPersistenceService)
         def record1 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', false, Instant.now().minus(1, ChronoUnit.DAYS))
         def record2 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', true, Instant.now())
-        def record3 = new WaveBuildCountRecord( '127.0.0.2',2, 'reg/repo:hash', true, Instant.now())
+        def record3 = new WaveBuildCountRecord( '127.0.0.2',2, 'reg/repo:hash2', true, Instant.now())
 
         when:
         persistence.incrementBuildCount(record1)
@@ -351,290 +332,94 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         then:
         sleep 300
-        persistence.getBuildCountByMetrics(Metric.ip, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['127.0.0.1'] == 1
-        persistence.getBuildCountByMetrics(Metric.ip, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['127.0.0.2'] == 1
+        persistence.getBuildCountByMetrics(Metric.ip, null, null, null)['127.0.0.1'] == 2
+        persistence.getBuildCountByMetrics(Metric.ip, null, null, null)['127.0.0.2'] == 1
+
+        and: 'should return the correct successful build counts per ip'
+        persistence.getBuildCountByMetrics(Metric.ip, true, null, null)['127.0.0.1'] == 1
+        persistence.getBuildCountByMetrics(Metric.ip, true, null, null)['127.0.0.2'] == 1
+
+        and: 'should return the correct build counts per user'
+        persistence.getBuildCountByMetrics(Metric.user, null, null, null)['1'] == 2
+        persistence.getBuildCountByMetrics(Metric.user, null, null, null)['2'] == 1
+
+        and: 'should return the correct successful build counts per user'
+        persistence.getBuildCountByMetrics(Metric.user, true, null, null)['1'] == 1
+        persistence.getBuildCountByMetrics(Metric.user, true, null, null)['2'] == 1
+
+        and: 'should return the correct build counts per image'
+        persistence.getBuildCountByMetrics(Metric.image, null, null, null)['reg/repo:hash'] == 2
+        persistence.getBuildCountByMetrics(Metric.image, null, null, null)['reg/repo:hash2'] == 1
+
+        and: 'should return the correct successful build counts per image'
+        persistence.getBuildCountByMetrics(Metric.image, true, null, null)['reg/repo:hash'] == 1
+        persistence.getBuildCountByMetrics(Metric.image, true, null, null)['reg/repo:hash2'] == 1
+
+        and: 'should return the correct build counts per ip between start and end date'
+        persistence.getBuildCountByMetrics(Metric.ip, null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['127.0.0.1'] == 1
+        persistence.getBuildCountByMetrics(Metric.ip, null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['127.0.0.2'] == 1
+
+        and: 'should return the correct build counts per user between start and end date'
+        persistence.getBuildCountByMetrics(Metric.user, null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['1'] == 1
+        persistence.getBuildCountByMetrics(Metric.user, null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['2'] == 1
+
+        and: 'should return the correct build counts per image between start and end date'
+        persistence.getBuildCountByMetrics(Metric.image, null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['reg/repo:hash'] == 1
+        persistence.getBuildCountByMetrics(Metric.image, null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['reg/repo:hash2'] == 1
+
+        and: 'should return the total build count'
+        persistence.getBuildCount(null, null, null) == 3
+
+        and: 'should return the total successful build count'
+        persistence.getBuildCount(true, null, null) == 2
+
+        and: 'should return the total build count between start and end date'
+        persistence.getBuildCount( null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == 2
 
     }
 
-
-    def 'should return the correct pull counts by ip' () {
+    def 'should return the correct pull counts per metrics' () {
         given:
         def persistence = applicationContext.getBean(SurrealPersistenceService)
-        def record1 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now())
+        def record1 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now().minus(1, ChronoUnit.DAYS))
         def record2 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now())
-        def record3 = new WavePullCountRecord( '127.0.0.2',2, 'reg/repo:hash', Instant.now())
+        def record3 = new WavePullCountRecord( '127.0.0.2',2, 'reg/repo:hash2', Instant.now())
 
         when:
         persistence.incrementPullCount(record1)
         persistence.incrementPullCount(record2)
         persistence.incrementPullCount(record3)
 
-        then:
+        then: 'should return the correct pull counts per ip'
         sleep 300
         persistence.getPullCountByMetrics(Metric.ip, null, null)['127.0.0.1'] == 2
         persistence.getPullCountByMetrics(Metric.ip, null, null)['127.0.0.2'] == 1
 
-    }
-
-    def 'should return the correct pull counts by ip between start and end date' () {
-        given:
-        def persistence = applicationContext.getBean(SurrealPersistenceService)
-        def record1 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now().minus(1, ChronoUnit.DAYS))
-        def record2 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now())
-        def record3 = new WavePullCountRecord( '127.0.0.2',2, 'reg/repo:hash', Instant.now())
-
-        when:
-        persistence.incrementPullCount(record1)
-        persistence.incrementPullCount(record2)
-        persistence.incrementPullCount(record3)
-
-        then:
-        sleep 300
+        and:'should return the correct pull counts by ip between start and end date'
         persistence.getPullCountByMetrics(Metric.ip, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['127.0.0.1'] == 1
         persistence.getPullCountByMetrics(Metric.ip, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['127.0.0.2'] == 1
 
-    }
-
-    def 'should return the correct build counts by userid' () {
-        given:
-        def persistence = applicationContext.getBean(SurrealPersistenceService)
-        def record1 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', false, Instant.now())
-        def record2 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', true, Instant.now())
-        def record3 = new WaveBuildCountRecord( '127.0.0.2',2, 'reg/repo:hash', true, Instant.now())
-
-        when:
-        persistence.incrementBuildCount(record1)
-        persistence.incrementBuildCount(record2)
-        persistence.incrementBuildCount(record3)
-
-        then:
-        sleep 300
-        persistence.getBuildCountByMetrics(Metric.user, null, null)['1'] == 2
-        persistence.getBuildCountByMetrics(Metric.user, null, null)['2'] == 1
-
-    }
-
-    def 'should return the correct build counts by userid between start and end date' () {
-        given:
-        def persistence = applicationContext.getBean(SurrealPersistenceService)
-        def record1 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', false, Instant.now().minus(1, ChronoUnit.DAYS))
-        def record2 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', true, Instant.now())
-        def record3 = new WaveBuildCountRecord( '127.0.0.2',2, 'reg/repo:hash', true, Instant.now())
-
-        when:
-        persistence.incrementBuildCount(record1)
-        persistence.incrementBuildCount(record2)
-        persistence.incrementBuildCount(record3)
-
-        then:
-        sleep 300
-        persistence.getBuildCountByMetrics(Metric.user, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['1'] == 1
-        persistence.getBuildCountByMetrics(Metric.user, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['2'] == 1
-
-    }
-
-
-    def 'should return the correct pull counts by Userid' () {
-        given:
-        def persistence = applicationContext.getBean(SurrealPersistenceService)
-        def record1 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now())
-        def record2 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now())
-        def record3 = new WavePullCountRecord( '127.0.0.2',2, 'reg/repo:hash', Instant.now())
-
-        when:
-        persistence.incrementPullCount(record1)
-        persistence.incrementPullCount(record2)
-        persistence.incrementPullCount(record3)
-
-        then:
-        sleep 300
+        and: 'should return the correct pull counts per user'
         persistence.getPullCountByMetrics(Metric.user, null, null)['1'] == 2
         persistence.getPullCountByMetrics(Metric.user, null, null)['2'] == 1
 
-    }
-
-    def 'should return the correct pull counts by Userid between start and end date' () {
-        given:
-        def persistence = applicationContext.getBean(SurrealPersistenceService)
-        def record1 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now().minus(1, ChronoUnit.DAYS))
-        def record2 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now())
-        def record3 = new WavePullCountRecord( '127.0.0.2',2, 'reg/repo:hash', Instant.now())
-
-        when:
-        persistence.incrementPullCount(record1)
-        persistence.incrementPullCount(record2)
-        persistence.incrementPullCount(record3)
-
-        then:
-        sleep 300
+        and: 'should return the correct pull counts by userid between start and end date'
         persistence.getPullCountByMetrics(Metric.user, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['1'] == 1
         persistence.getPullCountByMetrics(Metric.user, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['2'] == 1
 
-    }
-
-    def 'should return the correct build counts by imagename' () {
-        given:
-        def persistence = applicationContext.getBean(SurrealPersistenceService)
-        def record1 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', false, Instant.now())
-        def record2 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', true, Instant.now())
-        def record3 = new WaveBuildCountRecord( '127.0.0.2',2, 'reg/repo:hash2', true, Instant.now())
-
-        when:
-        persistence.incrementBuildCount(record1)
-        persistence.incrementBuildCount(record2)
-        persistence.incrementBuildCount(record3)
-
-        then:
-        sleep 300
-        persistence.getBuildCountByMetrics(Metric.image, null, null)['reg/repo:hash'] == 2
-        persistence.getBuildCountByMetrics(Metric.image, null, null)['reg/repo:hash2'] == 1
-
-    }
-
-    def 'should return the correct build counts by imagename between start and end date' () {
-        given:
-        def persistence = applicationContext.getBean(SurrealPersistenceService)
-        def record1 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', false, Instant.now().minus(1, ChronoUnit.DAYS))
-        def record2 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', true, Instant.now())
-        def record3 = new WaveBuildCountRecord( '127.0.0.2',2, 'reg/repo:hash2', true, Instant.now())
-
-        when:
-        persistence.incrementBuildCount(record1)
-        persistence.incrementBuildCount(record2)
-        persistence.incrementBuildCount(record3)
-
-        then:
-        sleep 300
-        persistence.getBuildCountByMetrics(Metric.image, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['reg/repo:hash'] == 1
-        persistence.getBuildCountByMetrics(Metric.image, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['reg/repo:hash2'] == 1
-
-    }
-
-    def 'should return the correct pull counts by imagename' () {
-        given:
-        def persistence = applicationContext.getBean(SurrealPersistenceService)
-        def record1 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now())
-        def record2 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now())
-        def record3 = new WavePullCountRecord( '127.0.0.2',2, 'reg/repo:hash2', Instant.now())
-
-        when:
-        persistence.incrementPullCount(record1)
-        persistence.incrementPullCount(record2)
-        persistence.incrementPullCount(record3)
-
-        then:
-        sleep 300
+        and: 'should return the correct pull counts per image'
         persistence.getPullCountByMetrics(Metric.image, null, null)['reg/repo:hash'] == 2
         persistence.getPullCountByMetrics(Metric.image, null, null)['reg/repo:hash2'] == 1
 
-    }
-
-    def 'should return the correct pull counts by imagename between start and end date' () {
-        given:
-        def persistence = applicationContext.getBean(SurrealPersistenceService)
-        def record1 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now().minus(1, ChronoUnit.DAYS))
-        def record2 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now())
-        def record3 = new WavePullCountRecord( '127.0.0.2',2, 'reg/repo:hash2', Instant.now())
-
-        when:
-        persistence.incrementPullCount(record1)
-        persistence.incrementPullCount(record2)
-        persistence.incrementPullCount(record3)
-
-        then:
-        sleep 300
+        and: 'should return the correct pull counts by image between start and end date'
         persistence.getPullCountByMetrics(Metric.image, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['reg/repo:hash'] == 1
         persistence.getPullCountByMetrics(Metric.image, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['reg/repo:hash2'] == 1
 
-    }
-
-    def 'should return the total build count' () {
-        given:
-        def persistence = applicationContext.getBean(SurrealPersistenceService)
-        def record1 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', false, Instant.now())
-        def record2 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', true, Instant.now())
-        def record3 = new WaveBuildCountRecord( '127.0.0.2',2, 'reg/repo:hash2', true, Instant.now())
-
-        when:
-        persistence.incrementBuildCount(record1)
-        persistence.incrementBuildCount(record2)
-        persistence.incrementBuildCount(record3)
-
-        then:
-        sleep 300
-        persistence.getBuildCount(null,null, null) == 3
-
-    }
-
-    def 'should return the total build count between start and end date' () {
-        given:
-        def persistence = applicationContext.getBean(SurrealPersistenceService)
-        def record1 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', false, Instant.now().minus(1, ChronoUnit.DAYS))
-        def record2 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', true, Instant.now())
-        def record3 = new WaveBuildCountRecord( '127.0.0.2',2, 'reg/repo:hash2', true, Instant.now())
-
-        when:
-        persistence.incrementBuildCount(record1)
-        persistence.incrementBuildCount(record2)
-        persistence.incrementBuildCount(record3)
-
-        then:
-        sleep 300
-        persistence.getBuildCount(null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == 2
-
-    }
-
-    def 'should return the total successful build count' () {
-        given:
-        def persistence = applicationContext.getBean(SurrealPersistenceService)
-        def record1 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', false, Instant.now())
-        def record2 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', true, Instant.now())
-        def record3 = new WaveBuildCountRecord( '127.0.0.2',2, 'reg/repo:hash2', true, Instant.now())
-
-        when:
-        persistence.incrementBuildCount(record1)
-        persistence.incrementBuildCount(record2)
-        persistence.incrementBuildCount(record3)
-
-        then:
-        sleep 300
-        persistence.getBuildCount(true,null, null) == 2
-
-    }
-
-    def 'should return the total pull count' () {
-        given:
-        def persistence = applicationContext.getBean(SurrealPersistenceService)
-        def record1 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now())
-        def record2 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now())
-        def record3 = new WavePullCountRecord( '127.0.0.2',2, 'reg/repo:hash2', Instant.now())
-
-        when:
-        persistence.incrementPullCount(record1)
-        persistence.incrementPullCount(record2)
-        persistence.incrementPullCount(record3)
-
-        then:
-        sleep 300
+        and: 'should return the total pull count'
         persistence.getPullCount(null, null) == 3
 
-    }
-
-    def 'should return the total pull count between start and end date' () {
-        given:
-        def persistence = applicationContext.getBean(SurrealPersistenceService)
-        def record1 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now().minus(1, ChronoUnit.DAYS))
-        def record2 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now())
-        def record3 = new WavePullCountRecord( '127.0.0.2',2, 'reg/repo:hash2', Instant.now())
-
-        when:
-        persistence.incrementPullCount(record1)
-        persistence.incrementPullCount(record2)
-        persistence.incrementPullCount(record3)
-
-        then:
-        sleep 300
+        and: 'should return the total pull count between start and end date'
         persistence.getPullCount(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == 2
-    }
 
+    }
 }

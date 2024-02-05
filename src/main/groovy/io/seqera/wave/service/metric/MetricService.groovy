@@ -30,7 +30,7 @@ import io.seqera.wave.service.metric.event.PullEvent
 interface MetricService {
     void storeBuild(BuildEvent event)
     void storePull(PullEvent event)
-    Map getBuildMetrics(Metric metrics, Instant startDate, Instant endDate)
+    Map getBuildMetrics(Metric metrics, Boolean success, Instant startDate, Instant endDate)
     Map getPullMetrics(Metric metrics, Instant startDate, Instant endDate)
     Long getPullCount(Instant startDate, Instant endDate)
     Long getBuildCount(Boolean success, Instant startDate, Instant endDate)
