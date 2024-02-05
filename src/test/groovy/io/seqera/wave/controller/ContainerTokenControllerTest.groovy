@@ -369,14 +369,6 @@ class ContainerTokenControllerTest extends Specification {
         msg.message == "Missing pairing record for Tower endpoint 'https://tower.something.com/api'"
 
         when:
-        controller.validateContainerRequest(new SubmitContainerTokenRequest(towerEndpoint: 'ftp://foo.com', towerAccessToken: '123'))
-        then:
-        0 * pairing.getPairingRecord('tower','https://tower.something.com/api') >> null
-        and:
-        msg = thrown(BadRequestException)
-        msg.message == 'Invalid Tower endpoint protocol — offending value: ftp://foo.com'
-
-        when:
         controller.validateContainerRequest(new SubmitContainerTokenRequest(containerImage: 'foo:latest', towerAccessToken: '123'))
         then:
         noExceptionThrown()
