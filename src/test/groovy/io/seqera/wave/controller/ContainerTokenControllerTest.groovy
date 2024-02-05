@@ -407,7 +407,6 @@ class ContainerTokenControllerTest extends Specification {
         def pairing = Mock(PairingService)
         def channel = Mock(PairingChannel)
         def controller = new ContainerTokenController(validationService: validation, pairingService: pairing, pairingChannel: channel)
-        def msg
 
         when:
         controller.validateContainerRequest(new SubmitContainerTokenRequest(towerEndpoint: registeredUri, towerAccessToken: '123'))
