@@ -402,7 +402,7 @@ class ContainerTokenControllerTest extends Specification {
 
     def 'should allow any registered endpoint' () {
         given:
-        def registeredUri = 'ftp://127.0.0.1'
+        def registeredUri = 'http://foo.com'
         def validation = new ValidationServiceImpl()
         def pairing = Mock(PairingService)
         def channel = Mock(PairingChannel)
