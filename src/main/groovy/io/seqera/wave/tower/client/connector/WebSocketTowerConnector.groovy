@@ -26,8 +26,8 @@ import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
 import jakarta.inject.Inject
+import jakarta.inject.Singleton
 import static io.seqera.wave.service.pairing.PairingService.TOWER_SERVICE
-
 /**
  * Implements a Tower connector using a WebSocket connection
  *
@@ -35,6 +35,7 @@ import static io.seqera.wave.service.pairing.PairingService.TOWER_SERVICE
  * @author Jordi Deu-Pons <jordi@seqera.io>
  */
 @Slf4j
+@Singleton
 @CompileStatic
 class WebSocketTowerConnector extends TowerConnector {
 

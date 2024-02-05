@@ -18,9 +18,19 @@
 
 package io.seqera.wave.util
 
+import java.util.concurrent.CompletableFuture
+
 /**
- *
+ *  Future class helpers
+ *  
  *  @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class FutureTest {
+class FutureUtils {
+
+    static CompletableFuture completeExceptionally(Throwable t) {
+        final result = new CompletableFuture()
+        result.completeExceptionally(t)
+        return result
+    }
+
 }

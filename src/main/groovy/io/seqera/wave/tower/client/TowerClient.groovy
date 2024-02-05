@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture
 import groovy.transform.CompileStatic
 import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.core.annotation.Nullable
-import io.seqera.wave.tower.client.connector.WebSocketTowerConnector
+import io.seqera.wave.tower.client.connector.TowerConnector
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import org.apache.commons.lang3.StringUtils
@@ -38,7 +38,7 @@ import org.apache.commons.lang3.StringUtils
 class TowerClient {
 
     @Inject
-    private WebSocketTowerConnector socketClient
+    private TowerConnector socketClient
 
     protected <T> CompletableFuture<T> getAsync(URI uri, String endpoint, @Nullable String authorization, Class<T> type) {
         assert uri, "Missing uri argument"
