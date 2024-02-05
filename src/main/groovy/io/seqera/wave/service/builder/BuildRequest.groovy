@@ -62,9 +62,14 @@ class BuildRequest {
     final String condaFile
 
     /**
-     * The spock file recipe associated with this request
+     * The spack file recipe associated with this request
      */
     final String spackFile
+
+    /**
+     * Target architecture for Spack builds
+     */
+    final String spackTarget
 
     /**
      * The build context work directory
@@ -146,13 +151,14 @@ class BuildRequest {
      */
     volatile boolean uncached
 
-    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, BuildFormat format, User user, ContainerConfig containerConfig, BuildContext buildContext, ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId) {
-        this.id = computeDigest(containerFile, condaFile, spackFile, platform, repo, buildContext)
+    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, String spackTarget, BuildFormat format, User user, ContainerConfig containerConfig, BuildContext buildContext, ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId) {
+        this.id = computeDigest(containerFile, condaFile, spackFile, spackTarget, platform, repo, buildContext)
         this.containerFile = containerFile
         this.containerConfig = containerConfig
         this.buildContext = buildContext
         this.condaFile = condaFile
         this.spackFile = spackFile
+        this.spackTarget = spackTarget
         this.targetImage = makeTarget(format, repo, id, condaFile, spackFile)
         this.format = format
         this.user = user
@@ -214,13 +220,14 @@ class BuildRequest {
         return tag ?: null
     }
 
-    static private String computeDigest(String containerFile, String condaFile, String spackFile, ContainerPlatform platform, String repository, BuildContext buildContext) {
+    static private String computeDigest(String containerFile, String condaFile, String spackFile, String spackTarget, ContainerPlatform platform, String repository, BuildContext buildContext) {
         final attrs = new LinkedHashMap<String,String>(10)
         attrs.containerFile = containerFile
         attrs.condaFile = condaFile
         attrs.platform = platform?.toString()
         attrs.repository = repository
         if( spackFile ) attrs.spackFile = spackFile
+        if( spackFile && spackTarget ) attrs.spackTarget = spackTarget
         if( buildContext ) attrs.buildContext = buildContext.tarDigest
         return RegHelper.sipHash(attrs)
     }
@@ -249,6 +256,10 @@ class BuildRequest {
 
     String getSpackFile() {
         return spackFile
+    }
+
+    String getSpackTarget() {
+        return spackTarget
     }
 
     Path getWorkDir() {

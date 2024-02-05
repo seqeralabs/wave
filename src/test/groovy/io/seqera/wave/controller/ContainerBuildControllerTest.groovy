@@ -70,6 +70,7 @@ class ContainerBuildControllerTest extends Specification {
                 "buildrepo",
                 'conda::recipe',
                 'some-spack-recipe',
+                'zen3',
                 BuildFormat.DOCKER,
                 null,
                 null,
