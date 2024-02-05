@@ -44,8 +44,6 @@ import io.micronaut.http.annotation.Get
 import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
-import io.micronaut.security.annotation.Secured
-import io.micronaut.security.rules.SecurityRule
 import io.seqera.wave.ErrorHandler
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.RegistryProxyService
@@ -76,7 +74,6 @@ import reactor.core.publisher.Mono
 @Slf4j
 @CompileStatic
 @Controller("/v2")
-@Secured(SecurityRule.IS_ANONYMOUS)
 @ExecuteOn(TaskExecutors.IO)
 class RegistryProxyController {
 

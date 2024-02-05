@@ -562,7 +562,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         then:
         sleep 300
-        persistence.getBuildCount(null, null) == 3
+        persistence.getBuildCount(null,null, null) == 3
 
     }
 
@@ -580,7 +580,25 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         then:
         sleep 300
-        persistence.getBuildCount(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == 2
+        persistence.getBuildCount(null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == 2
+
+    }
+
+    def 'should return the total successful build count' () {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def record1 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', false, Instant.now())
+        def record2 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', true, Instant.now())
+        def record3 = new WaveBuildCountRecord( '127.0.0.2',2, 'reg/repo:hash2', true, Instant.now())
+
+        when:
+        persistence.incrementBuildCount(record1)
+        persistence.incrementBuildCount(record2)
+        persistence.incrementBuildCount(record3)
+
+        then:
+        sleep 300
+        persistence.getBuildCount(true,null, null) == 2
 
     }
 

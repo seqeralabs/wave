@@ -27,8 +27,6 @@ import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
-import io.micronaut.security.annotation.Secured
-import io.micronaut.security.rules.SecurityRule
 import io.micronaut.views.View
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.service.logs.BuildLogService
@@ -45,7 +43,6 @@ import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
  */
 @CompileStatic
 @Controller("/view")
-@Secured(SecurityRule.IS_ANONYMOUS)
 @ExecuteOn(TaskExecutors.IO)
 class ViewController {
 

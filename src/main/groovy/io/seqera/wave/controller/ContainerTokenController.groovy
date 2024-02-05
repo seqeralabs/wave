@@ -75,7 +75,6 @@ import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
 @Slf4j
 @CompileStatic
 @Controller("/")
-@Secured(SecurityRule.IS_ANONYMOUS)
 @ExecuteOn(TaskExecutors.IO)
 class ContainerTokenController {
 

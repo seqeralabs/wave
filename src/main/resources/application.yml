@@ -46,6 +46,19 @@ micronaut:
         read-timeout: '30s'
         read-idle-timeout: '120s'
         event-loop-group: 'stream-pool'
+  security :
+    enabled : true
+    token :
+      enabled : true
+    intercept-url-map :
+      - pattern : '/**'
+        http-method : 'GET'
+        access :
+          - isAnonymous()
+      - pattern : '/**'
+        http-method : 'POST'
+        access :
+          - isAnonymous()
 ---
 wave:
   allowAnonymous: true

@@ -92,7 +92,7 @@ class MetricServiceImpl implements MetricService{
     }
 
     @Override
-    Long getBuildCount(boolean success, Instant startdate, Instant enddate) {
+    Long getBuildCount(Boolean success, Instant startdate, Instant enddate) {
         persistenceService.getBuildCount(success, startdate, enddate)
     }
 

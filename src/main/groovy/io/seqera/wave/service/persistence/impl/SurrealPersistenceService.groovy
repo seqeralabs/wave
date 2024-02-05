@@ -326,7 +326,7 @@ class SurrealPersistenceService implements PersistenceService {
         return counts
     }
 
-    Long getBuildCount(boolean success, Instant startdate, Instant enddate){
+    Long getBuildCount(Boolean success, Instant startdate, Instant enddate){
         def filter=""
         if( startdate && enddate && success){
             filter = "where date >= '$startdate' and date <= '$enddate' and success = $success"

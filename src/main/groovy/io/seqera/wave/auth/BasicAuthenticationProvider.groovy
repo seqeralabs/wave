@@ -14,7 +14,6 @@ import reactor.core.publisher.Flux
 import reactor.core.publisher.FluxSink
 
 @Singleton
-@Requires(property = "wave.auth.basic.enabled", value = "true")
 class BasicAuthenticationProvider implements AuthenticationProvider {
     @Inject
     AuthConfig authConfig
