@@ -42,7 +42,7 @@ import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.storage.reader.ContentReaderFactory
-import io.seqera.wave.storage.reader.HttpServerRetryableErrorException
+import io.seqera.wave.exception.HttpServerRetryableErrorException
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.SpackHelper
 import io.seqera.wave.util.TarUtils
@@ -101,7 +101,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     @Inject
     private HttpClientConfig httpClientConfig
 
-    @Inject CleanupStrategy cleanup
+    @Inject
+    private CleanupStrategy cleanup
 
     /**
      * Build a container image for the given {@link BuildRequest}

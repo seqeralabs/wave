@@ -79,7 +79,6 @@ class ContainerTokenController {
     @Inject HttpClientAddressResolver addressResolver
     @Inject ContainerTokenService tokenService
     @Inject UserService userService
-    @Inject PairingService securityService
     @Inject JwtAuthStore jwtAuthStore
 
     @Inject
@@ -144,7 +143,7 @@ class ContainerTokenController {
         }
 
         // We first check if the service is registered
-        final registration = securityService.getPairingRecord(PairingService.TOWER_SERVICE, req.towerEndpoint)
+        final registration = pairingService.getPairingRecord(PairingService.TOWER_SERVICE, req.towerEndpoint)
         if( !registration )
             throw new BadRequestException("Tower instance '${req.towerEndpoint}' has not enabled to connect Wave service '$serverUrl'")
 

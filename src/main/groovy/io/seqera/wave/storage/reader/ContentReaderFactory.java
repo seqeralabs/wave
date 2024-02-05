@@ -41,6 +41,9 @@ public class ContentReaderFactory {
         if( location.startsWith("gzip:") ) {
             return GzipContentReader.fromBase64EncodedString(location.substring(5));
         }
+        if( location.startsWith("docker://") ) {
+            return new LayerContentReader(location.substring(9));
+        }
         throw new IllegalArgumentException("Unsupported content location: " + location);
     }
 

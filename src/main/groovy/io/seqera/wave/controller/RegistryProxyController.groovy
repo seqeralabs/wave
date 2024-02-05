@@ -52,8 +52,8 @@ import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.blob.BlobCacheService
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.storage.DigestStore
-import io.seqera.wave.storage.HttpResource
 import io.seqera.wave.storage.LayerDigestStore
+import io.seqera.wave.storage.LazyDigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.util.Retryable
 import jakarta.inject.Inject
@@ -212,8 +212,9 @@ class RegistryProxyController {
         if( route.blob ) {
             final entry = storage.getBlob(route.getTargetPath()).orElse(null)
             if( entry instanceof LayerDigestStore ) {
-                log.info "Blob found in the cache: $route.path ==> mapping to: ${entry.location}"
-                final target = RoutePath.parse(entry.location)
+                final location = (entry as LayerDigestStore).location
+                log.info "Blob found in the cache: $route.path ==> mapping to: ${location}"
+                final target = RoutePath.parse(location)
                 return handleDelegate0(target, httpRequest)
             }
             else if (entry) {
@@ -306,7 +307,7 @@ class RegistryProxyController {
     }
 
     MutableHttpResponse<?> fromCache(DigestStore entry) {
-        return entry instanceof HttpResource
+        return entry instanceof LazyDigestStore && entry.location
                 ? fromCacheRedirect0(entry)
                 : fromCacheStore0(entry)
     }
@@ -327,10 +328,9 @@ class RegistryProxyController {
                 .headers(headers)
     }
 
-    private MutableHttpResponse fromCacheRedirect0(HttpResource entry) {
-        final location = entry.getUrl()
+    private MutableHttpResponse fromCacheRedirect0(LazyDigestStore entry) {
         final override = Map.of(
-                'Location', location,       // <-- the location can be relative to the origin host, override it to always return a fully qualified URI
+                'Location', entry.location, // <-- the location can be relative to the origin host, override it to always return a fully qualified URI
                 'Content-Length', '0',  // <-- make sure to set content length to zero, some services return some content even with the redirect header that's discarded by this response
                 'Connection', 'close' ) // <-- make sure to return connection: close header otherwise docker hangs
         HttpResponse

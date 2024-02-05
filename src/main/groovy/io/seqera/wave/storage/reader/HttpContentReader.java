@@ -26,8 +26,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.Charset;
 
+import io.seqera.wave.exception.HttpServerRetryableErrorException;
 import io.seqera.wave.http.HttpClientFactory;
-import io.seqera.wave.storage.HttpResource;
 import org.apache.commons.io.IOUtils;
 import static io.seqera.wave.WaveDefault.HTTP_RETRYABLE_ERRORS;
 
@@ -36,7 +36,7 @@ import static io.seqera.wave.WaveDefault.HTTP_RETRYABLE_ERRORS;
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-public class HttpContentReader implements ContentReader, HttpResource {
+public class HttpContentReader implements ContentReader {
 
     final private String url;
 

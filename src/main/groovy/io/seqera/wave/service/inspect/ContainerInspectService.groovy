@@ -75,5 +75,21 @@ interface ContainerInspectService {
     List<String> containerEntrypoint(String containerFile, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint)
 
 
-    ContainerSpec containerSpec(String repository, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint)
+    /**
+     * Inspect a container image
+     *
+     * @param containerImage
+     *      The container image to be inspect e.g. ubuntu:latest or docker.io/library/ubuntu:22.04
+     * @param userId
+     *      The (tower) user ID
+     * @param workspaceId
+     *      The (tower) workspace ID
+     * @param towerToken
+     *      The tower access token
+     * @param towerEndpoint
+     *      The tower API endpoint
+     * @return
+     *      The {@link ContainerSpec} object modelling the container image inspect metadata
+     */
+    ContainerSpec containerSpec(String containerImage, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint)
 }

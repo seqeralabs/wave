@@ -217,13 +217,13 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
     }
 
     @Override
-    ContainerSpec containerSpec(String repo, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint) {
-        final path = ContainerCoordinates.parse(repo)
+    ContainerSpec containerSpec(String containerImage, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint) {
+        final path = ContainerCoordinates.parse(containerImage)
 
         final creds = !userId
                 ? credentialsProvider.getDefaultCredentials(path)
                 : credentialsProvider.getUserCredentials(path, userId, workspaceId, towerToken, towerEndpoint)
-        log.debug "Inspect credentials for repository: ${repo} => $creds"
+        log.debug "Inspect credentials for repository: ${containerImage} => $creds"
 
         final client = client0(path, creds)
 

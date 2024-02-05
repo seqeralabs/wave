@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.storage.reader
+package io.seqera.wave.exception
 
 /**
  * Capture a HTTP response error that should be manage retrying the HTTP request

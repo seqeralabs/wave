@@ -204,7 +204,7 @@ class ContainerAugmenterTest extends Specification {
 
         and:
         def TARGET = 'quay.io/v2/foo/blobs/1234567890'
-        def layer = new ContainerLayer("layer://$TARGET", 'sha256:1234567890', 100)
+        def layer = new ContainerLayer("docker://$TARGET", 'sha256:1234567890', 100)
 
         when:
         def blob = augumenter.layerBlob(IMAGE, layer)
@@ -830,8 +830,6 @@ class ContainerAugmenterTest extends Specification {
         spec.manifest.config.mediaType == 'application/vnd.oci.image.config.v1+json'
         spec.manifest.config.digest == 'sha256:3f57d9401f8d42f986df300f0c69192fc41da28ccc8d797829467780db3dd741'
         spec.manifest.config.size == 581
-        and:
-        spec.layerUrls == ['https://registry-1.docker.io/v2/library/busybox/blobs/sha256:9ad63333ebc97e32b987ae66aa3cff81300e4c2e6d2f2395cef8a3ae18b249fe']
     }
 
 
@@ -874,9 +872,6 @@ class ContainerAugmenterTest extends Specification {
         spec.manifest.schemaVersion == 1
         spec.manifest.mediaType == 'application/vnd.docker.distribution.manifest.v1+prettyjws'
         spec.manifest.config == null
-        and:
-        spec.layerUrls[0] == 'https://quay.io/v2/biocontainers/fastqc/blobs/sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4'
-        spec.layerUrls[11] == 'https://quay.io/v2/biocontainers/fastqc/blobs/sha256:6d92b3a49ebfad5fe895550c2cb24b6370d61783aa4f979702a94892cbd19077'
     }
 
 }
