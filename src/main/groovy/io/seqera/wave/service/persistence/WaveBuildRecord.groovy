@@ -62,11 +62,9 @@ class WaveBuildRecord {
             throw new IllegalStateException("Build id must match the result id")
         return new WaveBuildRecord(
                 buildId: event.request.id,
-                // note: the string replacement is needed to a bug in the SurrealDb version 1.0.0-beta.8
-                // see https://pullanswer.com/questions/bug-unicode-escaped-characters-with-surrogate-pairs-causes-surrealdb-to-panic
-                dockerFile: event.request.containerFile?.replaceAll("[\ud83c\udf00-\ud83d\ude4f]|[\ud83d\ude80-\ud83d\udeff]", ""),
-                condaFile: event.request.condaFile?.replaceAll("[\ud83c\udf00-\ud83d\ude4f]|[\ud83d\ude80-\ud83d\udeff]", ""),
-                spackFile: event.request.spackFile?.replaceAll("[\ud83c\udf00-\ud83d\ude4f]|[\ud83d\ude80-\ud83d\udeff]", ""),
+                dockerFile: event.request.containerFile,
+                condaFile: event.request.condaFile,
+                spackFile: event.request.spackFile,
                 targetImage: event.request.targetImage,
                 userName: event.request.user?.userName,
                 userEmail: event.request.user?.email,
