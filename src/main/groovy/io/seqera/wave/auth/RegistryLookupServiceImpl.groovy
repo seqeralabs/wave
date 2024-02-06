@@ -120,11 +120,13 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
      * @return the corresponding registry endpoint uri
      */
     protected URI registryEndpoint(String registry) {
-        def result = registry ?: DOCKER_IO
+        String result = registry ?: DOCKER_IO
         if( result==DOCKER_IO )
             result = DOCKER_REGISTRY_1
-        if( !result.startsWith('http://') && !result.startsWith('https://') )
-            result = 'https://' + result
+        if( !result.startsWith('http://') && !result.startsWith('https://') ) {
+            final prot = registry=~'localhost(:\\d+)?' ? 'http' : 'https'
+            result = "$prot://" + result
+        }
         if( result.endsWith('/v2'))
             result += '/'
         if( !result.endsWith('/v2/') )

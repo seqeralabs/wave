@@ -27,8 +27,21 @@ import io.seqera.wave.WaveDefault
 @ToString(includePackage = false, includeNames = true)
 class CredentialsDescription {
 
+    /**
+     * The credential record unique ID
+     */
     String id
+
+    /**
+     * The credentials provider as defined in tower. This must be {@code container-reg} for container registry
+     * credentials
+     */
     String provider
+
+    /**
+     * The target container registry e.g. {@code docker.io}, {@code quay.io}. Note this can also specify a full or
+     * partial container repository name e.g. {@code docker.io/user/foo}
+     */
     String registry
 
     @JsonProperty("keys")
