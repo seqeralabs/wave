@@ -92,7 +92,7 @@ class KubeScanStrategy extends ScanStrategy {
             V1Job job
             final trivyCommand = scanCommand(req.targetImage, reportFile, scanConfig)
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
-            final pod = k8sService.scanContainer(podName, scanConfig.scanImage, trivyCommand, req.workDir, configFile, scanConfig, selector)
+            final pod = k8sService.scanContainer(podName, scanConfig.scanImage, trivyCommand, req.workDir, configFile, scanConfig, selector, req.platform)
             final terminated = k8sService.waitPod(pod, scanConfig.timeout.toMillis())
             if( terminated ) {
                 log.info("Container scan completed for id: ${req.id}")

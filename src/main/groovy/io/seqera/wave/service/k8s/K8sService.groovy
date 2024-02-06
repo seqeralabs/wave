@@ -26,6 +26,8 @@ import io.kubernetes.client.openapi.models.V1Pod
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.SpackConfig
+import io.seqera.wave.core.ContainerPlatform
+
 /**
  * Defines Kubernetes operations
  *
@@ -47,9 +49,9 @@ interface K8sService {
 
     void deletePod(String name)
 
-    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector)
+    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector, ContainerPlatform platform)
 
-    V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map <String,String> nodeSelector)
+    V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map <String,String> nodeSelector, ContainerPlatform platform)
 
     V1Pod transferContainer(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig)
 

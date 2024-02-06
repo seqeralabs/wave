@@ -19,6 +19,9 @@
 package io.seqera.wave.service.k8s
 
 import java.nio.file.Path
+
+import io.kubernetes.client.openapi.models.V1Toleration
+import io.kubernetes.client.openapi.models.V1TolerationBuilder
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileDynamic
@@ -94,6 +97,9 @@ class K8sServiceImpl implements K8sService {
     @Value('${wave.build.k8s.resources.requests.memory}')
     @Nullable
     private String requestsMemory
+
+    @Inject
+    private K8sTolerationsConfig k8sTolerationsConfig
 
     @Inject
     private SpackConfig spackConfig
@@ -320,14 +326,14 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Pod} description the submitted pod
      */
     @Override
-    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector) {
-        final spec = buildSpec(name, containerImage, args, workDir, creds, spackConfig, nodeSelector)
+    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector, ContainerPlatform platform) {
+        final spec = buildSpec(name, containerImage, args, workDir, creds, spackConfig, nodeSelector, platform)
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
-    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, SpackConfig spackConfig, Map<String,String> nodeSelector) {
+    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, SpackConfig spackConfig, Map<String,String> nodeSelector, ContainerPlatform platform) {
 
         // dirty dependency to avoid introducing another parameter
         final singularity = containerImage.contains('singularity')
@@ -372,6 +378,14 @@ class K8sServiceImpl implements K8sService {
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
 
+        //set toleration for build pods
+        if( k8sTolerationsConfig.enabled && platform ) {
+            if ( platform.isARM64() ) {
+                spec.withTolerations(buildTolerations(k8sTolerationsConfig.arm64))
+            } else if ( platform.isAMD64() ) {
+                spec.withTolerations(buildTolerations(k8sTolerationsConfig.amd64))
+            }
+        }
 
         final requests = new V1ResourceRequirements()
         if( requestsCpu )
@@ -473,14 +487,14 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
-    V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
-        final spec = scanSpec(name, containerImage, args, workDir, creds, scanConfig, nodeSelector)
+    V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector, ContainerPlatform platform) {
+        final spec = scanSpec(name, containerImage, args, workDir, creds, scanConfig, nodeSelector, platform)
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
-    V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig, Map<String,String> nodeSelector) {
+    V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig, Map<String,String> nodeSelector, ContainerPlatform platform) {
 
         final mounts = new ArrayList<V1VolumeMount>(5)
         mounts.add(mountBuildStorage(workDir, storageMountPath, false))
@@ -511,6 +525,14 @@ class K8sServiceImpl implements K8sService {
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
 
+        //set toleration for scan pods
+        if( k8sTolerationsConfig.enabled && platform ) {
+            if ( platform.isARM64() ) {
+                spec.withTolerations(buildTolerations(k8sTolerationsConfig.arm64))
+            } else if ( platform.isAMD64() ) {
+                spec.withTolerations(buildTolerations(k8sTolerationsConfig.amd64))
+            }
+        }
 
         final requests = new V1ResourceRequirements()
         if( scanConfig.requestsCpu )
@@ -531,6 +553,24 @@ class K8sServiceImpl implements K8sService {
         builder.build()
     }
 
+    /**
+     * Creates List of Tolerations
+     */
+    protected List<V1Toleration> buildTolerations(List<K8sTolerationsConfig.Toleration> tolerations){
+        if( !tolerations )
+            return null;
+        V1TolerationBuilder builder = new V1TolerationBuilder();
+        List<V1Toleration> v1Tolerations = new ArrayList<>();
+        for(def toleration: tolerations) {
+            v1Tolerations.add(builder.withKey(toleration.key)
+                    .withOperator(toleration.operator)
+                    .withValue(toleration.value)
+                    .withEffect(toleration.effect)
+                    .build())
+        }
+        return  v1Tolerations
+    }
+  
     @Override
     V1Pod transferContainer(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
         final spec = transferSpec(name, containerImage, args, blobConfig)

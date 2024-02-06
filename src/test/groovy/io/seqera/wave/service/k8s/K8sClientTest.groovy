@@ -60,7 +60,8 @@ class K8sClientTest extends Specification {
                 Path.of('/work/dir'),
                 Path.of('/creds'),
                 Path.of('/spack/dir'),
-                ['my-creds': 'selector'])
+                ['my-creds': 'selector'],
+                'amd64')
         then:
         true
 
