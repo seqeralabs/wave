@@ -509,4 +509,34 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.getPullCount(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == 2
 
     }
+
+    def 'should get the correct build filter' () {
+        expect:
+        SurrealPersistenceService.getBuildMetricFilter(SUCCESS, STARTDATE, ENDDATE) == Filter
+
+        where:
+        SUCCESS | STARTDATE     | ENDDATE           | Filter
+        null    | null          | null              | ''
+        true    | null          | null              | 'where exitStatus = 0'
+        false   | null          | null              | 'where exitStatus != 0'
+        null    | Instant.now() | Instant.now()     | "where type::datetime(startTime) >= '$STARTDATE' and type::datetime(startTime) <= '$ENDDATE'"
+        null    | Instant.now() | null              | ''
+        null    | null          | Instant.now()     | ''
+        true    | null          | Instant.now()     | "where exitStatus = 0"
+        false   | Instant.now() | null              | "where exitStatus != 0"
+        true    | Instant.now() | Instant.now()     | "where type::datetime(startTime) >= '$STARTDATE' and type::datetime(startTime) <= '$ENDDATE' and exitStatus = 0"
+        false   | Instant.now() | Instant.now()     | "where type::datetime(startTime) >= '$STARTDATE' and type::datetime(startTime) <= '$ENDDATE' and exitStatus != 0"
+    }
+
+    def 'get the correct pull filter' () {
+        expect:
+        SurrealPersistenceService.getPullMetricFilter(STARTDATE, ENDDATE) == Filter
+
+        where:
+        STARTDATE     | ENDDATE           | Filter
+        null          | null              | ''
+        Instant.now() | null              | ''
+        null          | Instant.now()     | ''
+        Instant.now() | Instant.now()     | "where type::datetime(timestamp) >= '$STARTDATE' and type::datetime(timestamp) <= '$ENDDATE'"
+    }
 }
