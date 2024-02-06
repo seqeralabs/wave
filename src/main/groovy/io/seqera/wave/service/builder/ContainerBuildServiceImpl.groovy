@@ -38,11 +38,11 @@ import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.configuration.SpackConfig
+import io.seqera.wave.exception.HttpServerRetryableErrorException
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.cleanup.CleanupStrategy
-import io.seqera.wave.storage.reader.ContentReaderFactory
-import io.seqera.wave.exception.HttpServerRetryableErrorException
+import io.seqera.wave.service.stream.StreamService
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.SpackHelper
 import io.seqera.wave.util.TarUtils
@@ -103,6 +103,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     @Inject
     private CleanupStrategy cleanup
+
+    @Inject
+    private StreamService streamService
 
     /**
      * Build a container image for the given {@link BuildRequest}
@@ -291,7 +294,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             final retryable = retry0("Unable to copy '${it.location}' to docker context '${contextDir}'")
             // copy the layer to the build context
             retryable.apply(()-> {
-                try (InputStream stream = ContentReaderFactory.of(it.location).openStream()) {
+                try (InputStream stream = streamService.stream(it.location)) {
                     Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING)
                 }
                 return
@@ -310,7 +313,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             final retryable = retry0("Unable to copy '${it.location} to singularity context '${contextDir}'")
             // copy the layer to the build context
             retryable.apply(()-> {
-                try (InputStream stream = ContentReaderFactory.of(it.location).openStream()) {
+                try (InputStream stream = streamService.stream(it.location)) {
                     TarUtils.untarGzip(stream, target)
                 }
                 return
@@ -323,7 +326,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         final retryable = retry0("Unable to copy '${buildContext.location} to build context '${contextDir}'")
         // copy the layer to the build context
         retryable.apply(()-> {
-            try (InputStream stream = ContentReaderFactory.of(buildContext.location).openStream()) {
+            try (InputStream stream = streamService.stream(buildContext.location)) {
                 TarUtils.untarGzip(stream, contextDir)
             }
             return

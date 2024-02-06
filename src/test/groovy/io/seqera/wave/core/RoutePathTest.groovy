@@ -95,5 +95,7 @@ class RoutePathTest extends Specification {
         and:
         'foo.com:5000/v2/hello-world/blobs/latest'              | 'blobs'   | 'foo.com:5000'    | 'hello-world' | 'latest'
         'foo.com:5000/v2/hello-world/blobs/sha256:123456'       | 'blobs'   | 'foo.com:5000'    | 'hello-world' | 'sha256:123456'
+        and:
+        'docker://quay.io/v2/hello-world/blobs/sha256:123456'   | 'blobs'   | 'quay.io'         | 'hello-world' | 'sha256:123456'
     }
 }

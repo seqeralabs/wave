@@ -31,7 +31,7 @@ import io.seqera.wave.service.pairing.socket.msg.PairingResponse
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
 import io.seqera.wave.storage.DigestStore
-import io.seqera.wave.storage.LayerDigestStore
+import io.seqera.wave.storage.DockerDigestStore
 import io.seqera.wave.storage.LazyDigestStore
 import io.seqera.wave.storage.ZippedDigestStore
 import io.seqera.wave.storage.reader.ContentReader
@@ -73,7 +73,7 @@ abstract class MoshiEncodeStrategy<V> implements EncodingStrategy<V> {
                 .add(new PathAdapter())
                 .add(PolymorphicJsonAdapterFactory.of(DigestStore.class, "@type")
                         .withSubtype(LazyDigestStore, LazyDigestStore.simpleName)
-                        .withSubtype(LayerDigestStore, LayerDigestStore.simpleName)
+                        .withSubtype(DockerDigestStore, DockerDigestStore.simpleName)
                         .withSubtype(ZippedDigestStore, ZippedDigestStore.simpleName) )
                 .add(PolymorphicJsonAdapterFactory.of(ContentReader.class, "@type")
                         .withSubtype(DataContentReader.class, DataContentReader.simpleName)

@@ -52,7 +52,7 @@ import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.blob.BlobCacheService
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.storage.DigestStore
-import io.seqera.wave.storage.LayerDigestStore
+import io.seqera.wave.storage.DockerDigestStore
 import io.seqera.wave.storage.LazyDigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.util.Retryable
@@ -211,13 +211,13 @@ class RegistryProxyController {
 
         if( route.blob ) {
             final entry = storage.getBlob(route.getTargetPath()).orElse(null)
-            if( entry instanceof LayerDigestStore ) {
-                final location = (entry as LayerDigestStore).location
+            if( entry instanceof DockerDigestStore ) {
+                final location = (entry as DockerDigestStore).location
                 log.info "Blob found in the cache: $route.path ==> mapping to: ${location}"
                 final target = RoutePath.parse(location)
                 return handleDelegate0(target, httpRequest)
             }
-            else if (entry) {
+            else if ( entry ) {
                 log.info "Blob found in the cache: $route.path"
                 return fromCache(entry)
             }

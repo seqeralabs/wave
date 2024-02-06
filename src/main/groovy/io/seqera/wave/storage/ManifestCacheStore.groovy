@@ -27,7 +27,7 @@ import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.cache.AbstractCacheStore
 import io.seqera.wave.service.cache.impl.CacheProvider
 import io.seqera.wave.storage.reader.ContentReader
-import io.seqera.wave.storage.reader.LayerContentReader
+import io.seqera.wave.storage.reader.DockerContentReader
 import jakarta.inject.Singleton
 /**
  * Implements manifest cache for {@link DigestStore}
@@ -100,8 +100,8 @@ class ManifestCacheStore extends AbstractCacheStore<DigestStore> implements Stor
     @Override
     DigestStore saveBlob(String path, ContentReader content, String type, String digest, int size) {
         log.trace "Save Blob ==> $path"
-        final result = content instanceof LayerContentReader
-                ? new LayerDigestStore(content.location, type, digest, size)
+        final result = content instanceof DockerContentReader
+                ? new DockerDigestStore(content.location, type, digest, size)
                 : new LazyDigestStore(content, type, digest, size)
         this.put(path, result)
         return result

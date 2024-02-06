@@ -128,6 +128,10 @@ class RoutePath implements ContainerPath {
     }
 
     static RoutePath parse(String location) {
+        assert location, "Missing 'location' attribute"
+        if( location.startsWith('docker://') )
+            location = location.substring(9)
+
         final m = REGEX.matcher(location)
         if( m.matches() ) {
             final registry = m.group(1)

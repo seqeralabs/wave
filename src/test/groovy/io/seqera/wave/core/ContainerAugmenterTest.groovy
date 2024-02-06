@@ -18,6 +18,7 @@
 
 package io.seqera.wave.core
 
+
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -41,7 +42,7 @@ import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContentType
 import io.seqera.wave.proxy.ProxyClient
-import io.seqera.wave.storage.LayerDigestStore
+import io.seqera.wave.storage.DockerDigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.test.ManifestConst
 import io.seqera.wave.util.ContainerConfigFactory
@@ -216,10 +217,10 @@ class ContainerAugmenterTest extends Specification {
 
         and:
         def entry = storage.getBlob("$REGISTRY/v2/$IMAGE/blobs/sha256:1234567890").get()
-        entry instanceof LayerDigestStore
+        entry instanceof DockerDigestStore
         entry.mediaType == ContentType.DOCKER_IMAGE_TAR_GZIP
         entry.digest == 'sha256:1234567890'
-        (entry as LayerDigestStore).location == TARGET
+        (entry as DockerDigestStore).location == TARGET
     }
 
     def 'should update image manifest' () {

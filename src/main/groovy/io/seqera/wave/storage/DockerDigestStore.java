@@ -3,14 +3,14 @@ package io.seqera.wave.storage;
 /**
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-public class LayerDigestStore implements DigestStore {
+public class DockerDigestStore implements DigestStore {
 
     private final String location;
     private final String mediaType;
     private String digest;
     private int size;
 
-    public LayerDigestStore(String location, String mediaType, String digest, int size) {
+    public DockerDigestStore(String location, String mediaType, String digest, int size) {
         this.location = location;
         this.mediaType = mediaType;
         this.digest = digest;
@@ -23,7 +23,7 @@ public class LayerDigestStore implements DigestStore {
 
     @Override
     public byte[] getBytes() throws InterruptedException {
-        throw new UnsupportedOperationException("LayerDigestStore does not allow 'getBytes' operation");
+        throw new UnsupportedOperationException("DockerDigestStore does not allow 'getBytes' operation");
     }
 
     @Override
