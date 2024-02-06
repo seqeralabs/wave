@@ -19,17 +19,12 @@ package io.seqera.wave.service.metric
 
 import java.time.Instant
 
-import io.seqera.wave.service.builder.BuildEvent
-import io.seqera.wave.service.metric.event.PullEvent
-
 /**
  * Metrics Service
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 interface MetricService {
-    void storeBuild(BuildEvent event)
-    void storePull(PullEvent event)
     Map getBuildMetrics(Metric metrics, Boolean success, Instant startDate, Instant endDate)
     Map getPullMetrics(Metric metrics, Instant startDate, Instant endDate)
     Long getPullCount(Instant startDate, Instant endDate)

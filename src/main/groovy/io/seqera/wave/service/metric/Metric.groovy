@@ -17,6 +17,8 @@
  */
 package io.seqera.wave.service.metric
 
+import software.amazon.awssdk.services.s3.endpoints.internal.Value
+
 /**
  * enum for Metrics
  *
@@ -24,12 +26,14 @@ package io.seqera.wave.service.metric
  */
 
 enum Metric {
-    ip('ip'),
-    user('userid'),
-    image('imagename')
+    ip('requestIp', 'ipAddress'),
+    user('userName', 'user'),
+    image('targetImage', 'sourceImage')
 
-    String label
-    Metric(String label){
-        this.label = label
+    String buildLabel
+    String pullLabel
+    Metric(String buildLabel, pullLabel){
+        this.buildLabel = buildLabel
+        this.pullLabel = pullLabel
     }
 }

@@ -34,8 +34,7 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.metric.Metric
-import io.seqera.wave.service.persistence.WaveBuildCountRecord
-import io.seqera.wave.service.persistence.WavePullCountRecord
+
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.BuildEvent
@@ -320,105 +319,193 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
     def 'should return the correct build counts per metrics' () {
         given:
-        def persistence = applicationContext.getBean(SurrealPersistenceService)
-        def record1 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', false, Instant.now().minus(1, ChronoUnit.DAYS))
-        def record2 = new WaveBuildCountRecord( '127.0.0.1',1, 'reg/repo:hash', true, Instant.now())
-        def record3 = new WaveBuildCountRecord( '127.0.0.2',2, 'reg/repo:hash2', true, Instant.now())
+        final persistence = applicationContext.getBean(SurrealPersistenceService)
 
-        when:
-        persistence.incrementBuildCount(record1)
-        persistence.incrementBuildCount(record2)
-        persistence.incrementBuildCount(record3)
+        def build1 = new WaveBuildRecord(
+                buildId: 'test',
+                dockerFile: 'test',
+                condaFile: 'test',
+                targetImage: 'testImage1',
+                userName: 'testUser1',
+                userEmail: 'test',
+                userId: 1,
+                requestIp: '127.0.0.1',
+                startTime: Instant.now().minus(1, ChronoUnit.DAYS),
+                duration: Duration.ofSeconds(1),
+                exitStatus: 1 )
 
-        then:
+        def build2 = new WaveBuildRecord(
+                buildId: 'test',
+                dockerFile: 'test',
+                condaFile: 'test',
+                targetImage: 'testImage1',
+                userName: 'testUser1',
+                userEmail: 'test',
+                userId: 1,
+                requestIp: '127.0.0.1',
+                startTime: Instant.now(),
+                duration: Duration.ofSeconds(1),
+                exitStatus: 0 )
+
+        def build3 = new WaveBuildRecord(
+                buildId: 'test',
+                dockerFile: 'test',
+                condaFile: 'test',
+                targetImage: 'testImage2',
+                userName: null,
+                userEmail: null,
+                userId: null,
+                requestIp: '127.0.0.2',
+                startTime: Instant.now(),
+                duration: Duration.ofSeconds(1),
+                exitStatus: 0 )
+
+        and:
+        persistence.saveBuild(build1)
+        persistence.saveBuild(build2)
+        persistence.saveBuild(build3)
         sleep 300
-        persistence.getBuildCountByMetrics(Metric.ip, null, null, null)['127.0.0.1'] == 2
-        persistence.getBuildCountByMetrics(Metric.ip, null, null, null)['127.0.0.2'] == 1
 
-        and: 'should return the correct successful build counts per ip'
-        persistence.getBuildCountByMetrics(Metric.ip, true, null, null)['127.0.0.1'] == 1
-        persistence.getBuildCountByMetrics(Metric.ip, true, null, null)['127.0.0.2'] == 1
-
-        and: 'should return the correct build counts per user'
-        persistence.getBuildCountByMetrics(Metric.user, null, null, null)['1'] == 2
-        persistence.getBuildCountByMetrics(Metric.user, null, null, null)['2'] == 1
-
-        and: 'should return the correct successful build counts per user'
-        persistence.getBuildCountByMetrics(Metric.user, true, null, null)['1'] == 1
-        persistence.getBuildCountByMetrics(Metric.user, true, null, null)['2'] == 1
-
-        and: 'should return the correct build counts per image'
-        persistence.getBuildCountByMetrics(Metric.image, null, null, null)['reg/repo:hash'] == 2
-        persistence.getBuildCountByMetrics(Metric.image, null, null, null)['reg/repo:hash2'] == 1
-
-        and: 'should return the correct successful build counts per image'
-        persistence.getBuildCountByMetrics(Metric.image, true, null, null)['reg/repo:hash'] == 1
-        persistence.getBuildCountByMetrics(Metric.image, true, null, null)['reg/repo:hash2'] == 1
-
-        and: 'should return the correct build counts per ip between start and end date'
-        persistence.getBuildCountByMetrics(Metric.ip, null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['127.0.0.1'] == 1
-        persistence.getBuildCountByMetrics(Metric.ip, null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['127.0.0.2'] == 1
-
-        and: 'should return the correct build counts per user between start and end date'
-        persistence.getBuildCountByMetrics(Metric.user, null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['1'] == 1
-        persistence.getBuildCountByMetrics(Metric.user, null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['2'] == 1
-
-        and: 'should return the correct build counts per image between start and end date'
-        persistence.getBuildCountByMetrics(Metric.image, null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['reg/repo:hash'] == 1
-        persistence.getBuildCountByMetrics(Metric.image, null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['reg/repo:hash2'] == 1
-
-        and: 'should return the total build count'
+        expect:
+        expect:
+        persistence.getBuildCountByMetrics(Metric.ip, null, null, null) == [
+                '127.0.0.1': 2,
+                '127.0.0.2': 1
+        ]
+        persistence.getBuildCountByMetrics(Metric.user, null, null, null) == [
+                'testUser1': 2,
+                'unknown': 1
+        ]
+        persistence.getBuildCountByMetrics(Metric.image, null, null, null) == [
+                'testImage1': 2,
+                'testImage2': 1
+        ]
+        persistence.getBuildCountByMetrics(Metric.ip, true, null, null) ==[
+                '127.0.0.1': 1,
+                '127.0.0.2': 1
+        ]
+        persistence.getBuildCountByMetrics(Metric.user, true, null, null) == [
+                'testUser1': 1,
+                'unknown': 1
+        ]
+        persistence.getBuildCountByMetrics(Metric.image, true, null, null) == [
+                'testImage1': 1,
+                'testImage2': 1
+        ]
+        persistence.getBuildCountByMetrics(Metric.ip, null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == [
+                '127.0.0.1': 1,
+                '127.0.0.2': 1
+        ]
+        persistence.getBuildCountByMetrics(Metric.user, null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == [
+                'testUser1': 1,
+                'unknown': 1
+        ]
+        persistence.getBuildCountByMetrics(Metric.image, null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == [
+                'testImage1': 1,
+                'testImage2': 1
+        ]
         persistence.getBuildCount(null, null, null) == 3
 
-        and: 'should return the total successful build count'
         persistence.getBuildCount(true, null, null) == 2
 
-        and: 'should return the total build count between start and end date'
         persistence.getBuildCount( null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == 2
 
     }
 
     def 'should return the correct pull counts per metrics' () {
         given:
-        def persistence = applicationContext.getBean(SurrealPersistenceService)
-        def record1 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now().minus(1, ChronoUnit.DAYS))
-        def record2 = new WavePullCountRecord( '127.0.0.1',1, 'reg/repo:hash', Instant.now())
-        def record3 = new WavePullCountRecord( '127.0.0.2',2, 'reg/repo:hash2', Instant.now())
+        final persistence = applicationContext.getBean(SurrealPersistenceService)
+        def TOKEN1 = '123abc'
+        def cfg = new ContainerConfig(entrypoint: ['/opt/fusion'])
+        def req = new SubmitContainerTokenRequest(
+                towerEndpoint: 'https://tower.nf',
+                towerWorkspaceId: 100,
+                containerConfig: cfg,
+                containerPlatform: ContainerPlatform.of('amd64'),
+                buildRepository: 'build.docker.io',
+                cacheRepository: 'cache.docker.io',
+                fingerprint: 'xyz',
+                timestamp: Instant.now().toString()
+        )
+        def data = new ContainerRequestData( 1, 100, 'hello-world' )
+        def wave = "wave.io/wt/$TOKEN1/hello-world"
+        def user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
+        def addr = "100.200.300.400"
+        def exp = Instant.now().plusSeconds(3600)
+        def request1 = new WaveContainerRecord(req, data, wave, user, addr, exp)
 
-        when:
-        persistence.incrementPullCount(record1)
-        persistence.incrementPullCount(record2)
-        persistence.incrementPullCount(record3)
+        def TOKEN2 = '1234abc'
+        cfg = new ContainerConfig(entrypoint: ['/opt/fusion'])
+        req = new SubmitContainerTokenRequest(
+                towerEndpoint: 'https://tower.nf',
+                towerWorkspaceId: 100,
+                containerConfig: cfg,
+                containerPlatform: ContainerPlatform.of('amd64'),
+                buildRepository: 'build.docker.io',
+                cacheRepository: 'cache.docker.io',
+                fingerprint: 'abc',
+                timestamp: Instant.now().minus(1, ChronoUnit.DAYS).toString()
+        )
+        data = new ContainerRequestData( 1, 100, 'hello-world' )
+        wave = "wave.io/wt/$TOKEN2/hello-world"
+        user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
+        addr = "100.200.300.400"
+        exp = Instant.now().plusSeconds(3600)
+        def request2 = new WaveContainerRecord(req, data, wave, user, addr, exp)
 
-        then: 'should return the correct pull counts per ip'
+        def TOKEN3 = '12345abc'
+        cfg = new ContainerConfig(entrypoint: ['/opt/fusion'])
+        req = new SubmitContainerTokenRequest(
+                towerEndpoint: 'https://tower.nf',
+                towerWorkspaceId: 100,
+                containerConfig: cfg,
+                containerPlatform: ContainerPlatform.of('amd64'),
+                buildRepository: 'build.docker.io',
+                cacheRepository: 'cache.docker.io',
+                fingerprint: 'lmn',
+                timestamp: Instant.now().toString()
+        )
+        data = new ContainerRequestData( 1, 100, 'hello-wave-world' )
+        wave = "wave.io/wt/$TOKEN3/hello-wave-world"
+        user = null
+        addr = "100.200.300.401"
+        exp = Instant.now().plusSeconds(3600)
+        def request3 = new WaveContainerRecord(req, data, wave, user, addr, exp)
+
+        and:
+        persistence.saveContainerRequest(TOKEN1, request1)
+        persistence.saveContainerRequest(TOKEN2, request2)
+        persistence.saveContainerRequest(TOKEN3, request3)
         sleep 300
-        persistence.getPullCountByMetrics(Metric.ip, null, null)['127.0.0.1'] == 2
-        persistence.getPullCountByMetrics(Metric.ip, null, null)['127.0.0.2'] == 1
 
-        and:'should return the correct pull counts by ip between start and end date'
-        persistence.getPullCountByMetrics(Metric.ip, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['127.0.0.1'] == 1
-        persistence.getPullCountByMetrics(Metric.ip, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['127.0.0.2'] == 1
+        expect:
+        persistence.getPullCountByMetrics(Metric.ip, null, null) ==[
+                '100.200.300.400': 2,
+                '100.200.300.401': 1
+        ]
+        persistence.getPullCountByMetrics(Metric.ip, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) ==[
+                '100.200.300.400': 1,
+                '100.200.300.401': 1
+        ]
+        persistence.getPullCountByMetrics(Metric.user, null, null) == [
+                'foo': 2,
+                'unknown': 1
+        ]
+        persistence.getPullCountByMetrics(Metric.user, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == [
+                'foo': 1,
+                'unknown': 1
+        ]
+        persistence.getPullCountByMetrics(Metric.image, null, null) == [
+                'hello-world': 2,
+                'hello-wave-world': 1
+        ]
+        persistence.getPullCountByMetrics(Metric.image, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == [
+                'hello-world': 1,
+                'hello-wave-world': 1
+        ]
 
-        and: 'should return the correct pull counts per user'
-        persistence.getPullCountByMetrics(Metric.user, null, null)['1'] == 2
-        persistence.getPullCountByMetrics(Metric.user, null, null)['2'] == 1
-
-        and: 'should return the correct pull counts by userid between start and end date'
-        persistence.getPullCountByMetrics(Metric.user, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['1'] == 1
-        persistence.getPullCountByMetrics(Metric.user, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['2'] == 1
-
-        and: 'should return the correct pull counts per image'
-        persistence.getPullCountByMetrics(Metric.image, null, null)['reg/repo:hash'] == 2
-        persistence.getPullCountByMetrics(Metric.image, null, null)['reg/repo:hash2'] == 1
-
-        and: 'should return the correct pull counts by image between start and end date'
-        persistence.getPullCountByMetrics(Metric.image, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['reg/repo:hash'] == 1
-        persistence.getPullCountByMetrics(Metric.image, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now())['reg/repo:hash2'] == 1
-
-        and: 'should return the total pull count'
         persistence.getPullCount(null, null) == 3
 
-        and: 'should return the total pull count between start and end date'
         persistence.getPullCount(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == 2
 
     }

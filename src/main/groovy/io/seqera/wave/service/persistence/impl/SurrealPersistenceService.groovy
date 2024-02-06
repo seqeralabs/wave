@@ -33,10 +33,9 @@ import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.metric.Metric
 import io.seqera.wave.service.persistence.PersistenceService
-import io.seqera.wave.service.persistence.WaveBuildCountRecord
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
-import io.seqera.wave.service.persistence.WavePullCountRecord
+
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.persistence.legacy.SurrealLegacyService
 import io.seqera.wave.service.scan.ScanVulnerability
@@ -96,42 +95,6 @@ class SurrealPersistenceService implements PersistenceService {
         final ret4 = surrealDb.sqlAsMap(authorization, "define table wave_scan_vuln SCHEMALESS")
         if( ret4.status != "OK")
             throw new IllegalStateException("Unable to define SurrealDB table wave_scan_vuln - cause: $ret4")
-
-        try {
-            // create wave_matrics_pull  table
-            surrealDb.sqlAsString(authorization, '''
-                                                    DEFINE TABLE wave_metrics_pull SCHEMAFULL;
-                                                    DEFINE FIELD count ON TABLE wave_metrics_pull TYPE number;
-                                                    DEFINE FIELD ip ON TABLE wave_metrics_pull TYPE string; 
-                                                    DEFINE FIELD userid ON TABLE wave_metrics_pull TYPE number;
-                                                    DEFINE FIELD imagename ON TABLE wave_metrics_pull TYPE string;
-                                                    DEFINE FIELD date ON TABLE wave_metrics_pull TYPE datetime; 
-                                                    DEFINE INDEX indexip ON TABLE wave_metrics_pull COLUMNS ip; 
-                                                    DEFINE INDEX indexuserid ON TABLE wave_metrics_pull COLUMNS userid;
-                                                    DEFINE INDEX indeximagename ON TABLE wave_metrics_pull COLUMNS imagename;
-                                                    ''')
-        }catch(Exception e){
-                throw new IllegalStateException("Unable to define SurrealDB table wave_metrics_pull - cause: ${e.getCause()}")
-        }
-
-        try{
-        // create wave_matrics_build  table
-        surrealDb.sqlAsString(authorization, '''
-                                                DEFINE TABLE wave_metrics_build SCHEMAFULL; 
-                                                DEFINE FIELD count ON TABLE wave_metrics_build TYPE number;
-                                                DEFINE FIELD ip ON TABLE wave_metrics_build TYPE string;
-                                                DEFINE FIELD userid ON TABLE wave_metrics_build TYPE number;
-                                                DEFINE FIELD date ON TABLE wave_metrics_build TYPE datetime;
-                                                DEFINE FIELD imagename ON TABLE wave_metrics_build TYPE string;
-                                                DEFINE FIELD success ON TABLE wave_metrics_build TYPE bool;
-                                                DEFINE INDEX indexip ON TABLE wave_metrics_build COLUMNS ip;
-                                                DEFINE INDEX indexuserid ON TABLE wave_metrics_build COLUMNS userid;
-                                                DEFINE INDEX indeximagename ON TABLE wave_metrics_build COLUMNS imagename;
-                                                ''')
-        }catch(Exception e) {
-            throw new IllegalStateException("Unable to define SurrealDB table wave_matrics_build - cause: ${e.getCause()}")
-        }
-
     }
 
     private String getAuthorization() {
@@ -260,110 +223,84 @@ class SurrealPersistenceService implements PersistenceService {
         return result
     }
 
-    void incrementPullCount(WavePullCountRecord record) {
-        final statement = "insert into wave_metrics_pull " +
-                "(id, count, ip, userid, imagename, date) " +
-                "values " +
-                "('${record.hashCode()}', 1, '${record.ip}', ${record.userId}, '${record.imageName}', '${record.date}') " +
-                "ON DUPLICATE KEY UPDATE count += 1"
-
-        surrealDb.sqlAsync(authorization, statement).subscribe({ result->
-            log.trace "pull count ${result}"
-        }, {error->
-            def msg = error.message
-            if( error instanceof HttpClientResponseException ){
-                msg += ":\n $error.response.body"
-            }
-            log.error "Error saving pull count ${msg}", error
-        })
-    }
-
-    void incrementBuildCount(WaveBuildCountRecord record) {
-        final statement = "insert into wave_metrics_build " +
-                "(id, count, ip, userid, imagename, success, date) " +
-                "values " +
-                "('${record.hashCode()}', 1, '${record.ip}', ${record.userId}, '${record.imageName}',${record.success}, '${record.date}') " +
-                "ON DUPLICATE KEY UPDATE count += 1"
-
-        surrealDb.sqlAsync(authorization, statement).subscribe({ result->
-            log.trace "Build count ${result}"
-        }, {error->
-            def msg = error.message
-            if( error instanceof HttpClientResponseException ){
-                msg += ":\n $error.response.body"
-            }
-            log.error "Error saving build coun ${msg}", error
-        })
-    }
-
-     Map<String, Long> getBuildCountByMetrics(Metric metric, Boolean success, Instant startDate, Instant endDate) {
-         def filter=""
-         if( startDate && endDate && success!=null){
-             filter = "where date >= '$startDate' and date <= '$endDate' and success = $success"
-         }else if( startDate && endDate ){
-             filter = "where date >= '$startDate' and date <= '$endDate'"
-         }else if( success!=null ){
-             filter = "where success = $success"
-         }
-         final statement = "SELECT ${metric.label},  math::sum(count) as total_count FROM wave_metrics_build $filter GROUP BY ${metric.label}"
-         log.info("SQL: $statement")
-         final map = surrealDb.sqlAsMap(authorization, statement)
-         def results = map.get("result") as List<Map>
-         Map<String, Long> counts = new HashMap<>()
-         for(def result : results){
-             counts.put(result.get(metric.label) as String, result.get("total_count") as Long)
-         }
-         return counts
-    }
-
-    Map<String, Long> getPullCountByMetrics(Metric metric, Instant startDate, Instant endDate) {
-        def filter=""
-        if( startDate && endDate ){
-            filter = "where date >= '$startDate' and date <= '$endDate'"
-        }
-        final statement = "SELECT ${metric.label},  math::sum(count) as total_count  FROM wave_metrics_pull $filter GROUP BY ${metric.label}"
-        log.info("SQL: $statement")
+    // get build count by specific metric like ip, userid, imagename between two dates
+    Map<String, Long> getBuildCountByMetrics(Metric metric, Boolean success, Instant startDate, Instant endDate) {
+        final statement = "SELECT ${metric.buildLabel}, count() as total_count FROM wave_build "+
+                                "${getBuildMetricFilter(success, startDate, endDate)} GROUP BY ${metric.buildLabel}"
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
+        log.trace("build count results by ${metric.buildLabel}: $results")
         Map<String, Long> counts = new HashMap<>()
         for(def result : results){
-            counts.put(result.get(metric.label) as String, result.get("total_count") as Long)
+            counts.put((result.get(metric.buildLabel)?:"unknown") as String, result.get("total_count") as Long)
         }
         return counts
     }
 
+    // get build count between two dates
     Long getBuildCount(Boolean success, Instant startDate, Instant endDate){
-        def filter=""
-        if( startDate && endDate && success!=null){
-            filter = "where date >= '$startDate' and date <= '$endDate' and success = $success"
-        }else if( startDate && endDate ){
-            filter = "where date >= '$startDate' and date <= '$endDate'"
-        }else if( success!=null ){
-            filter = "where success = $success"
-        }
-
-        final statement = "SELECT math::sum(count) as total_count FROM wave_metrics_build $filter GROUP ALL"
-        log.info("SQL: $statement")
+        final statement = "SELECT count() as total_count FROM wave_build ${getBuildMetricFilter(success, startDate, endDate)} GROUP ALL"
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
+        log.trace("build count results: $results")
         if( results && results.size() > 0)
             return results[0].get("total_count")? results[0].get("total_count") as Long : 0
         else
             return 0
     }
 
-    Long getPullCount(Instant startDate, Instant endDate){
+    static String getBuildMetricFilter(Boolean success, Instant startDate, Instant endDate){
         def filter=""
-        if( startDate && endDate ){
-            filter = "where date >= '$startDate' and date <= '$endDate'"
+        if (startDate && endDate) {
+            filter = "where type::datetime(startTime) >= '$startDate' and type::datetime(startTime) <= '$endDate'"
+            if (success != null) {
+                filter += success ? " and exitStatus = 0" : " and exitStatus != 0"
+            }
+        } else if (success != null) {
+            filter = success ? "where exitStatus = 0" : "where exitStatus != 0"
         }
-        final statement = "SELECT math::sum(count) as total_count FROM wave_metrics_pull $filter GROUP ALL"
-        log.info("SQL: $statement")
+
+        return filter
+    }
+
+
+    // get pull count by specific metric like ip, userid, imagename between two dates
+    Map<String, Long> getPullCountByMetrics(Metric metric, Instant startDate, Instant endDate) {
+
+        final statement = "SELECT ${metric.pullLabel}, count() as total_count  FROM wave_request "+
+                                "${getPullMetricFilter(startDate, endDate)} GROUP BY ${metric.pullLabel}"
+        log.info("getPullCountByMetrics: $statement")
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
+        log.trace("pull count results by ${metric.pullLabel}: $results")
+        Map<String, Long> counts = new HashMap<>()
+        for(def result : results){
+            def key = result.get(metric.pullLabel)
+            if(key && metric.pullLabel == "user"){
+                def user = result.get(metric.pullLabel) as Map
+                key = user.get("userName")
+            }
+            counts.put((key?:"unknown") as String, result.get("total_count") as Long)
+        }
+        return counts
+    }
+
+    // get pull count between two dates
+    Long getPullCount(Instant startDate, Instant endDate){
+        final statement = "SELECT count() as total_count FROM wave_request ${getPullMetricFilter(startDate, endDate)}  GROUP ALL"
+        final map = surrealDb.sqlAsMap(authorization, statement)
+        def results = map.get("result") as List<Map>
+        log.trace("pull count results: $results")
         if( results && results.size() > 0)
             return results[0].get("total_count")? results[0].get("total_count") as Long : 0
         else
             return 0
+    }
+
+    static String getPullMetricFilter(Instant startDate, Instant endDate){
+        if( startDate && endDate ){
+            return "where type::datetime(timestamp) >= '$startDate' and type::datetime(timestamp) <= '$endDate'"
+        }
+        return  "";
     }
 }

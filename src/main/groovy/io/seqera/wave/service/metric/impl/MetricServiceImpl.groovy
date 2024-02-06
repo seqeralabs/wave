@@ -22,13 +22,8 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.micronaut.runtime.event.annotation.EventListener
-import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.metric.Metric
 import io.seqera.wave.service.metric.MetricService
-import io.seqera.wave.service.metric.event.PullEvent
-import io.seqera.wave.service.persistence.WaveBuildCountRecord
-import io.seqera.wave.service.persistence.WavePullCountRecord
 import io.seqera.wave.service.persistence.impl.SurrealPersistenceService
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -46,35 +41,6 @@ import jakarta.inject.Singleton
 class MetricServiceImpl implements MetricService{
     @Inject
     private SurrealPersistenceService persistenceService
-
-    @EventListener
-    void onBuildEvent(BuildEvent event) {
-        try {
-            storeBuild(event)
-        }
-        catch (Exception e) {
-            log.warn "Unable to store the build request: ${e.message?:e}"
-        }
-    }
-    @EventListener
-    void onPullEvent(PullEvent event) {
-        try {
-            storePull(event)
-        }
-        catch (Exception e) {
-            log.warn "Unable to store the pull request: ${e.message?:e}"
-        }
-    }
-
-    @Override
-    void storeBuild(BuildEvent event) {
-        persistenceService.incrementBuildCount(new WaveBuildCountRecord(event))
-    }
-
-    @Override
-    void storePull(PullEvent event) {
-        persistenceService.incrementPullCount(new WavePullCountRecord(event))
-    }
 
     @Override
     Map getBuildMetrics(Metric metrics, Boolean success, Instant startDate, Instant endDate) {

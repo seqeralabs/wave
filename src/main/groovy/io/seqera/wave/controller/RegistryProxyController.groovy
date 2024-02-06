@@ -56,7 +56,6 @@ import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.blob.BlobCacheService
 import io.seqera.wave.service.builder.ContainerBuildService
-import io.seqera.wave.service.metric.event.PullEvent
 import io.seqera.wave.storage.DigestKey
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
@@ -109,9 +108,6 @@ class RegistryProxyController {
     @Nullable
     private BlobCacheService blobCacheService
 
-    @Inject
-    private ApplicationEventPublisher<PullEvent> eventPublisher
-
     @Value('${wave.cache.digestStore.maxWeightMb:350}')
     int cacheMaxWeightMb
 
@@ -162,31 +158,6 @@ class RegistryProxyController {
                         .ok("OK")
                         .header("docker-distribution-api-version", "registry/2.0")
         )
-    }
-
-    protected void increaseWavePullsCounter(RoutePath route, HttpRequest httpRequest) {
-        //fire a pull event
-        eventPublisher.publishEvent(new PullEvent(route.request, addressResolver.resolve(httpRequest)))
-        try {
-            final tags = new ArrayList<String>(20)
-            tags.add('registry'); tags.add(route.registry)
-            tags.add('repository'); tags.add(route.repository)
-            tags.add('container'); tags.add(route.targetContainer)
-            if( route.request?.towerEndpoint ) {
-                tags.add('endpoint'); tags.add(route.request.towerEndpoint)
-            }
-            if( route.request?.userId ) {
-                tags.add('userId'); tags.add(route.request.userId as String)
-            }
-            if( route.request?.workspaceId ) {
-                tags.add('workspaceId'); tags.add(route.request.workspaceId as String)
-            }
-
-            meterRegistry.counter('wave.pulls', tags as String[]).increment()
-        }
-        catch (Throwable e) {
-            log.error "Unable to increment wave pulls counter", e
-        }
     }
 
     protected void increaseFusionPullsCounter(RoutePath route) {
@@ -289,7 +260,6 @@ class RegistryProxyController {
 
     protected DigestStore manifestForPath(RoutePath route, HttpRequest httpRequest) {
         // increase the quest counters
-        increaseWavePullsCounter(route, httpRequest)
         increaseFusionPullsCounter(route)
         // when the request contains a wave token and the manifest is specified
         // using a container 'tag' instead of a 'digest' the request path is used as storage key
