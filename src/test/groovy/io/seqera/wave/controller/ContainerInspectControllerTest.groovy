@@ -31,7 +31,7 @@ class ContainerInspectControllerTest extends Specification {
 
     def 'should inspect container' () {
         when:
-        def inspect = new ContainerInspectRequest(containerImage: 'busybox')
+        def inspect = new ContainerInspectRequest(containerImage: 'busybox:1.36.1-glibc')
         def req = HttpRequest.POST("/v1alpha1/inspect", inspect)
         def resp = client.toBlocking().exchange(req, ContainerInspectResponse)
         then:
@@ -39,8 +39,8 @@ class ContainerInspectControllerTest extends Specification {
         and:
         resp.body().container.registry == 'docker.io'
         resp.body().container.imageName == 'library/busybox'
-        resp.body().container.reference == 'latest'
-        resp.body().container.digest == 'sha256:6d9ac9237a84afe1516540f40a0fafdc86859b2141954b4d643af7066d598b74'
+        resp.body().container.reference == '1.36.1-glibc'
+        resp.body().container.digest == 'sha256:e046063223f7eaafbfbc026aa3954d9a31b9f1053ba5db04a4f1fdc97abd8963'
         resp.body().container.config.architecture == 'amd64'
         resp.body().container.manifest.schemaVersion == 2
         resp.body().container.manifest.mediaType == 'application/vnd.oci.image.manifest.v1+json'

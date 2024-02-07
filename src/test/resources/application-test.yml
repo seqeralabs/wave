@@ -1,4 +1,7 @@
 micronaut:
+  server:
+    # Use a random port for testing to enable running tests with the application running as well as parallel execution
+    port: -1
   http:
     client:
       read-timeout: 90s

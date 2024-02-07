@@ -33,16 +33,13 @@ public class ContentReaderFactory {
             throw new IllegalArgumentException("Missing content location");
         if( location.startsWith("/") )
             return new PathContentReader(Paths.get(location));
-        if( location.startsWith("http://") || location.startsWith("https://"))
+        if( location.startsWith("http://") || location.startsWith("https://") || location.startsWith("docker://") )
             return new HttpContentReader(location);
         if( location.startsWith("data:") ) {
             return new DataContentReader(location.substring(5));
         }
         if( location.startsWith("gzip:") ) {
             return GzipContentReader.fromBase64EncodedString(location.substring(5));
-        }
-        if( location.startsWith("docker://") ) {
-            return new DockerContentReader(location);
         }
         throw new IllegalArgumentException("Unsupported content location: " + location);
     }

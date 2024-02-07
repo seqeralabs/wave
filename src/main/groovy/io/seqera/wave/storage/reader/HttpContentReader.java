@@ -20,12 +20,14 @@ package io.seqera.wave.storage.reader;
 
 import java.io.IOException;
 
+import io.seqera.wave.storage.RemoteLayerStore;
+
 /**
  * Read a layer content from the given http(s) url
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-public class HttpContentReader implements ContentReader {
+public class HttpContentReader implements ContentReader, RemoteLayerStore {
 
     final private String url;
 
@@ -38,7 +40,12 @@ public class HttpContentReader implements ContentReader {
         throw new UnsupportedOperationException("HttpContentReader does not support 'readAllBytes' operation");
     }
 
+    @Deprecated
     public String getUrl() { return url; }
+
+    public String getLocation() {
+        return url;
+    }
 
     @Override
     public String toString() {

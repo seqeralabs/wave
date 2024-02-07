@@ -18,7 +18,6 @@
 
 package io.seqera.wave.encoder
 
-
 import java.lang.reflect.Type
 
 import com.squareup.moshi.JsonAdapter
@@ -31,7 +30,6 @@ import io.seqera.wave.service.pairing.socket.msg.PairingResponse
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
 import io.seqera.wave.storage.DigestStore
-import io.seqera.wave.storage.DockerDigestStore
 import io.seqera.wave.storage.LazyDigestStore
 import io.seqera.wave.storage.ZippedDigestStore
 import io.seqera.wave.storage.reader.ContentReader
@@ -40,7 +38,6 @@ import io.seqera.wave.storage.reader.GzipContentReader
 import io.seqera.wave.storage.reader.HttpContentReader
 import io.seqera.wave.storage.reader.PathContentReader
 import io.seqera.wave.util.TypeHelper
-
 /**
  * Implements a JSON {@link EncodingStrategy} based on Mosh JSON serializer
  *
@@ -73,7 +70,6 @@ abstract class MoshiEncodeStrategy<V> implements EncodingStrategy<V> {
                 .add(new PathAdapter())
                 .add(PolymorphicJsonAdapterFactory.of(DigestStore.class, "@type")
                         .withSubtype(LazyDigestStore, LazyDigestStore.simpleName)
-                        .withSubtype(DockerDigestStore, DockerDigestStore.simpleName)
                         .withSubtype(ZippedDigestStore, ZippedDigestStore.simpleName) )
                 .add(PolymorphicJsonAdapterFactory.of(ContentReader.class, "@type")
                         .withSubtype(DataContentReader.class, DataContentReader.simpleName)

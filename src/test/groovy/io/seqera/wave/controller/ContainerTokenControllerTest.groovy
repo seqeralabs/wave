@@ -18,6 +18,8 @@
 
 package io.seqera.wave.controller
 
+import spock.lang.Specification
+
 import java.nio.file.Path
 
 import io.micronaut.context.annotation.Property
@@ -30,7 +32,6 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.configuration.BuildConfig
-import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
@@ -38,13 +39,14 @@ import io.seqera.wave.exchange.DescribeWaveContainerResponse
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.builder.FreezeService
+import io.seqera.wave.service.inclusion.ContainerInclusionService
+import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.service.pairing.PairingRecord
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
-import spock.lang.Specification
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -64,7 +66,7 @@ class ContainerTokenControllerTest extends Specification {
 
     def 'should create request data' () {
         given:
-        def controller = new ContainerTokenController()
+        def controller = new ContainerTokenController(inclusionService: Mock(ContainerInclusionService))
 
         when:
         def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest')
@@ -101,7 +103,7 @@ class ContainerTokenControllerTest extends Specification {
         given:
         def freeze = Mock(FreezeService)
         and:
-        def controller = Spy(new ContainerTokenController(freezeService: freeze))
+        def controller = Spy(new ContainerTokenController(freezeService: freeze, inclusionService: Mock(ContainerInclusionService)))
         and:
         def BUILD = Mock(BuildRequest) {
             getTargetImage() >> 'docker.io/repo/ubuntu:latest'
@@ -132,7 +134,7 @@ class ContainerTokenControllerTest extends Specification {
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
         def proxyRegistry = Mock(RegistryProxyService)
-        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig)
+        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService))
         def DOCKER = 'FROM foo'
         def user = new User(id: 100)
         def cfg = new ContainerConfig()
@@ -159,7 +161,7 @@ class ContainerTokenControllerTest extends Specification {
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
         def proxyRegistry = Mock(RegistryProxyService)
-        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig)
+        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService))
         def DOCKER = 'FROM foo'
         def user = new User(id: 100)
         def cfg = new ContainerConfig()
@@ -186,7 +188,7 @@ class ContainerTokenControllerTest extends Specification {
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
         def proxyRegistry = Mock(RegistryProxyService)
-        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig:buildConfig)
+        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig:buildConfig, inclusionService: Mock(ContainerInclusionService))
         def DOCKER = 'FROM foo'
         def user = new User(id: 100)
         def cfg = new ContainerConfig()

@@ -12,12 +12,13 @@ import io.seqera.wave.core.RoutePath
 import io.seqera.wave.exception.HttpServerRetryableErrorException
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.service.blob.BlobCacheService
+import io.seqera.wave.storage.reader.ContentReaderFactory
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import org.apache.commons.io.IOUtils
 import static io.seqera.wave.WaveDefault.HTTP_RETRYABLE_ERRORS
-
 /**
+ * Implement a service for the streaming of remote resources
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -35,14 +36,12 @@ class StreamServiceImpl implements StreamService {
     @Override
     InputStream stream(String location) {
         assert location, "Missing 'location' attribute"
-        if( location.startsWith('http://') || location.startsWith('https://') ) {
+        if( location.startsWith("docker://") )
+            return dockerStream0(RoutePath.parse(location))
+        if( location.startsWith("http://") || location.startsWith("https://") )
             return httpStream0(location)
-        }
-        if( location.startsWith('docker://') ) {
-            final target = RoutePath.parse(location)
-            return dockerStream0(target)
-        }
-        throw new IllegalArgumentException("Unsupported stream location: '$location'")
+        final reader = ContentReaderFactory.of(location)
+        return new ByteArrayInputStream(reader.readAllBytes())
     }
 
     protected InputStream httpStream0(String url) throws IOException, InterruptedException {

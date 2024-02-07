@@ -18,7 +18,6 @@
 
 package io.seqera.wave.core
 
-
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -42,7 +41,7 @@ import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContentType
 import io.seqera.wave.proxy.ProxyClient
-import io.seqera.wave.storage.DockerDigestStore
+import io.seqera.wave.storage.LazyDigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.test.ManifestConst
 import io.seqera.wave.util.ContainerConfigFactory
@@ -204,8 +203,8 @@ class ContainerAugmenterTest extends Specification {
                 .withClient(client)
 
         and:
-        def TARGET = 'quay.io/v2/foo/blobs/1234567890'
-        def layer = new ContainerLayer("docker://$TARGET", 'sha256:1234567890', 100)
+        def TARGET = 'docker://quay.io/v2/foo/blobs/1234567890'
+        def layer = new ContainerLayer(TARGET, 'sha256:1234567890', 100)
 
         when:
         def blob = augumenter.layerBlob(IMAGE, layer)
@@ -217,10 +216,11 @@ class ContainerAugmenterTest extends Specification {
 
         and:
         def entry = storage.getBlob("$REGISTRY/v2/$IMAGE/blobs/sha256:1234567890").get()
-        entry instanceof DockerDigestStore
+        entry instanceof LazyDigestStore
         entry.mediaType == ContentType.DOCKER_IMAGE_TAR_GZIP
         entry.digest == 'sha256:1234567890'
-        (entry as DockerDigestStore).location == TARGET
+        (entry as LazyDigestStore).isDockerLayer()
+        (entry as LazyDigestStore).location == TARGET
     }
 
     def 'should update image manifest' () {

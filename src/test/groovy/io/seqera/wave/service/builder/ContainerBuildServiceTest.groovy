@@ -394,7 +394,6 @@ class ContainerBuildServiceTest extends Specification {
         def layer = new Packer().layer(source)
         def context = BuildContext.of(layer)
         and:
-        def service = new ContainerBuildServiceImpl(httpClientConfig: httpClientConfig)
 
         when:
         service.saveBuildContext(context, target)
@@ -434,8 +433,6 @@ class ContainerBuildServiceTest extends Specification {
         server.start()
         and:
         def req = new BuildRequest('from foo', Path.of('/wsp'), 'quay.io/org/name', null, null, BuildFormat.DOCKER, Mock(User), config, null, ContainerPlatform.of('amd64'),'{auth}', null, null, "127.0.0.1", null)
-        and:
-        def service = new ContainerBuildServiceImpl(httpClientConfig: httpClientConfig)
 
         when:
         service.saveLayersToContext(req, folder)

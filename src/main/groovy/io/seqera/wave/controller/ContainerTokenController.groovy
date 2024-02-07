@@ -47,6 +47,7 @@ import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.builder.FreezeService
+import io.seqera.wave.service.inclusion.ContainerInclusionService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
@@ -64,7 +65,6 @@ import static io.seqera.wave.WaveDefault.TOWER
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
-
 /**
  * Implement a controller to receive container token requests
  * 
@@ -122,6 +122,9 @@ class ContainerTokenController {
 
     @Inject
     FreezeService freezeService
+
+    @Inject
+    ContainerInclusionService inclusionService
 
     @PostConstruct
     private void init() {
@@ -245,6 +248,9 @@ class ContainerTokenController {
         if( req.formatSingularity() && !req.freeze )
             throw new BadRequestException("Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting")
 
+        // expand inclusions
+        inclusionService.addContainerInclusions(req, user)
+
         // when 'freeze' is enabled, rewrite the request so that the container configuration specified
         // in the request is included in the build container file instead of being processed via the augmentation process
         if( req.freeze ) {
@@ -325,4 +331,5 @@ class ContainerTokenController {
         msg = validationService.checkBuildRepository(req.cacheRepository, true)
         if( msg ) throw new BadRequestException(msg)
     }
+
 }
