@@ -140,13 +140,14 @@ class LocalPersistenceService implements PersistenceService {
     Long getDistinctMetrics(Metric metric, Instant startDate, Instant endDate) {
         def pulls = getFilteredPulls(startDate, endDate)
         if (metric == Metric.ip)
-            return pulls.collect({ it.ipAddress })
+            return pulls.collect{ it.ipAddress }
                     .unique().size()
         if (metric == Metric.user)
-            return pulls.collect({ it.user.userName })
+            return pulls.findAll{ it.user != null }
+                    .collect{ it.user.userName  }
                     .unique().size()
         if (metric == Metric.image)
-            return pulls.collect({ it.sourceImage })
+            return pulls.collect{ it.sourceImage }
                     .unique().size()
     }
 

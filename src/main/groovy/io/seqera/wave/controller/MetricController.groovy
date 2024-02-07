@@ -51,19 +51,6 @@ class MetricController {
     @Inject
     private MetricService metricsService
 
-    @Get(uri="/pull/{metric}", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<Map> getPullMetrics(@PathVariable String metric, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
-        try {
-            def result = metricsService.getPullMetrics(Metric.valueOf(metric), parseStartDate(startDate), parseEndDate(endDate))
-            if( result && result.size() > 0)
-                return HttpResponse.ok(result)
-            else
-                return HttpResponse.notFound()
-        }catch (IllegalArgumentException | DateTimeParseException e) {
-            return HttpResponse.badRequest((Map)[message: e.message])
-        }
-    }
-
     @Get(uri="/build/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<Map> getBuildMetrics(@PathVariable String metric, @Nullable @QueryValue Boolean success, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
         try {
@@ -72,7 +59,38 @@ class MetricController {
                 return HttpResponse.ok(result)
             else
                 return HttpResponse.notFound()
-        }catch (IllegalArgumentException | DateTimeParseException e) {
+        }catch (DateTimeParseException e){
+            return HttpResponse.badRequest((Map)[message: 'Date format should be yyyy-MM-dd'])
+        }
+        catch (IllegalArgumentException e) {
+            return HttpResponse.badRequest((Map)[message: e.message])
+        }
+    }
+
+    @Get(uri="/build/count", produces = MediaType.APPLICATION_JSON)
+    HttpResponse<LinkedHashMap> getBuildCount(@Nullable @QueryValue Boolean success, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
+        try {
+            return HttpResponse.ok([count: metricsService.getBuildCount(success, parseStartDate(startDate), parseEndDate(endDate))])
+        }catch (DateTimeParseException e){
+            return HttpResponse.badRequest([message: 'Date format should be yyyy-MM-dd'])
+        }
+        catch (IllegalArgumentException e) {
+            return HttpResponse.badRequest([message: e.message])
+        }
+    }
+
+    @Get(uri="/pull/{metric}", produces = MediaType.APPLICATION_JSON)
+    HttpResponse<Map> getPullMetrics(@PathVariable String metric, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
+        try {
+            def result = metricsService.getPullMetrics(Metric.valueOf(metric), parseStartDate(startDate), parseEndDate(endDate))
+            if( result && result.size() > 0)
+                return HttpResponse.ok(result)
+            else
+                return HttpResponse.notFound()
+        }catch (DateTimeParseException e){
+            return HttpResponse.badRequest((Map)[message: 'Date format should be yyyy-MM-dd'])
+        }
+        catch (IllegalArgumentException e) {
             return HttpResponse.badRequest((Map)[message: e.message])
         }
     }
@@ -81,16 +99,10 @@ class MetricController {
     HttpResponse<LinkedHashMap> getPullCount(@Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
         try {
             return HttpResponse.ok([count: metricsService.getPullCount(parseStartDate(startDate), parseEndDate(endDate))])
-        }catch (IllegalArgumentException | DateTimeParseException e) {
-            return HttpResponse.badRequest([message: e.message])
+        }catch (DateTimeParseException e){
+            return HttpResponse.badRequest([message: 'Date format should be yyyy-MM-dd'])
         }
-    }
-
-    @Get(uri="/build/count", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<LinkedHashMap> getBuildCount(@Nullable @QueryValue Boolean success, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
-        try {
-            return HttpResponse.ok([count: metricsService.getBuildCount(success, parseStartDate(startDate), parseEndDate(endDate))])
-        }catch (IllegalArgumentException | DateTimeParseException e) {
+        catch (IllegalArgumentException e) {
             return HttpResponse.badRequest([message: e.message])
         }
     }
@@ -99,19 +111,22 @@ class MetricController {
     HttpResponse<LinkedHashMap> getBuildCount(@PathVariable String metric, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
         try {
             return HttpResponse.ok([count: metricsService.getDistinctMetrics(Metric.valueOf(metric), parseStartDate(startDate), parseEndDate(endDate))])
-        }catch (IllegalArgumentException | DateTimeParseException e) {
+        }catch (DateTimeParseException e){
+            return HttpResponse.badRequest([message: 'Date format should be yyyy-MM-dd'])
+        }
+        catch (IllegalArgumentException e) {
             return HttpResponse.badRequest([message: e.message])
         }
     }
 
-    protected Instant parseStartDate(String date) {
+    static Instant parseStartDate(String date) {
         if( !date )
             return null
         LocalDate localDate = LocalDate.parse(date);
         return localDate.atTime(LocalTime.MIN).atZone(ZoneId.systemDefault()).toInstant();
     }
 
-    protected Instant parseEndDate(String date) {
+    static Instant parseEndDate(String date) {
         if( !date )
             return null
         LocalDate localDate = LocalDate.parse(date);

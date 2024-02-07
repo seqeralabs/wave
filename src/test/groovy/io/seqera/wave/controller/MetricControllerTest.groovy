@@ -54,9 +54,10 @@ class MetricControllerTest extends Specification {
     @Client("/")
     HttpClient client
 
-    @Inject PersistenceService persistenceService
+    @Inject
+    PersistenceService persistenceService
 
-    final PREFIX='/v1alpha1/metrics'
+    final PREFIX = '/v1alpha1/metrics'
 
     def setup() {
         def build1 = new WaveBuildRecord(
@@ -70,7 +71,7 @@ class MetricControllerTest extends Specification {
                 requestIp: '127.0.0.1',
                 startTime: Instant.now().minus(1, ChronoUnit.DAYS),
                 duration: Duration.ofSeconds(1),
-                exitStatus: 1 )
+                exitStatus: 1)
 
         def build2 = new WaveBuildRecord(
                 buildId: 'test2',
@@ -83,7 +84,7 @@ class MetricControllerTest extends Specification {
                 requestIp: '127.0.0.1',
                 startTime: Instant.now(),
                 duration: Duration.ofSeconds(1),
-                exitStatus: 0 )
+                exitStatus: 0)
 
         def build3 = new WaveBuildRecord(
                 buildId: 'test3',
@@ -96,7 +97,7 @@ class MetricControllerTest extends Specification {
                 requestIp: '127.0.0.2',
                 startTime: Instant.now(),
                 duration: Duration.ofSeconds(1),
-                exitStatus: 0 )
+                exitStatus: 0)
 
         and:
         persistenceService.saveBuild(build1)
@@ -116,7 +117,7 @@ class MetricControllerTest extends Specification {
                 fingerprint: 'xyz',
                 timestamp: Instant.now().toString()
         )
-        def data = new ContainerRequestData( 1, 100, 'hello-world' )
+        def data = new ContainerRequestData(1, 100, 'hello-world')
         def wave = "wave.io/wt/$TOKEN1/hello-world"
         def user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
         def addr = "100.200.300.400"
@@ -135,7 +136,7 @@ class MetricControllerTest extends Specification {
                 fingerprint: 'abc',
                 timestamp: Instant.now().minus(1, ChronoUnit.DAYS).toString()
         )
-        data = new ContainerRequestData( 1, 100, 'hello-world' )
+        data = new ContainerRequestData(1, 100, 'hello-world')
         wave = "wave.io/wt/$TOKEN2/hello-world"
         user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
         addr = "100.200.300.400"
@@ -154,7 +155,7 @@ class MetricControllerTest extends Specification {
                 fingerprint: 'lmn',
                 timestamp: Instant.now().toString()
         )
-        data = new ContainerRequestData( 1, 100, 'hello-wave-world' )
+        data = new ContainerRequestData(1, 100, 'hello-wave-world')
         wave = "wave.io/wt/$TOKEN3/hello-wave-world"
         user = null
         addr = "100.200.300.401"
@@ -192,8 +193,9 @@ class MetricControllerTest extends Specification {
         res.body() == ['testUser1': 2, 'unknown': 1]
         res.status.code == 200
     }
+
     def "should return null and status 404 when no build records found"() {
-        given:"Date is tomorrow"
+        given: "Date is tomorrow"
         def date = LocalDate.now().plusDays(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         when:
         def req = HttpRequest.GET("$PREFIX/build/ip?startDate=$date&endDate=$date").basicAuth("username", "password")
@@ -242,11 +244,11 @@ class MetricControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() ==   ['testUser1': 1, 'unknown': 1]
+        res.body() == ['testUser1': 1, 'unknown': 1]
         res.status.code == 200
     }
 
-    def "should get the correct count per metrics between dates and status 200"() {
+    def "should get the correct build count per metrics between dates and status 200"() {
         given:
         def date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
 
@@ -263,7 +265,7 @@ class MetricControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() ==['testImage2': 1, 'testImage1': 1]
+        res.body() == ['testImage2': 1, 'testImage1': 1]
         res.status.code == 200
 
         when:
@@ -275,7 +277,50 @@ class MetricControllerTest extends Specification {
         res.status.code == 200
     }
 
-    def 'should return the correct pull counts per metrics and status 200' () {
+    def 'should return the total build count and status 200'() {
+        given:
+        def date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+
+        when: 'no filter provided'
+        def req = HttpRequest.GET("$PREFIX/build/count").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then: 'return total build count'
+        res.body() == ['count': 3]
+        res.status.code == 200
+
+        when: 'dates are provided'
+        req = HttpRequest.GET("$PREFIX/build/count?startDate=$date&endDate=$date").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'return total build count between provided dates'
+        res.body() == ['count': 2]
+        res.status.code == 200
+
+        when: 'success query parameter is set to true'
+        req = HttpRequest.GET("$PREFIX/build/count?success=true").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'return total build count between provided dates'
+        res.body() == ['count': 2]
+        res.status.code == 200
+
+    }
+
+    def 'should return zero total build count and status 200 when no record found' () {
+        given: "Date is tomorrow"
+        def date = LocalDate.now().plusDays(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+
+        when:
+        def req = HttpRequest.GET("$PREFIX/build/count?startDate=$date&endDate=$date").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then:
+        res.body() == ['count': 0]
+        res.status.code == 200
+    }
+
+    def 'should return the correct pull counts per metric and status 200' () {
         when:
         def req = HttpRequest.GET("$PREFIX/pull/ip").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
@@ -329,8 +374,8 @@ class MetricControllerTest extends Specification {
         e.status.code == 404
     }
 
-    def "should get the records between dates and status 200"() {
-        given:"Date is tomorrow"
+    def "should get the pull count per metric between dates and status 200"() {
+        given:
         def date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         when:
         def req = HttpRequest.GET("$PREFIX/pull/ip?startDate=$date&endDate=$date").basicAuth("username", "password")
@@ -355,5 +400,124 @@ class MetricControllerTest extends Specification {
         then:
         res.body() == ['foo': 1, 'unknown': 1]
         res.status.code == 200
+    }
+
+    def "should get the total pull count and status 200"() {
+        given:
+        def date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+        when:
+        def req = HttpRequest.GET("$PREFIX/pull/count").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then:
+        res.body() == ['count':3]
+        res.status.code == 200
+
+        when:
+        req = HttpRequest.GET("$PREFIX/pull/count?startDate=$date&endDate=$date").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then:
+        res.body() == ['count': 2]
+        res.status.code == 200
+    }
+
+    def 'should return zero total pull count and status 200 when no record found' () {
+        given: "Date is tomorrow"
+        def date = LocalDate.now().plusDays(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+
+        when:
+        def req = HttpRequest.GET("$PREFIX/pull/count?startDate=$date&endDate=$date").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then:
+        res.body() == ['count': 0]
+        res.status.code == 200
+    }
+
+    def 'should return the distinct count per metric and status 200' () {
+        when:
+        def req = HttpRequest.GET("$PREFIX/distinct/ip").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then:
+        res.body() == ['count':2]
+        res.status.code == 200
+
+        when:
+        req = HttpRequest.GET("$PREFIX/distinct/image").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then:
+        res.body() == ['count':2]
+        res.status.code == 200
+
+        when:
+        req = HttpRequest.GET("$PREFIX/distinct/user").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then:
+        res.body() == ['count':1]
+        res.status.code == 200
+    }
+
+    def 'should return the distinct count per metric between provided dates and status 200' () {
+        given:
+        def TOKEN = '1236abc'
+        def cfg = new ContainerConfig(entrypoint: ['/opt/fusion'])
+        def reqt = new SubmitContainerTokenRequest(
+                towerEndpoint: 'https://tower.nf',
+                towerWorkspaceId: 100,
+                containerConfig: cfg,
+                containerPlatform: ContainerPlatform.of('amd64'),
+                buildRepository: 'build.docker.io',
+                cacheRepository: 'cache.docker.io',
+                fingerprint: 'xyz',
+                timestamp: Instant.now().toString()
+        )
+        def data = new ContainerRequestData( 1, 100, 'hello-nf-world' )
+        def wave = "wave.io/wt/$TOKEN/hello-nf-world"
+        def user = new User(id: 3, userName: 'test', email: 'test@gmail.com')
+        def addr = "100.200.300.402"
+        def exp = Instant.now().plusSeconds(3600)
+        def request = new WaveContainerRecord(reqt, data, wave, user, addr, exp)
+
+        and:
+        persistenceService.saveContainerRequest(TOKEN, request)
+
+        def date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+
+        when:
+        def req = HttpRequest.GET("$PREFIX/distinct/ip?startDate=$date&endDate=$date").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then:
+        res.body() == ['count':3]
+        res.status.code == 200
+
+        when:
+        req = HttpRequest.GET("$PREFIX/distinct/image?startDate=$date&endDate=$date").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then:
+        res.body() == ['count':3]
+        res.status.code == 200
+
+        when:
+        req = HttpRequest.GET("$PREFIX/distinct/user?startDate=$date&endDate=$date").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then:
+        res.body() == ['count':2]
+        res.status.code == 200
+    }
+
+    def 'startDate and endDate should Cover the last day' () {
+        given:
+        def starDate ='2024-02-07'
+        def endDate = '2024-02-07'
+
+        expect:'1 day difference'
+        Duration.between(MetricController.parseStartDate(starDate), MetricController.parseEndDate(endDate)).toString() == 'PT23H59M59.999999999S'
     }
 }
