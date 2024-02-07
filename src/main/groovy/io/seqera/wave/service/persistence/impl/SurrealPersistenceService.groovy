@@ -224,6 +224,7 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     // get build count by specific metric like ip, userid, imagename between two dates
+    @Override
     Map<String, Long> getBuildCountByMetrics(Metric metric, Boolean success, Instant startDate, Instant endDate) {
         final statement = "SELECT ${metric.buildLabel}, count() as total_count FROM wave_build "+
                                 "${getBuildMetricFilter(success, startDate, endDate)} GROUP BY ${metric.buildLabel}"
@@ -238,6 +239,7 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     // get build count between two dates
+    @Override
     Long getBuildCount(Boolean success, Instant startDate, Instant endDate){
         final statement = "SELECT count() as total_count FROM wave_build ${getBuildMetricFilter(success, startDate, endDate)} GROUP ALL"
         final map = surrealDb.sqlAsMap(authorization, statement)
@@ -265,6 +267,7 @@ class SurrealPersistenceService implements PersistenceService {
 
 
     // get pull count by specific metric like ip, userid, imagename between two dates
+    @Override
     Map<String, Long> getPullCountByMetrics(Metric metric, Instant startDate, Instant endDate) {
 
         final statement = "SELECT ${metric.pullLabel}, count() as total_count  FROM wave_request "+
@@ -286,6 +289,7 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     // get pull count between two dates
+    @Override
     Long getPullCount(Instant startDate, Instant endDate){
         final statement = "SELECT count() as total_count FROM wave_request ${getPullMetricFilter(startDate, endDate)}  GROUP ALL"
         final map = surrealDb.sqlAsMap(authorization, statement)
@@ -297,13 +301,7 @@ class SurrealPersistenceService implements PersistenceService {
             return 0
     }
 
-    static String getPullMetricFilter(Instant startDate, Instant endDate){
-        if( startDate && endDate ){
-            return "where type::datetime(timestamp) >= '$startDate' and type::datetime(timestamp) <= '$endDate'"
-        }
-        return  "";
-    }
-
+    @Override
     Long getDistinctMetrics(Metric metric, Instant startDate, Instant endDate){
         final statement = "SELECT count(array) as total_count FROM (SELECT array::distinct(${metric.pullLabel}) as array FROM wave_request ${getPullMetricFilter(startDate, endDate)}  GROUP ALL)"
         final map = surrealDb.sqlAsMap(authorization, statement)
@@ -313,5 +311,12 @@ class SurrealPersistenceService implements PersistenceService {
             return results[0].get("total_count")? results[0].get("total_count") as Long : 0
         else
             return 0
+    }
+
+    static String getPullMetricFilter(Instant startDate, Instant endDate){
+        if( startDate && endDate ){
+            return "where type::datetime(timestamp) >= '$startDate' and type::datetime(timestamp) <= '$endDate'"
+        }
+        return  "";
     }
 }

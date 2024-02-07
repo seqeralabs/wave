@@ -24,7 +24,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.service.metric.Metric
 import io.seqera.wave.service.metric.MetricService
-import io.seqera.wave.service.persistence.impl.SurrealPersistenceService
+import io.seqera.wave.service.persistence.PersistenceService
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
@@ -35,12 +35,11 @@ import jakarta.inject.Singleton
  */
 @Slf4j
 @Requires(property = 'wave.metrics.enabled', value = 'true')
-@Requires(env='surrealdb')
 @Singleton
 @CompileStatic
 class MetricServiceImpl implements MetricService{
     @Inject
-    private SurrealPersistenceService persistenceService
+    private PersistenceService persistenceService
 
     @Override
     Map getBuildMetrics(Metric metrics, Boolean success, Instant startDate, Instant endDate) {

@@ -45,10 +45,10 @@ import jakarta.inject.Inject
 @Slf4j
 @CompileStatic
 @Secured(SecurityRule.IS_AUTHENTICATED)
-@Controller("/metrics")
+@Controller("/v1/metrics")
 class MetricController {
     @Inject
-    MetricService metricsService
+    private MetricService metricsService
 
     @Get(uri="/pull/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<Map> getPullMetrics(@PathVariable String metric, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
@@ -103,7 +103,7 @@ class MetricController {
         }
     }
 
-    private Instant parseDate(String date) {
+    protected Instant parseDate(String date) {
         if( !date )
             return null
         LocalDate localDate = LocalDate.parse(date);

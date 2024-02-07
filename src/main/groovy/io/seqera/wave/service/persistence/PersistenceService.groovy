@@ -18,10 +18,13 @@
 
 package io.seqera.wave.service.persistence
 
+import java.time.Instant
+
 import groovy.transform.CompileStatic
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.exception.NotFoundException
+import io.seqera.wave.service.metric.Metric
 import io.seqera.wave.service.scan.ScanResult
 import io.seqera.wave.service.builder.BuildEvent
 /**
@@ -123,4 +126,9 @@ interface PersistenceService {
                 scanRecord.vulnerabilities )
     }
 
+    Map<String, Long> getBuildCountByMetrics(Metric metric, Boolean success, Instant startDate, Instant endDate)
+    Long getBuildCount(Boolean success, Instant startDate, Instant endDate)
+    Map<String, Long> getPullCountByMetrics(Metric metric, Instant startDate, Instant endDate)
+    Long getPullCount(Instant startDate, Instant endDate)
+    Long getDistinctMetrics(Metric metric, Instant startDate, Instant endDate)
 }
