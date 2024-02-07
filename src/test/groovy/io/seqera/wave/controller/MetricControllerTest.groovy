@@ -23,9 +23,9 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoUnit
 
-import io.micronaut.context.annotation.Requires
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
@@ -46,8 +46,6 @@ import jakarta.inject.Inject
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @MicronautTest
-@Requires(property = 'wave.auth.basic.username', value = 'username')
-@Requires(property = 'wave.auth.basic.password', value = 'password')
 class MetricControllerTest extends Specification {
 
     @Inject
@@ -519,5 +517,20 @@ class MetricControllerTest extends Specification {
 
         expect:'1 day difference'
         Duration.between(MetricController.parseStartDate(starDate), MetricController.parseEndDate(endDate)).toString() == 'PT23H59M59.999999999S'
+    }
+    def 'should throw DateTimeParseException when format is not valid' () {
+        given:
+        def starDate ='2024-0-07'
+        def endDate = '2024-02-0'
+
+        when:
+        MetricController.parseStartDate(starDate)
+        then:
+        thrown(DateTimeParseException)
+
+        when:
+        MetricController.parseEndDate(endDate)
+        then:
+        thrown(DateTimeParseException)
     }
 }
