@@ -62,4 +62,8 @@ class MetricServiceImpl implements MetricService{
         persistenceService.getBuildCount(success, startDate, endDate)
     }
 
+    @Override
+    Long getDistinctMetrics(Metric metrics, Instant startDate, Instant endDate) {
+        persistenceService.getDistinctMetrics(metrics, startDate, endDate)
+    }
 }

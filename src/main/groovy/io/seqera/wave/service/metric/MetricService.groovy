@@ -29,4 +29,5 @@ interface MetricService {
     Map getPullMetrics(Metric metrics, Instant startDate, Instant endDate)
     Long getPullCount(Instant startDate, Instant endDate)
     Long getBuildCount(Boolean success, Instant startDate, Instant endDate)
+    Long getDistinctMetrics(Metric metrics, Instant startDate, Instant endDate)
 }

@@ -94,6 +94,15 @@ class MetricController {
         }
     }
 
+    @Get(uri="/distinct/{metric}", produces = MediaType.APPLICATION_JSON)
+    HttpResponse<LinkedHashMap> getBuildCount(@PathVariable String metric, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
+        try {
+            return HttpResponse.ok([count: metricsService.getDistinctMetrics(Metric.valueOf(metric), parseDate(startDate), parseDate(endDate))])
+        }catch (IllegalArgumentException | DateTimeParseException e) {
+            return HttpResponse.badRequest([message: e.message])
+        }
+    }
+
     private Instant parseDate(String date) {
         if( !date )
             return null

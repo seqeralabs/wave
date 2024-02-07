@@ -366,8 +366,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.saveBuild(build3)
         sleep 300
 
-        expect:
-        expect:
+        expect: 'should return the correct counts per metric'
         persistence.getBuildCountByMetrics(Metric.ip, null, null, null) == [
                 '127.0.0.1': 2,
                 '127.0.0.2': 1
@@ -380,6 +379,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 'testImage1': 2,
                 'testImage2': 1
         ]
+
+        and: 'should return correct metric count for successful builds'
         persistence.getBuildCountByMetrics(Metric.ip, true, null, null) ==[
                 '127.0.0.1': 1,
                 '127.0.0.2': 1
@@ -392,6 +393,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 'testImage1': 1,
                 'testImage2': 1
         ]
+
+        and: 'should return correct metric count between two dates'
         persistence.getBuildCountByMetrics(Metric.ip, null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == [
                 '127.0.0.1': 1,
                 '127.0.0.2': 1
@@ -404,10 +407,12 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 'testImage1': 1,
                 'testImage2': 1
         ]
-        persistence.getBuildCount(null, null, null) == 3
 
+        and: 'should return total build count'
+        persistence.getBuildCount(null, null, null) == 3
         persistence.getBuildCount(true, null, null) == 2
 
+        and: 'should return total build count between two dates'
         persistence.getBuildCount( null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == 2
 
     }
@@ -478,37 +483,46 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.saveContainerRequest(TOKEN3, request3)
         sleep 300
 
-        expect:
+        expect:'`should return the correct pull counts per metrics'
         persistence.getPullCountByMetrics(Metric.ip, null, null) ==[
                 '100.200.300.400': 2,
-                '100.200.300.401': 1
-        ]
-        persistence.getPullCountByMetrics(Metric.ip, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) ==[
-                '100.200.300.400': 1,
                 '100.200.300.401': 1
         ]
         persistence.getPullCountByMetrics(Metric.user, null, null) == [
                 'foo': 2,
                 'unknown': 1
         ]
+        persistence.getPullCountByMetrics(Metric.image, null, null) == [
+                'hello-world': 2,
+                'hello-wave-world': 1
+        ]
+
+        and: 'should return the correct pull counts per metrics between two dates'
         persistence.getPullCountByMetrics(Metric.user, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == [
                 'foo': 1,
                 'unknown': 1
         ]
-        persistence.getPullCountByMetrics(Metric.image, null, null) == [
-                'hello-world': 2,
-                'hello-wave-world': 1
+        persistence.getPullCountByMetrics(Metric.ip, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) ==[
+                '100.200.300.400': 1,
+                '100.200.300.401': 1
         ]
         persistence.getPullCountByMetrics(Metric.image, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == [
                 'hello-world': 1,
                 'hello-wave-world': 1
         ]
 
+        and: 'should return the correct pull'
         persistence.getPullCount(null, null) == 3
 
+        and: 'should return the correct pull counts between two dates'
         persistence.getPullCount(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == 2
 
+        and:'should return distinct metric count'
+        persistence.getDistinctMetrics(Metric.ip, null, null) == 2
+        persistence.getDistinctMetrics(Metric.user, null, null) == 1
+        persistence.getDistinctMetrics(Metric.image, null, null) == 2
     }
+
 
     def 'should get the correct build filter' () {
         expect:

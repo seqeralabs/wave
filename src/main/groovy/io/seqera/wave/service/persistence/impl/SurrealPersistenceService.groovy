@@ -303,4 +303,15 @@ class SurrealPersistenceService implements PersistenceService {
         }
         return  "";
     }
+
+    Long getDistinctMetrics(Metric metric, Instant startDate, Instant endDate){
+        final statement = "SELECT count(array) as total_count FROM (SELECT array::distinct(${metric.pullLabel}) as array FROM wave_request ${getPullMetricFilter(startDate, endDate)}  GROUP ALL)"
+        final map = surrealDb.sqlAsMap(authorization, statement)
+        def results = map.get("result") as List<Map>
+        log.trace("Distinct metric results: $results")
+        if( results && results.size() > 0)
+            return results[0].get("total_count")? results[0].get("total_count") as Long : 0
+        else
+            return 0
+    }
 }
