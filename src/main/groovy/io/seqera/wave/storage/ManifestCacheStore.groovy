@@ -98,6 +98,7 @@ class ManifestCacheStore extends AbstractCacheStore<DigestStore> implements Stor
     }
 
     @Override
+    @Deprecated
     DigestStore saveBlob(String path, ContentReader content, String type, String digest, int size) {
         log.trace "Save Blob ==> $path"
         final result = new LazyDigestStore(content, type, digest, size)
