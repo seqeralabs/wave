@@ -126,9 +126,53 @@ interface PersistenceService {
                 scanRecord.vulnerabilities )
     }
 
+    /**
+     * Retrieve the total build count per metric
+     *
+     * @param metric, which metric to count
+     * @param success, filter only successful builds or not
+     * @param startDate, the start date to filter build records for counting
+     * @param endDate, the end date to filter build records for counting
+     * @return The {@link Map} of [{@link Metric}, total build count per metric ]
+     */
     Map<String, Long> getBuildCountByMetrics(Metric metric, Boolean success, Instant startDate, Instant endDate)
+
+    /**
+     * Retrieve the total build count
+     *
+     * @param success, filter only successful builds or not
+     * @param startDate, the start date to filter build records for counting
+     * @param endDate, the end date to filter build records for counting
+     * @return The {@link Long} of total build count
+     */
     Long getBuildCount(Boolean success, Instant startDate, Instant endDate)
+
+    /**
+     * Retrieve the total pull count per metric
+     *
+     * @param metric, which metric to count
+     * @param startDate, the start date to filter pull records for counting
+     * @param endDate, the end date to filter pull records for counting
+     * @return The {@link Map} of [{@link Metric}, total pull count per metric ]
+     */
     Map<String, Long> getPullCountByMetrics(Metric metric, Instant startDate, Instant endDate)
+
+    /**
+     * Retrieve the total pull count
+     *
+     * @param startDate, the start date to filter pull records for counting
+     * @param endDate, the end date to filter pull records for counting
+     * @return The {@link Long} of total pull count
+     */
     Long getPullCount(Instant startDate, Instant endDate)
+
+    /**
+     * Retrieve the total count of distinct metrics
+     *
+     * @param metric, which metric to count
+     * @param startDate, the start date to filter container requests for counting
+     * @param endDate, the end date to filter container requests for counting
+     * @return The {@link Long} of count of distinct metrics
+     */
     Long getDistinctMetrics(Metric metric, Instant startDate, Instant endDate)
 }
