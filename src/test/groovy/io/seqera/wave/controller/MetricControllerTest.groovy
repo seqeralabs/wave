@@ -23,7 +23,6 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoUnit
 
 import io.micronaut.http.HttpRequest
@@ -164,6 +163,15 @@ class MetricControllerTest extends Specification {
         persistenceService.saveContainerRequest(TOKEN2, request2)
         persistenceService.saveContainerRequest(TOKEN3, request3)
         sleep 300
+    }
+
+    def'should get 401 when no credentials provided'() {
+        when:
+        def req = HttpRequest.GET("$PREFIX/build/ip")
+        def res = client.toBlocking().exchange(req, Map)
+        then:
+        def e = thrown(HttpClientResponseException)
+        e.status.code == 401
     }
 
     def "should get the correct build count per metrics and status 200"() {
@@ -510,6 +518,17 @@ class MetricControllerTest extends Specification {
         res.status.code == 200
     }
 
+    def 'return correct message when date format is not valid' () {
+        when:
+        def req = HttpRequest.GET("$PREFIX/distinct/user?startDate=2024-02-07&endDate=2024-02-0").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then:
+        def e = thrown(HttpClientResponseException)
+        e.status.code == 400
+        e.message == 'Date format should be yyyy-mm-dd'
+    }
+
     def 'startDate and endDate should Cover the last day' () {
         given:
         def starDate ='2024-02-07'
@@ -517,20 +536,5 @@ class MetricControllerTest extends Specification {
 
         expect:'1 day difference'
         Duration.between(MetricController.parseStartDate(starDate), MetricController.parseEndDate(endDate)).toString() == 'PT23H59M59.999999999S'
-    }
-    def 'should throw DateTimeParseException when format is not valid' () {
-        given:
-        def starDate ='2024-0-07'
-        def endDate = '2024-02-0'
-
-        when:
-        MetricController.parseStartDate(starDate)
-        then:
-        thrown(DateTimeParseException)
-
-        when:
-        MetricController.parseEndDate(endDate)
-        then:
-        thrown(DateTimeParseException)
     }
 }
