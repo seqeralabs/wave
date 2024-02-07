@@ -26,6 +26,7 @@ import java.io.Serializable;
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Deprecated
 public interface ContentReader extends Serializable {
 
     byte[] readAllBytes() throws IOException, InterruptedException;

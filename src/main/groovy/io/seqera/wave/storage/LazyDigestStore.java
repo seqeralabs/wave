@@ -28,7 +28,8 @@ import io.seqera.wave.storage.reader.HttpContentReader;
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-public class LazyDigestStore implements DigestStore, RemoteLayerStore {
+@Deprecated
+public class LazyDigestStore implements DigestStore {
 
     final private String mediaType;
     final private String digest;

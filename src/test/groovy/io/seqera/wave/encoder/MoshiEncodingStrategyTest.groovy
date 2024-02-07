@@ -32,7 +32,9 @@ import io.seqera.wave.service.pairing.socket.msg.PairingResponse
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
 import io.seqera.wave.storage.DigestStore
+import io.seqera.wave.storage.DockerDigestStore
 import io.seqera.wave.storage.LazyDigestStore
+import io.seqera.wave.storage.HttpDigestStore
 import io.seqera.wave.storage.ZippedDigestStore
 import io.seqera.wave.storage.reader.DataContentReader
 import io.seqera.wave.storage.reader.GzipContentReader
@@ -149,7 +151,7 @@ class MoshiEncodingStrategyTest extends Specification {
         def DATA = 'Hello wold!'
         def encoder = new MoshiEncodeStrategy<DigestStore>() { }
         and:
-        def data = new ZippedDigestStore(DATA.bytes, 'my/media', '12345', 2000)
+        def data = ZippedDigestStore.fromUncompressed(DATA.bytes, 'my/media', '12345', 2000)
 
         when:
         def json = encoder.encode(data)
@@ -262,5 +264,52 @@ class MoshiEncodingStrategyTest extends Specification {
         copy.pairingId == data.pairingId
     }
 
+    def 'should encode and decode http digest store' () {
+        given:
+        def encoder = new MoshiEncodeStrategy<DigestStore>() { }
+        and:
+        def data = new HttpDigestStore(
+                'http://foo.com/this/that',
+                'text/json',
+                '12345',
+                2000 )
+
+        when:
+        def json = encoder.encode(data)
+
+        and:
+        def copy = (HttpDigestStore) encoder.decode(json)
+        then:
+        copy.getClass() == data.getClass()
+        and:
+        copy.location == data.location
+        copy.digest == data.digest
+        copy.mediaType == data.mediaType
+        copy.size == data.size
+    }
+
+    def 'should encode and decode http digest store' () {
+        given:
+        def encoder = new MoshiEncodeStrategy<DigestStore>() { }
+        and:
+        def data = new DockerDigestStore(
+                'docker://foo.com/this/that',
+                'text/json',
+                '12345',
+                2000 )
+
+        when:
+        def json = encoder.encode(data)
+
+        and:
+        def copy = (DockerDigestStore) encoder.decode(json)
+        then:
+        copy.getClass() == data.getClass()
+        and:
+        copy.location == data.location
+        copy.digest == data.digest
+        copy.mediaType == data.mediaType
+        copy.size == data.size
+    }
 
 }

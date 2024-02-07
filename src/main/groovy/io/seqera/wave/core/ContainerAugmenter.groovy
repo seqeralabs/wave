@@ -32,10 +32,8 @@ import io.seqera.wave.core.spec.ConfigSpec
 import io.seqera.wave.core.spec.ContainerSpec
 import io.seqera.wave.core.spec.ManifestSpec
 import io.seqera.wave.exception.DockerRegistryException
-import io.seqera.wave.model.ContentType
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.storage.Storage
-import io.seqera.wave.storage.reader.ContentReaderFactory
 import io.seqera.wave.util.RegHelper
 import static io.seqera.wave.model.ContentType.DOCKER_IMAGE_CONFIG_V1
 import static io.seqera.wave.model.ContentType.DOCKER_IMAGE_INDEX_V2
@@ -262,18 +260,13 @@ class ContainerAugmenter {
     synchronized protected Map layerBlob(String image, ContainerLayer layer) {
         log.debug "Adding layer: $layer to image: $client.registry.name/$image"
         // store the layer blob in the cache
-        final type = ContentType.DOCKER_IMAGE_TAR_GZIP
-        final location = layer.location
-        final digest = layer.gzipDigest
-        final size = layer.gzipSize
-        final String path = "$client.registry.name/v2/$image/blobs/$digest"
-        final content = ContentReaderFactory.of(location)
-        storage.saveBlob(path, content, type, digest, size)
+        final String path = "$client.registry.name/v2/$image/blobs/$layer.gzipDigest"
+        final store = storage.saveBlob(path, layer)
 
         final result = new LinkedHashMap(10)
-        result."mediaType" = type
-        result."size" = size
-        result."digest" = digest
+        result."mediaType" = store.mediaType
+        result."size" = store.size
+        result."digest" = store.digest
         return result
     }
 

@@ -20,14 +20,13 @@ package io.seqera.wave.storage.reader;
 
 import java.io.IOException;
 
-import io.seqera.wave.storage.RemoteLayerStore;
-
 /**
  * Read a layer content from the given http(s) url
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-public class HttpContentReader implements ContentReader, RemoteLayerStore {
+@Deprecated
+public class HttpContentReader implements ContentReader {
 
     final private String url;
 

@@ -90,4 +90,16 @@ class StringUtilsTest extends Specification {
         'http://foo'    | '/bar'        | 'http://foo/bar'
         'http://foo/'   | '/bar'        | 'http://foo/bar'
     }
+
+    def 'should truncate a string' () {
+        expect:
+        StringUtils.trunc(STR, MAX) == EXPECTED
+        where:
+        STR             | MAX       | EXPECTED
+        null            | 100       | null
+        '1234567890'    | 100       | '1234567890'
+        '1234567890'    | 5         | '12345..'
+        '12345'         | 5         | '12345'
+
+    }
 }

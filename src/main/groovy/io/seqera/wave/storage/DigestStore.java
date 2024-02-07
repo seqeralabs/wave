@@ -21,6 +21,8 @@ package io.seqera.wave.storage;
 import java.io.Serializable;
 
 /**
+ * Define the interface for a container layer digests caching
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 public interface DigestStore extends Serializable {

@@ -23,6 +23,7 @@ import java.time.Duration
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.cache.AbstractCacheStore
 import io.seqera.wave.service.cache.impl.CacheProvider
@@ -70,7 +71,7 @@ class ManifestCacheStore extends AbstractCacheStore<DigestStore> implements Stor
     DigestStore saveManifest(String path, String manifest, String type, String digest) {
         log.trace "Save Manifest [size: ${manifest.size()}] ==> $path"
         final bytes = manifest.getBytes()
-        final result = new ZippedDigestStore(bytes, type, digest, bytes.length);
+        final result = ZippedDigestStore.fromUncompressed(bytes, type, digest, bytes.length);
         this.put(path, result)
         return result;
     }
@@ -91,7 +92,7 @@ class ManifestCacheStore extends AbstractCacheStore<DigestStore> implements Stor
     @Override
     DigestStore saveBlob(String path, byte[] content, String type, String digest) {
         log.trace "Save Blob [size: ${content.size()}] ==> $path"
-        final result = new ZippedDigestStore(content, type, digest, content.length)
+        final result = ZippedDigestStore.fromUncompressed(content, type, digest, content.length)
         this.put(path, result)
         return result
     }
@@ -104,4 +105,11 @@ class ManifestCacheStore extends AbstractCacheStore<DigestStore> implements Stor
         return result
     }
 
+    @Override
+    DigestStore saveBlob(String path, ContainerLayer layer) {
+        log.trace "Save Blob ==> $path; layer=${layer}"
+        final store = DigestStoreFactory.of(layer)
+        this.put(path, store)
+        return store
+    }
 }

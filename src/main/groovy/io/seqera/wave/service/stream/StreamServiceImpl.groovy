@@ -12,7 +12,8 @@ import io.seqera.wave.core.RoutePath
 import io.seqera.wave.exception.HttpServerRetryableErrorException
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.service.blob.BlobCacheService
-import io.seqera.wave.storage.reader.ContentReaderFactory
+import io.seqera.wave.util.StringUtils
+import io.seqera.wave.util.ZipUtils
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import org.apache.commons.io.IOUtils
@@ -36,12 +37,21 @@ class StreamServiceImpl implements StreamService {
     @Override
     InputStream stream(String location) {
         assert location, "Missing 'location' attribute"
-        if( location.startsWith("docker://") )
+        if( location.startsWith("docker://") ) {
             return dockerStream0(RoutePath.parse(location))
-        if( location.startsWith("http://") || location.startsWith("https://") )
+        }
+        if( location.startsWith("http://") || location.startsWith("https://") ) {
             return httpStream0(location)
-        final reader = ContentReaderFactory.of(location)
-        return new ByteArrayInputStream(reader.readAllBytes())
+        }
+        if( location.startsWith('data:')) {
+            final byte[] decoded = Base64.getDecoder().decode(location.substring(5))
+            return new ByteArrayInputStream(decoded)
+        }
+        if( location.startsWith('gzip:')) {
+            final byte[] decoded = Base64.getDecoder().decode(location.substring(5))
+            return ZipUtils.decompress(decoded)
+        }
+        throw new IllegalArgumentException("Unsupported location protocol: ${StringUtils.trunc(location)}")
     }
 
     protected InputStream httpStream0(String url) throws IOException, InterruptedException {

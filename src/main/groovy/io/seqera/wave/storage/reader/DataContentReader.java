@@ -25,6 +25,7 @@ import java.util.Base64;
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Deprecated
 public class DataContentReader implements ContentReader{
 
     final private String data;
