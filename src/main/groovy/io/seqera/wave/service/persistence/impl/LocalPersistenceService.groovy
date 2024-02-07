@@ -93,7 +93,7 @@ class LocalPersistenceService implements PersistenceService {
                     .collectEntries { [it.key, it.value.size()] }
 
         if(metric == Metric.user)
-            return builds.groupBy { it.userName}
+            return builds.groupBy { it.userName ?: 'unknown'}
                     .collectEntries { [it.key, it.value.size()] }
 
         if(metric == Metric.image)
@@ -123,7 +123,7 @@ class LocalPersistenceService implements PersistenceService {
             return pulls.groupBy { it.ipAddress}
                     .collectEntries { [it.key, it.value.size()] }
         if(metric == Metric.user)
-            return pulls.groupBy { it.user.userName}
+            return pulls.groupBy { it.user?.userName ?: 'unknown'}
                     .collectEntries { [it.key, it.value.size()] }
         if(metric == Metric.image)
             return pulls.groupBy { it.sourceImage}

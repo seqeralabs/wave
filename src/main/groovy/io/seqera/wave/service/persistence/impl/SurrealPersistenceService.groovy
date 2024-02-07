@@ -279,7 +279,7 @@ class SurrealPersistenceService implements PersistenceService {
         Map<String, Long> counts = new HashMap<>()
         for(def result : results){
             def key = result.get(metric.pullLabel)
-            if(key && metric.pullLabel == "user"){
+            if(key && metric == Metric.user) {
                 def user = result.get(metric.pullLabel) as Map
                 key = user.get("userName")
             }

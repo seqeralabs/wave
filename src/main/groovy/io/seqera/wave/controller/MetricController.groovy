@@ -19,6 +19,7 @@ package io.seqera.wave.controller
 
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeParseException
 import javax.annotation.Nullable
@@ -45,7 +46,7 @@ import jakarta.inject.Inject
 @Slf4j
 @CompileStatic
 @Secured(SecurityRule.IS_AUTHENTICATED)
-@Controller("/v1/metrics")
+@Controller("/v1alpha1/metrics")
 class MetricController {
     @Inject
     private MetricService metricsService
@@ -53,7 +54,7 @@ class MetricController {
     @Get(uri="/pull/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<Map> getPullMetrics(@PathVariable String metric, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
         try {
-            def result = metricsService.getPullMetrics(Metric.valueOf(metric), parseDate(startDate), parseDate(endDate))
+            def result = metricsService.getPullMetrics(Metric.valueOf(metric), parseStartDate(startDate), parseEndDate(endDate))
             if( result && result.size() > 0)
                 return HttpResponse.ok(result)
             else
@@ -66,7 +67,7 @@ class MetricController {
     @Get(uri="/build/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<Map> getBuildMetrics(@PathVariable String metric, @Nullable @QueryValue Boolean success, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
         try {
-            def result = metricsService.getBuildMetrics(Metric.valueOf(metric), success, parseDate(startDate), parseDate(endDate))
+            def result = metricsService.getBuildMetrics(Metric.valueOf(metric), success, parseStartDate(startDate), parseEndDate(endDate))
             if( result && result.size() > 0)
                 return HttpResponse.ok(result)
             else
@@ -79,7 +80,7 @@ class MetricController {
     @Get(uri="/pull/count", produces = MediaType.APPLICATION_JSON)
     HttpResponse<LinkedHashMap> getPullCount(@Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
         try {
-            return HttpResponse.ok([count: metricsService.getPullCount(parseDate(startDate), parseDate(endDate))])
+            return HttpResponse.ok([count: metricsService.getPullCount(parseStartDate(startDate), parseEndDate(endDate))])
         }catch (IllegalArgumentException | DateTimeParseException e) {
             return HttpResponse.badRequest([message: e.message])
         }
@@ -88,7 +89,7 @@ class MetricController {
     @Get(uri="/build/count", produces = MediaType.APPLICATION_JSON)
     HttpResponse<LinkedHashMap> getBuildCount(@Nullable @QueryValue Boolean success, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
         try {
-            return HttpResponse.ok([count: metricsService.getBuildCount(success, parseDate(startDate), parseDate(endDate))])
+            return HttpResponse.ok([count: metricsService.getBuildCount(success, parseStartDate(startDate), parseEndDate(endDate))])
         }catch (IllegalArgumentException | DateTimeParseException e) {
             return HttpResponse.badRequest([message: e.message])
         }
@@ -97,16 +98,23 @@ class MetricController {
     @Get(uri="/distinct/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<LinkedHashMap> getBuildCount(@PathVariable String metric, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
         try {
-            return HttpResponse.ok([count: metricsService.getDistinctMetrics(Metric.valueOf(metric), parseDate(startDate), parseDate(endDate))])
+            return HttpResponse.ok([count: metricsService.getDistinctMetrics(Metric.valueOf(metric), parseStartDate(startDate), parseEndDate(endDate))])
         }catch (IllegalArgumentException | DateTimeParseException e) {
             return HttpResponse.badRequest([message: e.message])
         }
     }
 
-    protected Instant parseDate(String date) {
+    protected Instant parseStartDate(String date) {
         if( !date )
             return null
         LocalDate localDate = LocalDate.parse(date);
-        return localDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
+        return localDate.atTime(LocalTime.MIN).atZone(ZoneId.systemDefault()).toInstant();
+    }
+
+    protected Instant parseEndDate(String date) {
+        if( !date )
+            return null
+        LocalDate localDate = LocalDate.parse(date);
+        return localDate.atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toInstant();
     }
 }

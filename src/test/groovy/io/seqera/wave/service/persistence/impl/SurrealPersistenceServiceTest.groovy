@@ -322,12 +322,12 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         final persistence = applicationContext.getBean(SurrealPersistenceService)
 
         def build1 = new WaveBuildRecord(
-                buildId: 'test',
-                dockerFile: 'test',
-                condaFile: 'test',
+                buildId: 'test1',
+                dockerFile: 'test1',
+                condaFile: 'test1',
                 targetImage: 'testImage1',
                 userName: 'testUser1',
-                userEmail: 'test',
+                userEmail: 'test1@xyz.com',
                 userId: 1,
                 requestIp: '127.0.0.1',
                 startTime: Instant.now().minus(1, ChronoUnit.DAYS),
@@ -335,12 +335,12 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 exitStatus: 1 )
 
         def build2 = new WaveBuildRecord(
-                buildId: 'test',
-                dockerFile: 'test',
-                condaFile: 'test',
+                buildId: 'test2',
+                dockerFile: 'test1',
+                condaFile: 'test1',
                 targetImage: 'testImage1',
                 userName: 'testUser1',
-                userEmail: 'test',
+                userEmail: 'test1@xyz.com',
                 userId: 1,
                 requestIp: '127.0.0.1',
                 startTime: Instant.now(),
@@ -348,9 +348,9 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 exitStatus: 0 )
 
         def build3 = new WaveBuildRecord(
-                buildId: 'test',
-                dockerFile: 'test',
-                condaFile: 'test',
+                buildId: 'test3',
+                dockerFile: 'test3',
+                condaFile: 'test3',
                 targetImage: 'testImage2',
                 userName: null,
                 userEmail: null,
