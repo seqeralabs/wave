@@ -82,10 +82,6 @@ wave:
     s5cmdImage: cr.seqera.io/public/wave/s5cmd:v2.2.2
   metrics:
     enabled: true
-  auth :
-    basic :
-      username : 'username'
-      password : 'password'
 ---
 jackson:
   serialization:
