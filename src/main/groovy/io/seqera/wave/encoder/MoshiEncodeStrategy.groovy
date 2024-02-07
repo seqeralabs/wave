@@ -18,6 +18,7 @@
 
 package io.seqera.wave.encoder
 
+
 import java.lang.reflect.Type
 
 import com.squareup.moshi.JsonAdapter
@@ -38,6 +39,7 @@ import io.seqera.wave.storage.reader.GzipContentReader
 import io.seqera.wave.storage.reader.HttpContentReader
 import io.seqera.wave.storage.reader.PathContentReader
 import io.seqera.wave.util.TypeHelper
+
 /**
  * Implements a JSON {@link EncodingStrategy} based on Mosh JSON serializer
  *

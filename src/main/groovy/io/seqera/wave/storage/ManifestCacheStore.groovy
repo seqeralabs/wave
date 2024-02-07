@@ -104,5 +104,4 @@ class ManifestCacheStore extends AbstractCacheStore<DigestStore> implements Stor
         return result
     }
 
-
 }
