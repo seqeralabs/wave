@@ -25,9 +25,53 @@ import java.time.Instant
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 interface MetricService {
+    /**
+     * get the build count per metric
+     *
+     * @param metric, which metric to count
+     * @param success, filter only successful builds or not
+     * @param startDate, the start date to filter build records for counting
+     * @param endDate, the end date to filter build records for counting
+     * @return The {@link Map} of [{@link Metric}, total build count per metric ]
+     */
     Map getBuildMetrics(Metric metrics, Boolean success, Instant startDate, Instant endDate)
+
+    /**
+     * get the pull count per metric
+     *
+     * @param metric, which metric to count
+     * @param startDate, the start date to filter pull records for counting
+     * @param endDate, the end date to filter pull records for counting
+     * @return The {@link Map} of [{@link Metric}, total pull count per metric ]
+     */
     Map getPullMetrics(Metric metrics, Instant startDate, Instant endDate)
+
+    /**
+     * get the total pull count
+     *
+     * @param startDate, the start date to filter pull records for counting
+     * @param endDate, the end date to filter pull records for counting
+     * @return The {@link Long} of total pull count
+     */
     Long getPullCount(Instant startDate, Instant endDate)
+
+    /**
+     * get the total build count
+     *
+     * @param success, filter only successful builds or not
+     * @param startDate, the start date to filter build records for counting
+     * @param endDate, the end date to filter build records for counting
+     * @return The {@link Long} of total build count
+     */
     Long getBuildCount(Boolean success, Instant startDate, Instant endDate)
+
+    /**
+     * get the total count of distinct metrics
+     *
+     * @param metric, which metric to count
+     * @param startDate, the start date to filter container requests for counting
+     * @param endDate, the end date to filter container requests for counting
+     * @return The {@link Long} of count of distinct metrics
+     */
     Long getDistinctMetrics(Metric metrics, Instant startDate, Instant endDate)
 }

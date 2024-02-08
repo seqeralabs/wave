@@ -127,7 +127,7 @@ interface PersistenceService {
     }
 
     /**
-     * Retrieve the total build count per metric
+     * Retrieve the build count per metric from storage
      *
      * @param metric, which metric to count
      * @param success, filter only successful builds or not
@@ -138,7 +138,7 @@ interface PersistenceService {
     Map<String, Long> getBuildCountByMetrics(Metric metric, Boolean success, Instant startDate, Instant endDate)
 
     /**
-     * Retrieve the total build count
+     * Retrieve the total build count from storage
      *
      * @param success, filter only successful builds or not
      * @param startDate, the start date to filter build records for counting
@@ -148,7 +148,7 @@ interface PersistenceService {
     Long getBuildCount(Boolean success, Instant startDate, Instant endDate)
 
     /**
-     * Retrieve the total pull count per metric
+     * Retrieve the pull count per metric from storage
      *
      * @param metric, which metric to count
      * @param startDate, the start date to filter pull records for counting
@@ -158,7 +158,7 @@ interface PersistenceService {
     Map<String, Long> getPullCountByMetrics(Metric metric, Instant startDate, Instant endDate)
 
     /**
-     * Retrieve the total pull count
+     * Retrieve the total pull count from storage
      *
      * @param startDate, the start date to filter pull records for counting
      * @param endDate, the end date to filter pull records for counting
@@ -167,7 +167,7 @@ interface PersistenceService {
     Long getPullCount(Instant startDate, Instant endDate)
 
     /**
-     * Retrieve the total count of distinct metrics
+     * Retrieve the total count of distinct metrics from storage
      *
      * @param metric, which metric to count
      * @param startDate, the start date to filter container requests for counting
