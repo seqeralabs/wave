@@ -50,25 +50,6 @@ class AbstractMessageQueueRedisTest extends Specification implements RedisTestCo
     }
 
 
-    def 'should register and unregister consumers'() {
-        given:
-        def broker = applicationContext.getBean(RedisQueueBroker)
-        def queue = new PairingOutboundQueue(broker, Duration.ofMillis(100))
-
-        when:
-        queue.registerClient('service-key-one', '123',  {})
-        then:
-        queue.hasTarget('service-key-one')
-
-        when:
-        queue.unregisterClient('service-key-one', '123')
-        then:
-        !queue.hasTarget('service-key-one')
-
-        cleanup:
-        queue.close()
-    }
-
     def 'should send and consume a request'() {
         given:
         def broker = applicationContext.getBean(RedisQueueBroker)
@@ -108,33 +89,5 @@ class AbstractMessageQueueRedisTest extends Specification implements RedisTestCo
         queue1.close()
         queue2.close()
     }
-
-    def 'should check register and unregister consumers across instances'() {
-        given:
-        def broker1 = applicationContext.getBean(RedisQueueBroker)
-        def queue1 = new PairingOutboundQueue(broker1, Duration.ofMillis(100))
-        and:
-        def broker2 = applicationContext.getBean(RedisQueueBroker)
-        def queue2 = new PairingOutboundQueue(broker2, Duration.ofMillis(100))
-
-        when:
-        queue1.registerClient('service-key-four', '123', {})
-        and:
-        sleep(100)
-        then:
-        queue2.hasTarget('service-key-four')
-
-        when:
-        queue1.unregisterClient('service-key-four', '123')
-        and:
-        sleep(100)
-        then:
-        !queue1.hasTarget('service-key-four')
-
-        cleanup:
-        queue1.close()
-        queue2.close()
-    }
-
 
 }

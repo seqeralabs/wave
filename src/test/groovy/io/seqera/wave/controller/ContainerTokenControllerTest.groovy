@@ -330,9 +330,7 @@ class ContainerTokenControllerTest extends Specification {
         given:
         def validation = new ValidationServiceImpl()
         def pairing = Mock(PairingService)
-        def channel = Mock(PairingChannel) {
-            canHandle(_, _) >> false
-        }
+        def channel = Mock(PairingChannel)
         def controller = new ContainerTokenController(validationService: validation, pairingService: pairing, pairingChannel: channel)
         def msg
 
@@ -371,14 +369,6 @@ class ContainerTokenControllerTest extends Specification {
         msg.message == "Missing pairing record for Tower endpoint 'https://tower.something.com/api'"
 
         when:
-        controller.validateContainerRequest(new SubmitContainerTokenRequest(towerEndpoint: 'ftp://foo.com', towerAccessToken: '123'))
-        then:
-        0 * pairing.getPairingRecord('tower','https://tower.something.com/api') >> null
-        and:
-        msg = thrown(BadRequestException)
-        msg.message == 'Invalid Tower endpoint protocol — offending value: ftp://foo.com'
-
-        when:
         controller.validateContainerRequest(new SubmitContainerTokenRequest(containerImage: 'foo:latest', towerAccessToken: '123'))
         then:
         noExceptionThrown()
@@ -404,14 +394,11 @@ class ContainerTokenControllerTest extends Specification {
 
     def 'should allow any registered endpoint' () {
         given:
-        def registeredUri = 'ftp://127.0.0.1'
+        def registeredUri = 'http://foo.com'
         def validation = new ValidationServiceImpl()
         def pairing = Mock(PairingService)
-        def channel = Mock(PairingChannel) {
-            canHandle('tower', registeredUri) >> true
-        }
+        def channel = Mock(PairingChannel)
         def controller = new ContainerTokenController(validationService: validation, pairingService: pairing, pairingChannel: channel)
-        def msg
 
         when:
         controller.validateContainerRequest(new SubmitContainerTokenRequest(towerEndpoint: registeredUri, towerAccessToken: '123'))

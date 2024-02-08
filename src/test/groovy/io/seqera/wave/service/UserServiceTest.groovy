@@ -18,64 +18,63 @@
 
 package io.seqera.wave.service
 
-
 import spock.lang.Specification
 
-import io.micronaut.context.ApplicationContext
-import io.micronaut.context.annotation.Requires
-import io.micronaut.core.io.socket.SocketUtils
-import io.micronaut.http.HttpResponse
-import io.micronaut.http.annotation.Controller
-import io.micronaut.http.annotation.Get
-import io.micronaut.http.annotation.Header
-import io.micronaut.runtime.server.EmbeddedServer
+import java.util.concurrent.CompletableFuture
+
+import io.micronaut.test.annotation.MockBean
+import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.tower.User
+import io.seqera.wave.tower.client.TowerClient
 import io.seqera.wave.tower.client.UserInfoResponse
+import jakarta.inject.Inject
+
+import static io.seqera.wave.util.FutureUtils.completeExceptionally
 
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@MicronautTest
 class UserServiceTest extends Specification {
 
-    @Requires(property = 'spec.name', value = 'UserServiceTest')
-    @Controller("/")
-    static class TowerController {
+    @Inject
+    TowerClient client
 
-        @Get('/user-info')
-        HttpResponse<UserInfoResponse> userInfo(@Header("Authorization") String authorization) {
-            if( authorization == 'Bearer foo')
-                return HttpResponse.unauthorized()
-            HttpResponse.ok(new UserInfoResponse(user: new User(id:1)))
-        }
+    @Inject
+    UserService service
 
+    @MockBean(TowerClient)
+    TowerClient mockConnector() {
+        Mock(TowerClient)
     }
 
     def 'should auth user' () {
         given:
-        int port = SocketUtils.findAvailableTcpPort()
-        final host = "http://localhost:${port}"
-        EmbeddedServer server = ApplicationContext.run(EmbeddedServer, [
-                'spec.name': 'UserServiceTest',
-                'micronaut.server.port':port,
-                'tower.api.endpoint':host
-        ], 'test','tower','h2')
-        ApplicationContext ctx = server.applicationContext
+        def endpoint = "https://foo.com/tower"
+        def token = "a valid token"
 
-        and:
-        def service = ctx.getBean(UserService)
 
         when: // a valid token
-        def token = "a valid token"
-        def user = service.getUserByAccessToken(host,token)
+        def user = service.getUserByAccessToken(endpoint,token)
         then:
+        1 * client.userInfo(endpoint,token) >> CompletableFuture.completedFuture(new UserInfoResponse(user:new User(id: 1)))
+        and:
         user.id == 1
 
+    }
+
+    def 'should not auth user' () {
+        given:
+        def endpoint = "https://foo.com/tower"
+        def token = "a invalid token"
+
         when: // an invalid token
-        token = "foo"
-        service.getUserByAccessToken(host,token)
+        service.getUserByAccessToken(endpoint,token)
         then:
+        1 * client.userInfo(endpoint,token) >> completeExceptionally(new HttpResponseException(401, "Auth error"))
+        and:
         def exp = thrown(HttpResponseException)
         exp.statusCode().code == 401
     }
