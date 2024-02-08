@@ -523,6 +523,28 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.getDistinctMetrics(Metric.image, null, null) == 2
     }
 
+    def 'should get empty map for count per metric when no record found' () {
+        given:
+        final persistence = applicationContext.getBean(SurrealPersistenceService)
+        expect:
+        persistence.getBuildCountByMetrics(Metric.ip, null, null, null) == [:]
+        persistence.getBuildCountByMetrics(Metric.image, null, null, null) == [:]
+        persistence.getBuildCountByMetrics(Metric.user, null, null, null) == [:]
+        persistence.getPullCountByMetrics(Metric.ip, null, null) == [:]
+        persistence.getPullCountByMetrics(Metric.image, null, null) == [:]
+        persistence.getPullCountByMetrics(Metric.user, null, null) == [:]
+    }
+    def 'should get 0 total_count if no record found' () {
+        given:
+        final persistence = applicationContext.getBean(SurrealPersistenceService)
+
+        expect:
+        persistence.getPullCount(null, null) == 0
+        persistence.getBuildCount(null, null, null) == 0
+        persistence.getDistinctMetrics(Metric.ip, null, null) == 0
+        persistence.getDistinctMetrics(Metric.image, null, null) == 0
+        persistence.getDistinctMetrics(Metric.user, null, null) == 0
+    }
 
     def 'should get the correct build filter' () {
         expect:
