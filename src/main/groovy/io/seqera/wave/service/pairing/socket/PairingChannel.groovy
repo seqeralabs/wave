@@ -66,17 +66,6 @@ class PairingChannel {
     }
 
     /**
-     * Determines whether the channel can handle messages for the given service and endpoint.
-     *
-     * @param service the name of the service to check for
-     * @param endpoint the endpoint to check for
-     * @return true if the message stream has a consumer for the given service and endpoint, false otherwise
-     */
-    boolean canHandle(String service, String endpoint) {
-        return outbound.hasTarget(clientTarget(service, endpoint))
-    }
-
-    /**
      * Sends a message request to a given service and endpoint.
      *
      * @param service the name of the service to send the request to
