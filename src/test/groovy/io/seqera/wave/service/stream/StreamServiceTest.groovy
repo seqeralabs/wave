@@ -6,6 +6,7 @@ import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
 import com.sun.net.httpserver.HttpServer
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.test.TestHelper
 import io.seqera.wave.util.ZipUtils
 import jakarta.inject.Inject
 /**
@@ -17,23 +18,6 @@ class StreamServiceTest extends Specification{
 
     @Inject
     StreamService streamService
-
-    // Define the characters allowed in the random string
-    private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
-    // Method to generate a random string of specified length
-    static String generateRandomString(int length) {
-        Random random = new Random();
-        StringBuilder sb = new StringBuilder(length);
-
-        for (int i = 0; i < length; i++) {
-            int randomIndex = random.nextInt(CHARACTERS.length());
-            char randomChar = CHARACTERS.charAt(randomIndex);
-            sb.append(randomChar);
-        }
-
-        return sb.toString();
-    }
 
     def 'should stream data location' () {
         given:
@@ -103,9 +87,9 @@ class StreamServiceTest extends Specification{
         server?.stop(0)
     }
 
-    def 'should stream large payload' () {
+    def 'should stream large payload using flux bytebuffer' () {
         given:
-        def body = generateRandomString(5 * 1024 * 1025).bytes
+        def body = TestHelper.generateRandomString(5 * 1024 * 1025).bytes
         and:
         HttpHandler handler = { HttpExchange exchange ->
             exchange.getResponseHeaders().add("Content-Type", "application/tar+gzip")
