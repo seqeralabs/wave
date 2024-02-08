@@ -223,14 +223,14 @@ class SurrealPersistenceService implements PersistenceService {
         return result
     }
 
-    // get build count by specific metric like ip, userid, imagename between two dates
+    // get build count by specific metric ( ip, userName, targetImage)
     @Override
     Map<String, Long> getBuildCountByMetrics(Metric metric, Boolean success, Instant startDate, Instant endDate) {
         final statement = "SELECT ${metric.buildLabel}, count() as total_count FROM wave_build "+
                                 "${getBuildMetricFilter(success, startDate, endDate)} GROUP BY ${metric.buildLabel}"
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
-        log.trace("build count results by ${metric.buildLabel}: $results")
+        log.trace("Build count results by ${metric.buildLabel}: $results")
         Map<String, Long> counts = new HashMap<>()
         for(def result : results){
             counts.put((result.get(metric.buildLabel)?:"unknown") as String, result.get("total_count") as Long)
@@ -238,13 +238,13 @@ class SurrealPersistenceService implements PersistenceService {
         return counts
     }
 
-    // get build count between two dates
+    // get total build count
     @Override
     Long getBuildCount(Boolean success, Instant startDate, Instant endDate){
         final statement = "SELECT count() as total_count FROM wave_build ${getBuildMetricFilter(success, startDate, endDate)} GROUP ALL"
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
-        log.trace("build count results: $results")
+        log.trace("Total build count results: $results")
         if( results && results.size() > 0)
             return results[0].get("total_count")? results[0].get("total_count") as Long : 0
         else
@@ -254,28 +254,27 @@ class SurrealPersistenceService implements PersistenceService {
     static String getBuildMetricFilter(Boolean success, Instant startDate, Instant endDate){
         def filter=""
         if (startDate && endDate) {
-            filter = "where type::datetime(startTime) >= '$startDate' and type::datetime(startTime) <= '$endDate'"
+            filter = "WHERE type::datetime(startTime) >= '$startDate' AND type::datetime(startTime) <= '$endDate'"
             if (success != null) {
-                filter += success ? " and exitStatus = 0" : " and exitStatus != 0"
+                filter += success ? " AND exitStatus = 0" : " AND exitStatus != 0"
             }
         } else if (success != null) {
-            filter = success ? "where exitStatus = 0" : "where exitStatus != 0"
+            filter = success ? "WHERE exitStatus = 0" : "where exitStatus != 0"
         }
 
         return filter
     }
 
 
-    // get pull count by specific metric like ip, userid, imagename between two dates
+    // get pull count by specific metric ( ip, user.userName, sourceImage)
     @Override
     Map<String, Long> getPullCountByMetrics(Metric metric, Instant startDate, Instant endDate) {
 
         final statement = "SELECT ${metric.pullLabel}, count() as total_count  FROM wave_request "+
                                 "${getPullMetricFilter(startDate, endDate)} GROUP BY ${metric.pullLabel}"
-        log.info("getPullCountByMetrics: $statement")
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
-        log.trace("pull count results by ${metric.pullLabel}: $results")
+        log.trace("Pull count results by ${metric.pullLabel}: $results")
         Map<String, Long> counts = new HashMap<>()
         for(def result : results){
             def key = result.get(metric.pullLabel)
@@ -283,18 +282,19 @@ class SurrealPersistenceService implements PersistenceService {
                 def user = result.get(metric.pullLabel) as Map
                 key = user.get("userName")
             }
+            //if the username is null, replace it with unknown
             counts.put((key?:"unknown") as String, result.get("total_count") as Long)
         }
         return counts
     }
 
-    // get pull count between two dates
+    // get total pull count
     @Override
     Long getPullCount(Instant startDate, Instant endDate){
         final statement = "SELECT count() as total_count FROM wave_request ${getPullMetricFilter(startDate, endDate)}  GROUP ALL"
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
-        log.trace("pull count results: $results")
+        log.trace("Total pull count results: $results")
         if( results && results.size() > 0)
             return results[0].get("total_count")? results[0].get("total_count") as Long : 0
         else
@@ -315,7 +315,7 @@ class SurrealPersistenceService implements PersistenceService {
 
     static String getPullMetricFilter(Instant startDate, Instant endDate){
         if( startDate && endDate ){
-            return "where type::datetime(timestamp) >= '$startDate' and type::datetime(timestamp) <= '$endDate'"
+            return "WHERE type::datetime(timestamp) >= '$startDate' AND type::datetime(timestamp) <= '$endDate'"
         }
         return  "";
     }
