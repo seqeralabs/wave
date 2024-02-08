@@ -274,11 +274,11 @@ class ContainerBuildServiceTest extends Specification {
         1* spack.getCacheBucket() >> 's3://bucket/cache'
         1* spack.getSecretMountPath() >> '/mnt/key'
         1* spack.getBuilderImage() >> 'spack-builder:2.0'
-        1* spack.getRunnerImage() >> 'ubuntu:22.04'
+        1* spack.getRunnerImage() >> 'ubuntu:jammy'
         and:
         result.contains('FROM spack-builder:2.0 as builder')
-        result.contains('spack config add packages:all:target:[x86_64]')
-        result.contains('spack mirror add seqera-spack s3://bucket/cache')
+        result.contains('spack -e . config add packages:all:target:[x86_64]')
+        result.contains('spack -e . mirror add seqera_spack s3://bucket/cache')
         result.contains('fingerprint="$(spack gpg trust /mnt/key 2>&1 | tee /dev/stderr | sed -nr "s/^gpg: key ([0-9A-F]{16}): secret key imported$/\\1/p")"')
 
         cleanup:
@@ -303,13 +303,13 @@ class ContainerBuildServiceTest extends Specification {
         1* spack.getCacheBucket() >> 's3://bucket/cache'
         1* spack.getSecretMountPath() >> '/mnt/key'
         1* spack.getBuilderImage() >> 'spack-builder:2.0'
-        1* spack.getRunnerImage() >> 'ubuntu:22.04'
+        1* spack.getRunnerImage() >> 'ubuntu:jammy'
         and:
         result.contains('Bootstrap: docker\n' +
                 'From: spack-builder:2.0\n' +
                 'Stage: build')
-        result.contains('spack config add packages:all:target:[x86_64]')
-        result.contains('spack mirror add seqera-spack s3://bucket/cache')
+        result.contains('spack -e . config add packages:all:target:[x86_64]')
+        result.contains('spack -e . mirror add seqera_spack s3://bucket/cache')
         result.contains('fingerprint="$(spack gpg trust /mnt/key 2>&1 | tee /dev/stderr | sed -nr "s/^gpg: key ([0-9A-F]{16}): secret key imported$/\\1/p")"')
         result.contains('/some/context/dir/spack.yaml /opt/spack-env/spack.yaml')
 
