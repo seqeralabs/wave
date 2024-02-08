@@ -194,8 +194,8 @@ class ContainerTokenController {
         final spackContent = req.spackFile ? new String(req.spackFile.decodeBase64()) : null as String
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
-        final build = req.buildRepository ?: (req.freeze && defaultPublicRepo ? defaultPublicRepo : defaultBuildRepo)
-        final cache = req.cacheRepository ?: defaultCacheRepo
+        final build = req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository ? buildConfig.defaultPublicRepository : buildConfig.defaultBuildRepository)
+        final cache = req.cacheRepository ?: buildConfig.defaultCacheRepository
         final configJson = dockerAuthService.credentialsConfigJson(containerSpec, build, cache, user?.id, req.towerWorkspaceId, req.towerAccessToken, req.towerEndpoint, req.workflowId)
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
