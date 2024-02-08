@@ -95,10 +95,6 @@ abstract class AbstractMessageQueue<M> implements Runnable {
         return clientKey.substring(0,p)
     }
 
-    protected String markerKey(String target, String clientId) {
-        clientKey(target,clientId).replaceAll('/queue$','/marker')
-    }
-
     /**
      * Add a message to the send queue
      *
@@ -129,7 +125,6 @@ abstract class AbstractMessageQueue<M> implements Runnable {
      *      A {@link MessageSender} that will send to message to the client 
      */
     void registerClient(String target, String clientId, MessageSender<M> sender) {
-        broker.mark(markerKey(target,clientId))
         clients.put(clientKey(target,clientId), new MessageSender<String>() {
             @Override
             void send(String message) {
@@ -150,19 +145,6 @@ abstract class AbstractMessageQueue<M> implements Runnable {
      */
     void unregisterClient(String target, String clientId) {
         clients.remove(clientKey(target,clientId))
-        broker.unmark(markerKey(target,clientId))
-    }
-
-    /**
-     * Check if the specified target is available
-     *
-     * @param target
-     *      The name of the queue for which check the existence
-     * @return
-     *      {@code true} if a queue with the specified name exists, {@code false} otherwise
-     */
-    boolean hasTarget(String target) {
-        broker.hasMark(targetKey(target))
     }
 
     @Override

@@ -24,13 +24,11 @@ import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
 import io.micronaut.cache.annotation.Cacheable
-import io.seqera.wave.tower.client.connector.HttpTowerConnector
-import io.seqera.wave.tower.client.connector.WebSocketTowerConnector
 import io.micronaut.core.annotation.Nullable
+import io.seqera.wave.tower.client.connector.TowerConnector
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import org.apache.commons.lang3.StringUtils
-
 /**
  * Implement a client to interact with Tower services
  *
@@ -42,21 +40,12 @@ import org.apache.commons.lang3.StringUtils
 class TowerClient {
 
     @Inject
-    private HttpTowerConnector httpClient
-
-    @Inject
-    private WebSocketTowerConnector socketClient
+    private TowerConnector connector
 
     protected <T> CompletableFuture<T> getAsync(URI uri, String endpoint, @Nullable String authorization, Class<T> type) {
         assert uri, "Missing uri argument"
         assert endpoint, "Missing endpoint argument"
-
-        // Connect using websocket connection when available
-        if( socketClient.isEndpointRegistered(endpoint) )
-            return socketClient.sendAsync(endpoint, uri, authorization, type)
-
-        // Fallback to public HTTP connection
-        return httpClient.sendAsync(endpoint, uri, authorization, type)
+        return connector.sendAsync(endpoint, uri, authorization, type)
     }
 
     @Cacheable('cache-20sec')

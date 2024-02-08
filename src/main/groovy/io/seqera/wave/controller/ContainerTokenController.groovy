@@ -311,14 +311,6 @@ class ContainerTokenController {
 
     void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException{
         if( req.towerEndpoint && req.towerAccessToken ) {
-
-            // check the endpoint is valid public URL if not registered
-            if( !pairingChannel.canHandle(PairingService.TOWER_SERVICE, req.towerEndpoint) ) {
-                final msg = validationService.checkEndpoint(req.towerEndpoint)
-                if (msg)
-                    throw new BadRequestException(msg.replaceAll(/(?i)endpoint/, 'Tower endpoint'))
-            }
-
             // check the endpoint has been registered via the pairing process
             if( !pairingService.getPairingRecord(TOWER, req.towerEndpoint) )
                 throw new BadRequestException("Missing pairing record for Tower endpoint '$req.towerEndpoint'")
