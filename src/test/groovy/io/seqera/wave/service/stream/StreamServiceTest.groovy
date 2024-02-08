@@ -18,6 +18,23 @@ class StreamServiceTest extends Specification{
     @Inject
     StreamService streamService
 
+    // Define the characters allowed in the random string
+    private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    // Method to generate a random string of specified length
+    static String generateRandomString(int length) {
+        Random random = new Random();
+        StringBuilder sb = new StringBuilder(length);
+
+        for (int i = 0; i < length; i++) {
+            int randomIndex = random.nextInt(CHARACTERS.length());
+            char randomChar = CHARACTERS.charAt(randomIndex);
+            sb.append(randomChar);
+        }
+
+        return sb.toString();
+    }
+
     def 'should stream data location' () {
         given:
         def data = "Hello world"
@@ -81,6 +98,30 @@ class StreamServiceTest extends Specification{
         def stream = streamService.stream("docker://localhost:9901/v2/library/ubuntu/blobs/content")
         then:
         stream.text == 'Hello world!'
+
+        cleanup:
+        server?.stop(0)
+    }
+
+    def 'should stream large payload' () {
+        given:
+        def body = generateRandomString(5 * 1024 * 1025).bytes
+        and:
+        HttpHandler handler = { HttpExchange exchange ->
+            exchange.getResponseHeaders().add("Content-Type", "application/tar+gzip")
+            exchange.sendResponseHeaders(200, body.size())
+            exchange.getResponseBody() << body
+            exchange.getResponseBody().close()
+        }
+        and:
+        HttpServer server = HttpServer.create(new InetSocketAddress(9901), 0);
+        server.createContext("/", handler);
+        server.start()
+
+        when:
+        def stream = streamService.stream("docker://localhost:9901/v2/library/ubuntu/blobs/content")
+        then:
+        stream.readAllBytes() == body
 
         cleanup:
         server?.stop(0)

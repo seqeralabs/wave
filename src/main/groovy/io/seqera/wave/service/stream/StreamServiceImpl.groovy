@@ -87,7 +87,8 @@ class StreamServiceImpl implements StreamService {
             throw new IllegalStateException(msg)
         }
         else {
-            throw new UnsupportedOperationException("Operation not supported")
+            final flux = proxyService.streamBlob(route, Map.<String,List<String>>of())
+            return new FluxToInputStream(flux);
         }
     }
 }
