@@ -518,15 +518,26 @@ class MetricControllerTest extends Specification {
         res.status.code == 200
     }
 
-    def 'return correct message when date format is not valid' () {
+    def 'return 400 status and message when date format is not valid' () {
         when:
         def req = HttpRequest.GET("$PREFIX/distinct/user?startDate=2024-02-07&endDate=2024-02-0").basicAuth("username", "password")
-        def res = client.toBlocking().exchange(req, Map)
+        client.toBlocking().exchange(req, Map)
 
         then:
         def e = thrown(HttpClientResponseException)
         e.status.code == 400
         e.message == 'Date format should be yyyy-mm-dd'
+    }
+
+    def 'return 400 status code and message metric in path is not valid' () {
+        when:
+        def req = HttpRequest.GET("$PREFIX/distinct/userId").basicAuth("username", "password")
+        client.toBlocking().exchange(req, Map)
+
+        then:
+        def e = thrown(HttpClientResponseException)
+        e.status.code == 400
+        e.message == 'you have provided an invalid metric. The valid metrics are: ip, user, image'
     }
 
     def 'startDate and endDate should Cover the last day' () {

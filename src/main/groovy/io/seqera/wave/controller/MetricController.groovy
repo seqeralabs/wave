@@ -26,7 +26,6 @@ import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Controller
@@ -56,55 +55,35 @@ class MetricController {
 
     @Get(uri="/build/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<Map> getBuildMetrics(@PathVariable String metric, @Nullable @QueryValue Boolean success, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
-        try {
             def result = metricsService.getBuildMetrics(Metric.valueOf(metric), success, parseStartDate(startDate), parseEndDate(endDate))
             if( result && result.size() > 0)
                 return HttpResponse.ok(result)
             else
                 return HttpResponse.notFound()
-        }catch (IllegalArgumentException e) {
-            return HttpResponse.badRequest((Map)[message: e.message])
-        }
     }
 
     @Get(uri="/build/count", produces = MediaType.APPLICATION_JSON)
     HttpResponse<LinkedHashMap> getBuildCount(@Nullable @QueryValue Boolean success, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
-        try {
             return HttpResponse.ok([count: metricsService.getBuildCount(success, parseStartDate(startDate), parseEndDate(endDate))])
-        }catch (IllegalArgumentException e) {
-            return HttpResponse.badRequest([message: e.message])
-        }
     }
 
     @Get(uri="/pull/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<Map> getPullMetrics(@PathVariable String metric, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
-        try {
             def result = metricsService.getPullMetrics(Metric.valueOf(metric), parseStartDate(startDate), parseEndDate(endDate))
             if( result && result.size() > 0)
                 return HttpResponse.ok(result)
             else
                 return HttpResponse.notFound()
-        }catch (IllegalArgumentException e) {
-            return HttpResponse.badRequest((Map)[message: e.message])
-        }
     }
 
     @Get(uri="/pull/count", produces = MediaType.APPLICATION_JSON)
     HttpResponse<LinkedHashMap> getPullCount(@Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
-        try {
             return HttpResponse.ok([count: metricsService.getPullCount(parseStartDate(startDate), parseEndDate(endDate))])
-        }catch (IllegalArgumentException e) {
-            return HttpResponse.badRequest([message: e.message])
-        }
     }
 
     @Get(uri="/distinct/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<LinkedHashMap> getBuildCount(@PathVariable String metric, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
-        try {
             return HttpResponse.ok([count: metricsService.getDistinctMetrics(Metric.valueOf(metric), parseStartDate(startDate), parseEndDate(endDate))])
-        }catch (IllegalArgumentException e) {
-            return HttpResponse.badRequest([message: e.message])
-        }
     }
 
     static Instant parseStartDate(String date) {
@@ -130,5 +109,11 @@ class MetricController {
     HttpResponse<?> handleAuthorizationException() {
         return HttpResponse.unauthorized()
         .header(WWW_AUTHENTICATE, "Basic realm=Wave Authentication");
+    }
+
+    @Error(exception = IllegalArgumentException.class)
+    HttpResponse<?> handleIllegalArgumentException() {
+        return HttpResponse.badRequest([message: 'you have provided an invalid metric. ' +
+                'The valid metrics are: ' + Metric.values().collect({it.name()}).join(', ')])
     }
 }
