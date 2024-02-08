@@ -17,8 +17,6 @@
  */
 package io.seqera.wave.service.metric
 
-import software.amazon.awssdk.services.s3.endpoints.internal.Value
-
 /**
  * enum for Metrics
  *

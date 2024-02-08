@@ -29,7 +29,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.annotation.Value
-import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.core.io.buffer.ReferenceCounted
 import io.micronaut.http.HttpMethod

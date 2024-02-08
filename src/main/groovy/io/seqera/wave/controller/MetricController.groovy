@@ -39,7 +39,8 @@ import io.micronaut.security.rules.SecurityRule
 import io.seqera.wave.service.metric.Metric
 import io.seqera.wave.service.metric.MetricService
 import jakarta.inject.Inject
-import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE;
+import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
+
 /**
  * Controller for wave Metrics
  *
@@ -89,15 +90,15 @@ class MetricController {
     static Instant parseStartDate(String date) {
         if( !date )
             return null
-        LocalDate localDate = LocalDate.parse(date);
-        return localDate.atTime(LocalTime.MIN).atZone(ZoneId.systemDefault()).toInstant();
+        LocalDate localDate = LocalDate.parse(date)
+        return localDate.atTime(LocalTime.MIN).atZone(ZoneId.systemDefault()).toInstant()
     }
 
     static Instant parseEndDate(String date) {
         if( !date )
             return null
-        LocalDate localDate = LocalDate.parse(date);
-        return localDate.atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toInstant();
+        LocalDate localDate = LocalDate.parse(date)
+        return localDate.atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toInstant()
     }
 
     @Error(exception = DateTimeParseException.class)
@@ -108,7 +109,7 @@ class MetricController {
     @Error(exception = AuthorizationException.class)
     HttpResponse<?> handleAuthorizationException() {
         return HttpResponse.unauthorized()
-        .header(WWW_AUTHENTICATE, "Basic realm=Wave Authentication");
+        .header(WWW_AUTHENTICATE, "Basic realm=Wave Authentication")
     }
 
     @Error(exception = IllegalArgumentException.class)
