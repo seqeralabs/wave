@@ -7,10 +7,9 @@ import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.spec.ObjectRef
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.inspect.ContainerInspectService
-import io.seqera.wave.tower.User
+import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 /**
  * Implement the container inclusion service which takes care of expanding
  * a list of container names into a set of layers to the added to the target request
@@ -25,7 +24,7 @@ class ContainerInclusionImpl implements ContainerInclusionService {
     private ContainerInspectService inspectService
 
     @Override
-    SubmitContainerTokenRequest addContainerInclusions(SubmitContainerTokenRequest request, User user) {
+    SubmitContainerTokenRequest addContainerInclusions(SubmitContainerTokenRequest request, PlatformId identity) {
         final containerNames = request.containerIncludes
         if( !containerNames )
             return request
@@ -35,7 +34,7 @@ class ContainerInclusionImpl implements ContainerInclusionService {
         final result = new ArrayList<ContainerLayer>()
         for( String it : containerNames ) {
             // submit a container inspect request to find out the layers making up the contaner
-            final spec = inspectService.containerSpec(it, user?.id, request.towerWorkspaceId, request.towerAccessToken, request.towerEndpoint)
+            final spec = inspectService.containerSpec(it, identity)
             final List<ObjectRef> layerRef = spec.getManifest().getLayers();
             // add each entry as a new container layer in the request container config
             for( int i=0; i<layerRef.size(); i++ ) {

@@ -151,8 +151,8 @@ class WaveContainerRecord {
      */
     final Boolean freeze
 
-    WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequestData data, String waveImage, User user, String addr, Instant expiration) {
-        this.user = user
+    WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequestData data, String waveImage, String addr, Instant expiration) {
+        this.user = data.identity.user
         this.workspaceId = request.towerWorkspaceId
         this.containerImage = request.containerImage
         this.containerConfig = ContainerConfig.copy(request.containerConfig, true)

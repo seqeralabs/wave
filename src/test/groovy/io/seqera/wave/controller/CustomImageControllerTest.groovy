@@ -46,6 +46,7 @@ import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.test.DockerRegistryContainer
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.Base32
 import jakarta.inject.Inject
 /**
@@ -86,8 +87,7 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
     ContainerTokenService containerTokenService(){
         Mock(ContainerTokenService){
             getRequest(_) >> new ContainerRequestData(
-                    null,
-                    null,
+                    PlatformId.NULL,
                     "library/hello-world",
                     "FROM busybox",
                     null,

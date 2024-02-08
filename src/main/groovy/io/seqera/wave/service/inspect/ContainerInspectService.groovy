@@ -18,9 +18,9 @@
 
 package io.seqera.wave.service.inspect
 
-import io.micronaut.core.annotation.Nullable
-import io.seqera.wave.core.spec.ContainerSpec
 
+import io.seqera.wave.core.spec.ContainerSpec
+import io.seqera.wave.tower.PlatformId
 /**
  * Define container inspect service
  *
@@ -39,18 +39,12 @@ interface ContainerInspectService {
      *      The target repository where the build is pushed
      * @param cacheRepo
      *      The container repository where layers cache is stored
-     * @param userId
-     *      The ID of the (tower) user submitting the request
-     * @param workspaceId
-     *      The ID of the (tower) workspace where the credentials should be looked into
-     * @param towerToken
-     *      The Tower access token
-     * @param towerEndpoint
-     *      The Tower API endpoint
+     * @param identity
+     *      The platform identity of the user submitting the request
      * @return
      *      A string holding the docker config JSON file for the given repositories
      */
-    String credentialsConfigJson(String containerFile, String buildRepo, String cacheRepo, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint)
+    String credentialsConfigJson(String containerFile, String buildRepo, String cacheRepo, PlatformId identity)
 
     /**
      * Infer the entrypoint of the container build for the given container file ie. Dockerfile.
@@ -60,19 +54,13 @@ interface ContainerInspectService {
      *
      * @param containerFile
      *      The container definition file i.e. Dockerfile
-     * @param userId
-     *      The (tower) user ID
-     * @param workspaceId
-     *      The (tower) workspace ID
-     * @param towerToken
-     *      The tower access token
-     * @param towerEndpoint
-     *      The tower API endpoint
+     * @param identity
+     *      The platform identity of the user submitting the request
      * @return
      *      The container entrypoint model as list of string representing the command to be executed or {@code null}
      *      if not entrypoint is defined
      */
-    List<String> containerEntrypoint(String containerFile, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint)
+    List<String> containerEntrypoint(String containerFile, PlatformId identity)
 
 
     /**
@@ -80,16 +68,10 @@ interface ContainerInspectService {
      *
      * @param containerImage
      *      The container image to be inspect e.g. ubuntu:latest or docker.io/library/ubuntu:22.04
-     * @param userId
-     *      The (tower) user ID
-     * @param workspaceId
-     *      The (tower) workspace ID
-     * @param towerToken
-     *      The tower access token
-     * @param towerEndpoint
-     *      The tower API endpoint
+     * @param identity
+     *      The platform identity of the user submitting the request
      * @return
      *      The {@link ContainerSpec} object modelling the container image inspect metadata
      */
-    ContainerSpec containerSpec(String containerImage, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint)
+    ContainerSpec containerSpec(String containerImage, PlatformId identity)
 }

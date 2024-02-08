@@ -70,7 +70,7 @@ class MailServiceImpl implements MailService {
     @Override
     void sendCompletionEmail(BuildRequest request, BuildResult build) {
         // send to user email address or fallback to the system `mail.from` address
-        final user = request.user
+        final user = request.identity.user
         final recipient = user ? user.email : config.from
         if( recipient ) {
             final result = build ?: BuildResult.unknown()
@@ -87,7 +87,7 @@ class MailServiceImpl implements MailService {
         final binding = new HashMap(20)
         final status = result.succeeded() ? 'DONE': 'FAILED'
         binding.build_id = result.id
-        binding.build_user =  "${req.user ? req.user.userName : 'n/a'} (${req.ip})"
+        binding.build_user =  "${req.identity?.user ? req.identity.user.userName : 'n/a'} (${req.ip})"
         binding.build_success = result.exitStatus==0
         binding.build_exit_status = result.exitStatus
         binding.build_time = formatTimestamp(result.startTime, req.offsetId) ?: '-'

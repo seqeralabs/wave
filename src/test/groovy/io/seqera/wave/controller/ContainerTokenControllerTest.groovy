@@ -45,6 +45,7 @@ import io.seqera.wave.service.pairing.PairingRecord
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.validation.ValidationServiceImpl
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
 /**
@@ -70,30 +71,30 @@ class ContainerTokenControllerTest extends Specification {
 
         when:
         def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest')
-        def data = controller.makeRequestData(req, null, "")
+        def data = controller.makeRequestData(req, PlatformId.NULL, "")
         then:
         data.containerImage == 'docker.io/library/ubuntu:latest'
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
         req = new SubmitContainerTokenRequest(towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64')
-        data = controller.makeRequestData(req, new User(id: 100), "127.0.0.1")
+        data = controller.makeRequestData(req, new PlatformId(new User(id: 100), 10), "127.0.0.1")
         then:
         data.containerImage == 'docker.io/library/ubuntu:latest'
-        data.userId == 100
-        data.workspaceId == 10 
+        data.identity.userId == 100
+        data.identity.workspaceId == 10
         data.containerConfig == cfg
         data.platform == ContainerPlatform.of('arm64')
 
         when:
         req = new SubmitContainerTokenRequest()
-        controller.makeRequestData(req, new User(id: 100),"")
+        controller.makeRequestData(req, new PlatformId(new User(id: 100)),"")
         then:
         thrown(BadRequestException)
 
         when:
         req = new SubmitContainerTokenRequest(containerImage: 'ubuntu', containerFile: 'from foo')
-        controller.makeRequestData(req, new User(id: 100),"")
+        controller.makeRequestData(req, new PlatformId(new User(id: 100)),"")
         then:
         thrown(BadRequestException)
 
@@ -112,7 +113,7 @@ class ContainerTokenControllerTest extends Specification {
         def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true, buildRepository: 'docker.io/foo/bar')
 
         when:
-        def data = controller.makeRequestData(req, null, "")
+        def data = controller.makeRequestData(req, PlatformId.NULL, "")
         then:
         1 * freeze.freezeBuildRequest(req, _) >> req.copyWith(containerFile: 'FROM ubuntu:latest')
         1 * controller.buildRequest(_,_,_) >> BUILD
@@ -136,7 +137,7 @@ class ContainerTokenControllerTest extends Specification {
         def proxyRegistry = Mock(RegistryProxyService)
         def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService))
         def DOCKER = 'FROM foo'
-        def user = new User(id: 100)
+        def user = new PlatformId(new User(id: 100))
         def cfg = new ContainerConfig()
         def req = new SubmitContainerTokenRequest(
                 containerFile: encode(DOCKER),
@@ -150,7 +151,7 @@ class ContainerTokenControllerTest extends Specification {
         1 * builder.buildImage(_) >> null
         and:
         data.containerFile == 'FROM foo'
-        data.userId == 100
+        data.identity.userId == 100
         data.containerImage ==  'wave/build:be9ee6ac1eeff4b5'
         data.containerConfig == cfg
         data.platform.toString() == 'linux/arm64'
@@ -163,7 +164,7 @@ class ContainerTokenControllerTest extends Specification {
         def proxyRegistry = Mock(RegistryProxyService)
         def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService))
         def DOCKER = 'FROM foo'
-        def user = new User(id: 100)
+        def user = new PlatformId(new User(id: 100))
         def cfg = new ContainerConfig()
         def req = new SubmitContainerTokenRequest(
                 containerFile: encode(DOCKER),
@@ -177,7 +178,7 @@ class ContainerTokenControllerTest extends Specification {
         0 * builder.buildImage(_) >> null
         and:
         data.containerFile == 'FROM foo'
-        data.userId == 100
+        data.identity.userId == 100
         data.containerImage ==  'wave/build:be9ee6ac1eeff4b5'
         data.containerConfig == cfg
         data.platform.toString() == 'linux/arm64'
@@ -190,7 +191,7 @@ class ContainerTokenControllerTest extends Specification {
         def proxyRegistry = Mock(RegistryProxyService)
         def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig:buildConfig, inclusionService: Mock(ContainerInclusionService))
         def DOCKER = 'FROM foo'
-        def user = new User(id: 100)
+        def user = new PlatformId(new User(id: 100))
         def cfg = new ContainerConfig()
         def req = new SubmitContainerTokenRequest(
                 containerFile: encode(DOCKER),
@@ -206,7 +207,7 @@ class ContainerTokenControllerTest extends Specification {
         0 * builder.buildImage(_) >> null
         and:
         data.containerFile == 'FROM foo'
-        data.userId == 100
+        data.identity.userId == 100
         data.containerImage ==  'wave/build:be9ee6ac1eeff4b5'
         data.containerConfig == cfg
         data.platform.toString() == 'linux/arm64'
@@ -219,7 +220,7 @@ class ContainerTokenControllerTest extends Specification {
 
         when:
         def submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'))
-        def build = controller.makeBuildRequest(submit, null,"")
+        def build = controller.makeBuildRequest(submit, PlatformId.NULL,"")
         then:
         build.id == '7efaa2ed59c58a16'
         build.containerFile == 'FROM foo'
@@ -229,7 +230,7 @@ class ContainerTokenControllerTest extends Specification {
         
         when:
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerPlatform: 'amd64')
-        build = controller.makeBuildRequest(submit, null, null)
+        build = controller.makeBuildRequest(submit, PlatformId.NULL, null)
         then:
         build.id == '7efaa2ed59c58a16'
         build.containerFile == 'FROM foo'
@@ -240,7 +241,7 @@ class ContainerTokenControllerTest extends Specification {
         // using 'arm' platform changes the id
         when:
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerPlatform: 'arm64')
-        build = controller.makeBuildRequest(submit, null, "")
+        build = controller.makeBuildRequest(submit, PlatformId.NULL, "")
         then:
         build.id == 'be9ee6ac1eeff4b5'
         build.containerFile == 'FROM foo'
@@ -250,7 +251,7 @@ class ContainerTokenControllerTest extends Specification {
 
         when:
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), condaFile: encode('some::conda-recipe'), containerPlatform: 'arm64')
-        build = controller.makeBuildRequest(submit, null, "")
+        build = controller.makeBuildRequest(submit, PlatformId.NULL, "")
         then:
         build.id == 'c6dac2e544419f71'
         build.containerFile == 'FROM foo'
@@ -261,7 +262,7 @@ class ContainerTokenControllerTest extends Specification {
 
         when:
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), spackFile: encode('some::spack-recipe'), containerPlatform: 'arm64')
-        build = controller.makeBuildRequest(submit, null, "")
+        build = controller.makeBuildRequest(submit, PlatformId.NULL, "")
         then:
         build.id == 'b7d730d274d1e057'
         build.containerFile.endsWith('\nFROM foo')

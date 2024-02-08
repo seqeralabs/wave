@@ -14,6 +14,7 @@ import io.seqera.wave.core.RoutePath
 import io.seqera.wave.exception.HttpServerRetryableErrorException
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.service.blob.BlobCacheService
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.StringUtils
 import io.seqera.wave.util.ZipUtils
 import jakarta.inject.Inject
@@ -39,10 +40,10 @@ class StreamServiceImpl implements StreamService {
     private BlobCacheService blobCacheService
 
     @Override
-    InputStream stream(String location) {
+    InputStream stream(String location, PlatformId identity) {
         assert location, "Missing 'location' attribute"
         if( location.startsWith("docker://") ) {
-            return dockerStream0(RoutePath.parse(location))
+            return dockerStream0(RoutePath.parse(location,identity))
         }
         if( location.startsWith("http://") || location.startsWith("https://") ) {
             return httpStream0(location)

@@ -30,7 +30,7 @@ import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildServiceImpl
-import io.seqera.wave.tower.User
+import io.seqera.wave.tower.PlatformId
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  *
@@ -58,9 +58,6 @@ class BuildServiceRateLimitTest extends Specification{
         configuration = applicationContext.getBean(RateLimiterConfig)
     }
 
-    def mockUser = Mock(User){
-        getId() >> 1234
-    }
 
     def 'should not allow more auth builds than rate limit' () {
         given:
@@ -71,7 +68,7 @@ class BuildServiceRateLimitTest extends Specification{
         RUN echo hi > hello.txt
         """.stripIndent()
         and:
-        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', cacheRepo, null, "127.0.0.1", null)
+        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, null, BuildFormat.DOCKER, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', cacheRepo, null, "127.0.0.1", null)
 
         when:
         (0..configuration.build.authenticated.max).each {
@@ -93,7 +90,7 @@ class BuildServiceRateLimitTest extends Specification{
         RUN echo hi > hello.txt
         """.stripIndent()
         and:
-        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', cacheRepo, null, "127.0.0.1", null)
+        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, null, BuildFormat.DOCKER, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', cacheRepo, null, "127.0.0.1", null)
 
         when:
         (0..configuration.build.anonymous.max).each {

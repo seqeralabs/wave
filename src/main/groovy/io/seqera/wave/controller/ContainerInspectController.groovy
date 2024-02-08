@@ -17,6 +17,7 @@ import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.UserService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.pairing.PairingService
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
 /**
@@ -57,7 +58,7 @@ class ContainerInspectController {
 
         // anonymous access
         if( !req.towerAccessToken ) {
-            return CompletableFuture.completedFuture(makeResponse(req, null))
+            return CompletableFuture.completedFuture(makeResponse(req, PlatformId.NULL))
         }
 
         // We first check if the service is registered
@@ -68,12 +69,12 @@ class ContainerInspectController {
         // find out the user associated with the specified tower access token
         return userService
                 .getUserByAccessTokenAsync(registration.endpoint, req.towerAccessToken)
-                .thenApply { User user -> makeResponse(req, user) }
+                .thenApply { User user -> makeResponse(req, PlatformId.of(user,req)) }
 
     }
 
-    protected HttpResponse<ContainerInspectResponse> makeResponse(ContainerInspectRequest req, User user) {
-        final spec = inspectService.containerSpec(req.containerImage, user?.id, req.towerWorkspaceId, req.towerAccessToken, req.towerEndpoint)
+    protected HttpResponse<ContainerInspectResponse> makeResponse(ContainerInspectRequest req, PlatformId identity) {
+        final spec = inspectService.containerSpec(req.containerImage, identity)
         return spec
                 ? HttpResponse.ok(new ContainerInspectResponse(spec))
                 : HttpResponse.<ContainerInspectResponse>notFound()

@@ -18,14 +18,13 @@
 
 package io.seqera.wave.auth
 
-import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Value
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.service.CredentialsService
+import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -109,8 +108,8 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
      *      if not credentials can be found
      */
     @Override
-    RegistryCredentials getUserCredentials(ContainerPath container, Long userId, Long workspaceId, String towerToken, String towerEndpoint) {
-        if( !userId )
+    RegistryCredentials getUserCredentials(ContainerPath container, PlatformId identity) {
+        if( !identity )
             throw new IllegalArgumentException("Missing required parameter userId -- Unable to retrieve credentials for container repository '$container'")
 
         // use default credentials for default repositories
@@ -118,16 +117,16 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
         if( repo==buildConfig.defaultBuildRepository || repo==buildConfig.defaultCacheRepository || repo==buildConfig.defaultPublicRepository)
             return getDefaultCredentials(container)
 
-        return getUserCredentials0(container.registry, userId, workspaceId, towerToken, towerEndpoint)
+        return getUserCredentials0(container.registry, identity)
     }
 
-    protected RegistryCredentials getUserCredentials0(String registry, Long userId, Long workspaceId, String towerToken, String towerEndpoint) {
-        final keys = credentialsService.findRegistryCreds(registry, userId, workspaceId, towerToken, towerEndpoint)
+    protected RegistryCredentials getUserCredentials0(String registry, PlatformId identity) {
+        final keys = credentialsService.findRegistryCreds(registry, identity)
         final result = keys
                 ? credentialsFactory.create(registry, keys.userName, keys.password)
                 // create a missing credentials class with a unique key (the access token) because even when
                 // no credentials are provided a registry auth token token can be associated to this user
-                : new MissingCredentials(towerToken)
+                : new MissingCredentials(identity.accessToken)
         return result
     }
 }

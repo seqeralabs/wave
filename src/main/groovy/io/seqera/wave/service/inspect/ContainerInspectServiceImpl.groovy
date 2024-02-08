@@ -18,12 +18,10 @@
 
 package io.seqera.wave.service.inspect
 
-
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.PackageScope
 import groovy.util.logging.Slf4j
-import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.WaveDefault
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
@@ -38,6 +36,7 @@ import io.seqera.wave.core.spec.ContainerSpec
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.proxy.ProxyClient
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -85,17 +84,17 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
      * {@inheritDoc}
      */
     @Override
-    String credentialsConfigJson(String containerFile, String buildRepo, String cacheRepo, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint) {
+    String credentialsConfigJson(String containerFile, String buildRepo, String cacheRepo, PlatformId identity) {
         final repos = new HashSet(10)
         repos.addAll(findRepositories(containerFile))
         if( buildRepo )
             repos.add(buildRepo)
         if( cacheRepo )
             repos.add(cacheRepo)
-        return credsJson(repos, userId, workspaceId, towerToken, towerEndpoint)
+        return credsJson(repos, identity)
     }
 
-    protected String credsJson(Set<String> repositories, Long userId, Long workspaceId, String towerToken, String towerEndpoint) {
+    protected String credsJson(Set<String> repositories, PlatformId identity) {
         final hosts = new HashSet()
         final result = new StringBuilder()
         for( String repo : repositories ) {
@@ -106,9 +105,9 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
                 // skip this index host because it has already be added to the list
                 continue
             }
-            final creds = !userId
+            final creds = !identity
                     ? credentialsProvider.getDefaultCredentials(path)
-                    : credentialsProvider.getUserCredentials(path, userId, workspaceId, towerToken, towerEndpoint)
+                    : credentialsProvider.getUserCredentials(path, identity)
             log.debug "Build credentials for repository: $repo => $creds"
             if( !creds ) {
                 // skip this host because there are no credentials
@@ -160,7 +159,7 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
      * {@inheritDoc}
      */
     @Override
-    List<String> containerEntrypoint(String containerFile, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint) {
+    List<String> containerEntrypoint(String containerFile, PlatformId identity) {
         final repos = inspectItems(containerFile)
         if( !repos )
             return null
@@ -178,9 +177,9 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
             else if( item instanceof InspectRepository ) {
                 final path = ContainerCoordinates.parse(item.getImage())
 
-                final creds = !userId
+                final creds = !identity
                         ? credentialsProvider.getDefaultCredentials(path)
-                        : credentialsProvider.getUserCredentials(path, userId, workspaceId, towerToken, towerEndpoint)
+                        : credentialsProvider.getUserCredentials(path, identity)
                 log.debug "Config credentials for repository: ${item.getImage()} => $creds"
 
                 final entry = fetchConfig0(path, creds).config?.entrypoint
@@ -217,12 +216,12 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
     }
 
     @Override
-    ContainerSpec containerSpec(String containerImage, @Nullable Long userId, @Nullable Long workspaceId, @Nullable String towerToken, @Nullable String towerEndpoint) {
+    ContainerSpec containerSpec(String containerImage, PlatformId identity) {
         final path = ContainerCoordinates.parse(containerImage)
 
-        final creds = !userId
+        final creds = !identity
                 ? credentialsProvider.getDefaultCredentials(path)
-                : credentialsProvider.getUserCredentials(path, userId, workspaceId, towerToken, towerEndpoint)
+                : credentialsProvider.getUserCredentials(path, identity)
         log.debug "Inspect credentials for repository: ${containerImage} => $creds"
 
         final client = client0(path, creds)

@@ -129,14 +129,14 @@ class RegistryProxyController {
             tags.add('registry'); tags.add(route.registry)
             tags.add('repository'); tags.add(route.repository)
             tags.add('container'); tags.add(route.targetContainer)
-            if( route.request?.towerEndpoint ) {
-                tags.add('endpoint'); tags.add(route.request.towerEndpoint)
+            if( route.identity.towerEndpoint ) {
+                tags.add('endpoint'); tags.add(route.identity.towerEndpoint)
             }
-            if( route.request?.userId ) {
-                tags.add('userId'); tags.add(route.request.userId as String)
+            if( route.identity.userId ) {
+                tags.add('userId'); tags.add(route.identity.userId as String)
             }
-            if( route.request?.workspaceId ) {
-                tags.add('workspaceId'); tags.add(route.request.workspaceId as String)
+            if( route.identity.workspaceId ) {
+                tags.add('workspaceId'); tags.add(route.identity.workspaceId as String)
             }
 
             meterRegistry.counter('wave.pulls', tags as String[]).increment()
@@ -165,7 +165,7 @@ class RegistryProxyController {
 
         if( route.manifest && route.digest ){
             String ip = addressResolver.resolve(httpRequest)
-            rateLimiterService?.acquirePull( new AcquireRequest(route.request?.userId?.toString(), ip) )
+            rateLimiterService?.acquirePull( new AcquireRequest(route.identity.userId as String, ip) )
         }
 
         // check if it's a container under build
@@ -215,7 +215,7 @@ class RegistryProxyController {
             String location
             if( location=dockerRedirection(entry) ) {
                 log.debug "Blob found in the cache: $route.path ==> mapping to: ${location}"
-                final target = RoutePath.parse(location)
+                final target = RoutePath.parse(location, route.identity)
                 return handleDelegate0(target, httpRequest)
             }
             else if ( location=httpRedirect(entry) ) {

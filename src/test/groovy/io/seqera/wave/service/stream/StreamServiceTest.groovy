@@ -7,6 +7,7 @@ import com.sun.net.httpserver.HttpHandler
 import com.sun.net.httpserver.HttpServer
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.test.TestHelper
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.ZipUtils
 import jakarta.inject.Inject
 /**
@@ -24,7 +25,7 @@ class StreamServiceTest extends Specification{
         def data = "Hello world"
         def location = "data:" + new String(Base64.getEncoder().encode(data.bytes))
         when:
-        def stream = streamService.stream(location)
+        def stream = streamService.stream(location, Mock(PlatformId))
         then:
         stream.text == data
     }
@@ -34,7 +35,7 @@ class StreamServiceTest extends Specification{
         def data = "Hello world"
         def location = "gzip:" + new String(Base64.getEncoder().encode(ZipUtils.compress(data)))
         when:
-        def stream = streamService.stream(location)
+        def stream = streamService.stream(location, Mock(PlatformId))
         then:
         stream.text == data
     }
@@ -55,7 +56,7 @@ class StreamServiceTest extends Specification{
         server.start()
         
         when:
-        def stream = streamService.stream("http://localhost:9901/foo.txt")
+        def stream = streamService.stream("http://localhost:9901/foo.txt", Mock(PlatformId))
         then:
         stream.text == 'Hello world!'
 
@@ -79,7 +80,7 @@ class StreamServiceTest extends Specification{
         server.start()
 
         when:
-        def stream = streamService.stream("docker://localhost:9901/v2/library/ubuntu/blobs/content")
+        def stream = streamService.stream("docker://localhost:9901/v2/library/ubuntu/blobs/content", Mock(PlatformId))
         then:
         stream.text == 'Hello world!'
 
@@ -103,7 +104,7 @@ class StreamServiceTest extends Specification{
         server.start()
 
         when:
-        def stream = streamService.stream("docker://localhost:9901/v2/library/ubuntu/blobs/content")
+        def stream = streamService.stream("docker://localhost:9901/v2/library/ubuntu/blobs/content", Mock(PlatformId))
         then:
         stream.readAllBytes() == body
 

@@ -19,8 +19,7 @@
 package io.seqera.wave.service.builder
 
 import io.seqera.wave.api.SubmitContainerTokenRequest
-import io.seqera.wave.tower.User
-
+import io.seqera.wave.tower.PlatformId
 /**
  * Implement container freeze service to augment a container build at runtime
  *
@@ -40,6 +39,6 @@ interface FreezeService {
      *      to include the changes defined by the {@link SubmitContainerTokenRequest#containerConfig} object
      *      or the original request object if the request does provide an empty config object 
      */
-    SubmitContainerTokenRequest freezeBuildRequest(final SubmitContainerTokenRequest req, final User user)
+    SubmitContainerTokenRequest freezeBuildRequest(final SubmitContainerTokenRequest req, PlatformId identity)
 
 }

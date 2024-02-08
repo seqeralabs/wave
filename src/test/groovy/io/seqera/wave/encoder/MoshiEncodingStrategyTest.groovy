@@ -38,6 +38,8 @@ import io.seqera.wave.storage.HttpDigestStore
 import io.seqera.wave.storage.ZippedDigestStore
 import io.seqera.wave.storage.reader.DataContentReader
 import io.seqera.wave.storage.reader.GzipContentReader
+import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.tower.User
 
 /**
  *
@@ -82,8 +84,8 @@ class MoshiEncodingStrategyTest extends Specification {
         given:
         def encoder = new MoshiEncodeStrategy<ContainerRequestData>() { }
         and:
-        def data = new ContainerRequestData(1,
-                2,
+        def data = new ContainerRequestData(
+                new PlatformId(new User(id:1),2),
                 'ubuntu',
                 'from foo',
                 new ContainerConfig(entrypoint: ['some', 'entry'], cmd:['the', 'cmd']),
