@@ -30,21 +30,21 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
-import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.ContainerDigestPair
-import io.seqera.wave.service.builder.BuildFormat
-import io.seqera.wave.service.metric.Metric
-
-import io.seqera.wave.service.scan.ScanVulnerability
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.service.metric.Metric
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.test.SurrealDBTestContainer
 import io.seqera.wave.tower.User
+
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  *
@@ -367,46 +367,51 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         sleep 300
 
         expect: 'should return the correct counts per metric'
-        persistence.getBuildCountByMetrics(Metric.ip, null, null, null) == [
+        persistence.getBuildCountByMetrics(Metric.ip, null, null, null, null) == [
                 '127.0.0.1': 2,
                 '127.0.0.2': 1
         ]
-        persistence.getBuildCountByMetrics(Metric.user, null, null, null) == [
+        persistence.getBuildCountByMetrics(Metric.user, null, null, null, null) == [
                 'testUser1': 2,
                 'unknown': 1
         ]
-        persistence.getBuildCountByMetrics(Metric.image, null, null, null) == [
+        persistence.getBuildCountByMetrics(Metric.image, null, null, null, null) == [
                 'testImage1': 2,
                 'testImage2': 1
         ]
 
         and: 'should return correct metric count for successful builds'
-        persistence.getBuildCountByMetrics(Metric.ip, true, null, null) ==[
+        persistence.getBuildCountByMetrics(Metric.ip, true, null, null, null) ==[
                 '127.0.0.1': 1,
                 '127.0.0.2': 1
         ]
-        persistence.getBuildCountByMetrics(Metric.user, true, null, null) == [
+        persistence.getBuildCountByMetrics(Metric.user, true, null, null,null) == [
                 'testUser1': 1,
                 'unknown': 1
         ]
-        persistence.getBuildCountByMetrics(Metric.image, true, null, null) == [
+        persistence.getBuildCountByMetrics(Metric.image, true, null, null, null) == [
                 'testImage1': 1,
                 'testImage2': 1
         ]
 
         and: 'should return correct metric count between two dates'
-        persistence.getBuildCountByMetrics(Metric.ip, null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == [
+        persistence.getBuildCountByMetrics(Metric.ip, null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now(), null) == [
                 '127.0.0.1': 1,
                 '127.0.0.2': 1
         ]
-        persistence.getBuildCountByMetrics(Metric.user, null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == [
+        persistence.getBuildCountByMetrics(Metric.user, null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now(), null) == [
                 'testUser1': 1,
                 'unknown': 1
         ]
-        persistence.getBuildCountByMetrics(Metric.image, null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == [
+        persistence.getBuildCountByMetrics(Metric.image, null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now(), null) == [
                 'testImage1': 1,
                 'testImage2': 1
         ]
+
+        and: 'should return correct metric count in limit'
+        persistence.getBuildCountByMetrics(Metric.ip, null, null, null, 1) == ['127.0.0.1': 2]
+        persistence.getBuildCountByMetrics(Metric.user, null, null, null, 1) == ['testUser1': 2]
+        persistence.getBuildCountByMetrics(Metric.image, null, null, null, 1) == ['testImage1': 2]
 
         and: 'should return total build count'
         persistence.getBuildCount(null, null, null) == 3
@@ -484,32 +489,37 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         sleep 300
 
         expect:'`should return the correct pull counts per metrics'
-        persistence.getPullCountByMetrics(Metric.ip, null, null) ==[
+        persistence.getPullCountByMetrics(Metric.ip, null, null, null) ==[
                 '100.200.300.400': 2,
                 '100.200.300.401': 1
         ]
-        persistence.getPullCountByMetrics(Metric.user, null, null) == [
+        persistence.getPullCountByMetrics(Metric.user, null, null, null) == [
                 'foo': 2,
                 'unknown': 1
         ]
-        persistence.getPullCountByMetrics(Metric.image, null, null) == [
+        persistence.getPullCountByMetrics(Metric.image, null, null, null) == [
                 'hello-world': 2,
                 'hello-wave-world': 1
         ]
 
         and: 'should return the correct pull counts per metrics between two dates'
-        persistence.getPullCountByMetrics(Metric.user, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == [
+        persistence.getPullCountByMetrics(Metric.user, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now(), null) == [
                 'foo': 1,
                 'unknown': 1
         ]
-        persistence.getPullCountByMetrics(Metric.ip, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) ==[
+        persistence.getPullCountByMetrics(Metric.ip, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now(), null) ==[
                 '100.200.300.400': 1,
                 '100.200.300.401': 1
         ]
-        persistence.getPullCountByMetrics(Metric.image, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == [
+        persistence.getPullCountByMetrics(Metric.image, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now(), null) == [
                 'hello-world': 1,
                 'hello-wave-world': 1
         ]
+
+        and:'`should return the correct pull counts per metrics in limit'
+        persistence.getPullCountByMetrics(Metric.ip, null, null, 1) ==['100.200.300.400': 2]
+        persistence.getPullCountByMetrics(Metric.user, null, null, 1) == ['foo': 2]
+        persistence.getPullCountByMetrics(Metric.image, null, null, 1) == ['hello-world': 2]
 
         and: 'should return the correct pull'
         persistence.getPullCount(null, null) == 3
@@ -527,12 +537,12 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         given:
         final persistence = applicationContext.getBean(SurrealPersistenceService)
         expect:
-        persistence.getBuildCountByMetrics(Metric.ip, null, null, null) == [:]
-        persistence.getBuildCountByMetrics(Metric.image, null, null, null) == [:]
-        persistence.getBuildCountByMetrics(Metric.user, null, null, null) == [:]
-        persistence.getPullCountByMetrics(Metric.ip, null, null) == [:]
-        persistence.getPullCountByMetrics(Metric.image, null, null) == [:]
-        persistence.getPullCountByMetrics(Metric.user, null, null) == [:]
+        persistence.getBuildCountByMetrics(Metric.ip, null, null, null, null) == [:]
+        persistence.getBuildCountByMetrics(Metric.image, null, null, null, null) == [:]
+        persistence.getBuildCountByMetrics(Metric.user, null, null, null, null) == [:]
+        persistence.getPullCountByMetrics(Metric.ip, null, null, null) == [:]
+        persistence.getPullCountByMetrics(Metric.image, null, null, null) == [:]
+        persistence.getPullCountByMetrics(Metric.user, null, null, null) == [:]
     }
     def 'should get 0 total_count if no record found' () {
         given:

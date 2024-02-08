@@ -35,13 +35,13 @@ import io.seqera.wave.service.metric.Metric
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
-
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.persistence.legacy.SurrealLegacyService
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+
 /**
  * Implements a persistence service based based on SurrealDB
  *
@@ -225,9 +225,12 @@ class SurrealPersistenceService implements PersistenceService {
 
     // get build count by specific metric ( ip, userName, targetImage)
     @Override
-    Map<String, Long> getBuildCountByMetrics(Metric metric, Boolean success, Instant startDate, Instant endDate) {
-        final statement = "SELECT ${metric.buildLabel}, count() as total_count FROM wave_build "+
-                                "${getBuildMetricFilter(success, startDate, endDate)} GROUP BY ${metric.buildLabel}"
+    Map<String, Long> getBuildCountByMetrics(Metric metric, Boolean success, Instant startDate, Instant endDate, Integer limit){
+        def statement = "SELECT ${metric.buildLabel}, count() as total_count FROM wave_build "+
+                                "${getBuildMetricFilter(success, startDate, endDate)} GROUP BY ${metric.buildLabel}  ORDER BY total_count DESC"
+        if( limit )
+            statement += " LIMIT $limit"
+
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
         log.trace("Build count results by ${metric.buildLabel}: $results")
@@ -268,10 +271,13 @@ class SurrealPersistenceService implements PersistenceService {
 
     // get pull count by specific metric ( ip, user.userName, sourceImage)
     @Override
-    Map<String, Long> getPullCountByMetrics(Metric metric, Instant startDate, Instant endDate) {
+    Map<String, Long> getPullCountByMetrics(Metric metric, Instant startDate, Instant endDate, Integer limit){
 
-        final statement = "SELECT ${metric.pullLabel}, count() as total_count  FROM wave_request "+
-                                "${getPullMetricFilter(startDate, endDate)} GROUP BY ${metric.pullLabel}"
+        def statement = "SELECT ${metric.pullLabel}, count() as total_count  FROM wave_request "+
+                                "${getPullMetricFilter(startDate, endDate)} GROUP BY ${metric.pullLabel} ORDER BY total_count DESC"
+        if( limit )
+            statement += " LIMIT $limit"
+
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
         log.trace("Pull count results by ${metric.pullLabel}: $results")
@@ -303,7 +309,8 @@ class SurrealPersistenceService implements PersistenceService {
 
     @Override
     Long getDistinctMetrics(Metric metric, Instant startDate, Instant endDate){
-        final statement = "SELECT count(array) as total_count FROM (SELECT array::distinct(${metric.pullLabel}) as array FROM wave_request ${getPullMetricFilter(startDate, endDate)}  GROUP ALL)"
+        final statement = "SELECT count(array) as total_count FROM " +
+                "(SELECT array::distinct(${metric.pullLabel}) as array FROM wave_request ${getPullMetricFilter(startDate, endDate)}  GROUP ALL)"
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
         log.trace("Distinct metric results: $results")

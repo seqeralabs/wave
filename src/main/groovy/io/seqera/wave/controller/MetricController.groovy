@@ -55,8 +55,9 @@ class MetricController {
     private MetricService metricsService
 
     @Get(uri="/build/{metric}", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<Map> getBuildMetrics(@PathVariable String metric, @Nullable @QueryValue Boolean success, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
-            def result = metricsService.getBuildMetrics(Metric.valueOf(metric), success, parseStartDate(startDate), parseEndDate(endDate))
+    HttpResponse<Map> getBuildMetrics(@PathVariable String metric, @Nullable @QueryValue Boolean success, @Nullable @QueryValue String startDate,
+                                      @Nullable @QueryValue String endDate, @Nullable @QueryValue Integer limit) {
+            def result = metricsService.getBuildMetrics(Metric.valueOf(metric), success, parseStartDate(startDate), parseEndDate(endDate), limit)
             if( result && result.size() > 0)
                 return HttpResponse.ok(result)
             else
@@ -69,8 +70,9 @@ class MetricController {
     }
 
     @Get(uri="/pull/{metric}", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<Map> getPullMetrics(@PathVariable String metric, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
-            def result = metricsService.getPullMetrics(Metric.valueOf(metric), parseStartDate(startDate), parseEndDate(endDate))
+    HttpResponse<Map> getPullMetrics(@PathVariable String metric, @Nullable @QueryValue String startDate,
+                                     @Nullable @QueryValue String endDate, @Nullable @QueryValue Integer limit) {
+            def result = metricsService.getPullMetrics(Metric.valueOf(metric), parseStartDate(startDate), parseEndDate(endDate), limit)
             if( result && result.size() > 0)
                 return HttpResponse.ok(result)
             else

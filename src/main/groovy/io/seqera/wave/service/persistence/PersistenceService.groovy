@@ -24,9 +24,10 @@ import groovy.transform.CompileStatic
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.exception.NotFoundException
+import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.metric.Metric
 import io.seqera.wave.service.scan.ScanResult
-import io.seqera.wave.service.builder.BuildEvent
+
 /**
  * A storage for statistic data
  *
@@ -133,9 +134,10 @@ interface PersistenceService {
      * @param success, filter only successful builds or not
      * @param startDate, the start date to filter build records for counting
      * @param endDate, the end date to filter build records for counting
+     * @param limit, to limit the number of fetched records
      * @return The {@link Map} of [{@link Metric}, total build count per metric ]
      */
-    Map<String, Long> getBuildCountByMetrics(Metric metric, Boolean success, Instant startDate, Instant endDate)
+    Map<String, Long> getBuildCountByMetrics(Metric metric, Boolean success, Instant startDate, Instant endDate, Integer limit)
 
     /**
      * Retrieve the total build count from storage
@@ -153,9 +155,10 @@ interface PersistenceService {
      * @param metric, which metric to count
      * @param startDate, the start date to filter pull records for counting
      * @param endDate, the end date to filter pull records for counting
+     * @param limit, to limit the number of fetched records
      * @return The {@link Map} of [{@link Metric}, total pull count per metric ]
      */
-    Map<String, Long> getPullCountByMetrics(Metric metric, Instant startDate, Instant endDate)
+    Map<String, Long> getPullCountByMetrics(Metric metric, Instant startDate, Instant endDate, Integer limit)
 
     /**
      * Retrieve the total pull count from storage

@@ -283,6 +283,32 @@ class MetricControllerTest extends Specification {
         res.status.code == 200
     }
 
+    def "should get the correct build count per metrics in limit and status 200"() {
+        when:
+        def req = HttpRequest.GET("$PREFIX/build/ip?limit=1").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then:
+        res.body() == ['127.0.0.1': 2]
+        res.status.code == 200
+
+        when:
+        req = HttpRequest.GET("$PREFIX/build/image?limit=1").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then:
+        res.body() == ['testImage1': 2]
+        res.status.code == 200
+
+        when:
+        req = HttpRequest.GET("$PREFIX/build/user?limit=1").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then:
+        res.body() == ['testUser1': 2]
+        res.status.code == 200
+    }
+
     def 'should return the total build count and status 200'() {
         given:
         def date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
@@ -405,6 +431,32 @@ class MetricControllerTest extends Specification {
 
         then:
         res.body() == ['foo': 1, 'unknown': 1]
+        res.status.code == 200
+    }
+
+    def 'should return the correct pull counts per metric in limit and status 200' () {
+        when:
+        def req = HttpRequest.GET("$PREFIX/pull/ip?limit=1").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then:
+        res.body() == ['100.200.300.400':2]
+        res.status.code == 200
+
+        when:
+        req = HttpRequest.GET("$PREFIX/pull/image?limit=1").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then:
+        res.body() == ['hello-world': 2]
+        res.status.code == 200
+
+        when:
+        req = HttpRequest.GET("$PREFIX/pull/user?limit=1").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then:
+        res.body() == ['foo': 2]
         res.status.code == 200
     }
 

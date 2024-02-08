@@ -42,13 +42,13 @@ class MetricServiceImpl implements MetricService{
     private PersistenceService persistenceService
 
     @Override
-    Map<String, Long> getBuildMetrics(Metric metrics, Boolean success, Instant startDate, Instant endDate) {
-        persistenceService.getBuildCountByMetrics(metrics, success, startDate, endDate)
+    Map<String, Long> getBuildMetrics(Metric metrics, Boolean success, Instant startDate, Instant endDate, Integer limit) {
+        persistenceService.getBuildCountByMetrics(metrics, success, startDate, endDate, limit)
     }
 
     @Override
-    Map<String, Long> getPullMetrics(Metric metrics, Instant startDate, Instant endDate) {
-        persistenceService.getPullCountByMetrics(metrics, startDate, endDate)
+    Map<String, Long> getPullMetrics(Metric metrics, Instant startDate, Instant endDate, Integer limit) {
+        persistenceService.getPullCountByMetrics(metrics, startDate, endDate, limit)
     }
 
     @Override

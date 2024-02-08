@@ -32,9 +32,10 @@ interface MetricService {
      * @param success, filter only successful builds or not
      * @param startDate, the start date to filter build records for counting
      * @param endDate, the end date to filter build records for counting
+     * @param limit, to limit the number of map entries
      * @return The {@link Map} of [{@link Metric}, total build count per metric ]
      */
-    Map getBuildMetrics(Metric metrics, Boolean success, Instant startDate, Instant endDate)
+    Map getBuildMetrics(Metric metrics, Boolean success, Instant startDate, Instant endDate, Integer limit)
 
     /**
      * get the pull count per metric
@@ -42,9 +43,10 @@ interface MetricService {
      * @param metric, which metric to count
      * @param startDate, the start date to filter pull records for counting
      * @param endDate, the end date to filter pull records for counting
+     * @param limit, to limit the number of map entries
      * @return The {@link Map} of [{@link Metric}, total pull count per metric ]
      */
-    Map getPullMetrics(Metric metrics, Instant startDate, Instant endDate)
+    Map getPullMetrics(Metric metrics, Instant startDate, Instant endDate, Integer limit)
 
     /**
      * get the total pull count

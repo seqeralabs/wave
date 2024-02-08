@@ -86,19 +86,24 @@ class LocalPersistenceService implements PersistenceService {
     }
 
     @Override
-    Map<String, Long> getBuildCountByMetrics(Metric metric, Boolean success, Instant startDate, Instant endDate) {
+    Map<String, Long> getBuildCountByMetrics(Metric metric, Boolean success, Instant startDate, Instant endDate, Integer limit) {
         def builds = getFilteredBuilds(success, startDate, endDate)
+
+        Map<String, Long> result = null
         if(metric == Metric.ip)
-            return builds.groupBy { it.requestIp }
+            result = builds.groupBy { it.requestIp }
+                    .collectEntries { [it.key, it.value.size()] }
+        else if(metric == Metric.user)
+            result = builds.groupBy { it.userName ?: 'unknown' }
+                    .collectEntries { [it.key, it.value.size()] }
+        else if(metric == Metric.image)
+            result = builds.groupBy { it.targetImage }
                     .collectEntries { [it.key, it.value.size()] }
 
-        if(metric == Metric.user)
-            return builds.groupBy { it.userName ?: 'unknown'}
-                    .collectEntries { [it.key, it.value.size()] }
-
-        if(metric == Metric.image)
-            return builds.groupBy { it.targetImage }
-                    .collectEntries { [it.key, it.value.size()] }
+        result = result.sort{ a, b -> b.value - a.value  }
+        if( limit )
+            return result.take(limit)
+        return result
     }
 
     @Override
@@ -117,17 +122,24 @@ class LocalPersistenceService implements PersistenceService {
     }
 
     @Override
-    Map<String, Long> getPullCountByMetrics(Metric metric, Instant startDate, Instant endDate) {
+    Map<String, Long> getPullCountByMetrics(Metric metric, Instant startDate, Instant endDate, Integer limit) {
         def pulls = getFilteredPulls(startDate, endDate)
+
+        Map<String, Long> result = null
         if(metric == Metric.ip)
-            return pulls.groupBy { it.ipAddress}
+            result = pulls.groupBy { it.ipAddress}
                     .collectEntries { [it.key, it.value.size()] }
-        if(metric == Metric.user)
-            return pulls.groupBy { it.user?.userName ?: 'unknown'}
+        else if(metric == Metric.user)
+            result = pulls.groupBy { it.user?.userName ?: 'unknown'}
                     .collectEntries { [it.key, it.value.size()] }
-        if(metric == Metric.image)
-            return pulls.groupBy { it.sourceImage}
+        else if(metric == Metric.image)
+            result = pulls.groupBy { it.sourceImage}
                     .collectEntries { [it.key, it.value.size()] }
+
+        result = result.sort{ a, b -> b.value - a.value  }
+        if( limit )
+            return result.take(limit)
+        return result
     }
 
     @Override
