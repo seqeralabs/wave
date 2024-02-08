@@ -48,8 +48,6 @@ micronaut:
         event-loop-group: 'stream-pool'
   security:
     enabled: true
-    token:
-      enabled: true
     intercept-url-map:
       - pattern: '/**'
         access:

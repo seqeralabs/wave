@@ -33,11 +33,10 @@ import jakarta.inject.Singleton
 @Singleton
 @Slf4j
 class AuthConfig {
-    @Nullable
-    @Value('${wave.auth.basic.username}')
+
+    @Value('${wave.auth.basic.username:username}')
     String userName
 
-    @Nullable
-    @Value('${wave.auth.basic.password}')
+    @Value('${wave.auth.basic.password:password}')
     String password
 }
