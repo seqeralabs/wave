@@ -553,15 +553,15 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         where:
         SUCCESS | STARTDATE     | ENDDATE           | Filter
         null    | null          | null              | ''
-        true    | null          | null              | 'where exitStatus = 0'
-        false   | null          | null              | 'where exitStatus != 0'
-        null    | Instant.now() | Instant.now()     | "where type::datetime(startTime) >= '$STARTDATE' and type::datetime(startTime) <= '$ENDDATE'"
+        true    | null          | null              | 'WHERE exitStatus = 0'
+        false   | null          | null              | 'WHERE exitStatus != 0'
+        null    | Instant.now() | Instant.now()     | "WHERE type::datetime(startTime) >= '$STARTDATE' AND type::datetime(startTime) <= '$ENDDATE'"
         null    | Instant.now() | null              | ''
         null    | null          | Instant.now()     | ''
-        true    | null          | Instant.now()     | "where exitStatus = 0"
-        false   | Instant.now() | null              | "where exitStatus != 0"
-        true    | Instant.now() | Instant.now()     | "where type::datetime(startTime) >= '$STARTDATE' and type::datetime(startTime) <= '$ENDDATE' and exitStatus = 0"
-        false   | Instant.now() | Instant.now()     | "where type::datetime(startTime) >= '$STARTDATE' and type::datetime(startTime) <= '$ENDDATE' and exitStatus != 0"
+        true    | null          | Instant.now()     | "WHERE exitStatus = 0"
+        false   | Instant.now() | null              | "WHERE exitStatus != 0"
+        true    | Instant.now() | Instant.now()     | "WHERE type::datetime(startTime) >= '$STARTDATE' AND type::datetime(startTime) <= '$ENDDATE' AND exitStatus = 0"
+        false   | Instant.now() | Instant.now()     | "WHERE type::datetime(startTime) >= '$STARTDATE' AND type::datetime(startTime) <= '$ENDDATE' AND exitStatus != 0"
     }
 
     def 'get the correct pull filter' () {
@@ -573,6 +573,6 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         null          | null              | ''
         Instant.now() | null              | ''
         null          | Instant.now()     | ''
-        Instant.now() | Instant.now()     | "where type::datetime(timestamp) >= '$STARTDATE' and type::datetime(timestamp) <= '$ENDDATE'"
+        Instant.now() | Instant.now()     | "WHERE type::datetime(timestamp) >= '$STARTDATE' AND type::datetime(timestamp) <= '$ENDDATE'"
     }
 }

@@ -54,10 +54,6 @@ wave:
       prefix : 'wave-build/logs'
   scan:
     enabled: true
-  auth :
-    basic :
-      username : 'username'
-      password : 'password'
 ---
 logger:
   levels:

@@ -259,7 +259,7 @@ class SurrealPersistenceService implements PersistenceService {
                 filter += success ? " AND exitStatus = 0" : " AND exitStatus != 0"
             }
         } else if (success != null) {
-            filter = success ? "WHERE exitStatus = 0" : "where exitStatus != 0"
+            filter = success ? "WHERE exitStatus = 0" : "WHERE exitStatus != 0"
         }
 
         return filter
