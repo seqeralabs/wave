@@ -225,7 +225,7 @@ class SurrealPersistenceService implements PersistenceService {
 
     // get build count by specific metric ( ip, userName, targetImage)
     @Override
-    Map<String, Long> getBuildCountByMetrics(Metric metric, Boolean success, Instant startDate, Instant endDate, Integer limit){
+    LinkedHashMap<String, Long> getBuildCountByMetrics(Metric metric, Boolean success, Instant startDate, Instant endDate, Integer limit){
         def statement = "SELECT ${metric.buildLabel}, count() as total_count FROM wave_build "+
                                 "${getBuildMetricFilter(success, startDate, endDate)} GROUP BY ${metric.buildLabel}  ORDER BY total_count DESC"
         if( limit )
@@ -234,7 +234,7 @@ class SurrealPersistenceService implements PersistenceService {
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
         log.trace("Build count results by ${metric.buildLabel}: $results")
-        Map<String, Long> counts = new HashMap<>()
+        LinkedHashMap<String, Long> counts = new LinkedHashMap<>()
         for(def result : results){
             counts.put((result.get(metric.buildLabel)?:"unknown") as String, result.get("total_count") as Long)
         }
@@ -271,7 +271,7 @@ class SurrealPersistenceService implements PersistenceService {
 
     // get pull count by specific metric ( ip, user.userName, sourceImage)
     @Override
-    Map<String, Long> getPullCountByMetrics(Metric metric, Instant startDate, Instant endDate, Integer limit){
+    LinkedHashMap<String, Long> getPullCountByMetrics(Metric metric, Instant startDate, Instant endDate, Integer limit){
 
         def statement = "SELECT ${metric.pullLabel}, count() as total_count  FROM wave_request "+
                                 "${getPullMetricFilter(startDate, endDate)} GROUP BY ${metric.pullLabel} ORDER BY total_count DESC"
@@ -281,7 +281,7 @@ class SurrealPersistenceService implements PersistenceService {
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
         log.trace("Pull count results by ${metric.pullLabel}: $results")
-        Map<String, Long> counts = new HashMap<>()
+        LinkedHashMap<String, Long> counts = new LinkedHashMap<>()
         for(def result : results){
             def key = result.get(metric.pullLabel)
             if(key && metric == Metric.user) {
