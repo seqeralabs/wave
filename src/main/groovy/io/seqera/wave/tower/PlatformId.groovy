@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -22,6 +22,7 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import io.seqera.wave.api.ContainerInspectRequest
 import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.util.StringUtils
 
 /**
  * Model Seqera Platform aka Tower identity
@@ -61,5 +62,15 @@ class PlatformId {
                 request.towerWorkspaceId,
                 request.towerAccessToken,
                 request.towerEndpoint)
+    }
+
+    @Override
+    String toString() {
+        return "PlatformId(" +
+                "user=" + user +
+                ", workspaceId=" + workspaceId +
+                ", accessToken='" + StringUtils.trunc(accessToken,10) + '\'' +
+                ", towerEndpoint='" + towerEndpoint + '\'' +
+                ')';
     }
 }
