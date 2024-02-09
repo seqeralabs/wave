@@ -205,7 +205,7 @@ class CredentialsServiceTest extends Specification {
         )
 
         when:
-        def credentials = credentialsService.findRegistryCreds('quay.io', 10, 10, "token",'tower.io', 'id123')
+        def credentials = credentialsService.findRegistryCreds('quay.io',new PlatformId(new User(id:10), 10, "token",'tower.io', 'id123'))
 
         then: 'a key is found'
         1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE, 'tower.io') >> new PairingRecord(
