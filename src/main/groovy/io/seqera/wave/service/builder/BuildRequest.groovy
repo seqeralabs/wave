@@ -21,14 +21,14 @@ package io.seqera.wave.service.builder
 import java.nio.file.Path
 import java.time.Instant
 import java.time.OffsetDateTime
-import io.micronaut.core.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
+import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.tower.User
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.RegHelper
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
@@ -79,7 +79,7 @@ class BuildRequest {
     /**
      * The (tower) user made this request
      */
-    final User user
+    final PlatformId identity
 
     /**
      * Container platform
@@ -146,7 +146,7 @@ class BuildRequest {
      */
     volatile boolean uncached
 
-    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, BuildFormat format, User user, ContainerConfig containerConfig, BuildContext buildContext, ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId) {
+    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, BuildFormat format, PlatformId identity, ContainerConfig containerConfig, BuildContext buildContext, ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId) {
         this.id = computeDigest(containerFile, condaFile, spackFile, platform, repo, buildContext)
         this.containerFile = containerFile
         this.containerConfig = containerConfig
@@ -155,7 +155,7 @@ class BuildRequest {
         this.spackFile = spackFile
         this.targetImage = makeTarget(format, repo, id, condaFile, spackFile)
         this.format = format
-        this.user = user
+        this.identity = identity
         this.platform = platform
         this.configJson = configJson
         this.cacheRepository = cacheRepo
@@ -227,7 +227,7 @@ class BuildRequest {
 
     @Override
     String toString() {
-        return "BuildRequest[id=$id; targetImage=$targetImage; user=$user; dockerFile=${trunc(containerFile)}; condaFile=${trunc(condaFile)}; spackFile=${trunc(spackFile)}]"
+        return "BuildRequest[id=$id; targetImage=$targetImage; identity=$identity; dockerFile=${trunc(containerFile)}; condaFile=${trunc(condaFile)}; spackFile=${trunc(spackFile)}]"
     }
 
     String getId() {
@@ -259,8 +259,8 @@ class BuildRequest {
         return targetImage
     }
 
-    User getUser() {
-        return user
+    PlatformId getIdentity() {
+        return identity
     }
 
     ContainerPlatform getPlatform() {

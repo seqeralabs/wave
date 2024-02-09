@@ -21,6 +21,7 @@ package io.seqera.wave.storage;
 
 import java.util.Optional;
 
+import io.seqera.wave.api.ContainerLayer;
 import io.seqera.wave.storage.reader.ContentReader;
 
 /**
@@ -38,5 +39,8 @@ public interface Storage {
 
     DigestStore saveBlob(String path, byte[] content, String type, String digest);
 
+    @Deprecated
     DigestStore saveBlob(String path, ContentReader content, String type, String digest, int size);
+
+    DigestStore saveBlob(String path, ContainerLayer layer);
 }
