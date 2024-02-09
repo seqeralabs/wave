@@ -292,7 +292,7 @@ class ContainerTokenController {
                 ContainerPlatform.of(req.containerPlatform),
                 buildId,
                 buildNew,
-                req.freeze)
+                req.freeze )
     }
 
     protected String targetImage(String token, ContainerCoordinates container) {

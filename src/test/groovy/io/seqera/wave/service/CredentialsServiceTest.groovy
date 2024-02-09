@@ -18,8 +18,6 @@
 
 package io.seqera.wave.service
 
-import io.seqera.wave.tower.model.ComputeEnv
-import io.seqera.wave.tower.model.WorkflowLaunchResponse
 import spock.lang.Specification
 
 import java.security.PublicKey
@@ -38,6 +36,8 @@ import io.seqera.wave.tower.client.CredentialsDescription
 import io.seqera.wave.tower.client.GetCredentialsKeysResponse
 import io.seqera.wave.tower.client.ListCredentialsResponse
 import io.seqera.wave.tower.client.TowerClient
+import io.seqera.wave.tower.model.ComputeEnv
+import io.seqera.wave.tower.model.WorkflowLaunchResponse
 import jakarta.inject.Inject
 
 /**
@@ -99,7 +99,6 @@ class CredentialsServiceTest extends Specification {
         def identity = new PlatformId(new User(id:userId), workspaceId,token,towerEndpoint)
 
         when: 'look those registry credentials from tower'
-
         def credentials = credentialsService.findRegistryCreds("quay.io",identity)
 
         then: 'the registered key is fetched correctly from the security service'
@@ -139,7 +138,6 @@ class CredentialsServiceTest extends Specification {
         def identity = new PlatformId(new User(id:10), 10,"token",'tower.io')
         when:
         def credentials = credentialsService.findRegistryCreds('quay.io', identity)
-
         then: 'a key is found'
         1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE, 'tower.io') >> new PairingRecord(
                 pairingId: 'a-key-id',

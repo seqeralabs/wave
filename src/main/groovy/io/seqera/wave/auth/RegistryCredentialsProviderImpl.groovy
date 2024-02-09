@@ -116,6 +116,7 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
         final repo = container.repository
         if( repo==buildConfig.defaultBuildRepository || repo==buildConfig.defaultCacheRepository || repo==buildConfig.defaultPublicRepository)
             return getDefaultCredentials(container)
+
         return getUserCredentials0(container.registry, identity)
     }
 

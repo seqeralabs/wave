@@ -26,5 +26,7 @@ import io.seqera.wave.tower.PlatformId
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 interface CredentialsService {
+
     ContainerRegistryKeys findRegistryCreds(String registryName, PlatformId identity)
+
 }

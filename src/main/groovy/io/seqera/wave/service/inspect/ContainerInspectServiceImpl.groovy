@@ -84,7 +84,6 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
      * {@inheritDoc}
      */
     @Override
-
     String credentialsConfigJson(String containerFile, String buildRepo, String cacheRepo, PlatformId identity) {
         final repos = new HashSet(10)
         repos.addAll(findRepositories(containerFile))
@@ -160,7 +159,6 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
      * {@inheritDoc}
      */
     @Override
-
     List<String> containerEntrypoint(String containerFile, PlatformId identity) {
         final repos = inspectItems(containerFile)
         if( !repos )
