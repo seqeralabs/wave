@@ -44,6 +44,14 @@ class StringUtils {
         return lines.size()==1 ? lines[0] : lines[0] + ' (more omitted)'
     }
 
+    static String trunc(String value, int max) {
+        if( value==null )
+            return null;
+        if( value.length()>max)
+            return value.substring(0,max) + "..";
+        return value;
+    }
+
     static String indent(String text) {
         if( !text ) return text
         final result = new StringBuilder()

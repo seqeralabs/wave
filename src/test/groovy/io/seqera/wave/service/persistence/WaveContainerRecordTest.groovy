@@ -28,6 +28,7 @@ import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 
 /**
@@ -50,14 +51,14 @@ class WaveContainerRecordTest extends Specification {
                 fingerprint: 'xyz',
                 timestamp: Instant.now().toString() )
         and:
-        def data = new ContainerRequestData(1, 100, 'hello-world', 'some docker', cfg, 'some conda')
-        def user = new User()
+        def user = new User(id:1)
+        def data = new ContainerRequestData(new PlatformId(user,100), 'hello-world', 'some docker', cfg, 'some conda')
         def wave = 'https://wave.io/some/container:latest'
         def addr = '100.200.300.400'
         
         when:
         def exp = Instant.now().plusSeconds(3600)
-        def container = new WaveContainerRecord(req, data, wave, user, addr, exp)
+        def container = new WaveContainerRecord(req, data, wave, addr, exp)
         then:
         container.user == user
         container.workspaceId == req.towerWorkspaceId

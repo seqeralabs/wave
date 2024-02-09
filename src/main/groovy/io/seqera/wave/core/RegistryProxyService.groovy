@@ -106,11 +106,10 @@ class RegistryProxyService {
     }
 
     protected RegistryCredentials getCredentials(RoutePath route) {
-        final req = route.request
-        final result = !req || !req.userId
+        final result = !route.identity
                 ? credentialsProvider.getDefaultCredentials(route)
-                : credentialsProvider.getUserCredentials(route, req.userId, req.workspaceId, req.towerToken, req.towerEndpoint)
-        log.debug "Credentials for route path=${route.targetContainer}; user=${req?.userId}; wsp=${req?.workspaceId} => ${result}"
+                : credentialsProvider.getUserCredentials(route, route.identity)
+        log.debug "Credentials for route path=${route.targetContainer}; identity=${route.identity} => ${result}"
         return result
     }
 

@@ -25,7 +25,7 @@ import java.nio.file.Path
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.tower.User
+import io.seqera.wave.tower.PlatformId
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -39,7 +39,7 @@ class BuildStrategyTest extends Specification {
         service.@buildConfig = new BuildConfig()
         and:
         def work = Path.of('/work/foo')
-        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
+        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, null, BuildFormat.DOCKER, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
 
         when:
         def cmd = service.launchCmd(REQ)
@@ -67,7 +67,7 @@ class BuildStrategyTest extends Specification {
         def build = Mock(BuildContext) {tarDigest >> '123'}
         and:
         def work = Path.of('/work/foo')
-        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, null, BuildFormat.DOCKER, Mock(User), null, build, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
+        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, null, BuildFormat.DOCKER, Mock(PlatformId), null, build, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
 
         when:
         def cmd = service.launchCmd(REQ)
@@ -93,7 +93,7 @@ class BuildStrategyTest extends Specification {
         def service = Spy(BuildStrategy)
         and:
         def work = Path.of('/work/foo')
-        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, null, BuildFormat.SINGULARITY, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
+        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, null, BuildFormat.SINGULARITY, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
 
         when:
         def cmd = service.launchCmd(REQ)

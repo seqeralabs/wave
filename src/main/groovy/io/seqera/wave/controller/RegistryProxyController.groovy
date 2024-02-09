@@ -21,10 +21,6 @@ package io.seqera.wave.controller
 import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
 
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.google.common.cache.LoadingCache
-import com.google.common.cache.Weigher
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micrometer.core.instrument.MeterRegistry
@@ -55,11 +51,12 @@ import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.blob.BlobCacheService
 import io.seqera.wave.service.builder.ContainerBuildService
-import io.seqera.wave.storage.DigestKey
 import io.seqera.wave.storage.DigestStore
+import io.seqera.wave.storage.DockerDigestStore
+import io.seqera.wave.storage.HttpDigestStore
+import io.seqera.wave.storage.LazyDigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.util.Retryable
-import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Mono
@@ -112,39 +109,6 @@ class RegistryProxyController {
 
     private static final int _1MB = 1024 * 1024
 
-    private LoadingCache<DigestKey, byte[]> digestsCache
-
-    @PostConstruct
-    private void init() {
-        log.debug "Creating proxy controller - cacheMaxWeightMb=$cacheMaxWeightMb"
-        // initialize the cache builder
-        digestsCache = CacheBuilder
-                .newBuilder()
-                .maximumWeight(cacheMaxWeightMb * _1MB)
-                .weigher(new Weigher<DigestKey, byte[]>() {
-                    @Override
-                    int weigh(DigestKey key, byte[] value) {
-                        return value.length
-                    }
-                })
-                .build(digestKeyCacheLoader())
-    }
-
-    private CacheLoader<DigestKey, byte[]> digestKeyCacheLoader() {
-        // create the retry logic on error
-        final retryable = Retryable
-                .<byte[]>of(httpConfig)
-                .onRetry((event) -> log.warn("Unable to load digest-store - event: $event"))
-        // load all bytes, this can invoke a remote http request
-        new CacheLoader<DigestKey, byte[]>() {
-            @Override
-            byte[] load(DigestKey key) throws Exception {
-                log.debug("Loading digest-store=${key}")
-                return retryable.apply(() -> key.readAllBytes())
-            }
-        }
-    }
-
     @Error
     HttpResponse<RegistryErrorResponse> handleError(HttpRequest request, Throwable t) {
         return errorHandler.handle(request, t, (msg, code) -> new RegistryErrorResponse(code,msg) )
@@ -178,7 +142,7 @@ class RegistryProxyController {
 
         if( route.manifest && route.digest ){
             String ip = addressResolver.resolve(httpRequest)
-            rateLimiterService?.acquirePull( new AcquireRequest(route.request?.userId?.toString(), ip) )
+            rateLimiterService?.acquirePull( new AcquireRequest(route.identity.userId as String, ip) )
         }
 
         // check if it's a container under build
@@ -213,21 +177,30 @@ class RegistryProxyController {
             if ( !route.digest ) {
                 final entry = manifestForPath(route, httpRequest)
                 if (entry) {
-                    return fromCache(entry)
+                    return fromCacheDigest(entry)
                 }
             } else {
                 final entry = storage.getManifest(route.getTargetPath())
                 if (entry.present) {
-                    return fromCache(entry.get())
+                    return fromCacheDigest(entry.get())
                 }
             }
         }
 
         if( route.blob ) {
-            final entry = storage.getBlob(route.getTargetPath())
-            if (entry.present) {
-                log.info "Blob found in the cache: $route.path"
-                return fromCache(entry.get())
+            final entry = storage.getBlob(route.getTargetPath()).orElse(null)
+            String location
+            if( location=dockerRedirection(entry) ) {
+                log.debug "Blob found in the cache: $route.path ==> mapping to: ${location}"
+                final target = RoutePath.parse(location, route.identity)
+                return handleDelegate0(target, httpRequest)
+            }
+            else if ( location=httpRedirect(entry) ) {
+                log.debug "Blob found in the cache: $route.path  ==> mapping to: $location"
+                return fromCacheRedirect(location)
+            }
+            else if( entry ) {
+                return fromCacheDigest(entry)
             }
         }
 
@@ -236,6 +209,24 @@ class RegistryProxyController {
             return handleTagList(route, httpRequest)
         }
 
+        return handleDelegate0(route, httpRequest)
+    }
+
+    private String httpRedirect(DigestStore entry) {
+        if( entry instanceof HttpDigestStore )
+            return (entry as HttpDigestStore).location
+        if( entry instanceof LazyDigestStore )
+            return (entry as LazyDigestStore).location
+        return null
+    }
+
+    private String dockerRedirection(DigestStore entry) {
+        if( entry instanceof DockerDigestStore )
+            return (entry as DockerDigestStore).location
+        return null
+    }
+
+    protected MutableHttpResponse<?> handleDelegate0(RoutePath route, HttpRequest httpRequest) {
         final headers = httpRequest.headers.asMap() as Map<String, List<String>>
         final resp = proxyService.handleRequest(route, headers)
         if( resp.isRedirect() ) {
@@ -297,7 +288,7 @@ class RegistryProxyController {
             throw new DockerRegistryException("Unable to find cache manifest for '$httpRequest.path'", 400, 'UNKNOWN')
         }
 
-        return fromCache(entry)
+        return fromCacheDigest(entry)
     }
 
     MutableHttpResponse<?> handleTagList(RoutePath route, HttpRequest httpRequest) {
@@ -309,21 +300,30 @@ class RegistryProxyController {
                 .headers(toMutableHeaders(resp.headers))
     }
 
-    MutableHttpResponse<?> fromCache(DigestStore entry) {
-
-        final size = entry.size
-        final resp = digestsCache.get( DigestKey.of(entry) )
+    private MutableHttpResponse fromCacheDigest(DigestStore entry) {
+        final size = entry.getSize()
+        final resp = entry.getBytes()
 
         Map<CharSequence, CharSequence> headers = Map.of(
-                        "Content-Length", String.valueOf(size),
-                        "Content-Type", entry.mediaType,
-                        "docker-content-digest", entry.digest,
-                        "etag", entry.digest,
-                        "docker-distribution-api-version", "registry/2.0") as Map<CharSequence, CharSequence>
+                "Content-Length", String.valueOf(size),
+                "Content-Type", entry.mediaType,
+                "docker-content-digest", entry.digest,
+                "etag", entry.digest,
+                "docker-distribution-api-version", "registry/2.0") as Map<CharSequence, CharSequence>
 
-        HttpResponse
+        return HttpResponse
                 .ok(resp)
                 .headers(headers)
+    }
+
+    private MutableHttpResponse fromCacheRedirect(String location) {
+        final override = Map.of(
+                'Location', location,       // <-- the location can be relative to the origin host, override it to always return a fully qualified URI
+                'Content-Length', '0',  // <-- make sure to set content length to zero, some services return some content even with the redirect header that's discarded by this response
+                'Connection', 'close' ) // <-- make sure to return connection: close header otherwise docker hangs
+        HttpResponse
+                .status(HttpStatus.TEMPORARY_REDIRECT)
+                .headers(toMutableHeaders(Map.of(), override))
     }
 
     MutableHttpResponse<?> fromRedirectResponse(final DelegateResponse resp) {

@@ -19,22 +19,13 @@
 package io.seqera.wave.storage.reader;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.Charset;
-
-import io.seqera.wave.http.HttpClientFactory;
-import org.apache.commons.io.IOUtils;
-import static io.seqera.wave.WaveDefault.HTTP_RETRYABLE_ERRORS;
 
 /**
  * Read a layer content from the given http(s) url
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Deprecated
 public class HttpContentReader implements ContentReader {
 
     final private String url;
@@ -45,25 +36,15 @@ public class HttpContentReader implements ContentReader {
 
     @Override
     public byte[] readAllBytes() throws IOException, InterruptedException {
-        try(InputStream stream = openStream()) {
-            return stream.readAllBytes();
-        }
+        throw new UnsupportedOperationException("HttpContentReader does not support 'readAllBytes' operation");
     }
 
-    @Override
-    public InputStream openStream() throws IOException, InterruptedException {
-        final HttpClient client = HttpClientFactory.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder().GET().uri(URI.create(url)).build();
-        HttpResponse<InputStream> resp = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
-        if( HTTP_RETRYABLE_ERRORS.contains(resp.statusCode()) ) {
-            final String err = IOUtils.toString(resp.body(), Charset.defaultCharset());
-            final String msg = String.format("Unexpected server response code %d for request 'GET %s' - message: %s", resp.statusCode(), url, err);
-            throw new HttpServerRetryableErrorException(msg);
-        }
-        return resp.body();
-    }
-
+    @Deprecated
     public String getUrl() { return url; }
+
+    public String getLocation() {
+        return url;
+    }
 
     @Override
     public String toString() {

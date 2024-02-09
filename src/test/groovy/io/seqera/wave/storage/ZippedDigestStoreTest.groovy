@@ -30,7 +30,7 @@ class ZippedDigestStoreTest extends Specification {
         def CONTENT = 'Hello world!'
 
         when:
-        def digest = new ZippedDigestStore(CONTENT.bytes, 'text', 'sha256:122345567890', 3000)
+        def digest = ZippedDigestStore.fromUncompressed(CONTENT.bytes, 'text', 'sha256:122345567890', 3000)
         then:
         digest.bytes == CONTENT.bytes
         digest.digest == 'sha256:122345567890'

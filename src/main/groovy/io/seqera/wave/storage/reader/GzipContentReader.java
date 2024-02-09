@@ -28,6 +28,7 @@ import io.seqera.wave.util.ZipUtils;
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Deprecated
 public class GzipContentReader implements ContentReader {
 
     final private byte[] data;

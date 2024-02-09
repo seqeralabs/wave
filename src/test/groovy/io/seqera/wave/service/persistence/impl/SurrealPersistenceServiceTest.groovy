@@ -43,6 +43,7 @@ import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.test.SurrealDBTestContainer
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 
 /**
@@ -103,7 +104,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         HttpClient httpClient = HttpClient.create(new URL(surrealDbURL))
         SurrealPersistenceService storage = applicationContext.getBean(SurrealPersistenceService)
         BuildRequest request = new BuildRequest(dockerFile,
-                Path.of("."), "buildrepo", condaFile, null, BuildFormat.DOCKER,null, null, null,
+                Path.of("."), "buildrepo", condaFile, null, BuildFormat.DOCKER, PlatformId.NULL, null, null,
                 ContainerPlatform.of('amd64'),'{auth}', null, null, "127.0.0.1", null)
         BuildResult result = new BuildResult(request.id, -1, "ok", Instant.now(), Duration.ofSeconds(3))
         BuildEvent event = new BuildEvent(request, result)
@@ -161,7 +162,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def storage = applicationContext.getBean(SurrealPersistenceService)
         storage.initializeDb()
         final service = applicationContext.getBean(SurrealPersistenceService)
-        BuildRequest request = new BuildRequest("test", Path.of("."), "test", "test", null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', "test", null, "127.0.0.1", null)
+        BuildRequest request = new BuildRequest("test", Path.of("."), "test", "test", null, BuildFormat.DOCKER, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', "test", null, "127.0.0.1", null)
         BuildResult result = new BuildResult(request.id, 0, "content", Instant.now(), Duration.ofSeconds(1))
         BuildEvent event = new BuildEvent(request, result)
 
@@ -186,7 +187,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         given:
         surrealContainer.stop()
         final service = applicationContext.getBean(SurrealPersistenceService)
-        BuildRequest request = new BuildRequest("test", Path.of("."), "test", "test", null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', "test", null, "127.0.0.1", null)
+        BuildRequest request = new BuildRequest("test", Path.of("."), "test", "test", null, BuildFormat.DOCKER, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', "test", null, "127.0.0.1", null)
         BuildResult result = new BuildResult(request.id, 0, "content", Instant.now(), Duration.ofSeconds(1))
         BuildEvent event = new BuildEvent(request, result)
 
@@ -207,7 +208,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 'conda::recipe',
                 null,
                 BuildFormat.DOCKER,
-                null,
+                PlatformId.NULL,
                 null,
                 null,
                 ContainerPlatform.of('amd64'),
@@ -245,13 +246,13 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 fingerprint: 'xyz',
                 timestamp: Instant.now().toString()
         )
-        def data = new ContainerRequestData( 1, 100, 'hello-world' )
-        def wave = "wave.io/wt/$TOKEN/hello-world"
         def user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
+        def data = new ContainerRequestData(new PlatformId(user,100), 'hello-world' )
+        def wave = "wave.io/wt/$TOKEN/hello-world"
         def addr = "100.200.300.400"
         def exp = Instant.now().plusSeconds(3600)
         and:
-        def request = new WaveContainerRecord(req, data, wave, user, addr, exp)
+        def request = new WaveContainerRecord(req, data, wave, addr, exp)
 
         and:
         persistence.saveContainerRequest(TOKEN, request)
