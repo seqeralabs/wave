@@ -167,7 +167,7 @@ class CredentialsServiceTest extends Specification {
                 registry: 'docker.io'
         )
         and:
-        def identity = new PlatformId(new User(id:10), 10,"token",'tower.io')
+        def identity = new PlatformId(new User(id:10), 10,"token",'tower.io', '101')
 
         when:
         def credentials = credentialsService.findRegistryCreds('quay.io', identity)
@@ -185,6 +185,9 @@ class CredentialsServiceTest extends Specification {
         1 * towerClient.listCredentials('tower.io',"token",10) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
                 credentials: [nonContainerRegistryCredentials,otherRegistryCredentials]
         ))
+
+        and:'no compute credentials'
+        1 * towerClient.fetchWorkflowLaunchInfo('tower.io',"token",'101') >> CompletableFuture.completedFuture(null)
 
         then:
         credentials == null
