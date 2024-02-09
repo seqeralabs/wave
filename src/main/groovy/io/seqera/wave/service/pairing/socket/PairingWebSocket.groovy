@@ -133,7 +133,7 @@ class PairingWebSocket {
             log.error "Failed license token validation - Unexpected response for endpoint: ${endpoint}; token: ${token}; status: ${e.status.code}; message: ${e.message}"
         }
         catch (Throwable e) {
-            log.error "Failed license token validation - Unexpected exceptio for endpoint: ${endpoint}; token: ${token} - cause: ${e.message}", e
+            log.error "Failed license token validation - Unexpected exception for endpoint: ${endpoint}; token: ${token} - cause: ${e.message}", e
         }
         // return 'true' when it's not possible to verify the license due to expected errors
         // to prevent a valid license is rejected due to transitory failures
