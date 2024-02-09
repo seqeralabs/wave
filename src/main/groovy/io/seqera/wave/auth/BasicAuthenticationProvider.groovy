@@ -17,6 +17,7 @@
  */
 package io.seqera.wave.auth
 
+import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpRequest
 import io.micronaut.security.authentication.AuthenticationProvider
@@ -34,6 +35,7 @@ import reactor.core.publisher.FluxSink
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
+@Slf4j
 @Singleton
 class BasicAuthenticationProvider implements AuthenticationProvider {
     @Inject
@@ -44,9 +46,11 @@ class BasicAuthenticationProvider implements AuthenticationProvider {
                                                    AuthenticationRequest<?, ?> authenticationRequest) {
         Flux.create(emitter -> {
             if (authenticationRequest.identity == authConfig.userName && authenticationRequest.secret == authConfig.password) {
+                log.debug "Auth request OK"
                 emitter.next(AuthenticationResponse.success((String) authenticationRequest.identity))
                 emitter.complete()
             } else {
+                log.debug "Auth request FAILED"
                 emitter.error(AuthenticationResponse.exception())
             }
         }, FluxSink.OverflowStrategy.ERROR)
