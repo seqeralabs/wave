@@ -54,32 +54,29 @@ class MetricController {
     @Inject
     private MetricService metricsService
 
-    @Get(uri="/build/{metric}", produces = MediaType.APPLICATION_JSON)
+    @Get(uri="/builds/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<Map> getBuildMetrics(@PathVariable String metric, @Nullable @QueryValue Boolean success, @Nullable @QueryValue String startDate,
                                       @Nullable @QueryValue String endDate, @Nullable @QueryValue Integer limit) {
-            def result = metricsService.getBuildMetrics(Metric.valueOf(metric), success, parseStartDate(startDate), parseEndDate(endDate), limit)
-            if( result && result.size() > 0)
-                return HttpResponse.ok(result)
-            else
-                return HttpResponse.notFound()
+                return HttpResponse.ok(
+                        metricsService.getBuildMetrics(Metric.valueOf(metric), success, parseStartDate(startDate), parseEndDate(endDate), limit)
+                )
     }
 
-    @Get(uri="/build/count", produces = MediaType.APPLICATION_JSON)
+    @Get(uri="/builds", produces = MediaType.APPLICATION_JSON)
     HttpResponse<LinkedHashMap> getBuildCount(@Nullable @QueryValue Boolean success, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
             return HttpResponse.ok([count: metricsService.getBuildCount(success, parseStartDate(startDate), parseEndDate(endDate))])
     }
 
-    @Get(uri="/pull/{metric}", produces = MediaType.APPLICATION_JSON)
+    @Get(uri="/pulls/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<Map> getPullMetrics(@PathVariable String metric, @Nullable @QueryValue String startDate,
                                      @Nullable @QueryValue String endDate, @Nullable @QueryValue Integer limit) {
-            def result = metricsService.getPullMetrics(Metric.valueOf(metric), parseStartDate(startDate), parseEndDate(endDate), limit)
-            if( result && result.size() > 0)
-                return HttpResponse.ok(result)
-            else
-                return HttpResponse.notFound()
+                return HttpResponse.ok(
+                        metricsService.getPullMetrics(Metric.valueOf(metric), parseStartDate(startDate), parseEndDate(endDate), limit)
+                )
+
     }
 
-    @Get(uri="/pull/count", produces = MediaType.APPLICATION_JSON)
+    @Get(uri="/pulls", produces = MediaType.APPLICATION_JSON)
     HttpResponse<LinkedHashMap> getPullCount(@Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
             return HttpResponse.ok([count: metricsService.getPullCount(parseStartDate(startDate), parseEndDate(endDate))])
     }

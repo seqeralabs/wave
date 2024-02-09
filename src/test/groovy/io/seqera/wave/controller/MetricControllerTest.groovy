@@ -168,7 +168,7 @@ class MetricControllerTest extends Specification {
 
     def'should get 401 when no credentials provided'() {
         when:
-        def req = HttpRequest.GET("$PREFIX/build/ip")
+        def req = HttpRequest.GET("$PREFIX/builds/ip")
         def res = client.toBlocking().exchange(req, Map)
         then:
         def e = thrown(HttpClientResponseException)
@@ -177,7 +177,7 @@ class MetricControllerTest extends Specification {
 
     def "should get the correct build count per metrics and status 200"() {
         when:
-        def req = HttpRequest.GET("$PREFIX/build/ip").basicAuth("username", "password")
+        def req = HttpRequest.GET("$PREFIX/builds/ip").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
         then:
@@ -185,7 +185,7 @@ class MetricControllerTest extends Specification {
         res.status.code == 200
 
         when:
-        req = HttpRequest.GET("$PREFIX/build/image").basicAuth("username", "password")
+        req = HttpRequest.GET("$PREFIX/builds/image").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
         then:
@@ -193,7 +193,7 @@ class MetricControllerTest extends Specification {
         res.status.code == 200
 
         when:
-        req = HttpRequest.GET("$PREFIX/build/user").basicAuth("username", "password")
+        req = HttpRequest.GET("$PREFIX/builds/user").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
         then:
@@ -201,37 +201,37 @@ class MetricControllerTest extends Specification {
         res.status.code == 200
     }
 
-    def "should return null and status 404 when no build records found"() {
+    def "should return null and status 200 when no build records found"() {
         given: "Date is tomorrow"
         def date = LocalDate.now().plusDays(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         when:
-        def req = HttpRequest.GET("$PREFIX/build/ip?startDate=$date&endDate=$date").basicAuth("username", "password")
-        client.toBlocking().exchange(req, Map)
+        def req = HttpRequest.GET("$PREFIX/builds/ip?startDate=$date&endDate=$date").basicAuth("username", "password")
+        def res =client.toBlocking().exchange(req, Map)
 
         then:
-        def e = thrown(HttpClientResponseException)
-        e.status.code == 404
+        res.body() == [:]
+        res.status.code == 200
 
         when:
-        req = HttpRequest.GET("$PREFIX/build/image?startDate=$date&endDate=$date").basicAuth("username", "password")
-        client.toBlocking().exchange(req, Map)
+        req = HttpRequest.GET("$PREFIX/builds/image?startDate=$date&endDate=$date").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
 
         then:
-        e = thrown(HttpClientResponseException)
-        e.status.code == 404
+        res.body() == [:]
+        res.status.code == 200
 
         when:
-        req = HttpRequest.GET("$PREFIX/build/user?startDate=$date&endDate=$date").basicAuth("username", "password")
-        client.toBlocking().exchange(req, Map)
+        req = HttpRequest.GET("$PREFIX/builds/user?startDate=$date&endDate=$date").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
 
         then:
-        e = thrown(HttpClientResponseException)
-        e.status.code == 404
+        res.body() == [:]
+        res.status.code == 200
     }
 
     def "should get the correct successful build count per metrics and status 200"() {
         when:
-        def req = HttpRequest.GET("$PREFIX/build/ip?success=true").basicAuth("username", "password")
+        def req = HttpRequest.GET("$PREFIX/builds/ip?success=true").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
         then:
@@ -239,7 +239,7 @@ class MetricControllerTest extends Specification {
         res.status.code == 200
 
         when:
-        req = HttpRequest.GET("$PREFIX/build/image?success=true").basicAuth("username", "password")
+        req = HttpRequest.GET("$PREFIX/builds/image?success=true").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
         then:
@@ -247,7 +247,7 @@ class MetricControllerTest extends Specification {
         res.status.code == 200
 
         when:
-        req = HttpRequest.GET("$PREFIX/build/user?success=true").basicAuth("username", "password")
+        req = HttpRequest.GET("$PREFIX/builds/user?success=true").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
         then:
@@ -260,7 +260,7 @@ class MetricControllerTest extends Specification {
         def date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
 
         when:
-        def req = HttpRequest.GET("$PREFIX/build/ip?startDate=$date&endDate=$date").basicAuth("username", "password")
+        def req = HttpRequest.GET("$PREFIX/builds/ip?startDate=$date&endDate=$date").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
         then:
@@ -268,7 +268,7 @@ class MetricControllerTest extends Specification {
         res.status.code == 200
 
         when:
-        req = HttpRequest.GET("$PREFIX/build/image?startDate=$date&endDate=$date").basicAuth("username", "password")
+        req = HttpRequest.GET("$PREFIX/builds/image?startDate=$date&endDate=$date").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
         then:
@@ -276,7 +276,7 @@ class MetricControllerTest extends Specification {
         res.status.code == 200
 
         when:
-        req = HttpRequest.GET("$PREFIX/build/user?startDate=$date&endDate=$date").basicAuth("username", "password")
+        req = HttpRequest.GET("$PREFIX/builds/user?startDate=$date&endDate=$date").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
         then:
@@ -286,7 +286,7 @@ class MetricControllerTest extends Specification {
 
     def "should get the correct build count per metrics in limit and status 200"() {
         when:
-        def req = HttpRequest.GET("$PREFIX/build/ip?limit=1").basicAuth("username", "password")
+        def req = HttpRequest.GET("$PREFIX/builds/ip?limit=1").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
         then:
@@ -294,7 +294,7 @@ class MetricControllerTest extends Specification {
         res.status.code == 200
 
         when:
-        req = HttpRequest.GET("$PREFIX/build/image?limit=1").basicAuth("username", "password")
+        req = HttpRequest.GET("$PREFIX/builds/image?limit=1").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
         then:
@@ -302,7 +302,7 @@ class MetricControllerTest extends Specification {
         res.status.code == 200
 
         when:
-        req = HttpRequest.GET("$PREFIX/build/user?limit=1").basicAuth("username", "password")
+        req = HttpRequest.GET("$PREFIX/builds/user?limit=1").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
         then:
@@ -315,7 +315,7 @@ class MetricControllerTest extends Specification {
         def date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
 
         when: 'no filter provided'
-        def req = HttpRequest.GET("$PREFIX/build/count").basicAuth("username", "password")
+        def req = HttpRequest.GET("$PREFIX/builds").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
         then: 'return total build count'
@@ -323,7 +323,7 @@ class MetricControllerTest extends Specification {
         res.status.code == 200
 
         when: 'dates are provided'
-        req = HttpRequest.GET("$PREFIX/build/count?startDate=$date&endDate=$date").basicAuth("username", "password")
+        req = HttpRequest.GET("$PREFIX/builds?startDate=$date&endDate=$date").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
         then: 'return total build count between provided dates'
@@ -331,7 +331,7 @@ class MetricControllerTest extends Specification {
         res.status.code == 200
 
         when: 'success query parameter is set to true'
-        req = HttpRequest.GET("$PREFIX/build/count?success=true").basicAuth("username", "password")
+        req = HttpRequest.GET("$PREFIX/builds?success=true").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
         then: 'return total build count between provided dates'
@@ -345,7 +345,7 @@ class MetricControllerTest extends Specification {
         def date = LocalDate.now().plusDays(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
 
         when:
-        def req = HttpRequest.GET("$PREFIX/build/count?startDate=$date&endDate=$date").basicAuth("username", "password")
+        def req = HttpRequest.GET("$PREFIX/builds?startDate=$date&endDate=$date").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
         then:
@@ -355,7 +355,7 @@ class MetricControllerTest extends Specification {
 
     def 'should return the correct pull counts per metric and status 200' () {
         when:
-        def req = HttpRequest.GET("$PREFIX/pull/ip").basicAuth("username", "password")
+        def req = HttpRequest.GET("$PREFIX/pulls/ip").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
         then:
@@ -363,7 +363,7 @@ class MetricControllerTest extends Specification {
         res.status.code == 200
 
         when:
-        req = HttpRequest.GET("$PREFIX/pull/image").basicAuth("username", "password")
+        req = HttpRequest.GET("$PREFIX/pulls/image").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
         then:
@@ -371,7 +371,7 @@ class MetricControllerTest extends Specification {
         res.status.code == 200
 
         when:
-        req = HttpRequest.GET("$PREFIX/pull/user").basicAuth("username", "password")
+        req = HttpRequest.GET("$PREFIX/pulls/user").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
         then:
@@ -379,39 +379,39 @@ class MetricControllerTest extends Specification {
         res.status.code == 200
     }
 
-    def "should return null and status 404 when no pull records found"() {
+    def "should return null and status 200 when no pull records found"() {
         given:"Date is tomorrow"
         def date = LocalDate.now().plusDays(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         when:
-        def req = HttpRequest.GET("$PREFIX/pull/ip?startDate=$date&endDate=$date").basicAuth("username", "password")
-        client.toBlocking().exchange(req, Map)
+        def req = HttpRequest.GET("$PREFIX/pulls/ip?startDate=$date&endDate=$date").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
 
         then:
-        def e = thrown(HttpClientResponseException)
-        e.status.code == 404
+        res.body() == [:]
+        res.status.code == 200
 
         when:
-        req = HttpRequest.GET("$PREFIX/pull/image?startDate=$date&endDate=$date").basicAuth("username", "password")
-        client.toBlocking().exchange(req, Map)
+        req = HttpRequest.GET("$PREFIX/pulls/image?startDate=$date&endDate=$date").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
 
         then:
-        e = thrown(HttpClientResponseException)
-        e.status.code == 404
+        res.body() == [:]
+        res.status.code == 200
 
         when:
-        req = HttpRequest.GET("$PREFIX/pull/user?startDate=$date&endDate=$date").basicAuth("username", "password")
-        client.toBlocking().exchange(req, Map)
+        req = HttpRequest.GET("$PREFIX/pulls/user?startDate=$date&endDate=$date").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
 
         then:
-        e = thrown(HttpClientResponseException)
-        e.status.code == 404
+        res.body() == [:]
+        res.status.code == 200
     }
 
     def "should get the pull count per metric between dates and status 200"() {
         given:
         def date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         when:
-        def req = HttpRequest.GET("$PREFIX/pull/ip?startDate=$date&endDate=$date").basicAuth("username", "password")
+        def req = HttpRequest.GET("$PREFIX/pulls/ip?startDate=$date&endDate=$date").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
         then:
@@ -419,7 +419,7 @@ class MetricControllerTest extends Specification {
         res.status.code == 200
 
         when:
-        req = HttpRequest.GET("$PREFIX/pull/image?startDate=$date&endDate=$date").basicAuth("username", "password")
+        req = HttpRequest.GET("$PREFIX/pulls/image?startDate=$date&endDate=$date").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
         then:
@@ -427,7 +427,7 @@ class MetricControllerTest extends Specification {
         res.status.code == 200
 
         when:
-        req = HttpRequest.GET("$PREFIX/pull/user?startDate=$date&endDate=$date").basicAuth("username", "password")
+        req = HttpRequest.GET("$PREFIX/pulls/user?startDate=$date&endDate=$date").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
         then:
@@ -437,7 +437,7 @@ class MetricControllerTest extends Specification {
 
     def 'should return the correct pull counts per metric in limit and status 200' () {
         when:
-        def req = HttpRequest.GET("$PREFIX/pull/ip?limit=1").basicAuth("username", "password")
+        def req = HttpRequest.GET("$PREFIX/pulls/ip?limit=1").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
         then:
@@ -445,7 +445,7 @@ class MetricControllerTest extends Specification {
         res.status.code == 200
 
         when:
-        req = HttpRequest.GET("$PREFIX/pull/image?limit=1").basicAuth("username", "password")
+        req = HttpRequest.GET("$PREFIX/pulls/image?limit=1").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
         then:
@@ -453,7 +453,7 @@ class MetricControllerTest extends Specification {
         res.status.code == 200
 
         when:
-        req = HttpRequest.GET("$PREFIX/pull/user?limit=1").basicAuth("username", "password")
+        req = HttpRequest.GET("$PREFIX/pulls/user?limit=1").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
         then:
@@ -465,7 +465,7 @@ class MetricControllerTest extends Specification {
         given:
         def date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         when:
-        def req = HttpRequest.GET("$PREFIX/pull/count").basicAuth("username", "password")
+        def req = HttpRequest.GET("$PREFIX/pulls").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
         then:
@@ -473,7 +473,7 @@ class MetricControllerTest extends Specification {
         res.status.code == 200
 
         when:
-        req = HttpRequest.GET("$PREFIX/pull/count?startDate=$date&endDate=$date").basicAuth("username", "password")
+        req = HttpRequest.GET("$PREFIX/pulls?startDate=$date&endDate=$date").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
         then:
@@ -486,7 +486,7 @@ class MetricControllerTest extends Specification {
         def date = LocalDate.now().plusDays(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
 
         when:
-        def req = HttpRequest.GET("$PREFIX/pull/count?startDate=$date&endDate=$date").basicAuth("username", "password")
+        def req = HttpRequest.GET("$PREFIX/pulls?startDate=$date&endDate=$date").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
         then:
