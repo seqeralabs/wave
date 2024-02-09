@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -34,6 +34,7 @@ import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.core.RouteHandler
 import io.seqera.wave.exception.HttpResponseException
+import io.seqera.wave.exchange.DescribeWaveContainerResponse
 import io.seqera.wave.service.pairing.PairingRecord
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.PairingServiceImpl
@@ -72,7 +73,7 @@ class ContainerTokenControllerHttpTest extends Specification {
         Mock(TowerClient)
     }
 
-    def 'should create build request for anonymous user' () {
+    def 'should create token request for anonymous user' () {
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
         SubmitContainerTokenRequest request =
@@ -83,7 +84,7 @@ class ContainerTokenControllerHttpTest extends Specification {
         resp.status() == HttpStatus.OK
     }
 
-    def 'should create build request for user 1' () {
+    def 'should create token request for user 1' () {
         given:
         def endpoint = 'http://tower.nf'
         def token = '12345'
@@ -221,4 +222,36 @@ class ContainerTokenControllerHttpTest extends Specification {
         then:
         thrown(IllegalArgumentException)
     }
+
+    def 'should create token request for anonymous user with include' () {
+        given:
+        def request = new SubmitContainerTokenRequest(
+                containerImage: 'ubuntu:latest',
+                containerIncludes: ['busybox'],
+                containerConfig: new ContainerConfig(workingDir: '/foo'),
+                containerPlatform: 'arm64',)
+        when:
+        def resp = httpClient
+                .toBlocking()
+                .exchange(HttpRequest.POST("/container-token", request), SubmitContainerTokenResponse)
+        then:
+        resp.status() == HttpStatus.OK
+        and:
+        def token = resp.body().containerToken
+        token != null  
+
+        when:
+        def req2 = HttpRequest.GET("/container-token/$token")
+        def resp2 = httpClient.toBlocking().exchange(req2, DescribeWaveContainerResponse)
+        then:
+        resp2.status() == HttpStatus.OK
+        then:
+        def layers = resp2.body().request.containerConfig.layers
+        layers.size()==1
+        layers[0].location == 'docker://docker.io/v2/library/busybox/blobs/sha256:9ad63333ebc97e32b987ae66aa3cff81300e4c2e6d2f2395cef8a3ae18b249fe'
+        layers[0].gzipDigest == 'sha256:9ad63333ebc97e32b987ae66aa3cff81300e4c2e6d2f2395cef8a3ae18b249fe'
+        layers[0].gzipSize == 2220094
+        layers[0].tarDigest == 'sha256:2e112031b4b923a873c8b3d685d48037e4d5ccd967b658743d93a6e56c3064b9'
+    }
+
 }

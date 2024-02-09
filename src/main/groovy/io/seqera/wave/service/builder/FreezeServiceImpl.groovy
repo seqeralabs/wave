@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -23,7 +23,7 @@ import groovy.util.logging.Slf4j
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.service.inspect.ContainerInspectService
-import io.seqera.wave.tower.User
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.Escape
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -42,7 +42,7 @@ class FreezeServiceImpl implements FreezeService {
     @Inject
     private ContainerInspectService inspectService
 
-    protected String createBuildFile(SubmitContainerTokenRequest req, User user) {
+    protected String createBuildFile(SubmitContainerTokenRequest req, PlatformId identity) {
         assert req.freeze, "Not a freeze container request"
 
         // create a build container file for the provider image,
@@ -50,14 +50,14 @@ class FreezeServiceImpl implements FreezeService {
         if( req.containerImage && !req.containerFile ) {
             def containerFile = "# wave generated container file\n"
             containerFile += createContainerFile(req)
-            containerFile = appendEntrypoint(containerFile, req, user)
+            containerFile = appendEntrypoint(containerFile, req, identity)
             return appendConfigToContainerFile(containerFile, req)
         }
         // append the container config to the provided build container file
         else if( !req.containerImage && req.containerFile && req.containerConfig ) {
             def containerFile = new String(req.containerFile.decodeBase64()) + '\n'
             containerFile += "# wave generated container file\n"
-            containerFile = appendEntrypoint(containerFile, req, user)
+            containerFile = appendEntrypoint(containerFile, req, identity)
             return appendConfigToContainerFile(containerFile, req)
         }
 
@@ -65,9 +65,9 @@ class FreezeServiceImpl implements FreezeService {
         return null
     }
 
-    protected String appendEntrypoint(String containerFile, SubmitContainerTokenRequest req, User user) {
+    protected String appendEntrypoint(String containerFile, SubmitContainerTokenRequest req, PlatformId identity) {
         // get the container manifest
-        final entry = inspectService.containerEntrypoint(containerFile, user?.id, req.towerWorkspaceId, req.towerAccessToken, req.towerEndpoint, req.workflowId)
+        final entry = inspectService.containerEntrypoint(containerFile, identity)
         if( entry ) {
             if( req.formatSingularity() ) {
                 return containerFile + "%environment\n  export WAVE_ENTRY_CHAIN=\"${entry.join(' ')}\"\n"
@@ -80,8 +80,8 @@ class FreezeServiceImpl implements FreezeService {
     }
 
     @Override
-    SubmitContainerTokenRequest freezeBuildRequest(final SubmitContainerTokenRequest req, User user) {
-        final containerFile = createBuildFile(req, user)
+    SubmitContainerTokenRequest freezeBuildRequest(final SubmitContainerTokenRequest req, PlatformId identity) {
+        final containerFile = createBuildFile(req, identity)
         return containerFile
                 ? req.copyWith(containerFile: containerFile.bytes.encodeBase64().toString())
                 : req

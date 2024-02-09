@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -42,6 +42,14 @@ class StringUtils {
         if( !value ) return value
         final lines = value.readLines()
         return lines.size()==1 ? lines[0] : lines[0] + ' (more omitted)'
+    }
+
+    static String trunc(String value, int max) {
+        if( value==null )
+            return null;
+        if( value.length()>max)
+            return value.substring(0,max) + "..";
+        return value;
     }
 
     static String indent(String text) {

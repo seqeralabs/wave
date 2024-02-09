@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -106,11 +106,10 @@ class RegistryProxyService {
     }
 
     protected RegistryCredentials getCredentials(RoutePath route) {
-        final req = route.request
-        final result = !req || !req.userId
+        final result = !route.identity
                 ? credentialsProvider.getDefaultCredentials(route)
-                : credentialsProvider.getUserCredentials(route, req.userId, req.workspaceId, req.towerToken, req.towerEndpoint, req.workflowId)
-        log.debug "Credentials for route path=${route.targetContainer}; user=${req?.userId}; wsp=${req?.workspaceId} => ${result}"
+                : credentialsProvider.getUserCredentials(route, route.identity)
+        log.debug "Credentials for route path=${route.targetContainer}; identity=${route.identity} => ${result}"
         return result
     }
 

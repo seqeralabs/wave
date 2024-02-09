@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -32,10 +32,14 @@ import io.seqera.wave.service.pairing.socket.msg.PairingResponse
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
 import io.seqera.wave.storage.DigestStore
+import io.seqera.wave.storage.DockerDigestStore
 import io.seqera.wave.storage.LazyDigestStore
+import io.seqera.wave.storage.HttpDigestStore
 import io.seqera.wave.storage.ZippedDigestStore
 import io.seqera.wave.storage.reader.DataContentReader
 import io.seqera.wave.storage.reader.GzipContentReader
+import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.tower.User
 
 /**
  *
@@ -80,8 +84,8 @@ class MoshiEncodingStrategyTest extends Specification {
         given:
         def encoder = new MoshiEncodeStrategy<ContainerRequestData>() { }
         and:
-        def data = new ContainerRequestData(1,
-                2,
+        def data = new ContainerRequestData(
+                new PlatformId(new User(id:1),2),
                 'ubuntu',
                 'from foo',
                 new ContainerConfig(entrypoint: ['some', 'entry'], cmd:['the', 'cmd']),
@@ -149,7 +153,7 @@ class MoshiEncodingStrategyTest extends Specification {
         def DATA = 'Hello wold!'
         def encoder = new MoshiEncodeStrategy<DigestStore>() { }
         and:
-        def data = new ZippedDigestStore(DATA.bytes, 'my/media', '12345', 2000)
+        def data = ZippedDigestStore.fromUncompressed(DATA.bytes, 'my/media', '12345', 2000)
 
         when:
         def json = encoder.encode(data)
@@ -262,5 +266,52 @@ class MoshiEncodingStrategyTest extends Specification {
         copy.pairingId == data.pairingId
     }
 
+    def 'should encode and decode http digest store' () {
+        given:
+        def encoder = new MoshiEncodeStrategy<DigestStore>() { }
+        and:
+        def data = new HttpDigestStore(
+                'http://foo.com/this/that',
+                'text/json',
+                '12345',
+                2000 )
+
+        when:
+        def json = encoder.encode(data)
+
+        and:
+        def copy = (HttpDigestStore) encoder.decode(json)
+        then:
+        copy.getClass() == data.getClass()
+        and:
+        copy.location == data.location
+        copy.digest == data.digest
+        copy.mediaType == data.mediaType
+        copy.size == data.size
+    }
+
+    def 'should encode and decode http digest store' () {
+        given:
+        def encoder = new MoshiEncodeStrategy<DigestStore>() { }
+        and:
+        def data = new DockerDigestStore(
+                'docker://foo.com/this/that',
+                'text/json',
+                '12345',
+                2000 )
+
+        when:
+        def json = encoder.encode(data)
+
+        and:
+        def copy = (DockerDigestStore) encoder.decode(json)
+        then:
+        copy.getClass() == data.getClass()
+        and:
+        copy.location == data.location
+        copy.digest == data.digest
+        copy.mediaType == data.mediaType
+        copy.size == data.size
+    }
 
 }

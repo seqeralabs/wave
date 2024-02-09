@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -47,6 +47,7 @@ import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.builder.FreezeService
+import io.seqera.wave.service.inclusion.ContainerInclusionService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
@@ -55,6 +56,7 @@ import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.service.token.TokenData
 import io.seqera.wave.service.validation.ValidationService
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
@@ -64,7 +66,6 @@ import static io.seqera.wave.WaveDefault.TOWER
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
-
 /**
  * Implement a controller to receive container token requests
  * 
@@ -79,7 +80,6 @@ class ContainerTokenController {
     @Inject HttpClientAddressResolver addressResolver
     @Inject ContainerTokenService tokenService
     @Inject UserService userService
-    @Inject PairingService securityService
     @Inject JwtAuthStore jwtAuthStore
 
     @Inject
@@ -124,6 +124,9 @@ class ContainerTokenController {
     @Inject
     FreezeService freezeService
 
+    @Inject
+    ContainerInclusionService inclusionService
+
     @PostConstruct
     private void init() {
         log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl; default-build-repo: $buildConfig.defaultBuildRepository; default-cache-repo: $buildConfig.defaultCacheRepository; default-public-repo: $buildConfig.defaultPublicRepository"
@@ -140,11 +143,11 @@ class ContainerTokenController {
 
         // anonymous access
         if( !req.towerAccessToken ) {
-            return CompletableFuture.completedFuture(makeResponse(httpRequest, req, null))
+            return CompletableFuture.completedFuture(makeResponse(httpRequest, req, PlatformId.NULL))
         }
 
         // We first check if the service is registered
-        final registration = securityService.getPairingRecord(PairingService.TOWER_SERVICE, req.towerEndpoint)
+        final registration = pairingService.getPairingRecord(PairingService.TOWER_SERVICE, req.towerEndpoint)
         if( !registration )
             throw new BadRequestException("Tower instance '${req.towerEndpoint}' has not enabled to connect Wave service '$serverUrl'")
 
@@ -153,27 +156,27 @@ class ContainerTokenController {
         // find out the user associated with the specified tower access token
         return userService
                 .getUserByAccessTokenAsync(registration.endpoint, req.towerAccessToken)
-                .thenApply { User user -> makeResponse(httpRequest, req, user) }
+                .thenApply { User user -> makeResponse(httpRequest, req, PlatformId.of(user,req)) }
     }
 
-    protected HttpResponse<SubmitContainerTokenResponse> makeResponse(HttpRequest httpRequest, SubmitContainerTokenRequest req, User user) {
-        if( !user && !allowAnonymous )
+    protected HttpResponse<SubmitContainerTokenResponse> makeResponse(HttpRequest httpRequest, SubmitContainerTokenRequest req, PlatformId identity) {
+        if( !identity && !allowAnonymous )
             throw new BadRequestException("Missing user access token")
         final ip = addressResolver.resolve(httpRequest)
-        final data = makeRequestData(req, user, ip)
+        final data = makeRequestData(req, identity, ip)
         final token = tokenService.computeToken(data)
         final target = targetImage(token.value, data.coordinates())
         final build = data.buildNew ? data.buildId : null
         final resp = new SubmitContainerTokenResponse(token.value, target, token.expiration, data.containerImage, build)
         // persist request
-        storeContainerRequest0(req, data, user, token, target, ip)
+        storeContainerRequest0(req, data, token, target, ip)
         // return response
         return HttpResponse.ok(resp)
     }
 
-    protected void storeContainerRequest0(SubmitContainerTokenRequest req, ContainerRequestData data, User user, TokenData token, String target, String ip) {
+    protected void storeContainerRequest0(SubmitContainerTokenRequest req, ContainerRequestData data, TokenData token, String target, String ip) {
         try {
-            final recrd = new WaveContainerRecord(req, data, target, user, ip, token.expiration)
+            final recrd = new WaveContainerRecord(req, data, target, ip, token.expiration)
             persistenceService.saveContainerRequest(token.value, recrd)
         }
         catch (Throwable e) {
@@ -181,7 +184,7 @@ class ContainerTokenController {
         }
     }
 
-    BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, User user, String ip) {
+    BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
         if( !req.containerFile )
             throw new BadRequestException("Missing dockerfile content")
         if( !buildConfig.defaultBuildRepository )
@@ -196,7 +199,7 @@ class ContainerTokenController {
         final platform = ContainerPlatform.of(req.containerPlatform)
         final build = req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository ? buildConfig.defaultPublicRepository : buildConfig.defaultBuildRepository)
         final cache = req.cacheRepository ?: buildConfig.defaultCacheRepository
-        final configJson = dockerAuthService.credentialsConfigJson(containerSpec, build, cache, user?.id, req.towerWorkspaceId, req.towerAccessToken, req.towerEndpoint, req.workflowId)
+        final configJson = dockerAuthService.credentialsConfigJson(containerSpec, build, cache, identity)
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
         final scanId = scanEnabled && format==DOCKER ? LongRndKey.rndHex() : null
@@ -208,7 +211,7 @@ class ContainerTokenController {
                 condaContent,
                 spackContent,
                 format,
-                user,
+                identity,
                 containerConfig,
                 req.buildContext,
                 platform,
@@ -219,8 +222,8 @@ class ContainerTokenController {
                 offset)
     }
 
-    protected BuildRequest buildRequest(SubmitContainerTokenRequest req, User user, String ip) {
-        final build = makeBuildRequest(req, user, ip)
+    protected BuildRequest buildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
+        final build = makeBuildRequest(req, identity, ip)
         if( req.dryRun ) {
             log.debug "== Dry-run build request: $build"
             return build
@@ -234,7 +237,7 @@ class ContainerTokenController {
         return build
     }
 
-    ContainerRequestData makeRequestData(SubmitContainerTokenRequest req, User user, String ip) {
+    ContainerRequestData makeRequestData(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
         if( !req.containerImage && !req.containerFile )
             throw new BadRequestException("Specify either 'containerImage' or 'containerFile' attribute")
         if( req.containerImage && req.containerFile )
@@ -246,10 +249,13 @@ class ContainerTokenController {
         if( req.formatSingularity() && !req.freeze )
             throw new BadRequestException("Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting")
 
+        // expand inclusions
+        inclusionService.addContainerInclusions(req, identity)
+
         // when 'freeze' is enabled, rewrite the request so that the container configuration specified
         // in the request is included in the build container file instead of being processed via the augmentation process
         if( req.freeze ) {
-            req = freezeService.freezeBuildRequest(req, user)
+            req = freezeService.freezeBuildRequest(req, identity)
         }
 
         String targetImage
@@ -258,7 +264,7 @@ class ContainerTokenController {
         String buildId
         boolean buildNew
         if( req.containerFile ) {
-            final build = buildRequest(req, user, ip)
+            final build = buildRequest(req, identity, ip)
             targetImage = build.targetImage
             targetContent = build.containerFile
             condaContent = build.condaFile
@@ -278,22 +284,15 @@ class ContainerTokenController {
             throw new IllegalStateException("Specify either 'containerImage' or 'containerFile' attribute")
 
         new ContainerRequestData(
-                user?.id,
-                req.towerWorkspaceId,
+                identity,
                 targetImage,
                 targetContent,
                 req.containerConfig,
                 condaContent,
                 ContainerPlatform.of(req.containerPlatform),
-                // this token is the original one used in the submit container request
-                // in the presence of a refresh token this is used just as a key to retrieve
-                // the actual authorization tokens from the store
-                req.towerAccessToken,
-                req.towerEndpoint,
                 buildId,
                 buildNew,
-                req.freeze,
-                req.workflowId)
+                req.freeze)
     }
 
     protected String targetImage(String token, ContainerCoordinates container) {
@@ -327,4 +326,5 @@ class ContainerTokenController {
         msg = validationService.checkBuildRepository(req.cacheRepository, true)
         if( msg ) throw new BadRequestException(msg)
     }
+
 }

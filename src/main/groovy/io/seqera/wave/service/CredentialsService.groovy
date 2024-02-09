@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -17,13 +17,14 @@
  */
 
 package io.seqera.wave.service
+
+import io.seqera.wave.tower.PlatformId
+
 /**
  * Declare operations to access container registry credentials from Tower
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 interface CredentialsService {
-
-    ContainerRegistryKeys findRegistryCreds(String registryName, Long userId, Long workspaceId, String towerToken, String towerEndpoint, String workflowId)
-
+    ContainerRegistryKeys findRegistryCreds(String registryName, PlatformId identity)
 }

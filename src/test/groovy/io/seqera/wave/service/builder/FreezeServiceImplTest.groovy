@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -27,7 +27,7 @@ import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
-import io.seqera.wave.tower.User
+import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
 /**
  *
@@ -83,7 +83,7 @@ class FreezeServiceImplTest extends Specification  {
     def 'should create build file given a container image' () {
         when:
         def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true)
-        def result = freezeService.createBuildFile(req, Mock(User))
+        def result = freezeService.createBuildFile(req, Mock(PlatformId))
         then:
         result == '''\
             # wave generated container file
@@ -92,7 +92,7 @@ class FreezeServiceImplTest extends Specification  {
 
         when:
         req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2']))
-         result = freezeService.createBuildFile(req, Mock(User))
+        result = freezeService.createBuildFile(req, PlatformId.NULL)
         then:
         result == '''\
             # wave generated container file
@@ -104,7 +104,7 @@ class FreezeServiceImplTest extends Specification  {
     def 'should create build file given a container image for singularity' () {
         when:
         def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true, format: 'sif')
-        def result = freezeService.createBuildFile(req, Mock(User))
+        def result = freezeService.createBuildFile(req, Mock(PlatformId))
         then:
         result == '''\
             # wave generated container file
@@ -114,12 +114,13 @@ class FreezeServiceImplTest extends Specification  {
     }
 
     def 'should create build file given a container image and config for singularity ' () {
-        when:
+        given:
         def l1 = new ContainerLayer('/some/loc', 'digest1')
         def l2 = new ContainerLayer('/other/loc', 'digest2')
         def config = new ContainerConfig(env:['FOO=1', 'BAR=2'], entrypoint: ['bash', '--this', '--that'], layers: [l1, l2])
         def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true, format: 'sif', containerConfig: config)
-        def result = freezeService.createBuildFile(req, Mock(User))
+        when:
+        def result = freezeService.createBuildFile(req, Mock(PlatformId))
         then:
         result == '''\
             # wave generated container file
@@ -141,14 +142,14 @@ class FreezeServiceImplTest extends Specification  {
 
         when:
         def req = new SubmitContainerTokenRequest(containerFile: ENCODED, freeze: true)
-        def result = freezeService.createBuildFile(req, Mock(User))
+        def result = freezeService.createBuildFile(req, Mock(PlatformId))
         then:
         // nothing to do here =>  returns null
         result == null
 
         when:
         req = new SubmitContainerTokenRequest(containerFile: ENCODED, freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2'], workingDir: '/work/dir'))
-        result = freezeService.createBuildFile(req, Mock(User))
+        result = freezeService.createBuildFile(req, Mock(PlatformId))
         then:
         // nothing to do here =>  returns null
         result == '''\
@@ -164,7 +165,7 @@ class FreezeServiceImplTest extends Specification  {
     def 'should throw an error' () {
         when:
         def req = new SubmitContainerTokenRequest(containerFile: 'FROM foo\nRUN this\n', freeze: false)
-        freezeService.createBuildFile(req, Mock(User))
+        freezeService.createBuildFile(req, Mock(PlatformId))
         then:
         thrown(AssertionError)
     }
@@ -172,9 +173,9 @@ class FreezeServiceImplTest extends Specification  {
     def 'should create build request given a container image' () {
         when:
         def req = new SubmitContainerTokenRequest(containerImage: 'hello-world:latest', freeze: true)
-        def result = freezeService.freezeBuildRequest(req, Mock(User))
+        def result = freezeService.freezeBuildRequest(req, Mock(PlatformId))
         then:
-        1* authService.containerEntrypoint(_,_,_,_,_,_) >> null
+        1* authService.containerEntrypoint(_,_) >> null
         and:
         new String(result.containerFile.decodeBase64()) == '''\
             # wave generated container file
@@ -183,9 +184,9 @@ class FreezeServiceImplTest extends Specification  {
 
         when:
         req = new SubmitContainerTokenRequest(containerImage: 'hello-world:latest', freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2']))
-        result = freezeService.freezeBuildRequest(req, Mock(User))
+        result = freezeService.freezeBuildRequest(req, Mock(PlatformId))
         then:
-        1* authService.containerEntrypoint(_,_,_,_,_,_) >> null
+        1* authService.containerEntrypoint(_,_) >> null
         and:
         new String(result.containerFile.decodeBase64()) == '''\
             # wave generated container file
@@ -195,9 +196,9 @@ class FreezeServiceImplTest extends Specification  {
 
         when:
         req = new SubmitContainerTokenRequest(containerImage: 'hello-world:latest', freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2']))
-        result = freezeService.freezeBuildRequest(req, Mock(User))
+        result = freezeService.freezeBuildRequest(req, Mock(PlatformId))
         then:
-        1* authService.containerEntrypoint(_,_,_,_,_,_) >> ['/foo/entry.sh']
+        1* authService.containerEntrypoint(_,_) >> ['/foo/entry.sh']
         and:
         new String(result.containerFile.decodeBase64()) == '''\
             # wave generated container file
@@ -215,9 +216,9 @@ class FreezeServiceImplTest extends Specification  {
         // therefore the container file is not changed
         when:
         def req = new SubmitContainerTokenRequest(containerFile: ENCODED, freeze: true)
-        def result = freezeService.freezeBuildRequest(req, Mock(User))
+        def result = freezeService.freezeBuildRequest(req, Mock(PlatformId))
         then:
-        0* authService.containerEntrypoint(_,_,_,_,_,_) >> null
+        0* authService.containerEntrypoint(_,_) >> null
         and:
         result.containerFile == req.containerFile
 
@@ -225,9 +226,9 @@ class FreezeServiceImplTest extends Specification  {
         // the container file is updated correspondingly
         when:
         req = new SubmitContainerTokenRequest(containerFile: ENCODED, freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2'], workingDir: '/work/dir'))
-        result = freezeService.freezeBuildRequest(req, Mock(User))
+        result = freezeService.freezeBuildRequest(req, Mock(PlatformId))
         then:
-        1* authService.containerEntrypoint(_,_,_,_,_,_) >> null
+        1* authService.containerEntrypoint(_,_) >> null
         and:
         // nothing to do here =>  returns null
         new String(result.containerFile.decodeBase64()) == '''\
@@ -243,9 +244,9 @@ class FreezeServiceImplTest extends Specification  {
         // therefore the 'WAVE_ENTRY_CHAIN' is added to the resulting container file
         when:
         req = new SubmitContainerTokenRequest(containerFile: ENCODED, freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2'], workingDir: '/work/dir'))
-        result = freezeService.freezeBuildRequest(req, Mock(User))
+        result = freezeService.freezeBuildRequest(req, Mock(PlatformId))
         then:
-        1 * authService.containerEntrypoint(_,_,_,_,_,_) >> ['/some/entry.sh']
+        1 * authService.containerEntrypoint(_,_,) >> ['/some/entry.sh']
         and:
         // nothing to do here =>  returns null
         new String(result.containerFile.decodeBase64()) == '''\

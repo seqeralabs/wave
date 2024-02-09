@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -16,26 +16,18 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.storage
+package io.seqera.wave.service.stream
 
-import groovy.transform.CompileStatic
-import org.apache.commons.lang3.SerializationUtils
+import io.seqera.wave.tower.PlatformId
 
 /**
- * Helper class to encode/decode {@link DigestStore} objects
- * 
+ * Define the interface for remote resource steaming
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@CompileStatic
-@Deprecated
-class DigestStoreEncoder {
+interface StreamService {
 
-    static String encode(DigestStore store) {
-        return SerializationUtils.serialize(store).encodeBase64().toString()
-    }
-
-    static DigestStore decode(String encoded) {
-        return SerializationUtils.deserialize(encoded.decodeBase64())
-    }
+    InputStream stream(String location, PlatformId identity)
 
 }
+
