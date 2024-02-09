@@ -18,17 +18,17 @@
 
 package io.seqera.wave.tower.client
 
-import io.seqera.wave.tower.model.DescribeWorkflowLaunchResponse
-
 import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
 import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.tower.client.connector.TowerConnector
+import io.seqera.wave.tower.compute.DescribeWorkflowLaunchResponse
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import org.apache.commons.lang3.StringUtils
+
 /**
  * Implement a client to interact with Tower services
  *
@@ -113,7 +113,7 @@ class TowerClient {
         StringUtils.removeEnd(endpoint, "/")
     }
 
-    CompletableFuture<DescribeWorkflowLaunchResponse> fetchWorkflowlaunchInfo(String towerEndpoint, String authorization, String workflowId){
+    CompletableFuture<DescribeWorkflowLaunchResponse> fetchWorkflowLaunchInfo(String towerEndpoint, String authorization, String workflowId){
         def uri = workflowLaunchInfoEndpoint(towerEndpoint,workflowId)
         return getAsync(uri, towerEndpoint, authorization,DescribeWorkflowLaunchResponse.class)
     }

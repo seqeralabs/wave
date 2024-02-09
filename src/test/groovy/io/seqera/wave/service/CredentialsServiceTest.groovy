@@ -36,8 +36,10 @@ import io.seqera.wave.tower.client.CredentialsDescription
 import io.seqera.wave.tower.client.GetCredentialsKeysResponse
 import io.seqera.wave.tower.client.ListCredentialsResponse
 import io.seqera.wave.tower.client.TowerClient
-import io.seqera.wave.tower.model.ComputeEnv
-import io.seqera.wave.tower.model.WorkflowLaunchResponse
+import io.seqera.wave.tower.compute.ComputeEnv
+import io.seqera.wave.tower.compute.Credentials
+import io.seqera.wave.tower.compute.DescribeWorkflowLaunchResponse
+import io.seqera.wave.tower.compute.WorkflowLaunchResponse
 import jakarta.inject.Inject
 
 /**
@@ -65,7 +67,6 @@ class CredentialsServiceTest extends Specification {
         def workspaceId = 10
         def token = "valid-token"
         def towerEndpoint = "http://tower.io:9090"
-        def workflowId = "id123"
 
         and: 'a previously registered key'
         def keypair = TEST_CIPHER.generateKeyPair()
@@ -189,43 +190,6 @@ class CredentialsServiceTest extends Specification {
         credentials == null
     }
 
-    def 'should  fetch workflow launch info when no registry credentials match and workflow info found'(){
-        given:
-        def nonContainerRegistryCredentials = new CredentialsDescription(
-                id: 'alt-creds',
-                provider: 'azure',
-                registry: null
-        )
-        def computeEnv = new ComputeEnv(
-                credentialsId: 'id456',
-                platform: 'aws-batch'
-        )
-        def workflowLaunchResponse = new WorkflowLaunchResponse(
-                computeEnv: computeEnv
-        )
-
-        when:
-        def credentials = credentialsService.findRegistryCreds('quay.io',new PlatformId(new User(id:10), 10, "token",'tower.io', 'id123'))
-
-        then: 'a key is found'
-        1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE, 'tower.io') >> new PairingRecord(
-                pairingId: 'a-key-id',
-                service: PairingService.TOWER_SERVICE,
-                endpoint: 'tower.io',
-                privateKey: new byte[0], // we don't care about the value of the key
-                expiration: Instant.now() + Duration.ofSeconds(5)
-        )
-        and: 'non matching credentials are listed'
-        1 * towerClient.listCredentials('tower.io',"token",10) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
-                credentials:  [nonContainerRegistryCredentials]
-        ))
-
-        then:
-        1 * towerClient.fetchWorkflowlaunchInfo('tower.io','token', 'id123') >> null
-        and:
-        credentials == null
-    }
-
     def 'should parse credentials payload' () {
         given:
         def svc = new CredentialServiceImpl()
@@ -238,9 +202,79 @@ class CredentialsServiceTest extends Specification {
         keys.password == 'you'
     }
 
+    def 'should get registry creds from compute creds when not found in tower credentials'() {
+        given: 'a tower user in a workspace on a specific instance with a valid token'
+        def userId = 10
+        def workspaceId = 10
+        def token = "valid-token"
+        def towerEndpoint = "http://tower.io:9090"
+        def workflowId = "id123"
+
+        and: 'a previously registered key'
+        def keypair = TEST_CIPHER.generateKeyPair()
+        def keyId = 'generated-key-id'
+        def keyRecord = new PairingRecord(
+                service: PairingService.TOWER_SERVICE,
+                endpoint: towerEndpoint,
+                pairingId: keyId,
+                privateKey: keypair.getPrivate().getEncoded(),
+                expiration: (Instant.now() + Duration.ofSeconds(10)) )
+
+
+        and: 'registry credentials to access a registry stored in tower'
+        def credentialsId = 'credentialsId'
+        and: 'other credentials registered by the user'
+        def nonContainerRegistryCredentials = new CredentialsDescription(
+                id: 'alt-creds',
+                provider: 'azure',
+                registry: null )
+        and: 'workflow launch info'
+        def credentials = new Credentials(
+                id: credentialsId,
+        )
+        def computeEnv = new ComputeEnv(
+                id: 'computeId',
+                credentials: credentials,
+                platform: 'aws-batch'
+        )
+        def launch = new WorkflowLaunchResponse(
+                computeEnv: computeEnv
+        )
+        def describeWorkflowLaunchResponse = new DescribeWorkflowLaunchResponse(
+                launch: launch
+         )
+        and: 'compute credentials'
+        def computeCredentials = '{"userName":"me", "password": "you"}'
+        and:
+        def identity = new PlatformId(new User(id:userId), workspaceId,token,towerEndpoint,workflowId)
+
+        when: 'look those registry credentials from tower'
+        def containerCredentials = credentialsService.findRegistryCreds("ecr",identity)
+
+        then: 'the registered key is fetched correctly from the security service'
+        1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE, towerEndpoint) >> keyRecord
+
+        and: 'credentials are listed once and return a potential match'
+        1 * towerClient.listCredentials(towerEndpoint,token,workspaceId) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
+                credentials: [nonContainerRegistryCredentials]))
+
+        and:'fetched compute credentials'
+        1*towerClient.fetchWorkflowLaunchInfo(towerEndpoint, token, workflowId) >> CompletableFuture.completedFuture(describeWorkflowLaunchResponse)
+
+        and: 'they match and the encrypted credentials are fetched'
+        1 * towerClient.fetchEncryptedCredentials(towerEndpoint, token, credentialsId, keyId, workspaceId) >> CompletableFuture.completedFuture(
+                encryptedCredentialsFromTower(keypair.getPublic(), computeCredentials))
+
+        and:
+        containerCredentials.userName == 'me'
+        containerCredentials.password == "you"
+        noExceptionThrown()
+    }
 
     private static GetCredentialsKeysResponse encryptedCredentialsFromTower(PublicKey key, String credentials) {
-        return new GetCredentialsKeysResponse(keys: TEST_CIPHER.encrypt(key,credentials.getBytes()).encode())
+        if( credentials )
+            return new GetCredentialsKeysResponse(keys: TEST_CIPHER.encrypt(key,credentials.getBytes()).encode())
+        return null
     }
 
 }

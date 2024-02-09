@@ -16,7 +16,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.tower.model
+package io.seqera.wave.tower.compute
+
 
 /**
  * Model the response of compute environment from seqera platform
@@ -24,7 +25,8 @@ package io.seqera.wave.tower.model
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 class ComputeEnv {
-    String credentialsId
+    String id
     String platform
+    Credentials credentials
 }
 
