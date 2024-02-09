@@ -438,12 +438,12 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 fingerprint: 'xyz',
                 timestamp: Instant.now().toString()
         )
-        def data = new ContainerRequestData( 1, 100, 'hello-world' )
         def wave = "wave.io/wt/$TOKEN1/hello-world"
         def user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
+        def data = new ContainerRequestData(new PlatformId(user,100), 'hello-world' )
         def addr = "100.200.300.400"
         def exp = Instant.now().plusSeconds(3600)
-        def request1 = new WaveContainerRecord(req, data, wave, user, addr, exp)
+        def request1 = new WaveContainerRecord(req, data, wave, addr, exp)
 
         def TOKEN2 = '1234abc'
         cfg = new ContainerConfig(entrypoint: ['/opt/fusion'])
@@ -457,12 +457,12 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 fingerprint: 'abc',
                 timestamp: Instant.now().minus(1, ChronoUnit.DAYS).toString()
         )
-        data = new ContainerRequestData( 1, 100, 'hello-world' )
         wave = "wave.io/wt/$TOKEN2/hello-world"
         user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
+        data = new ContainerRequestData(new PlatformId(user,100), 'hello-world' )
         addr = "100.200.300.400"
         exp = Instant.now().plusSeconds(3600)
-        def request2 = new WaveContainerRecord(req, data, wave, user, addr, exp)
+        def request2 = new WaveContainerRecord(req, data, wave, addr, exp)
 
         def TOKEN3 = '12345abc'
         cfg = new ContainerConfig(entrypoint: ['/opt/fusion'])
@@ -476,12 +476,12 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 fingerprint: 'lmn',
                 timestamp: Instant.now().toString()
         )
-        data = new ContainerRequestData( 1, 100, 'hello-wave-world' )
         wave = "wave.io/wt/$TOKEN3/hello-wave-world"
         user = null
+        data = new ContainerRequestData(new PlatformId(user,100), 'hello-wave-world' )
         addr = "100.200.300.401"
         exp = Instant.now().plusSeconds(3600)
-        def request3 = new WaveContainerRecord(req, data, wave, user, addr, exp)
+        def request3 = new WaveContainerRecord(req, data, wave, addr, exp)
 
         and:
         persistence.saveContainerRequest(TOKEN1, request1)
