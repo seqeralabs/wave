@@ -536,7 +536,7 @@ class MetricControllerTest extends Specification {
         )
         def wave = "wave.io/wt/$TOKEN/hello-nf-world"
         def user = new User(id: 3, userName: 'test', email: 'test@gmail.com')
-        def data = new ContainerRequestData(new PlatformId(user,100), 'hello-world' )
+        def data = new ContainerRequestData(new PlatformId(user,100), 'hello-nf-world' )
         def addr = "100.200.300.402"
         def exp = Instant.now().plusSeconds(3600)
         def request = new WaveContainerRecord(reqt, data, wave, addr, exp)
