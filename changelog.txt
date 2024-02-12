@@ -1,4 +1,7 @@
 # Wave changelog
+1.3.2 - 12 Feb 2024
+- Patch missing user condition on ContainerRequestData [9a8f2a5c]
+
 1.3.1 - 12 Feb 2024 
 - Fix compatibility for existing ContainerRequestData records [e665629f]
 - Improve license check [95a2755e]
