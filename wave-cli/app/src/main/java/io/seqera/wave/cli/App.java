@@ -196,6 +196,9 @@ public class App implements Runnable {
     @Option(names = {"--inspect"}, paramLabel = "false", description = "Inspect specified container image")
     private boolean inspect;
 
+    @Option(names = {"--include"}, paramLabel = "false", description = "Include one or more containers in the specified base image")
+    List<String> includes;
+
     public static void main(String[] args) {
         try {
             final App app = new App();
@@ -401,6 +404,7 @@ public class App implements Runnable {
                 .withFormat( singularity ? "sif" : null )
                 .withFreezeMode(freeze)
                 .withDryRun(dryRun)
+                .withContainerIncludes(includes)
                 ;
     }
 
