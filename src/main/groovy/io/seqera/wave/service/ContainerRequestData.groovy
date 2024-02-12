@@ -55,7 +55,7 @@ class ContainerRequestData {
     }
 
     private PlatformId legacyId() {
-        return userId || workspaceId || towerToken || towerEndpoint
+        return userId 
                 ? new PlatformId(new User(id:userId), workspaceId, towerToken, towerEndpoint)
                 : PlatformId.NULL
     }
