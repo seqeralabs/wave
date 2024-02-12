@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -35,8 +35,16 @@ public class ZippedDigestStore implements DigestStore{
     final private String digest;
     final Integer size;
 
-    public ZippedDigestStore(byte[] bytes, String mediaType, String digest, int size) {
-        this.bytes = ZipUtils.compress(bytes);
+    static ZippedDigestStore fromCompressed(byte[] data, String mediaType, String digest, int size) {
+        return new ZippedDigestStore(data, mediaType, digest, size);
+    }
+
+    static ZippedDigestStore fromUncompressed(byte[] data, String mediaType, String digest, int size) {
+        return new ZippedDigestStore(ZipUtils.compress(data), mediaType, digest, size);
+    }
+
+    private ZippedDigestStore(byte[] data, String mediaType, String digest, int size) {
+        this.bytes = data;
         this.mediaType = mediaType;
         this.digest = digest;
         this.size = size;

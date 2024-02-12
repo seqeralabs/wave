@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -18,9 +18,7 @@
 
 package io.seqera.wave.storage.reader;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Serializable;
 
 /**
@@ -28,13 +26,10 @@ import java.io.Serializable;
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Deprecated
 public interface ContentReader extends Serializable {
 
     byte[] readAllBytes() throws IOException, InterruptedException;
-
-    default InputStream openStream() throws IOException, InterruptedException {
-        return new ByteArrayInputStream(readAllBytes());
-    }
 
     default String toLogString() {
         return toString();

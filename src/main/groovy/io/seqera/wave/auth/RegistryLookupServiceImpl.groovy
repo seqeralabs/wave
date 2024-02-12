@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -124,7 +124,7 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
         if( result==DOCKER_IO )
             result = DOCKER_REGISTRY_1
         if( !result.startsWith('http://') && !result.startsWith('https://') )
-            result = 'https://' + result
+            result = prefix(result)
         if( result.endsWith('/v2'))
             result += '/'
         if( !result.endsWith('/v2/') )
@@ -132,4 +132,8 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
         return new URI(result)
     }
 
+    private String prefix(String host) {
+        final protocol = host=='localhost' || host.startsWith('localhost:') ? 'http' : 'https'
+        return protocol + '://' + host
+    }
 }

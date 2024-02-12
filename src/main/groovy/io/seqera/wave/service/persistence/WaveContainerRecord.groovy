@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -151,8 +151,8 @@ class WaveContainerRecord {
      */
     final Boolean freeze
 
-    WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequestData data, String waveImage, User user, String addr, Instant expiration) {
-        this.user = user
+    WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequestData data, String waveImage, String addr, Instant expiration) {
+        this.user = data.identity.user
         this.workspaceId = request.towerWorkspaceId
         this.containerImage = request.containerImage
         this.containerConfig = ContainerConfig.copy(request.containerConfig, true)

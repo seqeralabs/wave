@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -41,24 +41,6 @@ class AbstractMessageQueueLocalTest extends Specification {
     private MessageBroker<String> broker
 
 
-    def 'should register and unregister consumers'() {
-        given:
-        def queue = new PairingOutboundQueue(broker, Duration.ofMillis(100))
-
-        when:
-        queue.registerClient('service-key', '123', {})
-        then:
-        queue.hasTarget('service-key')
-
-        when:
-        queue.unregisterClient('service-key', '123')
-        then:
-        !queue.hasTarget('service-key')
-
-        cleanup:
-        queue.close()
-    }
-
     def 'should send and consume a request'() {
         given:
         def queue = new PairingOutboundQueue(broker, Duration.ofMillis(100))
@@ -82,7 +64,6 @@ class AbstractMessageQueueLocalTest extends Specification {
         expect:
         queue.targetKey('foo') == 'pairing-outbound-queue/v1:foo'
         queue.clientKey('foo','bar') == 'pairing-outbound-queue/v1:foo:client=bar/queue'
-        queue.markerKey('foo','bar') == 'pairing-outbound-queue/v1:foo:client=bar/marker'
 
         cleanup:
         queue.close()
