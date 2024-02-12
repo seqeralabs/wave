@@ -25,10 +25,8 @@ import java.util.concurrent.CompletableFuture
 
 import com.google.common.hash.Hashing
 import groovy.util.logging.Slf4j
-import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.test.ManifestConst
-import io.seqera.wave.util.RegHelper
-import io.seqera.wave.util.ZipUtils
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -236,7 +234,7 @@ class RegHelperTest extends Specification {
         RegHelper.guessSpackRecipeName(SPACK) == 'bwa-0.7.15_salmon-1.1.1_nano-1.0'
     }
 
-    def 'should return null whenspack section is not present in spack yaml file' () {
+    def 'should return null when spack section is not present in spack yaml file' () {
         def SPACK = '''\
               specs: [bwa@0.7.15, salmon@1.1.1, nano@1.0 x=one]
               concretizer: {unify: true, reuse: true}

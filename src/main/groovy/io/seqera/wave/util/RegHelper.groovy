@@ -224,10 +224,10 @@ class RegHelper {
             final spack = yaml.spack as Map
 
             if( !spack ){
-                throw new BadRequestException("spack section is not present in your spack file, please add spack section and try again")
+                throw new BadRequestException("Section \"spack:\" not found in the Spack environment file, please check it and try again")
             }
             if( !spack.specs ){
-                throw new BadRequestException("spack.specs section is not present in your spack file, please add spack.specs section and try again")
+                throw new BadRequestException("Section \"spack:specs:\" not found in the Spack environment file, please check it and try again")
             }
 
             if( spack.specs instanceof List ) {
