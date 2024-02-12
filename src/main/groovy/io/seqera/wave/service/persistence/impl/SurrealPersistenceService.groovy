@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.persistence.impl
 
-import java.time.Instant
 
 import com.fasterxml.jackson.core.type.TypeReference
 import groovy.transform.CompileStatic
@@ -32,6 +31,7 @@ import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.metric.Metric
+import io.seqera.wave.service.metric.MetricFilter
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
@@ -225,12 +225,12 @@ class SurrealPersistenceService implements PersistenceService {
 
     // get build count by specific metric ( ip, userName, targetImage)
     @Override
-    LinkedHashMap<String, Long> getBuildCountByMetrics(Metric metric, Boolean success, Instant startDate, Instant endDate, Integer limit){
+    LinkedHashMap<String, Long> getBuildCountByMetrics(Metric metric, MetricFilter filter){
         def statement = "SELECT ${metric.buildLabel}, count() as total_count FROM wave_build "+
-                                "${getBuildMetricFilter(success, startDate, endDate)} GROUP BY ${metric.buildLabel}  ORDER BY total_count DESC"
-        if( limit )
-            statement += " LIMIT $limit"
-
+                                "${getBuildMetricFilter(filter)} GROUP BY ${metric.buildLabel}  ORDER BY total_count DESC"
+        if( filter && filter.limit )
+            statement += " LIMIT $filter.limit"
+        log.info(statement)
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
         log.trace("Build count results by ${metric.buildLabel}: $results")
@@ -243,8 +243,8 @@ class SurrealPersistenceService implements PersistenceService {
 
     // get total build count
     @Override
-    Long getBuildCount(Boolean success, Instant startDate, Instant endDate){
-        final statement = "SELECT count() as total_count FROM wave_build ${getBuildMetricFilter(success, startDate, endDate)} GROUP ALL"
+    Long getBuildCount( MetricFilter filter){
+        final statement = "SELECT count() as total_count FROM wave_build ${getBuildMetricFilter(filter)} GROUP ALL"
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
         log.trace("Total build count results: $results")
@@ -254,15 +254,17 @@ class SurrealPersistenceService implements PersistenceService {
             return 0
     }
 
-    static String getBuildMetricFilter(Boolean success, Instant startDate, Instant endDate){
-        def filter=""
-        if (startDate && endDate) {
-            filter = "WHERE type::datetime(startTime) >= '$startDate' AND type::datetime(startTime) <= '$endDate'"
-            if (success != null) {
-                filter += success ? " AND exitStatus = 0" : " AND exitStatus != 0"
+    static String getBuildMetricFilter(MetricFilter metricFilter){
+        if(!metricFilter)
+            return ""
+        def filter = ""
+        if (metricFilter.startDate && metricFilter.endDate) {
+            filter = "WHERE type::datetime(startTime) >= '$metricFilter.startDate' AND type::datetime(startTime) <= '$metricFilter.endDate'"
+            if (metricFilter.success != null) {
+                filter += metricFilter.success ? " AND exitStatus = 0" : " AND exitStatus != 0"
             }
-        } else if (success != null) {
-            filter = success ? "WHERE exitStatus = 0" : "WHERE exitStatus != 0"
+        } else if (metricFilter.success != null) {
+            filter = metricFilter.success ? "WHERE exitStatus = 0" : "WHERE exitStatus != 0"
         }
 
         return filter
@@ -271,12 +273,12 @@ class SurrealPersistenceService implements PersistenceService {
 
     // get pull count by specific metric ( ip, user.userName, sourceImage)
     @Override
-    LinkedHashMap<String, Long> getPullCountByMetrics(Metric metric, Instant startDate, Instant endDate, Integer limit){
+    LinkedHashMap<String, Long> getPullCountByMetrics(Metric metric, MetricFilter filter){
 
         def statement = "SELECT ${metric.pullLabel}, count() as total_count  FROM wave_request "+
-                                "${getPullMetricFilter(startDate, endDate)} GROUP BY ${metric.pullLabel} ORDER BY total_count DESC"
-        if( limit )
-            statement += " LIMIT $limit"
+                                "${getPullMetricFilter(filter)} GROUP BY ${metric.pullLabel} ORDER BY total_count DESC"
+        if( filter && filter.limit )
+            statement += " LIMIT $filter.limit"
 
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
@@ -296,8 +298,8 @@ class SurrealPersistenceService implements PersistenceService {
 
     // get total pull count
     @Override
-    Long getPullCount(Instant startDate, Instant endDate){
-        final statement = "SELECT count() as total_count FROM wave_request ${getPullMetricFilter(startDate, endDate)}  GROUP ALL"
+    Long getPullCount(MetricFilter filter){
+        final statement = "SELECT count() as total_count FROM wave_request ${getPullMetricFilter(filter)}  GROUP ALL"
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
         log.trace("Total pull count results: $results")
@@ -308,9 +310,9 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    Long getDistinctMetrics(Metric metric, Instant startDate, Instant endDate){
+    Long getDistinctMetrics(Metric metric, MetricFilter filter){
         final statement = "SELECT count(array) as total_count FROM " +
-                "(SELECT array::distinct(${metric.pullLabel}) as array FROM wave_request ${getPullMetricFilter(startDate, endDate)}  GROUP ALL)"
+                "(SELECT array::distinct(${metric.pullLabel}) as array FROM wave_request ${getPullMetricFilter(filter)}  GROUP ALL)"
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
         log.trace("Distinct metric results: $results")
@@ -320,10 +322,18 @@ class SurrealPersistenceService implements PersistenceService {
             return 0
     }
 
-    static String getPullMetricFilter(Instant startDate, Instant endDate){
-        if( startDate && endDate ){
-            return "WHERE type::datetime(timestamp) >= '$startDate' AND type::datetime(timestamp) <= '$endDate'"
+    static String getPullMetricFilter(MetricFilter metricFilter){
+        if(!metricFilter)
+            return ""
+        def filter = ""
+        if( metricFilter.startDate && metricFilter.endDate ){
+            filter = "WHERE type::datetime(timestamp) >= '$metricFilter.startDate' AND type::datetime(timestamp) <= '$metricFilter.endDate'"
+            if (metricFilter.fusion != null) {
+                filter += metricFilter.fusion ? " AND fusionVersion != NONE" : " AND fusionVersion = NONE"
+            }
+        } else if (metricFilter.fusion != null) {
+            filter = metricFilter.fusion ? " WHERE fusionVersion != NONE" : " WHERE fusionVersion = NONE"
         }
-        return  "";
+        return  filter
     }
 }

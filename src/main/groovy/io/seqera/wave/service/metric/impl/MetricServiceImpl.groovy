@@ -17,12 +17,12 @@
  */
 package io.seqera.wave.service.metric.impl
 
-import java.time.Instant
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.service.metric.Metric
+import io.seqera.wave.service.metric.MetricFilter
 import io.seqera.wave.service.metric.MetricService
 import io.seqera.wave.service.persistence.PersistenceService
 import jakarta.inject.Inject
@@ -37,32 +37,32 @@ import jakarta.inject.Singleton
 @Requires(property = 'wave.metrics.enabled', value = 'true')
 @Singleton
 @CompileStatic
-class MetricServiceImpl implements MetricService{
+class MetricServiceImpl implements MetricService {
     @Inject
     private PersistenceService persistenceService
 
     @Override
-    Map<String, Long> getBuildMetrics(Metric metrics, Boolean success, Instant startDate, Instant endDate, Integer limit) {
-        persistenceService.getBuildCountByMetrics(metrics, success, startDate, endDate, limit)
+    Map<String, Long> getBuildMetrics(Metric metric, MetricFilter filter) {
+        persistenceService.getBuildCountByMetrics(metric, filter)
     }
 
     @Override
-    Map<String, Long> getPullMetrics(Metric metrics, Instant startDate, Instant endDate, Integer limit) {
-        persistenceService.getPullCountByMetrics(metrics, startDate, endDate, limit)
+    Map<String, Long> getPullMetrics(Metric metric, MetricFilter filter) {
+        persistenceService.getPullCountByMetrics(metric, filter)
     }
 
     @Override
-    Long getPullCount(Instant startDate, Instant endDate) {
-        persistenceService.getPullCount(startDate, endDate)
+    Long getPullCount(MetricFilter filter) {
+        persistenceService.getPullCount(filter)
     }
 
     @Override
-    Long getBuildCount(Boolean success, Instant startDate, Instant endDate) {
-        persistenceService.getBuildCount(success, startDate, endDate)
+    Long getBuildCount(MetricFilter filter) {
+        persistenceService.getBuildCount(filter)
     }
 
     @Override
-    Long getDistinctMetrics(Metric metrics, Instant startDate, Instant endDate) {
-        persistenceService.getDistinctMetrics(metrics, startDate, endDate)
+    Long getDistinctMetrics(Metric metric, MetricFilter filter) {
+        persistenceService.getDistinctMetrics(metric, filter)
     }
 }

@@ -18,16 +18,17 @@
 
 package io.seqera.wave.service.persistence.impl
 
-import java.time.Instant
 
 import groovy.transform.CompileStatic
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.metric.Metric
+import io.seqera.wave.service.metric.MetricFilter
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import jakarta.inject.Singleton
+
 /**
  * Basic persistence for dev purpose
  *
@@ -86,9 +87,8 @@ class LocalPersistenceService implements PersistenceService {
     }
 
     @Override
-    Map<String, Long> getBuildCountByMetrics(Metric metric, Boolean success, Instant startDate, Instant endDate, Integer limit) {
-        def builds = getFilteredBuilds(success, startDate, endDate)
-
+    Map<String, Long> getBuildCountByMetrics(Metric metric, MetricFilter filter) {
+        def builds = getFilteredBuilds(filter)
         Map<String, Long> result = null
         if(metric == Metric.ip)
             result = builds.groupBy { it.requestIp }
@@ -101,29 +101,31 @@ class LocalPersistenceService implements PersistenceService {
                     .collectEntries { [it.key, it.value.size()] }
 
         result = result.sort{ a, b -> b.value - a.value  }
-        if( limit )
-            return result.take(limit)
+        if( filter && filter.limit )
+            return result.take(filter.limit)
         return result
     }
 
     @Override
-    Long getBuildCount(Boolean success, Instant startDate, Instant endDate) {
-        def builds = getFilteredBuilds(success, startDate, endDate)
+    Long getBuildCount(MetricFilter filter) {
+        def builds = getFilteredBuilds(filter)
         return builds.size()
     }
 
-    List<WaveBuildRecord> getFilteredBuilds(Boolean success, Instant startDate, Instant endDate) {
+    Collection<WaveBuildRecord> getFilteredBuilds(MetricFilter filter) {
+        if(!filter)
+            return buildStore.values()
         def builds = buildStore.values()
-        if(startDate && endDate)
-            builds = builds.findAll { it.startTime >= startDate && it.startTime <= endDate }
-        if(success != null)
-            builds = builds.findAll { it.succeeded() == success }
-        return builds as List<WaveBuildRecord>
+        if(filter.startDate && filter.endDate)
+            builds = builds.findAll { it.startTime >= filter.startDate && it.startTime <= filter.endDate }
+        if(filter.success != null)
+            builds = builds.findAll { it.succeeded() == filter.success }
+        return builds
     }
 
     @Override
-    Map<String, Long> getPullCountByMetrics(Metric metric, Instant startDate, Instant endDate, Integer limit) {
-        def pulls = getFilteredPulls(startDate, endDate)
+    Map<String, Long> getPullCountByMetrics(Metric metric, MetricFilter filter) {
+        def pulls = getFilteredPulls(filter)
 
         Map<String, Long> result = null
         if(metric == Metric.ip)
@@ -137,20 +139,20 @@ class LocalPersistenceService implements PersistenceService {
                     .collectEntries { [it.key, it.value.size()] }
 
         result = result.sort{ a, b -> b.value - a.value  }
-        if( limit )
-            return result.take(limit)
+        if( filter && filter.limit )
+            return result.take(filter.limit)
         return result
     }
 
     @Override
-    Long getPullCount(Instant startDate, Instant endDate) {
-        def pulls = getFilteredPulls(startDate, endDate)
+    Long getPullCount(MetricFilter filter) {
+        def pulls = getFilteredPulls(filter)
         return pulls.size()
     }
 
     @Override
-    Long getDistinctMetrics(Metric metric, Instant startDate, Instant endDate) {
-        def pulls = getFilteredPulls(startDate, endDate)
+    Long getDistinctMetrics(Metric metric, MetricFilter filter) {
+        def pulls = getFilteredPulls(filter)
         if (metric == Metric.ip)
             return pulls.collect{ it.ipAddress }
                     .unique().size()
@@ -163,10 +165,19 @@ class LocalPersistenceService implements PersistenceService {
                     .unique().size()
     }
 
-    List<WaveContainerRecord> getFilteredPulls(Instant startDate, Instant endDate) {
+    Collection<WaveContainerRecord> getFilteredPulls(MetricFilter filter) {
+        if (!filter)
+            return requestStore.values()
         def builds = requestStore.values()
-        if(startDate && endDate)
-            builds = builds.findAll { it.timestamp >= startDate && it.timestamp <= endDate }
-        return builds as List<WaveContainerRecord>
+        if(filter.startDate && filter.endDate)
+            builds = builds.findAll { it.timestamp >= filter.startDate && it.timestamp <= filter.endDate }
+        if(filter.fusion !=null){
+            if(filter.fusion)
+                builds = builds.findAll{it.containerConfig.fusionVersion() != null}
+            else
+                builds = builds.findAll{it.containerConfig.fusionVersion() == null}
+        }
+
+        return builds
     }
 }

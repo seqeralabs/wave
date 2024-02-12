@@ -29,6 +29,7 @@ import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.core.ContainerPlatform
@@ -38,6 +39,7 @@ import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.metric.Metric
+import io.seqera.wave.service.metric.MetricFilter
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
@@ -368,58 +370,62 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         sleep 300
 
         expect: 'should return the correct counts per metric'
-        persistence.getBuildCountByMetrics(Metric.ip, null, null, null, null) == [
+        persistence.getBuildCountByMetrics(Metric.ip, null) == [
                 '127.0.0.1': 2,
                 '127.0.0.2': 1
         ]
-        persistence.getBuildCountByMetrics(Metric.user, null, null, null, null) == [
+        persistence.getBuildCountByMetrics(Metric.user, null) == [
                 'testUser1': 2,
                 'unknown': 1
         ]
-        persistence.getBuildCountByMetrics(Metric.image, null, null, null, null) == [
+        persistence.getBuildCountByMetrics(Metric.image, null) == [
                 'testImage1': 2,
                 'testImage2': 1
         ]
 
         and: 'should return correct metric count for successful builds'
-        persistence.getBuildCountByMetrics(Metric.ip, true, null, null, null) ==[
+        def successFilter = new MetricFilter.Builder().success(true).build()
+        persistence.getBuildCountByMetrics(Metric.ip, successFilter) ==[
                 '127.0.0.1': 1,
                 '127.0.0.2': 1
         ]
-        persistence.getBuildCountByMetrics(Metric.user, true, null, null,null) == [
+        persistence.getBuildCountByMetrics(Metric.user, successFilter) == [
                 'testUser1': 1,
                 'unknown': 1
         ]
-        persistence.getBuildCountByMetrics(Metric.image, true, null, null, null) == [
+        persistence.getBuildCountByMetrics(Metric.image, successFilter) == [
                 'testImage1': 1,
                 'testImage2': 1
         ]
 
         and: 'should return correct metric count between two dates'
-        persistence.getBuildCountByMetrics(Metric.ip, null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now(), null) == [
+        def datesFilter = new MetricFilter.Builder().dates(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()).build()
+        persistence.getBuildCountByMetrics(Metric.ip, datesFilter) == [
                 '127.0.0.1': 1,
                 '127.0.0.2': 1
         ]
-        persistence.getBuildCountByMetrics(Metric.user, null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now(), null) == [
+        persistence.getBuildCountByMetrics(Metric.user, datesFilter) == [
                 'testUser1': 1,
                 'unknown': 1
         ]
-        persistence.getBuildCountByMetrics(Metric.image, null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now(), null) == [
+        persistence.getBuildCountByMetrics(Metric.image, datesFilter) == [
                 'testImage1': 1,
                 'testImage2': 1
         ]
 
         and: 'should return correct metric count in limit'
-        persistence.getBuildCountByMetrics(Metric.ip, null, null, null, 1) == ['127.0.0.1': 2]
-        persistence.getBuildCountByMetrics(Metric.user, null, null, null, 1) == ['testUser1': 2]
-        persistence.getBuildCountByMetrics(Metric.image, null, null, null, 1) == ['testImage1': 2]
+        def limitFilter = new MetricFilter.Builder().limit(1).build()
+        persistence.getBuildCountByMetrics(Metric.ip, limitFilter) == ['127.0.0.1': 2]
+        persistence.getBuildCountByMetrics(Metric.user, limitFilter) == ['testUser1': 2]
+        persistence.getBuildCountByMetrics(Metric.image, limitFilter) == ['testImage1': 2]
 
         and: 'should return total build count'
-        persistence.getBuildCount(null, null, null) == 3
-        persistence.getBuildCount(true, null, null) == 2
+
+        persistence.getBuildCount(null) == 3
+        persistence.getBuildCount(successFilter) == 2
 
         and: 'should return total build count between two dates'
-        persistence.getBuildCount( null, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == 2
+        persistence.getBuildCount(datesFilter) == 2
 
     }
 
@@ -427,7 +433,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         given:
         final persistence = applicationContext.getBean(SurrealPersistenceService)
         def TOKEN1 = '123abc'
-        def cfg = new ContainerConfig(entrypoint: ['/opt/fusion'])
+        def cfg = new ContainerConfig(entrypoint: ['/opt/fusion'],
+                layers: [ new ContainerLayer(location: 'https://fusionfs.seqera.io/releases/v2.2.8-amd64.json')])
         def req = new SubmitContainerTokenRequest(
                 towerEndpoint: 'https://tower.nf',
                 towerWorkspaceId: 100,
@@ -446,7 +453,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def request1 = new WaveContainerRecord(req, data, wave, addr, exp)
 
         def TOKEN2 = '1234abc'
-        cfg = new ContainerConfig(entrypoint: ['/opt/fusion'])
+        cfg = new ContainerConfig(entrypoint: ['/opt/fusion'],
+                 layers: [ new ContainerLayer(location: 'https://fusionfs.seqera.io/releases/v2.2.8-amd64.json')])
         req = new SubmitContainerTokenRequest(
                 towerEndpoint: 'https://tower.nf',
                 towerWorkspaceId: 100,
@@ -465,7 +473,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def request2 = new WaveContainerRecord(req, data, wave, addr, exp)
 
         def TOKEN3 = '12345abc'
-        cfg = new ContainerConfig(entrypoint: ['/opt/fusion'])
+        cfg = new ContainerConfig(entrypoint: ['sh'])
         req = new SubmitContainerTokenRequest(
                 towerEndpoint: 'https://tower.nf',
                 towerWorkspaceId: 100,
@@ -490,100 +498,161 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         sleep 300
 
         expect:'`should return the correct pull counts per metrics'
-        persistence.getPullCountByMetrics(Metric.ip, null, null, null) ==[
+        persistence.getPullCountByMetrics(Metric.ip, null) ==[
                 '100.200.300.400': 2,
                 '100.200.300.401': 1
         ]
-        persistence.getPullCountByMetrics(Metric.user, null, null, null) == [
+        persistence.getPullCountByMetrics(Metric.user, null) == [
                 'foo': 2,
                 'unknown': 1
         ]
-        persistence.getPullCountByMetrics(Metric.image, null, null, null) == [
+        persistence.getPullCountByMetrics(Metric.image, null) == [
                 'hello-world': 2,
                 'hello-wave-world': 1
         ]
 
         and: 'should return the correct pull counts per metrics between two dates'
-        persistence.getPullCountByMetrics(Metric.user, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now(), null) == [
+        def datesFilter = new MetricFilter.Builder().dates(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()).build()
+        persistence.getPullCountByMetrics(Metric.user, datesFilter) == [
                 'foo': 1,
                 'unknown': 1
         ]
-        persistence.getPullCountByMetrics(Metric.ip, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now(), null) ==[
+        persistence.getPullCountByMetrics(Metric.ip, datesFilter) ==[
                 '100.200.300.400': 1,
                 '100.200.300.401': 1
         ]
-        persistence.getPullCountByMetrics(Metric.image, Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now(), null) == [
+        persistence.getPullCountByMetrics(Metric.image, datesFilter) == [
                 'hello-world': 1,
                 'hello-wave-world': 1
         ]
 
+        and: 'should return the correct pull counts per metrics for fusion'
+        def fusionTrueFilter = new MetricFilter.Builder().fusion(true).build()
+        persistence.getPullCountByMetrics(Metric.user, fusionTrueFilter) == [
+                'foo': 2
+        ]
+        persistence.getPullCountByMetrics(Metric.ip, fusionTrueFilter) ==[
+                '100.200.300.400': 2
+        ]
+        persistence.getPullCountByMetrics(Metric.image, fusionTrueFilter) == [
+                'hello-world': 2
+        ]
+
+        and: 'should return the correct pull counts per metrics for no fusion'
+        def fusionFalseFilter = new MetricFilter.Builder().fusion(false).build()
+        persistence.getPullCountByMetrics(Metric.user, fusionFalseFilter) == [
+                'unknown': 1
+        ]
+        persistence.getPullCountByMetrics(Metric.ip, fusionFalseFilter) ==[
+                '100.200.300.401': 1
+        ]
+        persistence.getPullCountByMetrics(Metric.image, fusionFalseFilter) == [
+                'hello-wave-world': 1
+        ]
+
         and:'`should return the correct pull counts per metrics in limit'
-        persistence.getPullCountByMetrics(Metric.ip, null, null, 1) ==['100.200.300.400': 2]
-        persistence.getPullCountByMetrics(Metric.user, null, null, 1) == ['foo': 2]
-        persistence.getPullCountByMetrics(Metric.image, null, null, 1) == ['hello-world': 2]
+        def limitFilter = new MetricFilter.Builder().limit(1).build()
+        persistence.getPullCountByMetrics(Metric.ip, limitFilter) ==['100.200.300.400': 2]
+        persistence.getPullCountByMetrics(Metric.user, limitFilter) == ['foo': 2]
+        persistence.getPullCountByMetrics(Metric.image, limitFilter) == ['hello-world': 2]
 
         and: 'should return the correct pull'
-        persistence.getPullCount(null, null) == 3
+        persistence.getPullCount(null) == 3
 
         and: 'should return the correct pull counts between two dates'
-        persistence.getPullCount(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()) == 2
+        persistence.getPullCount(datesFilter) == 2
+
+        and: 'should return the correct pull counts with fusion'
+        persistence.getPullCount(fusionTrueFilter) == 2
+
+        and: 'should return the correct pull counts with no fusion'
+        persistence.getPullCount(fusionFalseFilter) == 1
 
         and:'should return distinct metric count'
-        persistence.getDistinctMetrics(Metric.ip, null, null) == 2
-        persistence.getDistinctMetrics(Metric.user, null, null) == 1
-        persistence.getDistinctMetrics(Metric.image, null, null) == 2
+        persistence.getDistinctMetrics(Metric.ip, null) == 2
+        persistence.getDistinctMetrics(Metric.user, null) == 1
+        persistence.getDistinctMetrics(Metric.image, null) == 2
+
+        and:'should return distinct metric count between dates'
+        persistence.getDistinctMetrics(Metric.ip, datesFilter) == 2
+        persistence.getDistinctMetrics(Metric.user, datesFilter) == 1
+        persistence.getDistinctMetrics(Metric.image, datesFilter) == 2
+
+        and:'should return distinct metric count with fusion'
+        persistence.getDistinctMetrics(Metric.ip, fusionTrueFilter) == 1
+        persistence.getDistinctMetrics(Metric.user, fusionTrueFilter) == 1
+        persistence.getDistinctMetrics(Metric.image, fusionTrueFilter) == 1
+
+        and:'should return distinct metric count with no fusion'
+        persistence.getDistinctMetrics(Metric.ip, fusionFalseFilter) == 1
+        persistence.getDistinctMetrics(Metric.user, fusionFalseFilter) == 0
+        persistence.getDistinctMetrics(Metric.image, fusionFalseFilter) == 1
     }
 
     def 'should get empty map for count per metric when no record found' () {
         given:
         final persistence = applicationContext.getBean(SurrealPersistenceService)
         expect:
-        persistence.getBuildCountByMetrics(Metric.ip, null, null, null, null) == [:]
-        persistence.getBuildCountByMetrics(Metric.image, null, null, null, null) == [:]
-        persistence.getBuildCountByMetrics(Metric.user, null, null, null, null) == [:]
-        persistence.getPullCountByMetrics(Metric.ip, null, null, null) == [:]
-        persistence.getPullCountByMetrics(Metric.image, null, null, null) == [:]
-        persistence.getPullCountByMetrics(Metric.user, null, null, null) == [:]
+        persistence.getBuildCountByMetrics(Metric.ip, null) == [:]
+        persistence.getBuildCountByMetrics(Metric.image, null) == [:]
+        persistence.getBuildCountByMetrics(Metric.user, null) == [:]
+        persistence.getPullCountByMetrics(Metric.ip, null) == [:]
+        persistence.getPullCountByMetrics(Metric.image, null) == [:]
+        persistence.getPullCountByMetrics(Metric.user, null) == [:]
     }
     def 'should get 0 total_count if no record found' () {
         given:
         final persistence = applicationContext.getBean(SurrealPersistenceService)
 
         expect:
-        persistence.getPullCount(null, null) == 0
-        persistence.getBuildCount(null, null, null) == 0
-        persistence.getDistinctMetrics(Metric.ip, null, null) == 0
-        persistence.getDistinctMetrics(Metric.image, null, null) == 0
-        persistence.getDistinctMetrics(Metric.user, null, null) == 0
+        persistence.getPullCount(null) == 0
+        persistence.getBuildCount(null) == 0
+        persistence.getDistinctMetrics(Metric.ip, null) == 0
+        persistence.getDistinctMetrics(Metric.image, null) == 0
+        persistence.getDistinctMetrics(Metric.user, null) == 0
     }
 
     def 'should get the correct build filter' () {
+        given:
+        final INSTANT =  Instant.now()
         expect:
-        SurrealPersistenceService.getBuildMetricFilter(SUCCESS, STARTDATE, ENDDATE) == Filter
+        SurrealPersistenceService.getBuildMetricFilter(METRICFILTER) == SURREALDBFILTER
 
         where:
-        SUCCESS | STARTDATE     | ENDDATE           | Filter
-        null    | null          | null              | ''
-        true    | null          | null              | 'WHERE exitStatus = 0'
-        false   | null          | null              | 'WHERE exitStatus != 0'
-        null    | Instant.now() | Instant.now()     | "WHERE type::datetime(startTime) >= '$STARTDATE' AND type::datetime(startTime) <= '$ENDDATE'"
-        null    | Instant.now() | null              | ''
-        null    | null          | Instant.now()     | ''
-        true    | null          | Instant.now()     | "WHERE exitStatus = 0"
-        false   | Instant.now() | null              | "WHERE exitStatus != 0"
-        true    | Instant.now() | Instant.now()     | "WHERE type::datetime(startTime) >= '$STARTDATE' AND type::datetime(startTime) <= '$ENDDATE' AND exitStatus = 0"
-        false   | Instant.now() | Instant.now()     | "WHERE type::datetime(startTime) >= '$STARTDATE' AND type::datetime(startTime) <= '$ENDDATE' AND exitStatus != 0"
+        METRICFILTER                                                                | SURREALDBFILTER
+        null                                                                        | ''
+        new MetricFilter.Builder().success(true).build()                            | 'WHERE exitStatus = 0'
+        new MetricFilter.Builder().success(false).build()                           | 'WHERE exitStatus != 0'
+        new MetricFilter.Builder().dates(INSTANT, INSTANT).build()                  | "WHERE type::datetime(startTime) >= '$INSTANT' " +
+                                                                                        "AND type::datetime(startTime) <= '$INSTANT'"
+        new MetricFilter.Builder().dates(INSTANT, null).build()                     | ''
+        new MetricFilter.Builder().dates(null, INSTANT).build()                     | ''
+        new MetricFilter.Builder().dates(INSTANT, null).success(true).build()       | "WHERE exitStatus = 0"
+        new MetricFilter.Builder().dates(INSTANT, null).success(false).build()      | "WHERE exitStatus != 0"
+        new MetricFilter.Builder().dates(INSTANT, INSTANT).success(true).build()    | "WHERE type::datetime(startTime) >= '$INSTANT' " +
+                                                                                        "AND type::datetime(startTime) <= '$INSTANT' AND exitStatus = 0"
+        new MetricFilter.Builder().dates(INSTANT, INSTANT).success(false).build()   | "WHERE type::datetime(startTime) >= '$INSTANT' " +
+                                                                                        "AND type::datetime(startTime) <= '$INSTANT' AND exitStatus != 0"
     }
 
     def 'get the correct pull filter' () {
+        given:
+        final INSTANT =  Instant.now()
         expect:
-        SurrealPersistenceService.getPullMetricFilter(STARTDATE, ENDDATE) == Filter
+        SurrealPersistenceService.getPullMetricFilter(MetricFilter) == SURREALDBFILTER
 
         where:
-        STARTDATE     | ENDDATE           | Filter
-        null          | null              | ''
-        Instant.now() | null              | ''
-        null          | Instant.now()     | ''
-        Instant.now() | Instant.now()     | "WHERE type::datetime(timestamp) >= '$STARTDATE' AND type::datetime(timestamp) <= '$ENDDATE'"
+        METRICFILTER                                                                | SURREALDBFILTER
+        null                                                                        | ''
+        new MetricFilter.Builder().dates(INSTANT, null).build()                     | ''
+        new MetricFilter.Builder().dates(null, INSTANT).build()                     | ''
+        new MetricFilter.Builder().dates(INSTANT, INSTANT).build()                  | "WHERE type::datetime(timestamp) >= '$INSTANT' " +
+                                                                                        "AND type::datetime(timestamp) <= '$INSTANT'"
+        new MetricFilter.Builder().fusion(true).build()                             |"WHERE fusionVersion != NONE"
+        new MetricFilter.Builder().fusion(false).build()                            |"WHERE fusionVersion = NONE"
+        new MetricFilter.Builder().dates(INSTANT, INSTANT).fusion(true).build()     | "WHERE type::datetime(timestamp) >= '$INSTANT' " +
+                                                                                        "AND type::datetime(timestamp) <= '$INSTANT' AND fusionVersion != NONE"
+        new MetricFilter.Builder().dates(INSTANT, INSTANT).fusion(false).build()     | "WHERE type::datetime(timestamp) >= '$INSTANT' " +
+                                                                                        "AND type::datetime(timestamp) <= '$INSTANT' AND fusionVersion = NONE"
     }
 }

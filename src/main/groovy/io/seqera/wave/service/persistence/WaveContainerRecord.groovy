@@ -151,6 +151,11 @@ class WaveContainerRecord {
      */
     final Boolean freeze
 
+    /**
+     * Whenever the request is for container with fusion
+     */
+    final String fusionVersion
+
     WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequestData data, String waveImage, String addr, Instant expiration) {
         this.user = data.identity.user
         this.workspaceId = request.towerWorkspaceId
@@ -173,6 +178,7 @@ class WaveContainerRecord {
         this.buildId = data.buildId
         this.buildNew = data.buildId ? data.buildNew : null
         this.freeze = data.buildId ? data.freeze : null
+        this.fusionVersion = request?.containerConfig?.fusionVersion()
     }
 
     WaveContainerRecord(WaveContainerRecord that, String sourceDigest, String waveDigest) {
@@ -195,6 +201,7 @@ class WaveContainerRecord {
         this.buildId = that.buildId
         this.buildNew = that.buildNew
         this.freeze = that.freeze
+        this.fusionVersion = that.fusionVersion
         // -- digest part 
         this.sourceDigest = sourceDigest
         this.waveDigest = waveDigest

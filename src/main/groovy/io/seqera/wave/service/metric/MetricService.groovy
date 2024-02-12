@@ -16,9 +16,6 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 package io.seqera.wave.service.metric
-
-import java.time.Instant
-
 /**
  * Metrics Service
  *
@@ -29,51 +26,43 @@ interface MetricService {
      * get the build count per metric
      *
      * @param metric, which metric to count
-     * @param success, filter only successful builds or not
-     * @param startDate, the start date to filter build records for counting
-     * @param endDate, the end date to filter build records for counting
-     * @param limit, to limit the number of map entries
+     * @param MetricFilters, to filter container requests for processing
      * @return The {@link Map} of [{@link Metric}, total build count per metric ]
      */
-    Map getBuildMetrics(Metric metrics, Boolean success, Instant startDate, Instant endDate, Integer limit)
+    Map getBuildMetrics(Metric metric, MetricFilter filter)
 
     /**
      * get the pull count per metric
      *
      * @param metric, which metric to count
-     * @param startDate, the start date to filter pull records for counting
-     * @param endDate, the end date to filter pull records for counting
-     * @param limit, to limit the number of map entries
+     * @param MetricFilters, to filter container requests for processing
      * @return The {@link Map} of [{@link Metric}, total pull count per metric ]
      */
-    Map getPullMetrics(Metric metrics, Instant startDate, Instant endDate, Integer limit)
+    Map getPullMetrics(Metric metric, MetricFilter filter)
 
     /**
      * get the total pull count
      *
-     * @param startDate, the start date to filter pull records for counting
-     * @param endDate, the end date to filter pull records for counting
+     * @param MetricFilters, to filter container requests for processing
      * @return The {@link Long} of total pull count
      */
-    Long getPullCount(Instant startDate, Instant endDate)
+    Long getPullCount(MetricFilter filter)
 
     /**
      * get the total build count
      *
-     * @param success, filter only successful builds or not
-     * @param startDate, the start date to filter build records for counting
-     * @param endDate, the end date to filter build records for counting
+     * @param MetricFilters, to filter container requests for processing
      * @return The {@link Long} of total build count
      */
-    Long getBuildCount(Boolean success, Instant startDate, Instant endDate)
+    Long getBuildCount(MetricFilter filter)
 
     /**
      * get the total count of distinct metrics
      *
      * @param metric, which metric to count
-     * @param startDate, the start date to filter container requests for counting
-     * @param endDate, the end date to filter container requests for counting
+     * @param MetricFilters, to filter container requests for processing
      * @return The {@link Long} of count of distinct metrics
      */
-    Long getDistinctMetrics(Metric metrics, Instant startDate, Instant endDate)
+    Long getDistinctMetrics(Metric metric, MetricFilter filter)
+
 }

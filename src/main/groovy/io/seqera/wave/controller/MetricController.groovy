@@ -37,6 +37,7 @@ import io.micronaut.security.annotation.Secured
 import io.micronaut.security.authentication.AuthorizationException
 import io.micronaut.security.rules.SecurityRule
 import io.seqera.wave.service.metric.Metric
+import io.seqera.wave.service.metric.MetricFilter
 import io.seqera.wave.service.metric.MetricService
 import jakarta.inject.Inject
 import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
@@ -54,47 +55,67 @@ class MetricController {
     @Inject
     private MetricService metricsService
 
-    @Get(uri="/builds/{metric}", produces = MediaType.APPLICATION_JSON)
+    @Get(uri = "/builds/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<Map> getBuildMetrics(@PathVariable String metric, @Nullable @QueryValue Boolean success, @Nullable @QueryValue String startDate,
                                       @Nullable @QueryValue String endDate, @Nullable @QueryValue Integer limit) {
-                return HttpResponse.ok(
-                        metricsService.getBuildMetrics(Metric.valueOf(metric), success, parseStartDate(startDate), parseEndDate(endDate), limit)
-                )
+        return HttpResponse.ok(
+                metricsService.getBuildMetrics(Metric.valueOf(metric),
+                        new MetricFilter.Builder().dates(parseStartDate(startDate), parseEndDate(endDate))
+                                .success(success)
+                                .limit(limit)
+                                .build())
+        )
     }
 
-    @Get(uri="/builds", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<LinkedHashMap> getBuildCount(@Nullable @QueryValue Boolean success, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
-            return HttpResponse.ok([count: metricsService.getBuildCount(success, parseStartDate(startDate), parseEndDate(endDate))])
+    @Get(uri = "/builds", produces = MediaType.APPLICATION_JSON)
+    HttpResponse<LinkedHashMap> getBuildCount(@Nullable @QueryValue Boolean success, @Nullable @QueryValue String startDate,
+                                              @Nullable @QueryValue String endDate) {
+        return HttpResponse.ok([count: metricsService.getBuildCount(
+                new MetricFilter.Builder().dates(parseStartDate(startDate), parseEndDate(endDate))
+                        .success(success)
+                        .build())])
     }
 
-    @Get(uri="/pulls/{metric}", produces = MediaType.APPLICATION_JSON)
+    @Get(uri = "/pulls/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<Map> getPullMetrics(@PathVariable String metric, @Nullable @QueryValue String startDate,
-                                     @Nullable @QueryValue String endDate, @Nullable @QueryValue Integer limit) {
-                return HttpResponse.ok(
-                        metricsService.getPullMetrics(Metric.valueOf(metric), parseStartDate(startDate), parseEndDate(endDate), limit)
-                )
+                                     @Nullable @QueryValue String endDate, @Nullable @QueryValue Integer limit,
+                                     @Nullable @QueryValue Boolean fusion) {
+        return HttpResponse.ok(
+                metricsService.getPullMetrics(Metric.valueOf(metric),
+                        new MetricFilter.Builder().dates(parseStartDate(startDate), parseEndDate(endDate))
+                                .fusion(fusion)
+                                .limit(limit)
+                                .build()))
 
     }
 
-    @Get(uri="/pulls", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<LinkedHashMap> getPullCount(@Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
-            return HttpResponse.ok([count: metricsService.getPullCount(parseStartDate(startDate), parseEndDate(endDate))])
+    @Get(uri = "/pulls", produces = MediaType.APPLICATION_JSON)
+    HttpResponse<LinkedHashMap> getPullCount(@Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate,
+                                             @Nullable @QueryValue Boolean fusion) {
+        return HttpResponse.ok([count: metricsService.getPullCount(
+                new MetricFilter.Builder().dates(parseStartDate(startDate), parseEndDate(endDate))
+                        .fusion(fusion)
+                        .build())])
     }
 
-    @Get(uri="/distinct/{metric}", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<LinkedHashMap> getBuildCount(@PathVariable String metric, @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate) {
-            return HttpResponse.ok([count: metricsService.getDistinctMetrics(Metric.valueOf(metric), parseStartDate(startDate), parseEndDate(endDate))])
+    @Get(uri = "/distinct/{metric}", produces = MediaType.APPLICATION_JSON)
+    HttpResponse<LinkedHashMap> getBuildCount(@PathVariable String metric, @Nullable @QueryValue String startDate,
+                                              @Nullable @QueryValue String endDate, @Nullable @QueryValue Boolean fusion) {
+        return HttpResponse.ok([count: metricsService.getDistinctMetrics(Metric.valueOf(metric),
+                new MetricFilter.Builder().dates(parseStartDate(startDate), parseEndDate(endDate))
+                        .fusion(fusion)
+                        .build())])
     }
 
     static Instant parseStartDate(String date) {
-        if( !date )
+        if (!date)
             return null
         LocalDate localDate = LocalDate.parse(date)
         return localDate.atTime(LocalTime.MIN).atZone(ZoneId.systemDefault()).toInstant()
     }
 
     static Instant parseEndDate(String date) {
-        if( !date )
+        if (!date)
             return null
         LocalDate localDate = LocalDate.parse(date)
         return localDate.atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toInstant()
@@ -108,12 +129,12 @@ class MetricController {
     @Error(exception = AuthorizationException.class)
     HttpResponse<?> handleAuthorizationException() {
         return HttpResponse.unauthorized()
-        .header(WWW_AUTHENTICATE, "Basic realm=Wave Authentication")
+                .header(WWW_AUTHENTICATE, "Basic realm=Wave Authentication")
     }
 
     @Error(exception = IllegalArgumentException.class)
     HttpResponse<?> handleIllegalArgumentException() {
         return HttpResponse.badRequest([message: 'you have provided an invalid metric. ' +
-                'The valid metrics are: ' + Metric.values().collect({it.name()}).join(', ')])
+                'The valid metrics are: ' + Metric.values().collect({ it.name() }).join(', ')])
     }
 }
