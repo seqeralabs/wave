@@ -154,6 +154,23 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"io.seqera.wave.api.ContainerInspectRequest",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.seqera.wave.api.ContainerInspectResponse",
+  "allDeclaredFields":true,
+  "queryAllPublicMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.seqera.wave.api.ContainerInspectResponseBeanInfo"
+},
+{
+  "name":"io.seqera.wave.api.ContainerInspectResponseCustomizer"
+},
+{
   "name":"io.seqera.wave.api.ContainerLayer",
   "allDeclaredFields":true,
   "methods":[{"name":"<init>","parameterTypes":[] }]
@@ -204,6 +221,43 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"io.seqera.wave.core.spec.ConfigSpec",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.seqera.wave.core.spec.ConfigSpec$Config",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.seqera.wave.core.spec.ConfigSpec$Rootfs",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.seqera.wave.core.spec.ContainerSpec",
+  "allDeclaredFields":true,
+  "queryAllPublicMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.seqera.wave.core.spec.ContainerSpecBeanInfo"
+},
+{
+  "name":"io.seqera.wave.core.spec.ContainerSpecCustomizer"
+},
+{
+  "name":"io.seqera.wave.core.spec.ManifestSpec",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.seqera.wave.core.spec.ObjectRef",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
   "name":"java.beans.PropertyVetoException"
 },
 {
@@ -214,6 +268,12 @@
   "allDeclaredFields":true,
   "queryAllDeclaredMethods":true,
   "queryAllPublicMethods":true
+},
+{
+  "name":"java.lang.ObjectBeanInfo"
+},
+{
+  "name":"java.lang.ObjectCustomizer"
 },
 {
   "name":"java.lang.RuntimePermission"

@@ -41,6 +41,8 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.seqera.wave.api.BuildContext;
 import io.seqera.wave.api.ContainerConfig;
+import io.seqera.wave.api.ContainerInspectRequest;
+import io.seqera.wave.api.ContainerInspectResponse;
 import io.seqera.wave.api.ContainerLayer;
 import io.seqera.wave.api.ServiceInfo;
 import io.seqera.wave.api.SubmitContainerTokenRequest;
@@ -191,6 +193,9 @@ public class App implements Runnable {
 
     private ContainerConfig containerConfig;
 
+    @Option(names = {"--inspect"}, paramLabel = "false", description = "Inspect specified container image")
+    private boolean inspect;
+
     public static void main(String[] args) {
         try {
             final App app = new App();
@@ -215,6 +220,9 @@ public class App implements Runnable {
             app.defaultArgs();
             if( app.info ) {
                 app.printInfo();
+            }
+            else if( app.inspect ) {
+                app.inspect();
             }
             else {
                 app.run();
@@ -396,6 +404,19 @@ public class App implements Runnable {
                 ;
     }
 
+    public void inspect() {
+        final Client client = client();
+        final ContainerInspectRequest req = new ContainerInspectRequest()
+                .withContainerImage(image)
+                .withTowerAccessToken(towerToken)
+                .withTowerWorkspaceId(towerWorkspaceId)
+                .withTowerEndpoint(towerEndpoint)
+                ;
+
+        final ContainerInspectResponse resp = client.inspect(req);
+        System.out.println(dumpOutput(resp));
+    }
+
     @Override
     public void run() {
         // validate the command line args
@@ -524,6 +545,7 @@ public class App implements Runnable {
             if( layer.gzipSize > _1MB )
                 throw new RuntimeException("Container layer cannot be bigger of 1 MiB - offending path: " + loc);
         }
+
         // check all size
         long size = 0;
         for(ContainerLayer it : result.layers ) {
@@ -535,6 +557,14 @@ public class App implements Runnable {
 
         // return the result
         return !result.empty() ? result : null;
+    }
+
+    private ContainerInspectRequest inspectRequest(String image) {
+        return new ContainerInspectRequest()
+                .withContainerImage(image)
+                .withTowerEndpoint(towerEndpoint)
+                .withTowerAccessToken(towerToken)
+                .withTowerWorkspaceId(towerWorkspaceId);
     }
 
     private CondaOpts condaOpts() {
@@ -618,6 +648,16 @@ public class App implements Runnable {
         return freeze
                 ? resp.containerImage
                 : resp.targetImage;
+    }
+
+    protected String dumpOutput(ContainerInspectResponse resp) {
+        if( "json".equals(outputFormat) || outputFormat==null ) {
+            return JsonHelper.toJson(resp);
+        }
+        if( "yaml".equals(outputFormat) ) {
+            return YamlHelper.toYaml(resp);
+        }
+        throw new IllegalArgumentException("Unexpected output format: "+outputFormat);
     }
 
     protected ContainerConfig readConfig(String path) {

@@ -34,6 +34,8 @@ import dev.failsafe.RetryPolicy;
 import dev.failsafe.event.EventListener;
 import dev.failsafe.event.ExecutionAttemptedEvent;
 import dev.failsafe.function.CheckedSupplier;
+import io.seqera.wave.api.ContainerInspectRequest;
+import io.seqera.wave.api.ContainerInspectResponse;
 import io.seqera.wave.api.ServiceInfo;
 import io.seqera.wave.api.ServiceInfoResponse;
 import io.seqera.wave.api.SubmitContainerTokenRequest;
@@ -79,6 +81,31 @@ public class Client {
                 .followRedirects(HttpClient.Redirect.NEVER)
                 .connectTimeout(Duration.ofSeconds(30))
                 .build();
+    }
+
+    ContainerInspectResponse inspect(ContainerInspectRequest request) {
+        final String body = JsonHelper.toJson(request);
+        final URI uri = URI.create(endpoint + "/v1alpha1/inspect");
+        log.debug("Wave request: {} - payload: {}", uri, request);
+        final HttpRequest req = HttpRequest.newBuilder()
+                .uri(uri)
+                .headers("Content-Type","application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+
+        try {
+            final HttpResponse<String> resp = httpSend(req);
+            log.debug("Wave response: statusCode={}; body={}", resp.statusCode(), resp.body());
+            if( resp.statusCode()==200 )
+                return JsonHelper.fromJson(resp.body(), ContainerInspectResponse.class);
+            else {
+                String msg = String.format("Wave invalid response: [%s] %s", resp.statusCode(), resp.body());
+                throw new BadClientResponseException(msg);
+            }
+        }
+        catch (IOException e) {
+            throw new IllegalStateException("Unable to connect Wave service: " + endpoint);
+        }
     }
 
     SubmitContainerTokenResponse submit(SubmitContainerTokenRequest request) {

@@ -20,7 +20,9 @@ package io.seqera.wave.cli.util
 
 import java.time.Instant
 
+import io.seqera.wave.api.ContainerInspectResponse
 import io.seqera.wave.api.SubmitContainerTokenResponse
+import io.seqera.wave.core.spec.ContainerSpec
 import spock.lang.Specification
 /**
  *
@@ -47,6 +49,25 @@ class YamlHelperTest extends Specification {
             containerToken: '12345'
             expiration: '1970-01-20T13:57:19.913Z'
             targetImage: docker.io/some/repo
+            '''.stripIndent(true)
+    }
+
+    def 'should convert response to yaml' () {
+        given:
+        def spec = new ContainerSpec('docker.io','ubuntu','22.04','sha:12345', null, null, null)
+        def resp = new ContainerInspectResponse(spec)
+
+        when:
+        def result = YamlHelper.toYaml(resp)
+        then:
+        result == '''\
+            container:
+              config: null
+              digest: sha:12345
+              imageName: ubuntu
+              manifest: null
+              reference: '22.04'
+              registry: docker.io
             '''.stripIndent(true)
     }
 

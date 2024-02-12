@@ -20,7 +20,9 @@ package io.seqera.wave.cli
 import java.nio.file.Files
 import java.time.Instant
 
+import io.seqera.wave.api.ContainerInspectResponse
 import io.seqera.wave.api.SubmitContainerTokenResponse
+import io.seqera.wave.core.spec.ContainerSpec
 import io.seqera.wave.util.TarUtils
 import io.seqera.wave.cli.exception.IllegalCliArgumentException
 import picocli.CommandLine
@@ -91,6 +93,42 @@ class AppTest extends Specification {
         def result = app.dumpOutput(resp)
         then:
         result == '{"buildId":"98765","containerImage":"docker.io/some/container","containerToken":"12345","expiration":"1970-01-20T13:57:19.913Z","targetImage":"docker.io/some/repo"}'
+    }
+
+    def 'should dump inspect to json' () {
+        given:
+        def app = new App()
+        String[] args = ["--output", "json"]
+        and:
+        def resp = new ContainerInspectResponse( new ContainerSpec('docker.io', 'busybox', 'latest', 'sha:12345', null, null, null) )
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        def result = app.dumpOutput(resp)
+        then:
+        result == '{"container":{"digest":"sha:12345","imageName":"busybox","reference":"latest","registry":"docker.io"}}'
+    }
+
+    def 'should dump inspect to yaml' () {
+        given:
+        def app = new App()
+        String[] args = ["--output", "yaml"]
+        and:
+        def resp = new ContainerInspectResponse( new ContainerSpec('docker.io', 'busybox', 'latest', 'sha:12345', null, null, null) )
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        def result = app.dumpOutput(resp)
+        then:
+        result == '''\
+            container:
+              config: null
+              digest: sha:12345
+              imageName: busybox
+              manifest: null
+              reference: latest
+              registry: docker.io
+            '''.stripIndent()
     }
 
     def 'should prepare context' () {
