@@ -123,18 +123,6 @@ class RegistryProxyController {
         )
     }
 
-    protected void increaseFusionPullsCounter(RoutePath route) {
-        try {
-            final version = route.request?.containerConfig?.fusionVersion()
-            if( version ) {
-                meterRegistry.counter('fusion.pulls', 'version', version.number, 'arch', version.arch).increment()
-            }
-        }
-        catch (Throwable e) {
-            log.error "Unable to increment fusion pulls counter", e
-        }
-    }
-
     @Get(uri="/{url:(.+)}", produces = "*/*")
     CompletableFuture<MutableHttpResponse<?>> handleGet(String url, HttpRequest httpRequest) {
         log.info "> Request [$httpRequest.method] $httpRequest.path"
@@ -249,8 +237,6 @@ class RegistryProxyController {
     }
 
     protected DigestStore manifestForPath(RoutePath route, HttpRequest httpRequest) {
-        // increase the quest counters
-        increaseFusionPullsCounter(route)
         // when the request contains a wave token and the manifest is specified
         // using a container 'tag' instead of a 'digest' the request path is used as storage key
         // because the target container path could be not unique (multiple wave containers request
