@@ -1,5 +1,9 @@
 WAVE CLI CHANGE-LOG
 ===================
+1.2.0 - 12 Feb 2024
+- Add support for container includes option [01d5904d]
+- Add support for inspect option [a29f905f]
+
 1.1.3 - 4 Feb 2024 
 - Add preserve timestamp option [4b710ea9]
 - Bump reflect and resource configs for native-image build [8875dd9d]
