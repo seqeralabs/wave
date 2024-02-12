@@ -170,6 +170,8 @@ class ContainerTokenController {
         final resp = new SubmitContainerTokenResponse(token.value, target, token.expiration, data.containerImage, build)
         // persist request
         storeContainerRequest0(req, data, token, target, ip)
+        // log the response
+        log.debug "New container request fulfilled - token=$token.value; expiration=$token.expiration; container=$data.containerImage; build=$build; identity=$identity"
         // return response
         return HttpResponse.ok(resp)
     }
