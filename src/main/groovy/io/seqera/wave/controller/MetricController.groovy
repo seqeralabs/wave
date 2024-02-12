@@ -56,55 +56,75 @@ class MetricController {
     private MetricService metricsService
 
     @Get(uri = "/builds/{metric}", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<Map> getBuildMetrics(@PathVariable String metric, @Nullable @QueryValue Boolean success, @Nullable @QueryValue String startDate,
-                                      @Nullable @QueryValue String endDate, @Nullable @QueryValue Integer limit) {
+    HttpResponse<Map> getBuildMetrics(@PathVariable String metric, @Nullable @QueryValue Boolean success,
+                                      @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate,
+                                      @Nullable @QueryValue Integer limit) {
         return HttpResponse.ok(
-                metricsService.getBuildMetrics(Metric.valueOf(metric),
-                        new MetricFilter.Builder().dates(parseStartDate(startDate), parseEndDate(endDate))
+                metricsService.getBuildMetrics(
+                        Metric.valueOf(metric),
+                        new MetricFilter.Builder()
+                                .dates(parseStartDate(startDate), parseEndDate(endDate))
                                 .success(success)
                                 .limit(limit)
-                                .build())
+                                .build()
+                )
         )
     }
 
     @Get(uri = "/builds", produces = MediaType.APPLICATION_JSON)
     HttpResponse<LinkedHashMap> getBuildCount(@Nullable @QueryValue Boolean success, @Nullable @QueryValue String startDate,
                                               @Nullable @QueryValue String endDate) {
-        return HttpResponse.ok([count: metricsService.getBuildCount(
-                new MetricFilter.Builder().dates(parseStartDate(startDate), parseEndDate(endDate))
-                        .success(success)
-                        .build())])
+        return HttpResponse.ok(
+                [count: metricsService.getBuildCount(
+                        new MetricFilter.Builder()
+                                .dates(parseStartDate(startDate), parseEndDate(endDate))
+                                .success(success)
+                                .build())
+                ]
+        )
     }
 
     @Get(uri = "/pulls/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<Map> getPullMetrics(@PathVariable String metric, @Nullable @QueryValue String startDate,
-                                     @Nullable @QueryValue String endDate, @Nullable @QueryValue Integer limit,
-                                     @Nullable @QueryValue Boolean fusion) {
+                                     @Nullable @QueryValue String endDate,@Nullable @QueryValue Boolean fusion,
+                                     @Nullable @QueryValue Integer limit) {
         return HttpResponse.ok(
-                metricsService.getPullMetrics(Metric.valueOf(metric),
-                        new MetricFilter.Builder().dates(parseStartDate(startDate), parseEndDate(endDate))
+                metricsService.getPullMetrics(
+                        Metric.valueOf(metric),
+                        new MetricFilter.Builder()
+                                .dates(parseStartDate(startDate), parseEndDate(endDate))
                                 .fusion(fusion)
                                 .limit(limit)
-                                .build()))
+                                .build())
+        )
 
     }
 
     @Get(uri = "/pulls", produces = MediaType.APPLICATION_JSON)
     HttpResponse<LinkedHashMap> getPullCount(@Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate,
                                              @Nullable @QueryValue Boolean fusion) {
-        return HttpResponse.ok([count: metricsService.getPullCount(
-                new MetricFilter.Builder().dates(parseStartDate(startDate), parseEndDate(endDate))
-                        .fusion(fusion)
-                        .build())])
+        return HttpResponse.ok(
+                [count: metricsService.getPullCount(
+                        new MetricFilter.Builder()
+                                .dates(parseStartDate(startDate), parseEndDate(endDate))
+                                .fusion(fusion)
+                                .build())
+                ]
+        )
     }
 
     @Get(uri = "/distinct/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<LinkedHashMap> getBuildCount(@PathVariable String metric, @Nullable @QueryValue String startDate,
                                               @Nullable @QueryValue String endDate, @Nullable @QueryValue Boolean fusion) {
-        return HttpResponse.ok([count: metricsService.getDistinctMetrics(Metric.valueOf(metric),
-                new MetricFilter.Builder().dates(parseStartDate(startDate), parseEndDate(endDate))
-                        .fusion(fusion)
-                        .build())])
+        return HttpResponse.ok(
+                [count: metricsService.getDistinctMetrics(
+                        Metric.valueOf(metric),
+                        new MetricFilter.Builder()
+                                .dates(parseStartDate(startDate), parseEndDate(endDate))
+                                .fusion(fusion)
+                                .build())
+                ]
+        )
     }
 
     static Instant parseStartDate(String date) {

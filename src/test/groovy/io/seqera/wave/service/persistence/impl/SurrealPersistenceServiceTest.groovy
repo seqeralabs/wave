@@ -613,46 +613,36 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
     }
 
     def 'should get the correct build filter' () {
-        given:
-        final INSTANT =  Instant.now()
         expect:
-        SurrealPersistenceService.getBuildMetricFilter(METRICFILTER) == SURREALDBFILTER
-
+        SurrealPersistenceService.getBuildMetricFilter(new MetricFilter.Builder().success(SUCCESS).dates(STARTDATE, ENDDATE).build()) == SURREALDBFILTER
         where:
-        METRICFILTER                                                                | SURREALDBFILTER
-        null                                                                        | ''
-        new MetricFilter.Builder().success(true).build()                            | 'WHERE exitStatus = 0'
-        new MetricFilter.Builder().success(false).build()                           | 'WHERE exitStatus != 0'
-        new MetricFilter.Builder().dates(INSTANT, INSTANT).build()                  | "WHERE type::datetime(startTime) >= '$INSTANT' " +
-                                                                                        "AND type::datetime(startTime) <= '$INSTANT'"
-        new MetricFilter.Builder().dates(INSTANT, null).build()                     | ''
-        new MetricFilter.Builder().dates(null, INSTANT).build()                     | ''
-        new MetricFilter.Builder().dates(INSTANT, null).success(true).build()       | "WHERE exitStatus = 0"
-        new MetricFilter.Builder().dates(INSTANT, null).success(false).build()      | "WHERE exitStatus != 0"
-        new MetricFilter.Builder().dates(INSTANT, INSTANT).success(true).build()    | "WHERE type::datetime(startTime) >= '$INSTANT' " +
-                                                                                        "AND type::datetime(startTime) <= '$INSTANT' AND exitStatus = 0"
-        new MetricFilter.Builder().dates(INSTANT, INSTANT).success(false).build()   | "WHERE type::datetime(startTime) >= '$INSTANT' " +
-                                                                                        "AND type::datetime(startTime) <= '$INSTANT' AND exitStatus != 0"
+        SUCCESS | STARTDATE     | ENDDATE           | SURREALDBFILTER
+        null    | null          | null              | ''
+        true    | null          | null              | 'WHERE exitStatus = 0'
+        false   | null          | null              | 'WHERE exitStatus != 0'
+        null    | Instant.now() | Instant.now()     | "WHERE type::datetime(startTime) >= '$STARTDATE' AND type::datetime(startTime) <= '$ENDDATE'"
+        null    | Instant.now() | null              | ''
+        null    | null          | Instant.now()     | ''
+        true    | null          | Instant.now()     | "WHERE exitStatus = 0"
+        false   | Instant.now() | null              | "WHERE exitStatus != 0"
+        true    | Instant.now() | Instant.now()     | "WHERE type::datetime(startTime) >= '$STARTDATE' AND type::datetime(startTime) <= '$ENDDATE' AND exitStatus = 0"
+        false   | Instant.now() | Instant.now()     | "WHERE type::datetime(startTime) >= '$STARTDATE' AND type::datetime(startTime) <= '$ENDDATE' AND exitStatus != 0"
     }
 
     def 'get the correct pull filter' () {
-        given:
-        final INSTANT =  Instant.now()
         expect:
-        SurrealPersistenceService.getPullMetricFilter(MetricFilter) == SURREALDBFILTER
-
+        SurrealPersistenceService.getPullMetricFilter(new MetricFilter.Builder().fusion(FUSION).dates(STARTDATE, ENDDATE).build()) == SURREALDBFILTER
         where:
-        METRICFILTER                                                                | SURREALDBFILTER
-        null                                                                        | ''
-        new MetricFilter.Builder().dates(INSTANT, null).build()                     | ''
-        new MetricFilter.Builder().dates(null, INSTANT).build()                     | ''
-        new MetricFilter.Builder().dates(INSTANT, INSTANT).build()                  | "WHERE type::datetime(timestamp) >= '$INSTANT' " +
-                                                                                        "AND type::datetime(timestamp) <= '$INSTANT'"
-        new MetricFilter.Builder().fusion(true).build()                             |"WHERE fusionVersion != NONE"
-        new MetricFilter.Builder().fusion(false).build()                            |"WHERE fusionVersion = NONE"
-        new MetricFilter.Builder().dates(INSTANT, INSTANT).fusion(true).build()     | "WHERE type::datetime(timestamp) >= '$INSTANT' " +
-                                                                                        "AND type::datetime(timestamp) <= '$INSTANT' AND fusionVersion != NONE"
-        new MetricFilter.Builder().dates(INSTANT, INSTANT).fusion(false).build()     | "WHERE type::datetime(timestamp) >= '$INSTANT' " +
-                                                                                        "AND type::datetime(timestamp) <= '$INSTANT' AND fusionVersion = NONE"
+        FUSION | STARTDATE     | ENDDATE            | SURREALDBFILTER
+        null    | null          | null              | ''
+        true    | null          | null              | 'WHERE fusionVersion != NONE'
+        false   | null          | null              | 'WHERE fusionVersion = NONE'
+        null    | Instant.now() | Instant.now()     | "WHERE type::datetime(timestamp) >= '$STARTDATE' AND type::datetime(timestamp) <= '$ENDDATE'"
+        null    | Instant.now() | null              | ''
+        null    | null          | Instant.now()     | ''
+        true    | null          | Instant.now()     | 'WHERE fusionVersion != NONE'
+        false   | Instant.now() | null              | 'WHERE fusionVersion = NONE'
+        true    | Instant.now() | Instant.now()     | "WHERE type::datetime(timestamp) >= '$STARTDATE' AND type::datetime(timestamp) <= '$ENDDATE' AND fusionVersion != NONE"
+        false   | Instant.now() | Instant.now()     | "WHERE type::datetime(timestamp) >= '$STARTDATE' AND type::datetime(timestamp) <= '$ENDDATE' AND fusionVersion = NONE"
     }
 }

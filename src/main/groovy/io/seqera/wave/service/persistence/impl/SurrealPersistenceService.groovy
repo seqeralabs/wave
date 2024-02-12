@@ -332,7 +332,7 @@ class SurrealPersistenceService implements PersistenceService {
                 filter += metricFilter.fusion ? " AND fusionVersion != NONE" : " AND fusionVersion = NONE"
             }
         } else if (metricFilter.fusion != null) {
-            filter = metricFilter.fusion ? " WHERE fusionVersion != NONE" : " WHERE fusionVersion = NONE"
+            filter = metricFilter.fusion ? "WHERE fusionVersion != NONE" : "WHERE fusionVersion = NONE"
         }
         return  filter
     }

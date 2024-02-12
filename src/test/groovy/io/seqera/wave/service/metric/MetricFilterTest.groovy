@@ -27,16 +27,16 @@ import java.time.Instant
  */
 class MetricFilterTest extends Specification {
 
-    def " should return filter with everything"() {
+    def "should return filter with everything"() {
         given:
         def startDate = Instant.now()
         def endDate = Instant.now()
-        def filter = new MetricFilter.Builder().
-                dates(startDate, endDate).
-                limit(10).
-                success(true).
-                fusion(false).
-                build()
+        def filter = new MetricFilter.Builder()
+                .dates(startDate, endDate)
+                .limit(10)
+                .success(true)
+                .fusion(false)
+                .build()
         expect:
         filter.startDate == startDate
         filter.endDate == endDate
@@ -45,7 +45,7 @@ class MetricFilterTest extends Specification {
         filter.fusion == false
     }
 
-    def " should return filter with dates"() {
+    def "should return filter with dates"() {
         given:
         def startDate = Instant.now()
         def endDate = Instant.now()
@@ -59,7 +59,7 @@ class MetricFilterTest extends Specification {
         filter.fusion == null
     }
 
-    def " should return filter with limit"() {
+    def "should return filter with limit"() {
         given:
         def filter = new MetricFilter.Builder().limit(1).build()
 
@@ -71,7 +71,7 @@ class MetricFilterTest extends Specification {
         filter.fusion == null
     }
 
-    def " should return filter with success"() {
+    def "should return filter with success"() {
         given:
         def filter = new MetricFilter.Builder().success(true).build()
 
@@ -83,7 +83,7 @@ class MetricFilterTest extends Specification {
         filter.fusion == null
     }
 
-    def " should return filter with fusion"() {
+    def "should return filter with fusion"() {
         given:
         def filter = new MetricFilter.Builder().fusion(false).build()
 
@@ -95,14 +95,14 @@ class MetricFilterTest extends Specification {
         filter.fusion == false
     }
 
-    def " should return null if every parameter is null"() {
+    def "should return null if every parameter is null"() {
         given:
-        def filter = new MetricFilter.Builder().
-                dates(null, null).
-                limit(null).
-                success(null).
-                fusion(null).
-                build()
+        def filter = new MetricFilter.Builder()
+                .dates(null, null)
+                .limit(null)
+                .success(null)
+                .fusion(null)
+                .build()
 
         expect:
         filter == null

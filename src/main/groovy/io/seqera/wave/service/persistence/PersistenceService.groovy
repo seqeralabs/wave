@@ -131,7 +131,7 @@ interface PersistenceService {
      * Retrieve the build count per metric from storage
      *
      * @param metric , which metric to count
-     * @param MetricFilters , to filter container requests for storage
+     * @param MetricFilters , to filter records extracted from storage
      * @return The {@link Map} of [{@link Metric}, total build count per metric ]
      */
     Map<String, Long> getBuildCountByMetrics(Metric metric, MetricFilter filter)
@@ -139,7 +139,7 @@ interface PersistenceService {
     /**
      * Retrieve the total build count from storage
      *
-     * @param MetricFilters , to filter container requests for storage
+     * @param MetricFilters , to filter records extracted from storage
      * @return The {@link Long} of total build count
      */
     Long getBuildCount(MetricFilter filter)
@@ -148,7 +148,7 @@ interface PersistenceService {
      * Retrieve the pull count per metric from storage
      *
      * @param metric , which metric to count
-     * @param MetricFilters , to filter container requests for storage
+     * @param MetricFilters , to filter records extracted from storage
      * @return The {@link Map} of [{@link Metric}, total pull count per metric ]
      */
     Map<String, Long> getPullCountByMetrics(Metric metric, MetricFilter filter)
@@ -156,7 +156,7 @@ interface PersistenceService {
     /**
      * Retrieve the total pull count from storage
      *
-     * @param MetricFilters , to filter container requests for storage
+     * @param MetricFilters , to filter records extracted from storage
      * @return The {@link Long} of total pull count
      */
     Long getPullCount(MetricFilter filter)
@@ -165,7 +165,7 @@ interface PersistenceService {
      * Retrieve the total count of distinct metrics from storage
      *
      * @param metric , which metric to count
-     * @param MetricFilters , to filter container requests for storage
+     * @param MetricFilters , to filter records extracted from storage
      * @return The {@link Long} of count of distinct metrics
      */
     Long getDistinctMetrics(Metric metric, MetricFilter filter)
