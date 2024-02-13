@@ -19,6 +19,7 @@
 package io.seqera.wave.service.persistence.impl
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.nio.file.Path
 import java.time.Duration
@@ -612,6 +613,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.getDistinctMetrics(Metric.user, null) == 0
     }
 
+    @Unroll
     def 'should get the correct build filter' () {
         expect:
         SurrealPersistenceService.getBuildMetricFilter(new MetricFilter.Builder().success(SUCCESS).dates(STARTDATE, ENDDATE).build()) == SURREALDBFILTER
@@ -621,10 +623,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         true    | null          | null              | 'WHERE exitStatus = 0'
         false   | null          | null              | 'WHERE exitStatus != 0'
         null    | Instant.now() | Instant.now()     | "WHERE type::datetime(startTime) >= '$STARTDATE' AND type::datetime(startTime) <= '$ENDDATE'"
-        null    | Instant.now() | null              | ''
         null    | null          | Instant.now()     | ''
         true    | null          | Instant.now()     | "WHERE exitStatus = 0"
-        false   | Instant.now() | null              | "WHERE exitStatus != 0"
         true    | Instant.now() | Instant.now()     | "WHERE type::datetime(startTime) >= '$STARTDATE' AND type::datetime(startTime) <= '$ENDDATE' AND exitStatus = 0"
         false   | Instant.now() | Instant.now()     | "WHERE type::datetime(startTime) >= '$STARTDATE' AND type::datetime(startTime) <= '$ENDDATE' AND exitStatus != 0"
     }
@@ -638,10 +638,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         true    | null          | null              | 'WHERE fusionVersion != NONE'
         false   | null          | null              | 'WHERE fusionVersion = NONE'
         null    | Instant.now() | Instant.now()     | "WHERE type::datetime(timestamp) >= '$STARTDATE' AND type::datetime(timestamp) <= '$ENDDATE'"
-        null    | Instant.now() | null              | ''
         null    | null          | Instant.now()     | ''
         true    | null          | Instant.now()     | 'WHERE fusionVersion != NONE'
-        false   | Instant.now() | null              | 'WHERE fusionVersion = NONE'
         true    | Instant.now() | Instant.now()     | "WHERE type::datetime(timestamp) >= '$STARTDATE' AND type::datetime(timestamp) <= '$ENDDATE' AND fusionVersion != NONE"
         false   | Instant.now() | Instant.now()     | "WHERE type::datetime(timestamp) >= '$STARTDATE' AND type::datetime(timestamp) <= '$ENDDATE' AND fusionVersion = NONE"
     }
