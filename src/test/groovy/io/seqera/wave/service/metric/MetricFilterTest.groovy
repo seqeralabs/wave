@@ -59,6 +59,20 @@ class MetricFilterTest extends Specification {
         filter.fusion == null
     }
 
+    def "should generate endDate when startDate is set"() {
+        given:
+        def startDate = Instant.now()
+        def endDate = null
+        def filter = new MetricFilter.Builder().dates(startDate, endDate).build()
+
+        expect:
+        filter.startDate == startDate
+        filter.endDate != null
+        filter.limit == null
+        filter.success == null
+        filter.fusion == null
+    }
+
     def "should return filter with limit"() {
         given:
         def filter = new MetricFilter.Builder().limit(1).build()
