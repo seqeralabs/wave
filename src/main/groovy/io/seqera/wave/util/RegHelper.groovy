@@ -32,6 +32,7 @@ import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.api.ContainerLayer
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.model.ContainerCoordinates
 import org.yaml.snakeyaml.Yaml
 /**
@@ -221,6 +222,14 @@ class RegHelper {
         try {
             final yaml = new Yaml().load(spackFileContent) as Map
             final spack = yaml.spack as Map
+
+            if( !spack ){
+                throw new BadRequestException('Malformed Spack environment file - missing "spack:" section')
+            }
+            if( !spack.specs ){
+                throw new BadRequestException('Malformed Spack environment file - missing "spack.specs:" section')
+            }
+
             if( spack.specs instanceof List ) {
                 final LinkedHashSet<String> result = new LinkedHashSet()
                 for( String it : spack.specs ) {
@@ -237,7 +246,10 @@ class RegHelper {
             }
             return null
         }
-        catch (Exception e) {
+        catch (BadRequestException e) {
+            throw  e
+        }
+        catch (Throwable e) {
             log.warn "Unable to infer spack recipe name - cause: ${e.message}", e
             return null
         }
