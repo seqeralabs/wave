@@ -224,10 +224,10 @@ class RegHelper {
             final spack = yaml.spack as Map
 
             if( !spack ){
-                throw new BadRequestException("Section \"spack:\" not found in the Spack environment file, please check it and try again")
+                throw new BadRequestException('Malformed Spack environment file - missing "spack:" section')
             }
             if( !spack.specs ){
-                throw new BadRequestException("Section \"spack:specs:\" not found in the Spack environment file, please check it and try again")
+                throw new BadRequestException('Malformed Spack environment file - missing "spack.specs:" section')
             }
 
             if( spack.specs instanceof List ) {
@@ -246,7 +246,10 @@ class RegHelper {
             }
             return null
         }
-        catch (Exception e) {
+        catch (BadRequestException e) {
+            throw  e
+        }
+        catch (Throwable e) {
             log.warn "Unable to infer spack recipe name - cause: ${e.message}", e
             return null
         }

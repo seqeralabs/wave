@@ -25,6 +25,7 @@ import java.util.concurrent.CompletableFuture
 
 import com.google.common.hash.Hashing
 import groovy.util.logging.Slf4j
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.test.ManifestConst
 
 /**
@@ -234,24 +235,32 @@ class RegHelperTest extends Specification {
         RegHelper.guessSpackRecipeName(SPACK) == 'bwa-0.7.15_salmon-1.1.1_nano-1.0'
     }
 
-    def 'should return null when spack section is not present in spack yaml file' () {
+    def 'should throw an exception when spack section is not present in spack yaml file' () {
         def SPACK = '''\
               specs: [bwa@0.7.15, salmon@1.1.1, nano@1.0 x=one]
               concretizer: {unify: true, reuse: true}
             '''.stripIndent(true)
 
-        expect:
-        RegHelper.guessSpackRecipeName(SPACK) == null
+        when:
+        RegHelper.guessSpackRecipeName(SPACK)
+        then:
+        def e = thrown(BadRequestException)
+        and:
+        e.message == 'Malformed Spack environment file - missing "spack:" section'
     }
 
-    def 'should return null when spack.specs section is not present in spack yaml file' () {
+    def 'should throw an exception when spack.specs section is not present in spack yaml file' () {
         def SPACK = '''\
             spack:
               concretizer: {unify: true, reuse: true}
             '''.stripIndent(true)
 
-        expect:
-        RegHelper.guessSpackRecipeName(SPACK) == null
+        when:
+        RegHelper.guessSpackRecipeName(SPACK)
+        then:
+        def e = thrown(BadRequestException)
+        and:
+        e.message == 'Malformed Spack environment file - missing "spack.specs:" section'
     }
 
     def 'should compute sip hash' () {
