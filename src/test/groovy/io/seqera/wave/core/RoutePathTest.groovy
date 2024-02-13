@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -21,6 +21,9 @@ package io.seqera.wave.core
 import spock.lang.Specification
 
 import io.seqera.wave.model.ContainerCoordinates
+import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.tower.User
 
 /**
  *
@@ -79,4 +82,58 @@ class RoutePathTest extends Specification {
         'quay.io/foo/bar:v1.0' | '/v2/foo/bar/manifests/v1.0'
     }
 
+    def 'should parse location' () {
+        expect:
+        RoutePath.parse(GIVEN) == RoutePath.v2path(TYPE, REG, IMAGE, REF)
+
+        where:
+        GIVEN                                                   | TYPE          | REG           | IMAGE         | REF
+        '/v2/hello-world/manifests/latest'                      | 'manifests'   | 'docker.io'   | 'hello-world' | 'latest'
+        'docker.io/v2/hello-world/manifests/latest'             | 'manifests'   | 'docker.io'   | 'hello-world' | 'latest'
+        'quay.io/v2/hello-world/manifests/sha256:123456'        | 'manifests'   | 'quay.io'     | 'hello-world' | 'sha256:123456'
+        and:
+        '/v2/hello-world/blobs/latest'                          | 'blobs'   | 'docker.io'       | 'hello-world' | 'latest'
+        'docker.io/v2/hello-world/blobs/latest'                 | 'blobs'   | 'docker.io'       | 'hello-world' | 'latest'
+        'quay.io/v2/hello-world/blobs/sha256:123456'            | 'blobs'   | 'quay.io'         | 'hello-world' | 'sha256:123456'
+        and:
+        'foo.com:5000/v2/hello-world/blobs/latest'              | 'blobs'   | 'foo.com:5000'    | 'hello-world' | 'latest'
+        'foo.com:5000/v2/hello-world/blobs/sha256:123456'       | 'blobs'   | 'foo.com:5000'    | 'hello-world' | 'sha256:123456'
+        and:
+        'docker://quay.io/v2/hello-world/blobs/sha256:123456'   | 'blobs'   | 'quay.io'         | 'hello-world' | 'sha256:123456'
+    }
+
+    def 'should create route path' () {
+        when:
+        def route1 = new RoutePath(
+                   'manifests',
+                 'foo.com',
+                  'ubuntu',
+                'latest',
+                    '/v2/library/ubuntu/manifests/latest' )
+        then:
+        route1.type == 'manifests'
+        route1.registry == 'foo.com'
+        route1.image == 'ubuntu'
+        route1.reference == 'latest'
+        route1.path == '/v2/library/ubuntu/manifests/latest'
+        route1.identity == PlatformId.NULL
+        route1.request == null
+        
+        when:
+        def route2 = new RoutePath(
+                'manifests',
+                'foo.com',
+                'ubuntu',
+                'latest',
+                '/v2/library/ubuntu/manifests/latest',
+                new ContainerRequestData(new PlatformId(new User(id: 100)), 'ubuntu:latest') )
+        then:
+        route2.type == 'manifests'
+        route2.registry == 'foo.com'
+        route2.image == 'ubuntu'
+        route2.reference == 'latest'
+        route2.path == '/v2/library/ubuntu/manifests/latest'
+        route2.request.containerImage == 'ubuntu:latest'
+        route2.identity == new PlatformId(new User(id: 100))
+    }
 }

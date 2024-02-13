@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -21,13 +21,15 @@ package io.seqera.wave.storage;
 import java.io.IOException;
 
 import io.seqera.wave.storage.reader.ContentReader;
+import io.seqera.wave.storage.reader.HttpContentReader;
 
 /**
  * Implements a digest store that loads the binary content on-demand
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-public class LazyDigestStore implements DigestStore{
+@Deprecated
+public class LazyDigestStore implements DigestStore {
 
     final private String mediaType;
     final private String digest;
@@ -73,4 +75,9 @@ public class LazyDigestStore implements DigestStore{
     public String toLogString() {
         return String.format("LazyDigestStore(digest=%s; size=%d; mediaType=%s; reader=%s)", digest, size, mediaType, contentReader.toLogString());
     }
+
+    public String getLocation() {
+        return contentReader instanceof HttpContentReader ? ((HttpContentReader) contentReader).getUrl() : null;
+    }
+
 }

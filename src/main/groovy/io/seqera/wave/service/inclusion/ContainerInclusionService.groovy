@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -16,11 +16,19 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.util
+package io.seqera.wave.service.inclusion
+
+import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.tower.PlatformId
 
 /**
+ * Define the interface for the container inclusion service which takes care of expanding
+ * a list of container names into a set of layers to the added to the target request
  *
- *  @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class FutureTest {
+interface ContainerInclusionService {
+
+    SubmitContainerTokenRequest addContainerInclusions(SubmitContainerTokenRequest request, PlatformId identity)
+
 }

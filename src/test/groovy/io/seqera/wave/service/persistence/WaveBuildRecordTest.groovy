@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -29,6 +29,7 @@ import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.JacksonHelper
 /**
  *
@@ -45,7 +46,7 @@ class WaveBuildRecordTest extends Specification {
                 'conda::recipe',
                 'some-spack-recipe',
                 BuildFormat.DOCKER,
-                null,
+                PlatformId.NULL,
                 null,
                 null,
                 ContainerPlatform.of('amd64'),

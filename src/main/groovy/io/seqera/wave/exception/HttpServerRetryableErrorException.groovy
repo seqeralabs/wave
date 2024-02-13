@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -16,26 +16,21 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.storage
-
-import groovy.transform.CompileStatic
-import org.apache.commons.lang3.SerializationUtils
+package io.seqera.wave.exception
 
 /**
- * Helper class to encode/decode {@link DigestStore} objects
- * 
+ * Capture a HTTP response error that should be manage retrying the HTTP request
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@CompileStatic
-@Deprecated
-class DigestStoreEncoder {
+class HttpServerRetryableErrorException extends IOException {
 
-    static String encode(DigestStore store) {
-        return SerializationUtils.serialize(store).encodeBase64().toString()
+    HttpServerRetryableErrorException(String message) {
+        super(message)
     }
 
-    static DigestStore decode(String encoded) {
-        return SerializationUtils.deserialize(encoded.decodeBase64())
+    HttpServerRetryableErrorException(String message, Throwable t) {
+        super(message,t)
     }
 
 }

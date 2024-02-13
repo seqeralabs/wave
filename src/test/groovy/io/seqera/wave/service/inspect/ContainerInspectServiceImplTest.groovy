@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -22,6 +22,7 @@ import spock.lang.Specification
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.auth.RegistryCredentialsProvider
+import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
 
 /**
@@ -39,7 +40,7 @@ class ContainerInspectServiceImplTest extends Specification {
         def creds = credentialsProvider.getDefaultCredentials('docker.io')
         def EXPECTED = "$creds.username:$creds.password".bytes.encodeBase64()
         when:
-        def result = service.credsJson(['docker.io'] as Set, null, null, null, null)
+        def result = service.credsJson(['docker.io'] as Set, PlatformId.NULL)
         then:
         // note: the auth below depends on the docker user and password used for test
         result == """{"auths":{"https://index.docker.io/v1/":{"auth":"$EXPECTED"}}}"""
@@ -53,7 +54,7 @@ class ContainerInspectServiceImplTest extends Specification {
         def creds2 = credentialsProvider.getDefaultCredentials('quay.io')
         def EXPECTED2 = "$creds2.username:$creds2.password".bytes.encodeBase64()
         when:
-        def result = service.credsJson(['docker.io/busybox','quay.io/alpine'] as Set, null, null,null, null)
+        def result = service.credsJson(['docker.io/busybox','quay.io/alpine'] as Set, PlatformId.NULL)
         then:
         // note: the auth below depends on the docker user and password used for test
         result == """{"auths":{"https://index.docker.io/v1/":{"auth":"$EXPECTED1"},"https://quay.io":{"auth":"$EXPECTED2"}}}"""
@@ -64,13 +65,13 @@ class ContainerInspectServiceImplTest extends Specification {
         def creds1 = credentialsProvider.getDefaultCredentials('docker.io')
         def EXPECTED1 = "$creds1.username:$creds1.password".bytes.encodeBase64()
         when:
-        def result = service.credsJson(['docker.io/busybox','docker.io/ubuntu:latest'] as Set, null, null, null, null)
+        def result = service.credsJson(['docker.io/busybox','docker.io/ubuntu:latest'] as Set, PlatformId.NULL)
         then:
         // note: the auth below depends on the docker user and password used for test
         result == """{"auths":{"https://index.docker.io/v1/":{"auth":"$EXPECTED1"}}}"""
 
         when:
-        result = service.credsJson(['busybox','docker.io/ubuntu:latest'] as Set, null, null, null, null)
+        result = service.credsJson(['busybox','docker.io/ubuntu:latest'] as Set, PlatformId.NULL)
         then:
         // note: the auth below depends on the docker user and password used for test
         result == """{"auths":{"https://index.docker.io/v1/":{"auth":"$EXPECTED1"}}}"""
@@ -101,7 +102,7 @@ class ContainerInspectServiceImplTest extends Specification {
         given:
         def DOCKERFILE = 'FROM busybox'
         when:
-        service.containerEntrypoint(DOCKERFILE, null, null, null, null)
+        service.containerEntrypoint(DOCKERFILE, PlatformId.NULL)
         then:
         noExceptionThrown()
     }
@@ -110,7 +111,7 @@ class ContainerInspectServiceImplTest extends Specification {
         given:
         def DOCKERFILE = 'FROM quay.io/biocontainers/fastqc:0.11.9--0'
         when:
-        service.containerEntrypoint(DOCKERFILE, null, null, null, null)
+        service.containerEntrypoint(DOCKERFILE, PlatformId.NULL)
         then:
         noExceptionThrown()
     }

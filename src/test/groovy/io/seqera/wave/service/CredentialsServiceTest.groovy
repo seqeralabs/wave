@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -31,6 +31,8 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.tower.crypto.AsymmetricCipher
 import io.seqera.wave.service.pairing.PairingRecord
 import io.seqera.wave.service.pairing.PairingService
+import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.tower.User
 import io.seqera.wave.tower.client.CredentialsDescription
 import io.seqera.wave.tower.client.GetCredentialsKeysResponse
 import io.seqera.wave.tower.client.ListCredentialsResponse
@@ -91,10 +93,11 @@ class CredentialsServiceTest extends Specification {
                 id: 'docker-creds',
                 provider: 'container-reg',
                 registry: 'docker.io' )
-
+        and:
+        def identity = new PlatformId(new User(id:userId), workspaceId,token,towerEndpoint)
 
         when: 'look those registry credentials from tower'
-        def credentials = credentialsService.findRegistryCreds("quay.io",userId, workspaceId,token,towerEndpoint)
+        def credentials = credentialsService.findRegistryCreds("quay.io",identity)
 
         then: 'the registered key is fetched correctly from the security service'
         1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE, towerEndpoint) >> keyRecord
@@ -116,8 +119,10 @@ class CredentialsServiceTest extends Specification {
 
 
     def 'should fail if keys where not registered for the tower endpoint'() {
+        given:
+        def identity = new PlatformId(new User(id:10), 10,"token",'endpoint')
         when:
-        credentialsService.findRegistryCreds('quay.io',10,10,"token",'endpoint')
+        credentialsService.findRegistryCreds('quay.io',identity)
 
         then: 'the security service does not have the key for the hostname'
         1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE,'endpoint') >> null
@@ -127,8 +132,10 @@ class CredentialsServiceTest extends Specification {
     }
 
     def 'should return no registry credentials if the user has no credentials in tower' () {
+        given:
+        def identity = new PlatformId(new User(id:10), 10,"token",'tower.io')
         when:
-        def credentials = credentialsService.findRegistryCreds('quay.io', 10, 10, "token",'tower.io')
+        def credentials = credentialsService.findRegistryCreds('quay.io', identity)
         then: 'a key is found'
         1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE, 'tower.io') >> new PairingRecord(
                 pairingId: 'a-key-id',
@@ -156,9 +163,11 @@ class CredentialsServiceTest extends Specification {
                 provider: 'container-reg',
                 registry: 'docker.io'
         )
+        and:
+        def identity = new PlatformId(new User(id:10), 10,"token",'tower.io')
 
         when:
-        def credentials = credentialsService.findRegistryCreds('quay.io', 10, 10, "token",'tower.io')
+        def credentials = credentialsService.findRegistryCreds('quay.io', identity)
 
         then: 'a key is found'
         1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE, 'tower.io') >> new PairingRecord(

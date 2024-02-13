@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #  Wave, containers provisioning service
-#  Copyright (c) 2023, Seqera Labs
+#  Copyright (c) 2023-2024, Seqera Labs
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU Affero General Public License as published by
@@ -44,6 +44,8 @@ if [[ $RELEASE ]]; then
   git push $REMOTE $TAG $FORCE
   # build and push the container
   ./gradlew jib
+  # build and push enterprise
+  ./gradlew -PjibRepo=195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/wave:$TAG jib
   # publish release notes
   gh release create $TAG --generate-notes
 fi

@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave
+package io.seqera.wave.util
 
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -25,9 +25,9 @@ import java.util.concurrent.CompletableFuture
 
 import com.google.common.hash.Hashing
 import groovy.util.logging.Slf4j
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.test.ManifestConst
-import io.seqera.wave.util.RegHelper
-import io.seqera.wave.util.ZipUtils
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -235,6 +235,33 @@ class RegHelperTest extends Specification {
         RegHelper.guessSpackRecipeName(SPACK) == 'bwa-0.7.15_salmon-1.1.1_nano-1.0'
     }
 
+    def 'should throw an exception when spack section is not present in spack yaml file' () {
+        def SPACK = '''\
+              specs: [bwa@0.7.15, salmon@1.1.1, nano@1.0 x=one]
+              concretizer: {unify: true, reuse: true}
+            '''.stripIndent(true)
+
+        when:
+        RegHelper.guessSpackRecipeName(SPACK)
+        then:
+        def e = thrown(BadRequestException)
+        and:
+        e.message == 'Malformed Spack environment file - missing "spack:" section'
+    }
+
+    def 'should throw an exception when spack.specs section is not present in spack yaml file' () {
+        def SPACK = '''\
+            spack:
+              concretizer: {unify: true, reuse: true}
+            '''.stripIndent(true)
+
+        when:
+        RegHelper.guessSpackRecipeName(SPACK)
+        then:
+        def e = thrown(BadRequestException)
+        and:
+        e.message == 'Malformed Spack environment file - missing "spack.specs:" section'
+    }
 
     def 'should compute sip hash' () {
         given:
