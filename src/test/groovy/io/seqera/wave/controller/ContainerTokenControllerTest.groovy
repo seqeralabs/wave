@@ -274,6 +274,43 @@ class ContainerTokenControllerTest extends Specification {
         build.platform == ContainerPlatform.of('arm64')
     }
 
+    def 'should return a bad request exception when field is not encoded' () {
+        given:
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def controller = new ContainerTokenController(dockerAuthService: dockerAuth, buildConfig: buildConfig)
+
+        // validate containerFile
+        when:
+        controller.makeBuildRequest(
+                new SubmitContainerTokenRequest(containerFile: 'FROM some:container'),
+                Mock(PlatformId),
+                null)
+        then:
+        def e = thrown(BadRequestException)
+        e.message == "Invalid 'containerFile' attribute - make sure it encoded as a base64 string"
+
+        // validate condaFile
+        when:
+        controller.makeBuildRequest(
+                new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), condaFile: 'samtools=123'),
+                Mock(PlatformId),
+                null)
+        then:
+        e = thrown(BadRequestException)
+        e.message == "Invalid 'condaFile' attribute - make sure it encoded as a base64 string"
+
+        // validate spackFile
+        when:
+        controller.makeBuildRequest(
+                new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), spackFile: 'spack@123'),
+                Mock(PlatformId),
+                null)
+        then:
+        e = thrown(BadRequestException)
+        e.message == "Invalid 'spackFile' attribute - make sure it encoded as a base64 string"
+
+    }
+
     def 'should add library prefix' () {
         when:
         def body = new SubmitContainerTokenRequest(containerImage: 'docker.io/hello-world')
