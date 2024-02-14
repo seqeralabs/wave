@@ -115,11 +115,13 @@ class PairingWebSocket {
         try {
             final resp = licenseManager.checkToken(token, "tower-enterprise")
             if( !resp ) {
-                log.warn "Failed license token validation - Refusing pairing session due to invalid license for endpoint: ${endpoint}; token: $token"
+                log.warn "Failed license token validation for endpoint: ${endpoint}; token: $token"
                 return false
             }
 
             if( resp.expiration.isBefore(Instant.now()) ) {
+                // just warn about the license expiration - due not return return false
+                // to prevent the interruption of the service
                 log.warn "Expired license for customer with endpoint: ${endpoint}; token: ${token}"
             }
             else {
@@ -131,9 +133,11 @@ class PairingWebSocket {
             log.error "Failed license token validation - Unexpected response for endpoint: ${endpoint}; token: ${token}; status: ${e.status.code}; message: ${e.message}"
         }
         catch (Throwable e) {
-            log.error "Failed license token validation - Unexpected exceptio for endpoint: ${endpoint}; token: ${token} - cause: ${e.message}", e
+            log.error "Failed license token validation - Unexpected exception for endpoint: ${endpoint}; token: ${token} - cause: ${e.message}", e
         }
-        return false
+        // return 'true' when it's not possible to verify the license due to expected errors
+        // to prevent a valid license is rejected due to transitory failures
+        return true
     }
 
 }
