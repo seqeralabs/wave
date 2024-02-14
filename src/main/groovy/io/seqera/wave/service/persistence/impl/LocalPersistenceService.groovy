@@ -20,6 +20,7 @@ package io.seqera.wave.service.persistence.impl
 
 import groovy.transform.CompileStatic
 import io.seqera.wave.core.ContainerDigestPair
+import io.seqera.wave.service.persistence.CondaPackageRecord
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
@@ -38,6 +39,7 @@ class LocalPersistenceService implements PersistenceService {
 
     private Map<String,WaveContainerRecord> requestStore = new HashMap<>()
     private Map<String,WaveScanRecord> scanStore = new HashMap<>()
+    private Map<String, CondaPackageRecord> condaStore = new HashMap<>()
 
     @Override
     void saveBuild(WaveBuildRecord record) {
@@ -82,4 +84,9 @@ class LocalPersistenceService implements PersistenceService {
         scanStore.get(scanId)
     }
 
+    @Override
+    void saveCondaPackage(CondaPackageRecord entry) {
+        String key = "${entry.channel}::${entry.name}=${entry.version}"
+        condaStore.put(key, entry)
+    }
 }

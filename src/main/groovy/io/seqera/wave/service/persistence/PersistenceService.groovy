@@ -123,4 +123,5 @@ interface PersistenceService {
                 scanRecord.vulnerabilities )
     }
 
+    void saveCondaPackage(CondaPackageRecord entry)
 }

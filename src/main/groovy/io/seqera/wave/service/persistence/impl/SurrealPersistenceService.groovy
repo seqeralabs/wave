@@ -29,6 +29,7 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
+import io.seqera.wave.service.persistence.CondaPackageRecord
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
@@ -220,4 +221,8 @@ class SurrealPersistenceService implements PersistenceService {
         return result
     }
 
+    @Override
+    void saveCondaPackage(CondaPackageRecord entry) {
+        throw new UnsupportedOperationException("Not yet implemented")
+    }
 }
