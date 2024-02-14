@@ -27,6 +27,6 @@ package io.seqera.wave.tower.compute
 class ComputeEnv {
     String id
     String platform
-    Credentials credentials
+    String credentialsId
 }
 

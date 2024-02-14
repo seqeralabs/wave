@@ -106,7 +106,7 @@ class CredentialServiceImpl implements CredentialsService {
             ComputeEnv computeEnv = describeWorkflowLaunchResponse.get()?.launch?.computeEnv
             if (computeEnv && (computeEnv.platform == 'aws-batch' || computeEnv.platform == 'google-batch')) {
                 return new CredentialsDescription(
-                        id: computeEnv.credentials.id
+                        id: computeEnv.credentialsId
                 )
             }
         }
