@@ -32,6 +32,7 @@ import jakarta.inject.Singleton
 @CompileStatic
 class DockerCondaFetcher extends AbstractCondaFetcher {
 
+    String condaImage = 'continuumio/miniconda3'
 
     protected List<String> dockerWrapper(Path workDir) {
 
@@ -44,11 +45,13 @@ class DockerCondaFetcher extends AbstractCondaFetcher {
         wrapper.add('-v')
         wrapper.add("$workDir:$workDir:rw".toString())
 
+        wrapper.add(condaImage)
+
         return wrapper
     }
 
     @Override
-    protected boolean run(List<String> cmd, Path workDir) {
+    protected void run(List<String> cmd, Path workDir) {
 
         //launch scanning
         final command = dockerWrapper(workDir) + cmd
@@ -61,10 +64,8 @@ class DockerCondaFetcher extends AbstractCondaFetcher {
 
         final exitCode = process.waitFor()
         if ( exitCode != 0 ) {
-            log.warn("Conda fetcher failed: ${exitCode} - cause: ${process.text}")
-            return false
+            throw new IllegalStateException("Conda fetcher failed: ${exitCode} - cause: ${process.text}")
         }
 
-        return true
     }
 }

@@ -89,4 +89,14 @@ class LocalPersistenceService implements PersistenceService {
         String key = "${entry.channel}::${entry.name}=${entry.version}"
         condaStore.put(key, entry)
     }
+
+    @Override
+    List<CondaPackageRecord> findCondaPackage(String criteria) {
+        final result = new ArrayList()
+        for( CondaPackageRecord it : condaStore.values() ) {
+            if( !criteria || it.name.contains(criteria) )
+                result.add(it)
+        }
+        return result
+    }
 }

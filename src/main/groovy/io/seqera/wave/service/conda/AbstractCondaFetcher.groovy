@@ -40,12 +40,12 @@ abstract class AbstractCondaFetcher implements CondaFetcherService{
     private List<String> channels = ['seqera']
 
     protected List<String> fetchCommand(String channel, String target) {
-        List.of('bash','-c', "conda search -q -c $channel | head 10 > $target".toString())
+        List.of('bash','-c', "conda search -q -c $channel | head > $target".toString())
     }
 
     @Override
     void fetchCondaPackages() {
-        final workDir = Path.of(buildConfig.buildWorkspace).resolve('conda-' + System.currentTimeMillis())
+        final workDir = Path.of(buildConfig.buildWorkspace).resolve('conda-' + System.currentTimeMillis()).toAbsolutePath()
         // create the work dir
         Files.createDirectory(workDir)
 
@@ -63,21 +63,22 @@ abstract class AbstractCondaFetcher implements CondaFetcherService{
     }
 
     protected void processResult(Path file) {
-        final reader = Files.newBufferedReader(file)
-        String line
-        boolean begin=false
-        while( (line=reader.readLine()) ) {
-            if( !begin ) {
-                begin = line.startsWith("# Name")
-                continue
+        try(final reader = Files.newBufferedReader(file)) {
+            String line
+            boolean begin=false
+            while( (line=reader.readLine()) ) {
+                if( !begin ) {
+                    begin = line.startsWith("# Name")
+                    continue
+                }
+                final items = line.tokenize(' ')
+                final entry = new CondaPackageRecord(items[3], items[0], items[1])
+                persistenceService.saveCondaPackage(entry)
             }
-            line.tokenize(' ')
-            final entry = new CondaPackageRecord(line[3], line[0], line[1])
-            persistenceService.saveCondaPackage(entry)
         }
     }
 
 
-    abstract protected boolean run(List<String> command, Path workDir)
+    abstract protected void run(List<String> command, Path workDir)
 
 }

@@ -124,4 +124,6 @@ interface PersistenceService {
     }
 
     void saveCondaPackage(CondaPackageRecord entry)
+
+    List<CondaPackageRecord> findCondaPackage(String criteria)
 }

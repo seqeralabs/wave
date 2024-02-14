@@ -225,4 +225,9 @@ class SurrealPersistenceService implements PersistenceService {
     void saveCondaPackage(CondaPackageRecord entry) {
         throw new UnsupportedOperationException("Not yet implemented")
     }
+
+    @Override
+    List<CondaPackageRecord> findCondaPackage(String criteria) {
+        throw new UnsupportedOperationException("Not yet implemented")
+    }
 }
