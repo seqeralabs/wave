@@ -25,6 +25,7 @@ import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.FusionVersion
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.tower.User
@@ -154,7 +155,7 @@ class WaveContainerRecord {
     /**
      * Whenever the request is for container with fusion
      */
-    final String fusionVersion
+    final FusionVersion fusionVersion
 
     WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequestData data, String waveImage, String addr, Instant expiration) {
         this.user = data.identity.user
