@@ -29,7 +29,6 @@ import io.seqera.wave.tower.User
 import io.seqera.wave.tower.client.TowerClient
 import io.seqera.wave.tower.client.UserInfoResponse
 import jakarta.inject.Inject
-
 import static io.seqera.wave.util.FutureUtils.completeExceptionally
 
 /**
@@ -59,9 +58,10 @@ class UserServiceTest extends Specification {
         when: // a valid token
         def user = service.getUserByAccessToken(endpoint,token)
         then:
-        1 * client.userInfo(endpoint,token) >> CompletableFuture.completedFuture(new UserInfoResponse(user:new User(id: 1)))
+        1 * client.userInfo(endpoint,token) >> CompletableFuture.completedFuture(new UserInfoResponse(user:new User(id: 1, organization: 'foo')))
         and:
         user.id == 1
+        user.organization == 'foo'
 
     }
 

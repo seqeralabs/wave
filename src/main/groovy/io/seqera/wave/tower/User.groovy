@@ -29,7 +29,7 @@ import groovy.transform.ToString
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@ToString(includeNames = true, includePackage = false, includes = 'id,userName,email')
+@ToString(includeNames = true, includePackage = false, includes = 'id,userName,email,organization')
 @EqualsAndHashCode
 @CompileStatic
 class User {
@@ -44,4 +44,6 @@ class User {
     @Size(max = 255)
     String email
 
+    @Size(max = 100)
+    String organization
 }

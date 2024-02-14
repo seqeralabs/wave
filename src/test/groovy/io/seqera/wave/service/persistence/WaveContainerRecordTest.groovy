@@ -51,7 +51,7 @@ class WaveContainerRecordTest extends Specification {
                 fingerprint: 'xyz',
                 timestamp: Instant.now().toString() )
         and:
-        def user = new User(id:1)
+        def user = new User(id:1, organization: 'myorg')
         def data = new ContainerRequestData(new PlatformId(user,100), 'hello-world', 'some docker', cfg, 'some conda')
         def wave = 'https://wave.io/some/container:latest'
         def addr = '100.200.300.400'
