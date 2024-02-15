@@ -186,6 +186,21 @@ class ContainerTokenController {
         }
     }
 
+    final protected String decodeBase64OrFail(String value, String field) {
+        if( !value )
+            return null
+        try {
+            final bytes = Base64.getDecoder().decode(value)
+            final check = Base64.getEncoder().encodeToString(bytes)
+            if( value!=check )
+                throw new IllegalArgumentException("Not a valid base64 encoded string")
+            return new String(bytes)
+        }
+        catch (IllegalArgumentException e) {
+            throw new BadRequestException("Invalid '$field' attribute - make sure it encoded as a base64 string", e)
+        }
+    }
+
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
         if( !req.containerFile )
             throw new BadRequestException("Missing dockerfile content")
@@ -194,9 +209,9 @@ class ContainerTokenController {
         if( !buildConfig.defaultCacheRepository )
             throw new BadRequestException("Missing build cache repository attribute")
 
-        final containerSpec = new String(req.containerFile.decodeBase64())
-        final condaContent = req.condaFile ? new String(req.condaFile.decodeBase64()) : null as String
-        final spackContent = req.spackFile ? new String(req.spackFile.decodeBase64()) : null as String
+        final containerSpec = decodeBase64OrFail(req.containerFile, 'containerFile')
+        final condaContent = decodeBase64OrFail(req.condaFile, 'condaFile')
+        final spackContent = decodeBase64OrFail(req.spackFile, 'spackFile')
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
         final build = req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository ? buildConfig.defaultPublicRepository : buildConfig.defaultBuildRepository)
