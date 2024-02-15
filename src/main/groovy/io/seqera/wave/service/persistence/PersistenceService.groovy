@@ -22,8 +22,9 @@ import groovy.transform.CompileStatic
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.exception.NotFoundException
-import io.seqera.wave.service.scan.ScanResult
 import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.scan.ScanResult
+
 /**
  * A storage for statistic data
  *
@@ -123,7 +124,32 @@ interface PersistenceService {
                 scanRecord.vulnerabilities )
     }
 
-    void saveCondaPackage(CondaPackageRecord entry)
+    /**
+     * Create a Conda Package record,
+     *
+     * @param entries Create records with the List specified
+     */
+    void saveCondaPackage(List<CondaPackageRecord> entries)
 
+    /**
+     * Retrieve a {@link List<CondaPackageRecord>} objects for a specified search criteria
+     *
+     * @param criteria The search criteria
+     * @return The {@link List<CondaPackageRecord>} objects returned by the search
+     */
     List<CondaPackageRecord> findCondaPackage(String criteria)
+
+    /**
+     * Create a Conda Package record,
+     *
+     * @param entries Create records with the List specified
+     * @param  size, size of sublist needs to be save in a cycle
+     */
+    default void saveCondaPackagesChunks(List<CondaPackageRecord> entries, int size){
+        int index = 0
+        while (index < entries.size()) {
+            saveCondaPackage(entries.subList(index, (index+size)>entries.size()?entries.size():index+size))
+            index += size
+        }
+    }
 }

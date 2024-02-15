@@ -27,11 +27,12 @@ import io.micronaut.http.annotation.Post
 import io.micronaut.http.annotation.Put
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.retry.annotation.Retryable
-import io.seqera.wave.service.persistence.WaveScanRecord
-import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
+import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.scan.ScanVulnerability
 import reactor.core.publisher.Flux
+
 /**
  * Declarative http client for SurrealDB
  *

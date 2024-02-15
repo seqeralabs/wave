@@ -88,10 +88,23 @@ class SurrealPersistenceService implements PersistenceService {
         final ret3 = surrealDb.sqlAsMap(authorization, "define table wave_scan SCHEMALESS")
         if( ret3.status != "OK")
             throw new IllegalStateException("Unable to define SurrealDB table wave_scan - cause: $ret3")
-        // create wave_scan table
+        // create wave_scan_vuln table
         final ret4 = surrealDb.sqlAsMap(authorization, "define table wave_scan_vuln SCHEMALESS")
         if( ret4.status != "OK")
-            throw new IllegalStateException("Unable to define SurrealDB table wave_scan_vuln - cause: $ret3")
+            throw new IllegalStateException("Unable to define SurrealDB table wave_scan_vuln - cause: $ret4")
+        // create wave_conda_package table
+        try{
+            surrealDb.sqlAsString(authorization, '''
+                                                DEFINE TABLE wave_conda_package SCHEMAFULL; 
+                                                DEFINE FIELD name ON TABLE wave_conda_package TYPE string;
+                                                DEFINE FIELD version ON TABLE wave_conda_package TYPE string;
+                                                DEFINE FIELD channel ON TABLE wave_conda_package TYPE string;
+                                                DEFINE ANALYZER class_analyzer TOKENIZERS class FILTERS ngram(3,50);
+                                                DEFINE INDEX wave_conda_package_name_idx ON wave_conda_package FIELDS name SEARCH ANALYZER class_analyzer BM25;
+                                                ''')
+         }catch(Exception e) {
+            throw new IllegalStateException("Unable to define SurrealDB table wave_conda_package - cause: ${e.getCause()}")
+        }
 
     }
 
@@ -221,13 +234,45 @@ class SurrealPersistenceService implements PersistenceService {
         return result
     }
 
-    @Override
-    void saveCondaPackage(CondaPackageRecord entry) {
-        throw new UnsupportedOperationException("Not yet implemented")
+    void saveCondaPackageAsync(List<CondaPackageRecord> entries){
+        final statement = "insert into wave_conda_package $entries"
+        surrealDb.sqlAsync(getAuthorization(), statement).subscribe({ result->
+            log.trace "wave_conda_package ${result}"
+        }, {error->
+            def msg = error.message
+            if( error instanceof HttpClientResponseException ){
+                msg += ":\n $error.response.body"
+            }
+            log.error "Error saving conda packages ${msg}", error
+        })
     }
 
     @Override
+    void saveCondaPackage(List<CondaPackageRecord> entries){
+        final statement = "insert into wave_conda_package $entries"
+        try {
+            def result = surrealDb.sqlAsString(getAuthorization(), statement)
+            log.trace "wave_conda_package ${result}"
+        }catch (Throwable error){
+            def msg = error.message
+            if( error instanceof  HttpClientResponseException){
+                msg += ":\n $error.response.body"
+            }
+            log.error "Error saving conda packages ${msg}", error
+        }
+    }
+    @Override
     List<CondaPackageRecord> findCondaPackage(String criteria) {
-        throw new UnsupportedOperationException("Not yet implemented")
+        def statement = 'SELECT * FROM wave_conda_package'
+        //to make sure search criteria doesn't have unwanted characters
+        //in search criteria alpha numeric and '/' and '.' are allowed
+        if (criteria && criteria =~ /^[a-zA-Z0-9\/.]+$/) {
+            statement += " WHERE name @@ '$criteria'"
+        }
+        final json = surrealDb.sqlAsString(authorization, statement)
+        final type = new TypeReference<ArrayList<SurrealResult<CondaPackageRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result as List<CondaPackageRecord>: null
+        return result
     }
 }

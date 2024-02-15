@@ -22,6 +22,7 @@ package io.seqera.wave.controller
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Nullable
+import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.scheduling.TaskExecutors
@@ -47,8 +48,8 @@ class CondaController {
     CondaFetcherService condaService
 
     @Get('/v1alpha1/conda{?search}')
-    List<CondaPackageRecord> list(@Nullable String search) {
-        persistenceService.findCondaPackage(search)
+    HttpResponse<List<CondaPackageRecord>> list(@Nullable String search) {
+        return HttpResponse.ok(persistenceService.findCondaPackage(search))
     }
 
     @Get('/v1alpha1/conda/update')

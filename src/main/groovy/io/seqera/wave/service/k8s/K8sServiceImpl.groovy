@@ -44,6 +44,7 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.configuration.CondaConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
@@ -103,6 +104,9 @@ class K8sServiceImpl implements K8sService {
 
     @Inject
     private BuildConfig buildConfig
+
+    @Inject
+    private CondaConfig condaConfig
 
     /**
      * Validate config setting
@@ -442,7 +446,7 @@ class K8sServiceImpl implements K8sService {
         }
     }
 
-    /**
+/**
      * Fetch the logs of a pod
      *
      * @param name The pod name
@@ -581,5 +585,57 @@ class K8sServiceImpl implements K8sService {
         for( Map.Entry<String,String> it : env )
             result.add( new V1EnvVar().name(it.key).value(it.value) )
         return result
+    }
+
+    @Override
+    V1Pod condaFetcherContainer(String name, String containerImage, List<String> args, Path workDir) {
+        final spec = condaFetcherSpec(name, containerImage, args, workDir)
+        return k8sClient
+                .coreV1Api()
+                .createNamespacedPod(namespace, spec, null, null, null,null)
+    }
+
+    V1Pod condaFetcherSpec(String name, String containerImage, List<String> args, Path workDir) {
+
+        final mounts = new ArrayList<V1VolumeMount>(5)
+        mounts.add(mountBuildStorage(workDir, storageMountPath, false))
+
+        final volumes = new ArrayList<V1Volume>(5)
+        volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
+
+        V1PodBuilder builder = new V1PodBuilder()
+
+        //metadata section
+        builder.withNewMetadata()
+                .withNamespace(namespace)
+                .withName(name)
+                .addToLabels(labels)
+                .endMetadata()
+
+        //spec section
+        def spec = builder
+                .withNewSpec()
+                .withServiceAccount(serviceAccount)
+                .withActiveDeadlineSeconds( condaConfig.timeout.toSeconds() )
+                .withRestartPolicy("Never")
+                .addAllToVolumes(volumes)
+
+        final requests = new V1ResourceRequirements()
+        if( condaConfig.requestsCpu )
+            requests.putRequestsItem('cpu', new Quantity(condaConfig.requestsCpu))
+        if( condaConfig.requestsMemory )
+            requests.putRequestsItem('memory', new Quantity(condaConfig.requestsMemory))
+
+        //container section
+        spec.addNewContainer()
+                .withName(name)
+                .withImage(containerImage)
+                .withArgs(args)
+                .withVolumeMounts(mounts)
+                .withResources(requests)
+                .endContainer()
+                .endSpec()
+
+        builder.build()
     }
 }

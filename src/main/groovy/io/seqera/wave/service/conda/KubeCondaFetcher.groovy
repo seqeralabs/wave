@@ -19,58 +19,46 @@
 package io.seqera.wave.service.conda
 
 import java.nio.file.Path
+import java.time.Instant
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.CondaConfig
+import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+
 /**
+ * Implements K8s based CondaFetcherService
  *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
+
 @Slf4j
 @Singleton
-@Requires(missingProperty = 'wave.build.k8s')
+@Requires(property = 'wave.build.k8s')
 @CompileStatic
-class DockerCondaFetcher extends AbstractCondaFetcher {
+class KubeCondaFetcher extends AbstractCondaFetcher {
 
     @Inject
     CondaConfig config
 
-    protected List<String> dockerWrapper(Path workDir) {
-
-        final wrapper = ['docker','run', '--rm']
-
-        // scan work dir
-        wrapper.add('-w')
-        wrapper.add(workDir.toString())
-
-        wrapper.add('-v')
-        wrapper.add("$workDir:$workDir:rw".toString())
-
-        wrapper.add(config.condaImage)
-
-        return wrapper
-    }
+    @Inject
+    K8sService k8sService
 
     @Override
-    protected void run(List<String> cmd, Path workDir) {
-
-        //launch scanning
-        final command = dockerWrapper(workDir) + cmd
-        log.debug("Conda fetcher command: ${command.join(' ')}")
-
-        final process = new ProcessBuilder()
-                .command(command)
-                .redirectErrorStream(true)
-                .start()
-
-        final exitCode = process.waitFor()
-        if ( exitCode != 0 ) {
-            throw new IllegalStateException("Conda fetcher failed: ${exitCode} - cause: ${process.text}")
+    protected void run(List<String> command, Path workDir) {
+        String podName = "conda-fetcher-${Instant.now().toEpochMilli()}"
+        log.info("Conda fetcher command: $command")
+        final pod = k8sService.condaFetcherContainer(podName, config.condaImage, command, workDir)
+        final terminated = k8sService.waitPod(pod, config.timeout.toMillis())
+        if( terminated ) {
+            log.info("Conda packages fetched successfully")
         }
-
+        else{
+            final logs = k8sService.logsPod(podName)
+            throw new IllegalStateException("Conda fetcher failed - logs: $logs")
+        }
     }
 }

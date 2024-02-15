@@ -20,15 +20,22 @@ package io.seqera.wave.service.conda
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 
+import groovy.util.logging.Slf4j
+import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.service.persistence.CondaPackageRecord
 import io.seqera.wave.service.persistence.PersistenceService
 import jakarta.inject.Inject
+import jakarta.inject.Named
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 abstract class AbstractCondaFetcher implements CondaFetcherService{
 
     @Inject
@@ -37,10 +44,14 @@ abstract class AbstractCondaFetcher implements CondaFetcherService{
     @Inject
     private PersistenceService persistenceService
 
+    @Inject
+    @Named(TaskExecutors.IO)
+    private ExecutorService executor
+
     private List<String> channels = ['seqera']
 
-    protected List<String> fetchCommand(String channel, String target) {
-        List.of('bash','-c', "conda search -q -c $channel | head > $target".toString())
+    protected List<String> fetchCommand(String channel, Path target) {
+        List.of('bash','-c', "conda search -q -c $channel > $target".toString())
     }
 
     @Override
@@ -57,23 +68,29 @@ abstract class AbstractCondaFetcher implements CondaFetcherService{
 
     protected void processChannel(String channel, Path workDir) {
         final target = "ch-${channel}.txt"
-        run(fetchCommand(channel, target), workDir)
+        def condaFile = workDir.resolve(target)
+        run(fetchCommand(channel, condaFile), workDir)
         // read the result file and parse it
-        processResult(workDir.resolve(target))
+        CompletableFuture
+                .supplyAsync( ()->processResult(condaFile), executor)
     }
 
     protected void processResult(Path file) {
         try(final reader = Files.newBufferedReader(file)) {
             String line
             boolean begin=false
+            List<CondaPackageRecord> entries = new ArrayList<>()
             while( (line=reader.readLine()) ) {
                 if( !begin ) {
                     begin = line.startsWith("# Name")
                     continue
                 }
                 final items = line.tokenize(' ')
-                final entry = new CondaPackageRecord(items[3], items[0], items[1])
-                persistenceService.saveCondaPackage(entry)
+                entries.add(new CondaPackageRecord(items[3], items[0], items[1]))
+            }
+            if ( !entries.isEmpty() ) {
+                persistenceService.saveCondaPackagesChunks(entries, 5000)
+                log.debug("Conda packages saved")
             }
         }
     }

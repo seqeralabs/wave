@@ -28,7 +28,26 @@ import groovy.transform.CompileStatic
 @Canonical
 @CompileStatic
 class CondaPackageRecord {
+    final String id
     final String channel
     final String name
     final String version
+
+    /**
+     * Required by jackson ser/de-ser
+     */
+    protected CondaPackageRecord(){}
+
+    CondaPackageRecord( String channel, String name, String version) {
+        this.id = "$channel::$name=$version"
+        this.channel = channel
+        this.name = name
+        this.version = version
+    }
+
+    @Override
+    String toString() {
+        return "{id:\"$id\", channel:\"$channel\", name:\"$name\", version:\"$version\"}";
+    }
+
 }
