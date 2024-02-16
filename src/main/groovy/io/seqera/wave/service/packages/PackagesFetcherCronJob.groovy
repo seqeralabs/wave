@@ -41,7 +41,7 @@ class PackagesFetcherCronJob {
     PackagesService service
 
     @ExecuteOn(TaskExecutors.SCHEDULED)
-    @Scheduled(initialDelay = '${wave.package.cron.delay:1m}' , fixedDelay = '${wave.package.cron.interval:6h}')
+    @Scheduled(initialDelay = '${wave.package.cron.delay:3m}' , fixedDelay = '${wave.package.cron.interval:3h}')
     void fetch(){
         service.fetchPackages()
     }
