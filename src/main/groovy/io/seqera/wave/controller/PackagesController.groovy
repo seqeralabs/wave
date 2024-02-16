@@ -37,7 +37,7 @@ import jakarta.inject.Inject
  */
 @Slf4j
 @CompileStatic
-@Controller("/")
+@Controller("/v1alpha1/packages")
 @ExecuteOn(TaskExecutors.IO)
 class PackagesController {
 
@@ -47,12 +47,12 @@ class PackagesController {
     @Inject
     PackagesService packagesService
 
-    @Get('/v1alpha1/packages/conda{?search}')
+    @Get('/conda{?search}')
     HttpResponse<List<CondaPackageRecord>> list(@Nullable String search) {
         return HttpResponse.ok(persistenceService.findCondaPackage(search))
     }
 
-    @Get('/v1alpha1/packages/conda/refresh')
+    @Get('/conda/refresh')
     String update() {
         packagesService.fetchPackages()
         return 'OK'
