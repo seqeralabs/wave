@@ -16,14 +16,14 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.conda
+package io.seqera.wave.service.packages
 
 import java.nio.file.Path
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.configuration.CondaConfig
+import io.seqera.wave.configuration.PackageConfig
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -37,7 +37,7 @@ import jakarta.inject.Singleton
 class DockerCondaFetcher extends AbstractCondaFetcher {
 
     @Inject
-    CondaConfig config
+    PackageConfig config
 
     protected List<String> dockerWrapper(Path workDir) {
 

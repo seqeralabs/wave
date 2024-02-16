@@ -58,6 +58,13 @@ class CondaPackageRecord {
 
     }
 
+    CondaPackageRecord( String id, String channel, String name, String version) {
+        this.id  = id
+        this.channel = channel
+        this.name = name
+        this.version = version
+
+    }
     @Override
     String toString() {
         return "{id:\"$id\", channel:\"$channel\", name:\"$name\", version:\"$version\"}";

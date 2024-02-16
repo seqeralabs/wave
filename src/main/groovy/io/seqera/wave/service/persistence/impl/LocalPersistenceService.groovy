@@ -85,7 +85,7 @@ class LocalPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveCondaPackage(List<CondaPackageRecord> entries) {
+    void saveCondaPackages(List<CondaPackageRecord> entries) {
         for( CondaPackageRecord entry : entries )
             condaStore.put(entry.id, entry)
     }

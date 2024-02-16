@@ -27,7 +27,7 @@ import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
-import io.seqera.wave.service.conda.CondaFetcherService
+import io.seqera.wave.service.packages.PackagesService
 import io.seqera.wave.service.persistence.CondaPackageRecord
 import io.seqera.wave.service.persistence.PersistenceService
 import jakarta.inject.Inject
@@ -39,22 +39,22 @@ import jakarta.inject.Inject
 @CompileStatic
 @Controller("/")
 @ExecuteOn(TaskExecutors.IO)
-class CondaController {
+class PackageController {
 
     @Inject
     PersistenceService persistenceService
 
     @Inject
-    CondaFetcherService condaService
+    PackagesService packagesService
 
-    @Get('/v1alpha1/conda{?search}')
+    @Get('/v1alpha1/packages/conda{?search}')
     HttpResponse<List<CondaPackageRecord>> list(@Nullable String search) {
         return HttpResponse.ok(persistenceService.findCondaPackage(search))
     }
 
-    @Get('/v1alpha1/conda/update')
+    @Get('/v1alpha1/packages/conda/refresh')
     String update() {
-        condaService.fetchCondaPackages()
+        packagesService.fetchPackages()
         return 'OK'
     }
 

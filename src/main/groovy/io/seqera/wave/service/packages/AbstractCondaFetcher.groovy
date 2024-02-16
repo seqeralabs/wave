@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.conda
+package io.seqera.wave.service.packages
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -26,7 +26,7 @@ import java.util.concurrent.ExecutorService
 import groovy.util.logging.Slf4j
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BuildConfig
-import io.seqera.wave.configuration.CondaConfig
+import io.seqera.wave.configuration.PackageConfig
 import io.seqera.wave.service.persistence.CondaPackageRecord
 import io.seqera.wave.service.persistence.PersistenceService
 import jakarta.inject.Inject
@@ -37,13 +37,13 @@ import jakarta.inject.Named
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
-abstract class AbstractCondaFetcher implements CondaFetcherService{
+abstract class AbstractCondaFetcher implements PackagesService{
 
     @Inject
     private BuildConfig buildConfig
 
     @Inject
-    private CondaConfig condaConfig
+    private PackageConfig packageConfig
 
     @Inject
     private PersistenceService persistenceService
@@ -57,12 +57,12 @@ abstract class AbstractCondaFetcher implements CondaFetcherService{
     }
 
     @Override
-    void fetchCondaPackages() {
+    void fetchPackages() {
         final workDir = Path.of(buildConfig.buildWorkspace).resolve('conda-' + System.currentTimeMillis()).toAbsolutePath()
         // create the work dir
         Files.createDirectory(workDir)
 
-        for( String it : condaConfig.channels ) {
+        for( String it : packageConfig.channels ) {
             processChannel(it, workDir)
         }
 

@@ -15,15 +15,34 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+package io.seqera.wave.service.packages
 
-package io.seqera.wave.service.conda
+
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
+import io.micronaut.scheduling.TaskExecutors
+import io.micronaut.scheduling.annotation.ExecuteOn
+import io.micronaut.scheduling.annotation.Scheduled
+import jakarta.inject.Inject
+import jakarta.inject.Singleton
 
 /**
+ * Cron job to fetch conda packages
  *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-interface CondaFetcherService {
 
-    void fetchCondaPackages()
+@CompileStatic
+@Singleton
+@Slf4j
+class PackageFetcherCronJob {
 
+    @Inject
+    PackagesService service
+
+    @ExecuteOn(TaskExecutors.SCHEDULED)
+    @Scheduled(initialDelay = '${wave.package.cron.delay:1m}' , fixedDelay = '${wave.package.cron.interval:6h}')
+    void fetch(){
+        service.fetchPackages()
+    }
 }

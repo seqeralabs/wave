@@ -236,7 +236,7 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveCondaPackage(List<CondaPackageRecord> entries){
+    void saveCondaPackages(List<CondaPackageRecord> entries){
         final statement = "insert into wave_conda_package $entries"
         surrealDb.sqlAsync(getAuthorization(), statement).subscribe({ result->
             log.trace "wave_conda_package ${result}"
@@ -259,10 +259,11 @@ class SurrealPersistenceService implements PersistenceService {
         return result
     }
 
-    protected String getCondaFetcherFilter(String criteria) {
+    static String getCondaFetcherFilter(String criteria) {
         //to make sure search criteria doesn't have unwanted characters
         //in search criteria alpha numeric and ':' and '=' and '.' are allowed
-        if (criteria && criteria.replaceAll(/[^a-zA-Z0-9=:.]/, '')) {
+        if (criteria) {
+            criteria = criteria.replaceAll(/[^\w:=.]/, '')
             def name = criteria
             def channel = null
             def version = null

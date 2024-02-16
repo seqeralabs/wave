@@ -15,29 +15,49 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package io.seqera.wave.service.conda
+
+package io.seqera.wave.configuration
+
+import java.time.Duration
+import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.scheduling.annotation.Scheduled
-import jakarta.inject.Inject
+import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
 import jakarta.inject.Singleton
 
 /**
- * Cron job to fetch conda packages
+ * Conda Fetcher service settings
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-
 @CompileStatic
 @Singleton
 @Slf4j
-class CondaFetcherCronJob {
+class PackageConfig {
+    /**
+     * Docker image of tool need to be used for conda fetcher
+     */
+    @Value('${wave.package.conda.image.name:continuumio/miniconda3}')
+    String condaImage
 
-    @Inject
-    CondaFetcherService fetcher
-    @Scheduled(fixedDelay = '12h')
-    void fetch(){
-        fetcher.fetchCondaPackages()
+    @Value('${wave.package.timeout:10m}')
+    Duration timeout
+
+    @Value('${wave.package.channels:seqera}')
+    List<String> channels
+
+    @Value('${wave.package.k8s.resources.requests.cpu}')
+    @Nullable
+    String requestsCpu
+
+    @Value('${wave.package.k8s.resources.requests.memory}')
+    @Nullable
+    String requestsMemory
+
+    @PostConstruct
+    private void init() {
+        log.debug("Package config: docker image name: ${condaImage}; timeout: ${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}")
     }
 }

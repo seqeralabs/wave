@@ -29,20 +29,22 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
-import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.ContainerDigestPair
-import io.seqera.wave.service.builder.BuildFormat
-import io.seqera.wave.service.scan.ScanVulnerability
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.service.persistence.CondaPackageRecord
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.test.SurrealDBTestContainer
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
+
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  *
@@ -315,4 +317,43 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         result2 == scanRecord2
     }
 
+    def "should save and find conda packages" () {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        def record1 = new CondaPackageRecord('channel1', 'package1', '1.1')
+        def record2 = new CondaPackageRecord('channel2', 'package2', '1.2')
+        def record3 = new CondaPackageRecord('channel3', 'package3', '1.3')
+
+        when:
+        persistence.saveCondaPackages([record1, record2, record3])
+
+        then:
+        sleep(100)
+        persistence.findCondaPackage(null) == [
+                new CondaPackageRecord('wave_conda_package:⟨channel1::package1=1.1⟩', 'channel1', 'package1', '1.1'),
+                new CondaPackageRecord('wave_conda_package:⟨channel2::package2=1.2⟩', 'channel2', 'package2', '1.2'),
+                new CondaPackageRecord('wave_conda_package:⟨channel3::package3=1.3⟩', 'channel3', 'package3', '1.3')
+        ]
+        and: 'when searching for a specific package'
+        persistence.findCondaPackage('package2') == [
+                new CondaPackageRecord('wave_conda_package:⟨channel2::package2=1.2⟩', 'channel2', 'package2', '1.2')
+        ]
+        and: 'when searching for a specific channel'
+        persistence.findCondaPackage('channel3') == [
+                new CondaPackageRecord('wave_conda_package:⟨channel3::package3=1.3⟩', 'channel3', 'package3', '1.3')
+        ]
+    }
+
+    def "should return correct filter" () {
+        expect:
+        SurrealPersistenceService.getCondaFetcherFilter(CRITERIA) == FILTER
+        where:
+        CRITERIA        | FILTER
+        null            | ''
+        ''              | ''
+        'foo*'          | "WHERE name ~ 'foo' OR channel ~ 'foo'"
+        'foo'           | "WHERE name ~ 'foo' OR channel ~ 'foo'"
+        'foo::bar'      | "WHERE name ~ 'bar' AND channel ~ 'foo'"
+        'foo::bar=1.0'  | "WHERE name ~ 'bar' AND channel ~ 'foo' AND version ~ '1.0'"
+    }
 }

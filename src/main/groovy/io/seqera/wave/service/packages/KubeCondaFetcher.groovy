@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.conda
+package io.seqera.wave.service.packages
 
 import java.nio.file.Path
 import java.time.Instant
@@ -24,7 +24,7 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.configuration.CondaConfig
+import io.seqera.wave.configuration.PackageConfig
 import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -42,7 +42,7 @@ import jakarta.inject.Singleton
 class KubeCondaFetcher extends AbstractCondaFetcher {
 
     @Inject
-    CondaConfig config
+    PackageConfig config
 
     @Inject
     K8sService k8sService

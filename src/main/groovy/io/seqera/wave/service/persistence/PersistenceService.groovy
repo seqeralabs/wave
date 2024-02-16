@@ -129,7 +129,7 @@ interface PersistenceService {
      *
      * @param entries Create records with the List specified
      */
-    void saveCondaPackage(List<CondaPackageRecord> entries)
+    void saveCondaPackages(List<CondaPackageRecord> entries)
 
     /**
      * Retrieve a {@link List<CondaPackageRecord>} objects for a specified search criteria
@@ -153,7 +153,7 @@ interface PersistenceService {
             if(wait){
                 Thread.sleep(500)
             }
-            saveCondaPackage(entries.subList(index, (index+size)>entries.size()?entries.size():index+size))
+            saveCondaPackages(entries.subList(index, (index+size)>entries.size()?entries.size():index+size))
             index += size
             wait = true
         }
