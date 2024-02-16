@@ -93,9 +93,9 @@ Wave uses SES to send emails about container builds.
 Wave uses Certificate Manager for TLS certificates used by AWS Application Load Balancer. The domain that you use can be a subdomain, such as `wave.example.com`.
 
 1.  If you have not yet configured Certificate Manager, [Register a domain name][cm-domain].
-2.  From the [AWS Certificate Manager console][cm-console], complete the procedure to [Request a public certificate using the console][cm-req].
-3.  After the validation process is complete, copy the ARN value for this certificate.
-4.  TBD
+1.  From the [AWS Certificate Manager console][cm-console], complete the procedure to [Request a public certificate using the console][cm-req].
+1.  After the validation process is complete, copy the ARN value for this certificate.
+1.  TBD
 
 ### Configure Amazon Route 53
 
@@ -107,15 +107,15 @@ The Wave service uses two ECR registries for build artifacts and caching.
 
 1.  Complete the steps in [Getting started with Amazon ECR using the AWS Management Console][ecr] and specify the following value:
     - **Repository name**: Specify a name, such as `wave-build`
-2. Copy the URI for the registry that you just created in the previous step.
-3. 
-4. Repeat the above step for a second repository and specify a name such as `wave-cache`.
-5. Edit `settings.sh` and set `WAVE_CONTAINER_BUILD_REPO` and `WAVE_CONTAINER_CACHE_REPO` with the URIs for the registries that you just created.
+1. Copy the URI for the registry that you just created in the previous step.
+1. 
+1. Repeat the above step for a second repository and specify a name such as `wave-cache`.
+1. Edit `settings.sh` and set `WAVE_CONTAINER_BUILD_REPO` and `WAVE_CONTAINER_CACHE_REPO` with the URIs for the registries that you just created.
 
 ### Configure Amazon ElastiCache
 
 1.  Complete the steps in [Getting started with Amazon ElastiCache for Redis][redis]
-2.  After creating the Redis server, copy the host name.
+1.  After creating the Redis server, copy the host name.
 
 ### Configure an IAM role
 
@@ -221,17 +221,17 @@ After completing the setup for all required AWS services, complete the following
     . settings.sh
     ```
 
-2.  Create the required namespace, roles, storage class, and persistent volume:
+1.  Create the required namespace, roles, storage class, and persistent volume:
     ```
     kubectl apply -f <(create.yml | envsubst)
     ```
 
-3.  Change the current context to the `wave-deploy` namespace:
+1.  Change the current context to the `wave-deploy` namespace:
     ```
     kubectl config set-context --current --namespace=wave-deploy
     ```
 
-4.  Configure the container registry for access to the Wave container image:
+1.  Configure the container registry for access to the Wave container image:
     ```
     kubectl create secret \
       docker-registry reg-creds \
@@ -243,29 +243,29 @@ After completing the setup for all required AWS services, complete the following
 
     Replace the placeholders `<SEQERA_CR_USER>` and `<SEQERA_CR_PASSWORD>` with your Seqera registry credentials. Ensure that each value is between single quotes.
 
-5.  Create the build storage and build namespace:
+1.  Create the build storage and build namespace:
     ```
     kubectl apply -f <(build.yml | envsubst)
     ```
 
-6.  Deploy the Surreal database:
+1.  Deploy the Surreal database:
     ```
     kubectl apply -f <(surrealdb.yml | envsubst)
     ```
 
-7.  Deploy the Wave service:
+1.  Deploy the Wave service:
 
     ```
     kubectl apply -f <(app.yml | envsubst)
     ```
 
-8.  Confirm that the Wave service is running:
+1.  Confirm that the Wave service is running:
 
     ```
     kubectl get pods -o wide
     ```
 
-9.  Deploy the Ingress controller:
+1.  Deploy the Ingress controller:
 
     ```
     kubectl apply -f <(ingress.yml | envsubst)
@@ -277,12 +277,12 @@ After completing the setup for all required AWS services, complete the following
     kubectl get ingress wave-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
     ```
 
-10. [Configure AWS Route53 DNS][alb] with an alias to the host name from the previous step. This alias makes the Wave service available at the host name you specified for `WAVE_HOSTNAME` earlier.
+1.  [Configure AWS Route53 DNS][alb] with an alias to the host name from the previous step. This alias makes the Wave service available at the host name you specified for `WAVE_HOSTNAME` earlier.
 
 [s3]: https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html
 [efs]: https://docs.aws.amazon.com/efs/latest/ug/gs-step-two-create-efs-resources.html
 [ses]: https://docs.aws.amazon.com/ses/latest/dg/setting-up.html
-[cm-console]: https://us-east-2.console.aws.amazon.com/acm/home
+[cm-console]: https://us-east-1.console.aws.amazon.com/acm/home
 [cm-domain]: https://docs.aws.amazon.com/acm/latest/userguide/setup-domain.html
 [cm-req]: https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-request-public.html#request-public-console
 [ecr]: https://docs.aws.amazon.com/AmazonECR/latest/userguide/getting-started-console.html
