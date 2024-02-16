@@ -23,7 +23,6 @@ import java.util.function.Consumer
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.core.io.buffer.ReferenceCounted
@@ -93,9 +92,6 @@ class RegistryProxyController {
 
     @Inject
     private ErrorHandler errorHandler
-
-    @Inject
-    private MeterRegistry meterRegistry
 
     @Inject
     private HttpClientConfig httpConfig
