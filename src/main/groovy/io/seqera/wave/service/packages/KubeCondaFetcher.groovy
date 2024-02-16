@@ -51,7 +51,7 @@ class KubeCondaFetcher extends AbstractCondaFetcher {
     protected void run(List<String> command, Path workDir) {
         String podName = "conda-fetcher-${Instant.now().toEpochMilli()}"
         log.info("Conda fetcher command: $command")
-        final pod = k8sService.condaFetcherContainer(podName, config.condaImage, command, workDir)
+        final pod = k8sService.packagesFetcherContainer(podName, config.condaImage, command, workDir)
         final terminated = k8sService.waitPod(pod, config.timeout.toMillis())
         if( terminated ) {
             log.info("Conda packages fetched successfully")

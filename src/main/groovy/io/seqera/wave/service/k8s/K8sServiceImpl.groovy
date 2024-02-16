@@ -588,14 +588,14 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
-    V1Pod condaFetcherContainer(String name, String containerImage, List<String> args, Path workDir) {
-        final spec = condaFetcherSpec(name, containerImage, args, workDir)
+    V1Pod packagesFetcherContainer(String name, String containerImage, List<String> args, Path workDir) {
+        final spec = packagesFetcherSpec(name, containerImage, args, workDir)
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
-    V1Pod condaFetcherSpec(String name, String containerImage, List<String> args, Path workDir) {
+    V1Pod packagesFetcherSpec(String name, String containerImage, List<String> args, Path workDir) {
 
         final mounts = new ArrayList<V1VolumeMount>(5)
         mounts.add(mountBuildStorage(workDir, storageMountPath, false))

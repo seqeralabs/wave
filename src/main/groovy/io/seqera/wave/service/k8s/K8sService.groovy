@@ -55,5 +55,5 @@ interface K8sService {
 
     V1ContainerStateTerminated waitPod(V1Pod pod, long timeout)
 
-    V1Pod condaFetcherContainer(String name, String containerImage, List<String> args, Path workDir)
+    V1Pod packagesFetcherContainer(String name, String containerImage, List<String> args, Path workDir)
 }
