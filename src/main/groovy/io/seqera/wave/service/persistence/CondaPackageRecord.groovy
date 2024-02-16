@@ -45,17 +45,12 @@ class CondaPackageRecord {
      */
     final String version
     /**
-     * field to be used for searching
-     */
-    final String fullName
-
-    /**
      * Required by jackson ser/de-ser
      */
     protected CondaPackageRecord(){}
 
     CondaPackageRecord( String channel, String name, String version) {
-        this.id = this.fullName = "$channel::$name=$version"
+        this.id  = "$channel::$name=$version"
         this.channel = channel
         this.name = name
         this.version = version
@@ -64,7 +59,7 @@ class CondaPackageRecord {
 
     @Override
     String toString() {
-        return "{id:\"$id\", channel:\"$channel\", name:\"$name\", version:\"$version\", fullName:\"$fullName\"}";
+        return "{id:\"$id\", channel:\"$channel\", name:\"$name\", version:\"$version\"}";
     }
 
 }

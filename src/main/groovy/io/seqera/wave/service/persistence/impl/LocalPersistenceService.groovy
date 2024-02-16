@@ -94,7 +94,7 @@ class LocalPersistenceService implements PersistenceService {
     List<CondaPackageRecord> findCondaPackage(String criteria) {
         final result = new ArrayList()
         for( CondaPackageRecord it : condaStore.values() ) {
-            if( !criteria || it.fullName.contains(criteria) )
+            if( !criteria || it.id.contains(criteria) )
                 result.add(it)
         }
         return result

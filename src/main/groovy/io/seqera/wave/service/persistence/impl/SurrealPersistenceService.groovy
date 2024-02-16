@@ -100,7 +100,9 @@ class SurrealPersistenceService implements PersistenceService {
                                                 DEFINE FIELD version ON TABLE wave_conda_package TYPE string;
                                                 DEFINE FIELD channel ON TABLE wave_conda_package TYPE string;
                                                 DEFINE FIELD fullName ON TABLE wave_conda_package TYPE string;
-                                                DEFINE INDEX wave_conda_package_idx ON wave_conda_package FIELDS fullName;
+                                                DEFINE INDEX wave_conda_package_nameidx ON wave_conda_package FIELDS name;
+                                                DEFINE INDEX wave_conda_package_version_idx ON wave_conda_package FIELDS version;
+                                                DEFINE INDEX wave_conda_package_channel_idx ON wave_conda_package FIELDS channel;
                                                 ''')
          }catch(Exception e) {
             throw new IllegalStateException("Unable to define SurrealDB table wave_conda_package - cause: ${e.getCause()}")
@@ -264,16 +266,41 @@ class SurrealPersistenceService implements PersistenceService {
     }
     @Override
     List<CondaPackageRecord> findCondaPackage(String criteria) {
-        def statement = 'SELECT * FROM wave_conda_package'
-        //to make sure search criteria doesn't have unwanted characters
-        //in search criteria alpha numeric and ':' and '=' and '.' are allowed
-        if (criteria && criteria.replaceAll(/[^a-zA-Z0-9=:.]/, '')) {
-            statement += " WHERE fullName ~ '$criteria'"
-        }
+        def statement = "SELECT * FROM wave_conda_package ${getCondaFetcherFilter(criteria)}"
         final json = surrealDb.sqlAsString(authorization, statement)
         final type = new TypeReference<ArrayList<SurrealResult<CondaPackageRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result as List<CondaPackageRecord>: null
         return result
+    }
+
+    protected String getCondaFetcherFilter(String criteria) {
+        //to make sure search criteria doesn't have unwanted characters
+        //in search criteria alpha numeric and ':' and '=' and '.' are allowed
+        if (criteria && criteria.replaceAll(/[^a-zA-Z0-9=:.]/, '')) {
+            def name = criteria
+            def channel = null
+            def version = null
+            if( criteria.contains('::') ){
+                def tokens1 = criteria.split('::')
+                channel = tokens1[0]
+                if(tokens1[1].contains('=') ){
+                    def tokens2 = tokens1[1].split('=')
+                    name = tokens2[0]
+                    version = tokens2[1]
+                }else{
+                    name = tokens1[1]
+                }
+
+            }
+            def result = "WHERE name ~ '$name'"
+            if( channel )
+                result +=  " AND channel ~ '$channel'"
+            if (version)
+                result += " AND version ~ '$version'"
+            return result
+        }else{
+            return ""
+        }
     }
 }
