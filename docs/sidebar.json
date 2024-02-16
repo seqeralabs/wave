@@ -1,6 +1,7 @@
 {
   "sidebar": [
     "index",
+    "install/index",
     {
       "type": "category",
       "label": "Wave CLI",
