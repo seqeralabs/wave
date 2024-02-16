@@ -28,10 +28,26 @@ import groovy.transform.CompileStatic
 @Canonical
 @CompileStatic
 class CondaPackageRecord {
+    /**
+     * id is added to avoid duplicate conda packages
+     */
     final String id
+    /**
+     * channel of the package
+     */
     final String channel
+    /**
+     * name of the package
+     */
     final String name
+    /**
+     * version of the package
+     */
     final String version
+    /**
+     * field to be used for searching
+     */
+    final String fullName
 
     /**
      * Required by jackson ser/de-ser
@@ -39,15 +55,16 @@ class CondaPackageRecord {
     protected CondaPackageRecord(){}
 
     CondaPackageRecord( String channel, String name, String version) {
-        this.id = "$channel::$name=$version"
+        this.id = this.fullName = "$channel::$name=$version"
         this.channel = channel
         this.name = name
         this.version = version
+
     }
 
     @Override
     String toString() {
-        return "{id:\"$id\", channel:\"$channel\", name:\"$name\", version:\"$version\"}";
+        return "{id:\"$id\", channel:\"$channel\", name:\"$name\", version:\"$version\", fullName:\"$fullName\"}";
     }
 
 }

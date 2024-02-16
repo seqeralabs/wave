@@ -147,9 +147,15 @@ interface PersistenceService {
      */
     default void saveCondaPackagesChunks(List<CondaPackageRecord> entries, int size){
         int index = 0
+        boolean wait = false
         while (index < entries.size()) {
+            //wait has been added to not overload the database
+            if(wait){
+                Thread.sleep(500)
+            }
             saveCondaPackage(entries.subList(index, (index+size)>entries.size()?entries.size():index+size))
             index += size
+            wait = true
         }
     }
 }

@@ -99,8 +99,8 @@ class SurrealPersistenceService implements PersistenceService {
                                                 DEFINE FIELD name ON TABLE wave_conda_package TYPE string;
                                                 DEFINE FIELD version ON TABLE wave_conda_package TYPE string;
                                                 DEFINE FIELD channel ON TABLE wave_conda_package TYPE string;
-                                                DEFINE ANALYZER class_analyzer TOKENIZERS class FILTERS ngram(3,50);
-                                                DEFINE INDEX wave_conda_package_name_idx ON wave_conda_package FIELDS name SEARCH ANALYZER class_analyzer BM25;
+                                                DEFINE FIELD fullName ON TABLE wave_conda_package TYPE string;
+                                                DEFINE INDEX wave_conda_package_idx ON wave_conda_package FIELDS fullName;
                                                 ''')
          }catch(Exception e) {
             throw new IllegalStateException("Unable to define SurrealDB table wave_conda_package - cause: ${e.getCause()}")
@@ -234,7 +234,8 @@ class SurrealPersistenceService implements PersistenceService {
         return result
     }
 
-    void saveCondaPackageAsync(List<CondaPackageRecord> entries){
+    @Override
+    void saveCondaPackage(List<CondaPackageRecord> entries){
         final statement = "insert into wave_conda_package $entries"
         surrealDb.sqlAsync(getAuthorization(), statement).subscribe({ result->
             log.trace "wave_conda_package ${result}"
@@ -247,8 +248,8 @@ class SurrealPersistenceService implements PersistenceService {
         })
     }
 
-    @Override
-    void saveCondaPackage(List<CondaPackageRecord> entries){
+
+    void saveCondaPackageSync(List<CondaPackageRecord> entries){
         final statement = "insert into wave_conda_package $entries"
         try {
             def result = surrealDb.sqlAsString(getAuthorization(), statement)
@@ -265,9 +266,9 @@ class SurrealPersistenceService implements PersistenceService {
     List<CondaPackageRecord> findCondaPackage(String criteria) {
         def statement = 'SELECT * FROM wave_conda_package'
         //to make sure search criteria doesn't have unwanted characters
-        //in search criteria alpha numeric and '/' and '.' are allowed
-        if (criteria && criteria =~ /^[a-zA-Z0-9\/.]+$/) {
-            statement += " WHERE name @@ '$criteria'"
+        //in search criteria alpha numeric and ':' and '=' and '.' are allowed
+        if (criteria && criteria.replaceAll(/[^a-zA-Z0-9=:.]/, '')) {
+            statement += " WHERE fullName ~ '$criteria'"
         }
         final json = surrealDb.sqlAsString(authorization, statement)
         final type = new TypeReference<ArrayList<SurrealResult<CondaPackageRecord>>>() {}

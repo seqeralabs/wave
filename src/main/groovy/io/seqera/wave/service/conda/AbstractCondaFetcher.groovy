@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutorService
 import groovy.util.logging.Slf4j
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BuildConfig
+import io.seqera.wave.configuration.CondaConfig
 import io.seqera.wave.service.persistence.CondaPackageRecord
 import io.seqera.wave.service.persistence.PersistenceService
 import jakarta.inject.Inject
@@ -42,13 +43,14 @@ abstract class AbstractCondaFetcher implements CondaFetcherService{
     private BuildConfig buildConfig
 
     @Inject
+    private CondaConfig condaConfig
+
+    @Inject
     private PersistenceService persistenceService
 
     @Inject
     @Named(TaskExecutors.IO)
     private ExecutorService executor
-
-    private List<String> channels = ['seqera']
 
     protected List<String> fetchCommand(String channel, Path target) {
         List.of('bash','-c', "conda search -q -c $channel > $target".toString())
@@ -60,7 +62,7 @@ abstract class AbstractCondaFetcher implements CondaFetcherService{
         // create the work dir
         Files.createDirectory(workDir)
 
-        for( String it : channels ) {
+        for( String it : condaConfig.channels ) {
             processChannel(it, workDir)
         }
 
