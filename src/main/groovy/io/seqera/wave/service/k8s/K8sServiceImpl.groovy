@@ -44,7 +44,7 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.BuildConfig
-import io.seqera.wave.configuration.PackageConfig
+import io.seqera.wave.configuration.PackagesConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
@@ -106,7 +106,7 @@ class K8sServiceImpl implements K8sService {
     private BuildConfig buildConfig
 
     @Inject
-    private PackageConfig packageConfig
+    private PackagesConfig packagesConfig
 
     /**
      * Validate config setting
@@ -616,15 +616,15 @@ class K8sServiceImpl implements K8sService {
         def spec = builder
                 .withNewSpec()
                 .withServiceAccount(serviceAccount)
-                .withActiveDeadlineSeconds( packageConfig.timeout.toSeconds() )
+                .withActiveDeadlineSeconds( packagesConfig.timeout.toSeconds() )
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
 
         final requests = new V1ResourceRequirements()
-        if( packageConfig.requestsCpu )
-            requests.putRequestsItem('cpu', new Quantity(packageConfig.requestsCpu))
-        if( packageConfig.requestsMemory )
-            requests.putRequestsItem('memory', new Quantity(packageConfig.requestsMemory))
+        if( packagesConfig.requestsCpu )
+            requests.putRequestsItem('cpu', new Quantity(packagesConfig.requestsCpu))
+        if( packagesConfig.requestsMemory )
+            requests.putRequestsItem('memory', new Quantity(packagesConfig.requestsMemory))
 
         //container section
         spec.addNewContainer()

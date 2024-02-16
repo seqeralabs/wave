@@ -26,7 +26,7 @@ import java.util.concurrent.ExecutorService
 import groovy.util.logging.Slf4j
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BuildConfig
-import io.seqera.wave.configuration.PackageConfig
+import io.seqera.wave.configuration.PackagesConfig
 import io.seqera.wave.service.persistence.CondaPackageRecord
 import io.seqera.wave.service.persistence.PersistenceService
 import jakarta.inject.Inject
@@ -43,7 +43,7 @@ abstract class AbstractCondaFetcher implements PackagesService{
     private BuildConfig buildConfig
 
     @Inject
-    private PackageConfig packageConfig
+    private PackagesConfig packagesConfig
 
     @Inject
     private PersistenceService persistenceService
@@ -62,7 +62,7 @@ abstract class AbstractCondaFetcher implements PackagesService{
         // create the work dir
         Files.createDirectory(workDir)
 
-        for( String it : packageConfig.channels ) {
+        for( String it : packagesConfig.channels ) {
             processChannel(it, workDir)
         }
 

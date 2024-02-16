@@ -23,7 +23,7 @@ import java.nio.file.Path
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.configuration.PackageConfig
+import io.seqera.wave.configuration.PackagesConfig
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -37,7 +37,7 @@ import jakarta.inject.Singleton
 class DockerCondaFetcher extends AbstractCondaFetcher {
 
     @Inject
-    PackageConfig config
+    PackagesConfig config
 
     protected List<String> dockerWrapper(Path workDir) {
 
