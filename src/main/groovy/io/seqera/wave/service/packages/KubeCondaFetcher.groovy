@@ -30,7 +30,7 @@ import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
 /**
- * Implements K8s based CondaFetcherService
+ * Implements K8s based AbstractCondaFetcher
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */

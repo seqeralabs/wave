@@ -15,34 +15,40 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package io.seqera.wave.service.packages
 
+import spock.lang.Specification
 
-import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
-import io.micronaut.scheduling.TaskExecutors
-import io.micronaut.scheduling.annotation.ExecuteOn
-import io.micronaut.scheduling.annotation.Scheduled
-import jakarta.inject.Inject
-import jakarta.inject.Singleton
+import java.nio.file.Path
+
+import io.micronaut.context.ApplicationContext
 
 /**
- * Cron job to fetch packages
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
+class DockerCondaFetcherTest extends Specification {
+    def 'should get docker command' () {
+        given:
+        def props = ['wave.package.conda.image.name': 'condaImage']
+        and:
+        def ctx = ApplicationContext.run(props)
+        and:
+        def fetcher = ctx.getBean(DockerCondaFetcher)
+        when:
+        def command = fetcher.dockerWrapper(Path.of('/some/conda/dir'))
 
-@CompileStatic
-@Singleton
-@Slf4j
-class PackagesFetcherCronJob {
-
-    @Inject
-    PackagesService service
-
-    @ExecuteOn(TaskExecutors.SCHEDULED)
-    @Scheduled(initialDelay = '${wave.package.cron.delay:3m}' , fixedDelay = '${wave.package.cron.interval:3h}')
-    void fetch(){
-        service.fetchPackages()
+        then:
+        command == [
+                'docker',
+                'run',
+                '--rm',
+                '-w',
+                '/some/conda/dir',
+                '-v',
+                '/some/conda/dir:/some/conda/dir:rw',
+                'condaImage'
+        ]
     }
 }

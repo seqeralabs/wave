@@ -39,7 +39,7 @@ import jakarta.inject.Inject
 @CompileStatic
 @Controller("/")
 @ExecuteOn(TaskExecutors.IO)
-class PackageController {
+class PackagesController {
 
     @Inject
     PersistenceService persistenceService
