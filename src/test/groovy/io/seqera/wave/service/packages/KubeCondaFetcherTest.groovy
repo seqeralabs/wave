@@ -38,7 +38,7 @@ class KubeCondaFetcherTest extends Specification {
     @Inject
     PackagesConfig config
 
-    def 'should throw IllegalStateException when conda fetcher fails'() {
+    def 'should throw IllegalStateException when conda fetcher pod fails'() {
         given:
         def k8sService = Mock(K8sService)
         and:
