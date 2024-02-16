@@ -110,6 +110,7 @@ The Wave service uses two ECR registries for build artifacts and caching.
 2. Copy the URI for the registry that you just created in the previous step.
 3. 
 4. Repeat the above step for a second repository and specify a name such as `wave-cache`.
+5. Edit `settings.sh` and set `WAVE_CONTAINER_BUILD_REPO` and `WAVE_CONTAINER_CACHE_REPO` with the URIs for the registries that you just created.
 
 ### Configure Amazon ElastiCache
 
