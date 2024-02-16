@@ -223,7 +223,7 @@ After completing the setup for all required AWS services, complete the following
 
 2.  Create the required namespace, roles, storage class, and persistent volume:
     ```
-    kubectl apply -f create.yml
+    kubectl apply -f <(create.yml | envsubst)
     ```
 
 3.  Change the current context to the `wave-deploy` namespace:
@@ -245,18 +245,18 @@ After completing the setup for all required AWS services, complete the following
 
 5.  Create the build storage and build namespace:
     ```
-    kubectl apply -f build.yml
+    kubectl apply -f <(build.yml | envsubst)
     ```
 
 6.  Deploy the Surreal database:
     ```
-    kubectl apply -f surrealdb.yml
+    kubectl apply -f <(surrealdb.yml | envsubst)
     ```
 
 7.  Deploy the Wave service:
 
     ```
-    kubectl apply -f app.yml
+    kubectl apply -f <(app.yml | envsubst)
     ```
 
 8.  Confirm that the Wave service is running:
@@ -268,7 +268,7 @@ After completing the setup for all required AWS services, complete the following
 9.  Deploy the Ingress controller:
 
     ```
-    kubectl apply -f ingress.yml
+    kubectl apply -f <(ingress.yml | envsubst)
     ```
 
     You can confirm that the AWS Application Load Balancer is configured with the following command:
