@@ -19,6 +19,8 @@ package io.seqera.wave.service.persistence
 
 import spock.lang.Specification
 
+import io.seqera.wave.util.JacksonHelper
+
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
@@ -32,5 +34,15 @@ class CondaPackageRecordTest extends Specification {
         expect:
         record.toString() == "{id:\"channel::name=version\", channel:\"channel\", name:\"name\", version:\"version\"}"
 
+    }
+
+    def 'should serialise-deserialize conda package record'() {
+        given:
+        def record = new CondaPackageRecord('channel', 'name', 'version')
+
+        when:
+        def json = JacksonHelper.fromJson(JacksonHelper.toJson(record), CondaPackageRecord)
+        then:
+        json == record
     }
 }
