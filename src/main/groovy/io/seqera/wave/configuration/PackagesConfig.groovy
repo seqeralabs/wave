@@ -45,7 +45,7 @@ class PackagesConfig {
     @Value('${wave.package.timeout:10m}')
     Duration timeout
 
-    @Value('${wave.package.channels:seqera}')
+    @Value('${wave.package.conda.channels:seqera}')
     List<String> channels
 
     @Value('${wave.package.k8s.resources.requests.cpu}')
