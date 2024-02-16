@@ -53,6 +53,17 @@ After completing the procedure to configure all the required AWS services, the f
 
 In the following steps, the installation procedure describes how to configure the required AWS service requirements and how to configure and apply the Kubernetes manifests for the Wave service.
 
+### Specify environment variables
+
+Set the following environment variables in `settings.sh`:
+
+```
+WAVE_HOSTNAME=
+SURREAL_DB_PASSWORD=
+SEQERA_CR_USER=
+SEQERA_CR_PASSWORD=
+```
+
 ### Configure AWS S3
 
 Wave uses the S3 bucket to store logs and other artifacts.
@@ -188,7 +199,12 @@ The Wave service uses two ECR registries for build artifacts and caching.
 
 ## Install Wave
 
-After completing the setup for all required AWS services, complete the following steps to install the Wave service.
+After completing the setup for all required AWS services, complete the following steps to install the Wave service. Ensure the following prerequisites are met:
+
+- You have the `kubectl` CLI installed
+- You have the `envsubst` command, part of GNU Core Utils, installed
+- You have admin privileges on the cluster
+- You have a `vars.sh` file that exports the Wave service installation environment variables
 
 1.  Download the Kubernetes manifests:
     - app.yml
@@ -198,26 +214,23 @@ After completing the setup for all required AWS services, complete the following
     - ingress.yml
     - surrealdb.yml
 
-2.  Set the configuration variables for Wave into the Kubernetes manifest templates:
+1.  Source `settings.sh` into your shell environment:
 
     ```
-    for f in app create ingress build hpa surrealdb
-    sed "
-      s/WAVE_HOSTNAME/$WAVE_HOSTNAME/;
-    " $f.yml > new.$f.yml
+    . settings.sh
     ```
 
-3.  Create the required namespace, roles, storage class, and persistent volume:
+2.  Create the required namespace, roles, storage class, and persistent volume:
     ```
     kubectl apply -f create.yml
     ```
 
-4.  Change the current context to the `wave-deploy` namespace:
+3.  Change the current context to the `wave-deploy` namespace:
     ```
     kubectl config set-context --current --namespace=wave-deploy
     ```
 
-5.  Configure the container registry for access to the Wave container image:
+4.  Configure the container registry for access to the Wave container image:
     ```
     kubectl create secret \
       docker-registry reg-creds \
@@ -229,23 +242,23 @@ After completing the setup for all required AWS services, complete the following
 
     Replace the placeholders `<SEQERA_CR_USER>` and `<SEQERA_CR_PASSWORD>` with your Seqera registry credentials. Ensure that each value is between single quotes.
 
-6.  Create the build storage and build namespace:
+5.  Create the build storage and build namespace:
     ```
-    kubectl apply -f
+    kubectl apply -f build.yml
     ```
 
-7.  Deploy the Surreal database:
+6.  Deploy the Surreal database:
     ```
     kubectl apply -f surrealdb.yml
     ```
 
-8.  Deploy the Wave service:
+7.  Deploy the Wave service:
 
     ```
     kubectl apply -f app.yml
     ```
 
-10. Confirm that the Wave service is running:
+8.  Confirm that the Wave service is running:
 
     ```
     kubectl get pods -o wide
