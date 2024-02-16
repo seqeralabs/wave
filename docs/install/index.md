@@ -11,6 +11,7 @@ Ensure that you meet the following requirements for the Wave service.
 - You have access to Seqera Platform
 - You have an AWS account for your organization with sufficient privileges to create new AWS services
 - You have an OpenID Connect (OIDC) service configured on AWS for your organization
+- You have the `kubectl` CLI installed
 
 If you are using the enterprise version of Seqera Platform, we recommend that you install the Wave service in the same EKS cluster where Seqera Platform is installed.
 
@@ -185,6 +186,85 @@ The Wave service uses two ECR registries for build artifacts and caching.
 }
 ```
 
+## Install Wave
+
+After completing the setup for all required AWS services, complete the following steps to install the Wave service.
+
+1.  Download the Kubernetes manifests:
+    - app.yml
+    - build.yml
+    - create.yml
+    - hpa.yaml
+    - ingress.yml
+    - surrealdb.yml
+
+2.  Set the configuration variables for Wave into the Kubernetes manifest templates:
+
+    ```
+    for f in app create ingress build hpa surrealdb
+    sed "
+      s/WAVE_HOSTNAME/$WAVE_HOSTNAME/;
+    " $f.yml > new.$f.yml
+    ```
+
+3.  Create the required namespace, roles, storage class, and persistent volume:
+    ```
+    kubectl apply -f create.yml
+    ```
+
+4.  Change the current context to the `wave-deploy` namespace:
+    ```
+    kubectl config set-context --current --namespace=wave-deploy
+    ```
+
+5.  Configure the container registry for access to the Wave container image:
+    ```
+    kubectl create secret \
+      docker-registry reg-creds \
+      --namespace wave-deploy \
+      --docker-server=cr.seqera.io \
+      --docker-username='<SEQERA_CR_USER>' \
+      --docker-password='<SEQERA_CR_PASSWORD>'
+    ```
+
+    Replace the placeholders `<SEQERA_CR_USER>` and `<SEQERA_CR_PASSWORD>` with your Seqera registry credentials. Ensure that each value is between single quotes.
+
+6.  Create the build storage and build namespace:
+    ```
+    kubectl apply -f
+    ```
+
+7.  Deploy the Surreal database:
+    ```
+    kubectl apply -f surrealdb.yml
+    ```
+
+8.  Deploy the Wave service:
+
+    ```
+    kubectl apply -f app.yml
+    ```
+
+10. Confirm that the Wave service is running:
+
+    ```
+    kubectl get pods -o wide
+    ```
+
+9.  Deploy the Ingress controller:
+
+    ```
+    kubectl apply -f ingress.yml
+    ```
+
+    You can confirm that the AWS Application Load Balancer is configured with the following command:
+
+    ```
+    kubectl get ingress wave-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+    ```
+
+10. [Configure AWS Route53 DNS][alb] with an alias to the host name from the previous step. This alias makes the Wave service available at the host name you specified for `WAVE_HOSTNAME` earlier.
+
 [s3]: https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html
 [efs]: https://docs.aws.amazon.com/efs/latest/ug/gs-step-two-create-efs-resources.html
 [ses]: https://docs.aws.amazon.com/ses/latest/dg/setting-up.html
@@ -194,3 +274,4 @@ The Wave service uses two ECR registries for build artifacts and caching.
 [ecr]: https://docs.aws.amazon.com/AmazonECR/latest/userguide/getting-started-console.html
 [redis]: https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/GettingStarted.html
 [iam-role-create]: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user.html#roles-creatingrole-user-console
+[alb]: https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-to-elb-load-balancer.html
