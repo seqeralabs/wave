@@ -44,6 +44,7 @@ class CondaPackageRecord {
      * version of the package
      */
     final String version
+
     /**
      * Required by jackson ser/de-ser
      */

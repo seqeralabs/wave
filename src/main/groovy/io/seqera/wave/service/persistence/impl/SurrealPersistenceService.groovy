@@ -99,10 +99,9 @@ class SurrealPersistenceService implements PersistenceService {
                                                 DEFINE FIELD name ON TABLE wave_conda_package TYPE string;
                                                 DEFINE FIELD version ON TABLE wave_conda_package TYPE string;
                                                 DEFINE FIELD channel ON TABLE wave_conda_package TYPE string;
-                                                DEFINE FIELD fullName ON TABLE wave_conda_package TYPE string;
-                                                DEFINE INDEX wave_conda_package_nameidx ON wave_conda_package FIELDS name;
-                                                DEFINE INDEX wave_conda_package_version_idx ON wave_conda_package FIELDS version;
+                                                DEFINE INDEX wave_conda_package_name_idx ON wave_conda_package FIELDS name;
                                                 DEFINE INDEX wave_conda_package_channel_idx ON wave_conda_package FIELDS channel;
+                                                DEFINE INDEX wave_conda_package_version_idx ON wave_conda_package FIELDS version;
                                                 ''')
          }catch(Exception e) {
             throw new IllegalStateException("Unable to define SurrealDB table wave_conda_package - cause: ${e.getCause()}")
@@ -250,20 +249,6 @@ class SurrealPersistenceService implements PersistenceService {
         })
     }
 
-
-    void saveCondaPackageSync(List<CondaPackageRecord> entries){
-        final statement = "insert into wave_conda_package $entries"
-        try {
-            def result = surrealDb.sqlAsString(getAuthorization(), statement)
-            log.trace "wave_conda_package ${result}"
-        }catch (Throwable error){
-            def msg = error.message
-            if( error instanceof  HttpClientResponseException){
-                msg += ":\n $error.response.body"
-            }
-            log.error "Error saving conda packages ${msg}", error
-        }
-    }
     @Override
     List<CondaPackageRecord> findCondaPackage(String criteria) {
         def statement = "SELECT * FROM wave_conda_package ${getCondaFetcherFilter(criteria)}"
@@ -294,8 +279,11 @@ class SurrealPersistenceService implements PersistenceService {
 
             }
             def result = "WHERE name ~ '$name'"
-            if( channel )
-                result +=  " AND channel ~ '$channel'"
+            if( channel ) {
+                result += " AND channel ~ '$channel'"
+            }else{
+                result += " OR channel ~ '$criteria'"
+            }
             if (version)
                 result += " AND version ~ '$version'"
             return result
