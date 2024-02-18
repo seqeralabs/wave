@@ -4,6 +4,10 @@ title: API reference
 
 This page summarizes the API provided by the Wave container service.
 
+## `/container-token/{token}`
+
+Get the details for a specific container request.
+
 ## `/container-token`
 
 This endpoint allows you to submit a request to access a private container repository via Wave, or build a container image on-the-fly with a Dockerfile or Conda recipe file.
