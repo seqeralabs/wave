@@ -21,6 +21,7 @@ package io.seqera.wave.auth
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.service.CredentialsService
@@ -39,7 +40,8 @@ import jakarta.inject.Singleton
 class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
 
     @Inject
-    private RegistryConfig registryConfigurationFactory
+    @Nullable
+    private RegistryConfig registryConfig
 
     @Inject
     private RegistryCredentialsFactory credentialsFactory
@@ -72,7 +74,7 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
     }
 
     protected RegistryCredentials getDefaultCredentials0(String registry) {
-        final config = registryConfigurationFactory.getRegistryKeys(registry)
+        final config = registryConfig?.getRegistryKeys(registry)
         if( !config ){
             log.debug "Unable to find default credentials for registry '$registry'"
             return null
@@ -81,7 +83,7 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
     }
 
     protected RegistryCredentials getDefaultRepoCredentials0(ContainerPath container) {
-        final config = registryConfigurationFactory.getRegistryKeys(container.repository)
+        final config = registryConfig?.getRegistryKeys(container.repository)
         if( !config ){
             log.debug "Unable to find default credentials for repository '$container.repository'"
             return null

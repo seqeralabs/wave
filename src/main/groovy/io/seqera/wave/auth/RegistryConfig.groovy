@@ -21,6 +21,7 @@ package io.seqera.wave.auth
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.ConfigurationProperties
 import io.micronaut.context.annotation.Context
+import io.micronaut.context.annotation.Requires
 
 /**
  * Holds container registry static keys as define in the Wave config file
@@ -28,8 +29,9 @@ import io.micronaut.context.annotation.Context
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
-@ConfigurationProperties('wave')
 @Context
+@Requires(property = 'wave.registries')
+@ConfigurationProperties('wave')
 @CompileStatic
 class RegistryConfig {
 
