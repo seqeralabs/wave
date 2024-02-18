@@ -105,9 +105,6 @@ class K8sServiceImpl implements K8sService {
     @Inject
     private BuildConfig buildConfig
 
-    @Inject
-    private PackagesConfig packagesConfig
-
     /**
      * Validate config setting
      */
@@ -588,14 +585,14 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
-    V1Pod packagesFetcherContainer(String name, String containerImage, List<String> args, Path workDir) {
-        final spec = packagesFetcherSpec(name, containerImage, args, workDir)
+    V1Pod packagesFetcherContainer(String name, String containerImage, List<String> args, Path workDir, PackagesConfig config) {
+        final spec = packagesFetcherSpec(name, containerImage, args, workDir, config)
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
-    V1Pod packagesFetcherSpec(String name, String containerImage, List<String> args, Path workDir) {
+    V1Pod packagesFetcherSpec(String name, String containerImage, List<String> args, Path workDir, PackagesConfig config) {
 
         final mounts = new ArrayList<V1VolumeMount>(5)
         mounts.add(mountBuildStorage(workDir, storageMountPath, false))
@@ -616,15 +613,15 @@ class K8sServiceImpl implements K8sService {
         def spec = builder
                 .withNewSpec()
                 .withServiceAccount(serviceAccount)
-                .withActiveDeadlineSeconds( packagesConfig.timeout.toSeconds() )
+                .withActiveDeadlineSeconds( config.timeout.toSeconds() )
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
 
         final requests = new V1ResourceRequirements()
-        if( packagesConfig.requestsCpu )
-            requests.putRequestsItem('cpu', new Quantity(packagesConfig.requestsCpu))
-        if( packagesConfig.requestsMemory )
-            requests.putRequestsItem('memory', new Quantity(packagesConfig.requestsMemory))
+        if( config.requestsCpu )
+            requests.putRequestsItem('cpu', new Quantity(config.requestsCpu))
+        if( config.requestsMemory )
+            requests.putRequestsItem('memory', new Quantity(config.requestsMemory))
 
         //container section
         spec.addNewContainer()

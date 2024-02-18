@@ -28,6 +28,7 @@ import io.kubernetes.client.openapi.models.V1EnvVar
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.BlobCacheConfig
+import io.seqera.wave.configuration.PackagesConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.SpackConfig
 /**
@@ -574,4 +575,77 @@ class K8sServiceImplTest extends Specification {
         cleanup:
         ctx.close()
     }
+
+    def 'should create package fetcher spec with defaults' () {
+        given:
+        def PROPS = [
+                'wave.build.k8s.namespace': 'my-ns',
+                'wave.build.k8s.configPath': '/home/kube.config' ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def config = Mock(PackagesConfig) {
+            getTimeout() >> Duration.ofSeconds(20)
+        }
+
+        when:
+        def result = k8sService.packagesFetcherSpec('pod-conda', 'my-conda:latest', ['this','that'], Path.of('/some/conda/path'), config)
+        then:
+        result.metadata.name == 'pod-conda'
+        result.metadata.namespace == 'my-ns'
+        and:
+        result.spec.activeDeadlineSeconds == 20
+        result.spec.serviceAccount == null
+        and:
+        result.spec.containers.get(0).name == 'pod-conda'
+        result.spec.containers.get(0).image == 'my-conda:latest'
+        result.spec.containers.get(0).args ==  ['this','that']
+        and:
+        !result.spec.containers.get(0).getResources().limits
+        !result.spec.containers.get(0).getResources().requests
+
+        cleanup:
+        ctx.close()
+    }
+
+    def 'should create package fetcher spec with custom settings' () {
+        given:
+        def PROPS = [
+                'wave.build.k8s.namespace': 'my-ns',
+                'wave.build.k8s.service-account': 'foo-sa',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.package.timeout': '20s',
+                'wave.package.k8s.resources.requests.cpu': '1',
+                'wave.package.k8s.resources.requests.memory': '2Gi' ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def config = Mock(PackagesConfig) {
+            getTimeout() >> Duration.ofSeconds(20)
+            getRequestsCpu() >> '1'
+            getRequestsMemory() >> '2Gi'
+        }
+        when:
+        def result = k8sService.packagesFetcherSpec('pod-conda', 'my-conda:latest', ['this','that'], Path.of('/some/conda/path'), config)
+        then:
+        result.metadata.name == 'pod-conda'
+        result.metadata.namespace == 'my-ns'
+        and:
+        result.spec.activeDeadlineSeconds == 20
+        result.spec.serviceAccount == 'foo-sa'
+        and:
+        result.spec.containers.get(0).name == 'pod-conda'
+        result.spec.containers.get(0).image == 'my-conda:latest'
+        result.spec.containers.get(0).args ==  ['this','that']
+        result.spec.containers.get(0).volumeMounts.get(0).mountPath == '/some/conda/path'
+        and:
+        result.spec.containers.get(0).getResources().requests.get('cpu') == new Quantity('1')
+        result.spec.containers.get(0).getResources().requests.get('memory') == new Quantity('2Gi')
+        and:
+        !result.spec.containers.get(0).getResources().limits
+
+        cleanup:
+        ctx.close()
+        }
+
 }

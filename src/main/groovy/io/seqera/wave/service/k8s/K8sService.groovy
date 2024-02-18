@@ -24,6 +24,7 @@ import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1Pod
 import io.seqera.wave.configuration.BlobCacheConfig
+import io.seqera.wave.configuration.PackagesConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.SpackConfig
 /**
@@ -55,5 +56,5 @@ interface K8sService {
 
     V1ContainerStateTerminated waitPod(V1Pod pod, long timeout)
 
-    V1Pod packagesFetcherContainer(String name, String containerImage, List<String> args, Path workDir)
+    V1Pod packagesFetcherContainer(String name, String containerImage, List<String> args, Path workDir, PackagesConfig config)
 }
