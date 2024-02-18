@@ -63,6 +63,11 @@ class PackagesControllerTest extends Specification {
         resp == '[{"id":"bioconda::multiqc=0.4","channel":"bioconda","name":"multiqc","version":"0.4"}]'
 
         when:
+        resp = client.toBlocking().retrieve("$PREFIX/conda?search=multiqc=0.4")
+        then:
+        resp == '[{"id":"bioconda::multiqc=0.4","channel":"bioconda","name":"multiqc","version":"0.4"}]'
+
+        when:
         resp = client.toBlocking().retrieve("$PREFIX/conda?search=salmon2")
         then:
         resp == '[{"id":"bioconda::salmon2=1.0","channel":"bioconda","name":"salmon2","version":"1.0"}]'

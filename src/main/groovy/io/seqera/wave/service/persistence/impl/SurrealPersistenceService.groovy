@@ -260,36 +260,40 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     static String getCondaFetcherFilter(String criteria) {
-        //to make sure search criteria doesn't have unwanted characters
-        //in search criteria alpha numeric and ':' and '=' and '.' are allowed
-        if (criteria) {
-            criteria = criteria.replaceAll(/[^\w:=.]/, '')
-            def name = criteria
-            def channel = null
-            def version = null
-            if( criteria.contains('::') ){
-                def tokens1 = criteria.split('::')
-                channel = tokens1[0]
-                if(tokens1[1].contains('=') ){
-                    def tokens2 = tokens1[1].split('=')
-                    name = tokens2[0]
-                    version = tokens2[1]
-                }else{
-                    name = tokens1[1]
-                }
-
-            }
-            def result = "WHERE name ~ '$name'"
-            if( channel ) {
-                result += " AND channel ~ '$channel'"
-            }else{
-                result += " OR channel ~ '$criteria'"
-            }
-            if (version)
-                result += " AND version ~ '$version'"
-            return result
-        }else{
-            return ""
+        if (!criteria) {
+            return ''
         }
+        // To make sure search criteria doesn't have unwanted characters
+        // In search criteria, alphanumeric and ':' and '=' and '.' are allowed
+        criteria = criteria.replaceAll(/[^\w:=.]/, '')
+
+        def name = null
+        def channel = null
+        def version = null
+
+        if (criteria.contains('::')) {
+            def tokens1 = criteria.split('::')
+            channel = tokens1[0]
+            def nameAndVersion = tokens1[1].tokenize('=')
+            name = nameAndVersion[0]
+            version = nameAndVersion.size() > 1 ? nameAndVersion[1] : null
+        } else if (criteria.contains('=')) {
+            def tokens = criteria.tokenize('=')
+            name = tokens[0]
+            version = tokens.size() > 1 ? tokens[1] : null
+        } else {
+            name = criteria
+        }
+
+        def result = "WHERE name ~ '$name'"
+        if (channel) {
+            result += " AND channel ~ '$channel'"
+        }
+        if (version) {
+            result += " AND version ~ '$version'"
+        } else if (!channel) {
+            result += " OR channel ~ '$criteria'"
+        }
+        return result
     }
 }

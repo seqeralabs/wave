@@ -354,6 +354,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         'foo*'          | "WHERE name ~ 'foo' OR channel ~ 'foo'"
         'foo'           | "WHERE name ~ 'foo' OR channel ~ 'foo'"
         'foo::bar'      | "WHERE name ~ 'bar' AND channel ~ 'foo'"
+        'bar=1.0'       | "WHERE name ~ 'bar' AND version ~ '1.0'"
         'foo::bar=1.0'  | "WHERE name ~ 'bar' AND channel ~ 'foo' AND version ~ '1.0'"
     }
 }
