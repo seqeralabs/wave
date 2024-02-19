@@ -17,8 +17,6 @@
  */
 package io.seqera.wave.configuration
 
-import javax.annotation.Nullable
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
