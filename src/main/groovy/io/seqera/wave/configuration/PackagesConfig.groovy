@@ -28,7 +28,7 @@ import io.micronaut.core.annotation.Nullable
 import jakarta.inject.Singleton
 
 /**
- * Conda Fetcher service settings
+ * Packages service settings
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
@@ -62,6 +62,6 @@ class PackagesConfig {
 
     @PostConstruct
     private void init() {
-        log.debug("Packages config: enabled: ${enabled}; docker image name: ${condaImage}; timeout: ${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}")
+        log.debug("Packages Service config: enabled: ${enabled}; docker image name: ${condaImage}; timeout: ${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}")
     }
 }
