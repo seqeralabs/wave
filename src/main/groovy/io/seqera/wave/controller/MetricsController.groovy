@@ -51,13 +51,15 @@ import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
 @CompileStatic
 @Secured(SecurityRule.IS_AUTHENTICATED)
 @Controller("/v1alpha1/metrics")
-class MetricController {
+class MetricsController {
     @Inject
     private MetricService metricsService
 
     @Get(uri = "/builds/{metric}", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<Map> getBuildMetrics(@PathVariable String metric, @Nullable @QueryValue Boolean success,
-                                      @Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate,
+    HttpResponse<Map> getBuildMetrics(@PathVariable String metric,
+                                      @Nullable @QueryValue Boolean success,
+                                      @Nullable @QueryValue String startDate,
+                                      @Nullable @QueryValue String endDate,
                                       @Nullable @QueryValue Integer limit) {
         return HttpResponse.ok(
                 metricsService.getBuildMetrics(
@@ -72,8 +74,9 @@ class MetricController {
     }
 
     @Get(uri = "/builds", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<LinkedHashMap> getBuildCount(@Nullable @QueryValue Boolean success, @Nullable @QueryValue String startDate,
-                                              @Nullable @QueryValue String endDate) {
+    HttpResponse<LinkedHashMap> getBuildsCount(@Nullable @QueryValue Boolean success,
+                                               @Nullable @QueryValue String startDate,
+                                               @Nullable @QueryValue String endDate) {
         return HttpResponse.ok(
                 [count: metricsService.getBuildCount(
                         new MetricFilter.Builder()
@@ -85,9 +88,11 @@ class MetricController {
     }
 
     @Get(uri = "/pulls/{metric}", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<Map> getPullMetrics(@PathVariable String metric, @Nullable @QueryValue String startDate,
-                                     @Nullable @QueryValue String endDate,@Nullable @QueryValue Boolean fusion,
-                                     @Nullable @QueryValue Integer limit) {
+    HttpResponse<Map> getPullsMetrics(@PathVariable String metric,
+                                      @Nullable @QueryValue String startDate,
+                                      @Nullable @QueryValue String endDate,
+                                      @Nullable @QueryValue Boolean fusion,
+                                      @Nullable @QueryValue Integer limit) {
         return HttpResponse.ok(
                 metricsService.getPullMetrics(
                         Metric.valueOf(metric),
@@ -101,8 +106,9 @@ class MetricController {
     }
 
     @Get(uri = "/pulls", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<LinkedHashMap> getPullCount(@Nullable @QueryValue String startDate, @Nullable @QueryValue String endDate,
-                                             @Nullable @QueryValue Boolean fusion) {
+    HttpResponse<LinkedHashMap> getPullsCount(@Nullable @QueryValue String startDate,
+                                              @Nullable @QueryValue String endDate,
+                                              @Nullable @QueryValue Boolean fusion) {
         return HttpResponse.ok(
                 [count: metricsService.getPullCount(
                         new MetricFilter.Builder()
@@ -114,8 +120,10 @@ class MetricController {
     }
 
     @Get(uri = "/distinct/{metric}", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<LinkedHashMap> getBuildCount(@PathVariable String metric, @Nullable @QueryValue String startDate,
-                                              @Nullable @QueryValue String endDate, @Nullable @QueryValue Boolean fusion) {
+    HttpResponse<LinkedHashMap> getBuildsCount(@PathVariable String metric,
+                                               @Nullable @QueryValue String startDate,
+                                               @Nullable @QueryValue String endDate,
+                                               @Nullable @QueryValue Boolean fusion) {
         return HttpResponse.ok(
                 [count: metricsService.getDistinctMetrics(
                         Metric.valueOf(metric),

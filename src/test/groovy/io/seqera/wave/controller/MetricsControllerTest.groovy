@@ -47,7 +47,7 @@ import jakarta.inject.Inject
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @MicronautTest
-class MetricControllerTest extends Specification {
+class MetricsControllerTest extends Specification {
 
     @Inject
     @Client("/")
@@ -649,6 +649,6 @@ class MetricControllerTest extends Specification {
         def endDate = '2024-02-07'
 
         expect: '1 day difference'
-        Duration.between(MetricController.parseStartDate(starDate), MetricController.parseEndDate(endDate)).toString() == 'PT23H59M59.999999999S'
+        Duration.between(MetricsController.parseStartDate(starDate), MetricsController.parseEndDate(endDate)).toString() == 'PT23H59M59.999999999S'
     }
 }
