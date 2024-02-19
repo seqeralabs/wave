@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.persistence.impl
 
-
 import groovy.transform.CompileStatic
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.metric.Metric
@@ -28,7 +27,6 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import jakarta.inject.Singleton
-
 /**
  * Basic persistence for dev purpose
  *

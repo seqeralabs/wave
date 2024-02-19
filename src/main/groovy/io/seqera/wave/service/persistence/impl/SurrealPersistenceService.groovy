@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.persistence.impl
 
-
 import com.fasterxml.jackson.core.type.TypeReference
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -41,7 +40,6 @@ import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 /**
  * Implements a persistence service based based on SurrealDB
  *
