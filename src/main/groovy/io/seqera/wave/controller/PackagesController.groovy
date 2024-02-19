@@ -41,7 +41,7 @@ import jakarta.inject.Inject
 @CompileStatic
 @Controller("/v1alpha1/packages")
 @ExecuteOn(TaskExecutors.IO)
-@Requires(property = 'wave.package.enabled', value = 'true')
+@Requires(property = 'wave.packages.enabled', value = 'true')
 class PackagesController {
 
     @Inject

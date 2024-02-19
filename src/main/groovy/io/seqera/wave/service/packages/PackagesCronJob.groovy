@@ -36,7 +36,7 @@ import jakarta.inject.Singleton
 @CompileStatic
 @Singleton
 @Slf4j
-@Requires(property = 'wave.package.enabled', value = 'true')
+@Requires(property = 'wave.packages.enabled', value = 'true')
 class PackagesCronJob {
 
     @Inject
