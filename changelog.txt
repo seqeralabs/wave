@@ -1,4 +1,13 @@
 # Wave changelog
+1.3.3 - 18 Feb 2024
+- Bump actions v4 [30a10876]
+- Add aws-java-sdk-sts and bump version 1.12.471 [c2ff7a8b]
+- Allow no default registries config [9523974e]
+- Improve request validation [b66b3de9]
+- Add error message when spack file is malformed (#361) [6439404b]
+- Add Wave configurations documentation  (#360) [3d167d99]
+- Add enterprise build container [fc6342a9]
+
 1.3.2 - 12 Feb 2024
 - Patch missing user condition on ContainerRequestData [9a8f2a5c]
 
