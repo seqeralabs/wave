@@ -18,9 +18,6 @@
 package io.seqera.wave.service.metric.model
 
 import groovy.transform.CompileStatic
-import groovy.transform.EqualsAndHashCode
-import groovy.transform.ToString
-import groovy.util.logging.Slf4j
 
 /**
  * Model a Wave pulls count Metric response
