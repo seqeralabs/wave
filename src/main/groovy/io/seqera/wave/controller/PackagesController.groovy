@@ -32,7 +32,8 @@ import io.seqera.wave.service.persistence.CondaPackageRecord
 import io.seqera.wave.service.persistence.PersistenceService
 import jakarta.inject.Inject
 /**
- *
+ * Implements controller interface for packages API
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
