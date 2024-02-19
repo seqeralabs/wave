@@ -20,6 +20,7 @@ package io.seqera.wave.service.packages
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.scheduling.annotation.Scheduled
@@ -35,6 +36,7 @@ import jakarta.inject.Singleton
 @CompileStatic
 @Singleton
 @Slf4j
+@Requires(property = 'wave.package.enabled', value = 'true')
 class PackagesCronJob {
 
     @Inject

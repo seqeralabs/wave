@@ -19,6 +19,7 @@ package io.seqera.wave.controller
 
 import spock.lang.Specification
 
+import io.micronaut.context.annotation.Property
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
@@ -31,6 +32,7 @@ import jakarta.inject.Inject
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @MicronautTest
+@Property(name = 'wave.package.enabled', value = 'true')
 class PackagesControllerTest extends Specification {
 
     @Inject

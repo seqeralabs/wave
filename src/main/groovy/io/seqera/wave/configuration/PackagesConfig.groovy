@@ -36,28 +36,32 @@ import jakarta.inject.Singleton
 @Singleton
 @Slf4j
 class PackagesConfig {
+
+    @Value('${wave.packages.enabled:false}')
+    String enabled
+
     /**
      * Docker image of tool need to be used for conda fetcher
      */
-    @Value('${wave.package.conda.image.name:continuumio/miniconda3}')
+    @Value('${wave.packages.conda.image.name:continuumio/miniconda3}')
     String condaImage
 
-    @Value('${wave.package.timeout:10m}')
+    @Value('${wave.packages.timeout:10m}')
     Duration timeout
 
-    @Value('${wave.package.conda.channels:seqera}')
+    @Value('${wave.packages.conda.channels:seqera}')
     List<String> channels
 
-    @Value('${wave.package.k8s.resources.requests.cpu}')
+    @Value('${wave.packages.k8s.resources.requests.cpu}')
     @Nullable
     String requestsCpu
 
-    @Value('${wave.package.k8s.resources.requests.memory}')
+    @Value('${wave.packages.k8s.resources.requests.memory}')
     @Nullable
     String requestsMemory
 
     @PostConstruct
     private void init() {
-        log.debug("Package config: docker image name: ${condaImage}; timeout: ${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}")
+        log.debug("Packages config: enabled: ${enabled}; docker image name: ${condaImage}; timeout: ${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}")
     }
 }

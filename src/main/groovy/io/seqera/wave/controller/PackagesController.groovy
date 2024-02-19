@@ -21,6 +21,7 @@ package io.seqera.wave.controller
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
@@ -40,6 +41,7 @@ import jakarta.inject.Inject
 @CompileStatic
 @Controller("/v1alpha1/packages")
 @ExecuteOn(TaskExecutors.IO)
+@Requires(property = 'wave.package.enabled', value = 'true')
 class PackagesController {
 
     @Inject
