@@ -25,6 +25,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
+import io.micronaut.context.annotation.Property
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
@@ -46,6 +47,8 @@ import jakarta.inject.Inject
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
+
+@Property(name = 'wave.metrics.enabled', value = 'true')
 @MicronautTest
 class MetricsControllerTest extends Specification {
 

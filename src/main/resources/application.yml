@@ -78,8 +78,6 @@ wave:
       name: aquasec/trivy:0.47.0
   blobCache:
     s5cmdImage: cr.seqera.io/public/wave/s5cmd:v2.2.2
-  metrics:
-    enabled: true
 ---
 jackson:
   serialization:

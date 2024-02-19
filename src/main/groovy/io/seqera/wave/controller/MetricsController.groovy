@@ -26,6 +26,7 @@ import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Controller
@@ -54,6 +55,7 @@ import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
  */
 @Slf4j
 @CompileStatic
+@Requires(property = 'wave.metrics.enabled', value = 'true')
 @Secured(SecurityRule.IS_AUTHENTICATED)
 @Controller("/v1alpha1/metrics")
 class MetricsController {

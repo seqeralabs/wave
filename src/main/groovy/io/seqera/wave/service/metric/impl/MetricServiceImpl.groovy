@@ -20,7 +20,6 @@ package io.seqera.wave.service.metric.impl
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Requires
 import io.seqera.wave.service.metric.Metric
 import io.seqera.wave.service.metric.MetricFilter
 import io.seqera.wave.service.metric.MetricService
@@ -34,7 +33,6 @@ import jakarta.inject.Singleton
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @Slf4j
-@Requires(property = 'wave.metrics.enabled', value = 'true')
 @Singleton
 @CompileStatic
 class MetricServiceImpl implements MetricService {
