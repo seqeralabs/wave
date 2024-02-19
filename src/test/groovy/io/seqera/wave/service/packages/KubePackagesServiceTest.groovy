@@ -15,34 +15,42 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package io.seqera.wave.service.packages
 
+import spock.lang.Specification
 
-import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
-import io.micronaut.scheduling.TaskExecutors
-import io.micronaut.scheduling.annotation.ExecuteOn
-import io.micronaut.scheduling.annotation.Scheduled
+import java.nio.file.Path
+
+import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.configuration.PackagesConfig
+import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Inject
-import jakarta.inject.Singleton
 
 /**
- * Cron job to fetch packages
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 
-@CompileStatic
-@Singleton
-@Slf4j
-class PackagesFetcherCronJob {
+@MicronautTest
+class KubePackagesServiceTest extends Specification {
 
     @Inject
-    PackagesService service
+    PackagesConfig config
 
-    @ExecuteOn(TaskExecutors.SCHEDULED)
-    @Scheduled(initialDelay = '${wave.package.cron.delay:3m}' , fixedDelay = '${wave.package.cron.interval:3h}')
-    void fetch(){
-        service.fetchPackages()
+    def 'should throw IllegalStateException when conda fetcher pod fails'() {
+        given:
+        def k8sService = Mock(K8sService)
+        and:
+        k8sService.waitPod(_, _) >> null
+        and:
+        def fetcher = new KubePackagesService( k8sService: k8sService, config: config)
+
+        when:
+        fetcher.run(['command'], Path.of('/some/conda/dir'))
+
+        then:
+        def e = thrown(IllegalStateException)
+        e.message == 'Conda fetcher failed - logs: null'
     }
 }

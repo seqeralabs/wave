@@ -54,7 +54,7 @@ class PackagesController {
 
     @Get('/conda/refresh')
     String update() {
-        packagesService.fetchPackages()
+        packagesService.fetchCondaPackages()
         return 'OK'
     }
 

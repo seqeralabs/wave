@@ -22,35 +22,33 @@ import spock.lang.Specification
 
 import java.nio.file.Path
 
-import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.configuration.PackagesConfig
-import io.seqera.wave.service.k8s.K8sService
-import jakarta.inject.Inject
+import io.micronaut.context.ApplicationContext
 
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-
-@MicronautTest
-class KubeCondaFetcherTest extends Specification {
-
-    @Inject
-    PackagesConfig config
-
-    def 'should throw IllegalStateException when conda fetcher pod fails'() {
+class DockerPackagesServiceTest extends Specification {
+    def 'should get docker command' () {
         given:
-        def k8sService = Mock(K8sService)
+        def props = ['wave.package.conda.image.name': 'condaImage']
         and:
-        k8sService.waitPod(_, _) >> null
+        def ctx = ApplicationContext.run(props)
         and:
-        def fetcher = new KubeCondaFetcher( k8sService: k8sService, config: config)
-
+        def fetcher = ctx.getBean(DockerPackagesService)
         when:
-        fetcher.run(['command'], Path.of('/some/conda/dir'))
+        def command = fetcher.dockerWrapper(Path.of('/some/conda/dir'))
 
         then:
-        def e = thrown(IllegalStateException)
-        e.message == 'Conda fetcher failed - logs: null'
+        command == [
+                'docker',
+                'run',
+                '--rm',
+                '-w',
+                '/some/conda/dir',
+                '-v',
+                '/some/conda/dir:/some/conda/dir:rw',
+                'condaImage'
+        ]
     }
 }

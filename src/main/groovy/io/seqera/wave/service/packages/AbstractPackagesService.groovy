@@ -33,11 +33,13 @@ import jakarta.inject.Inject
 import jakarta.inject.Named
 
 /**
+ * Implements base logic for fetching and storing
+ * Package dependencies metadata used to build containers
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
-abstract class AbstractCondaFetcher implements PackagesService{
+abstract class AbstractPackagesService implements PackagesService{
 
     @Inject
     private BuildConfig buildConfig
@@ -57,7 +59,7 @@ abstract class AbstractCondaFetcher implements PackagesService{
     }
 
     @Override
-    void fetchPackages() {
+    void fetchCondaPackages() {
         final workDir = Path.of(buildConfig.buildWorkspace).resolve('conda-' + System.currentTimeMillis()).toAbsolutePath()
         // create the work dir
         Files.createDirectory(workDir)

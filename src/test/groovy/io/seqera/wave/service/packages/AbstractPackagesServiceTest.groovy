@@ -30,10 +30,10 @@ import jakarta.inject.Inject
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-class AbstractCondaFetcherTest extends Specification {
+class AbstractPackagesServiceTest extends Specification {
 
     @Inject
-    DockerCondaFetcher fetcher
+    DockerPackagesService fetcher
 
     @Inject
     PersistenceService persistenceService

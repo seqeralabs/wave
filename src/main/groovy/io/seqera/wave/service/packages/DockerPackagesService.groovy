@@ -34,7 +34,7 @@ import jakarta.inject.Singleton
 @Singleton
 @Requires(missingProperty = 'wave.build.k8s')
 @CompileStatic
-class DockerCondaFetcher extends AbstractCondaFetcher {
+class DockerPackagesService extends AbstractPackagesService {
 
     @Inject
     PackagesConfig config

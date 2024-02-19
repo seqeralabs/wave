@@ -30,7 +30,7 @@ import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
 /**
- * Implements K8s based AbstractCondaFetcher
+ * Implements K8s based AbstractPackagesService
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
@@ -39,7 +39,7 @@ import jakarta.inject.Singleton
 @Singleton
 @Requires(property = 'wave.build.k8s')
 @CompileStatic
-class KubeCondaFetcher extends AbstractCondaFetcher {
+class KubePackagesService extends AbstractPackagesService {
 
     @Inject
     PackagesConfig config

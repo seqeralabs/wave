@@ -19,11 +19,13 @@
 package io.seqera.wave.service.packages
 
 /**
+ * Define operations interface to manage dependency packages metadata
+ * for container build
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 interface PackagesService {
 
-    void fetchPackages()
+    void fetchCondaPackages()
 
 }
