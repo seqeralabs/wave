@@ -68,14 +68,14 @@ class MetricsController {
                                       @Nullable @QueryValue String startDate,
                                       @Nullable @QueryValue String endDate,
                                       @Nullable @QueryValue Integer limit) {
-        def data =metricsService.getBuildMetrics(
+        def result =metricsService.getBuildMetrics(
                         Metric.valueOf(metric),
                         new MetricFilter.Builder()
                                 .dates(parseStartDate(startDate), parseEndDate(endDate))
                                 .success(success)
                                 .limit(limit)
                                 .build())
-        return HttpResponse.ok(new GetBuildsMetricsResponse(data))
+        return HttpResponse.ok(new GetBuildsMetricsResponse(result))
     }
 
     @Get(uri = "/builds", produces = MediaType.APPLICATION_JSON)
@@ -96,14 +96,14 @@ class MetricsController {
                                       @Nullable @QueryValue String endDate,
                                       @Nullable @QueryValue Boolean fusion,
                                       @Nullable @QueryValue Integer limit) {
-        def data = metricsService.getPullMetrics(
+        def result = metricsService.getPullMetrics(
                         Metric.valueOf(metric),
                         new MetricFilter.Builder()
                                 .dates(parseStartDate(startDate), parseEndDate(endDate))
                                 .fusion(fusion)
                                 .limit(limit)
                                 .build())
-        return HttpResponse.ok(new GetPullsMetricsResponse(data))
+        return HttpResponse.ok(new GetPullsMetricsResponse(result))
 
     }
 
