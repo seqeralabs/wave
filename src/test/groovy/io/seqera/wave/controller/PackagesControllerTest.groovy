@@ -32,7 +32,7 @@ import jakarta.inject.Inject
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @MicronautTest
-@Property(name = 'wave.package.enabled', value = 'true')
+@Property(name = 'wave.packages.enabled', value = 'true')
 class PackagesControllerTest extends Specification {
 
     @Inject

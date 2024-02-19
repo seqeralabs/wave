@@ -43,7 +43,7 @@ class PackagesCronJob {
     PackagesService service
 
     @ExecuteOn(TaskExecutors.SCHEDULED)
-    @Scheduled(initialDelay = '${wave.package.cron.delay:3m}' , fixedDelay = '${wave.package.cron.interval:3h}')
+    @Scheduled(initialDelay = '${wave.packages.cron.delay:3m}' , fixedDelay = '${wave.packages.cron.interval:3h}')
     void fetch(){
         service.fetchCondaPackages()
     }

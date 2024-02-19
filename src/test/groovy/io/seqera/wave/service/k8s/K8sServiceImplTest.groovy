@@ -614,9 +614,9 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.namespace': 'my-ns',
                 'wave.build.k8s.service-account': 'foo-sa',
                 'wave.build.k8s.configPath': '/home/kube.config',
-                'wave.package.timeout': '20s',
-                'wave.package.k8s.resources.requests.cpu': '1',
-                'wave.package.k8s.resources.requests.memory': '2Gi' ]
+                'wave.packages.timeout': '20s',
+                'wave.packages.k8s.resources.requests.cpu': '1',
+                'wave.packages.k8s.resources.requests.memory': '2Gi' ]
         and:
         def ctx = ApplicationContext.run(PROPS)
         def k8sService = ctx.getBean(K8sServiceImpl)

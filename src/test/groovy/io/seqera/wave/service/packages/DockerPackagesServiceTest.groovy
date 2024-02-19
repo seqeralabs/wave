@@ -31,7 +31,7 @@ import io.micronaut.context.ApplicationContext
 class DockerPackagesServiceTest extends Specification {
     def 'should get docker command' () {
         given:
-        def props = ['wave.package.conda.image.name': 'condaImage']
+        def props = ['wave.packages.conda.image.name': 'condaImage']
         and:
         def ctx = ApplicationContext.run(props)
         and:
