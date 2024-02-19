@@ -47,13 +47,22 @@ class PackagesControllerTest extends Specification {
         def record2 = new CondaPackageRecord('seqera', 'multiqc','0.5')
         def record3 = new CondaPackageRecord('bioconda', 'salmon', '1.0')
         def record4 = new CondaPackageRecord('bioconda', 'salmon2',  '1.0')
+        def record5 = new CondaPackageRecord('multiqc', 'multiqc','0.5')
         when:
-        persistenceService.saveCondaPackagesChunks([record1, record2, record3, record4], 2)
+        persistenceService.saveCondaPackagesChunks([record1, record2, record3, record4, record5], 2)
     }
 
     def'get correct packages list matches search'(){
         when:
-        def resp = client.toBlocking().retrieve("$PREFIX/conda?search=seqera::multiqc")
+        def resp = client.toBlocking().retrieve("$PREFIX/conda?search=multiqc")
+        then:
+        resp == '''[{"id":"seqera::multiqc=0.5","channel":"seqera","name":"multiqc","version":"0.5"},
+       {"id":"bioconda::multiqc=0.4","channel":"bioconda","name":"multiqc","version":"0.4"},
+       {"id":"multiqc::multiqc=0.5","channel":"multiqc","name":"multiqc","version":"0.5"}]
+       '''.replace(' ','').replace('\n','')
+
+        when:
+        resp = client.toBlocking().retrieve("$PREFIX/conda?search=seqera::multiqc")
         then:
         resp == '[{"id":"seqera::multiqc=0.5","channel":"seqera","name":"multiqc","version":"0.5"}]'
 
