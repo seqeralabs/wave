@@ -99,9 +99,7 @@ class LocalPersistenceService implements PersistenceService {
                     .collectEntries { [it.key, it.value.size()] }
 
         result = result.sort{ a, b -> b.value - a.value  }
-        if( filter && filter.limit )
-            return result.take(filter.limit)
-        return result
+        return result.take(filter.limit)
     }
 
     @Override
@@ -137,9 +135,7 @@ class LocalPersistenceService implements PersistenceService {
                     .collectEntries { [it.key, it.value.size()] }
 
         result = result.sort{ a, b -> b.value - a.value  }
-        if( filter && filter.limit )
-            return result.take(filter.limit)
-        return result
+        return result.take(filter.limit)
     }
 
     @Override

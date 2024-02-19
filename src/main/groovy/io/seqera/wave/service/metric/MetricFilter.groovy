@@ -89,8 +89,11 @@ class MetricFilter {
         }
 
         MetricFilter build(){
-            if(startDate == null && endDate == null && limit == null && success == null && fusion == null)
-                return null
+            //set min, max and default limit
+            limit = limit?:100
+            limit =limit<1?1:limit
+            limit =limit>1000?1000:limit
+
             return new MetricFilter(startDate, endDate, limit, success, fusion)
         }
     }

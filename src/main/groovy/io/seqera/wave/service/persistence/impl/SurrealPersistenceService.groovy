@@ -225,10 +225,7 @@ class SurrealPersistenceService implements PersistenceService {
     @Override
     LinkedHashMap<String, Long> getBuildCountByMetrics(Metric metric, MetricFilter filter){
         def statement = "SELECT ${metric.buildLabel}, count() as total_count FROM wave_build "+
-                                "${getBuildMetricFilter(filter)} GROUP BY ${metric.buildLabel}  ORDER BY total_count DESC"
-        if( filter && filter.limit )
-            statement += " LIMIT $filter.limit"
-        log.info(statement)
+                                "${getBuildMetricFilter(filter)} GROUP BY ${metric.buildLabel}  ORDER BY total_count DESC LIMIT $filter.limit"
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
         log.trace("Build count results by ${metric.buildLabel}: $results")
@@ -253,8 +250,6 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     static String getBuildMetricFilter(MetricFilter metricFilter){
-        if(!metricFilter)
-            return ""
         def filter = ""
         if (metricFilter.startDate && metricFilter.endDate) {
             filter = "WHERE type::datetime(startTime) >= '$metricFilter.startDate' AND type::datetime(startTime) <= '$metricFilter.endDate'"
@@ -274,10 +269,7 @@ class SurrealPersistenceService implements PersistenceService {
     LinkedHashMap<String, Long> getPullCountByMetrics(Metric metric, MetricFilter filter){
 
         def statement = "SELECT ${metric.pullLabel}, count() as total_count  FROM wave_request "+
-                                "${getPullMetricFilter(filter)} GROUP BY ${metric.pullLabel} ORDER BY total_count DESC"
-        if( filter && filter.limit )
-            statement += " LIMIT $filter.limit"
-
+                                "${getPullMetricFilter(filter)} GROUP BY ${metric.pullLabel} ORDER BY total_count DESC LIMIT $filter.limit"
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
         log.trace("Pull count results by ${metric.pullLabel}: $results")
@@ -321,8 +313,6 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     static String getPullMetricFilter(MetricFilter metricFilter){
-        if(!metricFilter)
-            return ""
         def filter = ""
         if( metricFilter.startDate && metricFilter.endDate ){
             filter = "WHERE type::datetime(timestamp) >= '$metricFilter.startDate' AND type::datetime(timestamp) <= '$metricFilter.endDate'"

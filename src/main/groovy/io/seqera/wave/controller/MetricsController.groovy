@@ -39,6 +39,11 @@ import io.micronaut.security.rules.SecurityRule
 import io.seqera.wave.service.metric.Metric
 import io.seqera.wave.service.metric.MetricFilter
 import io.seqera.wave.service.metric.MetricService
+import io.seqera.wave.service.metric.model.GetBuildsMetricsResponse
+import io.seqera.wave.service.metric.model.GetBuildsCountResponse
+import io.seqera.wave.service.metric.model.GetDistinctCountResponse
+import io.seqera.wave.service.metric.model.GetPullsCountResponse
+import io.seqera.wave.service.metric.model.GetPullsMetricsResponse
 import jakarta.inject.Inject
 import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
 
@@ -56,83 +61,74 @@ class MetricsController {
     private MetricService metricsService
 
     @Get(uri = "/builds/{metric}", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<Map> getBuildMetrics(@PathVariable String metric,
+    HttpResponse<?> getBuildMetrics(@PathVariable String metric,
                                       @Nullable @QueryValue Boolean success,
                                       @Nullable @QueryValue String startDate,
                                       @Nullable @QueryValue String endDate,
                                       @Nullable @QueryValue Integer limit) {
-        return HttpResponse.ok(
-                metricsService.getBuildMetrics(
+        def data =metricsService.getBuildMetrics(
                         Metric.valueOf(metric),
                         new MetricFilter.Builder()
                                 .dates(parseStartDate(startDate), parseEndDate(endDate))
                                 .success(success)
                                 .limit(limit)
-                                .build()
-                )
-        )
+                                .build())
+        return HttpResponse.ok(new GetBuildsMetricsResponse(data))
     }
 
     @Get(uri = "/builds", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<LinkedHashMap> getBuildsCount(@Nullable @QueryValue Boolean success,
+    HttpResponse<?> getBuildsCount(@Nullable @QueryValue Boolean success,
                                                @Nullable @QueryValue String startDate,
                                                @Nullable @QueryValue String endDate) {
-        return HttpResponse.ok(
-                [count: metricsService.getBuildCount(
+        def count = metricsService.getBuildCount(
                         new MetricFilter.Builder()
                                 .dates(parseStartDate(startDate), parseEndDate(endDate))
                                 .success(success)
                                 .build())
-                ]
-        )
+        return HttpResponse.ok(new GetBuildsCountResponse(count))
     }
 
     @Get(uri = "/pulls/{metric}", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<Map> getPullsMetrics(@PathVariable String metric,
+    HttpResponse<?> getPullsMetrics(@PathVariable String metric,
                                       @Nullable @QueryValue String startDate,
                                       @Nullable @QueryValue String endDate,
                                       @Nullable @QueryValue Boolean fusion,
                                       @Nullable @QueryValue Integer limit) {
-        return HttpResponse.ok(
-                metricsService.getPullMetrics(
+        def data = metricsService.getPullMetrics(
                         Metric.valueOf(metric),
                         new MetricFilter.Builder()
                                 .dates(parseStartDate(startDate), parseEndDate(endDate))
                                 .fusion(fusion)
                                 .limit(limit)
                                 .build())
-        )
+        return HttpResponse.ok(new GetPullsMetricsResponse(data))
 
     }
 
     @Get(uri = "/pulls", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<LinkedHashMap> getPullsCount(@Nullable @QueryValue String startDate,
+    HttpResponse<?> getPullsCount(@Nullable @QueryValue String startDate,
                                               @Nullable @QueryValue String endDate,
                                               @Nullable @QueryValue Boolean fusion) {
-        return HttpResponse.ok(
-                [count: metricsService.getPullCount(
+        def count = metricsService.getPullCount(
                         new MetricFilter.Builder()
                                 .dates(parseStartDate(startDate), parseEndDate(endDate))
                                 .fusion(fusion)
                                 .build())
-                ]
-        )
+        return HttpResponse.ok(new GetPullsCountResponse( count))
     }
 
     @Get(uri = "/distinct/{metric}", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<LinkedHashMap> getBuildsCount(@PathVariable String metric,
+    HttpResponse<?> getBuildsCount(@PathVariable String metric,
                                                @Nullable @QueryValue String startDate,
                                                @Nullable @QueryValue String endDate,
                                                @Nullable @QueryValue Boolean fusion) {
-        return HttpResponse.ok(
-                [count: metricsService.getDistinctMetrics(
+        def count = metricsService.getDistinctMetrics(
                         Metric.valueOf(metric),
                         new MetricFilter.Builder()
                                 .dates(parseStartDate(startDate), parseEndDate(endDate))
                                 .fusion(fusion)
                                 .build())
-                ]
-        )
+        return HttpResponse.ok(new GetDistinctCountResponse(count))
     }
 
     static Instant parseStartDate(String date) {

@@ -184,7 +184,7 @@ class MetricsControllerTest extends Specification {
         def res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['127.0.0.1': 2, '127.0.0.2': 1]
+        res.body() == [result:['127.0.0.1': 2, '127.0.0.2': 1]]
         res.status.code == 200
 
         when:
@@ -192,7 +192,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['testImage1': 2, 'testImage2': 1]
+        res.body() == [result:['testImage1': 2, 'testImage2': 1]]
         res.status.code == 200
 
         when:
@@ -200,7 +200,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['testUser1': 2, 'unknown': 1]
+        res.body() == [result:['testUser1': 2, 'unknown': 1]]
         res.status.code == 200
     }
 
@@ -238,7 +238,7 @@ class MetricsControllerTest extends Specification {
         def res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['127.0.0.2': 1, '127.0.0.1': 1]
+        res.body() == [result:['127.0.0.2': 1, '127.0.0.1': 1]]
         res.status.code == 200
 
         when:
@@ -246,7 +246,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['testImage2': 1, 'testImage1': 1]
+        res.body() == [result:['testImage2': 1, 'testImage1': 1]]
         res.status.code == 200
 
         when:
@@ -254,7 +254,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['testUser1': 1, 'unknown': 1]
+        res.body() == [result:['testUser1': 1, 'unknown': 1]]
         res.status.code == 200
     }
 
@@ -267,7 +267,7 @@ class MetricsControllerTest extends Specification {
         def res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['127.0.0.1': 1, '127.0.0.2': 1]
+        res.body() == [result: ['127.0.0.1': 1, '127.0.0.2': 1]]
         res.status.code == 200
 
         when:
@@ -275,7 +275,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['testImage2': 1, 'testImage1': 1]
+        res.body() == [result: ['testImage2': 1, 'testImage1': 1]]
         res.status.code == 200
 
         when:
@@ -283,7 +283,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['testUser1': 1, 'unknown': 1]
+        res.body() == [result:['testUser1': 1, 'unknown': 1]]
         res.status.code == 200
     }
 
@@ -293,7 +293,7 @@ class MetricsControllerTest extends Specification {
         def res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['127.0.0.1': 2]
+        res.body() == [result:['127.0.0.1': 2]]
         res.status.code == 200
 
         when:
@@ -301,7 +301,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['testImage1': 2]
+        res.body() == [result:['testImage1': 2]]
         res.status.code == 200
 
         when:
@@ -309,7 +309,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['testUser1': 2]
+        res.body() == [result:['testUser1': 2]]
         res.status.code == 200
     }
 
@@ -322,7 +322,7 @@ class MetricsControllerTest extends Specification {
         def res = client.toBlocking().exchange(req, Map)
 
         then: 'return total build count'
-        res.body() == ['count': 3]
+        res.body() == [count: 3]
         res.status.code == 200
 
         when: 'dates are provided'
@@ -330,7 +330,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then: 'return total build count between provided dates'
-        res.body() == ['count': 2]
+        res.body() == [count: 2]
         res.status.code == 200
 
         when: 'success query parameter is set to true'
@@ -338,7 +338,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then: 'return total build count between provided dates'
-        res.body() == ['count': 2]
+        res.body() == [count: 2]
         res.status.code == 200
 
     }
@@ -352,7 +352,7 @@ class MetricsControllerTest extends Specification {
         def res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['count': 0]
+        res.body() == [count: 0]
         res.status.code == 200
     }
 
@@ -362,7 +362,7 @@ class MetricsControllerTest extends Specification {
         def res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['100.200.300.401': 1, '100.200.300.400': 2]
+        res.body() == [result:['100.200.300.401': 1, '100.200.300.400': 2]]
         res.status.code == 200
 
         when:
@@ -370,7 +370,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['hello-world': 2, 'hello-wave-world': 1]
+        res.body() == [result:['hello-world': 2, 'hello-wave-world': 1]]
         res.status.code == 200
 
         when:
@@ -378,7 +378,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['foo': 2, 'unknown': 1]
+        res.body() == [result:['foo': 2, 'unknown': 1]]
         res.status.code == 200
     }
 
@@ -418,7 +418,7 @@ class MetricsControllerTest extends Specification {
         def res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['100.200.300.401': 1, '100.200.300.400': 1]
+        res.body() == [result:['100.200.300.401': 1, '100.200.300.400': 1]]
         res.status.code == 200
 
         when:
@@ -426,7 +426,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['hello-world': 1, 'hello-wave-world': 1]
+        res.body() == [result:['hello-world': 1, 'hello-wave-world': 1]]
         res.status.code == 200
 
         when:
@@ -434,7 +434,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['foo': 1, 'unknown': 1]
+        res.body() == [result:['foo': 1, 'unknown': 1]]
         res.status.code == 200
     }
 
@@ -444,7 +444,7 @@ class MetricsControllerTest extends Specification {
         def res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['100.200.300.400': 2]
+        res.body() == [result:['100.200.300.400': 2]]
         res.status.code == 200
 
         when:
@@ -452,7 +452,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['hello-world': 2]
+        res.body() == [result:['hello-world': 2]]
         res.status.code == 200
 
         when:
@@ -460,7 +460,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['foo': 2]
+        res.body() == [result:['foo': 2]]
         res.status.code == 200
     }
 
@@ -472,7 +472,7 @@ class MetricsControllerTest extends Specification {
         def res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['count': 3]
+        res.body() == [count: 3]
         res.status.code == 200
 
         when:
@@ -480,7 +480,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['count': 2]
+        res.body() == [count: 2]
         res.status.code == 200
     }
 
@@ -490,7 +490,7 @@ class MetricsControllerTest extends Specification {
         def res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['count': 1]
+        res.body() == [count: 1]
         res.status.code == 200
 
         when:
@@ -498,7 +498,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['count': 2]
+        res.body() == [count: 2]
         res.status.code == 200
     }
 
@@ -511,7 +511,7 @@ class MetricsControllerTest extends Specification {
         def res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['count': 0]
+        res.body() == [count: 0]
         res.status.code == 200
     }
 
@@ -521,7 +521,7 @@ class MetricsControllerTest extends Specification {
         def res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['count': 2]
+        res.body() == [count: 2]
         res.status.code == 200
 
         when:
@@ -529,7 +529,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['count': 2]
+        res.body() == [count: 2]
         res.status.code == 200
 
         when:
@@ -537,7 +537,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['count': 1]
+        res.body() == [count: 1]
         res.status.code == 200
     }
 
@@ -549,7 +549,7 @@ class MetricsControllerTest extends Specification {
         def res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['count': 2]
+        res.body() == [count: 2]
         res.status.code == 200
 
         when:
@@ -557,7 +557,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['count': 2]
+        res.body() == [count: 2]
         res.status.code == 200
 
         when:
@@ -565,7 +565,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['count': 1]
+        res.body() == [count: 1]
         res.status.code == 200
     }
 
@@ -575,7 +575,7 @@ class MetricsControllerTest extends Specification {
         def res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['count': 1]
+        res.body() == [count: 1]
         res.status.code == 200
 
         when:
@@ -583,7 +583,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['count': 1]
+        res.body() == [count: 1]
         res.status.code == 200
 
         when:
@@ -591,7 +591,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['count': 1]
+        res.body() == [count: 1]
         res.status.code == 200
     }
 
@@ -601,7 +601,7 @@ class MetricsControllerTest extends Specification {
         def res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['count': 1]
+        res.body() == [count: 1]
         res.status.code == 200
 
         when:
@@ -609,7 +609,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['count': 1]
+        res.body() == [count: 1]
         res.status.code == 200
 
         when:
@@ -617,7 +617,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == ['count': 0]
+        res.body() == [count: 0]
         res.status.code == 200
     }
 

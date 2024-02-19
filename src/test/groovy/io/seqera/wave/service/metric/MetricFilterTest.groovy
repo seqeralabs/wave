@@ -54,7 +54,7 @@ class MetricFilterTest extends Specification {
         expect:
         filter.startDate == startDate
         filter.endDate == endDate
-        filter.limit == null
+        filter.limit == 100
         filter.success == null
         filter.fusion == null
     }
@@ -68,7 +68,7 @@ class MetricFilterTest extends Specification {
         expect:
         filter.startDate == startDate
         filter.endDate != null
-        filter.limit == null
+        filter.limit == 100
         filter.success == null
         filter.fusion == null
     }
@@ -92,7 +92,7 @@ class MetricFilterTest extends Specification {
         expect:
         filter.startDate == null
         filter.endDate == null
-        filter.limit == null
+        filter.limit == 100
         filter.success == true
         filter.fusion == null
     }
@@ -104,21 +104,20 @@ class MetricFilterTest extends Specification {
         expect:
         filter.startDate == null
         filter.endDate == null
-        filter.limit == null
+        filter.limit == 100
         filter.success == null
         filter.fusion == false
     }
 
-    def "should return null if every parameter is null"() {
+    def "should return filter with limit 1000 if limit is more than 1000"() {
         given:
-        def filter = new MetricFilter.Builder()
-                .dates(null, null)
-                .limit(null)
-                .success(null)
-                .fusion(null)
-                .build()
+        def filter = new MetricFilter.Builder().limit(1001).build()
 
         expect:
-        filter == null
+        filter.startDate == null
+        filter.endDate == null
+        filter.limit == 1000
+        filter.success == null
+        filter.fusion == null
     }
 }

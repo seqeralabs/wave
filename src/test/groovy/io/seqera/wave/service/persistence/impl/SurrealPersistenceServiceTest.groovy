@@ -371,15 +371,16 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         sleep 300
 
         expect: 'should return the correct counts per metric'
-        persistence.getBuildCountByMetrics(Metric.ip, null) == [
+        def emptyFilter = new MetricFilter.Builder().build()
+        persistence.getBuildCountByMetrics(Metric.ip, emptyFilter) == [
                 '127.0.0.1': 2,
                 '127.0.0.2': 1
         ]
-        persistence.getBuildCountByMetrics(Metric.user, null) == [
+        persistence.getBuildCountByMetrics(Metric.user, emptyFilter) == [
                 'testUser1': 2,
                 'unknown': 1
         ]
-        persistence.getBuildCountByMetrics(Metric.image, null) == [
+        persistence.getBuildCountByMetrics(Metric.image, emptyFilter) == [
                 'testImage1': 2,
                 'testImage2': 1
         ]
@@ -422,7 +423,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         and: 'should return total build count'
 
-        persistence.getBuildCount(null) == 3
+        persistence.getBuildCount(emptyFilter) == 3
         persistence.getBuildCount(successFilter) == 2
 
         and: 'should return total build count between two dates'
@@ -499,15 +500,16 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         sleep 300
 
         expect:'`should return the correct pull counts per metrics'
-        persistence.getPullCountByMetrics(Metric.ip, null) ==[
+        def emptyFilter = new MetricFilter.Builder().build()
+        persistence.getPullCountByMetrics(Metric.ip, emptyFilter) ==[
                 '100.200.300.400': 2,
                 '100.200.300.401': 1
         ]
-        persistence.getPullCountByMetrics(Metric.user, null) == [
+        persistence.getPullCountByMetrics(Metric.user, emptyFilter) == [
                 'foo': 2,
                 'unknown': 1
         ]
-        persistence.getPullCountByMetrics(Metric.image, null) == [
+        persistence.getPullCountByMetrics(Metric.image, emptyFilter) == [
                 'hello-world': 2,
                 'hello-wave-world': 1
         ]
@@ -558,7 +560,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.getPullCountByMetrics(Metric.image, limitFilter) == ['hello-world': 2]
 
         and: 'should return the correct pull'
-        persistence.getPullCount(null) == 3
+        persistence.getPullCount(emptyFilter) == 3
 
         and: 'should return the correct pull counts between two dates'
         persistence.getPullCount(datesFilter) == 2
@@ -570,9 +572,9 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.getPullCount(fusionFalseFilter) == 1
 
         and:'should return distinct metric count'
-        persistence.getDistinctMetrics(Metric.ip, null) == 2
-        persistence.getDistinctMetrics(Metric.user, null) == 1
-        persistence.getDistinctMetrics(Metric.image, null) == 2
+        persistence.getDistinctMetrics(Metric.ip, emptyFilter) == 2
+        persistence.getDistinctMetrics(Metric.user, emptyFilter) == 1
+        persistence.getDistinctMetrics(Metric.image, emptyFilter) == 2
 
         and:'should return distinct metric count between dates'
         persistence.getDistinctMetrics(Metric.ip, datesFilter) == 2
@@ -594,23 +596,25 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         given:
         final persistence = applicationContext.getBean(SurrealPersistenceService)
         expect:
-        persistence.getBuildCountByMetrics(Metric.ip, null) == [:]
-        persistence.getBuildCountByMetrics(Metric.image, null) == [:]
-        persistence.getBuildCountByMetrics(Metric.user, null) == [:]
-        persistence.getPullCountByMetrics(Metric.ip, null) == [:]
-        persistence.getPullCountByMetrics(Metric.image, null) == [:]
-        persistence.getPullCountByMetrics(Metric.user, null) == [:]
+        def emptyFilter = new MetricFilter.Builder().build()
+        persistence.getBuildCountByMetrics(Metric.ip, emptyFilter) == [:]
+        persistence.getBuildCountByMetrics(Metric.image, emptyFilter) == [:]
+        persistence.getBuildCountByMetrics(Metric.user, emptyFilter) == [:]
+        persistence.getPullCountByMetrics(Metric.ip, emptyFilter) == [:]
+        persistence.getPullCountByMetrics(Metric.image, emptyFilter) == [:]
+        persistence.getPullCountByMetrics(Metric.user, emptyFilter) == [:]
     }
     def 'should get 0 total_count if no record found' () {
         given:
         final persistence = applicationContext.getBean(SurrealPersistenceService)
 
         expect:
-        persistence.getPullCount(null) == 0
-        persistence.getBuildCount(null) == 0
-        persistence.getDistinctMetrics(Metric.ip, null) == 0
-        persistence.getDistinctMetrics(Metric.image, null) == 0
-        persistence.getDistinctMetrics(Metric.user, null) == 0
+        def emptyFilter = new MetricFilter.Builder().build()
+        persistence.getPullCount(emptyFilter) == 0
+        persistence.getBuildCount(emptyFilter) == 0
+        persistence.getDistinctMetrics(Metric.ip, emptyFilter) == 0
+        persistence.getDistinctMetrics(Metric.image, emptyFilter) == 0
+        persistence.getDistinctMetrics(Metric.user, emptyFilter) == 0
     }
 
     @Unroll
