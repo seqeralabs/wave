@@ -45,14 +45,11 @@ import jakarta.inject.Inject
 class PackagesController {
 
     @Inject
-    PersistenceService persistenceService
-
-    @Inject
     PackagesService packagesService
 
     @Get('/conda{?search}')
     HttpResponse<List<CondaPackageRecord>> list(@Nullable String search) {
-        return HttpResponse.ok(persistenceService.findCondaPackage(search))
+        return HttpResponse.ok(packagesService.findCondaPackage(search))
     }
 
     @Get('/conda/refresh')
