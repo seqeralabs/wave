@@ -58,10 +58,15 @@ class PackagesControllerTest extends Specification {
         when:
         def resp = client.toBlocking().retrieve("$PREFIX/conda?search=multiqc")
         then:
-        resp == '''{"results":[{"id":"seqera::multiqc=0.5","channel":"seqera","name":"multiqc","version":"0.5"},
-       {"id":"bioconda::multiqc=0.4","channel":"bioconda","name":"multiqc","version":"0.4"},
-       {"id":"multiqc::multiqc=0.5","channel":"multiqc","name":"multiqc","version":"0.5"}]}
-       '''.replaceAll(/\s|\n/, "")
+        resp == '''
+                {
+                    "results":[
+                        {"id":"seqera::multiqc=0.5","channel":"seqera","name":"multiqc","version":"0.5"},
+                        {"id":"bioconda::multiqc=0.4","channel":"bioconda","name":"multiqc","version":"0.4"},
+                        {"id":"multiqc::multiqc=0.5","channel":"multiqc","name":"multiqc","version":"0.5"}
+                        ]
+                    }
+                '''.replaceAll(/\s|\n/, "")
 
         when:
         resp = client.toBlocking().retrieve("$PREFIX/conda?search=seqera::multiqc")
@@ -88,5 +93,20 @@ class PackagesControllerTest extends Specification {
         then:
         resp == '{"results":[{"id":"bioconda::salmon=1.0","channel":"bioconda","name":"salmon","version":"1.0"}]}'
     }
+
+    def'get correct packages list matches search and in specific channels'(){
+        when:
+        def resp = client.toBlocking().retrieve("$PREFIX/conda?search=multiqc&channels=seqera,multiqc")
+        then:
+        resp == '''
+                {
+                    "results":[
+                            {"id":"seqera::multiqc=0.5","channel":"seqera","name":"multiqc","version":"0.5"},
+                            {"id":"multiqc::multiqc=0.5","channel":"multiqc","name":"multiqc","version":"0.5"}
+                        ]
+                }
+                '''.replaceAll(/\s|\n/, "")
+    }
+
 
 }

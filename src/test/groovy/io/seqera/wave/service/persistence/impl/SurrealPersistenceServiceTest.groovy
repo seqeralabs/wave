@@ -329,32 +329,56 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         then:
         sleep(100)
-        persistence.findCondaPackage(null) == [
+        persistence.findCondaPackage(null,null) == [
                 new CondaPackageRecord('wave_conda_package:⟨channel1::package1=1.1⟩', 'channel1', 'package1', '1.1'),
                 new CondaPackageRecord('wave_conda_package:⟨channel2::package2=1.2⟩', 'channel2', 'package2', '1.2'),
                 new CondaPackageRecord('wave_conda_package:⟨channel3::package3=1.3⟩', 'channel3', 'package3', '1.3')
         ]
         and: 'when searching for a specific package'
-        persistence.findCondaPackage('package2') == [
+        persistence.findCondaPackage('package1',null) == [
+                new CondaPackageRecord('wave_conda_package:⟨channel1::package1=1.1⟩', 'channel1', 'package1', '1.1')
+        ]
+        and: 'when searching for a specific package and version'
+        persistence.findCondaPackage('package2=1',null) == [
                 new CondaPackageRecord('wave_conda_package:⟨channel2::package2=1.2⟩', 'channel2', 'package2', '1.2')
         ]
         and: 'when searching for a specific channel'
-        persistence.findCondaPackage('channel3') == [
+        persistence.findCondaPackage('channel3',null) == [
+                new CondaPackageRecord('wave_conda_package:⟨channel3::package3=1.3⟩', 'channel3', 'package3', '1.3')
+        ]
+        and: 'when searching for a specific channel'
+        persistence.findCondaPackage(null, ['channel1','channel3']) == [
+                new CondaPackageRecord('wave_conda_package:⟨channel1::package1=1.1⟩', 'channel1', 'package1', '1.1'),
                 new CondaPackageRecord('wave_conda_package:⟨channel3::package3=1.3⟩', 'channel3', 'package3', '1.3')
         ]
     }
+    
 
     def "should return correct filter" () {
         expect:
-        SurrealPersistenceService.getCondaFetcherFilter(CRITERIA) == FILTER
+        SurrealPersistenceService.getCondaFetcherFilter(CRITERIA, CHANNELS) == FILTER
         where:
-        CRITERIA        | FILTER
-        null            | ''
-        ''              | ''
-        'foo*'          | "WHERE name ~ 'foo' OR channel ~ 'foo'"
-        'foo'           | "WHERE name ~ 'foo' OR channel ~ 'foo'"
-        'foo::bar'      | "WHERE name ~ 'bar' AND channel ~ 'foo'"
-        'bar=1.0'       | "WHERE name ~ 'bar' AND version ~ '1.0'"
-        'foo::bar=1.0'  | "WHERE name ~ 'bar' AND channel ~ 'foo' AND version ~ '1.0'"
+        CRITERIA        | CHANNELS      | FILTER
+        null            | null          | ''
+        ''              | []            | ''
+        'foo'           | null          | "WHERE name ~ 'foo' OR channel ~ 'foo'"
+        'foo::bar'      | null          | "WHERE name ~ 'bar' AND channel ~ 'foo'"
+        'bar=1.0'       | null          | "WHERE name ~ 'bar' AND version ~ '1.0'"
+        'foo::bar=1.0'  | null          | "WHERE name ~ 'bar' AND channel ~ 'foo' AND version ~ '1.0'"
+        'foo'           | ['bar']       | "WHERE name ~ 'foo' AND channel IN ['bar']"
+        'foo::bar'      | ['bar']       | "WHERE name ~ 'bar' AND channel IN ['bar']"
+        'foo::bar=1.0'  | ['bar']       | "WHERE name ~ 'bar' AND channel IN ['bar'] AND version ~ '1.0'"
+    }
+
+    def "should return correct tokens" () {
+        expect:
+        SurrealPersistenceService.parseSearchString(CRITERIA) == TOKENS
+        where:
+        CRITERIA       | TOKENS
+        'foo*'         | ['foo', null, null]
+        'foo'          | ['foo', null, null]
+        'foo::bar'     | ['bar', 'foo', null]
+        'bar=1.0'      | ['bar', null, '1.0']
+        'foo::bar=1.0' | [ 'bar', 'foo', '1.0']
     }
 }

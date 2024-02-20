@@ -250,8 +250,8 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    List<CondaPackageRecord> findCondaPackage(String criteria) {
-        def statement = "SELECT * FROM wave_conda_package ${getCondaFetcherFilter(criteria)}"
+    List<CondaPackageRecord> findCondaPackage(String criteria, List<String> channels) {
+        def statement = "SELECT * FROM wave_conda_package ${getCondaFetcherFilter(criteria, channels)}"
         final json = surrealDb.sqlAsString(authorization, statement)
         final type = new TypeReference<ArrayList<SurrealResult<CondaPackageRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
@@ -259,18 +259,38 @@ class SurrealPersistenceService implements PersistenceService {
         return result
     }
 
-    static String getCondaFetcherFilter(String criteria) {
-        if (!criteria) {
+    static String getCondaFetcherFilter(String criteria, List<String> channels) {
+        if (!criteria && !channels)
             return ''
-        }
+        if (!criteria)
+            return "WHERE channel IN ${channels.inspect()}"
+
         // To make sure search criteria doesn't have unwanted characters
         // In search criteria, alphanumeric and ':' and '=' and '.' are allowed
-        criteria = criteria.replaceAll(/[^\w:=.]/, '')
+        def tokens = parseSearchString(criteria)
+        def name = tokens[0]
+        def channel = tokens[1]
+        def version = tokens[2]
+        def result = "WHERE name ~ '$name'"
+        if (channels){
+            result += " AND channel IN ${channels.inspect()}"
+        }else if (channel) {
+            result += " AND channel ~ '$channel'"
+        }
+        if (version) {
+            result += " AND version ~ '$version'"
+        } else if(!channel && !channels) {
+            result += " OR channel ~ '$name'"
+        }
+        return result
+    }
 
+    static List<String> parseSearchString(String criteria) {
         def name
         def channel = null
         def version = null
 
+        criteria = criteria.replaceAll(/[^\w:=.]/, '')
         if (criteria.contains('::')) {
             def tokens1 = criteria.split('::')
             channel = tokens1[0]
@@ -284,16 +304,6 @@ class SurrealPersistenceService implements PersistenceService {
         } else {
             name = criteria
         }
-
-        def result = "WHERE name ~ '$name'"
-        if (channel) {
-            result += " AND channel ~ '$channel'"
-        }
-        if (version) {
-            result += " AND version ~ '$version'"
-        } else if (!channel) {
-            result += " OR channel ~ '$criteria'"
-        }
-        return result
+        return [name, channel, version]
     }
 }

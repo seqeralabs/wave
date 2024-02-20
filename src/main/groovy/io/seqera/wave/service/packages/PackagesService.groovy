@@ -30,5 +30,5 @@ interface PackagesService {
 
     void fetchCondaPackages()
 
-    List<CondaPackageRecord> findCondaPackage(String search)
+    List<CondaPackageRecord> findCondaPackage(String search, List<String> channels)
 }

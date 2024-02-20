@@ -135,9 +135,10 @@ interface PersistenceService {
      * Retrieve a {@link List<CondaPackageRecord>} objects for a specified search criteria
      *
      * @param criteria The search criteria
+     * @param channels The list of channels for the search
      * @return The {@link List<CondaPackageRecord>} objects returned by the search
      */
-    List<CondaPackageRecord> findCondaPackage(String criteria)
+    List<CondaPackageRecord> findCondaPackage(String criteria, List<String> channels)
 
     /**
      * Create a Conda Package record,

@@ -100,9 +100,10 @@ abstract class AbstractPackagesService implements PackagesService{
     }
 
     @Override
-    List<CondaPackageRecord> findCondaPackage(String search) {
-        persistenceService.findCondaPackage(search)
+    List<CondaPackageRecord> findCondaPackage(String search, List<String> channels) {
+        persistenceService.findCondaPackage(search, channels)
     }
+
     abstract protected void run(List<String> command, Path workDir)
 
 }
