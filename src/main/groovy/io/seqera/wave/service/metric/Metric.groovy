@@ -25,7 +25,7 @@ package io.seqera.wave.service.metric
 
 enum Metric {
     ip('requestIp', 'ipAddress'),
-    user('userName', 'user'),
+    user('userEmail', 'user'),
     image('targetImage', 'sourceImage')
 
     String buildLabel

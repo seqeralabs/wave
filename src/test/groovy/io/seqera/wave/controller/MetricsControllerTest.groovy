@@ -203,11 +203,11 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == [result:['testUser1': 2, 'unknown': 1]]
+        res.body() == [result:['test1@xyz.com': 2, 'unknown': 1]]
         res.status.code == 200
     }
 
-    def "should return null and status 200 when no build records found"() {
+    def "should return empty body and status 200 when no build records found"() {
         given: "Date is tomorrow"
         def date = LocalDate.now().plusDays(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         when:
@@ -257,7 +257,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == [result:['testUser1': 1, 'unknown': 1]]
+        res.body() == [result:['test1@xyz.com': 1, 'unknown': 1]]
         res.status.code == 200
     }
 
@@ -286,7 +286,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == [result:['testUser1': 1, 'unknown': 1]]
+        res.body() == [result:['test1@xyz.com': 1, 'unknown': 1]]
         res.status.code == 200
     }
 
@@ -312,7 +312,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == [result:['testUser1': 2]]
+        res.body() == [result:['test1@xyz.com': 2]]
         res.status.code == 200
     }
 
@@ -381,7 +381,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == [result:['foo': 2, 'unknown': 1]]
+        res.body() == [result:['foo@gmail.com': 2, 'unknown': 1]]
         res.status.code == 200
     }
 
@@ -437,7 +437,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == [result:['foo': 1, 'unknown': 1]]
+        res.body() == [result:['foo@gmail.com': 1, 'unknown': 1]]
         res.status.code == 200
     }
 
@@ -463,7 +463,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == [result:['foo': 2]]
+        res.body() == [result:['foo@gmail.com': 2]]
         res.status.code == 200
     }
 

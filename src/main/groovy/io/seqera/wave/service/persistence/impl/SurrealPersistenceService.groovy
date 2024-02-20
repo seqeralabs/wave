@@ -278,7 +278,7 @@ class SurrealPersistenceService implements PersistenceService {
             def key = result.get(metric.pullLabel)
             if(key && metric == Metric.user) {
                 def user = result.get(metric.pullLabel) as Map
-                key = user.get("userName")
+                key = user.get("email")
             }
             //if the username is null, replace it with unknown
             counts.put((key?:"unknown") as String, result.get("total_count") as Long)
