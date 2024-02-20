@@ -23,13 +23,13 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.security.authentication.AuthenticationProvider
 import io.micronaut.security.authentication.AuthenticationRequest
 import io.micronaut.security.authentication.AuthenticationResponse
-import io.seqera.wave.configuration.AuthConfig
+import io.seqera.wave.service.account.AccountService
+import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Flux
 import reactor.core.publisher.FluxSink
-
 /**
  * Basic Authentication provider
  *
@@ -38,19 +38,22 @@ import reactor.core.publisher.FluxSink
 @Slf4j
 @Singleton
 class BasicAuthenticationProvider implements AuthenticationProvider {
+
     @Inject
-    AuthConfig authConfig
+    private AccountService accountService
 
     @Override
-    Publisher<AuthenticationResponse> authenticate(@Nullable HttpRequest<?> httpRequest,
-                                                   AuthenticationRequest<?, ?> authenticationRequest) {
+    Publisher<AuthenticationResponse> authenticate(@Nullable HttpRequest<?> httpRequest, AuthenticationRequest<?, ?> authRequest) {
         Flux.create(emitter -> {
-            if (authenticationRequest.identity == authConfig.userName && authenticationRequest.secret == authConfig.password) {
-                log.debug "Auth request OK"
-                emitter.next(AuthenticationResponse.success((String) authenticationRequest.identity))
+            final user = authRequest.identity?.toString()
+            final pass = authRequest.secret?.toString()
+            if (accountService.isAuthorised(user, pass)) {
+                log.debug "Auth request OK - user '$user'; password: '${StringUtils.redact(pass)}'"
+                emitter.next(AuthenticationResponse.success((String) authRequest.identity))
                 emitter.complete()
-            } else {
-                log.debug "Auth request FAILED"
+            }
+            else {
+                log.debug "Auth request FAILED - user '$user'; password: '${StringUtils.redact(pass)}'"
                 emitter.error(AuthenticationResponse.exception())
             }
         }, FluxSink.OverflowStrategy.ERROR)

@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2024, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -15,26 +15,16 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package io.seqera.wave.configuration
 
-import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Value
-import jakarta.inject.Singleton
+package io.seqera.wave.service.account
 
 /**
- * Model Wave auth config settings
- *
- * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * Defines the interface for checking account identity
+ * 
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Slf4j
-@Singleton
-@CompileStatic
-class AuthConfig {
+interface AccountService {
 
-    @Value('${wave.auth.basic.username:username}')
-    String userName
+    boolean isAuthorised(String username, String password)
 
-    @Value('${wave.auth.basic.password:password}')
-    String password
 }
