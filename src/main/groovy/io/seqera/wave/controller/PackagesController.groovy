@@ -29,9 +29,9 @@ import io.micronaut.http.annotation.Get
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.service.packages.PackagesService
-import io.seqera.wave.service.persistence.CondaPackageRecord
-import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.packages.model.PackagesResponse
 import jakarta.inject.Inject
+
 /**
  * Implements controller interface for packages API
  * 
@@ -48,8 +48,8 @@ class PackagesController {
     PackagesService packagesService
 
     @Get('/conda{?search}')
-    HttpResponse<List<CondaPackageRecord>> list(@Nullable String search) {
-        return HttpResponse.ok(packagesService.findCondaPackage(search))
+    HttpResponse<?> list(@Nullable String search) {
+        return HttpResponse.ok(new PackagesResponse(packagesService.findCondaPackage(search)))
     }
 
     @Get('/conda/refresh')

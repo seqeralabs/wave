@@ -58,35 +58,35 @@ class PackagesControllerTest extends Specification {
         when:
         def resp = client.toBlocking().retrieve("$PREFIX/conda?search=multiqc")
         then:
-        resp == '''[{"id":"seqera::multiqc=0.5","channel":"seqera","name":"multiqc","version":"0.5"},
+        resp == '''{"results":[{"id":"seqera::multiqc=0.5","channel":"seqera","name":"multiqc","version":"0.5"},
        {"id":"bioconda::multiqc=0.4","channel":"bioconda","name":"multiqc","version":"0.4"},
-       {"id":"multiqc::multiqc=0.5","channel":"multiqc","name":"multiqc","version":"0.5"}]
+       {"id":"multiqc::multiqc=0.5","channel":"multiqc","name":"multiqc","version":"0.5"}]}
        '''.replaceAll(/\s|\n/, "")
 
         when:
         resp = client.toBlocking().retrieve("$PREFIX/conda?search=seqera::multiqc")
         then:
-        resp == '[{"id":"seqera::multiqc=0.5","channel":"seqera","name":"multiqc","version":"0.5"}]'
+        resp == '{"results":[{"id":"seqera::multiqc=0.5","channel":"seqera","name":"multiqc","version":"0.5"}]}'
 
         when:
         resp = client.toBlocking().retrieve("$PREFIX/conda?search=bioconda::multiqc=0.4")
         then:
-        resp == '[{"id":"bioconda::multiqc=0.4","channel":"bioconda","name":"multiqc","version":"0.4"}]'
+        resp == '{"results":[{"id":"bioconda::multiqc=0.4","channel":"bioconda","name":"multiqc","version":"0.4"}]}'
 
         when:
         resp = client.toBlocking().retrieve("$PREFIX/conda?search=multiqc=0.4")
         then:
-        resp == '[{"id":"bioconda::multiqc=0.4","channel":"bioconda","name":"multiqc","version":"0.4"}]'
+        resp == '{"results":[{"id":"bioconda::multiqc=0.4","channel":"bioconda","name":"multiqc","version":"0.4"}]}'
 
         when:
         resp = client.toBlocking().retrieve("$PREFIX/conda?search=salmon2")
         then:
-        resp == '[{"id":"bioconda::salmon2=1.0","channel":"bioconda","name":"salmon2","version":"1.0"}]'
+        resp == '{"results":[{"id":"bioconda::salmon2=1.0","channel":"bioconda","name":"salmon2","version":"1.0"}]}'
 
         when:
         resp = client.toBlocking().retrieve("$PREFIX/conda?search=bioconda::salmon=1")
         then:
-        resp == '[{"id":"bioconda::salmon=1.0","channel":"bioconda","name":"salmon","version":"1.0"}]'
+        resp == '{"results":[{"id":"bioconda::salmon=1.0","channel":"bioconda","name":"salmon","version":"1.0"}]}'
     }
 
 }
