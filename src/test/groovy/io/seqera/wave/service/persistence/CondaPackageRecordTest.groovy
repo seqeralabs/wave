@@ -30,15 +30,15 @@ class CondaPackageRecordTest extends Specification {
     def 'should create conda package record'() {
 
         given:
-        def record = new CondaPackageRecord('channel', 'name', 'version')
+        def record = new CondaPackageRecord('channel', 'name', 'version', ['build1', 'build2'])
         expect:
-        record.toString() == "{id:\"channel::name=version\", channel:\"channel\", name:\"name\", version:\"version\"}"
+        record.toString() == "{id:\"channel::name=version\", channel:\"channel\", name:\"name\", version:\"version\", builds:['build1', 'build2'] }"
 
     }
 
     def 'should serialise-deserialize conda package record'() {
         given:
-        def record = new CondaPackageRecord('channel', 'name', 'version')
+        def record = new CondaPackageRecord('channel', 'name', 'version', ['build1', 'build2'])
 
         when:
         def json = JacksonHelper.fromJson(JacksonHelper.toJson(record), CondaPackageRecord)

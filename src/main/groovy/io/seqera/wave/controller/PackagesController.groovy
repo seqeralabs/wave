@@ -26,6 +26,7 @@ import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
+import io.micronaut.http.annotation.QueryValue
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.service.packages.PackagesService
@@ -47,8 +48,9 @@ class PackagesController {
     @Inject
     PackagesService packagesService
 
-    @Get('/conda{?search}')
-    HttpResponse<?> list(@Nullable String search) {
+    @Get('/conda}')
+    HttpResponse<?> list(@Nullable @QueryValue String search,
+                         @Nullable @QueryValue List<String> channels) {
         return HttpResponse.ok(new PackagesResponse(packagesService.findCondaPackage(search)))
     }
 

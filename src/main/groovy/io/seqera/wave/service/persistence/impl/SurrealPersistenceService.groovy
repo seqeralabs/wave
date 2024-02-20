@@ -267,7 +267,7 @@ class SurrealPersistenceService implements PersistenceService {
         // In search criteria, alphanumeric and ':' and '=' and '.' are allowed
         criteria = criteria.replaceAll(/[^\w:=.]/, '')
 
-        def name = null
+        def name
         def channel = null
         def version = null
 

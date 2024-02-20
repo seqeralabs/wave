@@ -44,30 +44,34 @@ class CondaPackageRecord {
      * version of the package
      */
     final String version
+    /**
+     * builds of the package
+     */
+    final List<String> builds
 
     /**
      * Required by jackson ser/de-ser
      */
     protected CondaPackageRecord(){}
 
-    CondaPackageRecord( String channel, String name, String version) {
+    CondaPackageRecord( String channel, String name, String version, List<String> builds) {
         this.id  = "$channel::$name=$version"
         this.channel = channel
         this.name = name
         this.version = version
-
+        this.builds = builds
     }
 
-    CondaPackageRecord( String id, String channel, String name, String version) {
+    CondaPackageRecord( String id, String channel, String name, String version, List<String> builds) {
         this.id  = id
         this.channel = channel
         this.name = name
         this.version = version
-
+        this.builds = builds
     }
     @Override
     String toString() {
-        return "{id:\"$id\", channel:\"$channel\", name:\"$name\", version:\"$version\"}";
+        return "{id:\"$id\", channel:\"$channel\", name:\"$name\", version:\"$version\", builds:${builds.inspect()} }";
     }
 
 }

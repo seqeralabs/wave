@@ -45,11 +45,11 @@ class PackagesControllerTest extends Specification {
     final PREFIX = '/v1alpha1/packages'
 
     def setup() {
-        def record1 = new CondaPackageRecord('bioconda', 'multiqc','0.4')
-        def record2 = new CondaPackageRecord('seqera', 'multiqc','0.5')
-        def record3 = new CondaPackageRecord('bioconda', 'salmon', '1.0')
-        def record4 = new CondaPackageRecord('bioconda', 'salmon2',  '1.0')
-        def record5 = new CondaPackageRecord('multiqc', 'multiqc','0.5')
+        def record1 = new CondaPackageRecord('bioconda', 'multiqc','0.4', ["py_2", "py_3", "py_4"])
+        def record2 = new CondaPackageRecord('seqera', 'multiqc','0.5', ["py_2", "py_3"])
+        def record3 = new CondaPackageRecord('bioconda', 'salmon', '1.0', ["1", "2"])
+        def record4 = new CondaPackageRecord('bioconda', 'salmon2',  '1.0', ["1", "2", "3"])
+        def record5 = new CondaPackageRecord('multiqc', 'multiqc','0.5', ["py_2", "py_3"])
         when:
         persistenceService.saveCondaPackagesChunks([record1, record2, record3, record4, record5], 2)
     }
@@ -58,35 +58,35 @@ class PackagesControllerTest extends Specification {
         when:
         def resp = client.toBlocking().retrieve("$PREFIX/conda?search=multiqc")
         then:
-        resp == '''{"results":[{"id":"seqera::multiqc=0.5","channel":"seqera","name":"multiqc","version":"0.5"},
-       {"id":"bioconda::multiqc=0.4","channel":"bioconda","name":"multiqc","version":"0.4"},
-       {"id":"multiqc::multiqc=0.5","channel":"multiqc","name":"multiqc","version":"0.5"}]}
+        resp == '''{"results":[{"id":"seqera::multiqc=0.5","channel":"seqera","name":"multiqc","version":"0.5","builds":["py_2","py_3"]},
+       {"id":"bioconda::multiqc=0.4","channel":"bioconda","name":"multiqc","version":"0.4","builds":["py_2","py_3","py_4"]},
+       {"id":"multiqc::multiqc=0.5","channel":"multiqc","name":"multiqc","version":"0.5","builds":["py_2","py_3"]}]}
        '''.replaceAll(/\s|\n/, "")
 
         when:
         resp = client.toBlocking().retrieve("$PREFIX/conda?search=seqera::multiqc")
         then:
-        resp == '{"results":[{"id":"seqera::multiqc=0.5","channel":"seqera","name":"multiqc","version":"0.5"}]}'
+        resp == '{"results":[{"id":"seqera::multiqc=0.5","channel":"seqera","name":"multiqc","version":"0.5","builds":["py_2","py_3"]}]}'
 
         when:
         resp = client.toBlocking().retrieve("$PREFIX/conda?search=bioconda::multiqc=0.4")
         then:
-        resp == '{"results":[{"id":"bioconda::multiqc=0.4","channel":"bioconda","name":"multiqc","version":"0.4"}]}'
+        resp == '{"results":[{"id":"bioconda::multiqc=0.4","channel":"bioconda","name":"multiqc","version":"0.4","builds":["py_2","py_3","py_4"]}]}'
 
         when:
         resp = client.toBlocking().retrieve("$PREFIX/conda?search=multiqc=0.4")
         then:
-        resp == '{"results":[{"id":"bioconda::multiqc=0.4","channel":"bioconda","name":"multiqc","version":"0.4"}]}'
+        resp == '{"results":[{"id":"bioconda::multiqc=0.4","channel":"bioconda","name":"multiqc","version":"0.4","builds":["py_2","py_3","py_4"]}]}'
 
         when:
         resp = client.toBlocking().retrieve("$PREFIX/conda?search=salmon2")
         then:
-        resp == '{"results":[{"id":"bioconda::salmon2=1.0","channel":"bioconda","name":"salmon2","version":"1.0"}]}'
+        resp == '{"results":[{"id":"bioconda::salmon2=1.0","channel":"bioconda","name":"salmon2","version":"1.0","builds":["1","2","3"]}]}'
 
         when:
         resp = client.toBlocking().retrieve("$PREFIX/conda?search=bioconda::salmon=1")
         then:
-        resp == '{"results":[{"id":"bioconda::salmon=1.0","channel":"bioconda","name":"salmon","version":"1.0"}]}'
+        resp == '{"results":[{"id":"bioconda::salmon=1.0","channel":"bioconda","name":"salmon","version":"1.0","builds":["1","2"]}]}'
     }
 
 }
