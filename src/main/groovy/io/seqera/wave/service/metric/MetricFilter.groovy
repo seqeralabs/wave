@@ -20,11 +20,14 @@ package io.seqera.wave.service.metric
 
 import java.time.Instant
 
+import groovy.transform.CompileStatic
+
 /**
  * This class contains filters to be applied on data to get desired metrics data
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
+@CompileStatic
 class MetricFilter {
 
     /*

@@ -19,10 +19,13 @@ package io.seqera.wave.service.metric
 
 /**
  * enum for Metrics
+ * This enum is created to avoid duplicating the same code in MetricController, MetricService and PersistenceService classes for ip, user and container image
+ * buildLabel and pullLabel are the database column names of wave_build and wave_request respectively
+ * This enum is used in MetricController, MetricService and PersistenceService to create generic methods for ip, user and container image
+ * These labels are used in GROUP BY clause of metric SELECT queries to get the results per ip, user or container image
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-
 enum Metric {
     ip('requestIp', 'ipAddress'),
     user('userEmail', 'user'),

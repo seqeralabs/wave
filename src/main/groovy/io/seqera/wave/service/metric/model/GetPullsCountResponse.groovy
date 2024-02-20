@@ -24,12 +24,11 @@ import groovy.transform.CompileStatic
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-
 @CompileStatic
 class GetPullsCountResponse {
     Long count
 
-    GetPullsCountResponse( Long count) {
+    GetPullsCountResponse(Long count) {
         this.count = count
     }
 }

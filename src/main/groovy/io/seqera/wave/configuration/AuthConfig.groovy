@@ -27,9 +27,9 @@ import jakarta.inject.Singleton
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-@CompileStatic
-@Singleton
 @Slf4j
+@Singleton
+@CompileStatic
 class AuthConfig {
 
     @Value('${wave.auth.basic.username:username}')

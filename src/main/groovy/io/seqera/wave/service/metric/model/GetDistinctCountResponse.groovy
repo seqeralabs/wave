@@ -24,12 +24,11 @@ import groovy.transform.CompileStatic
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-
 @CompileStatic
 class GetDistinctCountResponse {
     Long count
 
-    GetDistinctCountResponse( Long count) {
+    GetDistinctCountResponse(Long count) {
         this.count = count
     }
 }

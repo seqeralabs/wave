@@ -24,12 +24,11 @@ import groovy.transform.CompileStatic
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-
 @CompileStatic
 class GetBuildsMetricsResponse {
     Map result
 
-    GetBuildsMetricsResponse( Map result) {
+    GetBuildsMetricsResponse(Map result) {
         this.result = result
     }
 }

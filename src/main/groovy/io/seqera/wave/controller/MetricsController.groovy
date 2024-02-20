@@ -64,10 +64,10 @@ class MetricsController {
 
     @Get(uri = "/builds/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getBuildMetrics(@PathVariable String metric,
-                                      @Nullable @QueryValue Boolean success,
-                                      @Nullable @QueryValue String startDate,
-                                      @Nullable @QueryValue String endDate,
-                                      @Nullable @QueryValue Integer limit) {
+                                    @Nullable @QueryValue Boolean success,
+                                    @Nullable @QueryValue String startDate,
+                                    @Nullable @QueryValue String endDate,
+                                    @Nullable @QueryValue Integer limit) {
         def result =metricsService.getBuildMetrics(
                         Metric.valueOf(metric),
                         new MetricFilter.Builder()
@@ -80,8 +80,8 @@ class MetricsController {
 
     @Get(uri = "/builds", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getBuildsCount(@Nullable @QueryValue Boolean success,
-                                               @Nullable @QueryValue String startDate,
-                                               @Nullable @QueryValue String endDate) {
+                                   @Nullable @QueryValue String startDate,
+                                   @Nullable @QueryValue String endDate) {
         def count = metricsService.getBuildCount(
                         new MetricFilter.Builder()
                                 .dates(parseStartDate(startDate), parseEndDate(endDate))
@@ -92,10 +92,10 @@ class MetricsController {
 
     @Get(uri = "/pulls/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getPullsMetrics(@PathVariable String metric,
-                                      @Nullable @QueryValue String startDate,
-                                      @Nullable @QueryValue String endDate,
-                                      @Nullable @QueryValue Boolean fusion,
-                                      @Nullable @QueryValue Integer limit) {
+                                    @Nullable @QueryValue String startDate,
+                                    @Nullable @QueryValue String endDate,
+                                    @Nullable @QueryValue Boolean fusion,
+                                    @Nullable @QueryValue Integer limit) {
         def result = metricsService.getPullMetrics(
                         Metric.valueOf(metric),
                         new MetricFilter.Builder()
@@ -109,8 +109,8 @@ class MetricsController {
 
     @Get(uri = "/pulls", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getPullsCount(@Nullable @QueryValue String startDate,
-                                              @Nullable @QueryValue String endDate,
-                                              @Nullable @QueryValue Boolean fusion) {
+                                  @Nullable @QueryValue String endDate,
+                                  @Nullable @QueryValue Boolean fusion) {
         def count = metricsService.getPullCount(
                         new MetricFilter.Builder()
                                 .dates(parseStartDate(startDate), parseEndDate(endDate))
@@ -121,9 +121,9 @@ class MetricsController {
 
     @Get(uri = "/distinct/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getBuildsCount(@PathVariable String metric,
-                                               @Nullable @QueryValue String startDate,
-                                               @Nullable @QueryValue String endDate,
-                                               @Nullable @QueryValue Boolean fusion) {
+                                   @Nullable @QueryValue String startDate,
+                                   @Nullable @QueryValue String endDate,
+                                   @Nullable @QueryValue Boolean fusion) {
         def count = metricsService.getDistinctMetrics(
                         Metric.valueOf(metric),
                         new MetricFilter.Builder()

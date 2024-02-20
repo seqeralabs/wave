@@ -29,7 +29,7 @@ import groovy.transform.CompileStatic
 class GetPullsMetricsResponse {
     Map result
 
-    GetPullsMetricsResponse( Map result) {
+    GetPullsMetricsResponse(Map result) {
         this.result = result
     }
 }
