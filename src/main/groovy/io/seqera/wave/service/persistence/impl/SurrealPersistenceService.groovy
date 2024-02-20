@@ -223,7 +223,7 @@ class SurrealPersistenceService implements PersistenceService {
 
     // get build count by specific metric ( ip, userName, targetImage)
     @Override
-    LinkedHashMap<String, Long> getBuildCountByMetrics(Metric metric, MetricFilter filter){
+    LinkedHashMap<String, Long> getBuildsCountByMetric(Metric metric, MetricFilter filter){
         def statement = "SELECT ${metric.buildLabel}, count() as total_count FROM wave_build "+
                                 "${getBuildMetricFilter(filter)} GROUP BY ${metric.buildLabel}  ORDER BY total_count DESC LIMIT $filter.limit"
         final map = surrealDb.sqlAsMap(authorization, statement)
@@ -238,7 +238,7 @@ class SurrealPersistenceService implements PersistenceService {
 
     // get total build count
     @Override
-    Long getBuildCount( MetricFilter filter){
+    Long getBuildsCount(MetricFilter filter){
         final statement = "SELECT count() as total_count FROM wave_build ${getBuildMetricFilter(filter)} GROUP ALL"
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
@@ -266,7 +266,7 @@ class SurrealPersistenceService implements PersistenceService {
 
     // get pull count by specific metric ( ip, user.userName, sourceImage)
     @Override
-    LinkedHashMap<String, Long> getPullCountByMetrics(Metric metric, MetricFilter filter){
+    LinkedHashMap<String, Long> getPullsCountByMetric(Metric metric, MetricFilter filter){
 
         def statement = "SELECT ${metric.pullLabel}, count() as total_count  FROM wave_request "+
                                 "${getPullMetricFilter(filter)} GROUP BY ${metric.pullLabel} ORDER BY total_count DESC LIMIT $filter.limit"
@@ -288,7 +288,7 @@ class SurrealPersistenceService implements PersistenceService {
 
     // get total pull count
     @Override
-    Long getPullCount(MetricFilter filter){
+    Long getPullsCount(MetricFilter filter){
         final statement = "SELECT count() as total_count FROM wave_request ${getPullMetricFilter(filter)}  GROUP ALL"
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>

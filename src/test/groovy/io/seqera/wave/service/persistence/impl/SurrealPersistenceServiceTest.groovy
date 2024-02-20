@@ -371,62 +371,62 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         expect: 'should return the correct counts per metric'
         def emptyFilter = new MetricFilter.Builder().build()
-        persistence.getBuildCountByMetrics(Metric.ip, emptyFilter) == [
+        persistence.getBuildsCountByMetric(Metric.ip, emptyFilter) == [
                 '127.0.0.1': 2,
                 '127.0.0.2': 1
         ]
-        persistence.getBuildCountByMetrics(Metric.user, emptyFilter) == [
+        persistence.getBuildsCountByMetric(Metric.user, emptyFilter) == [
                 'test1@xyz.com': 2,
                 'unknown': 1
         ]
-        persistence.getBuildCountByMetrics(Metric.image, emptyFilter) == [
+        persistence.getBuildsCountByMetric(Metric.image, emptyFilter) == [
                 'testImage1': 2,
                 'testImage2': 1
         ]
 
         and: 'should return correct metric count for successful builds'
         def successFilter = new MetricFilter.Builder().success(true).build()
-        persistence.getBuildCountByMetrics(Metric.ip, successFilter) ==[
+        persistence.getBuildsCountByMetric(Metric.ip, successFilter) ==[
                 '127.0.0.1': 1,
                 '127.0.0.2': 1
         ]
-        persistence.getBuildCountByMetrics(Metric.user, successFilter) == [
+        persistence.getBuildsCountByMetric(Metric.user, successFilter) == [
                 'test1@xyz.com': 1,
                 'unknown': 1
         ]
-        persistence.getBuildCountByMetrics(Metric.image, successFilter) == [
+        persistence.getBuildsCountByMetric(Metric.image, successFilter) == [
                 'testImage1': 1,
                 'testImage2': 1
         ]
 
         and: 'should return correct metric count between two dates'
         def datesFilter = new MetricFilter.Builder().dates(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()).build()
-        persistence.getBuildCountByMetrics(Metric.ip, datesFilter) == [
+        persistence.getBuildsCountByMetric(Metric.ip, datesFilter) == [
                 '127.0.0.1': 1,
                 '127.0.0.2': 1
         ]
-        persistence.getBuildCountByMetrics(Metric.user, datesFilter) == [
+        persistence.getBuildsCountByMetric(Metric.user, datesFilter) == [
                 'test1@xyz.com': 1,
                 'unknown': 1
         ]
-        persistence.getBuildCountByMetrics(Metric.image, datesFilter) == [
+        persistence.getBuildsCountByMetric(Metric.image, datesFilter) == [
                 'testImage1': 1,
                 'testImage2': 1
         ]
 
         and: 'should return correct metric count in limit'
         def limitFilter = new MetricFilter.Builder().limit(1).build()
-        persistence.getBuildCountByMetrics(Metric.ip, limitFilter) == ['127.0.0.1': 2]
-        persistence.getBuildCountByMetrics(Metric.user, limitFilter) == ['test1@xyz.com': 2]
-        persistence.getBuildCountByMetrics(Metric.image, limitFilter) == ['testImage1': 2]
+        persistence.getBuildsCountByMetric(Metric.ip, limitFilter) == ['127.0.0.1': 2]
+        persistence.getBuildsCountByMetric(Metric.user, limitFilter) == ['test1@xyz.com': 2]
+        persistence.getBuildsCountByMetric(Metric.image, limitFilter) == ['testImage1': 2]
 
         and: 'should return total build count'
 
-        persistence.getBuildCount(emptyFilter) == 3
-        persistence.getBuildCount(successFilter) == 2
+        persistence.getBuildsCount(emptyFilter) == 3
+        persistence.getBuildsCount(successFilter) == 2
 
         and: 'should return total build count between two dates'
-        persistence.getBuildCount(datesFilter) == 2
+        persistence.getBuildsCount(datesFilter) == 2
 
     }
 
@@ -500,75 +500,75 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         expect:'`should return the correct pull counts per metrics'
         def emptyFilter = new MetricFilter.Builder().build()
-        persistence.getPullCountByMetrics(Metric.ip, emptyFilter) ==[
+        persistence.getPullsCountByMetric(Metric.ip, emptyFilter) ==[
                 '100.200.300.400': 2,
                 '100.200.300.401': 1
         ]
-        persistence.getPullCountByMetrics(Metric.user, emptyFilter) == [
+        persistence.getPullsCountByMetric(Metric.user, emptyFilter) == [
                 'foo@gmail.com': 2,
                 'unknown': 1
         ]
-        persistence.getPullCountByMetrics(Metric.image, emptyFilter) == [
+        persistence.getPullsCountByMetric(Metric.image, emptyFilter) == [
                 'hello-world': 2,
                 'hello-wave-world': 1
         ]
 
         and: 'should return the correct pull counts per metrics between two dates'
         def datesFilter = new MetricFilter.Builder().dates(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()).build()
-        persistence.getPullCountByMetrics(Metric.user, datesFilter) == [
+        persistence.getPullsCountByMetric(Metric.user, datesFilter) == [
                 'foo@gmail.com': 1,
                 'unknown': 1
         ]
-        persistence.getPullCountByMetrics(Metric.ip, datesFilter) ==[
+        persistence.getPullsCountByMetric(Metric.ip, datesFilter) ==[
                 '100.200.300.400': 1,
                 '100.200.300.401': 1
         ]
-        persistence.getPullCountByMetrics(Metric.image, datesFilter) == [
+        persistence.getPullsCountByMetric(Metric.image, datesFilter) == [
                 'hello-world': 1,
                 'hello-wave-world': 1
         ]
 
         and: 'should return the correct pull counts per metrics for fusion'
         def fusionTrueFilter = new MetricFilter.Builder().fusion(true).build()
-        persistence.getPullCountByMetrics(Metric.user, fusionTrueFilter) == [
+        persistence.getPullsCountByMetric(Metric.user, fusionTrueFilter) == [
                 'foo@gmail.com': 2
         ]
-        persistence.getPullCountByMetrics(Metric.ip, fusionTrueFilter) ==[
+        persistence.getPullsCountByMetric(Metric.ip, fusionTrueFilter) ==[
                 '100.200.300.400': 2
         ]
-        persistence.getPullCountByMetrics(Metric.image, fusionTrueFilter) == [
+        persistence.getPullsCountByMetric(Metric.image, fusionTrueFilter) == [
                 'hello-world': 2
         ]
 
         and: 'should return the correct pull counts per metrics for no fusion'
         def fusionFalseFilter = new MetricFilter.Builder().fusion(false).build()
-        persistence.getPullCountByMetrics(Metric.user, fusionFalseFilter) == [
+        persistence.getPullsCountByMetric(Metric.user, fusionFalseFilter) == [
                 'unknown': 1
         ]
-        persistence.getPullCountByMetrics(Metric.ip, fusionFalseFilter) ==[
+        persistence.getPullsCountByMetric(Metric.ip, fusionFalseFilter) ==[
                 '100.200.300.401': 1
         ]
-        persistence.getPullCountByMetrics(Metric.image, fusionFalseFilter) == [
+        persistence.getPullsCountByMetric(Metric.image, fusionFalseFilter) == [
                 'hello-wave-world': 1
         ]
 
         and:'`should return the correct pull counts per metrics in limit'
         def limitFilter = new MetricFilter.Builder().limit(1).build()
-        persistence.getPullCountByMetrics(Metric.ip, limitFilter) ==['100.200.300.400': 2]
-        persistence.getPullCountByMetrics(Metric.user, limitFilter) == ['foo@gmail.com': 2]
-        persistence.getPullCountByMetrics(Metric.image, limitFilter) == ['hello-world': 2]
+        persistence.getPullsCountByMetric(Metric.ip, limitFilter) ==['100.200.300.400': 2]
+        persistence.getPullsCountByMetric(Metric.user, limitFilter) == ['foo@gmail.com': 2]
+        persistence.getPullsCountByMetric(Metric.image, limitFilter) == ['hello-world': 2]
 
         and: 'should return the correct pull'
-        persistence.getPullCount(emptyFilter) == 3
+        persistence.getPullsCount(emptyFilter) == 3
 
         and: 'should return the correct pull counts between two dates'
-        persistence.getPullCount(datesFilter) == 2
+        persistence.getPullsCount(datesFilter) == 2
 
         and: 'should return the correct pull counts with fusion'
-        persistence.getPullCount(fusionTrueFilter) == 2
+        persistence.getPullsCount(fusionTrueFilter) == 2
 
         and: 'should return the correct pull counts with no fusion'
-        persistence.getPullCount(fusionFalseFilter) == 1
+        persistence.getPullsCount(fusionFalseFilter) == 1
 
         and:'should return distinct metric count'
         persistence.getDistinctMetrics(Metric.ip, emptyFilter) == 2
@@ -596,12 +596,12 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         final persistence = applicationContext.getBean(SurrealPersistenceService)
         expect:
         def emptyFilter = new MetricFilter.Builder().build()
-        persistence.getBuildCountByMetrics(Metric.ip, emptyFilter) == [:]
-        persistence.getBuildCountByMetrics(Metric.image, emptyFilter) == [:]
-        persistence.getBuildCountByMetrics(Metric.user, emptyFilter) == [:]
-        persistence.getPullCountByMetrics(Metric.ip, emptyFilter) == [:]
-        persistence.getPullCountByMetrics(Metric.image, emptyFilter) == [:]
-        persistence.getPullCountByMetrics(Metric.user, emptyFilter) == [:]
+        persistence.getBuildsCountByMetric(Metric.ip, emptyFilter) == [:]
+        persistence.getBuildsCountByMetric(Metric.image, emptyFilter) == [:]
+        persistence.getBuildsCountByMetric(Metric.user, emptyFilter) == [:]
+        persistence.getPullsCountByMetric(Metric.ip, emptyFilter) == [:]
+        persistence.getPullsCountByMetric(Metric.image, emptyFilter) == [:]
+        persistence.getPullsCountByMetric(Metric.user, emptyFilter) == [:]
     }
 
     def 'should get 0 total_count if no record found' () {
@@ -610,8 +610,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         expect:
         def emptyFilter = new MetricFilter.Builder().build()
-        persistence.getPullCount(emptyFilter) == 0
-        persistence.getBuildCount(emptyFilter) == 0
+        persistence.getPullsCount(emptyFilter) == 0
+        persistence.getBuildsCount(emptyFilter) == 0
         persistence.getDistinctMetrics(Metric.ip, emptyFilter) == 0
         persistence.getDistinctMetrics(Metric.image, emptyFilter) == 0
         persistence.getDistinctMetrics(Metric.user, emptyFilter) == 0

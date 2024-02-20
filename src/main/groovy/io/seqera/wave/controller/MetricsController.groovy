@@ -64,11 +64,11 @@ class MetricsController {
 
     @Get(uri = "/builds/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getBuildMetrics(@PathVariable String metric,
-                                    @Nullable @QueryValue Boolean success,
-                                    @Nullable @QueryValue String startDate,
-                                    @Nullable @QueryValue String endDate,
-                                    @Nullable @QueryValue Integer limit) {
-        def result =metricsService.getBuildMetrics(
+                                      @Nullable @QueryValue Boolean success,
+                                      @Nullable @QueryValue String startDate,
+                                      @Nullable @QueryValue String endDate,
+                                      @Nullable @QueryValue Integer limit) {
+        final result = metricsService.getBuildMetrics(
                         Metric.valueOf(metric),
                         new MetricFilter.Builder()
                                 .dates(parseStartDate(startDate), parseEndDate(endDate))
@@ -80,9 +80,9 @@ class MetricsController {
 
     @Get(uri = "/builds", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getBuildsCount(@Nullable @QueryValue Boolean success,
-                                   @Nullable @QueryValue String startDate,
-                                   @Nullable @QueryValue String endDate) {
-        def count = metricsService.getBuildCount(
+                                               @Nullable @QueryValue String startDate,
+                                               @Nullable @QueryValue String endDate) {
+        final count = metricsService.getBuildCount(
                         new MetricFilter.Builder()
                                 .dates(parseStartDate(startDate), parseEndDate(endDate))
                                 .success(success)
@@ -92,11 +92,11 @@ class MetricsController {
 
     @Get(uri = "/pulls/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getPullsMetrics(@PathVariable String metric,
-                                    @Nullable @QueryValue String startDate,
-                                    @Nullable @QueryValue String endDate,
-                                    @Nullable @QueryValue Boolean fusion,
-                                    @Nullable @QueryValue Integer limit) {
-        def result = metricsService.getPullMetrics(
+                                      @Nullable @QueryValue String startDate,
+                                      @Nullable @QueryValue String endDate,
+                                      @Nullable @QueryValue Boolean fusion,
+                                      @Nullable @QueryValue Integer limit) {
+        final result = metricsService.getPullMetrics(
                         Metric.valueOf(metric),
                         new MetricFilter.Builder()
                                 .dates(parseStartDate(startDate), parseEndDate(endDate))
@@ -109,22 +109,22 @@ class MetricsController {
 
     @Get(uri = "/pulls", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getPullsCount(@Nullable @QueryValue String startDate,
-                                  @Nullable @QueryValue String endDate,
-                                  @Nullable @QueryValue Boolean fusion) {
-        def count = metricsService.getPullCount(
+                                              @Nullable @QueryValue String endDate,
+                                              @Nullable @QueryValue Boolean fusion) {
+        final count = metricsService.getPullCount(
                         new MetricFilter.Builder()
                                 .dates(parseStartDate(startDate), parseEndDate(endDate))
                                 .fusion(fusion)
                                 .build())
-        return HttpResponse.ok(new GetPullsCountResponse( count))
+        return HttpResponse.ok(new GetPullsCountResponse(count))
     }
 
     @Get(uri = "/distinct/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getBuildsCount(@PathVariable String metric,
-                                   @Nullable @QueryValue String startDate,
-                                   @Nullable @QueryValue String endDate,
-                                   @Nullable @QueryValue Boolean fusion) {
-        def count = metricsService.getDistinctMetrics(
+                                               @Nullable @QueryValue String startDate,
+                                               @Nullable @QueryValue String endDate,
+                                               @Nullable @QueryValue Boolean fusion) {
+        final count = metricsService.getDistinctMetrics(
                         Metric.valueOf(metric),
                         new MetricFilter.Builder()
                                 .dates(parseStartDate(startDate), parseEndDate(endDate))
