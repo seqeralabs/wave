@@ -248,3 +248,11 @@ Wave offers a feature to provide a cache for Docker blobs, which improves the pe
 Email id to send emails from on the behalf of the Wave service.
 
 - **`mail.from`**: specifies the sender's email address for Wave notifications. This email address serves as the point of origin for any emails sent by Wave, providing a recognizable source for notifications. This setting is crucial for configuring the sender identity when Wave sends email notifications. *Mandatory*.
+
+## Metrics configuration
+
+Wave Metrics service provides data about container builds and pulls by ip, image and user.
+
+- **`wave.metrics.enabled`**: whether to enable the wave metrics. It is `false` by default. *Optional*.
+- **`wave.auth.basic.username`**: Wave metrics api are secured by basic authentication, and this setting provides the username for those APIs. The default value of this setting is `username`. *Optional*.
+- **`wave.auth.basic.password`**: This setting provides the password for accessing Metrics APIs. The default value of this setting is `password`. *Optional*.
