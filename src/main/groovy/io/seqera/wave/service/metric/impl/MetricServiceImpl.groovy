@@ -40,22 +40,22 @@ class MetricServiceImpl implements MetricService {
     private PersistenceService persistenceService
 
     @Override
-    Map<String, Long> getBuildMetrics(Metric metric, MetricFilter filter) {
+    Map<String, Long> getBuildsMetric(Metric metric, MetricFilter filter) {
         persistenceService.getBuildsCountByMetric(metric, filter)
     }
 
     @Override
-    Map<String, Long> getPullMetrics(Metric metric, MetricFilter filter) {
+    Map<String, Long> getPullsMetric(Metric metric, MetricFilter filter) {
         persistenceService.getPullsCountByMetric(metric, filter)
     }
 
     @Override
-    Long getPullCount(MetricFilter filter) {
+    Long getPullsCount(MetricFilter filter) {
         persistenceService.getPullsCount(filter)
     }
 
     @Override
-    Long getBuildCount(MetricFilter filter) {
+    Long getBuildsCount(MetricFilter filter) {
         persistenceService.getBuildsCount(filter)
     }
 

@@ -68,7 +68,7 @@ class MetricsController {
                                       @Nullable @QueryValue String startDate,
                                       @Nullable @QueryValue String endDate,
                                       @Nullable @QueryValue Integer limit) {
-        final result = metricsService.getBuildMetrics(
+        final result = metricsService.getBuildsMetric(
                         Metric.valueOf(metric),
                         new MetricFilter.Builder()
                                 .dates(parseStartDate(startDate), parseEndDate(endDate))
@@ -82,7 +82,7 @@ class MetricsController {
     HttpResponse<?> getBuildsCount(@Nullable @QueryValue Boolean success,
                                                @Nullable @QueryValue String startDate,
                                                @Nullable @QueryValue String endDate) {
-        final count = metricsService.getBuildCount(
+        final count = metricsService.getBuildsCount(
                         new MetricFilter.Builder()
                                 .dates(parseStartDate(startDate), parseEndDate(endDate))
                                 .success(success)
@@ -96,7 +96,7 @@ class MetricsController {
                                       @Nullable @QueryValue String endDate,
                                       @Nullable @QueryValue Boolean fusion,
                                       @Nullable @QueryValue Integer limit) {
-        final result = metricsService.getPullMetrics(
+        final result = metricsService.getPullsMetric(
                         Metric.valueOf(metric),
                         new MetricFilter.Builder()
                                 .dates(parseStartDate(startDate), parseEndDate(endDate))
@@ -111,7 +111,7 @@ class MetricsController {
     HttpResponse<?> getPullsCount(@Nullable @QueryValue String startDate,
                                               @Nullable @QueryValue String endDate,
                                               @Nullable @QueryValue Boolean fusion) {
-        final count = metricsService.getPullCount(
+        final count = metricsService.getPullsCount(
                         new MetricFilter.Builder()
                                 .dates(parseStartDate(startDate), parseEndDate(endDate))
                                 .fusion(fusion)
