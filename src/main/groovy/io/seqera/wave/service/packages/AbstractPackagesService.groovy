@@ -83,23 +83,17 @@ abstract class AbstractPackagesService implements PackagesService{
         try(final reader = Files.newBufferedReader(file)) {
             String line
             boolean begin=false
-            //Map to keep track of packages
-            Map<String, CondaPackageRecord> packages = new HashMap<>()
+            List<CondaPackageRecord> entries = new ArrayList<>()
             while( (line=reader.readLine()) ) {
                 if( !begin ) {
                     begin = line.startsWith("# Name")
                     continue
                 }
                 final items = line.tokenize(' ')
-                def entry = new CondaPackageRecord(items[3], items[0], items[1], [items[2]].toList())
-                if( packages.containsKey(entry.id) ) {
-                    packages.get(entry.id).builds.add(items[2])
-                }else{
-                    packages.put(entry.id, entry)
-                }
+                entries.add(new CondaPackageRecord(items[3], items[0], items[1]))
             }
-            if ( !packages.isEmpty() ) {
-                persistenceService.saveCondaPackagesChunks(packages.values().collect(), 5000)
+            if ( !entries.isEmpty() ) {
+                persistenceService.saveCondaPackagesChunks(entries, 5000)
                 log.debug("Conda packages saved")
             }
         }

@@ -320,9 +320,9 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
     def "should save and find conda packages" () {
         given:
         def persistence = applicationContext.getBean(SurrealPersistenceService)
-        def record1 = new CondaPackageRecord('channel1', 'package1', '1.1', ['build1', 'build2'])
-        def record2 = new CondaPackageRecord('channel2', 'package2', '1.2', ['build1', 'build2', 'build3'])
-        def record3 = new CondaPackageRecord('channel3', 'package3', '1.3', ['build1'])
+        def record1 = new CondaPackageRecord('channel1', 'package1', '1.1')
+        def record2 = new CondaPackageRecord('channel2', 'package2', '1.2')
+        def record3 = new CondaPackageRecord('channel3', 'package3', '1.3')
 
         when:
         persistence.saveCondaPackages([record1, record2, record3])
@@ -330,17 +330,17 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         then:
         sleep(100)
         persistence.findCondaPackage(null) == [
-                new CondaPackageRecord('wave_conda_package:⟨channel1::package1=1.1⟩', 'channel1', 'package1', '1.1', ['build1', 'build2']),
-                new CondaPackageRecord('wave_conda_package:⟨channel2::package2=1.2⟩', 'channel2', 'package2', '1.2', ['build1', 'build2', 'build3']),
-                new CondaPackageRecord('wave_conda_package:⟨channel3::package3=1.3⟩', 'channel3', 'package3', '1.3', ['build1'])
+                new CondaPackageRecord('wave_conda_package:⟨channel1::package1=1.1⟩', 'channel1', 'package1', '1.1'),
+                new CondaPackageRecord('wave_conda_package:⟨channel2::package2=1.2⟩', 'channel2', 'package2', '1.2'),
+                new CondaPackageRecord('wave_conda_package:⟨channel3::package3=1.3⟩', 'channel3', 'package3', '1.3')
         ]
         and: 'when searching for a specific package'
         persistence.findCondaPackage('package2') == [
-                new CondaPackageRecord('wave_conda_package:⟨channel2::package2=1.2⟩', 'channel2', 'package2', '1.2', ['build1', 'build2', 'build3'])
+                new CondaPackageRecord('wave_conda_package:⟨channel2::package2=1.2⟩', 'channel2', 'package2', '1.2')
         ]
         and: 'when searching for a specific channel'
         persistence.findCondaPackage('channel3') == [
-                new CondaPackageRecord('wave_conda_package:⟨channel3::package3=1.3⟩', 'channel3', 'package3', '1.3', ['build1'])
+                new CondaPackageRecord('wave_conda_package:⟨channel3::package3=1.3⟩', 'channel3', 'package3', '1.3')
         ]
     }
 
