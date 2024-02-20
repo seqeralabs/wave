@@ -47,7 +47,6 @@ import jakarta.inject.Inject
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-
 @Property(name = 'wave.metrics.enabled', value = 'true')
 @MicronautTest
 class MetricsControllerTest extends Specification {
@@ -62,6 +61,7 @@ class MetricsControllerTest extends Specification {
     final PREFIX = '/v1alpha1/metrics'
 
     def setup() {
+        //add build records
         def build1 = new WaveBuildRecord(
                 buildId: 'test1',
                 dockerFile: 'test1',
@@ -106,7 +106,7 @@ class MetricsControllerTest extends Specification {
         persistenceService.saveBuild(build2)
         persistenceService.saveBuild(build3)
 
-        //add some container records
+        //add container request records
         def TOKEN1 = '123abc'
         def cfg = new ContainerConfig(entrypoint: ['/opt/fusion'],
                 layers: [new ContainerLayer(location: 'https://fusionfs.seqera.io/releases/v2.2.8-amd64.json')])

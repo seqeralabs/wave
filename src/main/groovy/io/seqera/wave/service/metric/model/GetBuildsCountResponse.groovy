@@ -24,7 +24,6 @@ import groovy.transform.CompileStatic
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-
 @CompileStatic
 class GetBuildsCountResponse {
     Long count

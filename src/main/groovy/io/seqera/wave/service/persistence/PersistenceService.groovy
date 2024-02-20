@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.persistence
 
-
 import groovy.transform.CompileStatic
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair

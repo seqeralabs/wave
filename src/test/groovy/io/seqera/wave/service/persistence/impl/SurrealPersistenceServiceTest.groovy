@@ -19,7 +19,6 @@
 package io.seqera.wave.service.persistence.impl
 
 import spock.lang.Specification
-import spock.lang.Unroll
 
 import java.nio.file.Path
 import java.time.Duration
@@ -30,13 +29,14 @@ import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerDigestPair
-import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.builder.BuildFormat
+import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.BuildEvent
-import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.metric.Metric
@@ -44,7 +44,6 @@ import io.seqera.wave.service.metric.MetricFilter
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
-import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.test.SurrealDBTestContainer
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
@@ -604,6 +603,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.getPullCountByMetrics(Metric.image, emptyFilter) == [:]
         persistence.getPullCountByMetrics(Metric.user, emptyFilter) == [:]
     }
+
     def 'should get 0 total_count if no record found' () {
         given:
         final persistence = applicationContext.getBean(SurrealPersistenceService)
@@ -617,7 +617,6 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.getDistinctMetrics(Metric.user, emptyFilter) == 0
     }
 
-    @Unroll
     def 'should get the correct build filter' () {
         expect:
         SurrealPersistenceService.getBuildMetricFilter(new MetricFilter.Builder().success(SUCCESS).dates(STARTDATE, ENDDATE).build()) == SURREALDBFILTER
