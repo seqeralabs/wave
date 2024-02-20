@@ -251,7 +251,7 @@ Email id to send emails from on the behalf of the Wave service.
 
 ## Metrics configuration
 
-Wave Metrics service provides data about container builds and pulls by ip, image and user.
+Wave Metrics service provides data about container builds and pulls per ip, container image, and user.
 
 - **`wave.metrics.enabled`**: whether to enable the wave metrics. It is `false` by default. *Optional*.
 - **`wave.auth.basic.username`**: Wave metrics api are secured by basic authentication, and this setting provides the username for those APIs. The default value of this setting is `username`. *Optional*.
