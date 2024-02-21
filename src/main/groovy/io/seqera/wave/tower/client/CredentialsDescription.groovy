@@ -34,7 +34,7 @@ class CredentialsDescription {
     @JsonProperty("keys")
     private void unpackRegistry(Map<String,Object> keys) {
         if (this.provider == 'container-reg') {
-            this.registry = keys?.get("registry")?: WaveDefault.DOCKER_IO
+            this.registry = keys?.get("registry") ?: WaveDefault.DOCKER_IO
         } else {
             this.registry = null
         }

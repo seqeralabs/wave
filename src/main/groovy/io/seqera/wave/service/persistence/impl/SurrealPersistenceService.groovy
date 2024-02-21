@@ -235,7 +235,7 @@ class SurrealPersistenceService implements PersistenceService {
         LinkedHashMap<String, Long> counts = new LinkedHashMap<>()
         for(def result : results){
             //if the userEmail is null, replace it with anonymous
-            counts.put((result.get(metric.buildLabel)?:ANONYMOUS) as String, result.get("total_count") as Long)
+            counts.put((result.get(metric.buildLabel) ?: ANONYMOUS) as String, result.get("total_count") as Long)
         }
         return counts
     }

@@ -68,7 +68,7 @@ class JwtAuthStore extends AbstractCacheStore<JwtAuth> {
     }
 
     JwtAuth getJwtAuth(String endpoint, String accessToken) {
-        return this.get(tokensKey(endpoint, accessToken))?: new JwtAuth(accessToken)
+        return this.get(tokensKey(endpoint, accessToken)) ?: new JwtAuth(accessToken)
     }
 
     private static String tokensKey(String endpoint, String initialRefreshToken) {

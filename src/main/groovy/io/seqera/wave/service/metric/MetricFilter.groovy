@@ -71,7 +71,7 @@ class MetricFilter {
 
         Builder dates(Instant startDate, Instant endDate){
             this.startDate = startDate
-            this.endDate = endDate?:startDate?Instant.now():null
+            this.endDate = endDate ?: (startDate ? Instant.now() : null)
             return this
         }
 
