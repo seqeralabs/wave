@@ -20,7 +20,6 @@ package io.seqera.wave.service.persistence
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -32,14 +31,17 @@ class CondaPackageRecord {
      * id is added to avoid duplicate conda packages
      */
     final String id
+
     /**
      * channel of the package
      */
     final String channel
+
     /**
      * name of the package
      */
     final String name
+
     /**
      * version of the package
      */

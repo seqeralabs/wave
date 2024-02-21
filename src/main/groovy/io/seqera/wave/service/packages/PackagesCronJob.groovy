@@ -32,15 +32,14 @@ import jakarta.inject.Singleton
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-
-@CompileStatic
-@Singleton
 @Slf4j
+@Singleton
+@CompileStatic
 @Requires(property = 'wave.packages.enabled', value = 'true')
 class PackagesCronJob {
 
     @Inject
-    PackagesService service
+    private PackagesService service
 
     @ExecuteOn(TaskExecutors.SCHEDULED)
     @Scheduled(initialDelay = '${wave.packages.cron.delay:3m}' , fixedDelay = '${wave.packages.cron.interval:3h}')

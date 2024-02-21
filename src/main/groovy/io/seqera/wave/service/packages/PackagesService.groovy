@@ -19,7 +19,6 @@
 package io.seqera.wave.service.packages
 
 import io.seqera.wave.service.persistence.CondaPackageRecord
-
 /**
  * Define operations interface to manage dependency packages metadata
  * for container build

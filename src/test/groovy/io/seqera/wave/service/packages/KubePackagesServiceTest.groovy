@@ -26,12 +26,10 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.PackagesConfig
 import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Inject
-
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-
 @MicronautTest
 class KubePackagesServiceTest extends Specification {
 

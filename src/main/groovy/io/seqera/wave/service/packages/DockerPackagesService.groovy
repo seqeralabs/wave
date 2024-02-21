@@ -37,7 +37,7 @@ import jakarta.inject.Singleton
 class DockerPackagesService extends AbstractPackagesService {
 
     @Inject
-    PackagesConfig config
+    private PackagesConfig config
 
     protected List<String> dockerWrapper(Path workDir) {
 

@@ -23,7 +23,6 @@ import spock.lang.Specification
 import java.nio.file.Path
 
 import io.micronaut.context.ApplicationContext
-
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>

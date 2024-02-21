@@ -20,13 +20,11 @@ package io.seqera.wave.service.packages.model
 
 import groovy.transform.CompileStatic
 import io.seqera.wave.service.persistence.CondaPackageRecord
-
 /**
  * Response model for packages
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-
 @CompileStatic
 class PackagesResponse {
     List<CondaPackageRecord> results

@@ -15,17 +15,16 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package io.seqera.wave.service.persistence
 
 import spock.lang.Specification
 
 import io.seqera.wave.util.JacksonHelper
-
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-
 class CondaPackageRecordTest extends Specification {
     def 'should create conda package record'() {
 

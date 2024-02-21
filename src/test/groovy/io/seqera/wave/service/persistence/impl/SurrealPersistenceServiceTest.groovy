@@ -316,7 +316,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         result2 == scanRecord2
     }
 
-    def "should save and find conda packages" () {
+    def 'should save and find conda packages' () {
         given:
         def persistence = applicationContext.getBean(SurrealPersistenceService)
         def record1 = new CondaPackageRecord('channel1', 'package1', '1.1')
@@ -345,7 +345,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.findCondaPackage('channel3',null) == [
                 new CondaPackageRecord('wave_conda_package:⟨channel3::package3=1.3⟩', 'channel3', 'package3', '1.3')
         ]
-        and: 'when searching for a specific channel'
+        and: 'when searching from multiple channels'
         persistence.findCondaPackage(null, ['channel1','channel3']) == [
                 new CondaPackageRecord('wave_conda_package:⟨channel1::package1=1.1⟩', 'channel1', 'package1', '1.1'),
                 new CondaPackageRecord('wave_conda_package:⟨channel3::package3=1.3⟩', 'channel3', 'package3', '1.3')
@@ -353,7 +353,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
     }
     
 
-    def "should return correct filter" () {
+    def 'should return correct where clause for wave_conda_package table' () {
         expect:
         SurrealPersistenceService.getCondaFetcherFilter(CRITERIA, CHANNELS) == FILTER
         where:
@@ -369,7 +369,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         'foo::bar=1.0'  | ['bar']       | "WHERE name ~ 'bar' AND channel IN ['bar'] AND version ~ '1.0'"
     }
 
-    def "should return correct tokens" () {
+    def 'should return correct tokens from search string' () {
         expect:
         SurrealPersistenceService.parseSearchString(CRITERIA) == TOKENS
         where:

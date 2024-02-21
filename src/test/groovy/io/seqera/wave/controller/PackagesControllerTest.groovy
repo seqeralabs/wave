@@ -15,6 +15,7 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package io.seqera.wave.controller
 
 import spock.lang.Specification
@@ -26,7 +27,6 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.service.persistence.CondaPackageRecord
 import io.seqera.wave.service.persistence.PersistenceService
 import jakarta.inject.Inject
-
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
@@ -54,7 +54,7 @@ class PackagesControllerTest extends Specification {
         persistenceService.saveCondaPackagesChunks([record1, record2, record3, record4, record5], 2)
     }
 
-    def'get correct packages list matches search'(){
+    def 'get correct packages list matches search' (){
         when:
         def resp = client.toBlocking().retrieve("$PREFIX/conda?search=multiqc")
         then:
@@ -94,7 +94,7 @@ class PackagesControllerTest extends Specification {
         resp == '{"results":[{"id":"bioconda::salmon=1.0","channel":"bioconda","name":"salmon","version":"1.0"}]}'
     }
 
-    def'get correct packages list matches search and in specific channels'(){
+    def 'get correct packages list matches search and in specific channels' (){
         when:
         def resp = client.toBlocking().retrieve("$PREFIX/conda?search=multiqc&channels=seqera,multiqc")
         then:

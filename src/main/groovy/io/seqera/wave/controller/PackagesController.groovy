@@ -18,7 +18,6 @@
 
 package io.seqera.wave.controller
 
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
@@ -32,7 +31,6 @@ import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.service.packages.PackagesService
 import io.seqera.wave.service.packages.model.PackagesResponse
 import jakarta.inject.Inject
-
 /**
  * Implements controller interface for packages API
  * 

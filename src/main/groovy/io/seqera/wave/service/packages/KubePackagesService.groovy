@@ -28,7 +28,6 @@ import io.seqera.wave.configuration.PackagesConfig
 import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 /**
  * Implements K8s based AbstractPackagesService
  *
@@ -42,10 +41,10 @@ import jakarta.inject.Singleton
 class KubePackagesService extends AbstractPackagesService {
 
     @Inject
-    PackagesConfig config
+    private PackagesConfig config
 
     @Inject
-    K8sService k8sService
+    private K8sService k8sService
 
     @Override
     protected void run(List<String> command, Path workDir) {
