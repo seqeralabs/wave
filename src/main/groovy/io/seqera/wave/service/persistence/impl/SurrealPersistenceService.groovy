@@ -256,7 +256,7 @@ class SurrealPersistenceService implements PersistenceService {
     static String getBuildMetricFilter(MetricFilter metricFilter){
         def filter = ""
         if (metricFilter.startDate && metricFilter.endDate) {
-            filter = "WHERE type::datetime(startTime) >= '$metricFilter.startDate' AND type::datetime(startTime) <= '$metricFilter.endDate'"
+            filter = "WHERE type::is::datetime(startTime) AND type::datetime(startTime) >= '$metricFilter.startDate' AND type::datetime(startTime) <= '$metricFilter.endDate'"
             if (metricFilter.success != null) {
                 filter += metricFilter.success ? " AND exitStatus = 0" : " AND exitStatus != 0"
             }
@@ -320,7 +320,7 @@ class SurrealPersistenceService implements PersistenceService {
     static String getPullMetricFilter(MetricFilter metricFilter){
         def filter = ""
         if( metricFilter.startDate && metricFilter.endDate ){
-            filter = "WHERE type::datetime(timestamp) >= '$metricFilter.startDate' AND type::datetime(timestamp) <= '$metricFilter.endDate'"
+            filter = "WHERE type::is::datetime(timestamp) AND type::datetime(timestamp) >= '$metricFilter.startDate' AND type::datetime(timestamp) <= '$metricFilter.endDate'"
             if (metricFilter.fusion != null) {
                 filter += metricFilter.fusion ? " AND fusionVersion != NONE" : " AND fusionVersion = NONE"
             }

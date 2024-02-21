@@ -616,6 +616,114 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.getDistinctMetrics(Metric.user, emptyFilter) == 0
     }
 
+    def 'should return builds count per metric with valid date when date filter is applied and date is missing in DB records' () {
+        given:
+        final persistence = applicationContext.getBean(SurrealPersistenceService)
+
+        //record with no date
+        def build4 = new WaveBuildRecord(
+                buildId: 'test4',
+                dockerFile: 'test4',
+                condaFile: 'test4',
+                targetImage: 'testImage4',
+                userName: 'testUser4',
+                userEmail: 'test4@xyz.com',
+                userId: 4,
+                requestIp: '127.0.0.4',
+                duration: Duration.ofSeconds(1),
+                exitStatus: 0)
+
+        def build5 = new WaveBuildRecord(
+                buildId: 'test5',
+                dockerFile: 'test5',
+                condaFile: 'test5',
+                targetImage: 'testImage5',
+                userName: 'testUser5',
+                userEmail: 'test5@xyz.com',
+                userId: 4,
+                requestIp: '127.0.0.5',
+                startTime: Instant.now(),
+                duration: Duration.ofSeconds(1),
+                exitStatus: 0)
+        and:
+        persistence.saveBuild(build4)
+        persistence.saveBuild(build5)
+        sleep 200
+
+        expect: 'ignore wave_build records with no startDate'
+        def datesFilter = new MetricFilter.Builder().dates(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()).build()
+        persistence.getBuildsCountByMetric(Metric.ip, datesFilter) == [
+                '127.0.0.5': 1
+        ]
+        persistence.getBuildsCountByMetric(Metric.user, datesFilter) == [
+                'test5@xyz.com': 1
+        ]
+        persistence.getBuildsCountByMetric(Metric.image, datesFilter) == [
+                'testImage5': 1
+        ]
+    }
+
+    def 'should return pulls count per metric with valid date when date filter is applied and date is missing in DB records' () {
+        given:
+        final persistence = applicationContext.getBean(SurrealPersistenceService)
+
+        //record with no timestamp
+        def TOKEN4 = '1234abc'
+        def cfg = new ContainerConfig(entrypoint: ['/opt/fusion'],
+                layers: [ new ContainerLayer(location: 'https://fusionfs.seqera.io/releases/v2.2.8-amd64.json')])
+        def req = new SubmitContainerTokenRequest(
+                towerEndpoint: 'https://tower.nf',
+                towerWorkspaceId: 100,
+                containerConfig: cfg,
+                containerPlatform: ContainerPlatform.of('amd64'),
+                buildRepository: 'build.docker.io',
+                cacheRepository: 'cache.docker.io',
+                fingerprint: 'abc',
+        )
+        def wave = "wave.io/wt/$TOKEN4/hello-nf-world"
+        def user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
+        def data = new ContainerRequestData(new PlatformId(user,100), 'hello-nf-world' )
+        def addr = "100.200.300.404"
+        def exp = Instant.now().plusSeconds(3600)
+        def request4 = new WaveContainerRecord(req, data, wave, addr, exp)
+
+        def TOKEN5 = '12345abc'
+        cfg = new ContainerConfig(entrypoint: ['sh'])
+        req = new SubmitContainerTokenRequest(
+                towerEndpoint: 'https://tower.nf',
+                towerWorkspaceId: 100,
+                containerConfig: cfg,
+                containerPlatform: ContainerPlatform.of('amd64'),
+                buildRepository: 'build.docker.io',
+                cacheRepository: 'cache.docker.io',
+                fingerprint: 'lmn',
+                timestamp: Instant.now().toString()
+        )
+        wave = "wave.io/wt/$TOKEN5/hello-fs-world"
+        user = null
+        data = new ContainerRequestData(new PlatformId(user,100), 'hello-fs-world' )
+        addr = "100.200.300.405"
+        exp = Instant.now().plusSeconds(3600)
+        def request5 = new WaveContainerRecord(req, data, wave, addr, exp)
+
+        and:
+        persistence.saveContainerRequest(TOKEN4, request4)
+        persistence.saveContainerRequest(TOKEN5, request5)
+        sleep(200)
+
+        expect: 'should ignore wave_request records with no timestamp'
+        def datesFilter = new MetricFilter.Builder().dates(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()).build()
+        persistence.getPullsCountByMetric(Metric.user, datesFilter) == [
+                'anonymous': 1
+        ]
+        persistence.getPullsCountByMetric(Metric.ip, datesFilter) ==[
+                '100.200.300.405': 1
+        ]
+        persistence.getPullsCountByMetric(Metric.image, datesFilter) == [
+                'hello-fs-world': 1
+        ]
+    }
+
     def 'should get the correct where clause for wave_build table' () {
         expect:
         SurrealPersistenceService.getBuildMetricFilter(new MetricFilter.Builder().success(SUCCESS).dates(STARTDATE, ENDDATE).build()) == SURREALDBFILTER
@@ -624,11 +732,11 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         null    | null          | null              | ''
         true    | null          | null              | 'WHERE exitStatus = 0'
         false   | null          | null              | 'WHERE exitStatus != 0'
-        null    | Instant.now() | Instant.now()     | "WHERE type::datetime(startTime) >= '$STARTDATE' AND type::datetime(startTime) <= '$ENDDATE'"
+        null    | Instant.now() | Instant.now()     | "WHERE type::is::datetime(startTime) AND type::datetime(startTime) >= '$STARTDATE' AND type::datetime(startTime) <= '$ENDDATE'"
         null    | null          | Instant.now()     | ''
         true    | null          | Instant.now()     | "WHERE exitStatus = 0"
-        true    | Instant.now() | Instant.now()     | "WHERE type::datetime(startTime) >= '$STARTDATE' AND type::datetime(startTime) <= '$ENDDATE' AND exitStatus = 0"
-        false   | Instant.now() | Instant.now()     | "WHERE type::datetime(startTime) >= '$STARTDATE' AND type::datetime(startTime) <= '$ENDDATE' AND exitStatus != 0"
+        true    | Instant.now() | Instant.now()     | "WHERE type::is::datetime(startTime) AND type::datetime(startTime) >= '$STARTDATE' AND type::datetime(startTime) <= '$ENDDATE' AND exitStatus = 0"
+        false   | Instant.now() | Instant.now()     | "WHERE type::is::datetime(startTime) AND type::datetime(startTime) >= '$STARTDATE' AND type::datetime(startTime) <= '$ENDDATE' AND exitStatus != 0"
     }
 
     def 'get the correct where clause for wave_request table' () {
@@ -639,10 +747,10 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         null    | null          | null              | ''
         true    | null          | null              | 'WHERE fusionVersion != NONE'
         false   | null          | null              | 'WHERE fusionVersion = NONE'
-        null    | Instant.now() | Instant.now()     | "WHERE type::datetime(timestamp) >= '$STARTDATE' AND type::datetime(timestamp) <= '$ENDDATE'"
+        null    | Instant.now() | Instant.now()     | "WHERE type::is::datetime(timestamp) AND type::datetime(timestamp) >= '$STARTDATE' AND type::datetime(timestamp) <= '$ENDDATE'"
         null    | null          | Instant.now()     | ''
         true    | null          | Instant.now()     | 'WHERE fusionVersion != NONE'
-        true    | Instant.now() | Instant.now()     | "WHERE type::datetime(timestamp) >= '$STARTDATE' AND type::datetime(timestamp) <= '$ENDDATE' AND fusionVersion != NONE"
-        false   | Instant.now() | Instant.now()     | "WHERE type::datetime(timestamp) >= '$STARTDATE' AND type::datetime(timestamp) <= '$ENDDATE' AND fusionVersion = NONE"
+        true    | Instant.now() | Instant.now()     | "WHERE type::is::datetime(timestamp) AND type::datetime(timestamp) >= '$STARTDATE' AND type::datetime(timestamp) <= '$ENDDATE' AND fusionVersion != NONE"
+        false   | Instant.now() | Instant.now()     | "WHERE type::is::datetime(timestamp) AND type::datetime(timestamp) >= '$STARTDATE' AND type::datetime(timestamp) <= '$ENDDATE' AND fusionVersion = NONE"
     }
 }
