@@ -40,6 +40,9 @@ import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+
+import static io.seqera.wave.service.metric.MetricConstants.ANONYMOUS
+
 /**
  * Implements a persistence service based based on SurrealDB
  *
@@ -231,7 +234,7 @@ class SurrealPersistenceService implements PersistenceService {
         log.trace("Build count results by ${metric.buildLabel}: $results")
         LinkedHashMap<String, Long> counts = new LinkedHashMap<>()
         for(def result : results){
-            counts.put((result.get(metric.buildLabel)?:"unknown") as String, result.get("total_count") as Long)
+            counts.put((result.get(metric.buildLabel)?:ANONYMOUS) as String, result.get("total_count") as Long)
         }
         return counts
     }
@@ -280,8 +283,8 @@ class SurrealPersistenceService implements PersistenceService {
                 def user = result.get(metric.pullLabel) as Map
                 key = user.get("email")
             }
-            //if the username is null, replace it with unknown
-            counts.put((key?:"unknown") as String, result.get("total_count") as Long)
+            //if the username is null, replace it with anonymous
+            counts.put((key?:ANONYMOUS) as String, result.get("total_count") as Long)
         }
         return counts
     }

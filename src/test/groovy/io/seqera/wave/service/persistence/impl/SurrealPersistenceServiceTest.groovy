@@ -377,7 +377,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         ]
         persistence.getBuildsCountByMetric(Metric.user, emptyFilter) == [
                 'test1@xyz.com': 2,
-                'unknown': 1
+                'anonymous': 1
         ]
         persistence.getBuildsCountByMetric(Metric.image, emptyFilter) == [
                 'testImage1': 2,
@@ -392,7 +392,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         ]
         persistence.getBuildsCountByMetric(Metric.user, successFilter) == [
                 'test1@xyz.com': 1,
-                'unknown': 1
+                'anonymous': 1
         ]
         persistence.getBuildsCountByMetric(Metric.image, successFilter) == [
                 'testImage1': 1,
@@ -407,7 +407,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         ]
         persistence.getBuildsCountByMetric(Metric.user, datesFilter) == [
                 'test1@xyz.com': 1,
-                'unknown': 1
+                'anonymous': 1
         ]
         persistence.getBuildsCountByMetric(Metric.image, datesFilter) == [
                 'testImage1': 1,
@@ -506,7 +506,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         ]
         persistence.getPullsCountByMetric(Metric.user, emptyFilter) == [
                 'foo@gmail.com': 2,
-                'unknown': 1
+                'anonymous': 1
         ]
         persistence.getPullsCountByMetric(Metric.image, emptyFilter) == [
                 'hello-world': 2,
@@ -517,7 +517,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def datesFilter = new MetricFilter.Builder().dates(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()).build()
         persistence.getPullsCountByMetric(Metric.user, datesFilter) == [
                 'foo@gmail.com': 1,
-                'unknown': 1
+                'anonymous': 1
         ]
         persistence.getPullsCountByMetric(Metric.ip, datesFilter) ==[
                 '100.200.300.400': 1,
@@ -543,7 +543,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         and: 'should return the correct pull counts per metrics for no fusion'
         def fusionFalseFilter = new MetricFilter.Builder().fusion(false).build()
         persistence.getPullsCountByMetric(Metric.user, fusionFalseFilter) == [
-                'unknown': 1
+                'anonymous': 1
         ]
         persistence.getPullsCountByMetric(Metric.ip, fusionFalseFilter) ==[
                 '100.200.300.401': 1

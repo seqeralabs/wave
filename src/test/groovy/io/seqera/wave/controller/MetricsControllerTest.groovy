@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2024, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -203,7 +203,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == [result:['test1@xyz.com': 2, 'unknown': 1]]
+        res.body() == [result:['test1@xyz.com': 2, 'anonymous': 1]]
         res.status.code == 200
     }
 
@@ -257,7 +257,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == [result:['test1@xyz.com': 1, 'unknown': 1]]
+        res.body() == [result:['test1@xyz.com': 1, 'anonymous': 1]]
         res.status.code == 200
     }
 
@@ -286,7 +286,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == [result:['test1@xyz.com': 1, 'unknown': 1]]
+        res.body() == [result:['test1@xyz.com': 1, 'anonymous': 1]]
         res.status.code == 200
     }
 
@@ -381,7 +381,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == [result:['foo@gmail.com': 2, 'unknown': 1]]
+        res.body() == [result:['foo@gmail.com': 2, 'anonymous': 1]]
         res.status.code == 200
     }
 
@@ -437,7 +437,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == [result:['foo@gmail.com': 1, 'unknown': 1]]
+        res.body() == [result:['foo@gmail.com': 1, 'anonymous': 1]]
         res.status.code == 200
     }
 

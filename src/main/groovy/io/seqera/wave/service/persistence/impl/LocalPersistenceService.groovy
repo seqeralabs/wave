@@ -27,6 +27,9 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import jakarta.inject.Singleton
+
+import static io.seqera.wave.service.metric.MetricConstants.ANONYMOUS
+
 /**
  * Basic persistence for dev purpose
  *
@@ -92,7 +95,7 @@ class LocalPersistenceService implements PersistenceService {
             result = builds.groupBy { it.requestIp }
                     .collectEntries { [it.key, it.value.size()] }
         else if(metric == Metric.user)
-            result = builds.groupBy { it.userEmail ?: 'unknown' }
+            result = builds.groupBy { it.userEmail ?: ANONYMOUS }
                     .collectEntries { [it.key, it.value.size()] }
         else if(metric == Metric.image)
             result = builds.groupBy { it.targetImage }
@@ -128,7 +131,7 @@ class LocalPersistenceService implements PersistenceService {
             result = pulls.groupBy { it.ipAddress}
                     .collectEntries { [it.key, it.value.size()] }
         else if(metric == Metric.user)
-            result = pulls.groupBy { it.user?.email ?: 'unknown'}
+            result = pulls.groupBy { it.user?.email ?: ANONYMOUS}
                     .collectEntries { [it.key, it.value.size()] }
         else if(metric == Metric.image)
             result = pulls.groupBy { it.sourceImage}

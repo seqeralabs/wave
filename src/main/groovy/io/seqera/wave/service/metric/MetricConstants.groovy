@@ -15,20 +15,14 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package io.seqera.wave.service.metric.model
-
-import groovy.transform.CompileStatic
+package io.seqera.wave.service.metric
 
 /**
- * Model a Wave Builds count response
+ * Metric constants
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
- */
-@CompileStatic
-class GetBuildsCountResponse {
-    Long count
+*/
+interface MetricConstants {
 
-    GetBuildsCountResponse(Long count) {
-        this.count = count
-    }
+    static final public String ANONYMOUS = 'anonymous'
 }
