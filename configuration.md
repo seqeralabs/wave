@@ -257,7 +257,7 @@ Wave Metrics service provides data about container builds and pulls per ip, cont
 
 ## Accounts configuration
 
-- **`wave.accounts`**: This setting contains the list of credentials to access wave API, which requires authentication like metrics API. *Mandatory*.<br/>
+- **`wave.accounts`**: Specifies a list of credentials to access authenticated wave APIs  like metrics APIs. *Mandatory*.<br/>
   Format of the credential list
     ```
     - <USERNAME>:<PASSWORD CHECKSUM>
