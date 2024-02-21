@@ -254,5 +254,11 @@ Email id to send emails from on the behalf of the Wave service.
 Wave Metrics service provides data about container builds and pulls per ip, container image, and user.
 
 - **`wave.metrics.enabled`**: whether to enable the wave metrics. It is `false` by default. *Optional*.
-- **`wave.auth.basic.username`**: Wave metrics api are secured by basic authentication, and this setting provides the username for those APIs. The default value of this setting is `username`. *Optional*.
-- **`wave.auth.basic.password`**: This setting provides the password for accessing Metrics APIs. The default value of this setting is `password`. *Optional*.
+
+## Accounts configuration
+
+- **`wave.accounts`**: This setting contains the list of credentials to access wave API, which requires authentication like metrics API. *Mandatory*.<br/>
+  Format of the credential list
+    ```
+    - <USERNAME>:<PASSWORD CHECKSUM>
+    ```

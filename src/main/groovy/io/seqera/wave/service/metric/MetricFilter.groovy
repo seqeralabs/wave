@@ -15,8 +15,8 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package io.seqera.wave.service.metric
 
+package io.seqera.wave.service.metric
 
 import java.time.Instant
 
