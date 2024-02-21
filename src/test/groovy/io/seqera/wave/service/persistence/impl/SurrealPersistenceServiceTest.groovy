@@ -368,7 +368,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.saveBuild(build3)
         sleep 300
 
-        expect: 'should return the correct counts per metric'
+        expect: 'should return the correct builds count per metric'
         def emptyFilter = new MetricFilter.Builder().build()
         persistence.getBuildsCountByMetric(Metric.ip, emptyFilter) == [
                 '127.0.0.1': 2,
@@ -429,7 +429,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
     }
 
-    def 'should return the correct pulls count per metric' () {
+    def 'should return the correct pulls count per metric and distinct metric count' () {
         given:
         final persistence = applicationContext.getBean(SurrealPersistenceService)
         def TOKEN1 = '123abc'
@@ -497,7 +497,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.saveContainerRequest(TOKEN3, request3)
         sleep 300
 
-        expect: 'should return the correct pulls counts per metric'
+        expect: 'should return the correct pulls count per metric'
         def emptyFilter = new MetricFilter.Builder().build()
         persistence.getPullsCountByMetric(Metric.ip, emptyFilter) ==[
                 '100.200.300.400': 2,
