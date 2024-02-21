@@ -27,7 +27,7 @@ import io.seqera.wave.service.persistence.PersistenceService
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
- * Implements MetricService
+ * Implements service to retrieve wave metrics
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */

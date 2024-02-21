@@ -18,7 +18,7 @@
 
 package io.seqera.wave.service.metric
 /**
- * Metrics Service
+ * Define the interface to retrieve wave metrics
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */

@@ -47,7 +47,6 @@ import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.test.SurrealDBTestContainer
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
-
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  *
@@ -414,7 +413,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 'testImage2': 1
         ]
 
-        and: 'should return limited number builds count per metric records as defined by limit filter'
+        and: 'should return limited number of builds count per metric records as defined by limit filter'
         def limitFilter = new MetricFilter.Builder().limit(1).build()
         persistence.getBuildsCountByMetric(Metric.ip, limitFilter) == ['127.0.0.1': 2]
         persistence.getBuildsCountByMetric(Metric.user, limitFilter) == ['test1@xyz.com': 2]
@@ -552,7 +551,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 'hello-wave-world': 1
         ]
 
-        and:'`should return limited number pulls count per metric records specified by limit filter'
+        and:'`should return limited number of pulls count per metric records specified by limit filter'
         def limitFilter = new MetricFilter.Builder().limit(1).build()
         persistence.getPullsCountByMetric(Metric.ip, limitFilter) ==['100.200.300.400': 2]
         persistence.getPullsCountByMetric(Metric.user, limitFilter) == ['foo@gmail.com': 2]
