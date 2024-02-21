@@ -20,7 +20,6 @@ package io.seqera.wave.service.metric
 import spock.lang.Specification
 
 import java.time.Instant
-
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>

@@ -18,13 +18,11 @@
 package io.seqera.wave.service.metric.model
 
 import groovy.transform.CompileStatic
-
 /**
  * Model a Wave Pulls Metric response
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-
 @CompileStatic
 class GetPullsMetricsResponse {
     Map result

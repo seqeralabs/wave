@@ -42,7 +42,6 @@ import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
-
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>

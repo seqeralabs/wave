@@ -46,8 +46,8 @@ import io.seqera.wave.service.metric.model.GetDistinctCountResponse
 import io.seqera.wave.service.metric.model.GetPullsCountResponse
 import io.seqera.wave.service.metric.model.GetPullsMetricsResponse
 import jakarta.inject.Inject
-import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
 
+import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
 /**
  * Controller for wave Metrics
  *
@@ -64,10 +64,10 @@ class MetricsController {
 
     @Get(uri = "/builds/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getBuildMetrics(@PathVariable String metric,
-                                      @Nullable @QueryValue Boolean success,
-                                      @Nullable @QueryValue String startDate,
-                                      @Nullable @QueryValue String endDate,
-                                      @Nullable @QueryValue Integer limit) {
+                                    @Nullable @QueryValue Boolean success,
+                                    @Nullable @QueryValue String startDate,
+                                    @Nullable @QueryValue String endDate,
+                                    @Nullable @QueryValue Integer limit) {
         final result = metricsService.getBuildsMetric(
                         Metric.valueOf(metric),
                         new MetricFilter.Builder()
@@ -80,8 +80,8 @@ class MetricsController {
 
     @Get(uri = "/builds", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getBuildsCount(@Nullable @QueryValue Boolean success,
-                                               @Nullable @QueryValue String startDate,
-                                               @Nullable @QueryValue String endDate) {
+                                   @Nullable @QueryValue String startDate,
+                                   @Nullable @QueryValue String endDate) {
         final count = metricsService.getBuildsCount(
                         new MetricFilter.Builder()
                                 .dates(parseStartDate(startDate), parseEndDate(endDate))
@@ -92,10 +92,10 @@ class MetricsController {
 
     @Get(uri = "/pulls/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getPullsMetrics(@PathVariable String metric,
-                                      @Nullable @QueryValue String startDate,
-                                      @Nullable @QueryValue String endDate,
-                                      @Nullable @QueryValue Boolean fusion,
-                                      @Nullable @QueryValue Integer limit) {
+                                    @Nullable @QueryValue String startDate,
+                                    @Nullable @QueryValue String endDate,
+                                    @Nullable @QueryValue Boolean fusion,
+                                    @Nullable @QueryValue Integer limit) {
         final result = metricsService.getPullsMetric(
                         Metric.valueOf(metric),
                         new MetricFilter.Builder()
@@ -109,8 +109,8 @@ class MetricsController {
 
     @Get(uri = "/pulls", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getPullsCount(@Nullable @QueryValue String startDate,
-                                              @Nullable @QueryValue String endDate,
-                                              @Nullable @QueryValue Boolean fusion) {
+                                  @Nullable @QueryValue String endDate,
+                                  @Nullable @QueryValue Boolean fusion) {
         final count = metricsService.getPullsCount(
                         new MetricFilter.Builder()
                                 .dates(parseStartDate(startDate), parseEndDate(endDate))
@@ -121,9 +121,9 @@ class MetricsController {
 
     @Get(uri = "/distinct/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getBuildsCount(@PathVariable String metric,
-                                               @Nullable @QueryValue String startDate,
-                                               @Nullable @QueryValue String endDate,
-                                               @Nullable @QueryValue Boolean fusion) {
+                                   @Nullable @QueryValue String startDate,
+                                   @Nullable @QueryValue String endDate,
+                                   @Nullable @QueryValue Boolean fusion) {
         final count = metricsService.getDistinctMetrics(
                         Metric.valueOf(metric),
                         new MetricFilter.Builder()

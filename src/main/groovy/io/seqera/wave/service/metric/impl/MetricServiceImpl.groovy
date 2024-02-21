@@ -17,7 +17,6 @@
  */
 package io.seqera.wave.service.metric.impl
 
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.service.metric.Metric
@@ -26,7 +25,6 @@ import io.seqera.wave.service.metric.MetricService
 import io.seqera.wave.service.persistence.PersistenceService
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 /**
  * Implements MetricsService
  *
