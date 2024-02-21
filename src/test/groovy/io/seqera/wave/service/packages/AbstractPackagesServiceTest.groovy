@@ -42,6 +42,7 @@ class AbstractPackagesServiceTest extends Specification {
         given:
         def folder = Files.createTempDirectory('test')
         def file = folder.resolve('conda.txt')
+        def defaultLimit = 100
         file.text = '''\
 Loading channels: ...working... done
 # Name                       Version           Build  Channel             
@@ -58,12 +59,12 @@ salmon                           1.2          py34_0  bioconda
         when:
         fetcher.processResult(file)
         then:
-        persistenceService.findCondaPackage(null, null).size() == 5
+        persistenceService.findCondaPackage(null, null, defaultLimit).size() == 5
         and:
-        persistenceService.findCondaPackage('multiqc', null).size() == 3
-        persistenceService.findCondaPackage('salmon', null).size() == 2
-        persistenceService.findCondaPackage('bioconda', null).size() == 5
-        persistenceService.findCondaPackage(null, ['bioconda']).size() == 5
+        persistenceService.findCondaPackage('multiqc', null, defaultLimit).size() == 3
+        persistenceService.findCondaPackage('salmon', null, defaultLimit).size() == 2
+        persistenceService.findCondaPackage('bioconda', null, defaultLimit).size() == 5
+        persistenceService.findCondaPackage(null, ['bioconda'], defaultLimit).size() == 5
 
         cleanup:
         folder?.deleteDir()
