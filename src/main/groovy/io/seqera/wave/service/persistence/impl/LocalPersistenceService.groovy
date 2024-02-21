@@ -29,7 +29,6 @@ import io.seqera.wave.service.persistence.WaveScanRecord
 import jakarta.inject.Singleton
 
 import static io.seqera.wave.service.metric.MetricConstants.ANONYMOUS
-
 /**
  * Basic persistence for dev purpose
  *

@@ -224,14 +224,14 @@ class SurrealPersistenceService implements PersistenceService {
         return result
     }
 
-    // get build count by specific metric (ip, userEmail, targetImage)
+    // get builds count by specific metric (ip, userEmail, targetImage)
     @Override
     LinkedHashMap<String, Long> getBuildsCountByMetric(Metric metric, MetricFilter filter){
         def statement = "SELECT ${metric.buildLabel}, count() as total_count FROM wave_build "+
                                 "${getBuildMetricFilter(filter)} GROUP BY ${metric.buildLabel}  ORDER BY total_count DESC LIMIT $filter.limit"
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
-        log.trace("Build count results by ${metric.buildLabel}: $results")
+        log.trace("Builds count results by ${metric.buildLabel}: $results")
         LinkedHashMap<String, Long> counts = new LinkedHashMap<>()
         for(def result : results){
             //if the userEmail is null, replace it with anonymous
@@ -240,13 +240,13 @@ class SurrealPersistenceService implements PersistenceService {
         return counts
     }
 
-    // get total build count
+    // get total builds count
     @Override
     Long getBuildsCount(MetricFilter filter){
         final statement = "SELECT count() as total_count FROM wave_build ${getBuildMetricFilter(filter)} GROUP ALL"
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
-        log.trace("Total build count results: $results")
+        log.trace("Total builds count results: $results")
         if( results && results.size() > 0)
             return results[0].get("total_count")? results[0].get("total_count") as Long : 0
         else
@@ -268,7 +268,7 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
 
-    // get pull count by specific metric (ip, user.email, sourceImage)
+    // get pulls count by specific metric (ip, user.email, sourceImage)
     @Override
     LinkedHashMap<String, Long> getPullsCountByMetric(Metric metric, MetricFilter filter){
 
@@ -276,7 +276,7 @@ class SurrealPersistenceService implements PersistenceService {
                                 "${getPullMetricFilter(filter)} GROUP BY ${metric.pullLabel} ORDER BY total_count DESC LIMIT $filter.limit"
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
-        log.trace("Pull count results by ${metric.pullLabel}: $results")
+        log.trace("Pulls count by ${metric.pullLabel} results: $results")
         LinkedHashMap<String, Long> counts = new LinkedHashMap<>()
         for(def result : results){
             def key = result.get(metric.pullLabel)
@@ -290,13 +290,13 @@ class SurrealPersistenceService implements PersistenceService {
         return counts
     }
 
-    // get total pull count
+    // get total pulls count
     @Override
     Long getPullsCount(MetricFilter filter){
         final statement = "SELECT count() as total_count FROM wave_request ${getPullMetricFilter(filter)}  GROUP ALL"
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
-        log.trace("Total pull count results: $results")
+        log.trace("Total pulls count results: $results")
         if( results && results.size() > 0)
             return results[0].get("total_count")? results[0].get("total_count") as Long : 0
         else
