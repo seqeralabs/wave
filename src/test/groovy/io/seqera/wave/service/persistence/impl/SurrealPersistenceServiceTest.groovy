@@ -320,7 +320,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         result2 == scanRecord2
     }
 
-    def 'should return the correct build counts per metrics' () {
+    def 'should return the correct builds count per metric' () {
         given:
         final persistence = applicationContext.getBean(SurrealPersistenceService)
 
@@ -384,7 +384,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 'testImage2': 1
         ]
 
-        and: 'should return correct metric count for successful builds'
+        and: 'should return successful builds count per metric'
         def successFilter = new MetricFilter.Builder().success(true).build()
         persistence.getBuildsCountByMetric(Metric.ip, successFilter) ==[
                 '127.0.0.1': 1,
@@ -399,7 +399,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 'testImage2': 1
         ]
 
-        and: 'should return correct metric count between two dates'
+        and: 'should return correct builds count per metric between given dates'
         def datesFilter = new MetricFilter.Builder().dates(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()).build()
         persistence.getBuildsCountByMetric(Metric.ip, datesFilter) == [
                 '127.0.0.1': 1,
@@ -414,23 +414,23 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 'testImage2': 1
         ]
 
-        and: 'should return correct metric count in limit'
+        and: 'should return limited number builds count per metric records as defined by limit filter'
         def limitFilter = new MetricFilter.Builder().limit(1).build()
         persistence.getBuildsCountByMetric(Metric.ip, limitFilter) == ['127.0.0.1': 2]
         persistence.getBuildsCountByMetric(Metric.user, limitFilter) == ['test1@xyz.com': 2]
         persistence.getBuildsCountByMetric(Metric.image, limitFilter) == ['testImage1': 2]
 
-        and: 'should return total build count'
+        and: 'should return total builds count'
 
         persistence.getBuildsCount(emptyFilter) == 3
         persistence.getBuildsCount(successFilter) == 2
 
-        and: 'should return total build count between two dates'
+        and: 'should return total builds count between given dates'
         persistence.getBuildsCount(datesFilter) == 2
 
     }
 
-    def 'should return the correct pull counts per metrics' () {
+    def 'should return the correct pulls count per metric' () {
         given:
         final persistence = applicationContext.getBean(SurrealPersistenceService)
         def TOKEN1 = '123abc'
@@ -498,7 +498,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.saveContainerRequest(TOKEN3, request3)
         sleep 300
 
-        expect:'`should return the correct pull counts per metrics'
+        expect: 'should return the correct pulls counts per metric'
         def emptyFilter = new MetricFilter.Builder().build()
         persistence.getPullsCountByMetric(Metric.ip, emptyFilter) ==[
                 '100.200.300.400': 2,
@@ -513,7 +513,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 'hello-wave-world': 1
         ]
 
-        and: 'should return the correct pull counts per metrics between two dates'
+        and: 'should return the correct pulls count per metric between given dates'
         def datesFilter = new MetricFilter.Builder().dates(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()).build()
         persistence.getPullsCountByMetric(Metric.user, datesFilter) == [
                 'foo@gmail.com': 1,
@@ -528,7 +528,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 'hello-wave-world': 1
         ]
 
-        and: 'should return the correct pull counts per metrics for fusion'
+        and: 'should return the correct pulls count per metric for containers with fusion'
         def fusionTrueFilter = new MetricFilter.Builder().fusion(true).build()
         persistence.getPullsCountByMetric(Metric.user, fusionTrueFilter) == [
                 'foo@gmail.com': 2
@@ -540,7 +540,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 'hello-world': 2
         ]
 
-        and: 'should return the correct pull counts per metrics for no fusion'
+        and: 'should return the correct pulls count per metric for containers without fusion'
         def fusionFalseFilter = new MetricFilter.Builder().fusion(false).build()
         persistence.getPullsCountByMetric(Metric.user, fusionFalseFilter) == [
                 'anonymous': 1
@@ -552,22 +552,22 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 'hello-wave-world': 1
         ]
 
-        and:'`should return the correct pull counts per metrics in limit'
+        and:'`should return limited number pulls count per metric records specified by limit filter'
         def limitFilter = new MetricFilter.Builder().limit(1).build()
         persistence.getPullsCountByMetric(Metric.ip, limitFilter) ==['100.200.300.400': 2]
         persistence.getPullsCountByMetric(Metric.user, limitFilter) == ['foo@gmail.com': 2]
         persistence.getPullsCountByMetric(Metric.image, limitFilter) == ['hello-world': 2]
 
-        and: 'should return the correct pull'
+        and: 'should return the correct number of pulls'
         persistence.getPullsCount(emptyFilter) == 3
 
-        and: 'should return the correct pull counts between two dates'
+        and: 'should return the correct number of pulls between two dates'
         persistence.getPullsCount(datesFilter) == 2
 
-        and: 'should return the correct pull counts with fusion'
+        and: 'should return the correct number of pulls for containers with fusion'
         persistence.getPullsCount(fusionTrueFilter) == 2
 
-        and: 'should return the correct pull counts with no fusion'
+        and: 'should return the correct number of pulls for containers without fusion'
         persistence.getPullsCount(fusionFalseFilter) == 1
 
         and:'should return distinct metric count'
@@ -580,18 +580,18 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.getDistinctMetrics(Metric.user, datesFilter) == 1
         persistence.getDistinctMetrics(Metric.image, datesFilter) == 2
 
-        and:'should return distinct metric count with fusion'
+        and:'should return distinct metric count for containers with fusion'
         persistence.getDistinctMetrics(Metric.ip, fusionTrueFilter) == 1
         persistence.getDistinctMetrics(Metric.user, fusionTrueFilter) == 1
         persistence.getDistinctMetrics(Metric.image, fusionTrueFilter) == 1
 
-        and:'should return distinct metric count with no fusion'
+        and:'should return distinct metric count for containers without fusion'
         persistence.getDistinctMetrics(Metric.ip, fusionFalseFilter) == 1
         persistence.getDistinctMetrics(Metric.user, fusionFalseFilter) == 0
         persistence.getDistinctMetrics(Metric.image, fusionFalseFilter) == 1
     }
 
-    def 'should get empty map for count per metric when no record found' () {
+    def 'should get empty map for builds count and pulls count per metric when no record found' () {
         given:
         final persistence = applicationContext.getBean(SurrealPersistenceService)
         expect:
@@ -604,7 +604,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.getPullsCountByMetric(Metric.user, emptyFilter) == [:]
     }
 
-    def 'should get 0 total_count if no record found' () {
+    def 'should get zero for builds count, pulls count and distinct metric count if no record found' () {
         given:
         final persistence = applicationContext.getBean(SurrealPersistenceService)
 
@@ -617,7 +617,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.getDistinctMetrics(Metric.user, emptyFilter) == 0
     }
 
-    def 'should get the correct build filter' () {
+    def 'should get the correct where clause for wave_build table' () {
         expect:
         SurrealPersistenceService.getBuildMetricFilter(new MetricFilter.Builder().success(SUCCESS).dates(STARTDATE, ENDDATE).build()) == SURREALDBFILTER
         where:
@@ -632,7 +632,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         false   | Instant.now() | Instant.now()     | "WHERE type::datetime(startTime) >= '$STARTDATE' AND type::datetime(startTime) <= '$ENDDATE' AND exitStatus != 0"
     }
 
-    def 'get the correct pull filter' () {
+    def 'get the correct where clause for wave_request table' () {
         expect:
         SurrealPersistenceService.getPullMetricFilter(new MetricFilter.Builder().fusion(FUSION).dates(STARTDATE, ENDDATE).build()) == SURREALDBFILTER
         where:

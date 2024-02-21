@@ -27,7 +27,7 @@ import java.time.Instant
  */
 class MetricFilterTest extends Specification {
 
-    def "should return filter with everything"() {
+    def 'should return MetricFilter with every filter'() {
         given:
         def startDate = Instant.now()
         def endDate = Instant.now()
@@ -45,7 +45,7 @@ class MetricFilterTest extends Specification {
         filter.fusion == false
     }
 
-    def "should return filter with dates"() {
+    def 'should return MetricFilter with dates'() {
         given:
         def startDate = Instant.now()
         def endDate = Instant.now()
@@ -59,7 +59,7 @@ class MetricFilterTest extends Specification {
         filter.fusion == null
     }
 
-    def "should generate endDate when startDate is set"() {
+    def 'should generate endDate in MetricFilter when startDate is set'() {
         given:
         def startDate = Instant.now()
         def endDate = null
@@ -73,7 +73,7 @@ class MetricFilterTest extends Specification {
         filter.fusion == null
     }
 
-    def "should return filter with limit"() {
+    def 'should return MetricFilter with limit'() {
         given:
         def filter = new MetricFilter.Builder().limit(1).build()
 
@@ -85,7 +85,7 @@ class MetricFilterTest extends Specification {
         filter.fusion == null
     }
 
-    def "should return filter with success"() {
+    def 'should return MetricFilter with success'() {
         given:
         def filter = new MetricFilter.Builder().success(true).build()
 
@@ -97,7 +97,7 @@ class MetricFilterTest extends Specification {
         filter.fusion == null
     }
 
-    def "should return filter with fusion"() {
+    def 'should return MetricFilter with fusion'() {
         given:
         def filter = new MetricFilter.Builder().fusion(false).build()
 
@@ -109,7 +109,7 @@ class MetricFilterTest extends Specification {
         filter.fusion == false
     }
 
-    def "should return filter with limit 1000 if limit is more than 1000"() {
+    def 'should return MetricFilter with limit 1000 if limit is more than 1000'() {
         given:
         def filter = new MetricFilter.Builder().limit(1001).build()
 
