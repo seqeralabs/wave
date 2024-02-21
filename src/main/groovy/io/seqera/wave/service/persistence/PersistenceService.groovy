@@ -136,12 +136,13 @@ interface PersistenceService {
      *
      * @param criteria The search criteria
      * @param channels The list of channels for the search
+     * @param limit The maximum number of results
      * @return The {@link List<CondaPackageRecord>} objects returned by the search
      */
-    List<CondaPackageRecord> findCondaPackage(String criteria, List<String> channels)
+    List<CondaPackageRecord> findCondaPackage(String criteria, List<String> channels, Integer limit)
 
     /**
-     * Create a Conda Package record,
+     * Create a Conda Package record
      *
      * @param entries Create records with the List specified
      * @param  size, size of sublist needs to be save in a cycle

@@ -108,5 +108,18 @@ class PackagesControllerTest extends Specification {
                 '''.replaceAll(/\s|\n/, "")
     }
 
+    def 'get correct number of packages same as limit' (){
+        when:
+        def resp = client.toBlocking().retrieve("$PREFIX/conda?limit=2")
+        then:
+        resp == '''
+                {
+                    "results":[
+                            {"id":"bioconda::salmon2=1.0","channel":"bioconda","name":"salmon2","version":"1.0"},
+                            {"id":"seqera::multiqc=0.5","channel":"seqera","name":"multiqc","version":"0.5"}
+                        ]
+                }
+                '''.replaceAll(/\s|\n/, "")
+    }
 
 }

@@ -48,8 +48,9 @@ class PackagesController {
 
     @Get('/conda')
     HttpResponse<?> list(@Nullable @QueryValue String search,
-                         @Nullable @QueryValue List<String> channels) {
-        return HttpResponse.ok(new PackagesResponse(packagesService.findCondaPackage(search, channels)))
+                         @Nullable @QueryValue List<String> channels,
+                         @Nullable @QueryValue Integer limit) {
+        return HttpResponse.ok(new PackagesResponse(packagesService.findCondaPackage(search, channels, limit)))
     }
 
     @Get('/conda/refresh')

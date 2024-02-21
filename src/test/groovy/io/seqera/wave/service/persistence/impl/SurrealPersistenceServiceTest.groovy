@@ -322,33 +322,38 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def record1 = new CondaPackageRecord('channel1', 'package1', '1.1')
         def record2 = new CondaPackageRecord('channel2', 'package2', '1.2')
         def record3 = new CondaPackageRecord('channel3', 'package3', '1.3')
+        def defaultLimit = 100
 
         when:
         persistence.saveCondaPackages([record1, record2, record3])
 
         then:
         sleep(100)
-        persistence.findCondaPackage(null,null) == [
+        persistence.findCondaPackage(null,null, defaultLimit) == [
                 new CondaPackageRecord('wave_conda_package:⟨channel1::package1=1.1⟩', 'channel1', 'package1', '1.1'),
                 new CondaPackageRecord('wave_conda_package:⟨channel2::package2=1.2⟩', 'channel2', 'package2', '1.2'),
                 new CondaPackageRecord('wave_conda_package:⟨channel3::package3=1.3⟩', 'channel3', 'package3', '1.3')
         ]
         and: 'when searching for a specific package'
-        persistence.findCondaPackage('package1',null) == [
+        persistence.findCondaPackage('package1',null, defaultLimit) == [
                 new CondaPackageRecord('wave_conda_package:⟨channel1::package1=1.1⟩', 'channel1', 'package1', '1.1')
         ]
         and: 'when searching for a specific package and version'
-        persistence.findCondaPackage('package2=1',null) == [
+        persistence.findCondaPackage('package2=1',null, defaultLimit) == [
                 new CondaPackageRecord('wave_conda_package:⟨channel2::package2=1.2⟩', 'channel2', 'package2', '1.2')
         ]
         and: 'when searching for a specific channel'
-        persistence.findCondaPackage('channel3',null) == [
+        persistence.findCondaPackage('channel3',null, defaultLimit) == [
                 new CondaPackageRecord('wave_conda_package:⟨channel3::package3=1.3⟩', 'channel3', 'package3', '1.3')
         ]
         and: 'when searching from multiple channels'
-        persistence.findCondaPackage(null, ['channel1','channel3']) == [
+        persistence.findCondaPackage(null, ['channel1','channel3'], defaultLimit) == [
                 new CondaPackageRecord('wave_conda_package:⟨channel1::package1=1.1⟩', 'channel1', 'package1', '1.1'),
                 new CondaPackageRecord('wave_conda_package:⟨channel3::package3=1.3⟩', 'channel3', 'package3', '1.3')
+        ]
+        and: 'when asking for limited number of results'
+        persistence.findCondaPackage(null, null, 1) == [
+                new CondaPackageRecord('wave_conda_package:⟨channel1::package1=1.1⟩', 'channel1', 'package1', '1.1')
         ]
     }
     

@@ -91,33 +91,28 @@ class LocalPersistenceService implements PersistenceService {
     }
 
     @Override
-    List<CondaPackageRecord> findCondaPackage(String criteria, List<String> channels) {
-        if( !criteria && !channels )
-            return condaStore.values() as List<CondaPackageRecord>
-
+    List<CondaPackageRecord> findCondaPackage(String criteria, List<String> channels, Integer limit) {
         List<CondaPackageRecord> result = new ArrayList<>()
 
-        if (!channels) {
+        if( !criteria && !channels ) {
+            result = condaStore.values() as List<CondaPackageRecord>
+        }else if( criteria && channels ) {
+            for (CondaPackageRecord it : condaStore.values()) {
+                if (it.id.contains(criteria) && channels.contains(it.channel))
+                    result.add(it)
+            }
+        }else if (!channels) {
             for (CondaPackageRecord it : condaStore.values()) {
                 if (it.id.contains(criteria))
                     result.add(it)
             }
-            return result
-        }
-
-        if( !criteria ) {
+        }else {
             for (CondaPackageRecord it : condaStore.values()) {
                 if (channels.contains(it.channel))
                     result.add(it)
             }
-            return result
         }
 
-        for( CondaPackageRecord it : condaStore.values() ) {
-            if( it.id.contains(criteria) && channels.contains(it.channel))
-                result.add(it)
-        }
-
-        return result
+        return result.take(limit)
     }
 }

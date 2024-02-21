@@ -99,8 +99,15 @@ abstract class AbstractPackagesService implements PackagesService{
     }
 
     @Override
-    List<CondaPackageRecord> findCondaPackage(String search, List<String> channels) {
-        persistenceService.findCondaPackage(search, channels)
+    List<CondaPackageRecord> findCondaPackage(String search, List<String> channels, Integer limit) {
+        if( !limit )
+            limit = 100
+        else if( limit < 1 )
+            limit = 1
+        else if( limit > 1000 )
+            limit = 1000
+
+        return persistenceService.findCondaPackage(search, channels, limit)
     }
 
     abstract protected void run(List<String> command, Path workDir)

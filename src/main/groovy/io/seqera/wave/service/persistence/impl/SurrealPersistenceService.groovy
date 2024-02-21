@@ -250,8 +250,8 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    List<CondaPackageRecord> findCondaPackage(String criteria, List<String> channels) {
-        def statement = "SELECT * FROM wave_conda_package ${getCondaFetcherFilter(criteria, channels)}"
+    List<CondaPackageRecord> findCondaPackage(String criteria, List<String> channels, Integer limit) {
+        def statement = "SELECT * FROM wave_conda_package ${getCondaFetcherFilter(criteria, channels)} LIMIT $limit"
         final json = surrealDb.sqlAsString(authorization, statement)
         final type = new TypeReference<ArrayList<SurrealResult<CondaPackageRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
