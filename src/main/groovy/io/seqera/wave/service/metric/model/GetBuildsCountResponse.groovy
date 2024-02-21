@@ -20,7 +20,7 @@ package io.seqera.wave.service.metric.model
 
 import groovy.transform.CompileStatic
 /**
- * Model a Wave Builds count response
+ * Model a Wave builds count response
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
