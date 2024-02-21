@@ -29,22 +29,21 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
-import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.core.ContainerDigestPair
+import io.seqera.wave.service.builder.BuildFormat
+import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.BuildEvent
-import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.persistence.CondaPackageRecord
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
-import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.test.SurrealDBTestContainer
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
-
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  *

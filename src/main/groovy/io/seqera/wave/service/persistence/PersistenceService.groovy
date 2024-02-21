@@ -22,8 +22,8 @@ import groovy.transform.CompileStatic
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.exception.NotFoundException
-import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.scan.ScanResult
+import io.seqera.wave.service.builder.BuildEvent
 
 /**
  * A storage for statistic data
