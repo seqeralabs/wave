@@ -107,8 +107,7 @@ class LocalPersistenceService implements PersistenceService {
 
     @Override
     Long getBuildsCount(MetricFilter filter) {
-        def builds = getFilteredBuilds(filter)
-        return builds.size()
+        return getFilteredBuilds(filter).size()
     }
 
     Collection<WaveBuildRecord> getFilteredBuilds(MetricFilter filter) {
@@ -143,8 +142,7 @@ class LocalPersistenceService implements PersistenceService {
 
     @Override
     Long getPullsCount(MetricFilter filter) {
-        def pulls = getFilteredPulls(filter)
-        return pulls.size()
+        return getFilteredPulls(filter).size()
     }
 
     @Override

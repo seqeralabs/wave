@@ -24,7 +24,7 @@ package io.seqera.wave.service.metric
  */
 interface MetricService {
     /**
-     * get the build count per metric
+     * get the builds count per metric
      *
      * @param metric, which metric to count
      * @param MetricFilters, to filter container requests for processing
@@ -33,7 +33,7 @@ interface MetricService {
     Map getBuildsMetric(Metric metric, MetricFilter filter)
 
     /**
-     * get the pull count per metric
+     * get the pulls count per metric
      *
      * @param metric, which metric to count
      * @param MetricFilters, to filter container requests for processing
@@ -42,7 +42,7 @@ interface MetricService {
     Map getPullsMetric(Metric metric, MetricFilter filter)
 
     /**
-     * get the total pull count
+     * get the total pulls count
      *
      * @param MetricFilters, to filter container requests for processing
      * @return The {@link Long} of total pull count
@@ -50,7 +50,7 @@ interface MetricService {
     Long getPullsCount(MetricFilter filter)
 
     /**
-     * get the total build count
+     * get the total builds count
      *
      * @param MetricFilters, to filter container requests for processing
      * @return The {@link Long} of total build count
@@ -58,7 +58,7 @@ interface MetricService {
     Long getBuildsCount(MetricFilter filter)
 
     /**
-     * get the total count of distinct metrics
+     * get the total distinct metric count
      *
      * @param metric, which metric to count
      * @param MetricFilters, to filter container requests for processing

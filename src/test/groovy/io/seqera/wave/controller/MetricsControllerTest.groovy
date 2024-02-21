@@ -172,7 +172,7 @@ class MetricsControllerTest extends Specification {
         sleep 300
     }
 
-    def 'should get 401 when no credentials provided'() {
+    def 'should get http status code 401 when no credentials provided'() {
         when:
         def req = HttpRequest.GET("$PREFIX/builds/ip")
         def res = client.toBlocking().exchange(req, Map)
@@ -181,12 +181,12 @@ class MetricsControllerTest extends Specification {
         e.status.code == 401
     }
 
-    def "should get the correct build count per metrics and status 200"() {
+    def 'should get the correct builds count per metric and http status code 200'() {
         when:
         def req = HttpRequest.GET("$PREFIX/builds/ip").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should get the correct builds count per ip'
         res.body() == [result:['127.0.0.1': 2, '127.0.0.2': 1]]
         res.status.code == 200
 
@@ -194,7 +194,7 @@ class MetricsControllerTest extends Specification {
         req = HttpRequest.GET("$PREFIX/builds/image").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should get the correct builds count per image'
         res.body() == [result:['testImage1': 2, 'testImage2': 1]]
         res.status.code == 200
 
@@ -202,13 +202,13 @@ class MetricsControllerTest extends Specification {
         req = HttpRequest.GET("$PREFIX/builds/user").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should get the correct builds count per user'
         res.body() == [result:['test1@xyz.com': 2, 'anonymous': 1]]
         res.status.code == 200
     }
 
-    def "should return empty body and status 200 when no build records found"() {
-        given: "Date is tomorrow"
+    def 'should return empty map and http status code 200 when no build records found'() {
+        given: 'Date is tomorrow'
         def date = LocalDate.now().plusDays(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         when:
         def req = HttpRequest.GET("$PREFIX/builds/ip?startDate=$date&endDate=$date").basicAuth("username", "password")
@@ -235,12 +235,12 @@ class MetricsControllerTest extends Specification {
         res.status.code == 200
     }
 
-    def "should get the correct successful build count per metrics and status 200"() {
+    def 'should get the correct successful builds count per metric and http status code 200'() {
         when:
         def req = HttpRequest.GET("$PREFIX/builds/ip?success=true").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should get the correct successful builds count per ip'
         res.body() == [result:['127.0.0.2': 1, '127.0.0.1': 1]]
         res.status.code == 200
 
@@ -248,7 +248,7 @@ class MetricsControllerTest extends Specification {
         req = HttpRequest.GET("$PREFIX/builds/image?success=true").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should get the correct successful builds count per image'
         res.body() == [result:['testImage2': 1, 'testImage1': 1]]
         res.status.code == 200
 
@@ -256,12 +256,12 @@ class MetricsControllerTest extends Specification {
         req = HttpRequest.GET("$PREFIX/builds/user?success=true").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should get the correct successful builds count per user'
         res.body() == [result:['test1@xyz.com': 1, 'anonymous': 1]]
         res.status.code == 200
     }
 
-    def "should get the correct build count per metrics between dates and status 200"() {
+    def 'should get the correct builds count per metric between given dates and http status code 200'() {
         given:
         def date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
 
@@ -269,7 +269,7 @@ class MetricsControllerTest extends Specification {
         def req = HttpRequest.GET("$PREFIX/builds/ip?startDate=$date&endDate=$date").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should get the correct builds count per ip between given dates'
         res.body() == [result: ['127.0.0.1': 1, '127.0.0.2': 1]]
         res.status.code == 200
 
@@ -277,7 +277,7 @@ class MetricsControllerTest extends Specification {
         req = HttpRequest.GET("$PREFIX/builds/image?startDate=$date&endDate=$date").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should get the correct builds count per image between given dates'
         res.body() == [result: ['testImage2': 1, 'testImage1': 1]]
         res.status.code == 200
 
@@ -285,17 +285,17 @@ class MetricsControllerTest extends Specification {
         req = HttpRequest.GET("$PREFIX/builds/user?startDate=$date&endDate=$date").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should get the correct builds count per user between given dates'
         res.body() == [result:['test1@xyz.com': 1, 'anonymous': 1]]
         res.status.code == 200
     }
 
-    def "should get the correct build count per metrics in limit and status 200"() {
+    def 'should limit the number of builds count per metric records in response when limit is given and http status code 200'() {
         when:
         def req = HttpRequest.GET("$PREFIX/builds/ip?limit=1").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should return only one build count per ip record'
         res.body() == [result:['127.0.0.1': 2]]
         res.status.code == 200
 
@@ -303,7 +303,7 @@ class MetricsControllerTest extends Specification {
         req = HttpRequest.GET("$PREFIX/builds/image?limit=1").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then:"should return only one build count per image record"
         res.body() == [result:['testImage1': 2]]
         res.status.code == 200
 
@@ -311,12 +311,12 @@ class MetricsControllerTest extends Specification {
         req = HttpRequest.GET("$PREFIX/builds/user?limit=1").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should return only one builds count per user record'
         res.body() == [result:['test1@xyz.com': 2]]
         res.status.code == 200
     }
 
-    def 'should return the total build count and status 200'() {
+    def 'should return the total builds count and http status code 200'() {
         given:
         def date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
 
@@ -324,7 +324,7 @@ class MetricsControllerTest extends Specification {
         def req = HttpRequest.GET("$PREFIX/builds").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
-        then: 'return total build count'
+        then: 'should return total builds count'
         res.body() == [count: 3]
         res.status.code == 200
 
@@ -332,7 +332,7 @@ class MetricsControllerTest extends Specification {
         req = HttpRequest.GET("$PREFIX/builds?startDate=$date&endDate=$date").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
-        then: 'return total build count between provided dates'
+        then: 'should return total builds count between given dates'
         res.body() == [count: 2]
         res.status.code == 200
 
@@ -340,13 +340,13 @@ class MetricsControllerTest extends Specification {
         req = HttpRequest.GET("$PREFIX/builds?success=true").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
-        then: 'return total build count between provided dates'
+        then: 'should return successful total builds count between provided dates'
         res.body() == [count: 2]
         res.status.code == 200
 
     }
 
-    def 'should return zero total build count and status 200 when no record found'() {
+    def 'should return zero total builds count and http status code 200 when no record found'() {
         given: "Date is tomorrow"
         def date = LocalDate.now().plusDays(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
 
@@ -359,12 +359,12 @@ class MetricsControllerTest extends Specification {
         res.status.code == 200
     }
 
-    def 'should return the correct pull counts per metric and status 200'() {
+    def 'should return the correct pulls count per metric and http status code 200'() {
         when:
         def req = HttpRequest.GET("$PREFIX/pulls/ip").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should return the correct pulls count per ip'
         res.body() == [result:['100.200.300.401': 1, '100.200.300.400': 2]]
         res.status.code == 200
 
@@ -372,7 +372,7 @@ class MetricsControllerTest extends Specification {
         req = HttpRequest.GET("$PREFIX/pulls/image").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should return the correct pulls count per image'
         res.body() == [result:['hello-world': 2, 'hello-wave-world': 1]]
         res.status.code == 200
 
@@ -380,14 +380,15 @@ class MetricsControllerTest extends Specification {
         req = HttpRequest.GET("$PREFIX/pulls/user").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then:'should return the correct pulls count per user'
         res.body() == [result:['foo@gmail.com': 2, 'anonymous': 1]]
         res.status.code == 200
     }
 
-    def "should return null and status 200 when no pull records found"() {
-        given: "Date is tomorrow"
+    def 'should return empty map and http status code 200 when no container request records found'() {
+        given: 'Date is tomorrow'
         def date = LocalDate.now().plusDays(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+
         when:
         def req = HttpRequest.GET("$PREFIX/pulls/ip?startDate=$date&endDate=$date").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
@@ -413,14 +414,15 @@ class MetricsControllerTest extends Specification {
         res.status.code == 200
     }
 
-    def "should get the pull count per metric between dates and status 200"() {
+    def 'should get the pulls count per metric between provided dates and http status code 200'() {
         given:
         def date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+
         when:
         def req = HttpRequest.GET("$PREFIX/pulls/ip?startDate=$date&endDate=$date").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should get the pulls count per ip between provided dates'
         res.body() == [result:['100.200.300.401': 1, '100.200.300.400': 1]]
         res.status.code == 200
 
@@ -428,7 +430,7 @@ class MetricsControllerTest extends Specification {
         req = HttpRequest.GET("$PREFIX/pulls/image?startDate=$date&endDate=$date").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should get the pulls count per image between provided dates'
         res.body() == [result:['hello-world': 1, 'hello-wave-world': 1]]
         res.status.code == 200
 
@@ -436,17 +438,17 @@ class MetricsControllerTest extends Specification {
         req = HttpRequest.GET("$PREFIX/pulls/user?startDate=$date&endDate=$date").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should get the pulls count per user between provided dates'
         res.body() == [result:['foo@gmail.com': 1, 'anonymous': 1]]
         res.status.code == 200
     }
 
-    def 'should return the correct pull counts per metric in limit and status 200'() {
+    def 'should limit the number of pulls count per metric records in response when limit is given and http status code 200'() {
         when:
         def req = HttpRequest.GET("$PREFIX/pulls/ip?limit=1").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should return only one pulls count per ip record'
         res.body() == [result:['100.200.300.400': 2]]
         res.status.code == 200
 
@@ -454,7 +456,7 @@ class MetricsControllerTest extends Specification {
         req = HttpRequest.GET("$PREFIX/pulls/image?limit=1").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should return only one pulls count per image record'
         res.body() == [result:['hello-world': 2]]
         res.status.code == 200
 
@@ -462,14 +464,15 @@ class MetricsControllerTest extends Specification {
         req = HttpRequest.GET("$PREFIX/pulls/user?limit=1").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should return only one pulls count per user record'
         res.body() == [result:['foo@gmail.com': 2]]
         res.status.code == 200
     }
 
-    def "should get the total pull count and status 200"() {
+    def 'should get the total pulls count and http status code 200'() {
         given:
         def date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+
         when:
         def req = HttpRequest.GET("$PREFIX/pulls").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
@@ -487,12 +490,12 @@ class MetricsControllerTest extends Specification {
         res.status.code == 200
     }
 
-    def "should get the total pull count for containers with and without fusion and status 200"() {
+    def 'should get the total pulls count for containers when fusion filter is provided and http status code 200'() {
         when:
         def req = HttpRequest.GET("$PREFIX/pulls?fusion=false").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should return pulls count of containers without fusion'
         res.body() == [count: 1]
         res.status.code == 200
 
@@ -500,12 +503,12 @@ class MetricsControllerTest extends Specification {
         req = HttpRequest.GET("$PREFIX/pulls?fusion=true").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then:'should return pulls count of containers with fusion'
         res.body() == [count: 2]
         res.status.code == 200
     }
 
-    def 'should return zero total pull count and status 200 when no record found'() {
+    def 'should return zero total pulls count and http status code 200 when no record found'() {
         given: "Date is tomorrow"
         def date = LocalDate.now().plusDays(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
 
@@ -518,12 +521,12 @@ class MetricsControllerTest extends Specification {
         res.status.code == 200
     }
 
-    def 'should return the distinct count per metric and status 200'() {
+    def 'should return the distinct metric count and http status code 200'() {
         when:
         def req = HttpRequest.GET("$PREFIX/distinct/ip").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should return the distinct ip count'
         res.body() == [count: 2]
         res.status.code == 200
 
@@ -531,7 +534,7 @@ class MetricsControllerTest extends Specification {
         req = HttpRequest.GET("$PREFIX/distinct/image").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should return the distinct image count'
         res.body() == [count: 2]
         res.status.code == 200
 
@@ -539,19 +542,19 @@ class MetricsControllerTest extends Specification {
         req = HttpRequest.GET("$PREFIX/distinct/user").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then:'should return the distinct user count'
         res.body() == [count: 1]
         res.status.code == 200
     }
 
-    def 'should return the distinct count per metric between provided dates and status 200'() {
+    def 'should return the distinct metric count between provided dates and http status code 200'() {
         def date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
 
         when:
         def req = HttpRequest.GET("$PREFIX/distinct/ip?startDate=$date&endDate=$date").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should return the distinct ip count between provided dates'
         res.body() == [count: 2]
         res.status.code == 200
 
@@ -559,7 +562,7 @@ class MetricsControllerTest extends Specification {
         req = HttpRequest.GET("$PREFIX/distinct/image?startDate=$date&endDate=$date").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should return the distinct image count between provided dates'
         res.body() == [count: 2]
         res.status.code == 200
 
@@ -567,17 +570,17 @@ class MetricsControllerTest extends Specification {
         req = HttpRequest.GET("$PREFIX/distinct/user?startDate=$date&endDate=$date").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then:  'should return the distinct user count between provided dates'
         res.body() == [count: 1]
         res.status.code == 200
     }
 
-    def 'should return the distinct count per metric with fusion and status 200'() {
+    def 'should return the distinct metric count with fusion and http status code 200'() {
         when:
         def req = HttpRequest.GET("$PREFIX/distinct/ip?fusion=true").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should return the distinct ip count with fusion'
         res.body() == [count: 1]
         res.status.code == 200
 
@@ -585,7 +588,7 @@ class MetricsControllerTest extends Specification {
         req = HttpRequest.GET("$PREFIX/distinct/image?fusion=true").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should return the distinct image count with fusion'
         res.body() == [count: 1]
         res.status.code == 200
 
@@ -593,17 +596,17 @@ class MetricsControllerTest extends Specification {
         req = HttpRequest.GET("$PREFIX/distinct/user?fusion=true").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should return the distinct user count with fusion'
         res.body() == [count: 1]
         res.status.code == 200
     }
 
-    def 'should return the distinct count per metric without fusion and status 200'() {
+    def 'should return the distinct metric count without fusion and http status code 200'() {
         when:
         def req = HttpRequest.GET("$PREFIX/distinct/ip?fusion=false").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should return the distinct ip count without fusion'
         res.body() == [count: 1]
         res.status.code == 200
 
@@ -611,7 +614,7 @@ class MetricsControllerTest extends Specification {
         req = HttpRequest.GET("$PREFIX/distinct/image?fusion=false").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should return the distinct image count without fusion'
         res.body() == [count: 1]
         res.status.code == 200
 
@@ -619,12 +622,12 @@ class MetricsControllerTest extends Specification {
         req = HttpRequest.GET("$PREFIX/distinct/user?fusion=false").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
-        then:
+        then: 'should return the distinct user count without fusion'
         res.body() == [count: 0]
         res.status.code == 200
     }
 
-    def 'return 400 status and message when date format is not valid'() {
+    def 'return http status code 400 and message when date format is not valid'() {
         when:
         def req = HttpRequest.GET("$PREFIX/distinct/user?startDate=2024-02-07&endDate=2024-02-0").basicAuth("username", "password")
         client.toBlocking().exchange(req, Map)
@@ -635,7 +638,7 @@ class MetricsControllerTest extends Specification {
         e.message == 'Date format should be yyyy-mm-dd'
     }
 
-    def 'return 400 status code and message metric in path is not valid'() {
+    def 'return http status code 400 and message metric in path is not valid'() {
         when:
         def req = HttpRequest.GET("$PREFIX/distinct/userId").basicAuth("username", "password")
         client.toBlocking().exchange(req, Map)

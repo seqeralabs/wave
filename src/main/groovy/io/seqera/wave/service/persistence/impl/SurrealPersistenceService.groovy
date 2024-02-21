@@ -224,7 +224,7 @@ class SurrealPersistenceService implements PersistenceService {
         return result
     }
 
-    // get build count by specific metric ( ip, userName, targetImage)
+    // get build count by specific metric (ip, userEmail, targetImage)
     @Override
     LinkedHashMap<String, Long> getBuildsCountByMetric(Metric metric, MetricFilter filter){
         def statement = "SELECT ${metric.buildLabel}, count() as total_count FROM wave_build "+
@@ -234,6 +234,7 @@ class SurrealPersistenceService implements PersistenceService {
         log.trace("Build count results by ${metric.buildLabel}: $results")
         LinkedHashMap<String, Long> counts = new LinkedHashMap<>()
         for(def result : results){
+            //if the userEmail is null, replace it with anonymous
             counts.put((result.get(metric.buildLabel)?:ANONYMOUS) as String, result.get("total_count") as Long)
         }
         return counts
@@ -267,7 +268,7 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
 
-    // get pull count by specific metric ( ip, user.userName, sourceImage)
+    // get pull count by specific metric (ip, user.email, sourceImage)
     @Override
     LinkedHashMap<String, Long> getPullsCountByMetric(Metric metric, MetricFilter filter){
 
@@ -283,7 +284,7 @@ class SurrealPersistenceService implements PersistenceService {
                 def user = result.get(metric.pullLabel) as Map
                 key = user.get("email")
             }
-            //if the username is null, replace it with anonymous
+            //if the user.email is null, replace it with anonymous
             counts.put((key?:ANONYMOUS) as String, result.get("total_count") as Long)
         }
         return counts
@@ -302,6 +303,7 @@ class SurrealPersistenceService implements PersistenceService {
             return 0
     }
 
+    // get distinct metric (ip, user.email, sourceImage) count
     @Override
     Long getDistinctMetrics(Metric metric, MetricFilter filter){
         final statement = "SELECT count(array) as total_count FROM " +

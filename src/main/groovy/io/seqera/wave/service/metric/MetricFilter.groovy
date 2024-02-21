@@ -22,7 +22,7 @@ import java.time.Instant
 
 import groovy.transform.CompileStatic
 /**
- * This class contains filters to be applied on data to get desired metrics data
+ * This class contains filters to filter out the desired metrics data
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */

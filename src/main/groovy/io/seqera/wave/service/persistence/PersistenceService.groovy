@@ -127,7 +127,7 @@ interface PersistenceService {
     }
 
     /**
-     * Retrieve the build count per metric from storage
+     * Retrieve the builds count per metric from storage
      *
      * @param metric , which metric to count
      * @param MetricFilters , to filter records extracted from storage
@@ -136,7 +136,7 @@ interface PersistenceService {
     Map<String, Long> getBuildsCountByMetric(Metric metric, MetricFilter filter)
 
     /**
-     * Retrieve the total build count from storage
+     * Retrieve the total builds count from storage
      *
      * @param MetricFilters , to filter records extracted from storage
      * @return The {@link Long} of total build count
@@ -144,7 +144,7 @@ interface PersistenceService {
     Long getBuildsCount(MetricFilter filter)
 
     /**
-     * Retrieve the pull count per metric from storage
+     * Retrieve the pulls count per metric from storage
      *
      * @param metric , which metric to count
      * @param MetricFilters , to filter records extracted from storage
@@ -153,7 +153,7 @@ interface PersistenceService {
     Map<String, Long> getPullsCountByMetric(Metric metric, MetricFilter filter)
 
     /**
-     * Retrieve the total pull count from storage
+     * Retrieve the total pulls count from storage
      *
      * @param MetricFilters , to filter records extracted from storage
      * @return The {@link Long} of total pull count
@@ -161,7 +161,7 @@ interface PersistenceService {
     Long getPullsCount(MetricFilter filter)
 
     /**
-     * Retrieve the total count of distinct metrics from storage
+     * Retrieve the total distinct metric count from storage
      *
      * @param metric , which metric to count
      * @param MetricFilters , to filter records extracted from storage

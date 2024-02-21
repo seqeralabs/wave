@@ -26,4 +26,5 @@ package io.seqera.wave.service.metric
 interface MetricConstants {
 
     static final public String ANONYMOUS = 'anonymous'
+
 }
