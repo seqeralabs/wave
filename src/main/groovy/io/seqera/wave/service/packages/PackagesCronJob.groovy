@@ -26,7 +26,6 @@ import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.scheduling.annotation.Scheduled
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 /**
  * Cron job to fetch packages
  *

@@ -33,7 +33,6 @@ import jakarta.inject.Singleton
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-
 @Slf4j
 @Singleton
 @Requires(property = 'wave.build.k8s')
