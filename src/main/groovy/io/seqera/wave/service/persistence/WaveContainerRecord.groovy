@@ -168,7 +168,7 @@ class WaveContainerRecord {
         this.waveImage = waveImage
         this.expiration = expiration
         this.ipAddress = addr
-        final ts = parseOffsetDateTime(request.timestamp)?:OffsetDateTime.now()
+        final ts = parseOffsetDateTime(request.timestamp) ?: OffsetDateTime.now()
         this.timestamp = ts?.toInstant()
         this.zoneId = ts?.getOffset()?.getId()
         this.buildId = data.buildId
