@@ -686,6 +686,9 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def addr = "100.200.300.404"
         def exp = Instant.now().plusSeconds(3600)
         def request4 = new WaveContainerRecord(req, data, wave, addr, exp)
+        def timestamp = WaveContainerRecord.getDeclaredField("timestamp")
+        timestamp.accessible = true
+        timestamp.set(request4 , null)
 
         def TOKEN5 = '12345abc'
         cfg = new ContainerConfig(entrypoint: ['sh'])
