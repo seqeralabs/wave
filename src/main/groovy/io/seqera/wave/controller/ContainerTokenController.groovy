@@ -236,7 +236,8 @@ class ContainerTokenController {
                 cache,
                 scanId,
                 ip,
-                offset)
+                offset,
+                req.imageName)
     }
 
     protected BuildRequest buildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
