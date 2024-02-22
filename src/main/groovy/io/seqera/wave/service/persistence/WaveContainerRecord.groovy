@@ -19,6 +19,7 @@
 package io.seqera.wave.service.persistence
 
 import java.time.Instant
+import java.time.OffsetDateTime
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
@@ -167,7 +168,7 @@ class WaveContainerRecord {
         this.waveImage = waveImage
         this.expiration = expiration
         this.ipAddress = addr
-        final ts = parseOffsetDateTime(request.timestamp)
+        final ts = parseOffsetDateTime(request.timestamp)?:OffsetDateTime.now()
         this.timestamp = ts?.toInstant()
         this.zoneId = ts?.getOffset()?.getId()
         this.buildId = data.buildId

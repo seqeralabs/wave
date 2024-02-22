@@ -78,4 +78,45 @@ class WaveContainerRecordTest extends Specification {
         container.zoneId == OffsetDateTime.parse(req.timestamp).offset.id
         container.expiration == exp
     }
+
+    def 'should create wave record with valid timestamp when its null in submitContainerTokenRequest' () {
+        given:
+        def lyr = new ContainerLayer(location: 'data:12346')
+        def cfg = new ContainerConfig(entrypoint: ['/opt/fusion'], layers: [lyr])
+        def req = new SubmitContainerTokenRequest(
+                towerEndpoint: 'https://tower.nf',
+                towerWorkspaceId: 100,
+                containerConfig: cfg,
+                containerPlatform: ContainerPlatform.of('amd64'),
+                buildRepository: 'build.docker.io',
+                cacheRepository: 'cache.docker.io',
+                fingerprint: 'xyz' )
+        and:
+        def user = new User(id:1)
+        def data = new ContainerRequestData(new PlatformId(user,100), 'hello-world', 'some docker', cfg, 'some conda')
+        def wave = 'https://wave.io/some/container:latest'
+        def addr = '100.200.300.400'
+
+        when:
+        def exp = Instant.now().plusSeconds(3600)
+        def container = new WaveContainerRecord(req, data, wave, addr, exp)
+        then:
+        container.user == user
+        container.workspaceId == req.towerWorkspaceId
+        container.containerImage == req.containerImage
+        container.containerConfig == ContainerConfig.copy(req.containerConfig, true)
+        container.platform == req.containerPlatform
+        container.towerEndpoint == req.towerEndpoint
+        container.buildRepository == req.buildRepository
+        container.cacheRepository == req.cacheRepository
+        container.fingerprint == req.fingerprint
+        container.ipAddress == addr
+        container.condaFile == data.condaFile
+        container.containerFile == data.containerFile
+        container.sourceImage == data.containerImage
+        container.waveImage == wave
+        container.timestamp instanceof Instant
+        container.zoneId == OffsetDateTime.now().offset.id
+        container.expiration == exp
+    }
 }
