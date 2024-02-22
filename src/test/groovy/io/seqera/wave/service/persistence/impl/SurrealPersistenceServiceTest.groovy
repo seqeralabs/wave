@@ -466,7 +466,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 timestamp: Instant.now().minus(1, ChronoUnit.DAYS).toString()
         )
         wave = "wave.io/wt/$TOKEN2/hello-world"
-        user = new User(id: 1, userName: 'foo', email: 'foo@gmail.com')
+        user = new User(id: 1, userName: 'bar', email: 'foo@gmail.com')
         data = new ContainerRequestData(new PlatformId(user,100), 'hello-world' )
         addr = "100.200.300.400"
         exp = Instant.now().plusSeconds(3600)
