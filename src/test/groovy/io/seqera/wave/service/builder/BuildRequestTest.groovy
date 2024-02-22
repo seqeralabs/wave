@@ -65,7 +65,7 @@ class BuildRequestTest extends Specification {
                 SCAN_ID,
                 IP_ADDR,
                 OFFSET,
-        null)
+                null)
         then:
         req.id == '181ec22b26ae6d04'
         req.workDir == PATH.resolve(req.id).toAbsolutePath()
@@ -269,7 +269,7 @@ class BuildRequestTest extends Specification {
         BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', '12345', null, spack, null)
                 == 'quay.io/org/name:bwa-0.7.15--12345'
 
-        and: 'when imageName is provide it should be used to create target'
+        and: 'should return targetImage with give imageName'
         BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', '12345', null, null, 'foo')
                 == 'quay.io/org/name/foo:12345'
 
