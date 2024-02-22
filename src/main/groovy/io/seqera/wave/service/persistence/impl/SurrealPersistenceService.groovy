@@ -271,7 +271,7 @@ class SurrealPersistenceService implements PersistenceService {
     // get pulls count by specific metric (ip, user.email, sourceImage)
     @Override
     LinkedHashMap<String, Long> getPullsCountByMetric(Metric metric, MetricFilter filter){
-        def field =metric == Metric.user ? "${metric.pullLabel}.email" : metric.pullLabel
+        def field = metric == Metric.user ? "${metric.pullLabel}.email" : metric.pullLabel
         def statement = "SELECT $field, count() as total_count  FROM wave_request "+
                                 "${getPullMetricFilter(filter)} GROUP BY $field ORDER BY total_count DESC LIMIT $filter.limit"
         final map = surrealDb.sqlAsMap(authorization, statement)
@@ -306,7 +306,7 @@ class SurrealPersistenceService implements PersistenceService {
     // get distinct metric (ip, user.email, sourceImage) count
     @Override
     Long getDistinctMetrics(Metric metric, MetricFilter filter){
-        def field =metric == Metric.user ? "${metric.pullLabel}.email" : metric.pullLabel
+        def field = metric == Metric.user ? "${metric.pullLabel}.email" : metric.pullLabel
         final statement = "SELECT count(array) as total_count FROM " +
                 "(SELECT array::distinct($field) as array FROM wave_request ${getPullMetricFilter(filter)}  GROUP ALL)"
         final map = surrealDb.sqlAsMap(authorization, statement)
