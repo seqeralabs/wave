@@ -188,6 +188,7 @@ class BuildRequest {
                 tag = "${normaliseTag(prefix)}--${id}"
             }
         }
+
         return format==SINGULARITY ? "oras://${repo}:${tag}" : "${repo}:${tag}"
     }
 
