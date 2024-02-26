@@ -28,11 +28,14 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
+import io.micronaut.http.annotation.Delete
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.Post
 import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
+import io.micronaut.security.annotation.Secured
+import io.micronaut.security.rules.SecurityRule
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.configuration.BuildConfig
@@ -323,6 +326,16 @@ class ContainerTokenController {
             throw new NotFoundException("Missing container record for token: $token")
         // return the response 
         return HttpResponse.ok( DescribeWaveContainerResponse.create(token, data) )
+    }
+
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    @Delete('/container-token/{token}')
+    HttpResponse<ContainerRequestData> deleteContainerRequest(String token) {
+        def request = tokenService.evictContainerRequestFromCache(token)
+        if( !request ){
+            throw new NotFoundException("Missing container record for token: $token")
+        }
+        return HttpResponse.ok( request )
     }
 
     void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException{

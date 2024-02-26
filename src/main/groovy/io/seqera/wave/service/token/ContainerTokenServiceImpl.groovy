@@ -43,6 +43,9 @@ class ContainerTokenServiceImpl implements ContainerTokenService {
     @Inject
     private TokenConfig config
 
+    @Inject
+    private TokenCacheStore tokenCache
+
     @Override
     TokenData computeToken(ContainerRequestData request) {
         final token = LongRndKey.rndHex()
@@ -54,5 +57,17 @@ class ContainerTokenServiceImpl implements ContainerTokenService {
     @Override
     ContainerRequestData getRequest(String token) {
         return containerTokenStorage.get(token)
+    }
+
+    @Override
+    ContainerRequestData evictContainerRequestFromCache(String token) {
+        if(!token)
+            return null
+
+        def request = tokenCache.get(token)
+        if( request ) {
+            tokenCache.remove(token)
+        }
+        return request
     }
 }
