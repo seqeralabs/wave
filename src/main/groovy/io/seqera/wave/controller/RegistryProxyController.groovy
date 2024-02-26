@@ -23,7 +23,6 @@ import java.util.function.Consumer
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.core.io.buffer.ReferenceCounted
@@ -95,9 +94,6 @@ class RegistryProxyController {
     private ErrorHandler errorHandler
 
     @Inject
-    private MeterRegistry meterRegistry
-
-    @Inject
     private HttpClientConfig httpConfig
 
     @Inject
@@ -121,41 +117,6 @@ class RegistryProxyController {
                         .ok("OK")
                         .header("docker-distribution-api-version", "registry/2.0")
         )
-    }
-
-    protected void increaseWavePullsCounter(RoutePath route) {
-        try {
-            final tags = new ArrayList<String>(20)
-            tags.add('registry'); tags.add(route.registry)
-            tags.add('repository'); tags.add(route.repository)
-            tags.add('container'); tags.add(route.targetContainer)
-            if( route.identity.towerEndpoint ) {
-                tags.add('endpoint'); tags.add(route.identity.towerEndpoint)
-            }
-            if( route.identity.userId ) {
-                tags.add('userId'); tags.add(route.identity.userId as String)
-            }
-            if( route.identity.workspaceId ) {
-                tags.add('workspaceId'); tags.add(route.identity.workspaceId as String)
-            }
-
-            meterRegistry.counter('wave.pulls', tags as String[]).increment()
-        }
-        catch (Throwable e) {
-            log.error "Unable to increment wave pulls counter", e
-        }
-    }
-
-    protected void increaseFusionPullsCounter(RoutePath route) {
-        try {
-            final version = route.request?.containerConfig?.fusionVersion()
-            if( version ) {
-                meterRegistry.counter('fusion.pulls', 'version', version.number, 'arch', version.arch).increment()
-            }
-        }
-        catch (Throwable e) {
-            log.error "Unable to increment fusion pulls counter", e
-        }
     }
 
     @Get(uri="/{url:(.+)}", produces = "*/*")
@@ -272,9 +233,6 @@ class RegistryProxyController {
     }
 
     protected DigestStore manifestForPath(RoutePath route, HttpRequest httpRequest) {
-        // increase the quest counters
-        increaseWavePullsCounter(route)
-        increaseFusionPullsCounter(route)
         // when the request contains a wave token and the manifest is specified
         // using a container 'tag' instead of a 'digest' the request path is used as storage key
         // because the target container path could be not unique (multiple wave containers request
