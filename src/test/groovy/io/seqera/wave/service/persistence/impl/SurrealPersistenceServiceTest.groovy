@@ -236,7 +236,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def persistence = applicationContext.getBean(SurrealPersistenceService)
         and:
         def TOKEN = '123abc'
-        def cfg = new ContainerConfig(entrypoint: ['/opt/fusion'])
+        def cfg = new ContainerConfig(entrypoint: ['/opt/fusion'],
+                layers: [ new ContainerLayer(location: 'https://fusionfs.seqera.io/releases/v2.2.8-amd64.json')])
         def req = new SubmitContainerTokenRequest(
                 towerEndpoint: 'https://tower.nf',
                 towerWorkspaceId: 100,
