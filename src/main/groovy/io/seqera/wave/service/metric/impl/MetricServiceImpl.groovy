@@ -58,8 +58,4 @@ class MetricServiceImpl implements MetricService {
         persistenceService.getBuildsCount(filter)
     }
 
-    @Override
-    Long getDistinctMetrics(Metric metric, MetricFilter filter) {
-        persistenceService.getDistinctMetrics(metric, filter)
-    }
 }

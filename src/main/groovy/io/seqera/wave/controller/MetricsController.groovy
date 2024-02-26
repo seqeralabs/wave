@@ -43,7 +43,6 @@ import io.seqera.wave.service.metric.MetricFilter
 import io.seqera.wave.service.metric.MetricService
 import io.seqera.wave.service.metric.model.GetBuildsMetricsResponse
 import io.seqera.wave.service.metric.model.GetBuildsCountResponse
-import io.seqera.wave.service.metric.model.GetDistinctCountResponse
 import io.seqera.wave.service.metric.model.GetPullsCountResponse
 import io.seqera.wave.service.metric.model.GetPullsMetricsResponse
 import jakarta.inject.Inject
@@ -118,20 +117,6 @@ class MetricsController {
                                 .fusion(fusion)
                                 .build())
         return HttpResponse.ok(new GetPullsCountResponse(count))
-    }
-
-    @Get(uri = "/distinct/{metric}", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<?> getBuildsCount(@PathVariable String metric,
-                                   @Nullable @QueryValue String startDate,
-                                   @Nullable @QueryValue String endDate,
-                                   @Nullable @QueryValue Boolean fusion) {
-        final count = metricsService.getDistinctMetrics(
-                        Metric.valueOf(metric),
-                        new MetricFilter.Builder()
-                                .dates(parseStartDate(startDate), parseEndDate(endDate))
-                                .fusion(fusion)
-                                .build())
-        return HttpResponse.ok(new GetDistinctCountResponse(count))
     }
 
     static Instant parseStartDate(String date) {

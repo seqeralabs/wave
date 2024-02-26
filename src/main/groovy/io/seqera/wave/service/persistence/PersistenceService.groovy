@@ -159,13 +159,4 @@ interface PersistenceService {
      * @return The {@link Long} of total pull count
      */
     Long getPullsCount(MetricFilter filter)
-
-    /**
-     * Retrieve the total distinct metric count from storage
-     *
-     * @param metric , which metric to count
-     * @param MetricFilters , to filter records extracted from storage
-     * @return The {@link Long} of count of distinct metrics
-     */
-    Long getDistinctMetrics(Metric metric, MetricFilter filter)
 }

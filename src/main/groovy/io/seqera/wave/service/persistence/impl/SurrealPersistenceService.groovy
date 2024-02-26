@@ -224,7 +224,7 @@ class SurrealPersistenceService implements PersistenceService {
         return result
     }
 
-    // get builds count by specific metric (ip, userEmail, targetImage)
+    // get builds count by specific metric (ip, and userEmail)
     @Override
     LinkedHashMap<String, Long> getBuildsCountByMetric(Metric metric, MetricFilter filter){
         def statement = "SELECT ${metric.buildLabel}, count() as total_count FROM wave_build "+
@@ -268,7 +268,7 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
 
-    // get pulls count by specific metric (ip, user.email, sourceImage)
+    // get pulls count by specific metric (ip, and user.email)
     @Override
     LinkedHashMap<String, Long> getPullsCountByMetric(Metric metric, MetricFilter filter){
         def statement = "SELECT ${metric.pullLabel}, count() as total_count  FROM wave_request "+
@@ -296,20 +296,6 @@ class SurrealPersistenceService implements PersistenceService {
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
         log.trace("Total pulls count results: $results")
-        if( results && results.size() > 0)
-            return results[0].get("total_count")? results[0].get("total_count") as Long : 0
-        else
-            return 0
-    }
-
-    // get distinct metric (ip, user.email, sourceImage) count
-    @Override
-    Long getDistinctMetrics(Metric metric, MetricFilter filter){
-        final statement = "SELECT count(array) as total_count FROM " +
-                "(SELECT array::distinct(${metric.pullLabel}) as array FROM wave_request ${getPullMetricFilter(filter)}  GROUP ALL)"
-        final map = surrealDb.sqlAsMap(authorization, statement)
-        def results = map.get("result") as List<Map>
-        log.trace("Distinct metric results: $results")
         if( results && results.size() > 0)
             return results[0].get("total_count")? results[0].get("total_count") as Long : 0
         else

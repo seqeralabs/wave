@@ -57,14 +57,4 @@ interface MetricService {
      * @return The {@link Long} of total build count
      */
     Long getBuildsCount(MetricFilter filter)
-
-    /**
-     * get the total distinct metric count
-     *
-     * @param metric, which metric to count
-     * @param MetricFilters, to filter container requests for processing
-     * @return The {@link Long} of count of distinct metrics
-     */
-    Long getDistinctMetrics(Metric metric, MetricFilter filter)
-
 }

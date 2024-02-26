@@ -96,9 +96,6 @@ class LocalPersistenceService implements PersistenceService {
         else if(metric == Metric.user)
             result = builds.groupBy { it.userEmail ?: ANONYMOUS }
                     .collectEntries { [it.key, it.value.size()] }
-        else if(metric == Metric.image)
-            result = builds.groupBy { it.targetImage }
-                    .collectEntries { [it.key, it.value.size()] }
 
         result = result.sort{ a, b -> b.value - a.value  }
         return result.take(filter.limit)
@@ -131,9 +128,6 @@ class LocalPersistenceService implements PersistenceService {
         else if(metric == Metric.user)
             result = pulls.groupBy { it.user?.email ?: ANONYMOUS}
                     .collectEntries { [it.key, it.value.size()] }
-        else if(metric == Metric.image)
-            result = pulls.groupBy { it.sourceImage}
-                    .collectEntries { [it.key, it.value.size()] }
 
         result = result.sort{ a, b -> b.value - a.value  }
         return result.take(filter.limit)
@@ -142,21 +136,6 @@ class LocalPersistenceService implements PersistenceService {
     @Override
     Long getPullsCount(MetricFilter filter) {
         return getFilteredPulls(filter).size()
-    }
-
-    @Override
-    Long getDistinctMetrics(Metric metric, MetricFilter filter) {
-        def pulls = getFilteredPulls(filter)
-        if (metric == Metric.ip)
-            return pulls.collect{ it.ipAddress }
-                    .unique().size()
-        if (metric == Metric.user)
-            return pulls.findAll{ it.user != null }
-                    .collect{ it.user.email  }
-                    .unique().size()
-        if (metric == Metric.image)
-            return pulls.collect{ it.sourceImage }
-                    .unique().size()
     }
 
     Collection<WaveContainerRecord> getFilteredPulls(MetricFilter filter) {
