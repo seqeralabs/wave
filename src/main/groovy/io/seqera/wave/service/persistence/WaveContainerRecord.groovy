@@ -156,7 +156,7 @@ class WaveContainerRecord {
     /**
      * Whenever the request is for container with fusion
      */
-    final FusionVersion fusionVersion
+    final String fusionVersion
 
     WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequestData data, String waveImage, String addr, Instant expiration) {
         this.user = data.identity.user
@@ -180,7 +180,7 @@ class WaveContainerRecord {
         this.buildId = data.buildId
         this.buildNew = data.buildId ? data.buildNew : null
         this.freeze = data.buildId ? data.freeze : null
-        this.fusionVersion = request?.containerConfig?.fusionVersion()
+        this.fusionVersion = request?.containerConfig?.fusionVersion()?.number
     }
 
     WaveContainerRecord(WaveContainerRecord that, String sourceDigest, String waveDigest) {
