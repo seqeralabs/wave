@@ -78,7 +78,7 @@ class WaveContainerRecordTest extends Specification {
         container.timestamp == OffsetDateTime.parse(req.timestamp).toInstant()
         container.zoneId == OffsetDateTime.parse(req.timestamp).offset.id
         container.expiration == exp
-        container.fusionVersion == req.containerConfig.fusionVersion()
+        container.fusionVersion == req.containerConfig.fusionVersion().number
     }
 
     def 'should create wave record with valid timestamp when its null in submitContainerTokenRequest' () {
@@ -120,5 +120,6 @@ class WaveContainerRecordTest extends Specification {
         container.timestamp instanceof Instant
         container.zoneId == OffsetDateTime.now().offset.id
         container.expiration == exp
+        container.fusionVersion == null
     }
 }
