@@ -8,6 +8,17 @@
         <title>Wave container</title>
     </head>
 <style>
+    .table {
+        width: 100%;
+        border: 1px solid #dc3545;
+        border-radius: 5px;
+    }
+    .table td {
+        border: none;
+        padding-left: 15px;
+        padding-top: 15px;
+        padding-bottom: 15px;
+    }
     .button {
         color: #dc3545;
         text-align: center;
@@ -134,12 +145,45 @@
     </table>
     {{/if}}
 
-    <div style="display: flex; justify-content: center; align-items: center;">
-        <button class="button" onclick="redirectToDeleteContainerView()">Delete</button>
+    <div>
+        <h2>Danger Zone</h2>
     </div>
+    <div>
+        <table class="table">
+            <tr>
+                <td>Do you want to evict this wave container record from cache?</td>
+                <td>
+                    <button class="button" onclick="confirmEviction()">Yes evict it</button>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="status" class="display: none; text-align: center;">
+            <label id="statusLabel" ></label>
+    </div>
+
     <script>
-        function redirectToDeleteContainerView() {
-            window.location.href = "{{server_url}}/view/containers/{{request_token}}/delete";
+        function confirmEviction() {
+            const statusLabel = document.getElementById("statusLabel");
+            const status = document.getElementById("status");
+            fetch("{{server_url}}/container-token/{{request_token}}", {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+                    .then(response => {
+                        if (response.ok) {
+                            statusLabel.textContent = "This wave container record has been evicted from cache.";
+                        }else if (response.status === 404) {
+                            statusLabel.textContent = "This wave container record is already evicted from cache.";
+                        }
+                    })
+                    .catch(error => {
+                        statusLabel.textContent = "Error confirming eviction. Please try again later.";
+                    });
+            status.style.display = "block";
         }
     </script>
 
