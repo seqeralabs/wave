@@ -168,18 +168,14 @@
             const statusLabel = document.getElementById("statusLabel");
             const status = document.getElementById("status");
             fetch("{{server_url}}/container-token/{{request_token}}", {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
+                method: 'DELETE'
             }).then(response => {
                         if (response.ok) {
                             statusLabel.textContent = "This wave container record has been evicted from cache.";
                         }else if (response.status === 404) {
                             statusLabel.textContent = "This wave container record is already evicted from cache.";
                         }
-                    })
-                    .catch(error => {
+                    }).catch(error => {
                         statusLabel.textContent = "Error evicting the wave container record. Please try again later.";
                     });
             status.style.display = "block";
