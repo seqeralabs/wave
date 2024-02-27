@@ -1,4 +1,10 @@
 # Wave changelog
+1.4.0 - 27 Feb 2024
+- Add services to query Wave usage metadata  (#393) [6325b25c]
+- Add filter to trace slow endpoints [be49262f]
+- Add default to WaveContainerRecord when timestamp is null (#407) [f6eea93e]
+- Changed fusionVersion type to String (#411) [73d1cded]
+
 1.3.3 - 18 Feb 2024
 - Bump actions v4 [30a10876]
 - Add aws-java-sdk-sts and bump version 1.12.471 [c2ff7a8b]
