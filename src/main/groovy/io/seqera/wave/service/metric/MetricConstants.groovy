@@ -16,27 +16,15 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.tower.client
+package io.seqera.wave.service.metric
 
-import com.fasterxml.jackson.annotation.JsonProperty
-import groovy.transform.CompileStatic
-import groovy.transform.ToString
-import io.seqera.wave.WaveDefault
+/**
+ * Metric constants
+ *
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
+*/
+interface MetricConstants {
 
-@CompileStatic
-@ToString(includePackage = false, includeNames = true)
-class CredentialsDescription {
+    static final public String ANONYMOUS = 'anonymous'
 
-    String id
-    String provider
-    String registry
-
-    @JsonProperty("keys")
-    private void unpackRegistry(Map<String,Object> keys) {
-        if (this.provider == 'container-reg') {
-            this.registry = keys?.get("registry") ?: WaveDefault.DOCKER_IO
-        } else {
-            this.registry = null
-        }
-    }
 }
