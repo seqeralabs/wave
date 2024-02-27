@@ -165,4 +165,5 @@ class ViewController {
         binding.put('server_url', serverUrl)
         return HttpResponse.<Map<String,Object>>ok(binding)
     }
+
 }
