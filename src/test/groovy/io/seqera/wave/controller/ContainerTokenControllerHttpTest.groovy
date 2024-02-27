@@ -264,7 +264,7 @@ class ContainerTokenControllerHttpTest extends Specification {
         e.status.code == 401
     }
 
-    def 'should delete the token from token cache' () {
+    def 'should delete the record for the provided token from cache' () {
         given:
         def endpoint = 'http://tower.nf'
         def token = '12345'
@@ -288,8 +288,8 @@ class ContainerTokenControllerHttpTest extends Specification {
         def waveToken = resp.body().containerToken
 
         when:
-        def deleteResp = httpClient.toBlocking().exchange(HttpRequest.DELETE("/container-token/$waveToken")
-                .basicAuth("username", "password"), ContainerRequestData)
+        def req = HttpRequest.DELETE("/container-token/$waveToken").basicAuth("username", "password")
+        def deleteResp = httpClient.toBlocking().exchange(req, ContainerRequestData)
 
         then:
         deleteResp.status.code == 200
