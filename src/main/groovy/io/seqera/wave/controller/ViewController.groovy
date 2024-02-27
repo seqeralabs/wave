@@ -134,6 +134,7 @@ class ViewController {
         binding.build_repository = data.buildRepository ?: '-'
         binding.build_cache_repository = data.cacheRepository  ?: '-'
 
+
         return HttpResponse.<Map<String,Object>>ok(binding)
     }
 
