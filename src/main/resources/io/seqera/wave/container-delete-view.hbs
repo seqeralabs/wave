@@ -6,6 +6,26 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="description" content="Wave container request data">
         <title>Wave container</title>
+        <style>
+            .table {
+                width: 100%;
+                border: 1px solid #dc3545;
+                border-radius: 5px;
+            }
+            .table td {
+                border: none;
+                padding-left: 15px;
+                padding-top: 15px;
+                padding-bottom: 15px;
+            }
+            .button {
+                color: #dc3545;
+                text-align: center;
+                border-radius: 5px;
+                padding-top: 5px;
+                padding-bottom: 5px;
+            }
+        </style>
     </head>
 <body>
 <div style="font-family:'-apple-system', BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; padding: 30px; max-width: 800px; margin: 0 auto;">
@@ -14,13 +34,25 @@
         <img style="float:left; margin-top: 5px; margin-right: 10px; width: 30px;" src="/assets/wave-logo.png">
         <h1>Wave container</h1>
     </div>
-    <div style="display: flex; justify-content: center; align-items: center;">
-        <div style="text-align: center; padding: 20px; border: 1px solid #ccc; width: 300px;">
-            <p>Do you want to evict wave container with token: {{token}} fom cache?</p>
-            <button onclick="confirmEviction()">Yes</button>
-            <button onclick="cancelEviction()">No</button>
-        </div>
+    <div>
+        <h2>Danger Zone</h2>
     </div>
+        <div>
+            <table class="table">
+                <tr>
+                    <td>Do you want to evict wave container with token: {{token}} fom cache?</td>
+                    <td>
+                        <button class="button" onclick="confirmEviction()">Yes evict it</button>
+                    </td>
+                    <td>
+                        <button class="button" onclick="cancelEviction()">No</button>
+                    </td>
+                </tr>
+            </table>
+            <p></p>
+
+
+        </div>
 
     <script>
         function confirmEviction() {

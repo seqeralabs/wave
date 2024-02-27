@@ -175,7 +175,7 @@ class ViewController {
     @View("container-delete-view")
     @Get('/containers/{token}/delete')
     HttpResponse<Map<String,Object>> viewContainerDelete(String token) {
-        final binding = new HashMap(10)
+        final binding = new HashMap(2)
         binding.token = token
         binding.put('server_url', serverUrl)
         return HttpResponse.<Map<String,Object>>ok(binding)
