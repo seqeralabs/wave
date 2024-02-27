@@ -133,7 +133,6 @@ class ViewController {
         binding.build_conda_file = data.condaFile ?: '-'
         binding.build_repository = data.buildRepository ?: '-'
         binding.build_cache_repository = data.cacheRepository  ?: '-'
-        binding.authenticated = true
 
         return HttpResponse.<Map<String,Object>>ok(binding)
     }
