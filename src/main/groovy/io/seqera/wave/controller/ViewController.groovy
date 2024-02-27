@@ -24,9 +24,13 @@ import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
+import io.micronaut.http.annotation.Error
 import io.micronaut.http.annotation.Get
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
+import io.micronaut.security.annotation.Secured
+import io.micronaut.security.authentication.AuthorizationException
+import io.micronaut.security.rules.SecurityRule
 import io.micronaut.views.View
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.service.logs.BuildLogService
@@ -34,6 +38,7 @@ import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.scan.ScanResult
 import jakarta.inject.Inject
+import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
 import static io.seqera.wave.util.DataTimeUtils.formatDuration
 import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
 /**
@@ -128,7 +133,7 @@ class ViewController {
         binding.build_conda_file = data.condaFile ?: '-'
         binding.build_repository = data.buildRepository ?: '-'
         binding.build_cache_repository = data.cacheRepository  ?: '-'
-
+        binding.authenticated = true
 
         return HttpResponse.<Map<String,Object>>ok(binding)
     }
@@ -166,4 +171,19 @@ class ViewController {
         return HttpResponse.<Map<String,Object>>ok(binding)
     }
 
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    @View("container-delete-view")
+    @Get('/containers/{token}/delete')
+    HttpResponse<Map<String,Object>> viewContainerDelete(String token) {
+        final binding = new HashMap(10)
+        binding.token = token
+        binding.put('server_url', serverUrl)
+        return HttpResponse.<Map<String,Object>>ok(binding)
+    }
+
+    @Error(exception = AuthorizationException.class)
+    HttpResponse<?> handleAuthorizationException() {
+        return HttpResponse.unauthorized()
+                .header(WWW_AUTHENTICATE, "Basic realm=Wave Authentication")
+    }
 }

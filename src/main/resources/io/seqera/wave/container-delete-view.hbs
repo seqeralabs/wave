@@ -1,0 +1,66 @@
+<html>
+<head>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="Wave container request data">
+        <title>Wave container</title>
+    </head>
+<body>
+<div style="font-family:'-apple-system', BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; padding: 30px; max-width: 800px; margin: 0 auto;">
+
+    <div>
+        <img style="float:left; margin-top: 5px; margin-right: 10px; width: 30px;" src="/assets/wave-logo.png">
+        <h1>Wave container</h1>
+    </div>
+    <div style="display: flex; justify-content: center; align-items: center;">
+        <div style="text-align: center; padding: 20px; border: 1px solid #ccc; width: 300px;">
+            <p>Do you want to evict wave container with token: {{token}} fom cache?</p>
+            <button onclick="confirmEviction()">Yes</button>
+            <button onclick="cancelEviction()">No</button>
+        </div>
+    </div>
+
+    <script>
+        function confirmEviction() {
+            fetch("{{server_url}}/container-token/{{token}}", {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+                    .then(response => {
+                        if (response.ok) {
+                            alert("Eviction confirmed!");
+                            window.location.href = "{{server_url}}/view/containers/{{token}}";
+                        }else if (response.status === 404) {
+                            alert("This token is already evicted from cache");
+                            window.location.href = "{{server_url}}/view/containers/{{token}}";
+                        }
+                    })
+                    .catch(error => {
+                        alert("Error confirming eviction. Please try again later.");
+                    });
+        }
+
+        function cancelEviction() {
+            window.location.href = "{{server_url}}/view/containers/{{token}}";
+        }
+    </script>
+
+    <div class="footer" style="clear:both;width:100%;">
+        <hr class="footer-hr" style="height:0;overflow:visible;margin-top:30px;border:0;border-top:1px solid #eee;color:#999999;font-size:12px;line-height:18px;margin-bottom:30px;">
+        <img style="float:right; width: 150px;" src="/assets/seqera-logo.png">
+        <p class="footer-text" style="font-family:'-apple-system', BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';font-weight:normal;margin:0;margin-bottom:15px;color:#999999;font-size:12px;line-height:18px;">
+            <a href="{{server_url}}">{{server_url}}</a><br>
+            Seqera<br>
+            Carrer de Marià Aguiló, 28<br>
+            08005 Barcelona<br>
+        </p>
+    </div>
+
+</div>
+
+</body>
+</html>

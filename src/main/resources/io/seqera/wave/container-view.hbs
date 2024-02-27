@@ -125,6 +125,15 @@
     </table>
     {{/if}}
 
+    <div style="display: flex; justify-content: center; align-items: center;">
+        <button onclick="redirectToDeleteContainerView()">Delete</button>
+    </div>
+    <script>
+        function redirectToDeleteContainerView() {
+            window.location.href = "{{server_url}}/view/containers/{{request_token}}/delete";
+        }
+    </script>
+
     <div class="footer" style="clear:both;width:100%;">
         <hr class="footer-hr" style="height:0;overflow:visible;margin-top:30px;border:0;border-top:1px solid #eee;color:#999999;font-size:12px;line-height:18px;margin-bottom:30px;">
         <img style="float:right; width: 150px;" src="/assets/seqera-logo.png">
