@@ -48,6 +48,7 @@ import io.seqera.wave.api.ServiceInfo;
 import io.seqera.wave.api.SubmitContainerTokenRequest;
 import io.seqera.wave.api.SubmitContainerTokenResponse;
 import io.seqera.wave.cli.exception.BadClientResponseException;
+import io.seqera.wave.cli.exception.ClientConnectionException;
 import io.seqera.wave.cli.exception.IllegalCliArgumentException;
 import io.seqera.wave.cli.json.JsonHelper;
 import io.seqera.wave.cli.util.BuildInfo;
@@ -231,7 +232,8 @@ public class App implements Runnable {
                 app.run();
             }
         }
-        catch (IllegalCliArgumentException | CommandLine.ParameterException | BadClientResponseException e) {
+        catch (IllegalCliArgumentException | CommandLine.ParameterException | BadClientResponseException |
+               ClientConnectionException e) {
             System.err.println(e.getMessage());
             System.exit(1);
         }

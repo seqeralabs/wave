@@ -18,19 +18,18 @@
 package io.seqera.wave.cli.exception;
 
 /**
- * Model a client response http error
- * 
+ * Model a generic client connection exception
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-public class BadClientResponseException extends RuntimeException {
+public class ClientConnectionException extends RuntimeException {
 
-    public BadClientResponseException(String message) {
+    public ClientConnectionException(String message) {
         super(message);
     }
 
-    public BadClientResponseException(String message, Throwable cause) {
+    public ClientConnectionException(String message, Throwable cause) {
         super(message, cause);
     }
-
 
 }

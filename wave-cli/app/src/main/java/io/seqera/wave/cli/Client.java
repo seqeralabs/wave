@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import dev.failsafe.Failsafe;
+import dev.failsafe.FailsafeException;
 import dev.failsafe.RetryPolicy;
 import dev.failsafe.event.EventListener;
 import dev.failsafe.event.ExecutionAttemptedEvent;
@@ -42,6 +43,7 @@ import io.seqera.wave.api.SubmitContainerTokenRequest;
 import io.seqera.wave.api.SubmitContainerTokenResponse;
 import io.seqera.wave.cli.config.RetryOpts;
 import io.seqera.wave.cli.exception.BadClientResponseException;
+import io.seqera.wave.cli.exception.ClientConnectionException;
 import io.seqera.wave.cli.json.JsonHelper;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -103,8 +105,8 @@ public class Client {
                 throw new BadClientResponseException(msg);
             }
         }
-        catch (IOException e) {
-            throw new IllegalStateException("Unable to connect Wave service: " + endpoint);
+        catch (IOException | FailsafeException e) {
+            throw new ClientConnectionException("Unable to connect Wave service: " + endpoint, e);
         }
     }
 
@@ -128,8 +130,8 @@ public class Client {
                 throw new BadClientResponseException(msg);
             }
         }
-        catch (IOException e) {
-            throw new IllegalStateException("Unable to connect Wave service: " + endpoint);
+        catch (IOException | FailsafeException e) {
+            throw new ClientConnectionException("Unable to connect Wave service: " + endpoint, e);
         }
     }
 
@@ -231,8 +233,8 @@ public class Client {
                 throw new BadClientResponseException(msg);
             }
         }
-        catch (IOException e) {
-            throw new IllegalStateException("Unable to connect Wave service: " + endpoint);
+        catch (IOException | FailsafeException e) {
+            throw new ClientConnectionException("Unable to connect Wave service: " + endpoint, e);
         }
     }
 }
