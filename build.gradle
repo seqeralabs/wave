@@ -68,7 +68,7 @@ dependencies {
     implementation("io.micronaut.aws:micronaut-aws-parameter-store")
     implementation "software.amazon.awssdk:ecr"
     implementation "software.amazon.awssdk:ecrpublic"
-    implementation 'com.amazonaws:aws-java-sdk-ses:1.12.471'
+    implementation 'software.amazon.awssdk:ses:2.24.12'
     // include sts to allow the use of service account role - https://stackoverflow.com/a/73306570
     implementation 'com.amazonaws:aws-java-sdk-sts:1.12.471'
     implementation 'org.yaml:snakeyaml:2.0'

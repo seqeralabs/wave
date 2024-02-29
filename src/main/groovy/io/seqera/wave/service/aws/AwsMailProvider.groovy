@@ -21,9 +21,6 @@ package io.seqera.wave.service.aws
 import java.nio.ByteBuffer
 import javax.mail.internet.MimeMessage
 
-import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClientBuilder
-import com.amazonaws.services.simpleemail.model.RawMessage
-import com.amazonaws.services.simpleemail.model.SendRawEmailRequest
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Primary
@@ -32,6 +29,11 @@ import io.seqera.mail.MailProvider
 import io.seqera.mail.Mailer
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Singleton
+import software.amazon.awssdk.core.SdkBytes
+import software.amazon.awssdk.services.ses.SesClient
+import software.amazon.awssdk.services.ses.model.RawMessage
+import software.amazon.awssdk.services.ses.model.SendRawEmailRequest
+
 /**
  * Send a mime message via AWS SES raw API
  *
@@ -54,15 +56,19 @@ class AwsMailProvider implements MailProvider {
     @Override
     void send(MimeMessage message, Mailer mailer) {
         //get mail client
-        final client = AmazonSimpleEmailServiceClientBuilder
-                .standard()
-                .build()
+        final client = SesClient.builder().build();
         // dump the message to a buffer
         final outputStream = new ByteArrayOutputStream()
         message.writeTo(outputStream)
+        final sdkBytes = SdkBytes.fromByteArray(outputStream.toByteArray());
         // send the email
-        final rawMessage = new RawMessage(ByteBuffer.wrap(outputStream.toByteArray()))
-        final result = client.sendRawEmail(new SendRawEmailRequest(rawMessage));
+        final rawMessage = RawMessage.builder()
+                .data(sdkBytes)
+                .build()
+        final email = SendRawEmailRequest.builder()
+                .rawMessage(rawMessage)
+                .build()
+        final result = client.sendRawEmail(email);
         log.debug "Mail message sent: ${result}"
     }
 }
