@@ -100,3 +100,165 @@ Provides basic information about the service status.
     }
 }
 ```
+
+## Metrics APIs
+
+These APIs provide usage (builds and pulls) metrics of wave per ip and user.
+These APIs required basic authentication, so you need to provide username and password while calling these APIs.
+
+All Metrics API endpoints have these three common optional query parameters:
+
+| Name      | Description                                                                                     | sample Value |
+|-----------|-------------------------------------------------------------------------------------------------|--------------|
+| startDate | format: `yyyy-mm-dd`, The data of this date will be included in computing the resulting metric. | 2024-02-29   |
+| entDate   | format: `yyyy-mm-dd`, The data of this date will be included in computing the resulting metric. | 2024-02-29   |
+| limit     | integer from 0 to 1000 default is 100                                                           | 10           |
+
+
+### Build Metrics APIs
+
+These APIs are used to get the metrics about the container builds by Wave.
+
+All Metrics API endpoints have these one common optional query parameters:
+
+| Name    | Description                                                                                                      | sample Value |
+|---------|------------------------------------------------------------------------------------------------------------------|--------------|
+| success | `true` or `false` is allowed and its used to get the metrics about successful container builds performed by Wave | true         |
+
+Below are the different build metrics API endpoints:
+
+### GET `/v1alpha1/metrics/builds`
+
+This endpoint is used to get the total numbers of builds performed by Wave.
+
+### Response
+
+```json
+{
+    count: integer
+}
+```
+
+#### Example
+
+```
+% curl -u foo:bar "http://localhost:9090/v1alpha1/metrics/builds?startDate=2024-02-29&endDate=2024-02-29&success=true"
+{"count":2}
+```
+
+
+### GET `/v1alpha1/metrics/builds/ip`
+
+This endpoint is used to get the total numbers of builds per IP performed by Wave.
+
+### Response
+
+```json
+{
+    result: {
+        <IP_ADDRESS>: integer
+    }
+}
+```
+
+#### Example
+
+```
+% curl -u foo:bar "http://localhost:9090/v1alpha1/metrics/builds/ip?startDate=2024-02-29&endDate=2024-02-29&success=true"
+{"result":{"127.0.0.1":2}}
+```
+
+### GET `/v1alpha1/metrics/builds/user`
+
+This endpoint is used to get the total numbers of builds per User performed by Wave.
+
+### Response
+
+```json
+{
+    result: {
+        <EMAIL_ADDRESS>: integer
+    }
+}
+```
+
+#### Example
+
+```
+% curl -u foo:bar "http://localhost:9090/v1alpha1/metrics/builds/user?startDate=2024-02-29&endDate=2024-02-29&success=true"
+{"result":{"test_metrics@seqera.io":2}}
+```
+
+### Pull Metrics APIs
+
+These APIs are used to get the metrics about the container pulls by Wave.
+
+All Metrics API endpoints have these one common optional query parameters:
+
+| Name   | Description                                                                                                   | sample Value |
+|--------|---------------------------------------------------------------------------------------------------------------|--------------|
+| fusion | `true` or `false` is allowed and its used to get the metrics about containers with fusion pulled through Wave | true         |
+
+Below are the different pull metrics API endpoints:
+
+### GET `/v1alpha1/metrics/pulls`
+
+This endpoint is used to get the total numbers of pulls performed by Wave.
+
+### Response
+
+```json
+{
+    count: integer
+}
+```
+
+#### Example
+
+```
+% curl -u foo:bar "http://localhost:9090/v1alpha1/metrics/pulls?startDate=2024-02-29&endDate=2024-02-29&fusion=true"
+{"count":2}
+```
+
+
+### GET `/v1alpha1/metrics/pulls/ip`
+
+This endpoint is used to get the total numbers of pulls through Wave per IP.
+
+### Response
+
+```json
+{
+    result: {
+        <IP_ADDRESS>: integer
+    }
+}
+```
+
+#### Example
+
+```
+% curl -u foo:bar "http://localhost:9090/v1alpha1/metrics/pulls/ip?startDate=2024-02-29&endDate=2024-02-29&success=true"
+{"result":{"127.0.0.1":2}}
+```
+
+### GET `/v1alpha1/metrics/pulls/user`
+
+This endpoint is used to get the total numbers of pulls through Wave per user.
+
+### Response
+
+```json
+{
+    result: {
+        <EMAIL_ADDRESS>: integer
+    }
+}
+```
+
+#### Example
+
+```
+% curl -u foo:bar "http://localhost:9090/v1alpha1/metrics/pulls/user?startDate=2024-02-29&endDate=2024-02-29&fusion=true"
+{"result":{"test_metrics@seqera.io":2}}
+```
