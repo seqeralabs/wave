@@ -108,18 +108,18 @@ These APIs required basic authentication, so you need to provide username and pa
 
 All Metrics API endpoints have these three common optional query parameters:
 
-| Name      | Description                                                                                     | sample Value |
-|-----------|-------------------------------------------------------------------------------------------------|--------------|
-| startDate | format: `yyyy-mm-dd`, The data of this date will be included in computing the resulting metric. | 2024-02-29   |
-| endDate   | format: `yyyy-mm-dd`, The data of this date will be included in computing the resulting metric. | 2024-02-29   |
-| limit     | integer from 0 to 1000 and default is 100                                                       | 10           |
+| Name      | Description                                                                             | sample Value |
+|-----------|-----------------------------------------------------------------------------------------|--------------|
+| startDate | Format: `yyyy-mm-dd`, The data of this date will be included in computing the response. | 2024-02-29   |
+| endDate   | Format: `yyyy-mm-dd`, The data of this date will be included in computing the response. | 2024-02-29   |
+| limit     | Integer from `0` to `1000` and default is `100`                                         | 10           |
 
 
 ### Build Metrics APIs
 
 These APIs are used to get the metrics about the container builds by Wave.
 
-All Metrics API endpoints have one common optional query parameters:
+All build metrics API endpoints have one common optional query parameter:
 
 | Name    | Description                                                                                                   | sample Value |
 |---------|---------------------------------------------------------------------------------------------------------------|--------------|
@@ -191,9 +191,9 @@ This endpoint is used to get the total numbers of builds per User performed by W
 
 ### Pull Metrics APIs
 
-These APIs are used to get the metrics about the container pulls by Wave.
+These APIs are used to get the metrics about the container pulls through Wave.
 
-All Metrics API endpoints have one common optional query parameters:
+All pull metrics API endpoints have one common optional query parameter:
 
 | Name   | Description                                                                                                | sample Value |
 |--------|------------------------------------------------------------------------------------------------------------|--------------|
