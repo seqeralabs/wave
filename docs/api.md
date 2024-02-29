@@ -108,12 +108,13 @@ These APIs required basic authentication, so you need to provide username and pa
 
 All Metrics API endpoints have these three common optional query parameters:
 
-| Name      | Description                                                                             | sample Value |
-|-----------|-----------------------------------------------------------------------------------------|--------------|
-| startDate | Format: `yyyy-mm-dd`, The data of this date will be included in computing the response. | 2024-02-29   |
-| endDate   | Format: `yyyy-mm-dd`, The data of this date will be included in computing the response. | 2024-02-29   |
-| limit     | Integer from `0` to `1000` and default is `100`                                         | 10           |
+| Name      | Description                                                                                   | sample Value |
+|-----------|-----------------------------------------------------------------------------------------------|--------------|
+| startDate | Format: `yyyy-mm-dd`, The data of this date will be included in computing the response.       | 2024-02-29   |
+| endDate   | Format: `yyyy-mm-dd`, The data of this date will be included in computing the response.       | 2024-02-29   |
+| limit     | Integer from `0` to `1000` and default is `100`. It limits the number of records in response. | 10           |
 
+Note: If you only provide startDate then endDate will be today's date. 
 
 ### Build Metrics APIs
 
