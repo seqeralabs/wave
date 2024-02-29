@@ -103,7 +103,7 @@ Provides basic information about the service status.
 
 ## Metrics APIs
 
-These APIs provide usage (builds and pulls) metrics of wave per ip and user.
+These APIs provide usage (builds and pulls) metrics of Wave per IP and user.
 These APIs required basic authentication, so you need to provide username and password while calling these APIs.
 
 All Metrics API endpoints have these three common optional query parameters:
@@ -111,19 +111,19 @@ All Metrics API endpoints have these three common optional query parameters:
 | Name      | Description                                                                                     | sample Value |
 |-----------|-------------------------------------------------------------------------------------------------|--------------|
 | startDate | format: `yyyy-mm-dd`, The data of this date will be included in computing the resulting metric. | 2024-02-29   |
-| entDate   | format: `yyyy-mm-dd`, The data of this date will be included in computing the resulting metric. | 2024-02-29   |
-| limit     | integer from 0 to 1000 default is 100                                                           | 10           |
+| endDate   | format: `yyyy-mm-dd`, The data of this date will be included in computing the resulting metric. | 2024-02-29   |
+| limit     | integer from 0 to 1000 and default is 100                                                       | 10           |
 
 
 ### Build Metrics APIs
 
 These APIs are used to get the metrics about the container builds by Wave.
 
-All Metrics API endpoints have these one common optional query parameters:
+All Metrics API endpoints have one common optional query parameters:
 
-| Name    | Description                                                                                                      | sample Value |
-|---------|------------------------------------------------------------------------------------------------------------------|--------------|
-| success | `true` or `false` is allowed and its used to get the metrics about successful container builds performed by Wave | true         |
+| Name    | Description                                                                                                   | sample Value |
+|---------|---------------------------------------------------------------------------------------------------------------|--------------|
+| success | `true` or `false` is allowed and its used to get the metrics of successful container builds performed by Wave | true         |
 
 Below are the different build metrics API endpoints:
 
@@ -193,17 +193,17 @@ This endpoint is used to get the total numbers of builds per User performed by W
 
 These APIs are used to get the metrics about the container pulls by Wave.
 
-All Metrics API endpoints have these one common optional query parameters:
+All Metrics API endpoints have one common optional query parameters:
 
-| Name   | Description                                                                                                   | sample Value |
-|--------|---------------------------------------------------------------------------------------------------------------|--------------|
-| fusion | `true` or `false` is allowed and its used to get the metrics about containers with fusion pulled through Wave | true         |
+| Name   | Description                                                                                                | sample Value |
+|--------|------------------------------------------------------------------------------------------------------------|--------------|
+| fusion | `true` or `false` is allowed and its used to get the metrics of containers with fusion pulled through Wave | true         |
 
 Below are the different pull metrics API endpoints:
 
 ### GET `/v1alpha1/metrics/pulls`
 
-This endpoint is used to get the total numbers of pulls performed by Wave.
+This endpoint is used to get the total numbers of containers pulled through Wave.
 
 ### Response
 
