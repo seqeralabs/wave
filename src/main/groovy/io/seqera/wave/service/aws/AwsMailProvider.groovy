@@ -25,6 +25,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
+import io.micronaut.context.annotation.Value
 import io.seqera.mail.MailProvider
 import io.seqera.mail.Mailer
 import jakarta.annotation.PostConstruct
@@ -48,6 +49,9 @@ import software.amazon.awssdk.services.ses.model.SendRawEmailRequest
 @Slf4j
 class AwsMailProvider implements MailProvider {
 
+    @Value("wave.mail.ses.region")
+    String region
+
     @PostConstruct
     private void init() {
         log.debug "+ Creating AWS SES mail provider"
@@ -56,7 +60,9 @@ class AwsMailProvider implements MailProvider {
     @Override
     void send(MimeMessage message, Mailer mailer) {
         //get mail client
-        final client = SesClient.builder().build();
+        final client = SesClient.builder()
+                .region(region)
+                .build();
         // dump the message to a buffer
         final outputStream = new ByteArrayOutputStream()
         message.writeTo(outputStream)
