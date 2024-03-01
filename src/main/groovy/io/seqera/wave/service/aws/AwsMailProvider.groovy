@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.aws
 
-import java.nio.ByteBuffer
 import javax.mail.internet.MimeMessage
 
 import groovy.transform.CompileStatic
@@ -34,6 +33,7 @@ import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.ses.SesClient
 import software.amazon.awssdk.services.ses.model.RawMessage
 import software.amazon.awssdk.services.ses.model.SendRawEmailRequest
+import software.amazon.awssdk.regions.Region
 
 /**
  * Send a mime message via AWS SES raw API
@@ -61,7 +61,7 @@ class AwsMailProvider implements MailProvider {
     void send(MimeMessage message, Mailer mailer) {
         //get mail client
         final client = SesClient.builder()
-                .region(region)
+                .region(Region.of(region))
                 .build();
         // dump the message to a buffer
         final outputStream = new ByteArrayOutputStream()
