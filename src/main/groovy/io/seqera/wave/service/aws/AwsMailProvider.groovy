@@ -30,11 +30,10 @@ import io.seqera.mail.Mailer
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Singleton
 import software.amazon.awssdk.core.SdkBytes
+import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.ses.SesClient
 import software.amazon.awssdk.services.ses.model.RawMessage
 import software.amazon.awssdk.services.ses.model.SendRawEmailRequest
-import software.amazon.awssdk.regions.Region
-
 /**
  * Send a mime message via AWS SES raw API
  *
