@@ -61,7 +61,7 @@ class AwsMailProvider implements MailProvider {
         //get mail client
         final client = SesClient.builder()
                 .region(Region.of(region))
-                .build();
+                .build()
         // dump the message to a buffer
         final outputStream = new ByteArrayOutputStream()
         message.writeTo(outputStream)
