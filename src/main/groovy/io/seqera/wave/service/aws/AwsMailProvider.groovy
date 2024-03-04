@@ -25,6 +25,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
 import io.seqera.mail.MailProvider
 import io.seqera.mail.Mailer
 import jakarta.annotation.PostConstruct
@@ -48,6 +49,7 @@ import software.amazon.awssdk.services.ses.model.SendRawEmailRequest
 @Slf4j
 class AwsMailProvider implements MailProvider {
 
+    @Nullable
     @Value("wave.mail.ses.region")
     String region
 
@@ -59,9 +61,10 @@ class AwsMailProvider implements MailProvider {
     @Override
     void send(MimeMessage message, Mailer mailer) {
         //get mail client
-        final client = SesClient.builder()
-                .region(Region.of(region))
-                .build()
+        final clientBuilder = SesClient.builder()
+        if( region )
+                clientBuilder.region(Region.of(region))
+        final client = clientBuilder.build()
         // dump the message to a buffer
         final outputStream = new ByteArrayOutputStream()
         message.writeTo(outputStream)
