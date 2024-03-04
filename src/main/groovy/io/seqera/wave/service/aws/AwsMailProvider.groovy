@@ -49,10 +49,6 @@ import software.amazon.awssdk.services.ses.model.SendRawEmailRequest
 @Slf4j
 class AwsMailProvider implements MailProvider {
 
-    @Nullable
-    @Value("wave.mail.ses.region")
-    String region
-
     @PostConstruct
     private void init() {
         log.debug "+ Creating AWS SES mail provider"
@@ -61,10 +57,7 @@ class AwsMailProvider implements MailProvider {
     @Override
     void send(MimeMessage message, Mailer mailer) {
         //get mail client
-        final clientBuilder = SesClient.builder()
-        if( region )
-                clientBuilder.region(Region.of(region))
-        final client = clientBuilder.build()
+        final client = SesClient.builder().build()
         // dump the message to a buffer
         final outputStream = new ByteArrayOutputStream()
         message.writeTo(outputStream)
