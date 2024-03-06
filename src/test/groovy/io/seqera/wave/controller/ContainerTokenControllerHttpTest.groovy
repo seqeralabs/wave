@@ -226,8 +226,8 @@ class ContainerTokenControllerHttpTest extends Specification {
     def 'should create token request for anonymous user with include' () {
         given:
         def request = new SubmitContainerTokenRequest(
-                containerImage: 'ubuntu:latest',
-                containerIncludes: ['busybox'],
+                containerImage: 'ubuntu:sha256:aa772c98400ef833586d1d517d3e8de670f7e712bf581ce6053165081773259d',
+                containerIncludes: ['busybox:sha256:4be429a5fbb2e71ae7958bfa558bc637cf3a61baf40a708cb8fff532b39e52d0'],
                 containerConfig: new ContainerConfig(workingDir: '/foo'),
                 containerPlatform: 'arm64',)
         when:

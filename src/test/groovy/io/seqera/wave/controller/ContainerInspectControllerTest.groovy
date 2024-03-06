@@ -49,7 +49,7 @@ class ContainerInspectControllerTest extends Specification {
 
     def 'should inspect container' () {
         when:
-        def inspect = new ContainerInspectRequest(containerImage: 'busybox:1.36.1-glibc')
+        def inspect = new ContainerInspectRequest(containerImage: 'library/busybox@sha256:4be429a5fbb2e71ae7958bfa558bc637cf3a61baf40a708cb8fff532b39e52d0')
         def req = HttpRequest.POST("/v1alpha1/inspect", inspect)
         def resp = client.toBlocking().exchange(req, ContainerInspectResponse)
         then:
@@ -57,8 +57,8 @@ class ContainerInspectControllerTest extends Specification {
         and:
         resp.body().container.registry == 'docker.io'
         resp.body().container.imageName == 'library/busybox'
-        resp.body().container.reference == '1.36.1-glibc'
-        resp.body().container.digest == 'sha256:8425131865cec8fba4d2db137c883902155e0d58fcbb301690693161cc903910'
+        resp.body().container.reference == 'sha256:4be429a5fbb2e71ae7958bfa558bc637cf3a61baf40a708cb8fff532b39e52d0'
+        resp.body().container.digest == 'sha256:4be429a5fbb2e71ae7958bfa558bc637cf3a61baf40a708cb8fff532b39e52d0'
         resp.body().container.config.architecture == 'amd64'
         resp.body().container.manifest.schemaVersion == 2
         resp.body().container.manifest.mediaType == 'application/vnd.oci.image.manifest.v1+json'
