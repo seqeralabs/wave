@@ -34,6 +34,7 @@ import io.seqera.wave.core.spec.ManifestSpec
 import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.storage.Storage
+import io.seqera.wave.util.Escape
 import io.seqera.wave.util.RegHelper
 import static io.seqera.wave.model.ContentType.DOCKER_IMAGE_CONFIG_V1
 import static io.seqera.wave.model.ContentType.DOCKER_IMAGE_INDEX_V2
@@ -303,12 +304,11 @@ class ContainerAugmenter {
         return new Tuple2<String, Integer>(digest, size)
     }
 
-    protected String getFirst(value) {
+    protected static String getFirst(value) {
         if( !value )
             return null
         if( value instanceof List ) {
-            if( value.size()>1 ) log.warn "Invalid Entrypoint value: $value -- Only the first array element will be taken"
-            return value.get(0)
+            return Escape.cli(value)
         }
         if( value instanceof String )
             return value
