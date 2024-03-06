@@ -248,10 +248,10 @@ class ContainerTokenControllerHttpTest extends Specification {
         then:
         def layers = resp2.body().request.containerConfig.layers
         layers.size()==1
-        layers[0].location == 'docker://docker.io/v2/library/busybox/blobs/sha256:9ad63333ebc97e32b987ae66aa3cff81300e4c2e6d2f2395cef8a3ae18b249fe'
-        layers[0].gzipDigest == 'sha256:9ad63333ebc97e32b987ae66aa3cff81300e4c2e6d2f2395cef8a3ae18b249fe'
-        layers[0].gzipSize == 2220094
-        layers[0].tarDigest == 'sha256:2e112031b4b923a873c8b3d685d48037e4d5ccd967b658743d93a6e56c3064b9'
+        layers[0].location == 'docker://docker.io/v2/library/busybox/blobs/sha256:7b2699543f22d5b8dc8d66a5873eb246767bca37232dee1e7a3b8c9956bceb0c'
+        layers[0].gzipDigest == 'sha256:7b2699543f22d5b8dc8d66a5873eb246767bca37232dee1e7a3b8c9956bceb0c'
+        layers[0].gzipSize == 2152262
+        layers[0].tarDigest == 'sha256:95c4a60383f7b6eb6f7b8e153a07cd6e896de0476763bef39d0f6cf3400624bd'
     }
 
 }

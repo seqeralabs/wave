@@ -58,18 +58,18 @@ class ContainerInspectControllerTest extends Specification {
         resp.body().container.registry == 'docker.io'
         resp.body().container.imageName == 'library/busybox'
         resp.body().container.reference == '1.36.1-glibc'
-        resp.body().container.digest == 'sha256:e046063223f7eaafbfbc026aa3954d9a31b9f1053ba5db04a4f1fdc97abd8963'
+        resp.body().container.digest == 'sha256:8425131865cec8fba4d2db137c883902155e0d58fcbb301690693161cc903910'
         resp.body().container.config.architecture == 'amd64'
         resp.body().container.manifest.schemaVersion == 2
         resp.body().container.manifest.mediaType == 'application/vnd.oci.image.manifest.v1+json'
         resp.body().container.manifest.config.mediaType == 'application/vnd.oci.image.config.v1+json'
-        resp.body().container.manifest.config.digest == 'sha256:3f57d9401f8d42f986df300f0c69192fc41da28ccc8d797829467780db3dd741'
-        resp.body().container.manifest.config.size == 581
+        resp.body().container.manifest.config.digest == 'sha256:ba5dc23f65d4cc4a4535bce55cf9e63b068eb02946e3422d3587e8ce803b6aab'
+        resp.body().container.manifest.config.size == 372
         resp.body().container.manifest.layers[0].mediaType == 'application/vnd.oci.image.layer.v1.tar+gzip'
-        resp.body().container.manifest.layers[0].digest == 'sha256:9ad63333ebc97e32b987ae66aa3cff81300e4c2e6d2f2395cef8a3ae18b249fe'
-        resp.body().container.manifest.layers[0].size == 2220094
+        resp.body().container.manifest.layers[0].digest == 'sha256:7b2699543f22d5b8dc8d66a5873eb246767bca37232dee1e7a3b8c9956bceb0c'
+        resp.body().container.manifest.layers[0].size == 2152262
         resp.body().container.config.rootfs.type == 'layers'
-        resp.body().container.config.rootfs.diff_ids == ['sha256:2e112031b4b923a873c8b3d685d48037e4d5ccd967b658743d93a6e56c3064b9']
+        resp.body().container.config.rootfs.diff_ids == ['sha256:95c4a60383f7b6eb6f7b8e153a07cd6e896de0476763bef39d0f6cf3400624bd']
     }
 
 }
