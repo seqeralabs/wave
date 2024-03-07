@@ -34,6 +34,7 @@ import io.seqera.wave.core.spec.ManifestSpec
 import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.storage.Storage
+import io.seqera.wave.util.JacksonHelper
 import io.seqera.wave.util.RegHelper
 import static io.seqera.wave.model.ContentType.DOCKER_IMAGE_CONFIG_V1
 import static io.seqera.wave.model.ContentType.DOCKER_IMAGE_INDEX_V2
@@ -303,12 +304,13 @@ class ContainerAugmenter {
         return new Tuple2<String, Integer>(digest, size)
     }
 
-    protected String getFirst(value) {
+    protected static String processEntryPoint(value) {
         if( !value )
             return null
         if( value instanceof List ) {
-            if( value.size()>1 ) log.warn "Invalid Entrypoint value: $value -- Only the first array element will be taken"
-            return value.get(0)
+            if( value.size() == 1 )
+                return value.get(0)
+            return JacksonHelper.toJson(value)
         }
         if( value instanceof String )
             return value
@@ -325,7 +327,7 @@ class ContainerAugmenter {
     }
 
     protected Map enrichConfig(Map config){
-        final entryChain = getFirst(config.Entrypoint)
+        final entryChain = processEntryPoint(config.Entrypoint)
         if( containerConfig.entrypoint ) {
             config.Entrypoint = containerConfig.entrypoint
         }
