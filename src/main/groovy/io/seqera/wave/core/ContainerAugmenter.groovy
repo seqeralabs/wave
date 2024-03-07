@@ -34,7 +34,6 @@ import io.seqera.wave.core.spec.ManifestSpec
 import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.storage.Storage
-import io.seqera.wave.util.Escape
 import io.seqera.wave.util.JacksonHelper
 import io.seqera.wave.util.RegHelper
 import static io.seqera.wave.model.ContentType.DOCKER_IMAGE_CONFIG_V1
