@@ -39,8 +39,9 @@ class WaveContainerRecordTest extends Specification {
     
     def 'should create wave record' () {
         given:
-        def lyr = new ContainerLayer(location: 'data:12346')
-        def cfg = new ContainerConfig(entrypoint: ['/opt/fusion'], layers: [lyr])
+        def lyr1 = new ContainerLayer(location: 'data:12346')
+        def lyr2 = new ContainerLayer(location: 'https://fusionfs.seqera.io/releases/pkg/2/2/8/fusion-amd64.tar.gz')
+        def cfg = new ContainerConfig(entrypoint: ['/opt/fusion'], layers: [lyr1, lyr2])
         def req = new SubmitContainerTokenRequest(
                 towerEndpoint: 'https://tower.nf',
                 towerWorkspaceId: 100,
@@ -77,6 +78,7 @@ class WaveContainerRecordTest extends Specification {
         container.timestamp == OffsetDateTime.parse(req.timestamp).toInstant()
         container.zoneId == OffsetDateTime.parse(req.timestamp).offset.id
         container.expiration == exp
+        container.fusionVersion == req.containerConfig.fusionVersion().number
     }
 
     def 'should create wave record with valid timestamp when its null in submitContainerTokenRequest' () {
@@ -118,5 +120,6 @@ class WaveContainerRecordTest extends Specification {
         container.timestamp instanceof Instant
         container.zoneId == OffsetDateTime.now().offset.id
         container.expiration == exp
+        container.fusionVersion == null
     }
 }
