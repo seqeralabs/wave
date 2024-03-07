@@ -305,7 +305,7 @@ class ContainerAugmenter {
         return new Tuple2<String, Integer>(digest, size)
     }
 
-    protected static String getFirst(value) {
+    protected static String processEntryPoint(value) {
         if( !value )
             return null
         if( value instanceof List ) {
@@ -328,7 +328,7 @@ class ContainerAugmenter {
     }
 
     protected Map enrichConfig(Map config){
-        final entryChain = getFirst(config.Entrypoint)
+        final entryChain = processEntryPoint(config.Entrypoint)
         if( containerConfig.entrypoint ) {
             config.Entrypoint = containerConfig.entrypoint
         }
