@@ -49,7 +49,8 @@ class ContainerInspectControllerTest extends Specification {
 
     def 'should inspect container' () {
         when:
-        def inspect = new ContainerInspectRequest(containerImage: 'library/busybox@sha256:4be429a5fbb2e71ae7958bfa558bc637cf3a61baf40a708cb8fff532b39e52d0')
+        def inspect = new ContainerInspectRequest(containerImage:
+                'library/busybox@sha256:4be429a5fbb2e71ae7958bfa558bc637cf3a61baf40a708cb8fff532b39e52d0')
         def req = HttpRequest.POST("/v1alpha1/inspect", inspect)
         def resp = client.toBlocking().exchange(req, ContainerInspectResponse)
         then:
