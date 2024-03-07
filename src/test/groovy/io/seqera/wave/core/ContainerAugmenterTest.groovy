@@ -864,9 +864,9 @@ class ContainerAugmenterTest extends Specification {
         INPUT_VALUE                         | ENTRYPOINT
         null                                |null
         'entrypoint'                        |'entrypoint'
-        ['entrypoint', 'list']              |'entrypoint list'
-        ["/bin/sh", "-c", "\"echo Hola\""]  | '/bin/sh -c \'"echo Hola"\''
-        ["foo", "bar foo"]                  | 'foo \'bar foo\''
-        ["foo", "'bar foo'"]                | 'foo \\\'bar\\ foo\\\''
+        ['entrypoint', 'list']              |'["entrypoint","list"]'
+        ["/bin/sh", "-c", "\"echo Hola\""]  |'["/bin/sh","-c","\\"echo Hola\\""]'
+        ["foo", "bar foo"]                  |'["foo","bar foo"]'
+        ["foo", "'bar foo'"]                |'["foo","\'bar foo\'"]'
     }
 }

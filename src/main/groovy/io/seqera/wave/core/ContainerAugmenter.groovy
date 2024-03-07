@@ -35,6 +35,7 @@ import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.util.Escape
+import io.seqera.wave.util.JacksonHelper
 import io.seqera.wave.util.RegHelper
 import static io.seqera.wave.model.ContentType.DOCKER_IMAGE_CONFIG_V1
 import static io.seqera.wave.model.ContentType.DOCKER_IMAGE_INDEX_V2
@@ -308,7 +309,9 @@ class ContainerAugmenter {
         if( !value )
             return null
         if( value instanceof List ) {
-            return Escape.cli(value)
+            if( value.size() == 1 )
+                return value.get(0)
+            return JacksonHelper.toJson(value)
         }
         if( value instanceof String )
             return value
