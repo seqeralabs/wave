@@ -20,11 +20,15 @@ package io.seqera.wave.service.persistence.impl
 
 import groovy.transform.CompileStatic
 import io.seqera.wave.core.ContainerDigestPair
+import io.seqera.wave.service.metric.Metric
+import io.seqera.wave.service.metric.MetricFilter
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import jakarta.inject.Singleton
+
+import static io.seqera.wave.service.metric.MetricConstants.ANONYMOUS
 /**
  * Basic persistence for dev purpose
  *
@@ -82,4 +86,71 @@ class LocalPersistenceService implements PersistenceService {
         scanStore.get(scanId)
     }
 
+    @Override
+    Map<String, Long> getBuildsCountByMetric(Metric metric, MetricFilter filter) {
+        def builds = getFilteredBuilds(filter)
+        Map<String, Long> result = null
+        if(metric == Metric.ip)
+            result = builds.groupBy { it.requestIp }
+                    .collectEntries { [it.key, it.value.size()] }
+        else if(metric == Metric.user)
+            result = builds.groupBy { it.userEmail ?: ANONYMOUS }
+                    .collectEntries { [it.key, it.value.size()] }
+
+        result = result.sort{ a, b -> b.value - a.value  }
+        return result.take(filter.limit)
+    }
+
+    @Override
+    Long getBuildsCount(MetricFilter filter) {
+        return getFilteredBuilds(filter).size()
+    }
+
+    Collection<WaveBuildRecord> getFilteredBuilds(MetricFilter filter) {
+        if(!filter)
+            return buildStore.values()
+        def builds = buildStore.values()
+        if(filter.startDate && filter.endDate)
+            builds = builds.findAll { it.startTime >= filter.startDate && it.startTime <= filter.endDate }
+        if(filter.success != null)
+            builds = builds.findAll { it.succeeded() == filter.success }
+        return builds
+    }
+
+    @Override
+    Map<String, Long> getPullsCountByMetric(Metric metric, MetricFilter filter) {
+        def pulls = getFilteredPulls(filter)
+
+        Map<String, Long> result = null
+        if(metric == Metric.ip)
+            result = pulls.groupBy { it.ipAddress}
+                    .collectEntries { [it.key, it.value.size()] }
+        else if(metric == Metric.user)
+            result = pulls.groupBy { it.user?.email ?: ANONYMOUS}
+                    .collectEntries { [it.key, it.value.size()] }
+
+        result = result.sort{ a, b -> b.value - a.value  }
+        return result.take(filter.limit)
+    }
+
+    @Override
+    Long getPullsCount(MetricFilter filter) {
+        return getFilteredPulls(filter).size()
+    }
+
+    Collection<WaveContainerRecord> getFilteredPulls(MetricFilter filter) {
+        if (!filter)
+            return requestStore.values()
+        def builds = requestStore.values()
+        if(filter.startDate && filter.endDate)
+            builds = builds.findAll { it.timestamp >= filter.startDate && it.timestamp <= filter.endDate }
+        if(filter.fusion !=null){
+            if(filter.fusion)
+                builds = builds.findAll{it.containerConfig.fusionVersion() != null}
+            else
+                builds = builds.findAll{it.containerConfig.fusionVersion() == null}
+        }
+
+        return builds
+    }
 }
