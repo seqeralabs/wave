@@ -213,6 +213,7 @@ class ContainerTokenController {
         if( req.imageName && !RegHelper.isValidImageName(req.imageName) ){
             throw new BadRequestException("Supplied container image name '${req.imageName}' is not validate")
         }
+
         final containerSpec = decodeBase64OrFail(req.containerFile, 'containerFile')
         final condaContent = decodeBase64OrFail(req.condaFile, 'condaFile')
         final spackContent = decodeBase64OrFail(req.spackFile, 'spackFile')

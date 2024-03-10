@@ -454,7 +454,8 @@ class ContainerTokenControllerTest extends Specification {
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
         def proxyRegistry = Mock(RegistryProxyService)
-        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService))
+        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry,
+                buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService))
         def DOCKER = 'FROM foo'
         def user = new PlatformId(new User(id: 100))
         def cfg = new ContainerConfig()

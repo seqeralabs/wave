@@ -269,7 +269,7 @@ class BuildRequestTest extends Specification {
         BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', '12345', null, spack, null)
                 == 'quay.io/org/name:bwa-0.7.15--12345'
 
-        and: 'should return targetImage with give imageName'
+        and: 'should return targetImage with provided custom container image name'
         BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', '12345', null, null, 'foo')
                 == 'quay.io/org/name/foo:12345'
 
