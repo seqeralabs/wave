@@ -68,12 +68,11 @@ dependencies {
     implementation("io.micronaut.aws:micronaut-aws-parameter-store")
     implementation "software.amazon.awssdk:ecr"
     implementation "software.amazon.awssdk:ecrpublic"
-    implementation 'com.amazonaws:aws-java-sdk-ses:1.12.471'
-    // include sts to allow the use of service account role - https://stackoverflow.com/a/73306570
-    implementation 'com.amazonaws:aws-java-sdk-sts:1.12.471'
+    implementation 'software.amazon.awssdk:ses'
     implementation 'org.yaml:snakeyaml:2.0'
     //object storage dependency
     implementation("io.micronaut.objectstorage:micronaut-object-storage-aws")
+    // include sts to allow the use of service account role - https://stackoverflow.com/a/73306570
     // this sts dependency is require by micronaut-aws-parameter-store,
     // not directly used by the app, for this reason keeping `runtimeOnly`
     runtimeOnly "software.amazon.awssdk:sts"
