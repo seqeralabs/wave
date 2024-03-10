@@ -448,4 +448,28 @@ class ContainerTokenControllerTest extends Specification {
         noExceptionThrown()
 
     }
+
+    def 'should throw BadRequestException when custom image name is not correct' () {
+        given:
+        def builder = Mock(ContainerBuildService)
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def proxyRegistry = Mock(RegistryProxyService)
+        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService))
+        def DOCKER = 'FROM foo'
+        def user = new PlatformId(new User(id: 100))
+        def cfg = new ContainerConfig()
+        def customImageName= 'foo bar'
+        def req = new SubmitContainerTokenRequest(
+                containerFile: encode(DOCKER),
+                containerPlatform: 'arm64',
+                containerConfig: cfg,
+                imageName: customImageName)
+
+        when:
+        def data = controller.makeRequestData(req, user, "")
+
+        then:
+        def e = thrown(BadRequestException)
+        e.message == "Supplied container image name '$customImageName' is not validate"
+    }
 }

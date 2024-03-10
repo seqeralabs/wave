@@ -292,4 +292,9 @@ class RegHelper {
             log.debug "Unexpected error while closing http response - cause: ${e.message}", e
         }
     }
+
+    static boolean isValidImageName(String imageName){
+        final DOCKER_IMAGE_REGEX = /^(?:[a-zA-Z0-9-]+\.)?[a-zA-Z0-9-]+(?:\/[a-zA-Z0-9-]+)*(?::[a-zA-Z0-9-_.]+)?$/
+        return (imageName =~ DOCKER_IMAGE_REGEX).matches()
+    }
 }

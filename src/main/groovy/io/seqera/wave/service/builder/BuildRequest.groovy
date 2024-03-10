@@ -149,7 +149,7 @@ class BuildRequest {
     BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile,
                  BuildFormat format, PlatformId identity, ContainerConfig containerConfig, BuildContext buildContext,
                  ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId,
-                String imageName) {
+                 String imageName) {
         this.id = computeDigest(containerFile, condaFile, spackFile, platform, repo, buildContext)
         this.containerFile = containerFile
         this.containerConfig = containerConfig
