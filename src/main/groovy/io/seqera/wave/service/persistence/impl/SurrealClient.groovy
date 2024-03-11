@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -41,9 +41,9 @@ import reactor.core.publisher.Flux
 @Requires(env='surrealdb')
 @CompileStatic
 @Header(name = "Content-type", value = "application/json")
-@Header(name = "ns", value = '${surrealdb.ns}')
-@Header(name = "db", value = '${surrealdb.db}')
-@Client(value = '${surrealdb.url}')
+@Header(name = "ns", value = '${surreal.default.ns}')
+@Header(name = "db", value = '${surreal.default.db}')
+@Client(value = '${surreal.default.url}')
 @Retryable(
         delay = '${wave.surreal.retry.delay:1s}',
         maxDelay = '${wave.surreal.retry.maxDelay:10s}',
@@ -76,10 +76,10 @@ interface SurrealClient {
     @Put('/key/wave_request/{token}')
     Flux<Map<String, Object>> updateContainerRequestAsync(@Header String authorization, String token, @Body WaveContainerRecord body)
 
-    @Post('/key/wave_scan/{id}')
-    Map<String,Object> insertScanRecord(@Header String authorization, String id, @Body WaveScanRecord body)
+    @Post('/key/wave_scan')
+    Map<String,Object> insertScanRecord(@Header String authorization, @Body WaveScanRecord body)
 
-    @Post('/key/wave_scan_vuln/{id}')
-    Map<String, Object> insertScanVulnerability(@Header String authorization, String id, @Body ScanVulnerability scanVulnerability)
+    @Post('/key/wave_scan_vuln')
+    Map<String, Object> insertScanVulnerability(@Header String authorization, @Body ScanVulnerability scanVulnerability)
 
 }

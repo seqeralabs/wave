@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -27,22 +27,21 @@ import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.api.BuildContext
-import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.configuration.SpackConfig
+import io.seqera.wave.exception.HttpServerRetryableErrorException
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.cleanup.CleanupStrategy
-import io.seqera.wave.storage.reader.ContentReaderFactory
-import io.seqera.wave.storage.reader.HttpServerRetryableErrorException
+import io.seqera.wave.service.stream.StreamService
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.SpackHelper
 import io.seqera.wave.util.TarUtils
@@ -93,15 +92,16 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     private RateLimiterService rateLimiterService
 
     @Inject
-    private MeterRegistry meterRegistry
-
-    @Inject
     private SpackConfig spackConfig
 
     @Inject
     private HttpClientConfig httpClientConfig
 
-    @Inject CleanupStrategy cleanup
+    @Inject
+    private CleanupStrategy cleanup
+
+    @Inject
+    private StreamService streamService
 
     /**
      * Build a container image for the given {@link BuildRequest}
@@ -168,7 +168,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             Files.write(containerFile, containerFile0(req, context, spackConfig).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             // save build context
             if( req.buildContext ) {
-                saveBuildContext(req.buildContext, context)
+                saveBuildContext(req.buildContext, context, req.identity)
             }
             // save the conda file
             if( req.condaFile ) {
@@ -215,33 +215,17 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         // check the build rate limit
         try {
             if( rateLimiterService )
-                rateLimiterService.acquireBuild(new AcquireRequest(request.user?.id?.toString(), request.ip))
+                rateLimiterService.acquireBuild(new AcquireRequest(request.identity.userId as String, request.ip))
         }
         catch (Exception e) {
             buildStore.removeBuild(request.targetImage)
             throw e
         }
-        // increment the build counter
-        incrementBuildCounter(request)
 
         // launch the build async
         CompletableFuture
                 .<BuildResult>supplyAsync(() -> launch(request), executor)
                 .thenApply((result) -> { notifyCompletion(request,result); return result })
-    }
-
-    protected void incrementBuildCounter(BuildRequest request) {
-        try {
-            final tags = new ArrayList<String>()
-            tags.add('platform'); tags.add(request.platform.toString())
-            if( request.user?.id ) {
-                tags.add('userId'); tags.add(request.user.id as String)
-            }
-            meterRegistry.counter('wave.builds', tags as String[]).increment()
-        }
-        catch (Throwable e) {
-            log.error "Unable to increment build counter",e
-        }
     }
 
     protected notifyCompletion(BuildRequest request, BuildResult result) {
@@ -273,24 +257,24 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     protected void saveLayersToContext(BuildRequest req, Path contextDir) {
         if(req.formatDocker()) {
-            saveLayersToDockerContext0(req.containerConfig, contextDir)
+            saveLayersToDockerContext0(req, contextDir)
         }
         else if(req.formatSingularity()) {
-            saveLayersToSingularityContext0(req.containerConfig, contextDir)
+            saveLayersToSingularityContext0(req, contextDir)
         }
         else
             throw new IllegalArgumentException("Unknown container format: $req.format")
     }
 
-    protected void saveLayersToDockerContext0(ContainerConfig config, Path contextDir) {
-        final layers = config.layers
+    protected void saveLayersToDockerContext0(BuildRequest request, Path contextDir) {
+        final layers = request.containerConfig.layers
         for(int i=0; i<layers.size(); i++) {
             final it = layers[i]
             final target = contextDir.resolve(layerName(it))
             final retryable = retry0("Unable to copy '${it.location}' to docker context '${contextDir}'")
             // copy the layer to the build context
             retryable.apply(()-> {
-                try (InputStream stream = ContentReaderFactory.of(it.location).openStream()) {
+                try (InputStream stream = streamService.stream(it.location, request.identity)) {
                     Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING)
                 }
                 return
@@ -298,8 +282,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         }
     }
 
-    protected void saveLayersToSingularityContext0(ContainerConfig config, Path contextDir) {
-        final layers = config.layers
+    protected void saveLayersToSingularityContext0(BuildRequest request, Path contextDir) {
+        final layers = request.containerConfig.layers
         for(int i=0; i<layers.size(); i++) {
             final it = layers[i]
             final target = contextDir.resolve(layerDir(it))
@@ -309,7 +293,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             final retryable = retry0("Unable to copy '${it.location} to singularity context '${contextDir}'")
             // copy the layer to the build context
             retryable.apply(()-> {
-                try (InputStream stream = ContentReaderFactory.of(it.location).openStream()) {
+                try (InputStream stream = streamService.stream(it.location, request.identity)) {
                     TarUtils.untarGzip(stream, target)
                 }
                 return
@@ -317,12 +301,12 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         }
     }
 
-    protected void saveBuildContext(BuildContext buildContext, Path contextDir) {
+    protected void saveBuildContext(BuildContext buildContext, Path contextDir, PlatformId identity) {
         // retry strategy
         final retryable = retry0("Unable to copy '${buildContext.location} to build context '${contextDir}'")
         // copy the layer to the build context
         retryable.apply(()-> {
-            try (InputStream stream = ContentReaderFactory.of(buildContext.location).openStream()) {
+            try (InputStream stream = streamService.stream(buildContext.location, identity)) {
                 TarUtils.untarGzip(stream, contextDir)
             }
             return

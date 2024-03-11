@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -18,24 +18,23 @@
 
 package io.seqera.wave.storage
 
-import groovy.transform.CompileStatic
-import org.apache.commons.lang3.SerializationUtils
+import spock.lang.Specification
 
 /**
- * Helper class to encode/decode {@link DigestStore} objects
- * 
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@CompileStatic
-@Deprecated
-class DigestStoreEncoder {
+class DockerDigestStoreTest extends Specification {
 
-    static String encode(DigestStore store) {
-        return SerializationUtils.serialize(store).encodeBase64().toString()
-    }
+    def 'should create docker store' () {
+        when:
+        def store = new DockerDigestStore('docker://quay.io/v2/etc','some/media','sha256:12345', 100)
+        then:
+        store.location == 'docker://quay.io/v2/etc'
+        store.mediaType == 'some/media'
+        store.digest == 'sha256:12345'
+        store.size == 100
 
-    static DigestStore decode(String encoded) {
-        return SerializationUtils.deserialize(encoded.decodeBase64())
     }
 
 }

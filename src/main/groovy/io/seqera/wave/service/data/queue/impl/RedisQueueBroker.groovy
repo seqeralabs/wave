@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -52,27 +52,6 @@ class RedisQueueBroker implements MessageBroker<String>  {
     String take(String target) {
         try (Jedis conn = pool.getResource()) {
             return conn.rpop(target)
-        }
-    }
-
-    @Override
-    boolean hasMark(String prefix) {
-        try (Jedis conn = pool.getResource()) {
-            return conn.keys(prefix + '*')?.size()>0
-        }
-    }
-
-    @Override
-    void mark(String key) {
-        try (Jedis conn = pool.getResource()) {
-            conn.set(key, 'true')
-        }
-    }
-
-    @Override
-    void unmark(String key) {
-        try (Jedis conn = pool.getResource()) {
-            conn.del(key)
         }
     }
 

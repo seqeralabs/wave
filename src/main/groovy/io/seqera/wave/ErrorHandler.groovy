@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -26,6 +26,7 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpResponseFactory
 import io.micronaut.http.HttpStatus
+import io.micronaut.security.authentication.AuthorizationException
 import io.seqera.wave.exception.BuildTimeoutException
 import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.exception.ForbiddenException
@@ -111,6 +112,10 @@ class ErrorHandler {
         if( t instanceof WaveException ) {
             final resp = responseFactory.apply(msg, 'BAD_REQUEST')
             return HttpResponse.badRequest(resp)
+        }
+
+        if( t instanceof AuthorizationException ) {
+            return HttpResponse.unauthorized()
         }
 
         final resp = responseFactory.apply(msg, 'SERVER_ERROR')

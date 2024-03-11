@@ -1,5 +1,39 @@
 # Wave changelog
-1.2.0 - 22 Jan 2023
+1.4.0 - 27 Feb 2024
+- Add services to query Wave usage metadata  (#393) [6325b25c]
+- Add filter to trace slow endpoints [be49262f]
+- Add default to WaveContainerRecord when timestamp is null (#407) [f6eea93e]
+- Changed fusionVersion type to String (#411) [73d1cded]
+
+1.3.3 - 18 Feb 2024
+- Bump actions v4 [30a10876]
+- Add aws-java-sdk-sts and bump version 1.12.471 [c2ff7a8b]
+- Allow no default registries config [9523974e]
+- Improve request validation [b66b3de9]
+- Add error message when spack file is malformed (#361) [6439404b]
+- Add Wave configurations documentation  (#360) [3d167d99]
+- Add enterprise build container [fc6342a9]
+
+1.3.2 - 12 Feb 2024
+- Patch missing user condition on ContainerRequestData [9a8f2a5c]
+
+1.3.1 - 12 Feb 2024 
+- Fix compatibility for existing ContainerRequestData records [e665629f]
+- Improve license check [95a2755e]
+- Improve token request logging [930a7887]
+
+1.3.0 - 9 Feb 2024
+- Add support for container includes and inspect (#397) [57b62b69]
+- Remove support for Tower HTTP connector (#384) [180efe3c]
+- Update copyright info [197fd8ef]
+
+1.2.1 - 28 Jan 2024
+- Add support for SurrealDB v1.x (stable)  (#388) [e8ba40c7]
+- Remove TimedInputStream class [f59b02b3]
+- Remove unused setting [73cbbd29]
+- Bump nf-jdk:corretto-17.0.10-jemalloc as base image [a426d67e]
+
+1.2.0 - 22 Jan 2024
 - Add support for Cloudflare WAF token  (#383) [565ed112]
 - Add support for blob caching (#359) [627229ba]
 - Fix bootstrap error when blobCache is disabled [cf4e60dc]

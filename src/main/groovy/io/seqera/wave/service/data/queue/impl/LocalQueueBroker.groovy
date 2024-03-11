@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -40,8 +40,6 @@ class LocalQueueBroker implements MessageBroker<String> {
 
     private ConcurrentHashMap<String, LinkedBlockingQueue<String>> store = new ConcurrentHashMap<>()
 
-    private ConcurrentHashMap<String, Boolean> marks = new ConcurrentHashMap<>()
-
     @Override
     void offer(String target, String message) {
         store
@@ -56,18 +54,4 @@ class LocalQueueBroker implements MessageBroker<String> {
             .poll()
     }
 
-    @Override
-    void mark(String key) {
-        marks.put(key, true)
-    }
-
-    @Override
-    void unmark(String key) {
-        marks.remove(key)
-    }
-
-    @Override
-    boolean hasMark(String prefix) {
-        marks.keySet().find((String it) -> it.startsWith(prefix))
-    }
 }

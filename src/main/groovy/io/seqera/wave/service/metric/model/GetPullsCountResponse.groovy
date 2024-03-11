@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -16,32 +16,19 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.storage.reader;
+package io.seqera.wave.service.metric.model
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
-
+import groovy.transform.CompileStatic
 /**
- * Read a layer content from the given file system path
+ * Model a Wave pulls count response
  *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-@Deprecated
-public class PathContentReader implements ContentReader {
+@CompileStatic
+class GetPullsCountResponse {
+    Long count
 
-    final private Path path;
-
-    public PathContentReader(Path path) { this.path = path; }
-
-    @Override
-    public byte[] readAllBytes() throws IOException {
-        return Files.readAllBytes(path);
-    }
-
-    @Override
-    public String toLogString() {
-        return String.format("path=%s", path.toString());
+    GetPullsCountResponse(Long count) {
+        this.count = count
     }
 }

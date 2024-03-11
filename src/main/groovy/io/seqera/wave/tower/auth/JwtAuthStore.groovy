@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -68,7 +68,7 @@ class JwtAuthStore extends AbstractCacheStore<JwtAuth> {
     }
 
     JwtAuth getJwtAuth(String endpoint, String accessToken) {
-        return this.get(tokensKey(endpoint, accessToken))?: new JwtAuth(accessToken)
+        return this.get(tokensKey(endpoint, accessToken)) ?: new JwtAuth(accessToken)
     }
 
     private static String tokensKey(String endpoint, String initialRefreshToken) {

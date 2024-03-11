@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -24,6 +24,9 @@ import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.service.scan.ScanResult
 import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.metric.Metric
+import io.seqera.wave.service.metric.MetricFilter
+
 /**
  * A storage for statistic data
  *
@@ -123,4 +126,37 @@ interface PersistenceService {
                 scanRecord.vulnerabilities )
     }
 
+    /**
+     * Retrieve the builds count per metric from storage
+     *
+     * @param metric , which metric to count
+     * @param MetricFilters , to filter records extracted from storage
+     * @return The {@link Map} of [{@link Metric}, total build count per metric ]
+     */
+    Map<String, Long> getBuildsCountByMetric(Metric metric, MetricFilter filter)
+
+    /**
+     * Retrieve the total builds count from storage
+     *
+     * @param MetricFilters , to filter records extracted from storage
+     * @return The {@link Long} of total build count
+     */
+    Long getBuildsCount(MetricFilter filter)
+
+    /**
+     * Retrieve the pulls count per metric from storage
+     *
+     * @param metric , which metric to count
+     * @param MetricFilters , to filter records extracted from storage
+     * @return The {@link Map} of [{@link Metric}, total pull count per metric ]
+     */
+    Map<String, Long> getPullsCountByMetric(Metric metric, MetricFilter filter)
+
+    /**
+     * Retrieve the total pulls count from storage
+     *
+     * @param MetricFilters , to filter records extracted from storage
+     * @return The {@link Long} of total pull count
+     */
+    Long getPullsCount(MetricFilter filter)
 }

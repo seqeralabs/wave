@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -16,21 +16,15 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.storage.reader
+package io.seqera.wave.service.account
 
 /**
- * Capture a HTTP response error that should be manage retrying the HTTP request
- *
+ * Defines the interface for checking account identity
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class HttpServerRetryableErrorException extends IOException {
+interface AccountService {
 
-    HttpServerRetryableErrorException(String message) {
-        super(message)
-    }
-
-    HttpServerRetryableErrorException(String message, Throwable t) {
-        super(message,t)
-    }
+    boolean isAuthorised(String username, String password)
 
 }

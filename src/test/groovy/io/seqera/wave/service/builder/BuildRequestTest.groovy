@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -27,6 +27,7 @@ import java.time.OffsetDateTime
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 /**
  *
@@ -36,7 +37,7 @@ class BuildRequestTest extends Specification {
 
     def 'should create docker build request'() {
         given:
-        def USER = new User(id:1, email: 'foo@user.com')
+        def USER = new PlatformId(new User(id:1, email: 'foo@user.com'))
         def CONTENT = 'FROM foo'
         def PATH = Path.of('somewhere')
         def BUILD_REPO = 'docker.io/wave'
@@ -69,7 +70,7 @@ class BuildRequestTest extends Specification {
         req.workDir == PATH.resolve(req.id).toAbsolutePath()
         req.targetImage == "docker.io/wave:${req.id}"
         req.containerFile == CONTENT
-        req.user == USER
+        req.identity == USER
         req.configJson == '{auth}'
         req.job =~ /181ec22b26ae6d04-[a-z0-9]+/
         req.cacheRepository == CACHE_REPO
@@ -151,7 +152,7 @@ class BuildRequestTest extends Specification {
 
     def 'should create singularity build request'() {
         given:
-        def USER = new User(id:1, email: 'foo@user.com')
+        def USER = new PlatformId(new User(id:1, email: 'foo@user.com'))
         def CONTENT = 'From: foo'
         def PATH = Path.of('somewhere')
         def BUILD_REPO = 'docker.io/wave'
@@ -183,7 +184,7 @@ class BuildRequestTest extends Specification {
         req.workDir == PATH.resolve(req.id).toAbsolutePath()
         req.targetImage == "oras://docker.io/wave:${req.id}"
         req.containerFile == CONTENT
-        req.user == USER
+        req.identity == USER
         req.configJson == '{auth}'
         req.job =~ /d78ba9cb01188668-[a-z0-9]+/
         req.cacheRepository == CACHE_REPO
@@ -201,7 +202,7 @@ class BuildRequestTest extends Specification {
 
     def 'should check equals and hash code'() {
         given:
-        def USER = new User(id:1, email: 'foo@user.com')
+        def USER = new PlatformId(new User(id:1, email: 'foo@user.com'))
         def PATH = Path.of('somewhere')
         def repo = 'docker.io/wave'
         def cache = 'docker.io/cache'
