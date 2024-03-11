@@ -44,7 +44,7 @@ class BasicAuthenticationProvider implements AuthenticationProvider {
     private AccountService accountService
 
     @Override
-    Publisher<AuthenticationResponse> authenticate(@Nullable HttpRequest<?> httpRequest, AuthenticationRequest<?, ?> authRequest) {
+    Publisher<AuthenticationResponse> authenticate(@Nullable Object httpRequest, AuthenticationRequest authenticationRequest) {
         Flux.create(emitter -> {
             final user = authRequest.identity?.toString()
             final pass = authRequest.secret?.toString()

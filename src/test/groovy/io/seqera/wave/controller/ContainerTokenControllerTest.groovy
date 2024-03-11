@@ -313,7 +313,7 @@ class ContainerTokenControllerTest extends Specification {
 
     def 'should add library prefix' () {
         when:
-        SubmitContainerTokenRequest body = new SubmitContainerTokenRequest(containerImage: 'docker.io/hello-world')
+        def body = new SubmitContainerTokenRequest(containerImage: 'docker.io/hello-world')
         def req1 = HttpRequest.POST("/container-token", body)
         def resp1 = client.toBlocking().exchange(req1, SubmitContainerTokenResponse)
         then:
