@@ -68,7 +68,7 @@ class TokenCacheStore extends AbstractCacheStore<ContainerRequestData> implement
     }
 
     @Override
-    void remove(String key){
-            super.remove(key)
+    void remove(String key) {
+        super.remove(key)
     }
 }
