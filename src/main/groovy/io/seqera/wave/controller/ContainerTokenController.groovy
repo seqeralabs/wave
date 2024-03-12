@@ -334,7 +334,7 @@ class ContainerTokenController {
     @Secured(SecurityRule.IS_AUTHENTICATED)
     @Delete('/container-token/{token}')
     HttpResponse deleteContainerRequest(String token) {
-        def record = tokenService.evictContainerRequestFromCache(token)
+        final record = tokenService.evictRequest(token)
         if( !record ){
             throw new NotFoundException("Missing container record for token: $token")
         }

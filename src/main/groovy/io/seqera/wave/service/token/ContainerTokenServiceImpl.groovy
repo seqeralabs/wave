@@ -60,11 +60,11 @@ class ContainerTokenServiceImpl implements ContainerTokenService {
     }
 
     @Override
-    ContainerRequestData evictContainerRequestFromCache(String token) {
+    ContainerRequestData evictRequest(String token) {
         if(!token)
             return null
 
-        def request = tokenCache.get(token)
+        final request = tokenCache.get(token)
         if( request ) {
             tokenCache.remove(token)
         }

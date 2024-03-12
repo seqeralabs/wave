@@ -49,7 +49,7 @@ class ContainerTokenServiceImplTest extends Specification {
         tokenCache.put(TOKEN, data)
 
         when:
-        def request = containerTokenService.evictContainerRequestFromCache(TOKEN)
+        def request = containerTokenService.evictRequest(TOKEN)
         then:
         request == data
         tokenCache.get(TOKEN) == null
