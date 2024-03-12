@@ -87,22 +87,16 @@ abstract class BuildStrategy {
         }
 
         if(req.labels){
-            result << formatLabels(req.labels)
+            req.labels.forEach { key, value ->
+                if (key.contains(' ') || value.contains(' ')) {
+                    result << "--label \"$key\"=\"$value\""
+                } else {
+                    result << "--label $key=\"$value\""
+                }
+            }
         }
 
         return result
-    }
-
-    static String formatLabels(Map<String, String> labels) {
-        def formattedLabels = labels.collect { key, value ->
-            if (key.contains(' ') || value.contains(' ')) {
-                return "--label \"$key\"=\"$value\""
-            } else {
-                return "--label $key=\"$value\""
-            }
-        }.join(' ')
-
-        return formattedLabels
     }
 
     protected List<String> singularityLaunchCmd(BuildRequest req) {
