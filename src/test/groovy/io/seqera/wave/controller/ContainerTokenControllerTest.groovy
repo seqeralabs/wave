@@ -222,7 +222,7 @@ class ContainerTokenControllerTest extends Specification {
         def submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'))
         def build = controller.makeBuildRequest(submit, PlatformId.NULL,"")
         then:
-        build.id == '7efaa2ed59c58a16'
+        build.id =~ /7efaa2ed59c58a16-[a-z0-9]+/
         build.containerFile == 'FROM foo'
         build.targetImage == 'wave/build:7efaa2ed59c58a16'
         build.workDir == Path.of('/some/wsp').resolve(build.id)
@@ -232,7 +232,7 @@ class ContainerTokenControllerTest extends Specification {
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerPlatform: 'amd64')
         build = controller.makeBuildRequest(submit, PlatformId.NULL, null)
         then:
-        build.id == '7efaa2ed59c58a16'
+        build.id =~ /7efaa2ed59c58a16-[a-z0-9]+/
         build.containerFile == 'FROM foo'
         build.targetImage == 'wave/build:7efaa2ed59c58a16'
         build.workDir == Path.of('/some/wsp').resolve(build.id)
@@ -243,7 +243,7 @@ class ContainerTokenControllerTest extends Specification {
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), containerPlatform: 'arm64')
         build = controller.makeBuildRequest(submit, PlatformId.NULL, "")
         then:
-        build.id == 'be9ee6ac1eeff4b5'
+        build.id =~ /be9ee6ac1eeff4b5-[a-z0-9]+/
         build.containerFile == 'FROM foo'
         build.targetImage == 'wave/build:be9ee6ac1eeff4b5'
         build.workDir == Path.of('/some/wsp').resolve(build.id)
@@ -253,7 +253,7 @@ class ContainerTokenControllerTest extends Specification {
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), condaFile: encode('some::conda-recipe'), containerPlatform: 'arm64')
         build = controller.makeBuildRequest(submit, PlatformId.NULL, "")
         then:
-        build.id == 'c6dac2e544419f71'
+        build.id =~ /c6dac2e544419f71-[a-z0-9]+/
         build.containerFile == 'FROM foo'
         build.condaFile == 'some::conda-recipe'
         build.targetImage == 'wave/build:c6dac2e544419f71'
@@ -264,7 +264,7 @@ class ContainerTokenControllerTest extends Specification {
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), spackFile: encode('some::spack-recipe'), containerPlatform: 'arm64')
         build = controller.makeBuildRequest(submit, PlatformId.NULL, "")
         then:
-        build.id == 'b7d730d274d1e057'
+        build.id =~ /b7d730d274d1e057-[a-z0-9]+/
         build.containerFile.endsWith('\nFROM foo')
         build.containerFile.startsWith('# Builder image\n')
         build.condaFile == null

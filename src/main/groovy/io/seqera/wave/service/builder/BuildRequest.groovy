@@ -40,7 +40,7 @@ import static io.seqera.wave.util.StringUtils.trunc
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@EqualsAndHashCode(includes = 'id,targetImage')
+@EqualsAndHashCode(includes = 'containerId,targetImage')
 @CompileStatic
 class BuildRequest {
 
@@ -147,6 +147,28 @@ class BuildRequest {
      * Mark this request as not cached
      */
     volatile boolean uncached
+
+    protected BuildRequest(Map opts) {
+        this.id = opts.id
+        this.containerFile = opts.containerFile
+        this.condaFile = opts.condaFile
+        this.spackFile = opts.spackFile
+        this.workDir = opts.workDir as Path
+        this.targetImage = opts.targetImage
+        this.identity = opts.identity as PlatformId
+        this.platform = opts.platform as ContainerPlatform
+        this.cacheRepository = opts.cacheRepository
+        this.startTime = opts.startTime as Instant
+        this.ip = opts.ip
+        this.configJson = opts.configJson
+        this.offsetId = opts.offesetId
+        this.containerConfig = opts.containerConfig as ContainerConfig
+        this.isSpackBuild = opts.isSpackBuild
+        this.scanId = opts.scanId
+        this.buildContext = opts.buildContext as BuildContext
+        this.format = opts.format as BuildFormat
+        this.containerId = opts.containerId
+    }
 
     BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, BuildFormat format, PlatformId identity, ContainerConfig containerConfig, BuildContext buildContext, ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId) {
         this.containerId = computeDigest(containerFile, condaFile, spackFile, platform, repo, buildContext)
