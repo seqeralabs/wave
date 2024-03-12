@@ -292,4 +292,15 @@ class BuildRequestTest extends Specification {
         '._-xyz._-'             | 'xyz'
     }
 
+
+    def 'should parse legacy id' () {
+        expect:
+        BuildRequest.legacyBuildId(BUILD_ID) == EXPECTED
+        where:
+        BUILD_ID        | EXPECTED
+        null            | null
+        'foo'           | null
+        'foo-01'        | 'foo'
+    }
+
 }

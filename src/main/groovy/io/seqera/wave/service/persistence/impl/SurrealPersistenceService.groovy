@@ -29,6 +29,7 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
+import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.metric.Metric
 import io.seqera.wave.service.metric.MetricFilter
 import io.seqera.wave.service.persistence.PersistenceService
@@ -126,10 +127,8 @@ class SurrealPersistenceService implements PersistenceService {
         if( result )
             return result
         // try to lookup legacy record
-        if( !buildId.contains('-') )
-            return null
-        def legacyId = buildId.tokenize('-')[0]
-        return loadBuild1(legacyId)
+        final legacyId = BuildRequest.legacyBuildId(buildId)
+        return legacyId ? loadBuild1(legacyId) : null
     }
 
     private WaveBuildRecord loadBuild0(String buildId) {

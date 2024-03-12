@@ -322,4 +322,10 @@ class BuildRequest {
     boolean formatSingularity() {
         format==SINGULARITY
     }
+
+    static String legacyBuildId(String id) {
+        if( !id )
+            return null
+        return id.contains('-') ? id.tokenize('-')[0] : null
+    }
 }
