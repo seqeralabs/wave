@@ -146,7 +146,14 @@ class BuildRequest {
      */
     volatile boolean uncached
 
-    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, BuildFormat format, PlatformId identity, ContainerConfig containerConfig, BuildContext buildContext, ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId) {
+    /**
+     * Labels to be added in conda and spack build images
+     */
+    final Map<String, String> labels
+
+    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, BuildFormat format,
+                 PlatformId identity, ContainerConfig containerConfig, BuildContext buildContext, ContainerPlatform platform,
+                 String configJson, String cacheRepo, String scanId, String ip, String offsetId, Map<String, String> labels) {
         this.id = computeDigest(containerFile, condaFile, spackFile, platform, repo, buildContext)
         this.containerFile = containerFile
         this.containerConfig = containerConfig
@@ -166,6 +173,7 @@ class BuildRequest {
         this.ip = ip
         this.isSpackBuild = spackFile
         this.scanId = scanId
+        this.labels = labels
     }
 
     static protected String makeTarget(BuildFormat format, String repo, String id, @Nullable String condaFile, @Nullable String spackFile) {
