@@ -35,6 +35,7 @@ import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.core.RouteHandler
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.exchange.DescribeWaveContainerResponse
+import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.pairing.PairingRecord
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.PairingServiceImpl
@@ -252,6 +253,46 @@ class ContainerTokenControllerHttpTest extends Specification {
         layers[0].gzipDigest == 'sha256:7b2699543f22d5b8dc8d66a5873eb246767bca37232dee1e7a3b8c9956bceb0c'
         layers[0].gzipSize == 2152262
         layers[0].tarDigest == 'sha256:95c4a60383f7b6eb6f7b8e153a07cd6e896de0476763bef39d0f6cf3400624bd'
+    }
+
+    def 'should get http status code 401 from delete token api when no credentials provided'() {
+        when:
+        def req = HttpRequest.DELETE("/container-token/token")
+        def res = httpClient.toBlocking().exchange(req, Map)
+        then:
+        def e = thrown(HttpClientResponseException)
+        e.status.code == 401
+    }
+
+    def 'should delete the record for the provided token from cache' () {
+        given:
+        def endpoint = 'http://tower.nf'
+        def token = '12345'
+        and:
+        pairingService.getPairingRecord(TOWER_SERVICE, endpoint) >> { new PairingRecord('tower', endpoint) }
+        towerClient.userInfo(endpoint,token) >> CompletableFuture.completedFuture(new UserInfoResponse(user:new User(id:1)))
+
+        and:
+        def cfg = new ContainerConfig(workingDir: '/foo')
+        SubmitContainerTokenRequest request =
+                new SubmitContainerTokenRequest(
+                        towerAccessToken: token,
+                        towerRefreshToken: "2",
+                        towerEndpoint: endpoint,
+                        towerWorkspaceId: 10,
+                        containerImage: 'ubuntu:latest',
+                        containerConfig: cfg,
+                        containerPlatform: 'arm64',)
+        def resp = httpClient.toBlocking().exchange(HttpRequest.POST("/container-token", request), SubmitContainerTokenResponse)
+        and:
+        def waveToken = resp.body().containerToken
+
+        when:
+        def req = HttpRequest.DELETE("/container-token/$waveToken").basicAuth("username", "password")
+        def deleteResp = httpClient.toBlocking().exchange(req, ContainerRequestData)
+
+        then:
+        deleteResp.status.code == 200
     }
 
 }
