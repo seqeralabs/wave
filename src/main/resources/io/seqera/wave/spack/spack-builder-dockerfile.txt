@@ -2,6 +2,9 @@
 FROM {{spack_builder_image}} as builder
 COPY spack.yaml /opt/spack-env/spack.yaml
 
+#Labels
+${labels}
+
 # Assume the values from the environment
 ARG AWS_STS_REGIONAL_ENDPOINTS
 ARG AWS_REGION
