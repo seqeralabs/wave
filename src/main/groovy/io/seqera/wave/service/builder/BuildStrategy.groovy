@@ -86,7 +86,23 @@ abstract class BuildStrategy {
             result << 'AWS_WEB_IDENTITY_TOKEN_FILE=$(AWS_WEB_IDENTITY_TOKEN_FILE)'
         }
 
+        if(req.labels){
+            result << formatLabels(req.labels)
+        }
+
         return result
+    }
+
+    static String formatLabels(Map<String, String> labels) {
+        def formattedLabels = labels.collect { key, value ->
+            if (key.contains(' ') || value.contains(' ')) {
+                return "--label \"$key\"=\"$value\""
+            } else {
+                return "--label $key=\"$value\""
+            }
+        }.join(' ')
+
+        return formattedLabels
     }
 
     protected List<String> singularityLaunchCmd(BuildRequest req) {

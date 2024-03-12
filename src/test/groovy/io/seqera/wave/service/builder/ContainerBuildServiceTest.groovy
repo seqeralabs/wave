@@ -445,19 +445,4 @@ class ContainerBuildServiceTest extends Specification {
         server?.stop(0)
     }
 
-
-    def 'should format the labels'(){
-        given:'a list of labels'
-        def labels = [
-                'com.example.vendor':'ACME Incorporated',
-                'com.example.label-with-value':'foo',
-                'version':'1.0'
-        ]
-
-        when:'formatted for docker file'
-        def formattedLabels = service.formatLabels(labels)
-
-        then: 'The result is a string is prefixed by LABEL and all entries separated by space'
-        formattedLabels == "LABEL \"com.example.vendor\"=\"ACME Incorporated\" com.example.label-with-value=\"foo\" version=\"1.0\""
-    }
 }

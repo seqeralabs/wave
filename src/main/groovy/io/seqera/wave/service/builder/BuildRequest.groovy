@@ -310,4 +310,8 @@ class BuildRequest {
         this.labels = labels
         return this
     }
+
+    Map<String, String> getLabels() {
+        return labels
+    }
 }

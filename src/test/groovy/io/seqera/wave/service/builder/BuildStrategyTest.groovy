@@ -105,4 +105,44 @@ class BuildStrategyTest extends Specification {
             ]
     }
 
+    def "should format labels correctly"() {
+        given: "a map of labels"
+        def labels = [
+                "arch": "arm64",
+                "package name": "salmon",
+                "version": "1.0.0"
+        ]
+
+        when: "formatting the labels"
+        def formattedLabels = BuildStrategy.formatLabels(labels)
+
+        then: "the labels are formatted correctly"
+        formattedLabels == "--label arch=\"arm64\" --label \"package name\"=\"salmon\" --label version=\"1.0.0\""
+    }
+
+    def "should handle empty labels correctly"() {
+        given: "an empty map of labels"
+        def labels = [:]
+
+        when: "formatting the labels"
+        def formattedLabels = BuildStrategy.formatLabels(labels)
+
+        then: "the result is an empty string"
+        formattedLabels == ""
+    }
+
+    def "should handle null values correctly"() {
+        given: "a map of labels with null values"
+        def labels = [
+                "description": null,
+                "package name": "cowsay"
+        ]
+
+        when: "formatting the labels"
+        def formattedLabels = BuildStrategy.formatLabels(labels)
+
+        then: "the labels are formatted correctly, ignoring null values"
+        formattedLabels == "--label \"package name\"=\"cowsay\""
+    }
+
 }

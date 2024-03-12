@@ -146,26 +146,11 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             binding.spack_arch = SpackHelper.toSpackArch(req.getPlatform())
             binding.spack_cache_bucket = config.cacheBucket
             binding.spack_key_file = config.secretMountPath
-            if(req.labels && req.labels.size() > 0){
-                binding.labels = formatLabels(req.labels)
-            }
             return new TemplateRenderer().render(containerFile, binding)
         }
         else {
             return containerFile
         }
-    }
-
-    static String formatLabels(Map<String, String> labels) {
-        def formattedLabels = labels.collect { key, value ->
-            if (key.contains(' ') || value.contains(' ')) {
-                return "\"$key\"=\"$value\""
-            } else {
-                return "$key=\"$value\""
-            }
-        }.join(' ')
-
-        return "LABEL $formattedLabels"
     }
 
     protected BuildResult launch(BuildRequest req) {
