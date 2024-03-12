@@ -248,9 +248,9 @@ class SurrealPersistenceService implements PersistenceService {
         def results = map.get("result") as List<Map>
         log.trace("Total builds count results: $results")
         if( results && results.size() > 0)
-            return results[0].get("total_count")? results[0].get("total_count") as Long : 0
+            return results[0].get("total_count")? results[0].get("total_count") as Long : 0L
         else
-            return 0
+            return 0L
     }
 
     static String getBuildMetricFilter(MetricFilter metricFilter){
@@ -297,9 +297,9 @@ class SurrealPersistenceService implements PersistenceService {
         def results = map.get("result") as List<Map>
         log.trace("Total pulls count results: $results")
         if( results && results.size() > 0)
-            return results[0].get("total_count")? results[0].get("total_count") as Long : 0
+            return results[0].get("total_count")? results[0].get("total_count") as Long : 0L
         else
-            return 0
+            return 0L
     }
 
     static String getPullMetricFilter(MetricFilter metricFilter){

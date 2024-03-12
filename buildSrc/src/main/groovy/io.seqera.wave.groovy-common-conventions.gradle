@@ -23,8 +23,8 @@ compileJava {
 }
 
 tasks.withType(GroovyCompile) {
-    sourceCompatibility = '11'
-    targetCompatibility = '11'
+    sourceCompatibility = '17'
+    targetCompatibility = '17'
 }
 
 group = 'io.seqera'
