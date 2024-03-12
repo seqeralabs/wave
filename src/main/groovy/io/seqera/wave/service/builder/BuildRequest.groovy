@@ -150,6 +150,7 @@ class BuildRequest {
 
     BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, BuildFormat format, PlatformId identity, ContainerConfig containerConfig, BuildContext buildContext, ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId) {
         this.containerId = computeDigest(containerFile, condaFile, spackFile, platform, repo, buildContext)
+        this.startTime = Instant.now()
         this.id = "${containerId}-${startTime.toEpochMilli().toString().md5()[-5..-1]}"
         this.containerFile = containerFile
         this.containerConfig = containerConfig
@@ -164,7 +165,6 @@ class BuildRequest {
         this.cacheRepository = cacheRepo
         this.workDir = workspace.resolve(id).toAbsolutePath()
         this.offsetId = offsetId ?: OffsetDateTime.now().offset.id
-        this.startTime = Instant.now()
         this.ip = ip
         this.isSpackBuild = spackFile
         this.scanId = scanId
