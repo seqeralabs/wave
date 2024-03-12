@@ -96,10 +96,6 @@ class BuildRequest {
      */
     final Instant startTime
 
-    /**
-     * Build job unique id
-     */
-    final String job
 
     /**
      * The client IP if available
@@ -140,6 +136,12 @@ class BuildRequest {
      * The target build format, either Docker or Singularity
      */
     final BuildFormat format
+
+    /**
+     * Immutable container identity. This is computed as a checksum of {@link #containerFile}, {@link #condaFile},
+     * {@link #spackFile}, {@link #platform}, target repository and the build context
+     */
+    final String containerId
     
     /**
      * Mark this request as not cached
@@ -147,13 +149,14 @@ class BuildRequest {
     volatile boolean uncached
 
     BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, BuildFormat format, PlatformId identity, ContainerConfig containerConfig, BuildContext buildContext, ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId) {
-        this.id = computeDigest(containerFile, condaFile, spackFile, platform, repo, buildContext)
+        this.containerId = computeDigest(containerFile, condaFile, spackFile, platform, repo, buildContext)
+        this.id = "${containerId}-${startTime.toEpochMilli().toString().md5()[-5..-1]}"
         this.containerFile = containerFile
         this.containerConfig = containerConfig
         this.buildContext = buildContext
         this.condaFile = condaFile
         this.spackFile = spackFile
-        this.targetImage = makeTarget(format, repo, id, condaFile, spackFile)
+        this.targetImage = makeTarget(format, repo, containerId, condaFile, spackFile)
         this.format = format
         this.identity = identity
         this.platform = platform
@@ -162,7 +165,6 @@ class BuildRequest {
         this.workDir = workspace.resolve(id).toAbsolutePath()
         this.offsetId = offsetId ?: OffsetDateTime.now().offset.id
         this.startTime = Instant.now()
-        this.job = "${id}-${startTime.toEpochMilli().toString().md5()[-5..-1]}"
         this.ip = ip
         this.isSpackBuild = spackFile
         this.scanId = scanId

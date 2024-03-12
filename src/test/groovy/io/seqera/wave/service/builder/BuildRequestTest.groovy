@@ -66,13 +66,13 @@ class BuildRequestTest extends Specification {
                 IP_ADDR,
                 OFFSET)
         then:
-        req.id == '181ec22b26ae6d04'
-        req.workDir == PATH.resolve(req.id).toAbsolutePath()
+        req.id =~ /181ec22b26ae6d04-[a-z0-9]+/
+        req.containerId == '181ec22b26ae6d04'
+        req.workDir == PATH.resolve(req.containerId).toAbsolutePath()
         req.targetImage == "docker.io/wave:${req.id}"
         req.containerFile == CONTENT
         req.identity == USER
         req.configJson == '{auth}'
-        req.job =~ /181ec22b26ae6d04-[a-z0-9]+/
         req.cacheRepository == CACHE_REPO
         req.format == BuildFormat.DOCKER
         req.condaFile == null
