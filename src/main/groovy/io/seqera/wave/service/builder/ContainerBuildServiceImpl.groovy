@@ -138,8 +138,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 ? req.containerFile.replace('{{wave_context_dir}}', context.toString())
                 : req.containerFile
 
+        // render the Spack template if needed
         if( req.isSpackBuild ) {
-            // render the Spack template if needed
             final binding = new HashMap(2)
             binding.spack_builder_image = config.builderImage
             binding.spack_runner_image = config.runnerImage
