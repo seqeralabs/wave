@@ -105,15 +105,14 @@ class BuildStrategyTest extends Specification {
             ]
     }
 
-    def 'should get kaniko command with build context' () {
+    def 'should get kaniko command with labels' () {
         given:
         def cache = 'reg.io/wave/build/cache'
         def service = Spy(BuildStrategy)
         service.@buildConfig = new BuildConfig()
-        def build = Mock(BuildContext) {tarDigest >> '123'}
         and:
         def work = Path.of('/work/foo')
-        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, null, BuildFormat.DOCKER, Mock(PlatformId), null, build, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
+        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, null, BuildFormat.DOCKER, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
         def labels = [
                 "arch": "arm64",
                 "package name": "salmon",
@@ -127,19 +126,22 @@ class BuildStrategyTest extends Specification {
         then:
         cmd == [
                 '--dockerfile',
-                '/work/foo/3980470531b4a52a/Containerfile',
+                '/work/foo/c168dba125e28777/Containerfile',
                 '--context',
-                '/work/foo/3980470531b4a52a/context',
+                '/work/foo/c168dba125e28777/context',
                 '--destination',
-                'quay.io/wave:3980470531b4a52a',
+                'quay.io/wave:c168dba125e28777',
                 '--cache=true',
                 '--custom-platform',
                 'linux/amd64',
                 '--cache-repo',
                 'reg.io/wave/build/cache',
-                '--label arch=\"arm64\"',
-                '--label \"package name\"=\"salmon\"',
-                '--label version=\"1.0.0\"'
+                '--label',
+                'arch=arm64',
+                '--label',
+                'package name=salmon',
+                '--label',
+                'version=1.0.0'
         ]
     }
 
