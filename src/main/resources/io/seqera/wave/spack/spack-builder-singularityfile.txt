@@ -2,6 +2,9 @@ Bootstrap: docker
 From: {{spack_builder_image}}
 Stage: build
 
+%labels
+{{labels}}
+
 %setup
 cat <<EOF > ${SINGULARITY_ROOTFS}/aws-env.sh
 export AWS_STS_REGIONAL_ENDPOINTS=${AWS_STS_REGIONAL_ENDPOINTS}
