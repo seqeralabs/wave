@@ -450,9 +450,8 @@ class ContainerBuildServiceTest extends Specification {
         def builder = new ContainerBuildServiceImpl()
         and:
         def context = Path.of('/some/context/dir')
-        def dockerFile = SpackHelper.builderSingularityTemplate()
-        def spackFile = 'some spack packages'
-        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', null, spackFile, BuildFormat.SINGULARITY, Mock(PlatformId),null, null,  ContainerPlatform.of('amd64'), null, null, null, "", null)
+        def singularityFile = "Bootstrap: docker \n from alpine"
+        def REQ = new BuildRequest(singularityFile, folder, 'box:latest', null, null, BuildFormat.SINGULARITY, Mock(PlatformId),null, null,  ContainerPlatform.of('amd64'), null, null, null, "", null)
         and:
         def labels = [
                 "arch": "arm64",
@@ -460,20 +459,41 @@ class ContainerBuildServiceTest extends Specification {
                 "version": "1.0.0"
         ]
         REQ.withLabels(labels)
-        and:
-        def spack = Mock(SpackConfig)
 
         when:
-        def result = builder.containerFile0(REQ, context, spack)
+        def result = builder.addLabels(builder.containerFile0(REQ, context, null), REQ)
+
         then:
-        1* spack.getCacheBucket() >> 's3://bucket/cache'
-        1* spack.getSecretMountPath() >> '/mnt/key'
-        1* spack.getBuilderImage() >> 'spack-builder:2.0'
-        1* spack.getRunnerImage() >> 'ubuntu:22.04'
-        and:
-        result.contains('arch arm64\n' +
+        result.contains('%labels\n'+
+                'arch arm64\n' +
                 'packageName salmon\n' +
                 'version 1.0.0')
+
+        cleanup:
+        folder?.deleteDir()
+    }
+
+    def 'should resolve docker file with labels' () {
+        given:
+        def folder = Files.createTempDirectory('test')
+        def builder = new ContainerBuildServiceImpl()
+        and:
+        def context = Path.of('/some/context/dir')
+        def dockerFile = "from alpine"
+        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', null, null, BuildFormat.DOCKER, Mock(PlatformId),null, null,  ContainerPlatform.of('amd64'), null, null, null, "", null)
+        and:
+        def labels = [
+                "arch": "arm64",
+                "packageName": "salmon",
+                "version": "1.0.0"
+        ]
+        REQ.withLabels(labels)
+
+        when:
+        def result = builder.addLabels(builder.containerFile0(REQ, context, null), REQ)
+
+        then:
+        result.contains('Label arch=arm64 packageName=salmon version=1.0.0')
 
         cleanup:
         folder?.deleteDir()

@@ -105,44 +105,4 @@ class BuildStrategyTest extends Specification {
             ]
     }
 
-    def 'should get kaniko command with labels' () {
-        given:
-        def cache = 'reg.io/wave/build/cache'
-        def service = Spy(BuildStrategy)
-        service.@buildConfig = new BuildConfig()
-        and:
-        def work = Path.of('/work/foo')
-        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, null, BuildFormat.DOCKER, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
-        def labels = [
-                "arch": "arm64",
-                "packageName": "salmon",
-                "version": "1.0.0"
-        ]
-
-        REQ.withLabels(labels)
-
-        when:
-        def cmd = service.launchCmd(REQ)
-        then:
-        cmd == [
-                '--dockerfile',
-                '/work/foo/c168dba125e28777/Containerfile',
-                '--context',
-                '/work/foo/c168dba125e28777/context',
-                '--destination',
-                'quay.io/wave:c168dba125e28777',
-                '--cache=true',
-                '--custom-platform',
-                'linux/amd64',
-                '--cache-repo',
-                'reg.io/wave/build/cache',
-                '--label',
-                'arch=arm64',
-                '--label',
-                'packageName=salmon',
-                '--label',
-                'version=1.0.0'
-        ]
-    }
-
 }

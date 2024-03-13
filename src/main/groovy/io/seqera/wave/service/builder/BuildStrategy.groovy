@@ -86,13 +86,6 @@ abstract class BuildStrategy {
             result << 'AWS_WEB_IDENTITY_TOKEN_FILE=$(AWS_WEB_IDENTITY_TOKEN_FILE)'
         }
 
-        if(req.labels){
-            req.labels.forEach { key, value ->
-                    result << '--label'
-                    result << "$key=$value".toString()
-                }
-            }
-
         return result
     }
 

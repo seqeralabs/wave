@@ -138,32 +138,55 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 ? req.containerFile.replace('{{wave_context_dir}}', context.toString())
                 : req.containerFile
 
-        // render the Spack template if needed
-        final binding = new HashMap(6)
-        if ( req.formatSingularity() ){
-            binding.labels = req.labels?formatLabels(req.labels):null
-        }
         if( req.isSpackBuild ) {
+            // render the Spack template if needed
+            final binding = new HashMap(2)
             binding.spack_builder_image = config.builderImage
             binding.spack_runner_image = config.runnerImage
             binding.spack_arch = SpackHelper.toSpackArch(req.getPlatform())
             binding.spack_cache_bucket = config.cacheBucket
             binding.spack_key_file = config.secretMountPath
+            return new TemplateRenderer().render(containerFile, binding)
         }
         else {
             return containerFile
         }
-        return new TemplateRenderer().render(containerFile, binding)
     }
 
     //this method adds labels in singularity container
-    protected static String formatLabels(Map<String, String> labels){
+    protected static String addLabels(String containerFile, BuildRequest req){
+        if(req.labels) {
+            if (req.formatSingularity()) {
+                return containerFile + getSingularityLabels(req.labels)
+            }
+            if (req.formatDocker()){
+                return containerFile + getDockerLabels(req.labels)
+            }
+        }else{
+            return containerFile
+        }
+    }
+
+    protected static String getSingularityLabels(Map<String, String> labels){
         StringBuilder labelsBuilder = new StringBuilder()
+        labelsBuilder.append("\n%labels\n")
         labels.each() { key, value ->
             labelsBuilder.append(key)
             labelsBuilder.append(" ")
             labelsBuilder.append(value)
             labelsBuilder.append("\n")
+        }
+        return labelsBuilder.toString()
+    }
+
+    protected static String getDockerLabels(Map<String, String> labels){
+        StringBuilder labelsBuilder = new StringBuilder()
+        labelsBuilder.append("\nLabel ")
+        labels.each() { key, value ->
+            labelsBuilder.append(key)
+            labelsBuilder.append("=")
+            labelsBuilder.append(value)
+            labelsBuilder.append(" ")
         }
         return labelsBuilder.toString()
     }
@@ -180,7 +203,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             catch (FileAlreadyExistsException e) { /* ignore it */ }
             // save the dockerfile
             final containerFile = req.workDir.resolve('Containerfile')
-            Files.write(containerFile, containerFile0(req, context, spackConfig).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            Files.write(containerFile, addLabels(containerFile0(req, context, spackConfig), req).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             // save build context
             if( req.buildContext ) {
                 saveBuildContext(req.buildContext, context, req.identity)
