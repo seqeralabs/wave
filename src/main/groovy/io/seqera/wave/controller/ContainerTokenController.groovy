@@ -140,6 +140,10 @@ class ContainerTokenController {
 
     @Post('/container-token')
     CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
+        return getTokenImpl(httpRequest, req, false)
+    }
+
+    protected getTokenImpl(HttpRequest httpRequest, SubmitContainerTokenRequest req, boolean v2) {
         validateContainerRequest(req)
 
         // this is needed for backward compatibility with old clients
@@ -149,7 +153,7 @@ class ContainerTokenController {
 
         // anonymous access
         if( !req.towerAccessToken ) {
-            return CompletableFuture.completedFuture(makeResponse(httpRequest, req, PlatformId.NULL))
+            return CompletableFuture.completedFuture(makeResponse(httpRequest, req, PlatformId.NULL, v2))
         }
 
         // We first check if the service is registered
@@ -162,18 +166,28 @@ class ContainerTokenController {
         // find out the user associated with the specified tower access token
         return userService
                 .getUserByAccessTokenAsync(registration.endpoint, req.towerAccessToken)
-                .thenApply { User user -> makeResponse(httpRequest, req, PlatformId.of(user,req)) }
+                .thenApply { User user -> makeResponse(httpRequest, req, PlatformId.of(user,req), v2) }
     }
 
-    protected HttpResponse<SubmitContainerTokenResponse> makeResponse(HttpRequest httpRequest, SubmitContainerTokenRequest req, PlatformId identity) {
+    protected HttpResponse<SubmitContainerTokenResponse> makeResponse(HttpRequest httpRequest, SubmitContainerTokenRequest req, PlatformId identity, boolean v2) {
         if( !identity && !allowAnonymous )
             throw new BadRequestException("Missing user access token")
         final ip = addressResolver.resolve(httpRequest)
         final data = makeRequestData(req, identity, ip)
         final token = tokenService.computeToken(data)
-        final target = targetImage(token.value, data.coordinates())
-        final build = data.buildNew ? data.buildId : null
-        final resp = new SubmitContainerTokenResponse(token.value, target, token.expiration, data.containerImage, build)
+        final target = v2 && data.freeze
+                                ? data.containerImage
+                                : targetImage(token.value, data.coordinates())
+        final build = v2
+                                ? data.buildId
+                                : (data.buildNew ? data.buildId : null)
+        final Boolean cached = v2
+                                ? !data.buildNew
+                                : null
+        final String container = !v2
+                                ? data.containerImage
+                                : null
+        final resp = new SubmitContainerTokenResponse(token.value, target, token.expiration, container, build, cached)
         // persist request
         storeContainerRequest0(req, data, token, target, ip)
         // log the response
@@ -365,4 +379,10 @@ class ContainerTokenController {
         return HttpResponse.unauthorized()
                 .header(WWW_AUTHENTICATE, "Basic realm=Wave Authentication")
     }
+
+    @Post('/v1alpha2/container')
+    CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getTokenV2(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
+        return getTokenImpl(httpRequest, req, true)
+    }
+
 }
