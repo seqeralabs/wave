@@ -88,13 +88,10 @@ abstract class BuildStrategy {
 
         if(req.labels){
             req.labels.forEach { key, value ->
-                if (key.contains(' ') || value.contains(' ')) {
-                    result << "--label \"$key\"=\"$value\""
-                } else {
-                    result << "--label $key=\"$value\""
+                    result << '--label'
+                    result << "$key=$value".toString()
                 }
             }
-        }
 
         return result
     }
