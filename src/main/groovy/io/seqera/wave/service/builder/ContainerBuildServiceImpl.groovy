@@ -139,18 +139,33 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 : req.containerFile
 
         // render the Spack template if needed
+        final binding = new HashMap(6)
+        if ( req.formatSingularity() ){
+            binding.labels = req.labels?formatLabels(req.labels):null
+        }
         if( req.isSpackBuild ) {
-            final binding = new HashMap(2)
             binding.spack_builder_image = config.builderImage
             binding.spack_runner_image = config.runnerImage
             binding.spack_arch = SpackHelper.toSpackArch(req.getPlatform())
             binding.spack_cache_bucket = config.cacheBucket
             binding.spack_key_file = config.secretMountPath
-            return new TemplateRenderer().render(containerFile, binding)
         }
         else {
             return containerFile
         }
+        return new TemplateRenderer().render(containerFile, binding)
+    }
+
+    //this method adds labels in singularity container
+    protected static String formatLabels(Map<String, String> labels){
+        StringBuilder labelsBuilder = new StringBuilder()
+        labels.each() { key, value ->
+            labelsBuilder.append(key)
+            labelsBuilder.append(" ")
+            labelsBuilder.append(value)
+            labelsBuilder.append("\n")
+        }
+        return labelsBuilder.toString()
     }
 
     protected BuildResult launch(BuildRequest req) {

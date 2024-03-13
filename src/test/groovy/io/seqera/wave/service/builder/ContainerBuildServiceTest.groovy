@@ -393,7 +393,6 @@ class ContainerBuildServiceTest extends Specification {
         and:
         def layer = new Packer().layer(source)
         def context = BuildContext.of(layer)
-        and:
 
         when:
         service.saveBuildContext(context, target, Mock(PlatformId))
@@ -443,6 +442,41 @@ class ContainerBuildServiceTest extends Specification {
         cleanup:
         folder?.deleteDir()
         server?.stop(0)
+    }
+
+    def 'should resolve singularity file with labels' () {
+        given:
+        def folder = Files.createTempDirectory('test')
+        def builder = new ContainerBuildServiceImpl()
+        and:
+        def context = Path.of('/some/context/dir')
+        def dockerFile = SpackHelper.builderSingularityTemplate()
+        def spackFile = 'some spack packages'
+        def REQ = new BuildRequest(dockerFile, folder, 'box:latest', null, spackFile, BuildFormat.SINGULARITY, Mock(PlatformId),null, null,  ContainerPlatform.of('amd64'), null, null, null, "", null)
+        and:
+        def labels = [
+                "arch": "arm64",
+                "packageName": "salmon",
+                "version": "1.0.0"
+        ]
+        REQ.withLabels(labels)
+        and:
+        def spack = Mock(SpackConfig)
+
+        when:
+        def result = builder.containerFile0(REQ, context, spack)
+        then:
+        1* spack.getCacheBucket() >> 's3://bucket/cache'
+        1* spack.getSecretMountPath() >> '/mnt/key'
+        1* spack.getBuilderImage() >> 'spack-builder:2.0'
+        1* spack.getRunnerImage() >> 'ubuntu:22.04'
+        and:
+        result.contains('arch arm64\n' +
+                'packageName salmon\n' +
+                'version 1.0.0')
+
+        cleanup:
+        folder?.deleteDir()
     }
 
 }

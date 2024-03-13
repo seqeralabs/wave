@@ -115,7 +115,7 @@ class BuildStrategyTest extends Specification {
         def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, null, BuildFormat.DOCKER, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
         def labels = [
                 "arch": "arm64",
-                "package name": "salmon",
+                "packageName": "salmon",
                 "version": "1.0.0"
         ]
 
@@ -139,7 +139,7 @@ class BuildStrategyTest extends Specification {
                 '--label',
                 'arch=arm64',
                 '--label',
-                'package name=salmon',
+                'packageName=salmon',
                 '--label',
                 'version=1.0.0'
         ]
