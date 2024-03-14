@@ -144,6 +144,23 @@ interface PersistenceService {
     Long getBuildsCount(MetricFilter filter)
 
     /**
+     * Retrieve the Requests count per metric from storage
+     *
+     * @param metric , which metric to count
+     * @param MetricFilters , to filter records extracted from storage
+     * @return The {@link Map} of [{@link Metric}, total Requests count per metric ]
+     */
+    Map<String, Long> getRequestsCountByMetric(Metric metric, MetricFilter filter)
+
+    /**
+     * Retrieve the total Requests count from storage
+     *
+     * @param MetricFilters , to filter records extracted from storage
+     * @return The {@link Long} of total Requests count
+     */
+    Long getRequestsCount(MetricFilter filter)
+
+    /**
      * Retrieve the pulls count per metric from storage
      *
      * @param metric , which metric to count

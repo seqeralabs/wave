@@ -45,6 +45,8 @@ import io.seqera.wave.service.metric.model.GetBuildsMetricsResponse
 import io.seqera.wave.service.metric.model.GetBuildsCountResponse
 import io.seqera.wave.service.metric.model.GetPullsCountResponse
 import io.seqera.wave.service.metric.model.GetPullsMetricsResponse
+import io.seqera.wave.service.metric.model.GetRequestsCountResponse
+import io.seqera.wave.service.metric.model.GetRequestsMetricsResponse
 import jakarta.inject.Inject
 
 import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
@@ -83,40 +85,40 @@ class MetricsController {
                                    @Nullable @QueryValue String startDate,
                                    @Nullable @QueryValue String endDate) {
         final count = metricsService.getBuildsCount(
-                        new MetricFilter.Builder()
-                                .dates(parseStartDate(startDate), parseEndDate(endDate))
-                                .success(success)
-                                .build())
+                new MetricFilter.Builder()
+                        .dates(parseStartDate(startDate), parseEndDate(endDate))
+                        .success(success)
+                        .build())
         return HttpResponse.ok(new GetBuildsCountResponse(count))
     }
 
-    @Get(uri = "/pulls/{metric}", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<?> getPullsMetrics(@PathVariable String metric,
+    @Get(uri = "/requests/{metric}", produces = MediaType.APPLICATION_JSON)
+    HttpResponse<?> getRequestsMetrics(@PathVariable String metric,
                                     @Nullable @QueryValue String startDate,
                                     @Nullable @QueryValue String endDate,
                                     @Nullable @QueryValue Boolean fusion,
                                     @Nullable @QueryValue Integer limit) {
-        final result = metricsService.getPullsMetric(
-                        Metric.valueOf(metric),
-                        new MetricFilter.Builder()
-                                .dates(parseStartDate(startDate), parseEndDate(endDate))
-                                .fusion(fusion)
-                                .limit(limit)
-                                .build())
-        return HttpResponse.ok(new GetPullsMetricsResponse(result))
+        final result = metricsService.getRequestsMetric(
+                Metric.valueOf(metric),
+                new MetricFilter.Builder()
+                        .dates(parseStartDate(startDate), parseEndDate(endDate))
+                        .fusion(fusion)
+                        .limit(limit)
+                        .build())
+        return HttpResponse.ok(new GetRequestsMetricsResponse(result))
 
     }
 
-    @Get(uri = "/pulls", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<?> getPullsCount(@Nullable @QueryValue String startDate,
+    @Get(uri = "/requests", produces = MediaType.APPLICATION_JSON)
+    HttpResponse<?> getRequestsCount(@Nullable @QueryValue String startDate,
                                   @Nullable @QueryValue String endDate,
                                   @Nullable @QueryValue Boolean fusion) {
-        final count = metricsService.getPullsCount(
-                        new MetricFilter.Builder()
-                                .dates(parseStartDate(startDate), parseEndDate(endDate))
-                                .fusion(fusion)
-                                .build())
-        return HttpResponse.ok(new GetPullsCountResponse(count))
+        final count = metricsService.getRequestsCount(
+                new MetricFilter.Builder()
+                        .dates(parseStartDate(startDate), parseEndDate(endDate))
+                        .fusion(fusion)
+                        .build())
+        return HttpResponse.ok(new GetRequestsCountResponse(count))
     }
 
     static Instant parseStartDate(String date) {

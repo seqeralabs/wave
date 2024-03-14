@@ -62,15 +62,15 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
     def setup() {
         restartDb()
         applicationContext = ApplicationContext.run([
-                        surreal:['default': [
-                                user     : 'root',
-                                password : 'root',
-                                ns       : 'test',
-                                db       : 'test',
-                                url      : surrealDbURL,
-                                'init-db': false
-                        ]]]
-        , 'test', 'surrealdb')
+                surreal:['default': [
+                        user     : 'root',
+                        password : 'root',
+                        ns       : 'test',
+                        db       : 'test',
+                        url      : surrealDbURL,
+                        'init-db': false
+                ]]]
+                , 'test', 'surrealdb')
     }
 
     def cleanup() {
@@ -260,7 +260,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.saveContainerRequest(TOKEN, request)
         and:
         sleep 200  // <-- the above request is async, give time to save it
-        
+
         when:
         def loaded = persistence.loadContainerRequest(TOKEN)
         then:
@@ -417,7 +417,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
     }
 
-    def 'should return the correct pulls count per metric' () {
+    def 'should return the correct requests count per metric' () {
         given:
         final persistence = applicationContext.getBean(SurrealPersistenceService)
         def TOKEN1 = '123abc'
@@ -442,7 +442,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         def TOKEN2 = '1234abc'
         cfg = new ContainerConfig(entrypoint: ['/opt/fusion'],
-                 layers: [ new ContainerLayer(location: 'https://fusionfs.seqera.io/releases/v2.2.8-amd64.json')])
+                layers: [ new ContainerLayer(location: 'https://fusionfs.seqera.io/releases/v2.2.8-amd64.json')])
         req = new SubmitContainerTokenRequest(
                 towerEndpoint: 'https://tower.nf',
                 towerWorkspaceId: 100,
@@ -485,82 +485,82 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.saveContainerRequest(TOKEN3, request3)
         sleep 300
 
-        expect: 'should return the correct pulls count per metric'
+        expect: 'should return the correct requests count per metric'
         def emptyFilter = new MetricFilter.Builder().build()
-        persistence.getPullsCountByMetric(Metric.ip, emptyFilter) ==[
+        persistence.getRequestsCountByMetric(Metric.ip, emptyFilter) ==[
                 '100.200.300.400': 2,
                 '100.200.300.401': 1
         ]
-        persistence.getPullsCountByMetric(Metric.user, emptyFilter) == [
+        persistence.getRequestsCountByMetric(Metric.user, emptyFilter) == [
                 'foo@gmail.com': 2,
                 'anonymous': 1
         ]
 
-        and: 'should return the correct pulls count per metric between given dates'
+        and: 'should return the correct requests count per metric between given dates'
         def datesFilter = new MetricFilter.Builder().dates(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()).build()
-        persistence.getPullsCountByMetric(Metric.user, datesFilter) == [
+        persistence.getRequestsCountByMetric(Metric.user, datesFilter) == [
                 'foo@gmail.com': 1,
                 'anonymous': 1
         ]
-        persistence.getPullsCountByMetric(Metric.ip, datesFilter) ==[
+        persistence.getRequestsCountByMetric(Metric.ip, datesFilter) ==[
                 '100.200.300.400': 1,
                 '100.200.300.401': 1
         ]
 
-        and: 'should return the correct pulls count per metric for containers with fusion'
+        and: 'should return the correct requests count per metric for containers with fusion'
         def fusionTrueFilter = new MetricFilter.Builder().fusion(true).build()
-        persistence.getPullsCountByMetric(Metric.user, fusionTrueFilter) == [
+        persistence.getRequestsCountByMetric(Metric.user, fusionTrueFilter) == [
                 'foo@gmail.com': 2
         ]
-        persistence.getPullsCountByMetric(Metric.ip, fusionTrueFilter) ==[
+        persistence.getRequestsCountByMetric(Metric.ip, fusionTrueFilter) ==[
                 '100.200.300.400': 2
         ]
 
-        and: 'should return the correct pulls count per metric for containers without fusion'
+        and: 'should return the correct requests count per metric for containers without fusion'
         def fusionFalseFilter = new MetricFilter.Builder().fusion(false).build()
-        persistence.getPullsCountByMetric(Metric.user, fusionFalseFilter) == [
+        persistence.getRequestsCountByMetric(Metric.user, fusionFalseFilter) == [
                 'anonymous': 1
         ]
-        persistence.getPullsCountByMetric(Metric.ip, fusionFalseFilter) ==[
+        persistence.getRequestsCountByMetric(Metric.ip, fusionFalseFilter) ==[
                 '100.200.300.401': 1
         ]
 
-        and:'`should return limited number of pulls count per metric records specified by limit filter'
+        and:'`should return limited number of requests count per metric records specified by limit filter'
         def limitFilter = new MetricFilter.Builder().limit(1).build()
-        persistence.getPullsCountByMetric(Metric.ip, limitFilter) ==['100.200.300.400': 2]
-        persistence.getPullsCountByMetric(Metric.user, limitFilter) == ['foo@gmail.com': 2]
+        persistence.getRequestsCountByMetric(Metric.ip, limitFilter) ==['100.200.300.400': 2]
+        persistence.getRequestsCountByMetric(Metric.user, limitFilter) == ['foo@gmail.com': 2]
 
-        and: 'should return the correct number of pulls'
-        persistence.getPullsCount(emptyFilter) == 3
+        and: 'should return the correct number of requests'
+        persistence.getRequestsCount(emptyFilter) == 3
 
-        and: 'should return the correct number of pulls between two dates'
-        persistence.getPullsCount(datesFilter) == 2
+        and: 'should return the correct number of requests between two dates'
+        persistence.getRequestsCount(datesFilter) == 2
 
-        and: 'should return the correct number of pulls for containers with fusion'
-        persistence.getPullsCount(fusionTrueFilter) == 2
+        and: 'should return the correct number of requests for containers with fusion'
+        persistence.getRequestsCount(fusionTrueFilter) == 2
 
-        and: 'should return the correct number of pulls for containers without fusion'
-        persistence.getPullsCount(fusionFalseFilter) == 1
+        and: 'should return the correct number of requests for containers without fusion'
+        persistence.getRequestsCount(fusionFalseFilter) == 1
     }
 
-    def 'should get empty map for builds count and pulls count per metric when no record found' () {
+    def 'should get empty map for builds count and requests count per metric when no record found' () {
         given:
         final persistence = applicationContext.getBean(SurrealPersistenceService)
         expect:
         def emptyFilter = new MetricFilter.Builder().build()
         persistence.getBuildsCountByMetric(Metric.ip, emptyFilter) == [:]
         persistence.getBuildsCountByMetric(Metric.user, emptyFilter) == [:]
-        persistence.getPullsCountByMetric(Metric.ip, emptyFilter) == [:]
-        persistence.getPullsCountByMetric(Metric.user, emptyFilter) == [:]
+        persistence.getRequestsCountByMetric(Metric.ip, emptyFilter) == [:]
+        persistence.getRequestsCountByMetric(Metric.user, emptyFilter) == [:]
     }
 
-    def 'should get zero for builds count, and pulls count if no record found' () {
+    def 'should get zero for builds count, and requests count if no record found' () {
         given:
         final persistence = applicationContext.getBean(SurrealPersistenceService)
 
         expect:
         def emptyFilter = new MetricFilter.Builder().build()
-        persistence.getPullsCount(emptyFilter) == 0
+        persistence.getRequestsCount(emptyFilter) == 0
         persistence.getBuildsCount(emptyFilter) == 0
     }
 
@@ -608,7 +608,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         ]
     }
 
-    def 'should return pulls count per metric with valid date when date filter is applied and date is missing in DB records' () {
+    def 'should return requests count per metric with valid date when date filter is applied and date is missing in DB records' () {
         given:
         final persistence = applicationContext.getBean(SurrealPersistenceService)
 
@@ -661,10 +661,10 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         expect: 'should ignore wave_request records with no timestamp'
         def datesFilter = new MetricFilter.Builder().dates(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()).build()
-        persistence.getPullsCountByMetric(Metric.user, datesFilter) == [
+        persistence.getRequestsCountByMetric(Metric.user, datesFilter) == [
                 'anonymous': 1
         ]
-        persistence.getPullsCountByMetric(Metric.ip, datesFilter) ==[
+        persistence.getRequestsCountByMetric(Metric.ip, datesFilter) ==[
                 '100.200.300.405': 1
         ]
     }
@@ -686,7 +686,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
     def 'get the correct where clause for wave_request table' () {
         expect:
-        SurrealPersistenceService.getPullMetricFilter(new MetricFilter.Builder().fusion(FUSION).dates(STARTDATE, ENDDATE).build()) == SURREALDBFILTER
+        SurrealPersistenceService.getRequestMetricFilter(new MetricFilter.Builder().fusion(FUSION).dates(STARTDATE, ENDDATE).build()) == SURREALDBFILTER
         where:
         FUSION | STARTDATE     | ENDDATE            | SURREALDBFILTER
         null    | null          | null              | ''

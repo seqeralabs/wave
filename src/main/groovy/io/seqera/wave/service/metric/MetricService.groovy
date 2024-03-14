@@ -45,7 +45,7 @@ interface MetricService {
     /**
      * get the total pulls count
      *
-     * @param MetricFilters, to filter container requests for processing
+     * @param MetricFilters, to filter container pulls for processing
      * @return The {@link Long} of total pull count
      */
     Long getPullsCount(MetricFilter filter)
@@ -53,8 +53,25 @@ interface MetricService {
     /**
      * get the total builds count
      *
-     * @param MetricFilters, to filter container requests for processing
+     * @param MetricFilters, to filter container pulls for processing
      * @return The {@link Long} of total build count
      */
     Long getBuildsCount(MetricFilter filter)
+
+    /**
+     * Retrieve the Requests count per metric
+     *
+     * @param metric , which metric to count
+     * @param MetricFilters , to filter container requests for processing
+     * @return The {@link Map} of [{@link Metric}, total Requests count per metric ]
+     */
+    Map<String, Long> getRequestsMetric(Metric metric, MetricFilter filter)
+
+    /**
+     * Retrieve the total Requests count
+     *
+     * @param MetricFilters , to filter container requests for processing
+     * @return The {@link Long} of total Requests count
+     */
+    Long getRequestsCount(MetricFilter filter)
 }

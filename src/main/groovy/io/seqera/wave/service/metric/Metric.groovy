@@ -32,9 +32,9 @@ enum Metric {
     user('userEmail', 'user.email')
 
     String buildLabel
-    String pullLabel
-    Metric(String buildLabel, pullLabel){
+    String requestLabel
+    Metric(String buildLabel, requestLabel){
         this.buildLabel = buildLabel
-        this.pullLabel = pullLabel
+        this.requestLabel = requestLabel
     }
 }

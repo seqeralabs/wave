@@ -118,8 +118,8 @@ class LocalPersistenceService implements PersistenceService {
     }
 
     @Override
-    Map<String, Long> getPullsCountByMetric(Metric metric, MetricFilter filter) {
-        def pulls = getFilteredPulls(filter)
+    Map<String, Long> getRequestsCountByMetric(Metric metric, MetricFilter filter) {
+        def pulls = getFilteredRequests(filter)
 
         Map<String, Long> result = null
         if(metric == Metric.ip)
@@ -134,11 +134,11 @@ class LocalPersistenceService implements PersistenceService {
     }
 
     @Override
-    Long getPullsCount(MetricFilter filter) {
-        return getFilteredPulls(filter).size()
+    Long getRequestsCount(MetricFilter filter) {
+        return getFilteredRequests(filter).size()
     }
 
-    Collection<WaveContainerRecord> getFilteredPulls(MetricFilter filter) {
+    Collection<WaveContainerRecord> getFilteredRequests(MetricFilter filter) {
         if (!filter)
             return requestStore.values()
         def builds = requestStore.values()
@@ -152,5 +152,15 @@ class LocalPersistenceService implements PersistenceService {
         }
 
         return builds
+    }
+
+    @Override
+    Map<String, Long> getPullsCountByMetric(Metric metric, MetricFilter filter) {
+        return null
+    }
+
+    @Override
+    Long getPullsCount(MetricFilter filter) {
+        return null
     }
 }
