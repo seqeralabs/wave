@@ -28,13 +28,16 @@ package io.seqera.wave.service.metric
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 enum Metric {
-    ip('requestIp', 'ipAddress'),
-    user('userEmail', 'user.email')
+    ip('requestIp', 'ipAddress', 'ipAddress'),
+    user('userEmail', 'user.email', 'email')
 
     String buildLabel
     String requestLabel
-    Metric(String buildLabel, requestLabel){
+    String pullLabel
+
+    Metric(String buildLabel, requestLabel, pullLabel){
         this.buildLabel = buildLabel
         this.requestLabel = requestLabel
+        this.pullLabel = pullLabel
     }
 }

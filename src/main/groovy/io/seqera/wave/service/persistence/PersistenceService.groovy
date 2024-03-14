@@ -161,6 +161,13 @@ interface PersistenceService {
     Long getRequestsCount(MetricFilter filter)
 
     /**
+     * Save WavePullRecord in persistence
+     *
+     * @param WavePullRecord , a record of wave pull
+     */
+    void saveContainerPull(WaveContainerPullRecord record)
+
+    /**
      * Retrieve the pulls count per metric from storage
      *
      * @param metric , which metric to count

@@ -18,12 +18,15 @@
 
 package io.seqera.wave.service.persistence.impl
 
+import java.time.Instant
+
 import groovy.transform.CompileStatic
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.metric.Metric
 import io.seqera.wave.service.metric.MetricFilter
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
+import io.seqera.wave.service.persistence.WaveContainerPullRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import jakarta.inject.Singleton
@@ -39,9 +42,9 @@ import static io.seqera.wave.service.metric.MetricConstants.ANONYMOUS
 class LocalPersistenceService implements PersistenceService {
 
     private Map<String,WaveBuildRecord> buildStore = new HashMap<>()
-
     private Map<String,WaveContainerRecord> requestStore = new HashMap<>()
     private Map<String,WaveScanRecord> scanStore = new HashMap<>()
+    private Map<String,WaveContainerPullRecord> pullStore = new HashMap<>()
 
     @Override
     void saveBuild(WaveBuildRecord record) {
@@ -119,14 +122,14 @@ class LocalPersistenceService implements PersistenceService {
 
     @Override
     Map<String, Long> getRequestsCountByMetric(Metric metric, MetricFilter filter) {
-        def pulls = getFilteredRequests(filter)
+        def requests = getFilteredRequests(filter)
 
         Map<String, Long> result = null
         if(metric == Metric.ip)
-            result = pulls.groupBy { it.ipAddress}
+            result = requests.groupBy { it.ipAddress}
                     .collectEntries { [it.key, it.value.size()] }
         else if(metric == Metric.user)
-            result = pulls.groupBy { it.user?.email ?: ANONYMOUS}
+            result = requests.groupBy { it.user?.email ?: ANONYMOUS}
                     .collectEntries { [it.key, it.value.size()] }
 
         result = result.sort{ a, b -> b.value - a.value  }
@@ -141,26 +144,58 @@ class LocalPersistenceService implements PersistenceService {
     Collection<WaveContainerRecord> getFilteredRequests(MetricFilter filter) {
         if (!filter)
             return requestStore.values()
-        def builds = requestStore.values()
+        def requests = requestStore.values()
         if(filter.startDate && filter.endDate)
-            builds = builds.findAll { it.timestamp >= filter.startDate && it.timestamp <= filter.endDate }
+            requests = requests.findAll { it.timestamp >= filter.startDate && it.timestamp <= filter.endDate }
         if(filter.fusion !=null){
             if(filter.fusion)
-                builds = builds.findAll{it.containerConfig.fusionVersion() != null}
+                requests = requests.findAll{it.fusionVersion != null}
             else
-                builds = builds.findAll{it.containerConfig.fusionVersion() == null}
+                requests = requests.findAll{it.fusionVersion == null}
         }
 
-        return builds
+        return requests
+    }
+
+    @Override
+    void saveContainerPull(WaveContainerPullRecord record) {
+            pullStore.put(UUID.randomUUID().toString(), record)
     }
 
     @Override
     Map<String, Long> getPullsCountByMetric(Metric metric, MetricFilter filter) {
-        return null
+        def pulls = getFilteredPulls(filter)
+
+        Map<String, Long> result = null
+        if(metric == Metric.ip)
+            result = pulls.groupBy { it.ipAddress}
+                    .collectEntries { [it.key, it.value.size()] }
+        else if(metric == Metric.user)
+            result = pulls.groupBy { it.email ?: ANONYMOUS}
+                    .collectEntries { [it.key, it.value.size()] }
+
+        result = result.sort{ a, b -> b.value - a.value  }
+        return result.take(filter.limit)
     }
 
     @Override
     Long getPullsCount(MetricFilter filter) {
-        return null
+        return getFilteredPulls(filter).size()
+    }
+
+    Collection<WaveContainerPullRecord> getFilteredPulls( MetricFilter filter) {
+        if (!filter)
+            return pullStore.values()
+        def pulls = pullStore.values()
+        if(filter.startDate && filter.endDate)
+            pulls = pulls.findAll { it.timestamp >= filter.startDate && it.timestamp <= filter.endDate }
+        if(filter.fusion !=null){
+            if(filter.fusion)
+                pulls = pulls.findAll{it.fusionVersion != null}
+            else
+                pulls = pulls.findAll{it.fusionVersion == null}
+        }
+
+        return pulls
     }
 }

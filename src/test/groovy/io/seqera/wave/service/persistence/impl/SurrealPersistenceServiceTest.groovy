@@ -33,7 +33,10 @@ import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.core.ContainerDigestPair
+import io.seqera.wave.core.RoutePath
+import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.builder.BuildFormat
+import io.seqera.wave.service.persistence.WaveContainerPullRecord
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.BuildEvent
@@ -697,5 +700,115 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         true    | null          | Instant.now()     | 'WHERE fusionVersion != NONE'
         true    | Instant.now() | Instant.now()     | "WHERE type::is::datetime(timestamp) AND type::datetime(timestamp) >= '$STARTDATE' AND type::datetime(timestamp) <= '$ENDDATE' AND fusionVersion != NONE"
         false   | Instant.now() | Instant.now()     | "WHERE type::is::datetime(timestamp) AND type::datetime(timestamp) >= '$STARTDATE' AND type::datetime(timestamp) <= '$ENDDATE' AND fusionVersion = NONE"
+    }
+
+    def 'should save a container pull request' () {
+        given:
+        final persistence = applicationContext.getBean(SurrealPersistenceService)
+        def user = new User(id: 1, userName: 'bar', email: 'foo@gmail.com')
+        def data = new ContainerRequestData(new PlatformId(user,100), 'hello-world' )
+        def ip = '237.84.1.178'
+        def route = RoutePath.v2path('tags', 'quay.io', 'foo', 'some/path', data1)
+        and:
+        def record = new WaveContainerPullRecord(route, ip)
+        when:
+        persistence.saveContainerPull(record)
+        sleep(100)
+        and:
+        def result = persistence.getPullsCount(new MetricFilter.Builder().build())
+        then:
+        result == 1
+
+    }
+    def 'should return the correct pulls count'() {
+        given:
+        final persistence = applicationContext.getBean(SurrealPersistenceService)
+        def user1 = new User(id: 1, userName: 'bar', email: 'foo@gmail.com')
+        def data1 = new ContainerRequestData(new PlatformId(user1,100), 'hello-world' )
+        def ip1 = '237.84.1.178'
+        def route1 = RoutePath.v2path('tags', 'quay.io', 'foo', 'some/path', data1)
+
+        def user2 = new User(id: 2, userName: 'bar', email: 'foo@gmail.com')
+        def config = new ContainerConfig(entrypoint: ['/opt/fusion'],
+                layers: [ new ContainerLayer(location: 'https://fusionfs.seqera.io/releases/v2.2.8-amd64.json')])
+        def platformIdentity = new PlatformId(user2,100)
+        def data2 = new ContainerRequestData(platformIdentity, 'hello-world', null, config, null, null, null, null, null, 100)
+        def ip2 = '237.84.2.178'
+        def route2 = RoutePath.v2path('blobs', 'quay.io', 'foo', 'some/path', data2)
+
+        def ip3 = '237.84.3.178'
+        def container = ContainerCoordinates.parse('oras://quay.io/user/repo:abc')
+        def route3 = RoutePath.v2manifestPath(container)
+        and:
+        def record1 = new WaveContainerPullRecord(route1, ip1)
+        def record2 = new WaveContainerPullRecord(route2, ip2)
+        record2.timestamp = Instant.now().minus(1, ChronoUnit.DAYS)
+        def record3 = new WaveContainerPullRecord(route3, ip3)
+        and:
+        persistence.saveContainerPull(record1)
+        persistence.saveContainerPull(record2)
+        persistence.saveContainerPull(record3)
+        sleep(300)
+
+        and:
+        def datesFilter = new MetricFilter.Builder().dates(Instant.now().truncatedTo(ChronoUnit.DAYS), Instant.now()).build()
+        def emptyFilter = new MetricFilter.Builder().build()
+        def fusionTrueFilter = new MetricFilter.Builder().fusion(true).build()
+        def fusionFalseFilter = new MetricFilter.Builder().fusion(false).build()
+        def limitFilter = new MetricFilter.Builder().limit(1).build()
+
+        when:'get total pull count with no filter'
+        def result = persistence.getPullsCount(emptyFilter)
+        then:'return the pull count of all records'
+        result == 3
+
+        when:'get total pull count with date filter'
+        result = persistence.getPullsCount(datesFilter)
+        then:'return the pull count of all records for the date range'
+        result == 2
+
+        when:'get total pull count with fusion filter set to true'
+        result = persistence.getPullsCount(fusionTrueFilter)
+        then:'return the pull count of all records with fusion'
+        result == 1
+
+        when:'get total pull count with fusion filter set to false'
+        result = persistence.getPullsCount(fusionFalseFilter)
+        then:'return the pull count of all records without fusion'
+        result == 2
+
+        when:'get total pull count per user with no filter'
+        def mapResult = persistence.getPullsCountByMetric(Metric.user, emptyFilter)
+        then:'return the pull count per user of all records'
+        mapResult == [
+                'foo@gmail.com':2,
+                'anonymous':1
+        ]
+
+        when:'get total pull count per user with dates filter'
+        mapResult = persistence.getPullsCountByMetric(Metric.user, datesFilter)
+        then:'return the pull count per user of all records'
+        mapResult == [
+                'foo@gmail.com':1,
+                'anonymous':1
+        ]
+
+        when:'get total pull count per user with fusion filter set to true'
+        mapResult = persistence.getPullsCountByMetric(Metric.user, fusionTrueFilter)
+        then:'return the pull count per user of all records'
+        mapResult == ['foo@gmail.com':1]
+
+        when:'get total pull count per user with fusion filter set to false'
+        mapResult = persistence.getPullsCountByMetric(Metric.user, fusionFalseFilter)
+        then:'return the pull count per user of all records'
+        mapResult == [
+                'foo@gmail.com':1,
+                'anonymous':1
+        ]
+
+        when:'get total pull count per user with limit filter'
+        mapResult = persistence.getPullsCountByMetric(Metric.user, limitFilter)
+        then:'return the pull count per user of all records'
+        mapResult == ['foo@gmail.com':2]
     }
 }

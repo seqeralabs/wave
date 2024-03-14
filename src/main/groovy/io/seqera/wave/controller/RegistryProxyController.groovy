@@ -50,6 +50,7 @@ import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.blob.BlobCacheService
 import io.seqera.wave.service.builder.ContainerBuildService
+import io.seqera.wave.service.metric.MetricService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.DockerDigestStore
 import io.seqera.wave.storage.HttpDigestStore
@@ -99,6 +100,9 @@ class RegistryProxyController {
     @Inject
     @Nullable
     private BlobCacheService blobCacheService
+
+    @Inject
+    private MetricService metricsService
 
     @Value('${wave.cache.digestStore.maxWeightMb:350}')
     int cacheMaxWeightMb
@@ -233,6 +237,8 @@ class RegistryProxyController {
     }
 
     protected DigestStore manifestForPath(RoutePath route, HttpRequest httpRequest) {
+        //increase pull count
+        metricsService.addWavePull(route, addressResolver.resolve(httpRequest))
         // when the request contains a wave token and the manifest is specified
         // using a container 'tag' instead of a 'digest' the request path is used as storage key
         // because the target container path could be not unique (multiple wave containers request

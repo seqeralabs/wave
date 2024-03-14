@@ -34,6 +34,7 @@ import io.seqera.wave.service.metric.MetricFilter
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
+import io.seqera.wave.service.persistence.WaveContainerPullRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.persistence.legacy.SurrealLegacyService
 import io.seqera.wave.service.scan.ScanVulnerability
@@ -96,6 +97,10 @@ class SurrealPersistenceService implements PersistenceService {
         final ret4 = surrealDb.sqlAsMap(authorization, "define table wave_scan_vuln SCHEMALESS")
         if( ret4.status != "OK")
             throw new IllegalStateException("Unable to define SurrealDB table wave_scan_vuln - cause: $ret4")
+        // create wave_scan table
+        final ret5 = surrealDb.sqlAsMap(authorization, "define table wave_pull SCHEMALESS")
+        if( ret5.status != "OK")
+            throw new IllegalStateException("Unable to define SurrealDB table wave_pull - cause: $ret5")
     }
 
     private String getAuthorization() {
@@ -275,7 +280,7 @@ class SurrealPersistenceService implements PersistenceService {
                 "${getRequestMetricFilter(filter)} GROUP BY ${metric.requestLabel} ORDER BY total_count DESC LIMIT $filter.limit"
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
-        log.trace("Pulls count by ${metric.requestLabel} results: $results")
+        log.trace("Requests count by ${metric.requestLabel} results: $results")
         LinkedHashMap<String, Long> counts = new LinkedHashMap<>()
         for(def result : results){
             def key = result.get(metric.requestLabel)
@@ -295,7 +300,7 @@ class SurrealPersistenceService implements PersistenceService {
         final statement = "SELECT count() as total_count FROM wave_request ${getRequestMetricFilter(filter)}  GROUP ALL"
         final map = surrealDb.sqlAsMap(authorization, statement)
         def results = map.get("result") as List<Map>
-        log.trace("Total pulls count results: $results")
+        log.trace("Total requests count results: $results")
         if( results && results.size() > 0)
             return results[0].get("total_count")? results[0].get("total_count") as Long : 0
         else
@@ -316,12 +321,43 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
+    void saveContainerPull(WaveContainerPullRecord record) {
+        surrealDb.insertContainerPullAsync(authorization, record).subscribe({ result->
+            log.trace "Container pull record saved ${result}"
+        }, {error->
+            def msg = error.message
+            if( error instanceof HttpClientResponseException ){
+                msg += ":\n $error.response.body"
+            }
+            log.error "Error saving conatiner pull record ${msg}\n${record}", error
+        })
+    }
+
+    @Override
     Map<String, Long> getPullsCountByMetric(Metric metric, MetricFilter filter) {
-        return null
+        def statement = "SELECT ${metric.pullLabel}, count() as total_count  FROM wave_pull "+
+                "${getRequestMetricFilter(filter)} GROUP BY ${metric.pullLabel} ORDER BY total_count DESC LIMIT $filter.limit"
+        final map = surrealDb.sqlAsMap(authorization, statement)
+        def results = map.get("result") as List<Map>
+        log.trace("Requests count by ${metric.pullLabel} results: $results")
+        LinkedHashMap<String, Long> counts = new LinkedHashMap<>()
+        for(def result : results){
+            def key = result.get(metric.pullLabel)
+            //if the email is null, replace it with anonymous
+            counts.put((key?:ANONYMOUS) as String, result.get("total_count") as Long)
+        }
+        return counts
     }
 
     @Override
     Long getPullsCount(MetricFilter filter) {
-        return null
+        final statement = "SELECT count() as total_count FROM wave_pull ${getRequestMetricFilter(filter)}  GROUP ALL"
+        final map = surrealDb.sqlAsMap(authorization, statement)
+        def results = map.get("result") as List<Map>
+        log.trace("Total pulls count results: $results")
+        if( results && results.size() > 0)
+            return results[0].get("total_count")? results[0].get("total_count") as Long : 0
+        else
+            return 0
     }
 }

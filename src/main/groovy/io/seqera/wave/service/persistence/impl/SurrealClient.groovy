@@ -27,6 +27,7 @@ import io.micronaut.http.annotation.Post
 import io.micronaut.http.annotation.Put
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.retry.annotation.Retryable
+import io.seqera.wave.service.persistence.WaveContainerPullRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.service.persistence.WaveBuildRecord
@@ -81,5 +82,8 @@ interface SurrealClient {
 
     @Post('/key/wave_scan_vuln')
     Map<String, Object> insertScanVulnerability(@Header String authorization, @Body ScanVulnerability scanVulnerability)
+
+    @Post('/key/wave_pull')
+    Flux<Map<String, Object>> insertContainerPullAsync(@Header String authorization, @Body WaveContainerPullRecord body)
 
 }

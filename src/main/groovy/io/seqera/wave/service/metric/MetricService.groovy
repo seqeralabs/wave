@@ -18,6 +18,8 @@
 
 package io.seqera.wave.service.metric
 
+import io.seqera.wave.core.RoutePath
+
 /**
  * Defines the interface to retrieve wave metrics
  *
@@ -74,4 +76,12 @@ interface MetricService {
      * @return The {@link Long} of total Requests count
      */
     Long getRequestsCount(MetricFilter filter)
+
+    /**
+     * add wave pull into persistence
+     *
+     * @param RoutePath , a container registry route path
+     * @param ipAddress , ipAddress of the user
+     */
+    void addWavePull(RoutePath route, String ipAddress)
 }

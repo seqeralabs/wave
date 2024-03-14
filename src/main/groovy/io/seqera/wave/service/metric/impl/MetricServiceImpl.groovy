@@ -20,10 +20,12 @@ package io.seqera.wave.service.metric.impl
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.wave.core.RoutePath
 import io.seqera.wave.service.metric.Metric
 import io.seqera.wave.service.metric.MetricFilter
 import io.seqera.wave.service.metric.MetricService
 import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.persistence.WaveContainerPullRecord
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -66,5 +68,10 @@ class MetricServiceImpl implements MetricService {
     @Override
     Long getRequestsCount(MetricFilter filter) {
         persistenceService.getRequestsCount(filter)
+    }
+
+    @Override
+    void addWavePull(RoutePath route, String ipAddress) {
+        persistenceService.saveContainerPull(new WaveContainerPullRecord(route, ipAddress))
     }
 }
