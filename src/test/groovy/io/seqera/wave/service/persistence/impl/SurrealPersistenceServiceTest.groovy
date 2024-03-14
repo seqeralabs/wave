@@ -708,7 +708,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def user = new User(id: 1, userName: 'bar', email: 'foo@gmail.com')
         def data = new ContainerRequestData(new PlatformId(user,100), 'hello-world' )
         def ip = '237.84.1.178'
-        def route = RoutePath.v2path('tags', 'quay.io', 'foo', 'some/path', data1)
+        def route = RoutePath.v2path('tags', 'quay.io', 'foo', 'some/path', data)
         and:
         def record = new WaveContainerPullRecord(route, ip)
         when:
