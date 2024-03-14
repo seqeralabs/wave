@@ -16,57 +16,30 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.metric.impl
+package io.seqera.wave.service.pull.impl
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.core.RoutePath
-import io.seqera.wave.service.metric.Metric
-import io.seqera.wave.service.metric.MetricFilter
-import io.seqera.wave.service.metric.MetricService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveContainerPullRecord
+import io.seqera.wave.service.pull.ContainerPullService
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
- * Implements service to retrieve wave metrics
+ * Implements container pull service
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @Slf4j
 @Singleton
 @CompileStatic
-class MetricServiceImpl implements MetricService {
+class ContainerPullServiceImpl implements ContainerPullService {
     @Inject
     private PersistenceService persistenceService
 
     @Override
-    Map<String, Long> getBuildsMetric(Metric metric, MetricFilter filter) {
-        persistenceService.getBuildsCountByMetric(metric, filter)
-    }
-
-    @Override
-    Long getBuildsCount(MetricFilter filter) {
-        persistenceService.getBuildsCount(filter)
-    }
-
-    @Override
-    Map<String, Long> getRequestsMetric(Metric metric, MetricFilter filter) {
-        persistenceService.getRequestsCountByMetric(metric, filter)
-    }
-
-    @Override
-    Long getRequestsCount(MetricFilter filter) {
-        persistenceService.getRequestsCount(filter)
-    }
-
-    @Override
-    Map<String, Long> getPullsMetric(Metric metric, MetricFilter filter) {
-        persistenceService.getPullsCountByMetric(metric, filter)
-    }
-
-    @Override
-    Long getPullsCount(MetricFilter filter) {
-        persistenceService.getPullsCount(filter)
+    void createWaveContainerPullRecord(RoutePath route, String ipAddress) {
+        persistenceService.saveContainerPull(new WaveContainerPullRecord(route, ipAddress))
     }
 }
