@@ -144,7 +144,7 @@ class ContainerTokenController {
         return getTokenImpl(httpRequest, req, false)
     }
 
-    protected getTokenImpl(HttpRequest httpRequest, SubmitContainerTokenRequest req, boolean v2) {
+    protected CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getTokenImpl(HttpRequest httpRequest, SubmitContainerTokenRequest req, boolean v2) {
         validateContainerRequest(req)
 
         // this is needed for backward compatibility with old clients
