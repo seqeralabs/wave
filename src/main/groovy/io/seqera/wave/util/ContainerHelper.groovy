@@ -16,14 +16,12 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.container.impl
+package io.seqera.wave.util
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
-import io.seqera.wave.service.container.ContainerService
-import jakarta.inject.Singleton
 import static io.seqera.wave.util.CondaHelper.condaLock
 import static io.seqera.wave.util.DockerHelper.condaFileToDockerFile
 import static io.seqera.wave.util.DockerHelper.condaFileToSingularityFile
@@ -32,17 +30,15 @@ import static io.seqera.wave.util.DockerHelper.condaPackagesToSingularityFile
 import static io.seqera.wave.util.DockerHelper.spackFileToDockerFile
 import static io.seqera.wave.util.DockerHelper.spackFileToSingularityFile
 /**
- * Implements container service
+ * Container helper methods
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-@Slf4j
-@Singleton
 @CompileStatic
-class ContainerServiceImpl implements ContainerService {
+@Slf4j
+class ContainerHelper {
 
-    @Override
-    String createContainerFile(SubmitContainerTokenRequest request) {
+    static String createContainerFile(SubmitContainerTokenRequest request) {
         def packages = request.packages
         final String lock = condaLock(packages.packages)
         if(packages.type == PackagesSpec.Type.CONDA) {
@@ -66,7 +62,7 @@ class ContainerServiceImpl implements ContainerService {
             return result
         }
 
-    return null
+        return null
     }
 
 }

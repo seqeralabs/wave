@@ -52,7 +52,6 @@ import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.builder.FreezeService
-import io.seqera.wave.service.container.ContainerService
 import io.seqera.wave.service.inclusion.ContainerInclusionService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.pairing.PairingService
@@ -65,6 +64,7 @@ import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
+import io.seqera.wave.util.ContainerHelper
 import io.seqera.wave.util.DataTimeUtils
 import io.seqera.wave.util.LongRndKey
 import jakarta.inject.Inject
@@ -133,9 +133,6 @@ class ContainerTokenController {
 
     @Inject
     ContainerInclusionService inclusionService
-
-    @Inject
-    ContainerService containerService
 
     @PostConstruct
     private void init() {
@@ -233,7 +230,7 @@ class ContainerTokenController {
         if( !buildConfig.defaultCacheRepository )
             throw new BadRequestException("Missing build cache repository attribute")
 
-        final containerSpec = req.containerFile ? decodeBase64OrFail(req.containerFile, 'containerFile') : containerService.createContainerFile(req)
+        final containerSpec = req.containerFile ? decodeBase64OrFail(req.containerFile, 'containerFile') : ContainerHelper.createContainerFile(req)
         final condaContent = decodeBase64OrFail(req.condaFile, 'condaFile')
         final spackContent = decodeBase64OrFail(req.spackFile, 'spackFile')
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
