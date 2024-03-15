@@ -1,0 +1,116 @@
+openapi: "3.1.0" 
+info:
+  title: Wave containers API
+  description: API for the Wave container provisioning service 
+  contact:
+    url: https://seqera.io/wave
+    email: info@seqera.io
+  version: 1.0.0
+paths:
+  /service-info:
+    get:
+      summary: Get service info
+      description: Provides basic information about the Wave service status.
+      operationId: getServiceInfo
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceInfoResponse'
+
+  /container-token:
+    post:
+      summary: Submit container request
+      description: "Submit a request to access a private container repository via Wave, or build a container image on-the-fly with a Dockerfile or Conda recipe file. Returns the name of the container request made available by Wave."
+      operationId: RequestContainer
+      requestBody:
+        description: Container token request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContainerTokenRequest'
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContainerTokenResponse'
+
+components:
+  schemas: 
+    ContainerTokenRequest: 
+      type: object
+      properties:
+        containerImage: 
+          type: string
+        containerFile: 
+          type: string
+        containerConfig:
+          type: object
+          properties:
+            entrypoint:
+              type: string
+            cmd:
+              type: string
+            env:
+              type: string
+            workingDir:
+              type: string
+            layers:
+              type: object
+              properties:
+                location:
+                  type: string
+                gzipDigest: 
+                  type: string
+                gzipSize: 
+                  type: string
+                tarDigest:
+                  type: string
+        condaFile: 
+          type: string
+        spackFile: 
+          type: string
+        containerPlatform: 
+          type: string
+        buildRepository: 
+          type: string
+        cacheRepository: 
+          type: string
+        timestamp: 
+          type: string
+        fingerprint: 
+          type: string
+        freeze: 
+          type: boolean
+        towerAccessToken: 
+          type: string
+        towerRefreshToken: 
+          type: string
+        towerEndpoint: 
+          type: string
+        towerWorkspaceId: 
+          type: number
+
+    ContainerTokenResponse:
+      type: object
+      properties:
+        containerToken: 
+          type: string
+        targetImage: 
+          type: string
+        expiration: 
+          type: string
+
+    ServiceInfoResponse:
+      type: object
+      properties:
+        version:
+          type: string
+        commitId:
+          type: string
+                  
