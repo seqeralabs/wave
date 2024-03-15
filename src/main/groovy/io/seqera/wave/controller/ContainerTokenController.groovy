@@ -243,8 +243,8 @@ class ContainerTokenController {
                 scanId,
                 ip,
                 offset)
-        if( req.labels ){
-            buildRequest.withLabels(req.labels)
+        if( req.containerConfig.labels ){
+            buildRequest.withLabels(req.containerConfig.labels)
         }
         return buildRequest
     }
