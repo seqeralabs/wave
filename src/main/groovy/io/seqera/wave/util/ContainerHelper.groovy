@@ -35,7 +35,6 @@ import static io.seqera.wave.util.DockerHelper.spackFileToSingularityFile
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @CompileStatic
-@Slf4j
 class ContainerHelper {
 
     static String createContainerFile(SubmitContainerTokenRequest request) {
@@ -43,7 +42,7 @@ class ContainerHelper {
         final String lock = condaLock(packages.packages)
         if(packages.type == PackagesSpec.Type.CONDA) {
             def result
-            if (lock != null || lock.size() > 0) {
+            if (lock != null && lock.size() > 0) {
                 result = request.formatSingularity()
                         ? condaPackagesToSingularityFile(lock, packages.channels, packages.condaOpts)
                         : condaPackagesToDockerFile(lock, packages.channels, packages.condaOpts)
