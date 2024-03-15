@@ -161,7 +161,7 @@ class ContainerHelperTest extends Specification {
                     '''.stripIndent()
     }
 
-    def 'should create conda docker file'() {
+    def 'should create spack docker file'() {
         given:
         def SPACK_OPTS = new SpackOpts([
                 basePackages: 'foo bar',

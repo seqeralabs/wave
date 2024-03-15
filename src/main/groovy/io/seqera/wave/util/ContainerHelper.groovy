@@ -19,7 +19,6 @@
 package io.seqera.wave.util
 
 import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
 import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import static io.seqera.wave.util.CondaHelper.condaLock

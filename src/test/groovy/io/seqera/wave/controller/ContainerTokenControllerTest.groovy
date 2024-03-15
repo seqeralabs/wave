@@ -29,8 +29,11 @@ import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
+import io.seqera.wave.config.CondaOpts
+import io.seqera.wave.config.SpackOpts
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
@@ -447,5 +450,69 @@ class ContainerTokenControllerTest extends Specification {
         and:
         noExceptionThrown()
 
+    }
+
+    def'should create request data with spack packages' () {
+        given:
+        def builder = Mock(ContainerBuildService)
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def proxyRegistry = Mock(RegistryProxyService)
+        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService))
+
+        when:'packages with spack'
+        def SPACK_OPTS = new SpackOpts([
+                basePackages: 'foo bar',
+                commands: ['run','--this','--that']
+        ])
+        def packages = new PackagesSpec(type: PackagesSpec.Type.SPACK, spackOpts: SPACK_OPTS)
+        def req = new SubmitContainerTokenRequest(format: 'docker', packages:packages)
+        def data = controller.makeRequestData(req, new PlatformId(new User(id: 100), 10), "127.0.0.1")
+
+        then:
+        data.containerFile == '''\
+                # Runner image
+                FROM {{spack_runner_image}}
+                
+                COPY --from=builder /opt/spack-env /opt/spack-env
+                COPY --from=builder /opt/software /opt/software
+                COPY --from=builder /opt/._view /opt/._view
+                
+                # Entrypoint for Singularity
+                RUN mkdir -p /.singularity.d/env && \\
+                    cp -p /opt/spack-env/z10_spack_environment.sh /.singularity.d/env/91-environment.sh
+                # Entrypoint for Docker
+                RUN echo "#!/usr/bin/env bash\\n\\nset -ef -o pipefail\\nsource /opt/spack-env/z10_spack_environment.sh\\nexec \\"\\$@\\"" \\
+                    >/opt/spack-env/spack_docker_entrypoint.sh && chmod a+x /opt/spack-env/spack_docker_entrypoint.sh
+                
+                run
+                --this
+                --that
+                
+                ENTRYPOINT [ "/opt/spack-env/spack_docker_entrypoint.sh" ]
+                CMD [ "/bin/bash" ]
+                '''.stripIndent()
+    }
+
+    def'should throw BadRequestException when more than one artifact (container image, container file or packages) is provided in the request' () {
+        given:
+        def controller = new ContainerTokenController(inclusionService: Mock(ContainerInclusionService))
+
+        when: 'container image  and container file and packages are provided'
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu', containerFile: 'from foo', packages: new PackagesSpec())
+        controller.makeRequestData(req, new PlatformId(new User(id: 100)), "")
+        then:
+        thrown(BadRequestException)
+
+        when: 'container image and packages are provided'
+        req = new SubmitContainerTokenRequest(containerImage: 'ubuntu', packages: new PackagesSpec())
+        controller.makeRequestData(req, new PlatformId(new User(id: 100)), "")
+        then:
+        thrown(BadRequestException)
+
+        when: 'container file and packages are provided'
+        req = new SubmitContainerTokenRequest(containerFile: 'from foo', packages: new PackagesSpec())
+        controller.makeRequestData(req, new PlatformId(new User(id: 100)), "")
+        then:
+        thrown(BadRequestException)
     }
 }
