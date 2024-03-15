@@ -52,6 +52,7 @@ import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.builder.FreezeService
+import io.seqera.wave.service.container.ContainerService
 import io.seqera.wave.service.inclusion.ContainerInclusionService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.pairing.PairingService
@@ -132,6 +133,9 @@ class ContainerTokenController {
 
     @Inject
     ContainerInclusionService inclusionService
+
+    @Inject
+    ContainerService containerService
 
     @PostConstruct
     private void init() {
@@ -222,14 +226,14 @@ class ContainerTokenController {
     }
 
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
-        if( !req.containerFile )
-            throw new BadRequestException("Missing dockerfile content")
+        if( !req.packages && !req.containerFile )
+            throw new BadRequestException("Missing dockerfile and packages content")
         if( !buildConfig.defaultBuildRepository )
             throw new BadRequestException("Missing build repository attribute")
         if( !buildConfig.defaultCacheRepository )
             throw new BadRequestException("Missing build cache repository attribute")
 
-        final containerSpec = decodeBase64OrFail(req.containerFile, 'containerFile')
+        final containerSpec = req.containerFile ? decodeBase64OrFail(req.containerFile, 'containerFile') : containerService.createContainerFile(req)
         final condaContent = decodeBase64OrFail(req.condaFile, 'condaFile')
         final spackContent = decodeBase64OrFail(req.spackFile, 'spackFile')
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
@@ -275,10 +279,14 @@ class ContainerTokenController {
     }
 
     ContainerRequestData makeRequestData(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
-        if( !req.containerImage && !req.containerFile )
-            throw new BadRequestException("Specify either 'containerImage' or 'containerFile' attribute")
+        if( !req.packages && !req.containerImage && !req.containerFile )
+            throw new BadRequestException("Specify either 'packages' or 'containerImage' or 'containerFile' attribute")
         if( req.containerImage && req.containerFile )
             throw new BadRequestException("Attributes 'containerImage' and 'containerFile' cannot be used in the same request")
+        if( req.packages && req.containerImage )
+            throw new BadRequestException("Attributes 'packages' and 'containerFile' cannot be used in the same request")
+        if( req.packages && req.containerFile )
+            throw new BadRequestException("Attributes 'packages' and 'containerImage' cannot be used in the same request")
         if( req.containerImage?.contains('@sha256:') && req.containerConfig && !req.freeze )
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
         if( req.freeze && !req.buildRepository && !buildConfig.defaultPublicRepository )
@@ -300,7 +308,7 @@ class ContainerTokenController {
         String condaContent
         String buildId
         boolean buildNew
-        if( req.containerFile ) {
+        if( req.containerFile || req.packages) {
             final build = buildRequest(req, identity, ip)
             targetImage = build.targetImage
             targetContent = build.containerFile
