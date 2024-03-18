@@ -42,6 +42,7 @@ import io.seqera.wave.exchange.DescribeWaveContainerResponse
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.builder.FreezeService
+import io.seqera.wave.service.builder.FreezeServiceImpl
 import io.seqera.wave.service.inclusion.ContainerInclusionService
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.service.pairing.PairingRecord
@@ -450,6 +451,38 @@ class ContainerTokenControllerTest extends Specification {
         and:
         noExceptionThrown()
 
+    }
+
+    def 'should check and create request data with conda packages' () {
+        given:
+        def freeze = new FreezeServiceImpl()
+        def builder = Mock(ContainerBuildService)
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def proxyRegistry = Mock(RegistryProxyService)
+        def controller = new ContainerTokenController(freezeService:  freeze, buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService))
+
+        when:'packages with conda'
+        def CHANNELS = ['conda-forge', 'defaults']
+        def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
+        def PACKAGES = ['https://foo.com/lock.yml']
+        def packagesSpec = new PackagesSpec(type: PackagesSpec.Type.CONDA, packages: PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
+        def req = new SubmitContainerTokenRequest(format: 'sif', packages: packagesSpec, freeze: true, buildRepository: 'docker.io/foo')
+        def data = controller.makeRequestData(req, PlatformId.NULL, "127.0.0.1")
+
+        then:
+        data.containerFile =='''\
+                # wave generated container file
+                BootStrap: docker
+                From: mambaorg/micromamba:1.5.5
+                %post
+                    micromamba install -y -n base -c conda-forge -c defaults -f https://foo.com/lock.yml
+                    micromamba install -y -n base foo::one bar::two
+                    micromamba clean -a -y
+                %environment
+                    export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                '''.stripIndent()
+        and:
+        data.containerImage == 'oras://docker.io/foo:9b266d5b5c455fe0'
     }
 
     def'should create request data with spack packages' () {
