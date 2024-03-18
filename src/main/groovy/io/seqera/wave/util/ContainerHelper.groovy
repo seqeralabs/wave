@@ -21,6 +21,8 @@ package io.seqera.wave.util
 import groovy.transform.CompileStatic
 import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.config.CondaOpts
+import io.seqera.wave.config.SpackOpts
 import static io.seqera.wave.util.CondaHelper.condaLock
 import static io.seqera.wave.util.DockerHelper.condaFileToDockerFile
 import static io.seqera.wave.util.DockerHelper.condaFileToSingularityFile
@@ -41,6 +43,8 @@ class ContainerHelper {
         def packages = request.packages
         final String lock = condaLock(packages.packages)
         if( packages.type == PackagesSpec.Type.CONDA ) {
+            if( !packages.condaOpts )
+                packages.condaOpts = new CondaOpts()
             def result
             if ( !isEmpty(lock) ) {
                 result = request.formatSingularity()
@@ -55,6 +59,8 @@ class ContainerHelper {
         }
 
         if( packages.type == PackagesSpec.Type.SPACK ) {
+            if( !packages.spackOpts )
+                packages.spackOpts = new SpackOpts()
             final result = request.formatSingularity()
                     ? spackFileToSingularityFile(packages.spackOpts)
                     : spackFileToDockerFile(packages.spackOpts)
