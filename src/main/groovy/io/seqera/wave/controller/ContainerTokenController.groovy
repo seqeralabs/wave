@@ -38,6 +38,7 @@ import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.security.annotation.Secured
 import io.micronaut.security.authentication.AuthorizationException
 import io.micronaut.security.rules.SecurityRule
+import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.configuration.BuildConfig
@@ -76,6 +77,7 @@ import static io.seqera.wave.util.Checkers.isEmpty
 import static io.seqera.wave.util.CondaHelper.condaLock
 import static io.seqera.wave.util.CondaHelper.createCondaFileFromPackages
 import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
+import static io.seqera.wave.util.SpackHelper.createSpackFileFromPackages
 /**
  * Implement a controller to receive container token requests
  * 
@@ -234,13 +236,8 @@ class ContainerTokenController {
             throw new BadRequestException("Missing build cache repository attribute")
 
         final containerSpec = req.containerFile ? decodeBase64OrFail(req.containerFile, 'containerFile') : ContainerHelper.createContainerFile(req)
-        def condaContent
-        if( req.packages && isEmpty(condaLock(req.packages.packages))) {
-            condaContent = decodeBase64OrFail(createCondaFileFromPackages(req.packages), 'condaFile')
-        }else {
-            condaContent = decodeBase64OrFail(req.condaFile, 'condaFile')
-        }
-        final spackContent = decodeBase64OrFail(req.spackFile, 'spackFile')
+        final condaContent = getCondaFile(req)
+        final spackContent = getSpackFile(req)
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
         final build = req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository ? buildConfig.defaultPublicRepository : buildConfig.defaultBuildRepository)
@@ -266,6 +263,22 @@ class ContainerTokenController {
                 scanId,
                 ip,
                 offset)
+    }
+
+    private String getCondaFile(SubmitContainerTokenRequest req){
+        if( (req.packages.type == PackagesSpec.Type.CONDA) && req.packages && isEmpty(condaLock(req.packages.packages)) && isEmpty(req.condaFile)) {
+                return decodeBase64OrFail(createCondaFileFromPackages(req.packages), 'condaFile')
+            } else {
+                return decodeBase64OrFail(req.condaFile, 'condaFile')
+            }
+    }
+
+    private String getSpackFile(SubmitContainerTokenRequest req){
+        if( (req.packages.type == PackagesSpec.Type.SPACK) && req.packages && isEmpty(req.spackFile)) {
+            return decodeBase64OrFail(createSpackFileFromPackages(req.packages), 'spackFile')
+        }else {
+            return decodeBase64OrFail(req.spackFile, 'spackFile')
+        }
     }
 
     protected BuildRequest buildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {

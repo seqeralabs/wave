@@ -18,14 +18,21 @@
 
 package io.seqera.wave.util
 
+import java.nio.file.Files
+import java.nio.file.Path
+
+import groovy.transform.CompileStatic
+import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildFormat
+import static io.seqera.wave.util.DockerHelper.spackPackagesToSpackFile
 
 /**
  * Helper class for Spack package manager
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@CompileStatic
 class SpackHelper {
 
     static String builderDockerTemplate() {
@@ -60,6 +67,17 @@ class SpackHelper {
         if( value=='linux/arm64' )
             return 'aarch64'
         throw new IllegalArgumentException("Unable to map container platform '${platform}' to Spack architecture")
+    }
+
+    static String createSpackFileFromPackages(PackagesSpec packagesSpec) throws IOException {
+        if( packagesSpec.packages == null || packagesSpec.packages.isEmpty())
+            return null;
+        final String packages = String.join(" ", packagesSpec.packages);
+        Path spackFilePath = spackPackagesToSpackFile(packages, packagesSpec.spackOpts);
+        if( spackFilePath!=null ) {
+            return Base64.getEncoder().encodeToString(Files.readAllBytes(Path.of(spackFilePath.toString())));
+        }
+        return null;
     }
 
 }
