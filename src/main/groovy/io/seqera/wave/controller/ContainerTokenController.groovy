@@ -72,6 +72,9 @@ import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
 import static io.seqera.wave.WaveDefault.TOWER
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
+import static io.seqera.wave.util.Checkers.isEmpty
+import static io.seqera.wave.util.CondaHelper.condaLock
+import static io.seqera.wave.util.CondaHelper.createCondaFileFromPackages
 import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
 /**
  * Implement a controller to receive container token requests
@@ -231,7 +234,12 @@ class ContainerTokenController {
             throw new BadRequestException("Missing build cache repository attribute")
 
         final containerSpec = req.containerFile ? decodeBase64OrFail(req.containerFile, 'containerFile') : ContainerHelper.createContainerFile(req)
-        final condaContent = decodeBase64OrFail(req.condaFile, 'condaFile')
+        def condaContent
+        if( req.packages && isEmpty(condaLock(req.packages.packages))) {
+            condaContent = decodeBase64OrFail(createCondaFileFromPackages(req.packages), 'condaFile')
+        }else {
+            condaContent = decodeBase64OrFail(req.condaFile, 'condaFile')
+        }
         final spackContent = decodeBase64OrFail(req.spackFile, 'spackFile')
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)

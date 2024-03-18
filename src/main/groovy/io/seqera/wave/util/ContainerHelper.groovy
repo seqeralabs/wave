@@ -28,6 +28,7 @@ import static io.seqera.wave.util.DockerHelper.condaPackagesToDockerFile
 import static io.seqera.wave.util.DockerHelper.condaPackagesToSingularityFile
 import static io.seqera.wave.util.DockerHelper.spackFileToDockerFile
 import static io.seqera.wave.util.DockerHelper.spackFileToSingularityFile
+import static io.seqera.wave.util.Checkers.isEmpty;
 /**
  * Container helper methods
  *
@@ -39,9 +40,9 @@ class ContainerHelper {
     static String createContainerFile(SubmitContainerTokenRequest request) {
         def packages = request.packages
         final String lock = condaLock(packages.packages)
-        if(packages.type == PackagesSpec.Type.CONDA) {
+        if( packages.type == PackagesSpec.Type.CONDA ) {
             def result
-            if (lock != null && lock.size() > 0) {
+            if ( !isEmpty(lock) ) {
                 result = request.formatSingularity()
                         ? condaPackagesToSingularityFile(lock, packages.channels, packages.condaOpts)
                         : condaPackagesToDockerFile(lock, packages.channels, packages.condaOpts)
