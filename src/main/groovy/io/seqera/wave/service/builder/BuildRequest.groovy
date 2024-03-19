@@ -151,7 +151,7 @@ class BuildRequest {
     BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, BuildFormat format, PlatformId identity, ContainerConfig containerConfig, BuildContext buildContext, ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId) {
         this.containerId = computeDigest(containerFile, condaFile, spackFile, platform, repo, buildContext)
         this.startTime = Instant.now()
-        this.id = "${containerId}-${startTime.toEpochMilli().toString().md5()[-5..-1]}"
+        this.id = "${containerId}-${instantToHash(startTime)}"
         this.containerFile = containerFile
         this.containerConfig = containerConfig
         this.buildContext = buildContext
@@ -170,10 +170,7 @@ class BuildRequest {
         this.scanId = scanId
     }
 
-    /**
-     * ONLY FOR TESTING PURPOSES
-     */
-    protected BuildRequest(Map opts) {
+    BuildRequest(Map opts) {
         this.id = opts.id
         this.containerFile = opts.containerFile
         this.condaFile = opts.condaFile
@@ -241,16 +238,6 @@ class BuildRequest {
         return tag ?: null
     }
 
-    static private String computeDigest(String containerFile, String condaFile, String spackFile, ContainerPlatform platform, String repository, BuildContext buildContext) {
-        final attrs = new LinkedHashMap<String,String>(10)
-        attrs.containerFile = containerFile
-        attrs.condaFile = condaFile
-        attrs.platform = platform?.toString()
-        attrs.repository = repository
-        if( spackFile ) attrs.spackFile = spackFile
-        if( buildContext ) attrs.buildContext = buildContext.tarDigest
-        return RegHelper.sipHash(attrs)
-    }
 
     @Override
     String toString() {
@@ -330,5 +317,9 @@ class BuildRequest {
         if( !id )
             return null
         return id.contains('-') ? id.tokenize('-')[0] : null
+    }
+
+    static String instantToHash(Instant instant) {
+        RegHelper.randomString(10)
     }
 }

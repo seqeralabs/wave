@@ -16,47 +16,40 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.core
+package io.seqera.wave.service.counter.impl
 
-import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
-import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import jakarta.inject.Inject
+import io.seqera.wave.test.RedisTestContainer
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@MicronautTest
-class RegistryProxyServiceTest extends Specification {
+class RedisCounterProviderTest extends Specification implements RedisTestContainer {
 
-    @Inject
-    @Shared
     ApplicationContext applicationContext
 
-    @Inject RegistryProxyService registryProxyService
+    RedisCounterProvider redisCounterProvider
 
-
-    def 'should check manifest exist' () {
-        given:
-        def IMAGE = 'library/hello-world:latest'
-
-        when:
-        def resp1 = registryProxyService.isManifestPresent(IMAGE)
-
-        then:
-        resp1
+    def setup() {
+        applicationContext = ApplicationContext.run([
+                REDIS_HOST : redisHostName,
+                REDIS_PORT : redisPort
+        ], 'test', 'redis')
+        redisCounterProvider = applicationContext.getBean(RedisCounterProvider)
+        sleep(500) // workaround to wait for Redis connection
     }
 
-    def 'should retrieve image digest' () {
-        given:
-        def IMAGE = 'library/hello-world@sha256:6352af1ab4ba4b138648f8ee88e63331aae519946d3b67dae50c313c6fc8200f'
 
-        when:
-        def resp1 = registryProxyService.getImageDigest(IMAGE)
-
-        then:
-        resp1 == 'sha256:6352af1ab4ba4b138648f8ee88e63331aae519946d3b67dae50c313c6fc8200f'
+    def 'should increment a counter value' () {
+        expect:
+        redisCounterProvider.inc('build-x', 'foo', 1) == 1
+        redisCounterProvider.inc('build-x', 'foo', 1) == 2
+        and:
+        redisCounterProvider.inc('build-x', 'foo', 10) == 12
+        and:
+        redisCounterProvider.inc('build-x', 'foo', -12) == 0
     }
+
 }

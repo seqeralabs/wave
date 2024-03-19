@@ -29,6 +29,7 @@ import io.micronaut.context.annotation.Value
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -55,6 +56,9 @@ class DockerBuildStrategy extends BuildStrategy {
 
     @Inject
     BuildConfig buildConfig
+
+    @Inject
+    RegistryProxyService proxyService
 
     @Override
     BuildResult build(BuildRequest req) {
@@ -93,7 +97,13 @@ class DockerBuildStrategy extends BuildStrategy {
 
         final completed = proc.waitFor(buildConfig.buildTimeout.toSeconds(), TimeUnit.SECONDS)
         final stdout = proc.inputStream.text
-        return BuildResult.completed(req.id, completed ? proc.exitValue() : -1, stdout, req.startTime)
+        if( completed ) {
+            final digest = proxyService.getImageDigest(req.targetImage)
+            return BuildResult.completed(req.id, proc.exitValue(), stdout, req.startTime, digest)
+        }
+        else {
+            return BuildResult.failed(req.id, stdout, req.startTime)
+        }
     }
 
     protected List<String> buildCmd(BuildRequest req, Path credsFile) {

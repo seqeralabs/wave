@@ -59,6 +59,8 @@ interface PersistenceService {
      */
     WaveBuildRecord loadBuild(String buildId)
 
+    WaveBuildRecord loadBuild(String buildId, String digest)
+
     /**
      * Store a {@link WaveContainerRecord} object in the Surreal wave_request table.
      *

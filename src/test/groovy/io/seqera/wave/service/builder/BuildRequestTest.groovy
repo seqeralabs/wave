@@ -22,7 +22,9 @@ import spock.lang.Specification
 import spock.lang.Unroll
 
 import java.nio.file.Path
+import java.time.Instant
 import java.time.OffsetDateTime
+import java.util.concurrent.ConcurrentHashMap
 
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
@@ -303,4 +305,27 @@ class BuildRequestTest extends Specification {
         'foo-01'        | 'foo'
     }
 
+    def 'should check collision' () {
+        given:
+        def map = new ConcurrentHashMap<String,Integer>()
+        def STEP = 1_000
+        def count = 0
+
+        when:
+        for( int i=0; i<100_000; i++ ) {
+            if( i % 1_000 == 0 ) {
+                println "Iteration ${i * STEP}.."
+            }
+            final h = BuildRequest.instantToHash(Instant.now())
+            if( map.containsKey(h)) {
+                count ++
+                map[h] = map[h]+1
+            }
+            else {
+                map[h] = 1
+            }
+        }
+        then:
+        count == 0
+    }
 }

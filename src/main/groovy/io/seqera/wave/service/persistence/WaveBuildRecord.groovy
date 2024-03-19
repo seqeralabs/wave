@@ -26,6 +26,7 @@ import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
+import io.seqera.wave.service.builder.BuildRequest
 
 /**
  * A collection of request and response properties to be stored
@@ -38,6 +39,7 @@ import io.seqera.wave.service.builder.BuildFormat
 @EqualsAndHashCode
 class WaveBuildRecord {
 
+    String id
     String buildId
     String dockerFile
     String condaFile
@@ -54,6 +56,7 @@ class WaveBuildRecord {
     String platform
     String scanId
     BuildFormat format
+    String digest
 
     boolean succeeded() { exitStatus==0 }
 
@@ -61,7 +64,8 @@ class WaveBuildRecord {
         if( event.request.id != event.result.id )
             throw new IllegalStateException("Build id must match the result id")
         return new WaveBuildRecord(
-                buildId: event.request.id,
+                id: event.request.id,
+                buildId: event.request.containerId,
                 dockerFile: event.request.containerFile,
                 condaFile: event.request.condaFile,
                 spackFile: event.request.spackFile,
@@ -71,12 +75,31 @@ class WaveBuildRecord {
                 userId: event.request.identity.user?.id,
                 requestIp: event.request.ip,
                 startTime: event.request.startTime,
-                duration: event.result.duration,
-                exitStatus: event.result.exitStatus,
                 platform: event.request.platform,
                 offsetId: event.request.offsetId,
                 scanId: event.request.scanId,
-                format: event.request.format
+                format: event.request.format,
+                duration: event.result.duration,
+                exitStatus: event.result.exitStatus,
+                digest: event.result.digest
         )
     }
+
+    BuildRequest toBuildRequest() {
+        new BuildRequest(
+                id: buildId,
+                containerFile: dockerFile,
+                condaFile: condaFile,
+                spackFile: spackFile,
+                targetImage: targetImage,
+                userName: userName,
+                userEmail: userEmail,
+                userId: userId,
+                ip: requestIp,
+                startTime: startTime,
+                platform: platform,
+                offsetId: offsetId,
+                scanId: scanId )
+    }
+
 }

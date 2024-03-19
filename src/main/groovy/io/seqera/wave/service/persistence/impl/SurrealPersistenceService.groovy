@@ -137,8 +137,6 @@ class SurrealPersistenceService implements PersistenceService {
         final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null
-        if( !result && legacy )
-            return legacy.loadBuild(buildId)
         return result
     }
 
@@ -150,6 +148,16 @@ class SurrealPersistenceService implements PersistenceService {
         final result = data && data[0].result ? data[0].result[0] : null
         if( !result && legacy )
             return legacy.loadBuild(buildId)
+        return result
+    }
+
+    @Override
+    WaveBuildRecord loadBuild(String buildId, String digest) {
+        final query = "select * from wave_build where buildId = '$buildId' and digest = '$digest'"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result[0] : null
         return result
     }
 

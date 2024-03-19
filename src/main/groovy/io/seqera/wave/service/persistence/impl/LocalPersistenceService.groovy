@@ -54,6 +54,12 @@ class LocalPersistenceService implements PersistenceService {
     }
 
     @Override
+    WaveBuildRecord loadBuild(String buildId, String digest) {
+        // TODO
+        return null
+    }
+
+    @Override
     void saveContainerRequest(String token, WaveContainerRecord data) {
         requestStore.put(token, data)
     }
