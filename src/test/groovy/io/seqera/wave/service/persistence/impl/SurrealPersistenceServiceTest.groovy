@@ -107,7 +107,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         BuildRequest request = new BuildRequest(dockerFile,
                 Path.of("."), "buildrepo", condaFile, null, BuildFormat.DOCKER, PlatformId.NULL, null, null,
                 ContainerPlatform.of('amd64'),'{auth}', null, null, "127.0.0.1", null)
-        BuildResult result = new BuildResult(request.id, -1, "ok", Instant.now(), Duration.ofSeconds(3))
+        BuildResult result = new BuildResult(request.containerId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         BuildEvent event = new BuildEvent(request, result)
         WaveBuildRecord build = WaveBuildRecord.fromEvent(event)
 
@@ -164,7 +164,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         storage.initializeDb()
         final service = applicationContext.getBean(SurrealPersistenceService)
         BuildRequest request = new BuildRequest("test", Path.of("."), "test", "test", null, BuildFormat.DOCKER, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', "test", null, "127.0.0.1", null)
-        BuildResult result = new BuildResult(request.id, 0, "content", Instant.now(), Duration.ofSeconds(1))
+        BuildResult result = new BuildResult(request.containerId, 0, "content", Instant.now(), Duration.ofSeconds(1), null)
         BuildEvent event = new BuildEvent(request, result)
 
         when:
@@ -189,7 +189,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         surrealContainer.stop()
         final service = applicationContext.getBean(SurrealPersistenceService)
         BuildRequest request = new BuildRequest("test", Path.of("."), "test", "test", null, BuildFormat.DOCKER, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', "test", null, "127.0.0.1", null)
-        BuildResult result = new BuildResult(request.id, 0, "content", Instant.now(), Duration.ofSeconds(1))
+        BuildResult result = new BuildResult(request.containerId, 0, "content", Instant.now(), Duration.ofSeconds(1), null)
         BuildEvent event = new BuildEvent(request, result)
 
         when:
@@ -218,7 +218,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 null,
                 "1.2.3.4",
                 null )
-        final result = new BuildResult(request.id, -1, "ok", Instant.now(), Duration.ofSeconds(3))
+        final result = new BuildResult(request.containerId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         final event = new BuildEvent(request, result)
         final record = WaveBuildRecord.fromEvent(event)
 

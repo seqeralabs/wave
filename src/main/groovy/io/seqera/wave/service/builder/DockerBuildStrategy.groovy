@@ -99,10 +99,10 @@ class DockerBuildStrategy extends BuildStrategy {
         final stdout = proc.inputStream.text
         if( completed ) {
             final digest = proxyService.getImageDigest(req.targetImage)
-            return BuildResult.completed(req.id, proc.exitValue(), stdout, req.startTime, digest)
+            return BuildResult.completed(req.buildId, proc.exitValue(), stdout, req.startTime, digest)
         }
         else {
-            return BuildResult.failed(req.id, stdout, req.startTime)
+            return BuildResult.failed(req.buildId, stdout, req.startTime)
         }
     }
 

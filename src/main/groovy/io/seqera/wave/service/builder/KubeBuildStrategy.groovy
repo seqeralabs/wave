@@ -72,7 +72,7 @@ class KubeBuildStrategy extends BuildStrategy {
     private RegistryProxyService proxyService
 
     private String podName(BuildRequest req) {
-        return "build-${req.getId()}"
+        return "build-${req.getBuildId()}"
     }
 
     @Override
@@ -104,10 +104,10 @@ class KubeBuildStrategy extends BuildStrategy {
             final stdout = k8sService.logsPod(name)
             if( terminated ) {
                 final digest = proxyService.getImageDigest(req.targetImage)
-                return BuildResult.completed(req.id, terminated.exitCode, stdout, req.startTime, digest)
+                return BuildResult.completed(req.buildId, terminated.exitCode, stdout, req.startTime, digest)
             }
             else {
-                return BuildResult.failed(req.id, stdout, req.startTime )
+                return BuildResult.failed(req.buildId, stdout, req.startTime )
             }
         }
         catch (ApiException e) {

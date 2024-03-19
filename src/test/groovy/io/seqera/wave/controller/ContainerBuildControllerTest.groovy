@@ -81,17 +81,17 @@ class ContainerBuildControllerTest extends Specification {
                 '12345',
                 "1.2.3.4",
                 null )
-        final result = new BuildResult(build.id, -1, "ok", Instant.now(), Duration.ofSeconds(3))
+        final result = new BuildResult(build.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         final event = new BuildEvent(build, result)
         final entry = WaveBuildRecord.fromEvent(event)
         and:
         persistenceService.saveBuild(entry)
         when:
-        def req = HttpRequest.GET("/v1alpha1/builds/${build.id}")
+        def req = HttpRequest.GET("/v1alpha1/builds/${build.buildId}")
         def res = client.toBlocking().exchange(req, WaveBuildRecord)
 
         then:
-        res.body().buildId == build.id
+        res.body().buildId == build.buildId
 
     }
 

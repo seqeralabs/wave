@@ -61,11 +61,10 @@ class WaveBuildRecord {
     boolean succeeded() { exitStatus==0 }
 
     static WaveBuildRecord fromEvent(BuildEvent event) {
-        if( event.request.id != event.result.id )
+        if( event.request.buildId != event.result.id )
             throw new IllegalStateException("Build id must match the result id")
         return new WaveBuildRecord(
-                id: event.request.id,
-                buildId: event.request.containerId,
+                buildId: event.request.buildId,
                 dockerFile: event.request.containerFile,
                 condaFile: event.request.condaFile,
                 spackFile: event.request.spackFile,

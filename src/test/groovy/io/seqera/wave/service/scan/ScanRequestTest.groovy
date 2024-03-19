@@ -44,7 +44,7 @@ class ScanRequestTest extends Specification {
         def scan = ScanRequest.fromBuild(build)
         then:
         scan.id == build.scanId
-        scan.buildId == build.id
+        scan.buildId == build.buildId
         scan.workDir != build.workDir
         scan.configJson == build.configJson
         scan.targetImage == build.targetImage

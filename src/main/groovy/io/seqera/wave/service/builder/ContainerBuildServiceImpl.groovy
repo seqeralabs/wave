@@ -185,7 +185,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 saveLayersToContext(req, context)
             }
             resp = buildStrategy.build(req)
-            def msg = "== Build request ${req.id} completed with status=$resp.exitStatus"
+            def msg = "== Build request ${req.buildId} completed with status=$resp.exitStatus"
             if( log.isTraceEnabled() )
                 msg += "; stdout: (see below)\n${indent(resp.logs)}"
             log.info(msg)
@@ -193,7 +193,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         }
         catch (Throwable e) {
             log.error "== Ouch! Unable to build container req=$req", e
-            return resp = BuildResult.failed(req.id, e.message, req.startTime)
+            return resp = BuildResult.failed(req.buildId, e.message, req.startTime)
         }
         finally {
             // use a short time-to-live for failed build

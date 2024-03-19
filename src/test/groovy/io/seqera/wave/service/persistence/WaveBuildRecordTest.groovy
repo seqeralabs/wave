@@ -55,7 +55,7 @@ class WaveBuildRecordTest extends Specification {
                 '12345',
                 "1.2.3.4",
                 null )
-        final result = new BuildResult(request.id, -1, "ok", Instant.now(), Duration.ofSeconds(3))
+        final result = new BuildResult(request.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         final event = new BuildEvent(request, result)
         final record = WaveBuildRecord.fromEvent(event)
 

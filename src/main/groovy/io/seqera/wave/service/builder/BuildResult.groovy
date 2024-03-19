@@ -87,7 +87,7 @@ class BuildResult {
     }
 
     static BuildResult create(BuildRequest req) {
-        new BuildResult(req.id, 0, null, req.startTime, null, null)
+        new BuildResult(req.buildId, 0, null, req.startTime, null, null)
     }
 
     static BuildResult create(String id) {

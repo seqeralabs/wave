@@ -252,14 +252,13 @@ class ContainerTokenController {
         // check for dry-run execution
         if( req.dryRun ) {
             log.debug "== Dry-run build request: $build"
-            return new BuildTrack(build.id, build.targetImage, digest!=null)
+            return new BuildTrack(build.containerId + '_0', build.targetImage, digest!=null)
         }
         // check for existing image
         if( digest ) {
             log.debug "== Found cached build for request: $build"
-            final build0 = persistenceService.loadBuild(build.containerId, digest)
-            final id = build0 ? build0.id : build.id
-            return new BuildTrack(id, build.targetImage, true)
+            final cache = persistenceService.loadBuild(build.containerId, digest)
+            return new BuildTrack(cache?.id, build.targetImage, true)
         }
         else {
             return buildService.buildImage(build)
