@@ -69,8 +69,8 @@ class ContainerBuildControllerTest extends Specification {
                 'FROM foo:latest',
                 Path.of("/some/path"),
                 "buildrepo",
-                'conda::recipe',
-                'some-spack-recipe',
+                null,
+                null,
                 BuildFormat.DOCKER,
                 PlatformId.NULL,
                 null,
@@ -81,6 +81,7 @@ class ContainerBuildControllerTest extends Specification {
                 '12345',
                 "1.2.3.4",
                 null )
+            .withBuildId('1')
         final result = new BuildResult(build.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         final event = new BuildEvent(build, result)
         final entry = WaveBuildRecord.fromEvent(event)
