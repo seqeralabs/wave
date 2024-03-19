@@ -149,7 +149,7 @@ class BuildRequest {
     /**
      * Labels to be added in conda and spack build images
      */
-    private Map<String, String> labels
+    Map<String, String> labels
 
     BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, BuildFormat format,
                  PlatformId identity, ContainerConfig containerConfig, BuildContext buildContext, ContainerPlatform platform,
@@ -309,9 +309,5 @@ class BuildRequest {
     BuildRequest withLabels(Map<String, String> labels){
         this.labels = labels
         return this
-    }
-
-    Map<String, String> getLabels() {
-        return labels
     }
 }
