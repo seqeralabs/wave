@@ -65,7 +65,8 @@ class FreezeServiceImpl implements FreezeService {
         else if( req.packages ){
             def containerFile = "# wave generated container file\n"
             containerFile += ContainerHelper.createContainerFile(req)
-            return containerFile
+            containerFile = appendEntrypoint(containerFile, req, identity)
+            return appendConfigToContainerFile(containerFile, req)
         }
         // nothing to do
         return null
