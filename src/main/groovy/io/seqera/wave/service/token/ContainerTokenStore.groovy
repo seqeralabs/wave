@@ -31,4 +31,6 @@ interface ContainerTokenStore {
     void put(String key, ContainerRequestData request)
 
     ContainerRequestData get(String key)
+
+    void remove(String key)
 }

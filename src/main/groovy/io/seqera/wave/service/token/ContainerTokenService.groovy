@@ -43,4 +43,12 @@ interface ContainerTokenService {
      */
     ContainerRequestData getRequest(String token)
 
+    /**
+     * Evict the container request entry from the cache for the given container token
+     *
+     * @param token A container token string
+     * @return the corresponding token string, or null if the token is unknown
+     */
+    ContainerRequestData evictRequest(String token)
+
 }

@@ -28,11 +28,16 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
+import io.micronaut.http.annotation.Delete
+import io.micronaut.http.annotation.Error
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.Post
 import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
+import io.micronaut.security.annotation.Secured
+import io.micronaut.security.authentication.AuthorizationException
+import io.micronaut.security.rules.SecurityRule
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.configuration.BuildConfig
@@ -63,6 +68,7 @@ import io.seqera.wave.util.DataTimeUtils
 import io.seqera.wave.util.LongRndKey
 import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
+import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
 import static io.seqera.wave.WaveDefault.TOWER
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
@@ -331,6 +337,16 @@ class ContainerTokenController {
         return HttpResponse.ok( DescribeWaveContainerResponse.create(token, data) )
     }
 
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    @Delete('/container-token/{token}')
+    HttpResponse deleteContainerRequest(String token) {
+        final record = tokenService.evictRequest(token)
+        if( !record ){
+            throw new NotFoundException("Missing container record for token: $token")
+        }
+        return HttpResponse.ok()
+    }
+
     void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException{
         if( req.towerEndpoint && req.towerAccessToken ) {
             // check the endpoint has been registered via the pairing process
@@ -350,4 +366,9 @@ class ContainerTokenController {
         if( msg ) throw new BadRequestException(msg)
     }
 
+    @Error(exception = AuthorizationException.class)
+    HttpResponse<?> handleAuthorizationException() {
+        return HttpResponse.unauthorized()
+                .header(WWW_AUTHENTICATE, "Basic realm=Wave Authentication")
+    }
 }
