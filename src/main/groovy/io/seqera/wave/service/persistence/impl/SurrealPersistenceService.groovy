@@ -152,8 +152,8 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    WaveBuildRecord loadBuild(String buildId, String digest) {
-        final query = "select * from wave_build where buildId = '$buildId' and digest = '$digest'"
+    WaveBuildRecord loadBuild(String targetImage, String digest) {
+        final query = "select * from wave_build where targetImage = '$targetImage' and digest = '$digest'"
         final json = surrealDb.sqlAsString(getAuthorization(), query)
         final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null

@@ -54,9 +54,8 @@ class LocalPersistenceService implements PersistenceService {
     }
 
     @Override
-    WaveBuildRecord loadBuild(String buildId, String digest) {
-        // TODO
-        return null
+    WaveBuildRecord loadBuild(String targetImage, String digest) {
+        buildStore.values().find( (build) ->  build.targetImage==targetImage && build.digest==digest )
     }
 
     @Override

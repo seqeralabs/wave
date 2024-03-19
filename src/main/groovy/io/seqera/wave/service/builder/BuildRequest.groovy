@@ -318,7 +318,7 @@ class BuildRequest {
 
     BuildRequest withBuildId(String id) {
         this.buildId = containerId + '_' + id
-        this.workDir = workspace.resolve(buildId)
+        this.workDir = workspace.resolve(buildId).toAbsolutePath()
         return this
     }
 

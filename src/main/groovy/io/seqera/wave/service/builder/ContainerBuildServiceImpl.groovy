@@ -103,6 +103,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     @Inject
     private StreamService streamService
 
+    @Inject
+    private BuildCounterStore buildCounter
+
     /**
      * Build a container image for the given {@link BuildRequest}
      *
@@ -233,6 +236,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     }
 
     protected BuildTrack checkOrSubmit(BuildRequest request) {
+        // find next build number
+        final num = buildCounter.inc(request.containerId)
+        request.withBuildId(String.valueOf(num))
         // try to store a new build status for the given target image
         // this returns true if and only if such container image was not set yet
         final ret1 = BuildResult.create(request)

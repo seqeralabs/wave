@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.counter
 
+import groovy.transform.CompileStatic
 import io.seqera.wave.service.counter.impl.CounterProvider
 
 /**
@@ -25,6 +26,7 @@ import io.seqera.wave.service.counter.impl.CounterProvider
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@CompileStatic
 abstract class AbstractCounterStore implements CounterStore {
 
     private CounterProvider provider
@@ -40,4 +42,7 @@ abstract class AbstractCounterStore implements CounterStore {
         provider.inc(getPrefix(), key, value)
     }
 
+    long inc(String key) {
+        provider.inc(getPrefix(), key, 1)
+    }
 }
