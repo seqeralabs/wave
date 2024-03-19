@@ -236,8 +236,8 @@ class ContainerTokenController {
             throw new BadRequestException("Missing build cache repository attribute")
 
         final containerSpec = req.containerFile ? decodeBase64OrFail(req.containerFile, 'containerFile') : ContainerHelper.createContainerFile(req)
-        final condaContent = getCondaFile(req)
-        final spackContent = getSpackFile(req)
+        final condaContent = req.packages ? getCondaFile(req) : decodeBase64OrFail(req.condaFile, 'condaFile')
+        final spackContent = req.packages ? getSpackFile(req) : decodeBase64OrFail(req.spackFile, 'spackFile')
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
         final build = req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository ? buildConfig.defaultPublicRepository : buildConfig.defaultBuildRepository)
@@ -286,9 +286,9 @@ class ContainerTokenController {
         if( req.containerImage && req.containerFile )
             throw new BadRequestException("Attributes 'containerImage' and 'containerFile' cannot be used in the same request")
         if( req.packages && req.containerImage )
-            throw new BadRequestException("Attributes 'packages' and 'containerFile' cannot be used in the same request")
-        if( req.packages && req.containerFile )
             throw new BadRequestException("Attributes 'packages' and 'containerImage' cannot be used in the same request")
+        if( req.packages && req.containerFile )
+            throw new BadRequestException("Attributes 'packages' and 'containerFile' cannot be used in the same request")
         if( req.containerImage?.contains('@sha256:') && req.containerConfig && !req.freeze )
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
         if( req.freeze && !req.buildRepository && !buildConfig.defaultPublicRepository )
@@ -402,10 +402,8 @@ class ContainerTokenController {
         if(packages.type == PackagesSpec.Type.CONDA) {
             if ( packages.envFile ) {
                 return decodeBase64OrFail(packages.envFile, 'condaFile')
-            }else if ( packages.packages && isEmpty(condaLock(packages.packages))) {
+            }else if ( isEmpty(condaLock(packages.packages)) ) {
                 return decodeBase64OrFail(createCondaFileFromPackages(req.packages), 'condaFile')
-            }else if ( req.condaFile && !isEmpty(req.condaFile) ){
-                return decodeBase64OrFail(req.condaFile, 'condaFile')
             }
         }
         return null
@@ -418,13 +416,11 @@ class ContainerTokenController {
         if( packages.type == PackagesSpec.Type.SPACK ) {
             if ( packages.envFile ) {
                 return decodeBase64OrFail(packages.envFile, 'spackFile')
-            }else if( req.packages ) {
+            }else {
                 return decodeBase64OrFail(createSpackFileFromPackages(req.packages), 'spackFile')
-            }else if ( req.condaFile && !isEmpty(req.condaFile) ){
-                return decodeBase64OrFail(req.spackFile, 'spackFile')
             }
         }
-            return null
+        return null
     }
 
 }

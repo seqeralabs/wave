@@ -455,9 +455,9 @@ class ContainerTokenControllerTest extends Specification {
 
     def 'should check and create request data with conda packages' () {
         given:
-        def freeze = new FreezeServiceImpl()
-        def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def freeze = new FreezeServiceImpl( inspectService: dockerAuth)
+        def builder = Mock(ContainerBuildService)
         def proxyRegistry = Mock(RegistryProxyService)
         def controller = new ContainerTokenController(freezeService:  freeze, buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService))
 
@@ -485,7 +485,7 @@ class ContainerTokenControllerTest extends Specification {
         data.containerImage == 'oras://docker.io/foo:9b266d5b5c455fe0'
     }
 
-    def'should create request data with spack packages' () {
+    def 'should create request data with spack packages' () {
         given:
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
@@ -526,7 +526,7 @@ class ContainerTokenControllerTest extends Specification {
                 '''.stripIndent()
     }
 
-    def'should throw BadRequestException when more than one artifact (container image, container file or packages) is provided in the request' () {
+    def 'should throw BadRequestException when more than one artifact (container image, container file or packages) is provided in the request' () {
         given:
         def controller = new ContainerTokenController(inclusionService: Mock(ContainerInclusionService))
 
@@ -534,18 +534,52 @@ class ContainerTokenControllerTest extends Specification {
         def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu', containerFile: 'from foo', packages: new PackagesSpec())
         controller.makeRequestData(req, new PlatformId(new User(id: 100)), "")
         then:
-        thrown(BadRequestException)
+        def e =thrown(BadRequestException)
+        e.message == "Attributes 'containerImage' and 'containerFile' cannot be used in the same request"
 
         when: 'container image and packages are provided'
         req = new SubmitContainerTokenRequest(containerImage: 'ubuntu', packages: new PackagesSpec())
         controller.makeRequestData(req, new PlatformId(new User(id: 100)), "")
         then:
-        thrown(BadRequestException)
+        e = thrown(BadRequestException)
+        e.message == "Attributes 'packages' and 'containerImage' cannot be used in the same request"
 
         when: 'container file and packages are provided'
         req = new SubmitContainerTokenRequest(containerFile: 'from foo', packages: new PackagesSpec())
         controller.makeRequestData(req, new PlatformId(new User(id: 100)), "")
         then:
-        thrown(BadRequestException)
+        e = thrown(BadRequestException)
+        e.message == "Attributes 'packages' and 'containerFile' cannot be used in the same request"
     }
+
+    def 'should make build request data from envfile' () {
+        given:
+        def builder = Mock(ContainerBuildService)
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def proxyRegistry = Mock(RegistryProxyService)
+        def inclusionService = Mock(ContainerInclusionService)
+        def controller = new ContainerTokenController(dockerAuthService: dockerAuth, inclusionService: inclusionService, buildService: builder,
+                registryProxyService: proxyRegistry, buildConfig: buildConfig)
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, envFile: encode('some::conda-recipe'))
+
+        when: 'container image  and container file and packages are provided'
+        def req = new SubmitContainerTokenRequest(packages: packages)
+        def request = controller.makeRequestData(req, new PlatformId(new User(id: 100)), "")
+        then:
+        request.condaFile == 'some::conda-recipe'
+    }
+
+    def 'should throw BadRequestException when both packages and envfile is provided in packagesSpec is provided in the request' () {
+        given:
+        def controller = new ContainerTokenController(inclusionService: Mock(ContainerInclusionService), buildConfig: buildConfig)
+        def packages = new PackagesSpec(type: PackagesSpec.Type.SPACK, packages: ['foo', 'bar'], envFile: 'ENCODED')
+
+        when: 'container image  and container file and packages are provided'
+        def req = new SubmitContainerTokenRequest(packages: packages)
+        controller.makeRequestData(req, new PlatformId(new User(id: 100)), "")
+        then:
+        def e = thrown(BadRequestException)
+        e.message == "Cannot specify both 'envFile' and 'packages' attributes"
+    }
+
 }
