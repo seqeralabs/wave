@@ -43,6 +43,7 @@ import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.service.pairing.PairingRecord
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
+import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
@@ -162,7 +163,8 @@ class ContainerTokenControllerTest extends Specification {
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
         def proxyRegistry = Mock(RegistryProxyService)
-        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService))
+        def persistenceService = Mock(PersistenceService)
+        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, persistenceService:persistenceService, inclusionService: Mock(ContainerInclusionService))
         def DOCKER = 'FROM foo'
         def user = new PlatformId(new User(id: 100))
         def cfg = new ContainerConfig()
@@ -175,6 +177,7 @@ class ContainerTokenControllerTest extends Specification {
         def data = controller.makeRequestData(req, user, "")
         then:
         1 * proxyRegistry.getImageDigest(_) >> 'abc'
+        1 * persistenceService.loadBuild(_,'abc')
         0 * builder.buildImage(_) >> null
         and:
         data.containerFile == encode(DOCKER)

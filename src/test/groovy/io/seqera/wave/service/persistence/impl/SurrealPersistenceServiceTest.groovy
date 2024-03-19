@@ -106,8 +106,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         SurrealPersistenceService storage = applicationContext.getBean(SurrealPersistenceService)
         BuildRequest request = new BuildRequest(dockerFile,
                 Path.of("."), "buildrepo", condaFile, null, BuildFormat.DOCKER, PlatformId.NULL, null, null,
-                ContainerPlatform.of('amd64'),'{auth}', null, null, "127.0.0.1", null)
-        BuildResult result = new BuildResult(request.containerId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
+                ContainerPlatform.of('amd64'),'{auth}', null, null, "127.0.0.1", null) .withBuildId('1')
+        BuildResult result = new BuildResult(request.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         BuildEvent event = new BuildEvent(request, result)
         WaveBuildRecord build = WaveBuildRecord.fromEvent(event)
 
@@ -217,8 +217,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 'docker.io/my/repo',
                 null,
                 "1.2.3.4",
-                null )
-        final result = new BuildResult(request.containerId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
+                null ) .withBuildId('1')
+        final result = new BuildResult(request.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         final event = new BuildEvent(request, result)
         final record = WaveBuildRecord.fromEvent(event)
 
