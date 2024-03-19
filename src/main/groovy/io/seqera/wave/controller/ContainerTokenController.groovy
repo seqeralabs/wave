@@ -265,22 +265,6 @@ class ContainerTokenController {
                 offset)
     }
 
-    private String getCondaFile(SubmitContainerTokenRequest req){
-        if( (req.packages.type == PackagesSpec.Type.CONDA) && req.packages && isEmpty(condaLock(req.packages.packages)) && isEmpty(req.condaFile)) {
-                return decodeBase64OrFail(createCondaFileFromPackages(req.packages), 'condaFile')
-            } else {
-                return decodeBase64OrFail(req.condaFile, 'condaFile')
-            }
-    }
-
-    private String getSpackFile(SubmitContainerTokenRequest req){
-        if( (req.packages.type == PackagesSpec.Type.SPACK) && req.packages && isEmpty(req.spackFile)) {
-            return decodeBase64OrFail(createSpackFileFromPackages(req.packages), 'spackFile')
-        }else {
-            return decodeBase64OrFail(req.spackFile, 'spackFile')
-        }
-    }
-
     protected BuildRequest buildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
         final build = makeBuildRequest(req, identity, ip)
         if( req.dryRun ) {
@@ -409,6 +393,38 @@ class ContainerTokenController {
     @Post('/v1alpha2/container')
     CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getTokenV2(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
         return getTokenImpl(httpRequest, req, true)
+    }
+
+    private String getCondaFile(SubmitContainerTokenRequest req){
+        def packages = req.packages
+        if( packages.envFile && packages.packages )
+            throw new BadRequestException("Cannot specify both 'envFile' and 'packages' attributes")
+        if(packages.type == PackagesSpec.Type.CONDA) {
+            if ( packages.envFile ) {
+                return decodeBase64OrFail(packages.envFile, 'condaFile')
+            }else if ( packages.packages && isEmpty(condaLock(packages.packages))) {
+                return decodeBase64OrFail(createCondaFileFromPackages(req.packages), 'condaFile')
+            }else if ( req.condaFile && !isEmpty(req.condaFile) ){
+                return decodeBase64OrFail(req.condaFile, 'condaFile')
+            }
+        }
+        return null
+    }
+
+    private String getSpackFile(SubmitContainerTokenRequest req){
+        def packages = req.packages
+        if( packages.envFile && packages.packages )
+            throw new BadRequestException("Cannot specify both 'envFile' and 'packages' attributes")
+        if( packages.type == PackagesSpec.Type.SPACK ) {
+            if ( packages.envFile ) {
+                return decodeBase64OrFail(packages.envFile, 'spackFile')
+            }else if( req.packages ) {
+                return decodeBase64OrFail(createSpackFileFromPackages(req.packages), 'spackFile')
+            }else if ( req.condaFile && !isEmpty(req.condaFile) ){
+                return decodeBase64OrFail(req.spackFile, 'spackFile')
+            }
+        }
+            return null
     }
 
 }
