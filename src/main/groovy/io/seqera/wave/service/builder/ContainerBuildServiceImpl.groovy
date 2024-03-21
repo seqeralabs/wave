@@ -259,9 +259,14 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         // since it was unable to initialise the build result status
         // this means the build status already exists, retrieve it
         final ret2 = buildStore.getBuild(request.targetImage)
-        if( ret2 ) {
+        if( ret2.getExitStatus() == null  || ret2.getExitStatus() == 0 ) {
             log.info "== Hit build cache for request: $request"
             return new BuildTrack(ret2.id, request.targetImage, true)
+        }else{
+            log.info "== Previous build for this image was failed, building again: $request"
+            buildStore.storeBuild(request.targetImage,ret1)
+            launchAsync(request)
+            return new BuildTrack(ret1.id, request.targetImage, false)
         }
         // invalid state
         throw new IllegalStateException("Unable to determine build status for '$request.targetImage'")

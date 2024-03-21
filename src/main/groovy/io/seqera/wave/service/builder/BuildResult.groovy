@@ -39,13 +39,13 @@ import groovy.transform.ToString
 class BuildResult {
 
     final String id
-    final int exitStatus
+    final Integer exitStatus
     final String logs
     final Instant startTime
     final Duration duration
     final String digest
 
-    BuildResult(String id, int exitStatus, String content, Instant startTime, Duration duration, String digest) {
+    BuildResult(String id, Integer exitStatus, String content, Instant startTime, Duration duration, String digest) {
         this.id = id
         this.logs = content?.replaceAll("\u001B\\[[;\\d]*m", "") // strip ansi escape codes
         this.exitStatus = exitStatus
@@ -61,7 +61,7 @@ class BuildResult {
 
     Duration getDuration() { duration }
 
-    int getExitStatus() { exitStatus }
+    Integer getExitStatus() { exitStatus }
 
     Instant getStartTime() { startTime }
 
