@@ -251,8 +251,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         // this returns true if and only if such container image was not set yet
         final ret1 = BuildResult.create(request)
         if( buildStore.storeIfAbsent(request.targetImage, ret1) ) {
-            // flag it as a new build
-            request.uncached = true
             // go ahead
             log.info "== Submit build request: $request"
             launchAsync(request)

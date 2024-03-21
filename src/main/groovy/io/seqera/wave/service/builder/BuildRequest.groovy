@@ -136,11 +136,6 @@ class BuildRequest {
      */
     final BuildFormat format
     
-    /**
-     * Mark this request as not cached
-     */
-    volatile boolean uncached
-
     volatile String buildId
 
     volatile Path workDir
