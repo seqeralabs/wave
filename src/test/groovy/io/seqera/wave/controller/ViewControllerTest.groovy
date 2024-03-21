@@ -119,7 +119,7 @@ class ViewControllerTest extends Specification {
                 exitStatus: 0 )
 
         when:
-        persistenceService.saveBuild(record1)
+        persistenceService.createBuild(record1)
         and:
         def request = HttpRequest.GET("/view/builds/${record1.buildId}")
         def response = client.toBlocking().exchange(request, String)
@@ -148,7 +148,7 @@ class ViewControllerTest extends Specification {
                 exitStatus: 0 )
 
         when:
-        persistenceService.saveBuild(record1)
+        persistenceService.createBuild(record1)
         and:
         def request = HttpRequest.GET("/view/builds/${record1.buildId}")
         def response = client.toBlocking().exchange(request, String)
@@ -179,7 +179,7 @@ class ViewControllerTest extends Specification {
                 exitStatus: 0 )
 
         when:
-        persistenceService.saveBuild(record1)
+        persistenceService.createBuild(record1)
         and:
         def request = HttpRequest.GET("/view/builds/${record1.buildId}")
         def response = client.toBlocking().exchange(request, String)

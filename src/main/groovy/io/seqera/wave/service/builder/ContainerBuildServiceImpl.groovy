@@ -40,6 +40,8 @@ import io.seqera.wave.exception.HttpServerRetryableErrorException
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.cleanup.CleanupStrategy
+import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.stream.StreamService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.Retryable
@@ -105,6 +107,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     @Inject
     private BuildCounterStore buildCounter
+
+    @Inject
+    PersistenceService persistenceService
 
     /**
      * Build a container image for the given {@link BuildRequest}
@@ -224,6 +229,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             buildStore.removeBuild(request.targetImage)
             throw e
         }
+
+        // persist the container request
+        persistenceService.createBuild(WaveBuildRecord.fromEvent(new BuildEvent(request)))
 
         // launch the build async
         CompletableFuture

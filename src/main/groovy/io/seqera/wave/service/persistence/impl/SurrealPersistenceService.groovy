@@ -104,7 +104,7 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveBuild(WaveBuildRecord build) {
+    void createBuild(WaveBuildRecord build) {
         surrealDb.insertBuildAsync(authorization, build).subscribe({ result->
             log.trace "Build record saved ${result}"
         }, {error->
@@ -114,6 +114,33 @@ class SurrealPersistenceService implements PersistenceService {
             }
             log.error "Error saving build record ${msg}\n${build}", error
         })
+    }
+
+    @Override
+    void updateBuild(WaveBuildRecord build) {
+        // create the scan record
+        final statement = """\
+                                UPDATE wave_build
+                                SET 
+                                    digest = '${build.digest}',
+                                    duration = '${build.duration}',
+                                    exitStatus = ${build.exitStatus}
+                                where
+                                    buildId = '${build.buildId}' 
+                                """.stripIndent()
+        final result = surrealDb
+                                .sqlAsync(authorization, statement)
+                                .subscribe({result ->
+                                    log.trace "Update build record id: $build.buildId: ${result}"
+                                },
+                        {error->
+                            def msg = error.message
+                            if( error instanceof HttpClientResponseException ){
+                                msg += ":\n $error.response.body"
+                            }
+                            log.error("Error updating build record id: $build.buildId => ${msg}\n", error)
+                        })
+        log.trace "Scan update result=$result"
     }
 
     void saveBuildBlocking(WaveBuildRecord record) {

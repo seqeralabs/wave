@@ -78,20 +78,20 @@ class BuildResult {
         return "BuildRequest[id=$id; exitStatus=$exitStatus; duration=$duration]"
     }
 
-    static BuildResult completed(String id, int exitStatus, String content, Instant startTime, String digest) {
-        new BuildResult(id, exitStatus, content, startTime, Duration.between(startTime, Instant.now()), digest)
+    static BuildResult completed(String buildId, int exitStatus, String content, Instant startTime, String digest) {
+        new BuildResult(buildId, exitStatus, content, startTime, Duration.between(startTime, Instant.now()), digest)
     }
 
-    static BuildResult failed(String id, String content, Instant startTime) {
-        new BuildResult(id, -1, content, startTime, Duration.between(startTime, Instant.now()), null)
+    static BuildResult failed(String buildId, String content, Instant startTime) {
+        new BuildResult(buildId, -1, content, startTime, Duration.between(startTime, Instant.now()), null)
     }
 
     static BuildResult create(BuildRequest req) {
         new BuildResult(req.buildId, 0, null, req.startTime, null, null)
     }
 
-    static BuildResult create(String id) {
-        new BuildResult(id, 0, null, Instant.now(), null, null)
+    static BuildResult create(String buildId) {
+        new BuildResult(buildId, 0, null, Instant.now(), null, null)
     }
 
     @Memoized

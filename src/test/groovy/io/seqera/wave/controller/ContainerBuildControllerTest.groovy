@@ -23,15 +23,19 @@ import spock.lang.Specification
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpStatus
 import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
+import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.exchange.BuildStatusResponse
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
@@ -59,9 +63,11 @@ class ContainerBuildControllerTest extends Specification {
     @Client("/")
     HttpClient client
 
-    @Inject PersistenceService persistenceService
+    @Inject
+    PersistenceService persistenceService
 
-    @Inject BuildLogService buildLogService
+    @Inject
+    BuildLogService buildLogService
 
     def 'should get container build record' () {
         given:
@@ -86,7 +92,7 @@ class ContainerBuildControllerTest extends Specification {
         final event = new BuildEvent(build, result)
         final entry = WaveBuildRecord.fromEvent(event)
         and:
-        persistenceService.saveBuild(entry)
+        persistenceService.createBuild(entry)
         when:
         def req = HttpRequest.GET("/v1alpha1/builds/${build.buildId}")
         def res = client.toBlocking().exchange(req, WaveBuildRecord)
@@ -111,6 +117,37 @@ class ContainerBuildControllerTest extends Specification {
         and:
         res.code() == 200
         new String(res.bodyBytes) == LOGS
+    }
+
+    def 'should get container status' () {
+        given:
+        def build1 = new WaveBuildRecord(
+                buildId: 'test1',
+                dockerFile: 'test1',
+                condaFile: 'test1',
+                targetImage: 'testImage1',
+                userName: 'testUser1',
+                userEmail: 'test1@xyz.com',
+                userId: 1,
+                requestIp: '127.0.0.1',
+                startTime: Instant.now().minus(1, ChronoUnit.DAYS) )
+        and:
+        persistenceService.createBuild(build1)
+        sleep(500)
+
+        when:
+        def req = HttpRequest.GET("/v1alpha1/builds/${build1.buildId}/status")
+        def res = client.toBlocking().exchange(req, BuildStatusResponse)
+        then:
+        res.status() == HttpStatus.OK
+        res.body().id == build1.buildId
+        res.body().status == BuildStatusResponse.Status.PENDING
+
+        when:
+        client.toBlocking().exchange(HttpRequest.GET("/v1alpha1/builds/0000/status"), BuildStatusResponse)
+        then:
+        HttpClientResponseException e = thrown(HttpClientResponseException)
+        e.status == HttpStatus.NOT_FOUND
     }
 
 }

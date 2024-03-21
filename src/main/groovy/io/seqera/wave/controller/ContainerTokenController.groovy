@@ -258,7 +258,7 @@ class ContainerTokenController {
         if( digest ) {
             log.debug "== Found cached build for request: $build"
             final cache = persistenceService.loadBuild(build.targetImage, digest)
-            return new BuildTrack(cache?.id, build.targetImage, true)
+            return new BuildTrack(cache?.buildId, build.targetImage, true)
         }
         else {
             return buildService.buildImage(build)
