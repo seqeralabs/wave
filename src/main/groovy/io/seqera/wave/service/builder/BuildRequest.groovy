@@ -40,7 +40,7 @@ import static io.seqera.wave.util.StringUtils.trunc
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@EqualsAndHashCode(includes = 'containerId,targetImage')
+@EqualsAndHashCode(includes = 'containerId,targetImage,buildId')
 @CompileStatic
 class BuildRequest {
 
