@@ -294,7 +294,7 @@ class BuildRequestTest extends Specification {
         BUILD_ID        | EXPECTED
         null            | null
         'foo'           | null
-        'foo-01'        | 'foo'
+        'foo_01'        | 'foo'
     }
 
 }

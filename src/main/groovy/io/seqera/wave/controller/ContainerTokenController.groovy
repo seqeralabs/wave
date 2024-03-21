@@ -252,7 +252,9 @@ class ContainerTokenController {
         // check for dry-run execution
         if( req.dryRun ) {
             log.debug "== Dry-run build request: $build"
-            return new BuildTrack(build.containerId + '_0', build.targetImage, digest!=null)
+            final dryId = build.containerId +  BuildRequest.SEP + '0'
+            final cached = digest!=null
+            return new BuildTrack(dryId, build.targetImage, cached)
         }
         // check for existing image
         if( digest ) {

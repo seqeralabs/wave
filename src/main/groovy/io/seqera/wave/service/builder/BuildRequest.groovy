@@ -44,6 +44,8 @@ import static io.seqera.wave.util.StringUtils.trunc
 @CompileStatic
 class BuildRequest {
 
+    static final String SEP = '_'
+
     /**
      * Unique request Id. This is computed as a consistent hash generated from
      * the container build assets e.g. Dockerfile. Therefore the same container build
@@ -312,7 +314,7 @@ class BuildRequest {
     }
 
     BuildRequest withBuildId(String id) {
-        this.buildId = containerId + '_' + id
+        this.buildId = containerId + SEP + id
         this.workDir = workspace.resolve(buildId).toAbsolutePath()
         return this
     }
@@ -320,7 +322,7 @@ class BuildRequest {
     static String legacyBuildId(String id) {
         if( !id )
             return null
-        return id.contains('-') ? id.tokenize('-')[0] : null
+        return id.contains(SEP) ? id.tokenize(SEP)[0] : null
     }
 
 }
