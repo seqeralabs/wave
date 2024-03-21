@@ -60,7 +60,8 @@ class MailServiceImpl implements MailService {
     @EventListener
     void onBuildEvent(BuildEvent event) {
         try {
-            sendCompletionEmail(event.request, event.result)
+            if( event.result )
+                sendCompletionEmail(event.request, event.result)
         }
         catch (Exception e) {
             log.warn "Unable to send completion notication - reason: ${e.message ?: e}"
@@ -98,6 +99,7 @@ class MailServiceImpl implements MailService {
         binding.build_containerfile = req.containerFile ?: '-'
         binding.build_condafile = req.condaFile
         binding.build_spackfile = req.spackFile
+        binding.build_digest = result.digest
         binding.put('build_log_data', result.logs)
         binding.build_url = "$serverUrl/view/builds/${result.id}"
         binding.scan_url = req.scanId && result.succeeded() ? "$serverUrl/view/scans/${req.scanId}" : null

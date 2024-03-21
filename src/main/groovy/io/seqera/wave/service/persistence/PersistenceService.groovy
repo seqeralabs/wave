@@ -38,7 +38,7 @@ interface PersistenceService {
 
     @EventListener
     default void onBuildEvent(BuildEvent event) {
-        saveBuild(WaveBuildRecord.fromEvent(event))
+        updateBuild(WaveBuildRecord.fromEvent(event))
     }
 
     /**
@@ -49,7 +49,17 @@ interface PersistenceService {
      *
      * @param build A {@link WaveBuildRecord} object
      */
-    void saveBuild(WaveBuildRecord build)
+    void createBuild(WaveBuildRecord build)
+
+    /**
+     * Update the build record. This function is expect to update only the following fields
+     * - digest
+     * - duration
+     * - exitStatus
+     *
+     * @param build The build record to be updated
+     */
+    void updateBuild(WaveBuildRecord build)
 
     /**
      * Retrieve a {@link WaveBuildRecord} object for the given build id
@@ -58,6 +68,8 @@ interface PersistenceService {
      * @return The corresponding {@link WaveBuildRecord} object object
      */
     WaveBuildRecord loadBuild(String buildId)
+
+    WaveBuildRecord loadBuild(String targetImage, String digest)
 
     /**
      * Store a {@link WaveContainerRecord} object in the Surreal wave_request table.

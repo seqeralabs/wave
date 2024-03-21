@@ -16,32 +16,31 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.scan
+package io.seqera.wave.service.counter.impl
 
-import java.nio.file.Path
-
-import groovy.transform.Canonical
 import groovy.transform.CompileStatic
-import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.builder.BuildRequest
+import io.micronaut.context.annotation.Requires
+import jakarta.inject.Inject
+import jakarta.inject.Singleton
+import redis.clients.jedis.Jedis
+import redis.clients.jedis.JedisPool
 /**
- * Model a container scan request
- * 
+ * Implement a counter based on Redis cache
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Canonical
+@Requires(property = 'redis.uri')
+@Singleton
 @CompileStatic
-class ScanRequest {
-    final String id
-    final String buildId
-    final String configJson
-    final String targetImage
-    final ContainerPlatform platform
-    final Path workDir
+class RedisCounterProvider implements CounterProvider {
 
-    static ScanRequest fromBuild(BuildRequest request) {
-        final id = request.scanId
-        final workDir = request.workDir.resolveSibling("scan-${id}")
-        return new ScanRequest(id, request.buildId, request.configJson, request.targetImage, request.platform, workDir)
+    @Inject
+    private JedisPool pool
+
+    @Override
+    long inc(String key, String field, long value) {
+        try(Jedis conn=pool.getResource() ) {
+            return conn.hincrBy(key, field, value)
+        }
     }
 }

@@ -24,6 +24,7 @@ import java.nio.file.Path
 
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.tower.PlatformId
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -109,6 +110,41 @@ class BuildStrategyTest extends Specification {
                 "-c",
                 "singularity build image.sif /work/foo/c168dba125e28777/Containerfile && singularity push image.sif oras://quay.io/wave:c168dba125e28777"
             ]
+    }
+
+    def 'should create request' () {
+        when:
+        final build = new BuildRequest(
+                'FROM foo:latest',
+                Path.of("some/path"),
+                "buildrepo",
+                null,
+                null,
+                BuildFormat.DOCKER,
+                PlatformId.NULL,
+                null,
+                null,
+                ContainerPlatform.of('amd64'),
+                '{auth}',
+                'docker.io/my/repo',
+                '12345',
+                "1.2.3.4",
+                null )
+        then:
+        build.containerId == '911d21120b4b505c'
+        build.workspace == Path.of("some/path")
+        and:
+        !build.buildId
+        !build.workDir
+
+        when:
+        build.withBuildId('100')
+        then:
+        build.containerId == '911d21120b4b505c'
+        build.workspace == Path.of("some/path")
+        and:
+        build.buildId == '911d21120b4b505c_100'
+        build.workDir == Path.of('.').toRealPath().resolve('some/path/911d21120b4b505c_100')
     }
 
 }
