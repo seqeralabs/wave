@@ -78,7 +78,7 @@ class BuildResult {
         return "BuildRequest[id=$id; exitStatus=$exitStatus; duration=$duration]"
     }
 
-    static BuildResult completed(String buildId, int exitStatus, String content, Instant startTime, String digest) {
+    static BuildResult completed(String buildId, Integer exitStatus, String content, Instant startTime, String digest) {
         new BuildResult(buildId, exitStatus, content, startTime, Duration.between(startTime, Instant.now()), digest)
     }
 
