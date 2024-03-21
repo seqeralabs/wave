@@ -79,7 +79,7 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         ManifestCacheStore storage = applicationContext.getBean(ManifestCacheStore)
 
         when:
-        HttpRequest request = HttpRequest.GET("http://localhost:$port/v2/library/hello-world/manifests/latest").headers({h->
+        HttpRequest request = HttpRequest.GET("http://localhost:$port/v2/library/hello-world/manifests/sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6").headers({h->
             h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
             h.add('Accept', ContentType.DOCKER_MANIFEST_V1_JWS_TYPE)
             h.add('Accept', MediaType.APPLICATION_JSON)
@@ -90,7 +90,7 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         and:
         response.body().indexOf('"schemaVersion":') != -1
         response.getContentType().get().getName() ==  'application/vnd.oci.image.index.v1+json'
-        response.getContentLength() == 9125
+        response.getContentLength() == 10242
 
         when:
         storage.clear()
@@ -103,7 +103,7 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         and:
         response.body().indexOf('"schemaVersion":') != -1
         response.getContentType().get().getName() ==  'application/vnd.oci.image.index.v1+json'
-        response.getContentLength() == 9125
+        response.getContentLength() == 10242
     }
 
     @Timeout(10)
@@ -114,7 +114,7 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         jedis.set("wave-tokens/v1:1234", '{"containerImage":"library/hello-world"}')
         jedis.set("wave-build/v1:library/hello-world", '{"containerImage":"library/hello-world"}')
         when:
-        HttpRequest request = HttpRequest.GET("http://localhost:$port/v2/wt/1234/library/hello-world/manifests/latest").headers({h->
+        HttpRequest request = HttpRequest.GET("http://localhost:$port/v2/wt/1234/library/hello-world/manifests/sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6").headers({h->
             h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
             h.add('Accept', ContentType.DOCKER_MANIFEST_V1_JWS_TYPE)
             h.add('Accept', MediaType.APPLICATION_JSON)

@@ -58,7 +58,7 @@ class RegistryControllerLocalTest extends Specification implements DockerRegistr
 
     void 'should get manifest'() {
         when:
-        HttpRequest request = HttpRequest.GET("/v2/library/hello-world/manifests/latest").headers({h->
+        HttpRequest request = HttpRequest.GET("/v2/library/hello-world/manifests/sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6").headers({h->
             h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
             h.add('Accept', ContentType.DOCKER_MANIFEST_V1_JWS_TYPE)
             h.add('Accept', MediaType.APPLICATION_JSON)
@@ -69,7 +69,7 @@ class RegistryControllerLocalTest extends Specification implements DockerRegistr
         and:
         response.body().indexOf('"schemaVersion":') != -1
         response.getContentType().get().getName() ==  'application/vnd.oci.image.index.v1+json'
-        response.getContentLength() == 9125
+        response.getContentLength() == 10242
 
         when:
         storage.clear()
@@ -82,12 +82,12 @@ class RegistryControllerLocalTest extends Specification implements DockerRegistr
         and:
         response.body().indexOf('"schemaVersion":') != -1
         response.getContentType().get().getName() ==  'application/vnd.oci.image.index.v1+json'
-        response.getContentLength() == 9125
+        response.getContentLength() == 10242
     }
 
     void 'should head manifest'() {
         when:
-        HttpRequest request = HttpRequest.HEAD("/v2/library/hello-world/manifests/latest").headers({h->
+        HttpRequest request = HttpRequest.HEAD("/v2/library/hello-world/manifests/sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6").headers({h->
             h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
             h.add('Accept', ContentType.DOCKER_MANIFEST_V1_JWS_TYPE)
             h.add('Accept', MediaType.APPLICATION_JSON)
@@ -99,12 +99,12 @@ class RegistryControllerLocalTest extends Specification implements DockerRegistr
         and:
         response.getHeaders().get('docker-content-digest').startsWith( 'sha256:')
         response.getHeaders().get('Content-Type') == 'application/vnd.oci.image.index.v1+json'
-        response.getContentLength() == 9125
+        response.getContentLength() == 10242
     }
 
     void 'should head manifest and get blob of image'() {
         when:
-        HttpRequest request = HttpRequest.HEAD("/v2/library/hello-world/manifests/latest").headers({h->
+        HttpRequest request = HttpRequest.HEAD("/v2/library/hello-world/manifests/sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6").headers({h->
             h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
             h.add('Accept', ContentType.DOCKER_MANIFEST_V1_JWS_TYPE)
             h.add('Accept', MediaType.APPLICATION_JSON)
@@ -115,7 +115,7 @@ class RegistryControllerLocalTest extends Specification implements DockerRegistr
         and:
         response.getHeaders().get('docker-content-digest').startsWith( 'sha256:')
         response.getHeaders().get('Content-Type') == 'application/vnd.oci.image.index.v1+json'
-        response.getContentLength() == 9125
+        response.getContentLength() == 10242
 
         when:
         storage.clear()
@@ -127,7 +127,7 @@ class RegistryControllerLocalTest extends Specification implements DockerRegistr
         and:
         response.getHeaders().get('docker-content-digest').startsWith( 'sha256:')
         response.getHeaders().get('Content-Type') == 'application/vnd.oci.image.index.v1+json'
-        response.getContentLength() == 9125
+        response.getContentLength() == 10242
     }
 
     // Double download hello-world requesting all required layers refreshing cache between them
@@ -141,7 +141,7 @@ class RegistryControllerLocalTest extends Specification implements DockerRegistr
         ]
 
         when:
-        HttpRequest request = HttpRequest.GET("/v2/$IMAGE/manifests/latest").headers({ h ->
+        HttpRequest request = HttpRequest.GET("/v2/$IMAGE/manifests/sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6").headers({ h ->
             accept.each {
                 h.add('Accept', it)
             }
