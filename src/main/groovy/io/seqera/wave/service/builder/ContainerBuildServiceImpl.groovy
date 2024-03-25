@@ -249,7 +249,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     protected BuildTrack checkOrSubmit(BuildRequest request) {
         //increment metrics
-        metricsService.incrementBuildsCounter(null)
+        CompletableFuture.supplyAsync(() -> metricsService.incrementBuildsCounter(request.accessToken), executor)
         // find next build number
         final num = buildCounter.inc(request.containerId)
         request.withBuildId(String.valueOf(num))

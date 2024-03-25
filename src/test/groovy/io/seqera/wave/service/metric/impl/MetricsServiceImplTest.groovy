@@ -25,69 +25,105 @@ import java.security.Key
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import jakarta.inject.Inject
-
+import io.seqera.wave.service.counter.impl.LocalCounterProvider
+import io.seqera.wave.service.license.CheckTokenResponse
+import io.seqera.wave.service.license.LicenseManClient
+import io.seqera.wave.service.metric.MetricsCounterStore
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-@MicronautTest(environments = ['test'])
 class MetricsServiceImplTest extends Specification {
-
-    @Inject
-    MetricsServiceImpl metricsService
 
     DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
     def 'should increment a builds count' () {
         given:
-        def org = 'wave'
         def date = LocalDate.now().format(dateFormatter)
+        def localCounterProvider = new LocalCounterProvider()
+        def metricsCounterStore = new MetricsCounterStore(localCounterProvider)
+        def licMan = Mock(LicenseManClient)
+        def metricsService = new MetricsServiceImpl(licenseManager: licMan, metricsCounterStore: metricsCounterStore)
 
         when:
-        metricsService.incrementBuildsCounter(org)
+        metricsService.incrementBuildsCounter('token1')
         then:
-        metricsService.getBuildsMetrics(null, org) == 1
-        metricsService.getBuildsMetrics(date, org) == 1
+        1 * licMan.checkToken('token1', _) >> new CheckTokenResponse(organization: 'org1')
+
+        when:
+        metricsService.incrementBuildsCounter('token2')
+        then:
+        1 * licMan.checkToken('token2', _) >> new CheckTokenResponse(organization: 'org2')
+
         when:
         metricsService.incrementBuildsCounter(null)
         then:
-        metricsService.getBuildsMetrics(date, null) == 2
+        0 * licMan.checkToken(_, _)
+
+        and:
+        metricsService.getBuildsMetrics(date, null) == 3
+        metricsService.getBuildsMetrics(null, 'org1') == 1
+        metricsService.getBuildsMetrics(date, 'org2') == 1
 
     }
 
     def 'should increment a pulls count' () {
         given:
-        def org = 'wave'
         def date = LocalDate.now().format(dateFormatter)
+        def localCounterProvider = new LocalCounterProvider()
+        def metricsCounterStore = new MetricsCounterStore(localCounterProvider)
+        def licMan = Mock(LicenseManClient)
+        def metricsService = new MetricsServiceImpl(licenseManager: licMan, metricsCounterStore: metricsCounterStore)
 
         when:
-        metricsService.incrementPullsCounter(org)
+        metricsService.incrementPullsCounter('token1')
         then:
-        metricsService.getPullsMetrics(null, org) == 1
-        metricsService.getPullsMetrics(date, org) == 1
+        1 * licMan.checkToken('token1', _) >> new CheckTokenResponse(organization: 'org1')
+
+        when:
+        metricsService.incrementPullsCounter('token2')
+        then:
+        1 * licMan.checkToken('token2', _) >> new CheckTokenResponse(organization: 'org2')
+
         when:
         metricsService.incrementPullsCounter(null)
         then:
-        metricsService.getPullsMetrics(date, null) == 2
+        0 * licMan.checkToken(_, _)
+
+        and:
+        metricsService.getPullsMetrics(null, 'org1') == 1
+        metricsService.getPullsMetrics(date, 'org2') == 1
+        metricsService.getPullsMetrics(date, null) == 3
 
     }
 
     def 'should increment a fusion pulls count' () {
         given:
-        def org = 'wave'
         def date = LocalDate.now().format(dateFormatter)
+        def localCounterProvider = new LocalCounterProvider()
+        def metricsCounterStore = new MetricsCounterStore(localCounterProvider)
+        def licMan = Mock(LicenseManClient)
+        def metricsService = new MetricsServiceImpl(licenseManager: licMan, metricsCounterStore: metricsCounterStore)
 
         when:
-        metricsService.incrementFusionPullsCounter(org)
+        metricsService.incrementFusionPullsCounter('token1')
         then:
-        metricsService.getFusionPullsMetrics(null, org) == 1
-        metricsService.getFusionPullsMetrics(date, org) == 1
+        1 * licMan.checkToken('token1', _) >> new CheckTokenResponse(organization: 'org1')
+
+        when:
+        metricsService.incrementFusionPullsCounter('token2')
+        then:
+        1 * licMan.checkToken('token2', _) >> new CheckTokenResponse(organization: 'org2')
+
         when:
         metricsService.incrementFusionPullsCounter(null)
         then:
-        metricsService.getFusionPullsMetrics(date, null) == 2
+        0 * licMan.checkToken(_, _)
+
+        and:
+        metricsService.getFusionPullsMetrics(null, 'org1') == 1
+        metricsService.getFusionPullsMetrics(date, 'org2') == 1
+        metricsService.getFusionPullsMetrics(date, null) == 3
 
     }
 

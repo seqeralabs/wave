@@ -51,9 +51,9 @@ interface MetricsService {
      */
     Long getFusionPullsMetrics(String date, String org)
 
-    void incrementFusionPullsCounter(String org)
+    void incrementFusionPullsCounter(String token)
 
-    void incrementBuildsCounter(String org)
+    void incrementBuildsCounter(String token)
 
-    void incrementPullsCounter(String org)
+    void incrementPullsCounter(String token)
 }

@@ -27,4 +27,5 @@ import java.time.Instant
 class CheckTokenResponse {
     String id // license ID
     Instant expiration  // license expiration timestamp
+    String organization // the name of the associated org
 }
