@@ -79,7 +79,7 @@ abstract class TowerConnector {
 
     @Inject
     @Named(TaskExecutors.IO)
-    private ExecutorService ioExecutor
+    private volatile ExecutorService ioExecutor
 
     /**
      * Generic async get with authorization
@@ -114,6 +114,8 @@ abstract class TowerConnector {
     protected <T> CompletableFuture<T> sendAsync0(String endpoint, URI uri, String authorization, Class<T> type, int attempt0) {
         final msgId = rndHex()
         final attempt = newAttempt(attempt0)
+        // note: use a local variable for the executor, othereise it will fail to reference the `ioExecutor` in the closure
+        final exec0 = this.ioExecutor
         return sendAsync1(endpoint, uri, authorization, msgId, true)
                 .thenCompose { resp ->
                     log.trace "Tower response for request GET '${uri}' => ${resp.status}"
@@ -140,7 +142,7 @@ abstract class TowerConnector {
                     final retryable = err instanceof IOException || err instanceof TimeoutException
                     if( retryable && attempt.canAttempt() && checkLimit(endpoint) ) {
                         final delay = attempt.delay()
-                        final exec = CompletableFuture.delayedExecutor(delay.toMillis(), TimeUnit.MILLISECONDS, ioExecutor)
+                        final exec = CompletableFuture.delayedExecutor(delay.toMillis(), TimeUnit.MILLISECONDS, exec0)
                         log.debug "Unable to connect '$endpoint' - cause: ${err.message ?: err}; attempt: ${attempt.current()}; await: ${delay}; msgId: ${msgId}"
                         return CompletableFuture.supplyAsync(()->sendAsync0(endpoint, uri, authorization, type, attempt.current()+1), exec)
                                 .thenCompose(Function.identity());
@@ -159,7 +161,6 @@ abstract class TowerConnector {
     }
 
     protected boolean checkLimit(String endpoint) {
-        log.debug "Limiter $limiter"
         if( !limiter )
             return true
         final result = limiter.acquireTimeoutCounter(endpoint)
