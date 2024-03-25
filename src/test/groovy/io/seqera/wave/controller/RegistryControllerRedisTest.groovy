@@ -90,7 +90,7 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         and:
         response.body().indexOf('"schemaVersion":') != -1
         response.getContentType().get().getName() ==  'application/vnd.oci.image.index.v1+json'
-        response.getContentLength() == 9125
+        response.getContentLength() == 10242
 
         when:
         storage.clear()
@@ -103,7 +103,7 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         and:
         response.body().indexOf('"schemaVersion":') != -1
         response.getContentType().get().getName() ==  'application/vnd.oci.image.index.v1+json'
-        response.getContentLength() == 9125
+        response.getContentLength() == 10242
     }
 
     @Timeout(10)
