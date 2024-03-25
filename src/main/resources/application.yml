@@ -36,6 +36,9 @@ micronaut:
     stream-executor:
       type: FIXED
       number-of-threads: 16
+    future-store-executor:
+      type : FIXED
+      number-of-threads : 16
   netty:
     event-loops:
       stream-pool:

@@ -21,6 +21,7 @@ package io.seqera.wave.tower.client.connector
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.function.Function
@@ -32,6 +33,7 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpMethod
 import io.micronaut.http.HttpStatus
+import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.ratelimit.impl.SpillwayRateLimiter
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
@@ -43,6 +45,7 @@ import io.seqera.wave.util.ExponentialAttempt
 import io.seqera.wave.util.JacksonHelper
 import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import static io.seqera.wave.util.LongRndKey.rndHex
 /**
  * Implements an abstract client that allows to connect Tower service either
@@ -73,6 +76,10 @@ abstract class TowerConnector {
     @Inject
     @Nullable
     private SpillwayRateLimiter limiter
+
+    @Inject
+    @Named(TaskExecutors.IO)
+    private ExecutorService ioExecutor
 
     /**
      * Generic async get with authorization
@@ -133,7 +140,7 @@ abstract class TowerConnector {
                     final retryable = err instanceof IOException || err instanceof TimeoutException
                     if( retryable && attempt.canAttempt() && checkLimit(endpoint) ) {
                         final delay = attempt.delay()
-                        final exec = CompletableFuture.delayedExecutor(delay.toMillis(), TimeUnit.MILLISECONDS)
+                        final exec = CompletableFuture.delayedExecutor(delay.toMillis(), TimeUnit.MILLISECONDS, ioExecutor)
                         log.debug "Unable to connect '$endpoint' - cause: ${err.message ?: err}; attempt: ${attempt.current()}; await: ${delay}; msgId: ${msgId}"
                         return CompletableFuture.supplyAsync(()->sendAsync0(endpoint, uri, authorization, type, attempt.current()+1), exec)
                                 .thenCompose(Function.identity());
