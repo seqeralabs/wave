@@ -19,7 +19,9 @@
 package io.seqera.wave.service.metric.impl
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
+import java.security.Key
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -87,5 +89,44 @@ class MetricsServiceImplTest extends Specification {
         then:
         metricsService.getFusionPullsMetrics(date, null) == 2
 
+    }
+
+    @Unroll
+    def'should get correct builds key'() {
+        expect:
+        MetricsServiceImpl.getBuildsKey(DAY, ORG) == KEY
+
+        where:
+        DAY             | ORG       | KEY
+        null            | null      | null
+        null            | 'wave'    | 'builds/o/wave'
+        '2024-03-25'    | 'wave'    | 'builds/o/wave/d/2024-03-25'
+        '2024-03-25'    | null      | 'builds/d/2024-03-25'
+    }
+
+    @Unroll
+    def'should get correct pulls key'() {
+        expect:
+        MetricsServiceImpl.getPullsKey(DAY, ORG) == KEY
+
+        where:
+        DAY             | ORG       | KEY
+        null            | null      | null
+        null            | 'wave'    | 'pulls/o/wave'
+        '2024-03-25'    | 'wave'    | 'pulls/o/wave/d/2024-03-25'
+        '2024-03-25'    | null      | 'pulls/d/2024-03-25'
+    }
+
+    @Unroll
+    def'should get correct build key'() {
+        expect:
+        MetricsServiceImpl.getFusionPullsKey(DAY, ORG) == KEY
+
+        where:
+        DAY             | ORG       | KEY
+        null            | null      | null
+        null            | 'wave'    | 'fusion/o/wave'
+        '2024-03-25'    | 'wave'    | 'fusion/o/wave/d/2024-03-25'
+        '2024-03-25'    | null      | 'fusion/d/2024-03-25'
     }
 }
