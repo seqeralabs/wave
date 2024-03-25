@@ -29,9 +29,11 @@ import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpMethod
 import io.micronaut.http.HttpStatus
 import io.seqera.wave.exception.HttpResponseException
+import io.seqera.wave.ratelimit.impl.SpillwayRateLimiter
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
 import io.seqera.wave.tower.auth.JwtAuth
@@ -67,6 +69,10 @@ abstract class TowerConnector {
 
     @Value('${wave.pairing.channel.retryMaxDelay:30s}')
     private Duration retryMaxDelay
+
+    @Inject
+    @Nullable
+    private SpillwayRateLimiter limiter
 
     /**
      * Generic async get with authorization
@@ -125,7 +131,7 @@ abstract class TowerConnector {
                         err = err.cause
                     // check for retryable condition
                     final retryable = err instanceof IOException || err instanceof TimeoutException
-                    if( retryable && attempt.canAttempt() ) {
+                    if( retryable && attempt.canAttempt() && checkLimit(endpoint) ) {
                         final delay = attempt.delay()
                         final exec = CompletableFuture.delayedExecutor(delay.toMillis(), TimeUnit.MILLISECONDS)
                         log.debug "Unable to connect '$endpoint' - cause: ${err.message ?: err}; attempt: ${attempt.current()}; await: ${delay}; msgId: ${msgId}"
@@ -143,6 +149,16 @@ abstract class TowerConnector {
                     }
                     throw err
                 })
+    }
+
+    protected boolean checkLimit(String endpoint) {
+        log.debug "Limiter $limiter"
+        if( !limiter )
+            return true
+        final result = limiter.acquireTimeoutCounter(endpoint)
+        if( !result )
+            log.warn "Endpoint '$endpoint' is exceeding the timeout counter limit"
+        return result
     }
 
     /**
