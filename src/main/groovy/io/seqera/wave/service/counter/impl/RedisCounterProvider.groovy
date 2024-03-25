@@ -43,4 +43,11 @@ class RedisCounterProvider implements CounterProvider {
             return conn.hincrBy(key, field, value)
         }
     }
+
+    @Override
+    Long get(String key, String field) {
+        try(Jedis conn=pool.getResource() ) {
+            return conn.hget(key, field) ? conn.hget(key, field).toLong() : null
+        }
+    }
 }

@@ -40,6 +40,7 @@ import io.seqera.wave.exception.HttpServerRetryableErrorException
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.cleanup.CleanupStrategy
+import io.seqera.wave.service.metric.MetricsService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.stream.StreamService
@@ -110,6 +111,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     @Inject
     PersistenceService persistenceService
+
+    @Inject
+    private MetricsService metricsService
 
     /**
      * Build a container image for the given {@link BuildRequest}
@@ -232,6 +236,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
         // persist the container request
         persistenceService.createBuild(WaveBuildRecord.fromEvent(new BuildEvent(request)))
+
+        //increment metrics
+        metricsService.incrementBuildsCounter(null)
 
         // launch the build async
         CompletableFuture

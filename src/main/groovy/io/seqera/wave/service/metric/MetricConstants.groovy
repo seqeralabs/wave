@@ -27,4 +27,16 @@ interface MetricConstants {
 
     static final public String ANONYMOUS = 'anonymous'
 
+    static final public String PREFIX_PULLS_DAY =  'pulls/d/'
+
+    static final public String PREFIX_PULLS_ORG =  'pulls/o/'
+
+    static final public String PREFIX_FUSION_DAY =  'fusion/d/'
+
+    static final public String PREFIX_FUSION_ORG =  'fusion/o/'
+
+    static final public String PREFIX_BUILDS_DAY =  'builds/d/'
+
+    static final public String PREFIX_BUILDS_ORG =  'builds/o/'
+
 }

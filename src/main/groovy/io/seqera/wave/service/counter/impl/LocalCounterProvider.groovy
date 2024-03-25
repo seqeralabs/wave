@@ -42,4 +42,8 @@ class LocalCounterProvider implements CounterProvider {
         return result.computeIfAbsent(field, (it)-> new AtomicLong(0)).addAndGet(value)
     }
 
+    @Override
+    Long get(String key, String field) {
+        return store.get(key)?.get(field)?.get()
+    }
 }

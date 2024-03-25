@@ -50,6 +50,7 @@ import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.blob.BlobCacheService
 import io.seqera.wave.service.builder.ContainerBuildService
+import io.seqera.wave.service.metric.MetricsService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.DockerDigestStore
 import io.seqera.wave.storage.HttpDigestStore
@@ -100,6 +101,9 @@ class RegistryProxyController {
     @Nullable
     private BlobCacheService blobCacheService
 
+    @Inject
+    private MetricsService metricsService
+
     @Value('${wave.cache.digestStore.maxWeightMb:350}')
     int cacheMaxWeightMb
 
@@ -127,6 +131,15 @@ class RegistryProxyController {
         if( route.manifest && route.digest ){
             String ip = addressResolver.resolve(httpRequest)
             rateLimiterService?.acquirePull( new AcquireRequest(route.identity.userId as String, ip) )
+        }
+
+        //increment metrics
+        if( httpRequest.method==HttpMethod.GET && (route.manifest || route.isTag()) ) {
+            metricsService.incrementPullsCounter(null)
+            final version = route.request?.containerConfig?.fusionVersion()
+            if( version ) {
+                metricsService.incrementFusionPullsCounter(null)
+            }
         }
 
         // check if it's a container under build
