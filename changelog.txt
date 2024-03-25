@@ -1,4 +1,17 @@
 # Wave changelog
+1.5.0 - 25 Mar 2024 
+- Add fixed executor to future store [9f61abe9]
+- Add timeout retry limiter [0a98aa96]
+- Fix failing tests [eeb9ddfe]
+- Add thred pool monitor cron [a1cdcc13]
+- Bump corretto-17.0.10-al2023-jemalloc as base image [7238a86d]
+- Evict status redesigned (#419) [9cf07b56]
+- Add API and UI to evict a wave request from token cache  (#410) [5833c18d]
+- Add all values to entrypoint (#416) [7fef9a59]
+- Add documentation for Metrics API (#414) [6e16fc41]
+- Update aws sdk to version v2 (#415) [1cd5d496]
+- bumped actions/upload-artifact to v4 and fix tests (#417) [7f0d7866]
+
 1.4.0 - 27 Feb 2024
 - Add services to query Wave usage metadata  (#393) [6325b25c]
 - Add filter to trace slow endpoints [be49262f]
