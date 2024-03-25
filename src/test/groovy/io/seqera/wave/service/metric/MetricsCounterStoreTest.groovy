@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023-2024, Seqera Labs
+ *  Copyright (c) 2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.counter.impl
+package io.seqera.wave.service.metric
 
 import spock.lang.Specification
 
@@ -24,34 +24,23 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import jakarta.inject.Inject
 /**
  *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @MicronautTest(environments = ['test'])
-class LocalCounterProviderTest extends Specification {
+class MetricsCounterStoreTest extends Specification {
 
     @Inject
-    LocalCounterProvider localCounterProvider
-
-    def 'should increment a counter value' () {
-        expect:
-        localCounterProvider.inc('build-x', 'foo', 1) == 1
-        localCounterProvider.inc('build-x', 'foo', 1) == 2
-        and:
-        localCounterProvider.inc('build-x', 'foo', 10) == 12
-        and:
-        localCounterProvider.inc('build-x', 'foo', -12) == 0
-    }
+    MetricsCounterStore metricsCounterStore
 
     def 'should get correct count value' () {
         when:
-        localCounterProvider.inc('build-x', 'foo', 1)
-        localCounterProvider.inc('build-x', 'foo', 1)
-        localCounterProvider.inc('metrics-x', 'foo', 1)
+        metricsCounterStore.inc('foo')
+        metricsCounterStore.inc('foo')
+        metricsCounterStore.inc('bar')
 
         then:
-        localCounterProvider.get('build-x', 'foo') == 2
-        and:
-        localCounterProvider.get('metrics-x', 'foo') == 1
+        metricsCounterStore.get('foo') == 2
+        metricsCounterStore.get('bar') == 1
     }
 
 }
