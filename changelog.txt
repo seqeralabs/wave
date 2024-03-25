@@ -1,4 +1,7 @@
 # Wave changelog
+1.5.2 - 25 Mar 2024
+- Fix No such property: ioExecutor [f603868b]
+
 1.5.1 - 25 Mar 2024
 - Fix Thread pool selection on container controller [d882bd4d]
 - Fix trace slow endpoint duration [fb1eea96]
