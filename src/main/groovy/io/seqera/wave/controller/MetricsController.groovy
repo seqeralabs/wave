@@ -127,20 +127,23 @@ class MetricsController {
     }
 
     @Get(uri = "/v1alpha2/metrics/builds", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<?> getBuildsMetrics(String date, @Nullable @QueryValue String org) {
-        final count = metricsService.getBuildsMetrics(validateDate(date), org)
+    HttpResponse<?> getBuildsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
+        validateQueryParams(date, org)
+        final count = metricsService.getBuildsMetrics(date, org)
         return HttpResponse.ok(new GetBuildsCountResponse(count))
     }
 
     @Get(uri = "/v1alpha2/metrics/pulls", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<?> getFusionPullsMetrics(String date, @Nullable @QueryValue String org) {
-        final count = metricsService.getPullsMetrics(validateDate(date), org)
+    HttpResponse<?> getFusionPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
+        validateQueryParams(date, org)
+        final count = metricsService.getPullsMetrics(date, org)
         return HttpResponse.ok(new GetPullsCountResponse(count))
     }
 
     @Get(uri = "/v1alpha2/metrics/fusion/pulls", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<?> getPullsMetrics(String date, @Nullable @QueryValue String org) {
-        final count = metricsService.getFusionPullsMetrics(validateDate(date), org)
+    HttpResponse<?> getPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
+        validateQueryParams(date, org)
+        final count = metricsService.getFusionPullsMetrics(date, org)
         return HttpResponse.ok(new GetFusionPullsCountResponse(count))
 
     }
@@ -176,11 +179,12 @@ class MetricsController {
                 'The valid metrics are: ' + Metric.values().collect({ it.name() }).join(', ')])
     }
 
-    static String validateDate(String date){
+    static void validateQueryParams(String date, String org) {
+        if(!date && !org)
+            throw new BadRequestException('Either date or org query parameter must be provided')
         def pattern = ~/\d{4}-\d{2}-\d{2}/
         if(!(date ==~ pattern)){
-            throw new BadRequestException('Date format should be yyyy-MM-dd')
+            throw new BadRequestException('date format should be yyyy-MM-dd')
         }
-        return date
     }
 }
