@@ -69,8 +69,6 @@ interface PersistenceService {
      */
     WaveBuildRecord loadBuild(String buildId)
 
-    WaveBuildRecord loadBuild(String targetImage, String digest)
-
     /**
      * Retrieve a {@link WaveBuildRecord} object for the given target image and container digest
      *
