@@ -16,21 +16,29 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.configuration
+package io.seqera.wave.cron
 
-import java.time.Duration
+import spock.lang.Specification
+import spock.lang.Unroll
 
-import groovy.transform.CompileStatic
-import groovy.transform.ToString
 /**
- * A simple bean to configure a max items per duration
  *
- * @author : jorge <jorge.aguilera@seqera.io>
- *
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@ToString(includePackage = false, includeNames = true)
-@CompileStatic
-class LimitConfig {
-    int max
-    Duration duration
+class ThreadMonitorCronTest extends Specification {
+
+    @Unroll
+    def 'should check file name' () {
+        expect:
+        ThreadMonitorCron.getDumpFile(FILENAME) =~ /$EXPECTED/
+
+        where:
+        FILENAME                | EXPECTED
+        '/this/hello'           | '/this/hello-\\d+.txt'
+        '/this/hello.txt'       | '/this/hello-\\d+.txt'
+        '/this/that/hello.txt'  | '/this/that/hello-\\d+.txt'
+        '/this/that/hello'      | '/this/that/hello-\\d+.txt'
+
+    }
+
 }

@@ -20,6 +20,7 @@ package io.seqera.wave.controller
 
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
@@ -68,6 +69,7 @@ import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
 import io.seqera.wave.util.LongRndKey
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
 import static io.seqera.wave.WaveDefault.TOWER
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
@@ -134,12 +136,17 @@ class ContainerTokenController {
     @Inject
     ContainerInclusionService inclusionService
 
+    @Inject
+    @Named(TaskExecutors.IO)
+    ExecutorService ioExecutor
+
     @PostConstruct
     private void init() {
         log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl; default-build-repo: $buildConfig.defaultBuildRepository; default-cache-repo: $buildConfig.defaultCacheRepository; default-public-repo: $buildConfig.defaultPublicRepository"
     }
 
     @Post('/container-token')
+    @ExecuteOn(TaskExecutors.IO)
     CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
         validateContainerRequest(req)
 
@@ -163,7 +170,7 @@ class ContainerTokenController {
         // find out the user associated with the specified tower access token
         return userService
                 .getUserByAccessTokenAsync(registration.endpoint, req.towerAccessToken)
-                .thenApply { User user -> makeResponse(httpRequest, req, PlatformId.of(user,req)) }
+                .thenApplyAsync({ User user -> makeResponse(httpRequest, req, PlatformId.of(user,req)) }, ioExecutor)
     }
 
     protected HttpResponse<SubmitContainerTokenResponse> makeResponse(HttpRequest httpRequest, SubmitContainerTokenRequest req, PlatformId identity) {
