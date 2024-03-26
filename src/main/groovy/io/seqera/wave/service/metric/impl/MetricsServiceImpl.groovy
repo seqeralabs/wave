@@ -23,6 +23,7 @@ import java.time.format.DateTimeFormatter
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.service.license.LicenseManClient
 import io.seqera.wave.service.metric.MetricConstants
@@ -106,6 +107,7 @@ class MetricsServiceImpl implements MetricsService {
         }
     }
 
+    @Cacheable('cache-1min')
     protected String getOrg(String token) {
         return licenseManager && token ? licenseManager.checkToken(token, "tower-enterprise").organization : null
     }

@@ -29,7 +29,7 @@ interface MetricsService {
      *
      * @param date, date of the required metrics
      * @param org, org of the required metrics
-     * @return Long, builds counts ]
+     * @return Long, builds counts
      */
     Long getBuildsMetrics(String date, String org)
 
@@ -38,7 +38,7 @@ interface MetricsService {
      *
      * @param date, date of the required metrics
      * @param org, org of the required metrics
-     * @return Long, pulls counts ]
+     * @return Long, pulls counts
      */
     Long getPullsMetrics(String date, String org)
 
@@ -47,13 +47,28 @@ interface MetricsService {
      *
      * @param date, date of the required metrics
      * @param org, org of the required metrics
-     * @return Long, pulls counts ]
+     * @return Long, pulls counts
      */
     Long getFusionPullsMetrics(String date, String org)
 
+    /**
+     * increment wave fusion pulls count
+     *
+     * @param seqera platform token to get the org name
+     */
     void incrementFusionPullsCounter(String token)
 
+    /**
+     * increment wave builds count
+     *
+     * @param seqera platform token to get the org name
+     */
     void incrementBuildsCounter(String token)
 
+    /**
+     * increment wave pulls count
+     *
+     * @param seqera platform token to get the org name
+     */
     void incrementPullsCounter(String token)
 }
