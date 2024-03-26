@@ -40,6 +40,8 @@ import io.seqera.wave.exception.HttpServerRetryableErrorException
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.cleanup.CleanupStrategy
+import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.stream.StreamService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.Retryable
@@ -103,6 +105,12 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     @Inject
     private StreamService streamService
 
+    @Inject
+    private BuildCounterStore buildCounter
+
+    @Inject
+    PersistenceService persistenceService
+
     /**
      * Build a container image for the given {@link BuildRequest}
      *
@@ -112,8 +120,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
      *      The container image where the resulting image is going to be hosted
      */
     @Override
-    void buildImage(BuildRequest request) {
-        checkOrSubmit(request)
+    BuildTrack buildImage(BuildRequest request) {
+        return checkOrSubmit(request)
     }
 
     /**
@@ -223,7 +231,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 saveLayersToContext(req, context)
             }
             resp = buildStrategy.build(req)
-            def msg = "== Build request ${req.id} completed with status=$resp.exitStatus"
+            def msg = "== Build request ${req.buildId} completed with status=$resp.exitStatus"
             if( log.isTraceEnabled() )
                 msg += "; stdout: (see below)\n${indent(resp.logs)}"
             log.info(msg)
@@ -231,7 +239,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         }
         catch (Throwable e) {
             log.error "== Ouch! Unable to build container req=$req", e
-            return resp = BuildResult.failed(req.id, e.message, req.startTime)
+            return resp = BuildResult.failed(req.buildId, e.message, req.startTime)
         }
         finally {
             // use a short time-to-live for failed build
@@ -260,6 +268,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             throw e
         }
 
+        // persist the container request
+        persistenceService.createBuild(WaveBuildRecord.fromEvent(new BuildEvent(request)))
+
         // launch the build async
         CompletableFuture
                 .<BuildResult>supplyAsync(() -> launch(request), executor)
@@ -270,24 +281,25 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         eventPublisher.publishEvent(new BuildEvent(request, result))
     }
 
-    protected void checkOrSubmit(BuildRequest request) {
+    protected BuildTrack checkOrSubmit(BuildRequest request) {
+        // find next build number
+        final num = buildCounter.inc(request.containerId)
+        request.withBuildId(String.valueOf(num))
         // try to store a new build status for the given target image
         // this returns true if and only if such container image was not set yet
         final ret1 = BuildResult.create(request)
         if( buildStore.storeIfAbsent(request.targetImage, ret1) ) {
-            // flag it as a new build
-            request.uncached = true
             // go ahead
             log.info "== Submit build request: $request"
             launchAsync(request)
-            return
+            return new BuildTrack(ret1.id, request.targetImage, false)
         }
         // since it was unable to initialise the build result status
         // this means the build status already exists, retrieve it
         final ret2 = buildStore.getBuild(request.targetImage)
         if( ret2 ) {
             log.info "== Hit build cache for request: $request"
-            return
+            return new BuildTrack(ret2.id, request.targetImage, true)
         }
         // invalid state
         throw new IllegalStateException("Unable to determine build status for '$request.targetImage'")

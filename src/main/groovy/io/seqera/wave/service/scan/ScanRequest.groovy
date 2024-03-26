@@ -42,6 +42,6 @@ class ScanRequest {
     static ScanRequest fromBuild(BuildRequest request) {
         final id = request.scanId
         final workDir = request.workDir.resolveSibling("scan-${id}")
-        return new ScanRequest(id, request.id, request.configJson, request.targetImage, request.platform, workDir)
+        return new ScanRequest(id, request.buildId, request.configJson, request.targetImage, request.platform, workDir)
     }
 }

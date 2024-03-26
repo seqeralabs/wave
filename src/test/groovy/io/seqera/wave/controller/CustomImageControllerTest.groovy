@@ -145,7 +145,7 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
 
     void 'should retrieve head manifest when image is completed'() {
         given:
-        expected = BuildResult.completed('xyz', 0, 'OK', Instant.now())
+        expected = BuildResult.completed('xyz', 0, 'OK', Instant.now(), null)
 
         when:
         HttpRequest request = HttpRequest.HEAD("/v2/wt/1234/library/hello-world/manifests/latest").headers({h->
@@ -160,7 +160,7 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
 
     void 'should wait for head manifest when image is under construction'() {
         given:
-        expected = BuildResult.completed('xyz', 0, 'OK', Instant.now())
+        expected = BuildResult.completed('xyz', 0, 'OK', Instant.now(), null)
         resolveImageAsync = true
 
         when:

@@ -22,7 +22,6 @@ import spock.lang.Specification
 
 import java.nio.file.Path
 
-import io.seqera.wave.api.BuildContext
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
@@ -38,11 +37,14 @@ class BuildStrategyTest extends Specification {
         def service = Spy(BuildStrategy)
         service.@buildConfig = new BuildConfig()
         and:
-        def work = Path.of('/work/foo')
-        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, null, BuildFormat.DOCKER, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
+        def req = new BuildRequest(
+                workDir: Path.of('/work/foo/c168dba125e28777'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'quay.io/wave:c168dba125e28777',
+                cacheRepository: 'reg.io/wave/build/cache' )
 
         when:
-        def cmd = service.launchCmd(REQ)
+        def cmd = service.launchCmd(req)
         then:
         cmd == [
                 '--dockerfile',
@@ -64,13 +66,15 @@ class BuildStrategyTest extends Specification {
         def cache = 'reg.io/wave/build/cache'
         def service = Spy(BuildStrategy)
         service.@buildConfig = new BuildConfig()
-        def build = Mock(BuildContext) {tarDigest >> '123'}
         and:
-        def work = Path.of('/work/foo')
-        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, null, BuildFormat.DOCKER, Mock(PlatformId), null, build, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
-
+        def req = new BuildRequest(
+                workDir: Path.of('/work/foo/3980470531b4a52a'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'quay.io/wave:3980470531b4a52a',
+                cacheRepository: 'reg.io/wave/build/cache' )
+        
         when:
-        def cmd = service.launchCmd(REQ)
+        def cmd = service.launchCmd(req)
         then:
         cmd == [
                 '--dockerfile',
@@ -92,17 +96,55 @@ class BuildStrategyTest extends Specification {
         def cache = 'reg.io/wave/build/cache'
         def service = Spy(BuildStrategy)
         and:
-        def work = Path.of('/work/foo')
-        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, null, BuildFormat.SINGULARITY, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
-
+        def req = new BuildRequest(
+                workDir: Path.of('/work/foo/c168dba125e28777'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'oras://quay.io/wave:c168dba125e28777',
+                format: BuildFormat.SINGULARITY,
+                cacheRepository: 'reg.io/wave/build/cache' )
         when:
-        def cmd = service.launchCmd(REQ)
+        def cmd = service.launchCmd(req)
         then:
         cmd == [
                 "sh",
                 "-c",
                 "singularity build image.sif /work/foo/c168dba125e28777/Containerfile && singularity push image.sif oras://quay.io/wave:c168dba125e28777"
             ]
+    }
+
+    def 'should create request' () {
+        when:
+        final build = new BuildRequest(
+                'FROM foo:latest',
+                Path.of("some/path"),
+                "buildrepo",
+                null,
+                null,
+                BuildFormat.DOCKER,
+                PlatformId.NULL,
+                null,
+                null,
+                ContainerPlatform.of('amd64'),
+                '{auth}',
+                'docker.io/my/repo',
+                '12345',
+                "1.2.3.4",
+                null )
+        then:
+        build.containerId == '911d21120b4b505c'
+        build.workspace == Path.of("some/path")
+        and:
+        !build.buildId
+        !build.workDir
+
+        when:
+        build.withBuildId('100')
+        then:
+        build.containerId == '911d21120b4b505c'
+        build.workspace == Path.of("some/path")
+        and:
+        build.buildId == '911d21120b4b505c_100'
+        build.workDir == Path.of('.').toRealPath().resolve('some/path/911d21120b4b505c_100')
     }
 
 }

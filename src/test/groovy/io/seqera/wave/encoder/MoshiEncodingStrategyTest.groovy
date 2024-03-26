@@ -52,7 +52,7 @@ class MoshiEncodingStrategyTest extends Specification {
         given:
         def encoder = new MoshiEncodeStrategy<BuildResult>() { }
         and:
-        def build = BuildResult.completed('1', 2, 'Oops', Instant.now())
+        def build = BuildResult.completed('1', 2, 'Oops', Instant.now(), null)
 
         when:
         def json = encoder.encode(build)

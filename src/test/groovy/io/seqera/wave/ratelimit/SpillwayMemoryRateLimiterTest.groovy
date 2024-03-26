@@ -74,4 +74,22 @@ class SpillwayMemoryRateLimiterTest extends Specification {
         thrown(SlowDownException)
     }
 
+    void "can acquire 1 error retry"() {
+        expect:
+        rateLimiter.acquireTimeoutCounter('http://foo.com')
+        rateLimiter.acquireTimeoutCounter('http://bar.com')
+    }
+
+    void "should fail on multiple requests "() {
+        given:
+        def result = new ArrayList<Boolean>()
+
+        when:
+        result << rateLimiter.acquireTimeoutCounter('http://foo.com')
+        result << rateLimiter.acquireTimeoutCounter('http://foo.com')
+        result << rateLimiter.acquireTimeoutCounter('http://foo.com')
+        then:
+        result.count{it==false }>0
+    }
+
 }

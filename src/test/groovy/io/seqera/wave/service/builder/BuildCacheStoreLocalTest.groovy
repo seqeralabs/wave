@@ -39,9 +39,9 @@ class BuildCacheStoreLocalTest extends Specification {
     private BuildConfig buildConfig
 
     BuildResult zero = BuildResult.create('0')
-    BuildResult one = BuildResult.completed('1', 0, 'done', Instant.now())
-    BuildResult two = BuildResult.completed('2', 0, 'done', Instant.now())
-    BuildResult three = BuildResult.completed('3', 0, 'done', Instant.now())
+    BuildResult one = BuildResult.completed('1', 0, 'done', Instant.now(), 'abc')
+    BuildResult two = BuildResult.completed('2', 0, 'done', Instant.now(), 'abc')
+    BuildResult three = BuildResult.completed('3', 0, 'done', Instant.now(), 'abc')
 
     def 'should get and put key values' () {
         given:

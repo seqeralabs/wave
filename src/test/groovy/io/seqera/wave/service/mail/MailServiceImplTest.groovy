@@ -40,7 +40,7 @@ class MailServiceImplTest extends Specification {
     def 'should create build mail' () {
         given:
         def recipient = 'foo@gmail.com'
-        def result = BuildResult.completed('12345', 0, 'pull foo:latest', Instant.now())
+        def result = BuildResult.completed('12345', 0, 'pull foo:latest', Instant.now(), 'abc')
         def request= Mock(BuildRequest)
 
         when:

@@ -31,6 +31,7 @@ import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.request.UploadRequest
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.persistence.PersistenceService
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
@@ -100,6 +101,11 @@ class BuildLogServiceImpl implements BuildLogService {
 
     @Override
     StreamedFile fetchLogStream(String buildId) {
+        fetchLogStream0(buildId) ?: fetchLogStream0(BuildRequest.legacyBuildId(buildId))
+    }
+
+    private StreamedFile fetchLogStream0(String buildId) {
+        if( !buildId ) return null
         final Optional<ObjectStorageEntry<?>> result = objectStorageOperations.retrieve(logKey(buildId))
         return result.isPresent() ? result.get().toStreamedFile() : null
     }
