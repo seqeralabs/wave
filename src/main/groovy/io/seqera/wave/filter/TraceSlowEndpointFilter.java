@@ -42,7 +42,7 @@ import org.reactivestreams.Publisher;
 @Filter("/**")
 class TraceSlowEndpointFilter implements HttpServerFilter {
 
-    @Value("${wave.trace.slow-endpoint.duration:1ms}")
+    @Value("${wave.trace.slow-endpoint.duration:1m}")
     private Duration duration;
 
     @Override

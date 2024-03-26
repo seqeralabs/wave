@@ -234,6 +234,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             throw e
         }
 
+
         //increment metrics
         CompletableFuture.supplyAsync(() -> metricsService.incrementBuildsCounter(request.identity.accessToken), executor)
 
