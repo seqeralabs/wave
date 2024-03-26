@@ -26,7 +26,6 @@ import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.tower.PlatformId
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -85,10 +84,13 @@ class DockerBuildStrategyTest extends Specification {
         def ctx = ApplicationContext.run()
         def service = ctx.getBean(DockerBuildStrategy)
         and:
-        def work = Path.of('/work/foo')
         def creds = Path.of('/work/creds.json')
-        def cache = 'reg.io/wave/build/cache'
-        def req = new BuildRequest('from foo', work, 'repo', null, null, BuildFormat.DOCKER, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "1.2.3.4", null)
+        and:
+        def req = new BuildRequest(
+                workDir: Path.of('/work/foo/89fb83ce6ec8627b'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'repo:89fb83ce6ec8627b',
+                cacheRepository: 'reg.io/wave/build/cache' )
         when:
         def cmd = service.buildCmd(req, creds)
         then:
@@ -115,9 +117,11 @@ class DockerBuildStrategyTest extends Specification {
         def ctx = ApplicationContext.run(['wave.build.compress-caching': false])
         def service = ctx.getBean(DockerBuildStrategy)
         and:
-        def work = Path.of('/work/foo')
-        def cache    = 'reg.io/wave/build/cache'
-        def req = new BuildRequest('from foo', work, 'repo', null, null, BuildFormat.DOCKER, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "1.2.3.4", null)
+        def req = new BuildRequest(
+                workDir: Path.of('/work/foo/89fb83ce6ec8627b'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'repo:89fb83ce6ec8627b',
+                cacheRepository: 'reg.io/wave/build/cache' )
         when:
         def cmd = service.launchCmd(req)
         then:
@@ -144,10 +148,15 @@ class DockerBuildStrategyTest extends Specification {
         SpackConfig spackConfig = ctx.getBean(SpackConfig)
         service.setSpackConfig(spackConfig)
         and:
-        def work = Path.of('/work/foo')
         def creds = Path.of('/work/creds.json')
-        def spackFile = '/work/spack.yaml'
-        def req = new BuildRequest('from foo', work, 'repo', null, spackFile, BuildFormat.SINGULARITY, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', null, null, "1.2.3.4", null)
+        and:
+        def req = new BuildRequest(
+                workDir: Path.of('/work/foo/d4869cc39b8d7d55'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'oras://repo:d4869cc39b8d7d55',
+                cacheRepository: 'reg.io/wave/build/cache',
+                format: BuildFormat.SINGULARITY,
+                isSpackBuild: true )
         when:
         def cmd = service.buildCmd(req, creds)
         then:
@@ -181,10 +190,15 @@ class DockerBuildStrategyTest extends Specification {
         SpackConfig spackConfig = ctx.getBean(SpackConfig)
         service.setSpackConfig(spackConfig)
         and:
-        def work = Path.of('/work/foo')
         def creds = Path.of('/work/creds.json')
-        def spackFile = '/work/spack.yaml'
-        def req = new BuildRequest('from foo', work, 'repo', null, spackFile, BuildFormat.SINGULARITY, Mock(PlatformId), null, null, ContainerPlatform.of('arm64'),'{auth}', null, null, "1.2.3.4", null)
+        and:
+        def req = new BuildRequest(
+                workDir: Path.of('/work/foo/9c68af894bb2419c'),
+                platform: ContainerPlatform.of('linux/arm64'),
+                targetImage: 'oras://repo:9c68af894bb2419c',
+                cacheRepository: 'reg.io/wave/build/cache',
+                format: BuildFormat.SINGULARITY,
+                isSpackBuild: true )
         when:
         def cmd = service.buildCmd(req, creds)
         then:

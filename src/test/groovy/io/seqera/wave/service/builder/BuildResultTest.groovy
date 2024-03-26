@@ -35,9 +35,9 @@ class BuildResultTest extends Specification {
     def 'should check equals and hashcode' () {
         given:
         def now = Instant.now()
-        def r1 = new BuildResult('100', 1, 'logs', now, Duration.ofMinutes(1))
-        def r2 = new BuildResult('100', 1, 'logs', now, Duration.ofMinutes(1))
-        def r3 = new BuildResult('101', 1, 'logs', now, Duration.ofMinutes(1))
+        def r1 = new BuildResult('100', 1, 'logs', now, Duration.ofMinutes(1), 'abc')
+        def r2 = new BuildResult('100', 1, 'logs', now, Duration.ofMinutes(1), 'abc')
+        def r3 = new BuildResult('101', 1, 'logs', now, Duration.ofMinutes(1), 'abc')
 
         expect:
         r1 == r2
@@ -50,7 +50,7 @@ class BuildResultTest extends Specification {
     @Unroll
     def 'should validate status methods' () {
         when:
-        def result = new BuildResult('100', EXIT, 'blah', Instant.now(), DURATION)
+        def result = new BuildResult('100', EXIT, 'blah', Instant.now(), DURATION, 'abc')
         then:
         result.done() == DONE
         result.succeeded() == SUCCEEDED
@@ -68,7 +68,7 @@ class BuildResultTest extends Specification {
 
     def 'should ser-deser build result' () {
         given:
-        def result = new BuildResult('100', 1, 'logs', Instant.now(), Duration.ofMinutes(1))
+        def result = new BuildResult('100', 1, 'logs', Instant.now(), Duration.ofMinutes(1),'abc')
 
         when:
         def json = JacksonHelper.toJson(result)
