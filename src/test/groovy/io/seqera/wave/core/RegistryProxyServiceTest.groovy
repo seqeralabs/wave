@@ -18,20 +18,18 @@
 
 package io.seqera.wave.core
 
-
 import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.test.DockerRegistryContainer
 import jakarta.inject.Inject
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-class RegistryProxyServiceTest extends Specification implements DockerRegistryContainer{
+class RegistryProxyServiceTest extends Specification {
 
     @Inject
     @Shared
@@ -39,9 +37,6 @@ class RegistryProxyServiceTest extends Specification implements DockerRegistryCo
 
     @Inject RegistryProxyService registryProxyService
 
-    def setupSpec() {
-        initRegistryContainer(applicationContext)
-    }
 
     def 'should check manifest exist' () {
         given:
@@ -54,4 +49,14 @@ class RegistryProxyServiceTest extends Specification implements DockerRegistryCo
         resp1
     }
 
+    def 'should retrieve image digest' () {
+        given:
+        def IMAGE = 'library/hello-world@sha256:6352af1ab4ba4b138648f8ee88e63331aae519946d3b67dae50c313c6fc8200f'
+
+        when:
+        def resp1 = registryProxyService.getImageDigest(IMAGE)
+
+        then:
+        resp1 == 'sha256:6352af1ab4ba4b138648f8ee88e63331aae519946d3b67dae50c313c6fc8200f'
+    }
 }

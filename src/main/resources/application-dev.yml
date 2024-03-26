@@ -16,6 +16,10 @@ wave:
     slow-endpoint:
       duration: 1s
 ---
+endpoints:
+  metrics:
+    enabled: true
+---
 # uses TOWER_xxx variable because the dev environment is expected to be
 # the same as of tower
 mail:

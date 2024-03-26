@@ -24,9 +24,9 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
+import io.seqera.wave.exchange.BuildStatusResponse
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
-
 /**
  * A collection of request and response properties to be stored
  *
@@ -50,18 +50,19 @@ class WaveBuildRecord {
     Instant startTime
     String offsetId
     Duration duration
-    int exitStatus
+    Integer exitStatus
     String platform
     String scanId
     BuildFormat format
+    String digest
 
     boolean succeeded() { exitStatus==0 }
 
     static WaveBuildRecord fromEvent(BuildEvent event) {
-        if( event.request.id != event.result.id )
+        if( event.result && event.request.buildId != event.result.id )
             throw new IllegalStateException("Build id must match the result id")
         return new WaveBuildRecord(
-                buildId: event.request.id,
+                buildId: event.request.buildId,
                 dockerFile: event.request.containerFile,
                 condaFile: event.request.condaFile,
                 spackFile: event.request.spackFile,
@@ -71,12 +72,29 @@ class WaveBuildRecord {
                 userId: event.request.identity.user?.id,
                 requestIp: event.request.ip,
                 startTime: event.request.startTime,
-                duration: event.result.duration,
-                exitStatus: event.result.exitStatus,
                 platform: event.request.platform,
                 offsetId: event.request.offsetId,
                 scanId: event.request.scanId,
-                format: event.request.format
+                format: event.request.format,
+                duration: event.result?.duration,
+                exitStatus: event.result?.exitStatus,
+                digest: event.result?.digest
         )
     }
+
+    BuildStatusResponse toStatusResponse() {
+        final status = exitStatus != null
+                ? BuildStatusResponse.Status.COMPLETED
+                : BuildStatusResponse.Status.PENDING
+        final succeeded = exitStatus!=null
+                    ? exitStatus==0
+                    : null
+        return new BuildStatusResponse(
+                buildId,
+                status,
+                startTime,
+                duration,
+                succeeded )
+    }
+
 }

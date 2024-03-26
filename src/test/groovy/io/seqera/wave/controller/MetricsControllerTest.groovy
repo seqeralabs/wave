@@ -102,9 +102,9 @@ class MetricsControllerTest extends Specification {
                 exitStatus: 0)
 
         and:
-        persistenceService.saveBuild(build1)
-        persistenceService.saveBuild(build2)
-        persistenceService.saveBuild(build3)
+        persistenceService.createBuild(build1)
+        persistenceService.createBuild(build2)
+        persistenceService.createBuild(build3)
 
         //add container request records
         def TOKEN1 = '123abc'

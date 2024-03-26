@@ -187,9 +187,10 @@ class RegistryProxyService {
         }
     }
 
+    @Deprecated
     boolean isManifestPresent(String image){
         try {
-            return isManifestPresent0(image)
+            return getImageDigest0(image) != null
         }
         catch(Exception e) {
             log.warn "Unable to check status for container image '$image' -- cause: ${e.message}"
@@ -197,14 +198,26 @@ class RegistryProxyService {
         }
     }
 
+    String getImageDigest(String image) {
+        try {
+            return getImageDigest0(image)
+        }
+        catch(Exception e) {
+            log.warn "Unable to retrieve digest for image '$image' -- cause: ${e.message}"
+            return null
+        }
+    }
+
     @Cacheable('cache-1min')
     @Retryable(includes=[IOException, HttpException])
-    protected boolean isManifestPresent0(String image) {
+    protected String getImageDigest0(String image) {
         final coords = ContainerCoordinates.parse(image)
         final route = RoutePath.v2manifestPath(coords)
         final proxyClient = client(route)
         final resp = proxyClient.head(route.path, WaveDefault.ACCEPT_HEADERS)
         return resp.statusCode() == 200
+                ? resp.headers().firstValue('docker-content-digest').orElse(null)
+                : null
     }
 
     static class DelegateResponse {
