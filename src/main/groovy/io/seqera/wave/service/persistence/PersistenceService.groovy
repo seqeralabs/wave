@@ -72,6 +72,15 @@ interface PersistenceService {
     WaveBuildRecord loadBuild(String targetImage, String digest)
 
     /**
+     * Retrieve a {@link WaveBuildRecord} object for the given target image and container digest
+     *
+     * @param targetImage The container target image name e.g. docker.io/user/image:tag
+     * @param digest The container image sha256 checksum
+     * @return The corresponding {@link WaveBuildRecord} object or {@code null} if no record is found
+     */
+    WaveBuildRecord loadBuild(String targetImage, String digest)
+
+    /**
      * Store a {@link WaveContainerRecord} object in the Surreal wave_request table.
      *
      * @param token The request token associated with this request

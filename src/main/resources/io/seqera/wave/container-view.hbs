@@ -151,10 +151,10 @@
     {{/if}}
 
     <div>
-        <h2>Danger Zone</h2>
+        <h3>Admin</h3>
     </div>
     <div>
-        <table class="table">
+        <table id="evictTable" class="table">
             <tr>
                 <td>Do you want to evict this wave container record from cache?</td>
                 <td>
@@ -162,16 +162,20 @@
                 </td>
             </tr>
         </table>
-    </div>
-
-    <div id="status" class="display: none; text-align: center;">
-            <label id="statusLabel" ></label>
+        <table id="evictStatusTable" class="table" style="display: none">
+            <tr>
+                <td style="text-align: center">
+                    <label id="statusLabel" ></label>
+                </td>
+            </tr>
+        </table>
     </div>
 
     <script>
         function evictFromCache() {
             const statusLabel = document.getElementById("statusLabel");
-            const status = document.getElementById("status");
+            const evictTable = document.getElementById("evictTable");
+            const evictStatusTable = document.getElementById("evictStatusTable");
             fetch("{{server_url}}/container-token/{{request_token}}", {
                 method: 'DELETE'
             }).then(response => {
@@ -185,7 +189,8 @@
                     }).catch(error => {
                         statusLabel.textContent = "Error evicting the wave container record. Please try again later.";
                     });
-            status.style.display = "block";
+            evictTable.style.display = "none";
+            evictStatusTable.style.display = "block";
         }
     </script>
 

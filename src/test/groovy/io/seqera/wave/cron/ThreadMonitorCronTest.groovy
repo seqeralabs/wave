@@ -16,39 +16,29 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.counter.impl
+package io.seqera.wave.cron
 
-import groovy.transform.CompileStatic
-import io.micronaut.context.annotation.Requires
-import jakarta.inject.Inject
-import jakarta.inject.Singleton
-import redis.clients.jedis.Jedis
-import redis.clients.jedis.JedisPool
+import spock.lang.Specification
+import spock.lang.Unroll
+
 /**
- * Implement a counter based on Redis cache
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Requires(property = 'redis.uri')
-@Singleton
-@CompileStatic
-class RedisCounterProvider implements CounterProvider {
+class ThreadMonitorCronTest extends Specification {
 
-    @Inject
-    private JedisPool pool
+    @Unroll
+    def 'should check file name' () {
+        expect:
+        ThreadMonitorCron.getDumpFile(FILENAME) =~ /$EXPECTED/
 
-    @Override
-    long inc(String key, String field, long value) {
-        try(Jedis conn=pool.getResource() ) {
-            return conn.hincrBy(key, field, value)
-        }
-    }
+        where:
+        FILENAME                | EXPECTED
+        '/this/hello'           | '/this/hello-\\d+.txt'
+        '/this/hello.txt'       | '/this/hello-\\d+.txt'
+        '/this/that/hello.txt'  | '/this/that/hello-\\d+.txt'
+        '/this/that/hello'      | '/this/that/hello-\\d+.txt'
 
-    @Override
-    Long get(String key, String field) {
-        try(Jedis conn=pool.getResource() ) {
-            return conn.hget(key, field) ? conn.hget(key, field).toLong() : null
-        }
     }
 
 }

@@ -41,7 +41,7 @@ class LocalCounterProviderTest extends Specification {
         and:
         localCounterProvider.inc('build-x', 'foo', -12) == 0
     }
-
+  
     def 'should get correct count value' () {
         when:
         localCounterProvider.inc('build-x', 'foo', 1)

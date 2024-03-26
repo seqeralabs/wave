@@ -46,4 +46,5 @@ class LocalCounterProvider implements CounterProvider {
     Long get(String key, String field) {
         return store.get(key)?.get(field)?.get()
     }
+
 }
