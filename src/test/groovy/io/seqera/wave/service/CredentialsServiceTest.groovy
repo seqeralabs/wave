@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service
 
-
 import spock.lang.Specification
 
 import java.security.PublicKey
@@ -37,6 +36,9 @@ import io.seqera.wave.tower.client.CredentialsDescription
 import io.seqera.wave.tower.client.GetCredentialsKeysResponse
 import io.seqera.wave.tower.client.ListCredentialsResponse
 import io.seqera.wave.tower.client.TowerClient
+import io.seqera.wave.tower.compute.ComputeEnv
+import io.seqera.wave.tower.compute.DescribeWorkflowLaunchResponse
+import io.seqera.wave.tower.compute.WorkflowLaunchResponse
 import jakarta.inject.Inject
 
 /**
@@ -164,7 +166,7 @@ class CredentialsServiceTest extends Specification {
                 registry: 'docker.io'
         )
         and:
-        def identity = new PlatformId(new User(id:10), 10,"token",'tower.io')
+        def identity = new PlatformId(new User(id:10), 10,"token",'tower.io', '101')
 
         when:
         def credentials = credentialsService.findRegistryCreds('quay.io', identity)
@@ -183,10 +185,12 @@ class CredentialsServiceTest extends Specification {
                 credentials: [nonContainerRegistryCredentials,otherRegistryCredentials]
         ))
 
+        and:'no compute credentials'
+        1 * towerClient.fetchWorkflowLaunchInfo('tower.io',"token",'101') >> CompletableFuture.completedFuture(null)
+
         then:
         credentials == null
     }
-
 
     def 'should parse credentials payload' () {
         given:
@@ -200,9 +204,76 @@ class CredentialsServiceTest extends Specification {
         keys.password == 'you'
     }
 
+    def 'should get registry creds from compute creds when not found in tower credentials'() {
+        given: 'a tower user in a workspace on a specific instance with a valid token'
+        def userId = 10
+        def workspaceId = 10
+        def token = "valid-token"
+        def towerEndpoint = "http://tower.io:9090"
+        def workflowId = "id123"
+
+        and: 'a previously registered key'
+        def keypair = TEST_CIPHER.generateKeyPair()
+        def keyId = 'generated-key-id'
+        def keyRecord = new PairingRecord(
+                service: PairingService.TOWER_SERVICE,
+                endpoint: towerEndpoint,
+                pairingId: keyId,
+                privateKey: keypair.getPrivate().getEncoded(),
+                expiration: (Instant.now() + Duration.ofSeconds(10)) )
+
+
+        and: 'registry credentials to access a registry stored in tower'
+        def credentialsId = 'credentialsId'
+        and: 'other credentials registered by the user'
+        def nonContainerRegistryCredentials = new CredentialsDescription(
+                id: 'alt-creds',
+                provider: 'azure',
+                registry: null )
+        and: 'workflow launch info'
+        def computeEnv = new ComputeEnv(
+                id: 'computeId',
+                credentialsId: credentialsId,
+                platform: 'aws-batch'
+        )
+        def launch = new WorkflowLaunchResponse(
+                computeEnv: computeEnv
+        )
+        def describeWorkflowLaunchResponse = new DescribeWorkflowLaunchResponse(
+                launch: launch
+         )
+        and: 'compute credentials'
+        def computeCredentials = '{"userName":"me", "password": "you"}'
+        and:
+        def identity = new PlatformId(new User(id:userId), workspaceId,token,towerEndpoint,workflowId)
+
+        when: 'look those registry credentials from tower'
+        def containerCredentials = credentialsService.findRegistryCreds("ecr",identity)
+
+        then: 'the registered key is fetched correctly from the security service'
+        1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE, towerEndpoint) >> keyRecord
+
+        and: 'credentials are listed once and return a potential match'
+        1 * towerClient.listCredentials(towerEndpoint,token,workspaceId) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
+                credentials: [nonContainerRegistryCredentials]))
+
+        and:'fetched compute credentials'
+        1*towerClient.fetchWorkflowLaunchInfo(towerEndpoint, token, workflowId) >> CompletableFuture.completedFuture(describeWorkflowLaunchResponse)
+
+        and: 'they match and the encrypted credentials are fetched'
+        1 * towerClient.fetchEncryptedCredentials(towerEndpoint, token, credentialsId, keyId, workspaceId) >> CompletableFuture.completedFuture(
+                encryptedCredentialsFromTower(keypair.getPublic(), computeCredentials))
+
+        and:
+        containerCredentials.userName == 'me'
+        containerCredentials.password == "you"
+        noExceptionThrown()
+    }
 
     private static GetCredentialsKeysResponse encryptedCredentialsFromTower(PublicKey key, String credentials) {
-        return new GetCredentialsKeysResponse(keys: TEST_CIPHER.encrypt(key,credentials.getBytes()).encode())
+        if( credentials )
+            return new GetCredentialsKeysResponse(keys: TEST_CIPHER.encrypt(key,credentials.getBytes()).encode())
+        return null
     }
 
 }

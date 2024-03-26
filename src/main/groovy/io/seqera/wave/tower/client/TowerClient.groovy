@@ -24,9 +24,11 @@ import groovy.transform.CompileStatic
 import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.tower.client.connector.TowerConnector
+import io.seqera.wave.tower.compute.DescribeWorkflowLaunchResponse
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import org.apache.commons.lang3.StringUtils
+
 /**
  * Implement a client to interact with Tower services
  *
@@ -109,6 +111,14 @@ class TowerClient {
             throw new IllegalArgumentException("Endpoint should start with HTTP or HTTPS protocol — offending value: '$endpoint'")
 
         StringUtils.removeEnd(endpoint, "/")
+    }
+
+    CompletableFuture<DescribeWorkflowLaunchResponse> fetchWorkflowLaunchInfo(String towerEndpoint, String authorization, String workflowId){
+        def uri = workflowLaunchInfoEndpoint(towerEndpoint,workflowId)
+        return getAsync(uri, towerEndpoint, authorization,DescribeWorkflowLaunchResponse.class)
+    }
+    protected static URI workflowLaunchInfoEndpoint(String towerEndpoint, String workflowId) {
+        return URI.create("${checkEndpoint(towerEndpoint)}/workflow/${workflowId}/launch")
     }
 
 }
