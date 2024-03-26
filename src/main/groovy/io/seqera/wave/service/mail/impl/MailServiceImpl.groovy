@@ -60,8 +60,7 @@ class MailServiceImpl implements MailService {
     @EventListener
     void onBuildEvent(BuildEvent event) {
         try {
-            if( event.result )
-                sendCompletionEmail(event.request, event.result)
+            sendCompletionEmail(event.request, event.result)
         }
         catch (Exception e) {
             log.warn "Unable to send completion notication - reason: ${e.message ?: e}"
