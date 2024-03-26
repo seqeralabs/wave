@@ -244,7 +244,6 @@ class ContainerTokenController {
                 scanId,
                 ip,
                 offset)
-                .withAccessToken(req.towerAccessToken)
     }
 
     protected BuildTrack buildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {

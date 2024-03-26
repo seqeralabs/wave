@@ -137,11 +137,6 @@ class BuildRequest {
      * The target build format, either Docker or Singularity
      */
     final BuildFormat format
-
-    /**
-     * The organization name
-     */
-    String accessToken
     
     volatile String buildId
 
@@ -329,10 +324,4 @@ class BuildRequest {
             return null
         return id.contains(SEP) ? id.tokenize(SEP)[0] : null
     }
-
-    BuildRequest withAccessToken(String accessToken) {
-        this.accessToken = accessToken
-        return this
-    }
-
 }

@@ -234,6 +234,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             throw e
         }
 
+        //increment metrics
+        CompletableFuture.supplyAsync(() -> metricsService.incrementBuildsCounter(request.identity.accessToken), executor)
+
         // persist the container request
         persistenceService.createBuild(WaveBuildRecord.fromEvent(new BuildEvent(request)))
 
@@ -248,8 +251,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     }
 
     protected BuildTrack checkOrSubmit(BuildRequest request) {
-        //increment metrics
-        CompletableFuture.supplyAsync(() -> metricsService.incrementBuildsCounter(request.accessToken), executor)
         // find next build number
         final num = buildCounter.inc(request.containerId)
         request.withBuildId(String.valueOf(num))
