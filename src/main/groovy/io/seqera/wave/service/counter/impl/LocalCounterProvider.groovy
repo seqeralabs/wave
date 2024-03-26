@@ -16,32 +16,30 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.scan
+package io.seqera.wave.service.counter.impl
 
-import java.nio.file.Path
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
 
-import groovy.transform.Canonical
 import groovy.transform.CompileStatic
-import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.builder.BuildRequest
+import io.micronaut.context.annotation.Requires
+import jakarta.inject.Singleton
 /**
- * Model a container scan request
- * 
+ * Local counter for development purposes
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Canonical
+@Requires(missingProperty = 'redis.uri')
+@Singleton
 @CompileStatic
-class ScanRequest {
-    final String id
-    final String buildId
-    final String configJson
-    final String targetImage
-    final ContainerPlatform platform
-    final Path workDir
+class LocalCounterProvider implements CounterProvider {
 
-    static ScanRequest fromBuild(BuildRequest request) {
-        final id = request.scanId
-        final workDir = request.workDir.resolveSibling("scan-${id}")
-        return new ScanRequest(id, request.buildId, request.configJson, request.targetImage, request.platform, workDir)
+    private ConcurrentHashMap<String,ConcurrentHashMap<String, AtomicLong>> store = new ConcurrentHashMap<>()
+
+    @Override
+    long inc(String key, String field, long value) {
+        final result = store.computeIfAbsent(key, (it)-> new ConcurrentHashMap<>())
+        return result.computeIfAbsent(field, (it)-> new AtomicLong(0)).addAndGet(value)
     }
+
 }

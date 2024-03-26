@@ -44,13 +44,23 @@ class LocalPersistenceService implements PersistenceService {
     private Map<String,WaveScanRecord> scanStore = new HashMap<>()
 
     @Override
-    void saveBuild(WaveBuildRecord record) {
+    void createBuild(WaveBuildRecord record) {
+        buildStore[record.buildId] = record
+    }
+
+    @Override
+    void updateBuild(WaveBuildRecord record) {
         buildStore[record.buildId] = record
     }
 
     @Override
     WaveBuildRecord loadBuild(String buildId) {
         return buildStore.get(buildId)
+    }
+
+    @Override
+    WaveBuildRecord loadBuild(String targetImage, String digest) {
+        buildStore.values().find( (build) ->  build.targetImage==targetImage && build.digest==digest )
     }
 
     @Override

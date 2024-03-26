@@ -64,6 +64,9 @@ interface SurrealClient {
     @Post('/key/wave_build')
     Flux<Map<String, Object>> insertBuildAsync(@Header String authorization, @Body WaveBuildRecord body)
 
+    @Get('/key/wave_build')
+    String loadBuild(@Header String authorization, String buildId)
+
     @Post('/key/wave_build')
     Map<String, Object> insertBuild(@Header String authorization, @Body WaveBuildRecord body)
 

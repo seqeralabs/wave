@@ -16,47 +16,35 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.core
+package io.seqera.wave.exchange
 
-import spock.lang.Shared
 import spock.lang.Specification
 
-import io.micronaut.context.ApplicationContext
-import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import jakarta.inject.Inject
+import java.time.Duration
+import java.time.Instant
+
+import io.seqera.wave.util.JacksonHelper
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@MicronautTest
-class RegistryProxyServiceTest extends Specification {
+class BuildStatusResponseTest extends Specification {
 
-    @Inject
-    @Shared
-    ApplicationContext applicationContext
-
-    @Inject RegistryProxyService registryProxyService
-
-
-    def 'should check manifest exist' () {
+    def 'should serialize/deserialize status' () {
         given:
-        def IMAGE = 'library/hello-world:latest'
-
+        def resp = new BuildStatusResponse(
+                'test',
+                BuildStatusResponse.Status.PENDING,
+                Instant.now(),
+                Duration.ofMinutes(1),
+                true )
         when:
-        def resp1 = registryProxyService.isManifestPresent(IMAGE)
-
+        def json = JacksonHelper.toJson(resp)
+        and:
+        def copy = JacksonHelper.fromJson(json, BuildStatusResponse)
         then:
-        resp1
-    }
+        copy == resp
 
-    def 'should retrieve image digest' () {
-        given:
-        def IMAGE = 'library/hello-world@sha256:6352af1ab4ba4b138648f8ee88e63331aae519946d3b67dae50c313c6fc8200f'
-
-        when:
-        def resp1 = registryProxyService.getImageDigest(IMAGE)
-
-        then:
-        resp1 == 'sha256:6352af1ab4ba4b138648f8ee88e63331aae519946d3b67dae50c313c6fc8200f'
     }
 }

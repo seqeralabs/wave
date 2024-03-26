@@ -66,13 +66,11 @@ class BuildRequestTest extends Specification {
                 IP_ADDR,
                 OFFSET)
         then:
-        req.id == '181ec22b26ae6d04'
-        req.workDir == PATH.resolve(req.id).toAbsolutePath()
-        req.targetImage == "docker.io/wave:${req.id}"
+        req.containerId == '181ec22b26ae6d04'
+        req.targetImage == "docker.io/wave:${req.containerId}"
         req.containerFile == CONTENT
         req.identity == USER
         req.configJson == '{auth}'
-        req.job =~ /181ec22b26ae6d04-[a-z0-9]+/
         req.cacheRepository == CACHE_REPO
         req.format == BuildFormat.DOCKER
         req.condaFile == null
@@ -111,7 +109,7 @@ class BuildRequestTest extends Specification {
                 IP_ADDR,
                 OFFSET)
         then:
-        req.id == '8026e3a63b5c863f'
+        req.containerId == '8026e3a63b5c863f'
         req.targetImage == 'docker.io/wave:samtools-1.0--8026e3a63b5c863f'
         req.condaFile == CONDA_RECIPE
         req.spackFile == null
@@ -142,7 +140,7 @@ class BuildRequestTest extends Specification {
                 IP_ADDR,
                 OFFSET)
         then:
-        req.id == '8726782b1d9bb8fb'
+        req.containerId == '8726782b1d9bb8fb'
         req.targetImage == 'docker.io/wave:bwa-0.7.15--8726782b1d9bb8fb'
         req.spackFile == SPACK_RECIPE
         req.condaFile == null
@@ -180,13 +178,11 @@ class BuildRequestTest extends Specification {
                 IP_ADDR,
                 OFFSET)
         then:
-        req.id == 'd78ba9cb01188668'
-        req.workDir == PATH.resolve(req.id).toAbsolutePath()
-        req.targetImage == "oras://docker.io/wave:${req.id}"
+        req.containerId == 'd78ba9cb01188668'
+        req.targetImage == "oras://docker.io/wave:${req.containerId}"
         req.containerFile == CONTENT
         req.identity == USER
         req.configJson == '{auth}'
-        req.job =~ /d78ba9cb01188668-[a-z0-9]+/
         req.cacheRepository == CACHE_REPO
         req.format == BuildFormat.SINGULARITY
         req.platform == ContainerPlatform.of('amd64')
@@ -288,6 +284,17 @@ class BuildRequestTest extends Specification {
         'aa..--__'              | 'aa'
         '..--__bb'              | 'bb'
         '._-xyz._-'             | 'xyz'
+    }
+
+
+    def 'should parse legacy id' () {
+        expect:
+        BuildRequest.legacyBuildId(BUILD_ID) == EXPECTED
+        where:
+        BUILD_ID        | EXPECTED
+        null            | null
+        'foo'           | null
+        'foo_01'        | 'foo'
     }
 
 }

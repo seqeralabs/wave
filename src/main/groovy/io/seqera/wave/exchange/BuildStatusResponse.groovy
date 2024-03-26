@@ -16,32 +16,28 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.scan
+package io.seqera.wave.exchange
 
-import java.nio.file.Path
+import java.time.Duration
+import java.time.Instant
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
-import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.builder.BuildRequest
+
 /**
- * Model a container scan request
- * 
+ * Model a build status response
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Canonical
 @CompileStatic
-class ScanRequest {
-    final String id
-    final String buildId
-    final String configJson
-    final String targetImage
-    final ContainerPlatform platform
-    final Path workDir
+class BuildStatusResponse {
+    enum Status { PENDING, COMPLETED }
 
-    static ScanRequest fromBuild(BuildRequest request) {
-        final id = request.scanId
-        final workDir = request.workDir.resolveSibling("scan-${id}")
-        return new ScanRequest(id, request.buildId, request.configJson, request.targetImage, request.platform, workDir)
-    }
+    final String id
+    final Status status
+    final Instant startTime
+    final Duration duration
+    final Boolean succeeded
+
 }
