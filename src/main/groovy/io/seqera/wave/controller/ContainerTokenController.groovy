@@ -39,7 +39,6 @@ import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.security.annotation.Secured
 import io.micronaut.security.authentication.AuthorizationException
 import io.micronaut.security.rules.SecurityRule
-import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.configuration.BuildConfig
@@ -51,8 +50,8 @@ import io.seqera.wave.exchange.DescribeWaveContainerResponse
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.UserService
-import io.seqera.wave.service.builder.BuildTrack
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.builder.BuildTrack
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.builder.FreezeService
 import io.seqera.wave.service.inclusion.ContainerInclusionService
@@ -67,7 +66,6 @@ import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
-import io.seqera.wave.util.ContainerHelper
 import io.seqera.wave.util.DataTimeUtils
 import io.seqera.wave.util.LongRndKey
 import jakarta.inject.Inject
@@ -76,11 +74,10 @@ import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
 import static io.seqera.wave.WaveDefault.TOWER
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
-import static io.seqera.wave.util.Checkers.isEmpty
-import static io.seqera.wave.util.CondaHelper.condaLock
-import static io.seqera.wave.util.CondaHelper.createCondaFileFromPackages
+import static ContainerHelper.condaFile0
+import static ContainerHelper.decodeBase64OrFail
+import static ContainerHelper.spackFile0
 import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
-import static io.seqera.wave.util.SpackHelper.createSpackFileFromPackages
 /**
  * Implement a controller to receive container token requests
  * 
@@ -186,6 +183,21 @@ class ContainerTokenController {
     protected HttpResponse<SubmitContainerTokenResponse> makeResponse(HttpRequest httpRequest, SubmitContainerTokenRequest req, PlatformId identity, boolean v2) {
         if( !identity && !allowAnonymous )
             throw new BadRequestException("Missing user access token")
+        if( v2 && req.containerFile && req.packages )
+            throw new BadRequestException("Attribute `containerFile` and `packages` conflicts each other")
+        if( v2 && req.condaFile )
+            throw new BadRequestException("Attribute `condaFile` is deprecated - use `packages` instead")
+        if( v2 && req.spackFile )
+            throw new BadRequestException("Attribute `spackFile` is deprecated - use `packages` instead")
+        if( !v2 && req.packages )
+            throw new BadRequestException("Attribute `packages` is not allowed")
+
+        if( v2 && req.packages ) {
+            // generate the container file required to assemble the container
+            final generated = ContainerHelper.createContainerFile(req.packages, req.formatSingularity())
+            req = req.copyWith(containerFile: generated.bytes.encodeBase64().toString())
+        }
+
         final ip = addressResolver.resolve(httpRequest)
         final data = makeRequestData(req, identity, ip)
         final token = tokenService.computeToken(data)
@@ -220,32 +232,17 @@ class ContainerTokenController {
         }
     }
 
-    final protected String decodeBase64OrFail(String value, String field) {
-        if( !value )
-            return null
-        try {
-            final bytes = Base64.getDecoder().decode(value)
-            final check = Base64.getEncoder().encodeToString(bytes)
-            if( value!=check )
-                throw new IllegalArgumentException("Not a valid base64 encoded string")
-            return new String(bytes)
-        }
-        catch (IllegalArgumentException e) {
-            throw new BadRequestException("Invalid '$field' attribute - make sure it encoded as a base64 string", e)
-        }
-    }
-
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
-        if( !req.packages && !req.containerFile )
-            throw new BadRequestException("Missing dockerfile and packages content")
+        if( !req.containerFile )
+            throw new BadRequestException("Missing dockerfile content")
         if( !buildConfig.defaultBuildRepository )
             throw new BadRequestException("Missing build repository attribute")
         if( !buildConfig.defaultCacheRepository )
             throw new BadRequestException("Missing build cache repository attribute")
 
-        final containerSpec = req.containerFile ? decodeBase64OrFail(req.containerFile, 'containerFile') : ContainerHelper.createContainerFile(req)
-        final condaContent = req.packages ? getCondaFile(req) : decodeBase64OrFail(req.condaFile, 'condaFile')
-        final spackContent = req.packages ? getSpackFile(req) : decodeBase64OrFail(req.spackFile, 'spackFile')
+        final containerSpec = decodeBase64OrFail(req.containerFile, 'containerFile')
+        final condaContent = condaFile0(req)
+        final spackContent = spackFile0(req)
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
         final build = req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository ? buildConfig.defaultPublicRepository : buildConfig.defaultBuildRepository)
@@ -273,7 +270,7 @@ class ContainerTokenController {
                 offset)
     }
 
-    protected BuildTrack buildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
+   protected BuildTrack buildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
         final build = makeBuildRequest(req, identity, ip)
         final digest = registryProxyService.getImageDigest(build.targetImage)
         // check for dry-run execution
@@ -295,14 +292,10 @@ class ContainerTokenController {
     }
 
     ContainerRequestData makeRequestData(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
-        if( !req.packages && !req.containerImage && !req.containerFile )
-            throw new BadRequestException("Specify either 'packages' or 'containerImage' or 'containerFile' attribute")
+        if( !req.containerImage && !req.containerFile )
+            throw new BadRequestException("Specify either 'containerImage' or 'containerFile' attribute")
         if( req.containerImage && req.containerFile )
             throw new BadRequestException("Attributes 'containerImage' and 'containerFile' cannot be used in the same request")
-        if( req.packages && req.containerImage )
-            throw new BadRequestException("Attributes 'packages' and 'containerImage' cannot be used in the same request")
-        if( req.packages && req.containerFile )
-            throw new BadRequestException("Attributes 'packages' and 'containerFile' cannot be used in the same request")
         if( req.containerImage?.contains('@sha256:') && req.containerConfig && !req.freeze )
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
         if( req.freeze && !req.buildRepository && !buildConfig.defaultPublicRepository )
@@ -324,7 +317,7 @@ class ContainerTokenController {
         String condaContent
         String buildId
         boolean buildNew
-        if( req.containerFile || req.packages) {
+        if( req.containerFile ) {
             final build = buildRequest(req, identity, ip)
             targetImage = build.targetImage
             targetContent = req.containerFile
@@ -407,34 +400,6 @@ class ContainerTokenController {
     @Post('/v1alpha2/container')
     CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getTokenV2(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
         return getTokenImpl(httpRequest, req, true)
-    }
-
-    private String getCondaFile(SubmitContainerTokenRequest req){
-        def packages = req.packages
-        if( packages.envFile && packages.packages )
-            throw new BadRequestException("Cannot specify both 'envFile' and 'packages' attributes")
-        if(packages.type == PackagesSpec.Type.CONDA) {
-            if ( packages.envFile ) {
-                return decodeBase64OrFail(packages.envFile, 'condaFile')
-            }else if ( isEmpty(condaLock(packages.packages)) ) {
-                return decodeBase64OrFail(createCondaFileFromPackages(req.packages), 'condaFile')
-            }
-        }
-        return null
-    }
-
-    private String getSpackFile(SubmitContainerTokenRequest req){
-        def packages = req.packages
-        if( packages.envFile && packages.packages )
-            throw new BadRequestException("Cannot specify both 'envFile' and 'packages' attributes")
-        if( packages.type == PackagesSpec.Type.SPACK ) {
-            if ( packages.envFile ) {
-                return decodeBase64OrFail(packages.envFile, 'spackFile')
-            }else {
-                return decodeBase64OrFail(createSpackFileFromPackages(req.packages), 'spackFile')
-            }
-        }
-        return null
     }
 
 }

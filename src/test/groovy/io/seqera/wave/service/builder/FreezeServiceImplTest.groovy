@@ -24,9 +24,7 @@ import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
-import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
-import io.seqera.wave.config.CondaOpts
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.tower.PlatformId
@@ -277,49 +275,6 @@ class FreezeServiceImplTest extends Specification  {
         result == '''\
             BootStrap: docker
             From: ubuntu:latest
-            '''.stripIndent()
-    }
-
-    def 'should create containerfile from conda packages' () {
-        given:
-        def CHANNELS = ['conda-forge', 'defaults']
-        def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
-        def PACKAGES = ['https://foo.com/lock.yml']
-        def packagesSpec = new PackagesSpec(type: PackagesSpec.Type.CONDA, packages: PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
-        def req = new SubmitContainerTokenRequest(packages: packagesSpec, freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2'], workingDir: '/work/dir'))
-        when:
-        def result = freezeService.createBuildFile(req, Mock(PlatformId))
-        then:
-        result == '''\
-            # wave generated container file
-            FROM mambaorg/micromamba:1.5.5
-            RUN \\
-                micromamba install -y -n base -c conda-forge -c defaults -f https://foo.com/lock.yml \\
-                && micromamba install -y -n base foo::one bar::two \\
-                && micromamba clean -a -y
-            USER root
-            ENV PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
-            WORKDIR /work/dir
-            ENV FOO=1 BAR=2
-            '''.stripIndent()
-
-
-        when:'format is singularity'
-        req = new SubmitContainerTokenRequest(format: 'sif', packages: packagesSpec, freeze: true, containerConfig: new ContainerConfig(env:['FOO=1', 'BAR=2'], workingDir: '/work/dir'))
-        result = freezeService.createBuildFile(req, Mock(PlatformId))
-        then:
-        result == '''\
-            # wave generated container file
-            BootStrap: docker
-            From: mambaorg/micromamba:1.5.5
-            %post
-                micromamba install -y -n base -c conda-forge -c defaults -f https://foo.com/lock.yml
-                micromamba install -y -n base foo::one bar::two
-                micromamba clean -a -y
-            %environment
-                export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
-            %environment
-              export FOO=1 BAR=2
             '''.stripIndent()
     }
 }
