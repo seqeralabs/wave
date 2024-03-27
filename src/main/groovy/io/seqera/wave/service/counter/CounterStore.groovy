@@ -27,4 +27,6 @@ interface CounterStore {
 
     long inc(String key, long value)
 
+    Long get(String key)
+
 }

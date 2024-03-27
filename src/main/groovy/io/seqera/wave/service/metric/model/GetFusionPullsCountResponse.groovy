@@ -16,15 +16,19 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.counter.impl
+package io.seqera.wave.service.metric.model
+
+import groovy.transform.CompileStatic
 /**
+ * Model a Wave fusion pulls count response
  *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-interface CounterProvider {
+@CompileStatic
+class GetFusionPullsCountResponse {
+    Long count
 
-    long inc(String key, String field, long value)
-
-    Long get(String key, String field)
-
+    GetFusionPullsCountResponse(Long count) {
+        this.count = count
+    }
 }

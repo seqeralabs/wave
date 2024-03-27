@@ -45,4 +45,10 @@ abstract class AbstractCounterStore implements CounterStore {
     long inc(String key) {
         provider.inc(getPrefix(), key, 1)
     }
+
+    @Override
+    Long get(String key) {
+        provider.get(getPrefix(), key)
+    }
+
 }

@@ -52,4 +52,16 @@ class RedisCounterProviderTest extends Specification implements RedisTestContain
         redisCounterProvider.inc('build-x', 'foo', -12) == 0
     }
 
+    def 'should get correct count value' () {
+        when:
+        redisCounterProvider.inc('build-x', 'foo', 1)
+        redisCounterProvider.inc('build-x', 'foo', 1)
+        redisCounterProvider.inc('metrics-x', 'foo', 1)
+
+        then:
+        redisCounterProvider.get('build-x', 'foo') == 2
+        and:
+        redisCounterProvider.get('metrics-x', 'foo') == 1
+    }
+
 }

@@ -18,6 +18,7 @@
 
 package io.seqera.wave.controller
 
+import spock.lang.Shared
 import spock.lang.Specification
 
 import java.time.Duration
@@ -26,6 +27,9 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.WireMock
 import io.micronaut.context.annotation.Property
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
@@ -36,7 +40,10 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.license.CheckTokenResponse
+import io.seqera.wave.service.metric.MetricsService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
@@ -47,9 +54,13 @@ import jakarta.inject.Inject
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-@Property(name = 'wave.metrics.enabled', value = 'true')
 @MicronautTest
+@Property(name = 'wave.metrics.enabled', value = 'true')
+@Property(name = 'license.server.url', value = 'http://localhost:7273')
 class MetricsControllerTest extends Specification {
+
+    @Shared
+    WireMockServer wiremockServer
 
     @Inject
     @Client("/")
@@ -58,9 +69,36 @@ class MetricsControllerTest extends Specification {
     @Inject
     PersistenceService persistenceService
 
+    @Inject
+    MetricsService metricsService
+
     final PREFIX = '/v1alpha1/metrics'
 
+    DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+
     def setup() {
+        wiremockServer = new WireMockServer(7273)
+        wiremockServer.start()
+        WireMock.configureFor("localhost", 7273)
+
+        def objectMapper = new ObjectMapper()
+
+        def checkTokenResponse = new CheckTokenResponse(organization: "org1")
+        def token1Response = objectMapper.writeValueAsString(checkTokenResponse)
+        checkTokenResponse = new CheckTokenResponse(organization: "org2")
+        def token2Response = objectMapper.writeValueAsString(checkTokenResponse)
+
+        WireMock.stubFor(WireMock.get(WireMock.urlEqualTo("/check?token=token1&product=tower-enterprise"))
+                .willReturn(WireMock.aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(token1Response)))
+        WireMock.stubFor(WireMock.get(WireMock.urlEqualTo("/check?token=token2&product=tower-enterprise"))
+                .willReturn(WireMock.aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(token2Response)))
+
         //add build records
         def build1 = new WaveBuildRecord(
                 buildId: 'test1',
@@ -478,5 +516,103 @@ class MetricsControllerTest extends Specification {
 
         expect: '1 day difference'
         Duration.between(MetricsController.parseStartDate(starDate), MetricsController.parseEndDate(endDate)).toString() == 'PT23H59M59.999999999S'
+    }
+
+    def 'should get the correct builds count and http status code 200'() {
+        given:
+        def date = LocalDate.now().format(dateFormatter)
+        metricsService.incrementBuildsCounter('token1')
+        metricsService.incrementBuildsCounter('token2')
+        metricsService.incrementBuildsCounter(null)
+        when:'only date is provided'
+        def req = HttpRequest.GET("/v1alpha2/metrics/builds?date=$date").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [count: 3]
+        res.status.code == 200
+
+        when:'when date and org is provided'
+        req = HttpRequest.GET("/v1alpha2/metrics/builds?date=$date&org=org1").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [count: 1]
+        res.status.code == 200
+
+    }
+
+    def 'should get the correct pulls count and http status code 200'() {
+        given:
+        def date = LocalDate.now().format(dateFormatter)
+        metricsService.incrementPullsCounter('token1')
+        metricsService.incrementPullsCounter('token2')
+        metricsService.incrementPullsCounter(null)
+
+        when:'only date is provided'
+        def req = HttpRequest.GET("/v1alpha2/metrics/pulls?date=$date").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [count: 3]
+        res.status.code == 200
+
+        when:'when date and org is provided'
+        req = HttpRequest.GET("/v1alpha2/metrics/pulls?date=$date&org=org1").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [count: 1]
+        res.status.code == 200
+
+    }
+
+    def 'should get the correct fusion pulls count and http status code 200'() {
+        given:
+        def date = LocalDate.now().format(dateFormatter)
+        metricsService.incrementFusionPullsCounter('token1')
+        metricsService.incrementFusionPullsCounter('token2')
+        metricsService.incrementFusionPullsCounter(null)
+
+        when:'only date is provided'
+        def req = HttpRequest.GET("/v1alpha2/metrics/fusion/pulls?date=$date").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [count: 3]
+        res.status.code == 200
+
+        when:'when date and org is provided'
+        req = HttpRequest.GET("/v1alpha2/metrics/fusion/pulls?date=$date&org=org1").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [count: 1]
+        res.status.code == 200
+
+    }
+
+    def 'should validate query parameters'() {
+        when:'wrong date format is provided'
+        def req = HttpRequest.GET("/v1alpha2/metrics/pulls?date=2024-03-2").basicAuth("username", "password")
+        client.toBlocking().exchange(req, Map)
+
+        then: 'should get 400 response code and message'
+        def e = thrown(HttpClientResponseException)
+        e.message == 'date format should be yyyy-MM-dd'
+        e.status.code == 400
+
+        when:'no query '
+        req = HttpRequest.GET("/v1alpha2/metrics/builds").basicAuth("username", "password")
+        client.toBlocking().exchange(req, Map)
+
+        then: 'should get 400 response code and message'
+        e = thrown(HttpClientResponseException)
+        e.message == 'Either date or org query parameter must be provided'
+        e.status.code == 400
+    }
+
+    def cleanup() {
+        wiremockServer.stop()
     }
 }
