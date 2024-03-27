@@ -81,7 +81,10 @@ class BuildCacheStore extends AbstractCacheStore<BuildResult> implements BuildSt
 
     @Override
     boolean storeIfAbsent(String imageName, BuildResult build) {
-        return putIfAbsent(imageName, build)
+        // store up 1.5 time the build timeout to prevent a missed cache
+        // update on job termination remains too long in the store
+        final ttl = Duration.ofMillis(Math.round(getTimeout().toMillis() * 1.5f))
+        return putIfAbsent(imageName, build, ttl)
     }
 
     @Override
