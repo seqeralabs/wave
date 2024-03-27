@@ -235,7 +235,7 @@ class ContainerTokenController {
         final offset = DataTimeUtils.offsetId(req.timestamp)
         final scanId = scanEnabled && format==DOCKER ? LongRndKey.rndHex() : null
         // create a unique digest to identify the request
-        return new BuildRequest(
+        def buildRequest = new BuildRequest(
                 (spackContent ? prependBuilderTemplate(containerSpec,format) : containerSpec),
                 Path.of(buildConfig.buildWorkspace),
                 build,
@@ -251,6 +251,10 @@ class ContainerTokenController {
                 scanId,
                 ip,
                 offset)
+        if( req.containerConfig.labels ){
+            buildRequest.withLabels(req.containerConfig.labels)
+        }
+        return buildRequest
     }
 
     protected BuildTrack buildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
