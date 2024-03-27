@@ -88,7 +88,7 @@ public class App implements Runnable {
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(App.class);
 
     private static final boolean isWindows = System.getProperty("os.name").toLowerCase().contains("windows");
-    private static final String DEFAULT_TOWER_ENDPOINT = "https://api.tower.nf";
+    private static final String DEFAULT_TOWER_ENDPOINT = "https://api.cloud.seqera.io";
 
     private static final List<String> VALID_PLATFORMS = List.of("amd64", "x86_64", "linux/amd64", "linux/x86_64", "arm64", "linux/arm64");
 
@@ -103,7 +103,7 @@ public class App implements Runnable {
     @Option(names = {"--tower-token"}, paramLabel = "''", description = "Tower service access token.")
     private String towerToken;
 
-    @Option(names = {"--tower-endpoint"}, paramLabel = "''", description = "Tower service endpoint e.g. https://api.tower.nf.")
+    @Option(names = {"--tower-endpoint"}, paramLabel = "''", description = "Tower service endpoint e.g. https://api.cloud.seqera.io.")
     private String towerEndpoint;
 
     @Option(names = {"--tower-workspace-id"}, paramLabel = "''", description = "Tower service workspace ID e.g. 1234567890.")
