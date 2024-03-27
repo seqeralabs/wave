@@ -134,14 +134,14 @@ class MetricsController {
     }
 
     @Get(uri = "/v1alpha2/metrics/pulls", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<?> getFusionPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
+    HttpResponse<?> getPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
         validateQueryParams(date, org)
         final count = metricsService.getPullsMetrics(date, org)
         return HttpResponse.ok(new GetPullsCountResponse(count))
     }
 
     @Get(uri = "/v1alpha2/metrics/fusion/pulls", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<?> getPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
+    HttpResponse<?> getFusionPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
         validateQueryParams(date, org)
         final count = metricsService.getFusionPullsMetrics(date, org)
         return HttpResponse.ok(new GetFusionPullsCountResponse(count))
