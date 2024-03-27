@@ -100,7 +100,7 @@ class ContainerTokenController {
     String serverUrl
 
     @Inject
-    @Value('${tower.endpoint.url:`https://api.tower.nf`}')
+    @Value('${tower.endpoint.url:`https://api.cloud.seqera.io`}')
     String towerEndpointUrl
 
     @Value('${wave.scan.enabled:false}')

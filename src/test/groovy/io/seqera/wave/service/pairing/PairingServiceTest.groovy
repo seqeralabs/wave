@@ -125,7 +125,7 @@ class PairingServiceTest extends Specification{
 
         expect:
         100.times {
-        assert PairingServiceImpl.makeKey('tower', 'https://api.tower.nf') == '7a0ebf8c7ef4b89227a0f6700d4322cb'
+        assert PairingServiceImpl.makeKey('tower', 'https://api.cloud.seqera.io') == '7a0ebf8c7ef4b89227a0f6700d4322cb'
         }
 
     }
