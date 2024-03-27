@@ -37,7 +37,7 @@ class MetricsServiceImplTest extends Specification {
 
     DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-    def 'should increment a builds count' () {
+    def 'should increment build count' () {
         given:
         def date = LocalDate.now().format(dateFormatter)
         def localCounterProvider = new LocalCounterProvider()
@@ -67,7 +67,7 @@ class MetricsServiceImplTest extends Specification {
 
     }
 
-    def 'should increment a pulls count' () {
+    def 'should increment pull count' () {
         given:
         def date = LocalDate.now().format(dateFormatter)
         def localCounterProvider = new LocalCounterProvider()
@@ -97,7 +97,7 @@ class MetricsServiceImplTest extends Specification {
 
     }
 
-    def 'should increment a fusion pulls count' () {
+    def 'should increment fusion pull count' () {
         given:
         def date = LocalDate.now().format(dateFormatter)
         def localCounterProvider = new LocalCounterProvider()
@@ -128,7 +128,7 @@ class MetricsServiceImplTest extends Specification {
     }
 
     @Unroll
-    def'should get correct builds key'() {
+    def'should get correct builds metrics key'() {
         expect:
         MetricsServiceImpl.getBuildsKey(DAY, ORG) == KEY
 
@@ -141,7 +141,7 @@ class MetricsServiceImplTest extends Specification {
     }
 
     @Unroll
-    def'should get correct pulls key'() {
+    def'should get correct pulls metrics key'() {
         expect:
         MetricsServiceImpl.getPullsKey(DAY, ORG) == KEY
 
@@ -154,7 +154,7 @@ class MetricsServiceImplTest extends Specification {
     }
 
     @Unroll
-    def'should get correct build key'() {
+    def'should get correct fusion pulls metrics key'() {
         expect:
         MetricsServiceImpl.getFusionPullsKey(DAY, ORG) == KEY
 
