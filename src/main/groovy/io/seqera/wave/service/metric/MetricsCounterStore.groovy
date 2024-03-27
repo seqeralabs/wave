@@ -22,7 +22,6 @@ import groovy.transform.CompileStatic
 import io.seqera.wave.service.counter.AbstractCounterStore
 import io.seqera.wave.service.counter.impl.CounterProvider
 import jakarta.inject.Singleton
-
 /**
  * Implement a persistent counter service for metrics
  *
@@ -34,14 +33,14 @@ class MetricsCounterStore extends AbstractCounterStore {
 
     private CounterProvider provider
 
-    @Override
-    protected String getPrefix() {
-        return 'metrics/v1'
-    }
-
     MetricsCounterStore(CounterProvider provider) {
         super(provider)
         this.provider = provider
+    }
+
+    @Override
+    protected String getPrefix() {
+        return 'metrics/v1'
     }
 
 }

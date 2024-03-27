@@ -115,13 +115,13 @@ class MetricsServiceImpl implements MetricsService {
     protected static String getFusionPullsKey(String day, String org){
 
         if( day && org )
-            return "$MetricConstants.PREFIX_FUSION_ORG$org/d/$day"
+            return "$MetricConstants.PREFIX_FUSION_ORG/$org/d/$day"
 
         if( org )
-            return "$MetricConstants.PREFIX_FUSION_ORG$org"
+            return "$MetricConstants.PREFIX_FUSION_ORG/$org"
 
         if( day )
-            return "$MetricConstants.PREFIX_FUSION_DAY$day"
+            return "$MetricConstants.PREFIX_FUSION_DAY/$day"
 
         return null
     }
@@ -129,13 +129,13 @@ class MetricsServiceImpl implements MetricsService {
     protected static String getBuildsKey(String day, String org){
 
         if( day && org )
-            return "$MetricConstants.PREFIX_BUILDS_ORG$org/d/$day"
+            return "$MetricConstants.PREFIX_BUILDS_ORG/$org/d/$day"
 
         if( org )
-            return "$MetricConstants.PREFIX_BUILDS_ORG$org"
+            return "$MetricConstants.PREFIX_BUILDS_ORG/$org"
 
         if( day )
-            return "$MetricConstants.PREFIX_BUILDS_DAY$day"
+            return "$MetricConstants.PREFIX_BUILDS_DAY/$day"
 
         return null
     }
@@ -143,13 +143,13 @@ class MetricsServiceImpl implements MetricsService {
     protected static String getPullsKey(String day, String org){
 
         if( day && org )
-            return "$MetricConstants.PREFIX_PULLS_ORG$org/d/$day"
+            return "$MetricConstants.PREFIX_PULLS_ORG/$org/d/$day"
 
         if( org )
-            return "$MetricConstants.PREFIX_PULLS_ORG$org"
+            return "$MetricConstants.PREFIX_PULLS_ORG/$org"
 
         if( day )
-            return "$MetricConstants.PREFIX_PULLS_DAY$day"
+            return "$MetricConstants.PREFIX_PULLS_DAY/$day"
 
         return null
     }

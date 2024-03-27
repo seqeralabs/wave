@@ -135,7 +135,7 @@ class RegistryProxyController {
 
         //increment metrics
         if( httpRequest.method==HttpMethod.GET && (route.manifest || route.isTag()) ) {
-            CompletableFuture.supplyAsync (()->metricsService.incrementPullsCounter(route.identity.accessToken))
+            CompletableFuture.supplyAsync (() -> metricsService.incrementPullsCounter(route.identity.accessToken))
             final version = route.request?.containerConfig?.fusionVersion()
             if( version ) {
                 CompletableFuture.supplyAsync (() -> metricsService.incrementFusionPullsCounter(route.identity.accessToken))

@@ -61,7 +61,6 @@ class WaveBuildRecord {
     static WaveBuildRecord fromEvent(BuildEvent event) {
         if( event.result && event.request.buildId != event.result.id )
             throw new IllegalStateException("Build id must match the result id")
-      
         return new WaveBuildRecord(
                 buildId: event.request.buildId,
                 dockerFile: event.request.containerFile,
