@@ -24,7 +24,6 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.tower.PlatformId
-import io.seqera.wave.util.ContainerHelper
 import io.seqera.wave.util.Escape
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -61,13 +60,7 @@ class FreezeServiceImpl implements FreezeService {
             containerFile = appendEntrypoint(containerFile, req, identity)
             return appendConfigToContainerFile(containerFile, req)
         }
-        //if packages are provided, create a container file from the packages
-        else if( req.packages ){
-            def containerFile = "# wave generated container file\n"
-            containerFile += ContainerHelper.createContainerFile(req)
-            containerFile = appendEntrypoint(containerFile, req, identity)
-            return appendConfigToContainerFile(containerFile, req)
-        }
+
         // nothing to do
         return null
     }
