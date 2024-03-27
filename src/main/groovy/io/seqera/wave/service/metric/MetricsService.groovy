@@ -47,7 +47,7 @@ interface MetricsService {
      *
      * @param date, date of the required metrics
      * @param org, org of the required metrics
-     * @return Long, pulls counts
+     * @return Long, fusion pulls counts
      */
     Long getFusionPullsMetrics(String date, String org)
 
