@@ -40,6 +40,7 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.license.CheckTokenResponse
 import io.seqera.wave.service.metric.MetricsService
@@ -589,6 +590,26 @@ class MetricsControllerTest extends Specification {
         res.body() == [count: 1]
         res.status.code == 200
 
+    }
+
+    def 'should validate query parameters'() {
+        when:'wrong date format is provided'
+        def req = HttpRequest.GET("/v1alpha2/metrics/pulls?date=2024-03-2").basicAuth("username", "password")
+        client.toBlocking().exchange(req, Map)
+
+        then: 'should get 400 response code and message'
+        def e = thrown(HttpClientResponseException)
+        e.message == 'date format should be yyyy-MM-dd'
+        e.status.code == 400
+
+        when:'no query '
+        req = HttpRequest.GET("/v1alpha2/metrics/builds").basicAuth("username", "password")
+        client.toBlocking().exchange(req, Map)
+
+        then: 'should get 400 response code and message'
+        e = thrown(HttpClientResponseException)
+        e.message == 'Either date or org query parameter must be provided'
+        e.status.code == 400
     }
 
     def cleanup() {
