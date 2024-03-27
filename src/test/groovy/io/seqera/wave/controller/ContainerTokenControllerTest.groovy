@@ -27,8 +27,11 @@ import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
+import io.seqera.wave.config.CondaOpts
+import io.seqera.wave.config.SpackOpts
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
@@ -38,6 +41,7 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildTrack
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.builder.FreezeService
+import io.seqera.wave.service.builder.FreezeServiceImpl
 import io.seqera.wave.service.inclusion.ContainerInclusionService
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.service.pairing.PairingRecord
@@ -446,4 +450,134 @@ class ContainerTokenControllerTest extends Specification {
         noExceptionThrown()
 
     }
+
+    def 'should check and create request data with conda packages' () {
+        given:
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def freeze = new FreezeServiceImpl( inspectService: dockerAuth)
+        def builder = Mock(ContainerBuildService)
+        def proxyRegistry = Mock(RegistryProxyService)
+        def controller = new ContainerTokenController(freezeService:  freeze, buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService))
+
+        when:'packages with conda'
+        def CHANNELS = ['conda-forge', 'defaults']
+        def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
+        def PACKAGES = ['https://foo.com/lock.yml']
+        def packagesSpec = new PackagesSpec(type: PackagesSpec.Type.CONDA, packages: PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
+        def req = new SubmitContainerTokenRequest(format: 'sif', packages: packagesSpec, freeze: true, buildRepository: 'docker.io/foo')
+        def data = controller.makeRequestData(req, PlatformId.NULL, "127.0.0.1")
+
+        then:
+        data.containerFile =='''\
+                # wave generated container file
+                BootStrap: docker
+                From: mambaorg/micromamba:1.5.5
+                %post
+                    micromamba install -y -n base -c conda-forge -c defaults -f https://foo.com/lock.yml
+                    micromamba install -y -n base foo::one bar::two
+                    micromamba clean -a -y
+                %environment
+                    export PATH="$MAMBA_ROOT_PREFIX/bin:$PATH"
+                '''.stripIndent()
+        and:
+        data.containerImage == 'oras://docker.io/foo:9b266d5b5c455fe0'
+    }
+
+    def 'should create request data with spack packages' () {
+        given:
+        def builder = Mock(ContainerBuildService)
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def proxyRegistry = Mock(RegistryProxyService)
+        def controller = new ContainerTokenController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService))
+
+        when:'packages with spack'
+        def SPACK_OPTS = new SpackOpts([
+                basePackages: 'foo bar',
+                commands: ['run','--this','--that']
+        ])
+        def packages = new PackagesSpec(type: PackagesSpec.Type.SPACK, spackOpts: SPACK_OPTS)
+        def req = new SubmitContainerTokenRequest(format: 'docker', packages:packages)
+        def data = controller.makeRequestData(req, new PlatformId(new User(id: 100), 10), "127.0.0.1")
+
+        then:
+        data.containerFile == '''\
+                # Runner image
+                FROM {{spack_runner_image}}
+                
+                COPY --from=builder /opt/spack-env /opt/spack-env
+                COPY --from=builder /opt/software /opt/software
+                COPY --from=builder /opt/._view /opt/._view
+                
+                # Entrypoint for Singularity
+                RUN mkdir -p /.singularity.d/env && \\
+                    cp -p /opt/spack-env/z10_spack_environment.sh /.singularity.d/env/91-environment.sh
+                # Entrypoint for Docker
+                RUN echo "#!/usr/bin/env bash\\n\\nset -ef -o pipefail\\nsource /opt/spack-env/z10_spack_environment.sh\\nexec \\"\\$@\\"" \\
+                    >/opt/spack-env/spack_docker_entrypoint.sh && chmod a+x /opt/spack-env/spack_docker_entrypoint.sh
+                
+                run
+                --this
+                --that
+                
+                ENTRYPOINT [ "/opt/spack-env/spack_docker_entrypoint.sh" ]
+                CMD [ "/bin/bash" ]
+                '''.stripIndent()
+    }
+
+    def 'should throw BadRequestException when more than one artifact (container image, container file or packages) is provided in the request' () {
+        given:
+        def controller = new ContainerTokenController(inclusionService: Mock(ContainerInclusionService))
+
+        when: 'container image  and container file and packages are provided'
+        def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu', containerFile: 'from foo', packages: new PackagesSpec())
+        controller.makeRequestData(req, new PlatformId(new User(id: 100)), "")
+        then:
+        def e =thrown(BadRequestException)
+        e.message == "Attributes 'containerImage' and 'containerFile' cannot be used in the same request"
+
+        when: 'container image and packages are provided'
+        req = new SubmitContainerTokenRequest(containerImage: 'ubuntu', packages: new PackagesSpec())
+        controller.makeRequestData(req, new PlatformId(new User(id: 100)), "")
+        then:
+        e = thrown(BadRequestException)
+        e.message == "Attributes 'packages' and 'containerImage' cannot be used in the same request"
+
+        when: 'container file and packages are provided'
+        req = new SubmitContainerTokenRequest(containerFile: 'from foo', packages: new PackagesSpec())
+        controller.makeRequestData(req, new PlatformId(new User(id: 100)), "")
+        then:
+        e = thrown(BadRequestException)
+        e.message == "Attributes 'packages' and 'containerFile' cannot be used in the same request"
+    }
+
+    def 'should make build request data from envfile' () {
+        given:
+        def builder = Mock(ContainerBuildService)
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def proxyRegistry = Mock(RegistryProxyService)
+        def inclusionService = Mock(ContainerInclusionService)
+        def controller = new ContainerTokenController(dockerAuthService: dockerAuth, inclusionService: inclusionService, buildService: builder,
+                registryProxyService: proxyRegistry, buildConfig: buildConfig)
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, envFile: encode('some::conda-recipe'))
+
+        when: 'container image  and container file and packages are provided'
+        def req = new SubmitContainerTokenRequest(packages: packages)
+        def request = controller.makeRequestData(req, new PlatformId(new User(id: 100)), "")
+        then:
+        request.condaFile == 'some::conda-recipe'
+    }
+
+    def 'should throw BadRequestException when both packages and envfile is provided in packagesSpec is provided in the request' () {
+        given:
+        def controller = new ContainerTokenController(inclusionService: Mock(ContainerInclusionService), buildConfig: buildConfig)
+        def packages = new PackagesSpec(type: PackagesSpec.Type.SPACK, packages: ['foo', 'bar'], envFile: 'ENCODED')
+
+        when: 'container image  and container file and packages are provided'
+        def req = new SubmitContainerTokenRequest(packages: packages)
+        controller.makeRequestData(req, new PlatformId(new User(id: 100)), "")
+        then:
+        def e = thrown(BadRequestException)
+        e.message == "Cannot specify both 'envFile' and 'packages' attributes"
+    }
+
 }

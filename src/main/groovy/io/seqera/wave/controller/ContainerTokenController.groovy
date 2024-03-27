@@ -39,6 +39,7 @@ import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.security.annotation.Secured
 import io.micronaut.security.authentication.AuthorizationException
 import io.micronaut.security.rules.SecurityRule
+import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.configuration.BuildConfig
@@ -66,6 +67,7 @@ import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
+import io.seqera.wave.util.ContainerHelper
 import io.seqera.wave.util.DataTimeUtils
 import io.seqera.wave.util.LongRndKey
 import jakarta.inject.Inject
@@ -74,7 +76,11 @@ import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
 import static io.seqera.wave.WaveDefault.TOWER
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
+import static io.seqera.wave.util.Checkers.isEmpty
+import static io.seqera.wave.util.CondaHelper.condaLock
+import static io.seqera.wave.util.CondaHelper.createCondaFileFromPackages
 import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
+import static io.seqera.wave.util.SpackHelper.createSpackFileFromPackages
 /**
  * Implement a controller to receive container token requests
  * 
@@ -148,6 +154,10 @@ class ContainerTokenController {
     @Post('/container-token')
     @ExecuteOn(TaskExecutors.IO)
     CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
+        return getTokenImpl(httpRequest, req, false)
+    }
+
+    protected CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getTokenImpl(HttpRequest httpRequest, SubmitContainerTokenRequest req, boolean v2) {
         validateContainerRequest(req)
 
         // this is needed for backward compatibility with old clients
@@ -157,7 +167,7 @@ class ContainerTokenController {
 
         // anonymous access
         if( !req.towerAccessToken ) {
-            return CompletableFuture.completedFuture(makeResponse(httpRequest, req, PlatformId.NULL))
+            return CompletableFuture.completedFuture(makeResponse(httpRequest, req, PlatformId.NULL, v2))
         }
 
         // We first check if the service is registered
@@ -170,18 +180,28 @@ class ContainerTokenController {
         // find out the user associated with the specified tower access token
         return userService
                 .getUserByAccessTokenAsync(registration.endpoint, req.towerAccessToken)
-                .thenApplyAsync({ User user -> makeResponse(httpRequest, req, PlatformId.of(user,req)) }, ioExecutor)
+                .thenApplyAsync({ User user -> makeResponse(httpRequest, req, PlatformId.of(user,req), v2) }, ioExecutor)
     }
 
-    protected HttpResponse<SubmitContainerTokenResponse> makeResponse(HttpRequest httpRequest, SubmitContainerTokenRequest req, PlatformId identity) {
+    protected HttpResponse<SubmitContainerTokenResponse> makeResponse(HttpRequest httpRequest, SubmitContainerTokenRequest req, PlatformId identity, boolean v2) {
         if( !identity && !allowAnonymous )
             throw new BadRequestException("Missing user access token")
         final ip = addressResolver.resolve(httpRequest)
         final data = makeRequestData(req, identity, ip)
         final token = tokenService.computeToken(data)
-        final target = targetImage(token.value, data.coordinates())
-        final build = data.buildNew ? data.buildId : null
-        final resp = new SubmitContainerTokenResponse(token.value, target, token.expiration, data.containerImage, build)
+        final target = v2 && data.freeze
+                                ? data.containerImage
+                                : targetImage(token.value, data.coordinates())
+        final build = v2
+                                ? data.buildId
+                                : (data.buildNew ? data.buildId : null)
+        final Boolean cached = v2
+                                ? !data.buildNew
+                                : null
+        final String container = !v2
+                                ? data.containerImage
+                                : null
+        final resp = new SubmitContainerTokenResponse(token.value, target, token.expiration, container, build, cached)
         // persist request
         storeContainerRequest0(req, data, token, target, ip)
         // log the response
@@ -216,16 +236,16 @@ class ContainerTokenController {
     }
 
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
-        if( !req.containerFile )
-            throw new BadRequestException("Missing dockerfile content")
+        if( !req.packages && !req.containerFile )
+            throw new BadRequestException("Missing dockerfile and packages content")
         if( !buildConfig.defaultBuildRepository )
             throw new BadRequestException("Missing build repository attribute")
         if( !buildConfig.defaultCacheRepository )
             throw new BadRequestException("Missing build cache repository attribute")
 
-        final containerSpec = decodeBase64OrFail(req.containerFile, 'containerFile')
-        final condaContent = decodeBase64OrFail(req.condaFile, 'condaFile')
-        final spackContent = decodeBase64OrFail(req.spackFile, 'spackFile')
+        final containerSpec = req.containerFile ? decodeBase64OrFail(req.containerFile, 'containerFile') : ContainerHelper.createContainerFile(req)
+        final condaContent = req.packages ? getCondaFile(req) : decodeBase64OrFail(req.condaFile, 'condaFile')
+        final spackContent = req.packages ? getSpackFile(req) : decodeBase64OrFail(req.spackFile, 'spackFile')
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
         final build = req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository ? buildConfig.defaultPublicRepository : buildConfig.defaultBuildRepository)
@@ -275,10 +295,14 @@ class ContainerTokenController {
     }
 
     ContainerRequestData makeRequestData(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
-        if( !req.containerImage && !req.containerFile )
-            throw new BadRequestException("Specify either 'containerImage' or 'containerFile' attribute")
+        if( !req.packages && !req.containerImage && !req.containerFile )
+            throw new BadRequestException("Specify either 'packages' or 'containerImage' or 'containerFile' attribute")
         if( req.containerImage && req.containerFile )
             throw new BadRequestException("Attributes 'containerImage' and 'containerFile' cannot be used in the same request")
+        if( req.packages && req.containerImage )
+            throw new BadRequestException("Attributes 'packages' and 'containerImage' cannot be used in the same request")
+        if( req.packages && req.containerFile )
+            throw new BadRequestException("Attributes 'packages' and 'containerFile' cannot be used in the same request")
         if( req.containerImage?.contains('@sha256:') && req.containerConfig && !req.freeze )
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
         if( req.freeze && !req.buildRepository && !buildConfig.defaultPublicRepository )
@@ -300,7 +324,7 @@ class ContainerTokenController {
         String condaContent
         String buildId
         boolean buildNew
-        if( req.containerFile ) {
+        if( req.containerFile || req.packages) {
             final build = buildRequest(req, identity, ip)
             targetImage = build.targetImage
             targetContent = req.containerFile
@@ -379,4 +403,38 @@ class ContainerTokenController {
         return HttpResponse.unauthorized()
                 .header(WWW_AUTHENTICATE, "Basic realm=Wave Authentication")
     }
+
+    @Post('/v1alpha2/container')
+    CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getTokenV2(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
+        return getTokenImpl(httpRequest, req, true)
+    }
+
+    private String getCondaFile(SubmitContainerTokenRequest req){
+        def packages = req.packages
+        if( packages.envFile && packages.packages )
+            throw new BadRequestException("Cannot specify both 'envFile' and 'packages' attributes")
+        if(packages.type == PackagesSpec.Type.CONDA) {
+            if ( packages.envFile ) {
+                return decodeBase64OrFail(packages.envFile, 'condaFile')
+            }else if ( isEmpty(condaLock(packages.packages)) ) {
+                return decodeBase64OrFail(createCondaFileFromPackages(req.packages), 'condaFile')
+            }
+        }
+        return null
+    }
+
+    private String getSpackFile(SubmitContainerTokenRequest req){
+        def packages = req.packages
+        if( packages.envFile && packages.packages )
+            throw new BadRequestException("Cannot specify both 'envFile' and 'packages' attributes")
+        if( packages.type == PackagesSpec.Type.SPACK ) {
+            if ( packages.envFile ) {
+                return decodeBase64OrFail(packages.envFile, 'spackFile')
+            }else {
+                return decodeBase64OrFail(createSpackFileFromPackages(req.packages), 'spackFile')
+            }
+        }
+        return null
+    }
+
 }
