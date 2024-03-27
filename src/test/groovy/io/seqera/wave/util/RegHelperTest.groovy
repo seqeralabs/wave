@@ -27,7 +27,6 @@ import com.google.common.hash.Hashing
 import groovy.util.logging.Slf4j
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.test.ManifestConst
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -283,5 +282,24 @@ class RegHelperTest extends Specification {
                         .putUnencodedChars(Character.toString(0x1E))
                 .hash()
                 .toString()
+    }
+
+    @Unroll
+    def 'should validate the provided custom container image name'(){
+        expect:
+        RegHelper.isValidImageName( IMAGENAME ) == ISVALID
+
+        where:
+        IMAGENAME               | ISVALID
+        'foo'                   | true
+        'foo:1.1'               | true
+        'foo:SHA123asdf'        | true
+        'foo/bar/foo'           | true
+        'foo/bar/foo:1.1.A'     | true
+        'foo/bar/foo:1.1-A'     | true
+        'foo/bar/foo:SHA123asdf'| true
+        'foo bar'               | false
+        'foo*bar'               | false
+        '/foo/bar'              | false
     }
 }

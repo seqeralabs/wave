@@ -68,6 +68,7 @@ import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
 import io.seqera.wave.util.LongRndKey
+import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
@@ -222,6 +223,10 @@ class ContainerTokenController {
             throw new BadRequestException("Missing build repository attribute")
         if( !buildConfig.defaultCacheRepository )
             throw new BadRequestException("Missing build cache repository attribute")
+        //validate custom image name
+        if( req.imageName && !RegHelper.isValidImageName(req.imageName) ){
+            throw new BadRequestException("Supplied container image name '${req.imageName}' is not validate")
+        }
 
         final containerSpec = decodeBase64OrFail(req.containerFile, 'containerFile')
         final condaContent = decodeBase64OrFail(req.condaFile, 'condaFile')
@@ -250,7 +255,8 @@ class ContainerTokenController {
                 cache,
                 scanId,
                 ip,
-                offset)
+                offset,
+                req.imageName)
     }
 
     protected BuildTrack buildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {

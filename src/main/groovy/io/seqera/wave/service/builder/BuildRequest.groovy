@@ -149,7 +149,7 @@ class BuildRequest {
         this.buildContext = buildContext
         this.condaFile = condaFile
         this.spackFile = spackFile
-        this.targetImage = makeTarget(format, repo, containerId, condaFile, spackFile)
+        this.targetImage = makeTarget(format, repo, containerId, condaFile, spackFile, imageName)
         this.format = format
         this.identity = identity
         this.platform = platform
@@ -186,21 +186,25 @@ class BuildRequest {
         this.buildId = opts.buildId
     }
 
-    static protected String makeTarget(BuildFormat format, String repo, String id, @Nullable String condaFile, @Nullable String spackFile) {
+    static protected String makeTarget(BuildFormat format, String repo, String id, @Nullable String condaFile,
+                                       @Nullable String spackFile, @Nullable String imageName) {
         assert id, "Argument 'id' cannot be null or empty"
         assert repo, "Argument 'repo' cannot be null or empty"
         assert format, "Argument 'format' cannot be null"
 
         String prefix
         def tag = id
-        if( condaFile && (prefix=guessCondaRecipeName(condaFile)) ) {
-            tag = "${normaliseTag(prefix)}--${id}"
-        }
-        else if( spackFile && (prefix=guessSpackRecipeName(spackFile)) ) {
-            tag = "${normaliseTag(prefix)}--${id}"
+        if( imageName ){
+            return format==SINGULARITY ? "oras://${repo}/${imageName}:${tag}" : "${repo}/${imageName}:${tag}"
+        }else {
+            if (condaFile && (prefix = guessCondaRecipeName(condaFile))) {
+                tag = "${normaliseTag(prefix)}--${id}"
+            } else if (spackFile && (prefix = guessSpackRecipeName(spackFile))) {
+                tag = "${normaliseTag(prefix)}--${id}"
+            }
         }
 
-        format==SINGULARITY ? "oras://${repo}:${tag}" : "${repo}:${tag}"
+        return format==SINGULARITY ? "oras://${repo}:${tag}" : "${repo}:${tag}"
     }
 
     static protected String normaliseTag(String tag, int maxLength=80) {
