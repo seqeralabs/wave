@@ -36,7 +36,7 @@ class ContainerHelperTest extends Specification {
         def CHANNELS = ['conda-forge', 'defaults']
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['https://foo.com/lock.yml']
-        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, packages:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
 
         when:
         def result = ContainerHelper.createContainerFile(packages, true)
@@ -60,7 +60,7 @@ class ContainerHelperTest extends Specification {
         def CHANNELS = ['conda-forge', 'defaults']
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['https://foo.com/lock.yml']
-        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, packages:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
 
         when:
         def result = ContainerHelper.createContainerFile(packages, false)
@@ -83,7 +83,7 @@ class ContainerHelperTest extends Specification {
         def CHANNELS = ['conda-forge', 'defaults']
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
-        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, packages:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
 
         when:
         def result = ContainerHelper.createContainerFile(packages, true)
@@ -108,7 +108,7 @@ class ContainerHelperTest extends Specification {
         def CHANNELS = ['conda-forge', 'defaults']
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
-        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, packages:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
 
         when:
         def result = ContainerHelper.createContainerFile(packages, false)
@@ -213,7 +213,7 @@ class ContainerHelperTest extends Specification {
             - salmon=1.1.1
             '''.stripIndent()
         and:
-        def req = new SubmitContainerTokenRequest(packages: new PackagesSpec(type: PackagesSpec.Type.CONDA,envFile: CONDA.bytes.encodeBase64().toString()))
+        def req = new SubmitContainerTokenRequest(packages: new PackagesSpec(type: PackagesSpec.Type.CONDA, environment: CONDA.bytes.encodeBase64().toString()))
 
         when:
         def result = ContainerHelper.condaFile0(req)
@@ -231,7 +231,7 @@ class ContainerHelperTest extends Specification {
             - salmon=1.1.1
             '''.stripIndent()
         and:
-        def spec = new PackagesSpec(type: PackagesSpec.Type.CONDA,envFile: CONDA.bytes.encodeBase64().toString(), channels: ['xx','yy'])
+        def spec = new PackagesSpec(type: PackagesSpec.Type.CONDA, environment: CONDA.bytes.encodeBase64().toString(), channels: ['xx', 'yy'])
         def req = new SubmitContainerTokenRequest(packages: spec)
 
         when:
@@ -250,7 +250,7 @@ class ContainerHelperTest extends Specification {
 
     def 'should validate conda packages helper' () {
         given:
-        def spec = new PackagesSpec(type: PackagesSpec.Type.CONDA, packages: ['this','that'], channels: ['defaults'])
+        def spec = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['this', 'that'], channels: ['defaults'])
         def req = new SubmitContainerTokenRequest(packages: spec)
 
         when:
@@ -283,7 +283,7 @@ class ContainerHelperTest extends Specification {
                   concretizer: {unify: true, reuse: false}
                 '''.stripIndent(true)
         and:
-        def spec = new PackagesSpec(type: PackagesSpec.Type.SPACK, envFile: SPACK.bytes.encodeBase64().toString())
+        def spec = new PackagesSpec(type: PackagesSpec.Type.SPACK, environment: SPACK.bytes.encodeBase64().toString())
         def req = new SubmitContainerTokenRequest(packages: spec)
 
         when:
@@ -294,7 +294,7 @@ class ContainerHelperTest extends Specification {
 
     def 'should validate spack env packages helper' () {
         given:
-        def spec = new PackagesSpec(type: PackagesSpec.Type.SPACK, packages: ['foo','bar'])
+        def spec = new PackagesSpec(type: PackagesSpec.Type.SPACK, entries: ['foo', 'bar'])
         def req = new SubmitContainerTokenRequest(packages: spec)
 
         when:

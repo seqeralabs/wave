@@ -25,8 +25,6 @@ import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.config.CondaOpts
 import io.seqera.wave.config.SpackOpts
 import io.seqera.wave.exception.BadRequestException
-import static io.seqera.wave.util.Checkers.isEmpty
-import static io.seqera.wave.util.CondaHelper.condaLock
 import static io.seqera.wave.util.DockerHelper.addPackagesToSpackYaml
 import static io.seqera.wave.util.DockerHelper.condaEnvironmentToCondaYaml
 import static io.seqera.wave.util.DockerHelper.condaFileToDockerFile
@@ -48,11 +46,11 @@ class ContainerHelper {
 
     static String createContainerFile(PackagesSpec spec, boolean formatSingularity) {
         if( spec.type == PackagesSpec.Type.CONDA ) {
-            final String lock = condaLock(spec.packages)
+            final lock = condaLock0(spec.entries)
             if( !spec.condaOpts )
                 spec.condaOpts = new CondaOpts()
             def result
-            if ( !isEmpty(lock) ) {
+            if ( lock ) {
                 result = formatSingularity
                         ? condaPackagesToSingularityFile(lock, spec.channels, spec.condaOpts)
                         : condaPackagesToDockerFile(lock, spec.channels, spec.condaOpts)
@@ -83,16 +81,16 @@ class ContainerHelper {
         if( req.packages.type != PackagesSpec.Type.CONDA )
             return null
 
-        if( req.packages.envFile ) {
+        if( req.packages.environment ) {
             // parse the attribute as a conda file path *and* append the base packages if any
             // note 'channel' is null, because they are expected to be provided in the conda file
-            final decoded = decodeBase64OrFail(req.packages.envFile, 'packages.envFile')
+            final decoded = decodeBase64OrFail(req.packages.environment, 'packages.envFile')
             return condaEnvironmentToCondaYaml(decoded, req.packages.channels)
         }
 
-        if ( req.packages.packages && !condaLock0(req.packages.packages)) {
+        if ( req.packages.entries && !condaLock0(req.packages.entries)) {
             // create a minimal conda file with package spec from user input
-            final String packages = req.packages.packages.join(' ')
+            final String packages = req.packages.entries.join(' ')
             return condaPackagesToCondaYaml(packages, req.packages.channels)
         }
 
@@ -121,13 +119,13 @@ class ContainerHelper {
         if( req.packages.type != PackagesSpec.Type.SPACK )
             return null
 
-        if( req.packages.envFile ) {
-            final decoded = decodeBase64OrFail(req.packages.envFile,'packages.envFile')
+        if( req.packages.environment ) {
+            final decoded = decodeBase64OrFail(req.packages.environment,'packages.envFile')
             return addPackagesToSpackYaml(decoded, req.packages.spackOpts)
         }
 
-        if( req.packages.packages ) {
-            final String packages = req.packages.packages.join(' ')
+        if( req.packages.entries ) {
+            final String packages = req.packages.entries.join(' ')
             return spackPackagesToSpackYaml(packages, req.packages.spackOpts)
         }
 
