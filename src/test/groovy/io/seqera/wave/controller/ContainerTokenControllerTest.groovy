@@ -463,7 +463,7 @@ class ContainerTokenControllerTest extends Specification {
         def CHANNELS = ['conda-forge', 'defaults']
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['https://foo.com/lock.yml']
-        def packagesSpec = new PackagesSpec(type: PackagesSpec.Type.CONDA, packages: PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
+        def packagesSpec = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
         def req = new SubmitContainerTokenRequest(format: 'sif', packages: packagesSpec, freeze: true, buildRepository: 'docker.io/foo')
         def data = controller.makeRequestData(req, PlatformId.NULL, "127.0.0.1")
 
@@ -558,7 +558,7 @@ class ContainerTokenControllerTest extends Specification {
         def inclusionService = Mock(ContainerInclusionService)
         def controller = new ContainerTokenController(dockerAuthService: dockerAuth, inclusionService: inclusionService, buildService: builder,
                 registryProxyService: proxyRegistry, buildConfig: buildConfig)
-        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, envFile: encode('some::conda-recipe'))
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, environment: encode('some::conda-recipe'))
 
         when: 'container image  and container file and packages are provided'
         def req = new SubmitContainerTokenRequest(packages: packages)
@@ -570,7 +570,7 @@ class ContainerTokenControllerTest extends Specification {
     def 'should throw BadRequestException when both packages and envfile is provided in packagesSpec is provided in the request' () {
         given:
         def controller = new ContainerTokenController(inclusionService: Mock(ContainerInclusionService), buildConfig: buildConfig)
-        def packages = new PackagesSpec(type: PackagesSpec.Type.SPACK, packages: ['foo', 'bar'], envFile: 'ENCODED')
+        def packages = new PackagesSpec(type: PackagesSpec.Type.SPACK, entries: ['foo', 'bar'], environment: 'ENCODED')
 
         when: 'container image  and container file and packages are provided'
         def req = new SubmitContainerTokenRequest(packages: packages)

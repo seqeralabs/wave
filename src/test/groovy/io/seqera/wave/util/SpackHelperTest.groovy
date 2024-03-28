@@ -20,8 +20,6 @@ package io.seqera.wave.util
 
 import spock.lang.Specification
 
-import io.seqera.wave.api.PackagesSpec
-import io.seqera.wave.config.SpackOpts
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildFormat
 
@@ -55,22 +53,5 @@ class SpackHelperTest extends Specification {
         SpackHelper.toSpackArch(ContainerPlatform.of('linux/arm64/v7'))
         then:
         thrown(IllegalArgumentException)
-    }
-
-    def 'should create spack container file' () {
-        given:
-        def PACKAGES = ['foo', 'bar']
-        SpackOpts spackOpts = [basePackages: 'gcc, python']
-        def packages = new PackagesSpec(type: PackagesSpec.Type.SPACK, packages:  PACKAGES, spackOpts: spackOpts)
-
-        when:
-        String encodedSpackfile =SpackHelper.createSpackFileFromPackages(packages)
-
-        then:
-        new String(Base64.getDecoder().decode(encodedSpackfile)) == '''\
-                  spack:
-                    specs: ['gcc,', python, foo, bar]
-                    concretizer: {unify: true, reuse: false}
-                  '''.stripIndent()
     }
 }

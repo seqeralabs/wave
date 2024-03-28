@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.util
+package io.seqera.wave.controller
 
 import spock.lang.Specification
 
@@ -24,7 +24,6 @@ import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.config.CondaOpts
 import io.seqera.wave.config.SpackOpts
-
 /**
  * Container helper methods
  *
@@ -37,11 +36,10 @@ class ContainerHelperTest extends Specification {
         def CHANNELS = ['conda-forge', 'defaults']
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['https://foo.com/lock.yml']
-        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, packages:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
-        def request = new SubmitContainerTokenRequest(format: 'sif', packages:packages)
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
 
         when:
-        def result = ContainerHelper.createContainerFile(request)
+        def result = ContainerHelper.createContainerFile(packages, true)
 
         then:
         result =='''\
@@ -62,11 +60,10 @@ class ContainerHelperTest extends Specification {
         def CHANNELS = ['conda-forge', 'defaults']
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['https://foo.com/lock.yml']
-        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, packages:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
-        def request = new SubmitContainerTokenRequest(format:  'docker', packages:packages)
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
 
         when:
-        def result = ContainerHelper.createContainerFile(request)
+        def result = ContainerHelper.createContainerFile(packages, false)
 
         then:
         result =='''\
@@ -86,11 +83,10 @@ class ContainerHelperTest extends Specification {
         def CHANNELS = ['conda-forge', 'defaults']
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
-        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, packages:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
-        def request = new SubmitContainerTokenRequest(format: 'sif', packages:packages)
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
 
         when:
-        def result = ContainerHelper.createContainerFile(request)
+        def result = ContainerHelper.createContainerFile(packages, true)
 
         then:
         result =='''\
@@ -112,11 +108,10 @@ class ContainerHelperTest extends Specification {
         def CHANNELS = ['conda-forge', 'defaults']
         def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
         def PACKAGES = ['bwa=0.7.15', 'salmon=1.1.1']
-        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, packages:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
-        def request = new SubmitContainerTokenRequest(format: 'docker', packages:packages)
+        def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
 
         when:
-        def result = ContainerHelper.createContainerFile(request)
+        def result = ContainerHelper.createContainerFile(packages, false)
 
         then:
         result =='''\
@@ -137,10 +132,9 @@ class ContainerHelperTest extends Specification {
                 commands: ['run','--this','--that']
         ])
         def packages = new PackagesSpec(type: PackagesSpec.Type.SPACK, spackOpts: SPACK_OPTS)
-        def request = new SubmitContainerTokenRequest(format: 'sif', packages:packages)
 
         when:
-        def result = ContainerHelper.createContainerFile(request)
+        def result = ContainerHelper.createContainerFile(packages, true)
 
         then:
         result == '''\
@@ -168,10 +162,9 @@ class ContainerHelperTest extends Specification {
                 commands: ['run','--this','--that']
         ])
         def packages = new PackagesSpec(type: PackagesSpec.Type.SPACK, spackOpts: SPACK_OPTS)
-        def request = new SubmitContainerTokenRequest(format: 'docker', packages:packages)
 
         when:
-        def result = ContainerHelper.createContainerFile(request)
+        def result = ContainerHelper.createContainerFile(packages, false)
 
         then:
         result == '''\
@@ -196,5 +189,121 @@ class ContainerHelperTest extends Specification {
                 ENTRYPOINT [ "/opt/spack-env/spack_docker_entrypoint.sh" ]
                 CMD [ "/bin/bash" ]
                 '''.stripIndent()
+    }
+
+
+    def 'should validate conda file helper' () {
+        given:
+        def CONDA = 'this and that'
+        def req = new SubmitContainerTokenRequest(condaFile: CONDA.bytes.encodeBase64().toString())
+        when:
+        def result = ContainerHelper.condaFile0(req)
+        then:
+        result == CONDA
+    }
+
+    def 'should validate conda env helper' () {
+        given:
+        def CONDA = '''\
+            channels:
+            - conda-forge
+            - defaults
+            dependencies:
+            - bwa=0.7.15
+            - salmon=1.1.1
+            '''.stripIndent()
+        and:
+        def req = new SubmitContainerTokenRequest(packages: new PackagesSpec(type: PackagesSpec.Type.CONDA, environment: CONDA.bytes.encodeBase64().toString()))
+
+        when:
+        def result = ContainerHelper.condaFile0(req)
+        then:
+        result == CONDA
+    }
+
+    def 'should validate conda env and channels helper' () {
+        given:
+        def CONDA = '''\
+            channels:
+            - aa
+            dependencies:
+            - bwa=0.7.15
+            - salmon=1.1.1
+            '''.stripIndent()
+        and:
+        def spec = new PackagesSpec(type: PackagesSpec.Type.CONDA, environment: CONDA.bytes.encodeBase64().toString(), channels: ['xx', 'yy'])
+        def req = new SubmitContainerTokenRequest(packages: spec)
+
+        when:
+        def result = ContainerHelper.condaFile0(req)
+        then:
+        result == '''\
+            channels:
+            - aa
+            - xx
+            - yy
+            dependencies:
+            - bwa=0.7.15
+            - salmon=1.1.1
+            '''.stripIndent()
+    }
+
+    def 'should validate conda packages helper' () {
+        given:
+        def spec = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['this', 'that'], channels: ['defaults'])
+        def req = new SubmitContainerTokenRequest(packages: spec)
+
+        when:
+        def result = ContainerHelper.condaFile0(req)
+        then:
+        result == '''\
+            channels:
+            - defaults
+            dependencies:
+            - this
+            - that
+            '''.stripIndent()
+    }
+
+    def 'should validate spack file helper' () {
+        given:
+        def SPACK = 'this and that'
+        def req = new SubmitContainerTokenRequest(spackFile: SPACK.bytes.encodeBase64().toString())
+        when:
+        def result = ContainerHelper.spackFile0(req)
+        then:
+        result == SPACK
+    }
+
+    def 'should validate spack env file helper' () {
+        given:
+        def SPACK = '''\
+                spack:
+                  specs: [bwa@0.7.15, salmon@1.1.1]
+                  concretizer: {unify: true, reuse: false}
+                '''.stripIndent(true)
+        and:
+        def spec = new PackagesSpec(type: PackagesSpec.Type.SPACK, environment: SPACK.bytes.encodeBase64().toString())
+        def req = new SubmitContainerTokenRequest(packages: spec)
+
+        when:
+        def result = ContainerHelper.spackFile0(req)
+        then:
+        result == SPACK
+    }
+
+    def 'should validate spack env packages helper' () {
+        given:
+        def spec = new PackagesSpec(type: PackagesSpec.Type.SPACK, entries: ['foo', 'bar'])
+        def req = new SubmitContainerTokenRequest(packages: spec)
+
+        when:
+        def result = ContainerHelper.spackFile0(req)
+        then:
+        result == '''\
+            spack:
+              specs: [foo, bar]
+              concretizer: {unify: true, reuse: false}
+            '''.stripIndent(true)
     }
 }
