@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -27,6 +27,7 @@ import java.time.OffsetDateTime
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 /**
  *
@@ -36,7 +37,7 @@ class BuildRequestTest extends Specification {
 
     def 'should create docker build request'() {
         given:
-        def USER = new User(id:1, email: 'foo@user.com')
+        def USER = new PlatformId(new User(id:1, email: 'foo@user.com'))
         def CONTENT = 'FROM foo'
         def PATH = Path.of('somewhere')
         def BUILD_REPO = 'docker.io/wave'
@@ -65,13 +66,11 @@ class BuildRequestTest extends Specification {
                 IP_ADDR,
                 OFFSET)
         then:
-        req.id == '181ec22b26ae6d04'
-        req.workDir == PATH.resolve(req.id).toAbsolutePath()
-        req.targetImage == "docker.io/wave:${req.id}"
+        req.containerId == '181ec22b26ae6d04'
+        req.targetImage == "docker.io/wave:${req.containerId}"
         req.containerFile == CONTENT
-        req.user == USER
+        req.identity == USER
         req.configJson == '{auth}'
-        req.job =~ /181ec22b26ae6d04-[a-z0-9]+/
         req.cacheRepository == CACHE_REPO
         req.format == BuildFormat.DOCKER
         req.condaFile == null
@@ -110,7 +109,7 @@ class BuildRequestTest extends Specification {
                 IP_ADDR,
                 OFFSET)
         then:
-        req.id == '8026e3a63b5c863f'
+        req.containerId == '8026e3a63b5c863f'
         req.targetImage == 'docker.io/wave:samtools-1.0--8026e3a63b5c863f'
         req.condaFile == CONDA_RECIPE
         req.spackFile == null
@@ -141,7 +140,7 @@ class BuildRequestTest extends Specification {
                 IP_ADDR,
                 OFFSET)
         then:
-        req.id == '8726782b1d9bb8fb'
+        req.containerId == '8726782b1d9bb8fb'
         req.targetImage == 'docker.io/wave:bwa-0.7.15--8726782b1d9bb8fb'
         req.spackFile == SPACK_RECIPE
         req.condaFile == null
@@ -151,7 +150,7 @@ class BuildRequestTest extends Specification {
 
     def 'should create singularity build request'() {
         given:
-        def USER = new User(id:1, email: 'foo@user.com')
+        def USER = new PlatformId(new User(id:1, email: 'foo@user.com'))
         def CONTENT = 'From: foo'
         def PATH = Path.of('somewhere')
         def BUILD_REPO = 'docker.io/wave'
@@ -179,13 +178,11 @@ class BuildRequestTest extends Specification {
                 IP_ADDR,
                 OFFSET)
         then:
-        req.id == 'd78ba9cb01188668'
-        req.workDir == PATH.resolve(req.id).toAbsolutePath()
-        req.targetImage == "oras://docker.io/wave:${req.id}"
+        req.containerId == 'd78ba9cb01188668'
+        req.targetImage == "oras://docker.io/wave:${req.containerId}"
         req.containerFile == CONTENT
-        req.user == USER
+        req.identity == USER
         req.configJson == '{auth}'
-        req.job =~ /d78ba9cb01188668-[a-z0-9]+/
         req.cacheRepository == CACHE_REPO
         req.format == BuildFormat.SINGULARITY
         req.platform == ContainerPlatform.of('amd64')
@@ -201,7 +198,7 @@ class BuildRequestTest extends Specification {
 
     def 'should check equals and hash code'() {
         given:
-        def USER = new User(id:1, email: 'foo@user.com')
+        def USER = new PlatformId(new User(id:1, email: 'foo@user.com'))
         def PATH = Path.of('somewhere')
         def repo = 'docker.io/wave'
         def cache = 'docker.io/cache'
@@ -287,6 +284,17 @@ class BuildRequestTest extends Specification {
         'aa..--__'              | 'aa'
         '..--__bb'              | 'bb'
         '._-xyz._-'             | 'xyz'
+    }
+
+
+    def 'should parse legacy id' () {
+        expect:
+        BuildRequest.legacyBuildId(BUILD_ID) == EXPECTED
+        where:
+        BUILD_ID        | EXPECTED
+        null            | null
+        'foo'           | null
+        'foo_01'        | 'foo'
     }
 
 }

@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -63,17 +63,6 @@ class PairingChannel {
     void unregisterClient(String service, String endpoint, String clientId) {
         final target = clientTarget(service, endpoint)
         outbound.unregisterClient(target, clientId)
-    }
-
-    /**
-     * Determines whether the channel can handle messages for the given service and endpoint.
-     *
-     * @param service the name of the service to check for
-     * @param endpoint the endpoint to check for
-     * @return true if the message stream has a consumer for the given service and endpoint, false otherwise
-     */
-    boolean canHandle(String service, String endpoint) {
-        return outbound.hasTarget(clientTarget(service, endpoint))
     }
 
     /**

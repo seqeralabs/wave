@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -46,6 +46,7 @@ import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.test.DockerRegistryContainer
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.Base32
 import jakarta.inject.Inject
 /**
@@ -86,8 +87,7 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
     ContainerTokenService containerTokenService(){
         Mock(ContainerTokenService){
             getRequest(_) >> new ContainerRequestData(
-                    null,
-                    null,
+                    PlatformId.NULL,
                     "library/hello-world",
                     "FROM busybox",
                     null,
@@ -145,7 +145,7 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
 
     void 'should retrieve head manifest when image is completed'() {
         given:
-        expected = BuildResult.completed('xyz', 0, 'OK', Instant.now())
+        expected = BuildResult.completed('xyz', 0, 'OK', Instant.now(), null)
 
         when:
         HttpRequest request = HttpRequest.HEAD("/v2/wt/1234/library/hello-world/manifests/latest").headers({h->
@@ -160,7 +160,7 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
 
     void 'should wait for head manifest when image is under construction'() {
         given:
-        expected = BuildResult.completed('xyz', 0, 'OK', Instant.now())
+        expected = BuildResult.completed('xyz', 0, 'OK', Instant.now(), null)
         resolveImageAsync = true
 
         when:

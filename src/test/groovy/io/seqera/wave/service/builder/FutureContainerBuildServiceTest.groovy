@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -29,7 +29,7 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.tower.User
+import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
 /**
  *
@@ -51,7 +51,7 @@ class FutureContainerBuildServiceTest extends Specification {
         new BuildStrategy() {
             @Override
             BuildResult build(BuildRequest req) {
-                new BuildResult("", exitCode, "a fake build result in a test", Instant.now(), Duration.ofSeconds(3))
+                new BuildResult("", exitCode, "a fake build result in a test", Instant.now(), Duration.ofSeconds(3), 'abc')
             }
         }
     }
@@ -67,16 +67,16 @@ class FutureContainerBuildServiceTest extends Specification {
         RUN echo $EXIT_CODE > hello.txt
         """.stripIndent()
         and:
-        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', cacheRepo, null, "", null)
+        def req = new BuildRequest(dockerfile, folder, buildRepo, null, null, BuildFormat.DOCKER, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', cacheRepo, null, "", null).withBuildId('1')
 
         when:
         exitCode = EXIT_CODE
-        service.checkOrSubmit(REQ)
+        service.checkOrSubmit(req)
         then:
         noExceptionThrown()
 
         when:
-        def status = service.buildResult(REQ.targetImage).get()
+        def status = service.buildResult(req.targetImage).get()
         then:
         status.getExitStatus() == EXIT_CODE
 

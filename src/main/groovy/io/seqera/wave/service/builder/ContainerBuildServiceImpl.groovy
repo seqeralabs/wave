@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -27,22 +27,23 @@ import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micrometer.core.instrument.MeterRegistry
 import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.api.BuildContext
-import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.configuration.SpackConfig
+import io.seqera.wave.exception.HttpServerRetryableErrorException
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.cleanup.CleanupStrategy
-import io.seqera.wave.storage.reader.ContentReaderFactory
-import io.seqera.wave.storage.reader.HttpServerRetryableErrorException
+import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.persistence.WaveBuildRecord
+import io.seqera.wave.service.stream.StreamService
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.SpackHelper
 import io.seqera.wave.util.TarUtils
@@ -93,15 +94,22 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     private RateLimiterService rateLimiterService
 
     @Inject
-    private MeterRegistry meterRegistry
-
-    @Inject
     private SpackConfig spackConfig
 
     @Inject
     private HttpClientConfig httpClientConfig
 
-    @Inject CleanupStrategy cleanup
+    @Inject
+    private CleanupStrategy cleanup
+
+    @Inject
+    private StreamService streamService
+
+    @Inject
+    private BuildCounterStore buildCounter
+
+    @Inject
+    PersistenceService persistenceService
 
     /**
      * Build a container image for the given {@link BuildRequest}
@@ -112,8 +120,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
      *      The container image where the resulting image is going to be hosted
      */
     @Override
-    void buildImage(BuildRequest request) {
-        checkOrSubmit(request)
+    BuildTrack buildImage(BuildRequest request) {
+        return checkOrSubmit(request)
     }
 
     /**
@@ -168,7 +176,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             Files.write(containerFile, containerFile0(req, context, spackConfig).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             // save build context
             if( req.buildContext ) {
-                saveBuildContext(req.buildContext, context)
+                saveBuildContext(req.buildContext, context, req.identity)
             }
             // save the conda file
             if( req.condaFile ) {
@@ -185,7 +193,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 saveLayersToContext(req, context)
             }
             resp = buildStrategy.build(req)
-            def msg = "== Build request ${req.id} completed with status=$resp.exitStatus"
+            def msg = "== Build request ${req.buildId} completed with status=$resp.exitStatus"
             if( log.isTraceEnabled() )
                 msg += "; stdout: (see below)\n${indent(resp.logs)}"
             log.info(msg)
@@ -193,7 +201,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         }
         catch (Throwable e) {
             log.error "== Ouch! Unable to build container req=$req", e
-            return resp = BuildResult.failed(req.id, e.message, req.startTime)
+            return resp = BuildResult.failed(req.buildId, e.message, req.startTime)
         }
         finally {
             // use a short time-to-live for failed build
@@ -215,14 +223,15 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         // check the build rate limit
         try {
             if( rateLimiterService )
-                rateLimiterService.acquireBuild(new AcquireRequest(request.user?.id?.toString(), request.ip))
+                rateLimiterService.acquireBuild(new AcquireRequest(request.identity.userId as String, request.ip))
         }
         catch (Exception e) {
             buildStore.removeBuild(request.targetImage)
             throw e
         }
-        // increment the build counter
-        incrementBuildCounter(request)
+
+        // persist the container request
+        persistenceService.createBuild(WaveBuildRecord.fromEvent(new BuildEvent(request)))
 
         // launch the build async
         CompletableFuture
@@ -230,42 +239,29 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 .thenApply((result) -> { notifyCompletion(request,result); return result })
     }
 
-    protected void incrementBuildCounter(BuildRequest request) {
-        try {
-            final tags = new ArrayList<String>()
-            tags.add('platform'); tags.add(request.platform.toString())
-            if( request.user?.id ) {
-                tags.add('userId'); tags.add(request.user.id as String)
-            }
-            meterRegistry.counter('wave.builds', tags as String[]).increment()
-        }
-        catch (Throwable e) {
-            log.error "Unable to increment build counter",e
-        }
-    }
-
     protected notifyCompletion(BuildRequest request, BuildResult result) {
         eventPublisher.publishEvent(new BuildEvent(request, result))
     }
 
-    protected void checkOrSubmit(BuildRequest request) {
+    protected BuildTrack checkOrSubmit(BuildRequest request) {
+        // find next build number
+        final num = buildCounter.inc(request.containerId)
+        request.withBuildId(String.valueOf(num))
         // try to store a new build status for the given target image
         // this returns true if and only if such container image was not set yet
         final ret1 = BuildResult.create(request)
         if( buildStore.storeIfAbsent(request.targetImage, ret1) ) {
-            // flag it as a new build
-            request.uncached = true
             // go ahead
             log.info "== Submit build request: $request"
             launchAsync(request)
-            return
+            return new BuildTrack(ret1.id, request.targetImage, false)
         }
         // since it was unable to initialise the build result status
         // this means the build status already exists, retrieve it
         final ret2 = buildStore.getBuild(request.targetImage)
         if( ret2 ) {
             log.info "== Hit build cache for request: $request"
-            return
+            return new BuildTrack(ret2.id, request.targetImage, true)
         }
         // invalid state
         throw new IllegalStateException("Unable to determine build status for '$request.targetImage'")
@@ -273,24 +269,24 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     protected void saveLayersToContext(BuildRequest req, Path contextDir) {
         if(req.formatDocker()) {
-            saveLayersToDockerContext0(req.containerConfig, contextDir)
+            saveLayersToDockerContext0(req, contextDir)
         }
         else if(req.formatSingularity()) {
-            saveLayersToSingularityContext0(req.containerConfig, contextDir)
+            saveLayersToSingularityContext0(req, contextDir)
         }
         else
             throw new IllegalArgumentException("Unknown container format: $req.format")
     }
 
-    protected void saveLayersToDockerContext0(ContainerConfig config, Path contextDir) {
-        final layers = config.layers
+    protected void saveLayersToDockerContext0(BuildRequest request, Path contextDir) {
+        final layers = request.containerConfig.layers
         for(int i=0; i<layers.size(); i++) {
             final it = layers[i]
             final target = contextDir.resolve(layerName(it))
             final retryable = retry0("Unable to copy '${it.location}' to docker context '${contextDir}'")
             // copy the layer to the build context
             retryable.apply(()-> {
-                try (InputStream stream = ContentReaderFactory.of(it.location).openStream()) {
+                try (InputStream stream = streamService.stream(it.location, request.identity)) {
                     Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING)
                 }
                 return
@@ -298,8 +294,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         }
     }
 
-    protected void saveLayersToSingularityContext0(ContainerConfig config, Path contextDir) {
-        final layers = config.layers
+    protected void saveLayersToSingularityContext0(BuildRequest request, Path contextDir) {
+        final layers = request.containerConfig.layers
         for(int i=0; i<layers.size(); i++) {
             final it = layers[i]
             final target = contextDir.resolve(layerDir(it))
@@ -309,7 +305,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             final retryable = retry0("Unable to copy '${it.location} to singularity context '${contextDir}'")
             // copy the layer to the build context
             retryable.apply(()-> {
-                try (InputStream stream = ContentReaderFactory.of(it.location).openStream()) {
+                try (InputStream stream = streamService.stream(it.location, request.identity)) {
                     TarUtils.untarGzip(stream, target)
                 }
                 return
@@ -317,12 +313,12 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         }
     }
 
-    protected void saveBuildContext(BuildContext buildContext, Path contextDir) {
+    protected void saveBuildContext(BuildContext buildContext, Path contextDir, PlatformId identity) {
         // retry strategy
         final retryable = retry0("Unable to copy '${buildContext.location} to build context '${contextDir}'")
         // copy the layer to the build context
         retryable.apply(()-> {
-            try (InputStream stream = ContentReaderFactory.of(buildContext.location).openStream()) {
+            try (InputStream stream = streamService.stream(buildContext.location, identity)) {
                 TarUtils.untarGzip(stream, contextDir)
             }
             return

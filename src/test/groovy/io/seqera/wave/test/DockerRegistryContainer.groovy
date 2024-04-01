@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -48,9 +48,9 @@ trait DockerRegistryContainer extends BaseTestContainerRegistry {
         testcontainers0.start()
         assert testcontainers0.execInContainer("apk","add", "docker","bash").exitCode==0
         assert testcontainers0.execInContainer("sh","-c","dockerd &").exitCode==0
-        assert testcontainers0.execInContainer("docker","pull","hello-world").exitCode==0
-        assert testcontainers0.execInContainer("docker","tag","hello-world","localhost:5000/hello-world").exitCode==0
-        assert testcontainers0.execInContainer("docker","tag","hello-world","localhost:5000/library/hello-world").exitCode==0
+        assert testcontainers0.execInContainer("docker","pull","hello-world@sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6").exitCode==0
+        assert testcontainers0.execInContainer("docker","tag","hello-world@sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6","localhost:5000/hello-world").exitCode==0
+        assert testcontainers0.execInContainer("docker","tag","hello-world@sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6","localhost:5000/library/hello-world").exitCode==0
         assert testcontainers0.execInContainer("docker","push","localhost:5000/hello-world").exitCode==0
         assert testcontainers0.execInContainer("docker","push","localhost:5000/library/hello-world").exitCode==0
 

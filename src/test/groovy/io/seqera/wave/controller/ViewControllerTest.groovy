@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -37,6 +37,7 @@ import io.seqera.wave.service.logs.BuildLogServiceImpl
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
 /**
@@ -118,7 +119,7 @@ class ViewControllerTest extends Specification {
                 exitStatus: 0 )
 
         when:
-        persistenceService.saveBuild(record1)
+        persistenceService.createBuild(record1)
         and:
         def request = HttpRequest.GET("/view/builds/${record1.buildId}")
         def response = client.toBlocking().exchange(request, String)
@@ -147,7 +148,7 @@ class ViewControllerTest extends Specification {
                 exitStatus: 0 )
 
         when:
-        persistenceService.saveBuild(record1)
+        persistenceService.createBuild(record1)
         and:
         def request = HttpRequest.GET("/view/builds/${record1.buildId}")
         def response = client.toBlocking().exchange(request, String)
@@ -178,7 +179,7 @@ class ViewControllerTest extends Specification {
                 exitStatus: 0 )
 
         when:
-        persistenceService.saveBuild(record1)
+        persistenceService.createBuild(record1)
         and:
         def request = HttpRequest.GET("/view/builds/${record1.buildId}")
         def response = client.toBlocking().exchange(request, String)
@@ -207,14 +208,16 @@ class ViewControllerTest extends Specification {
                 fingerprint: 'xyz',
                 timestamp: Instant.now().toString() )
         and:
-        def data = new ContainerRequestData(1, 100, 'hello-world', 'some docker', cfg, 'some conda')
-        def user = new User()
+        def user = new User(id:1)
+        def identity = new PlatformId(user,100)
+        and:
+        def data = new ContainerRequestData(identity, 'hello-world', 'some docker', cfg, 'some conda')
         def wave = 'https://wave.io/some/container:latest'
         def addr = '100.200.300.400'
 
         and:
         def exp = Instant.now().plusSeconds(3600)
-        def container = new WaveContainerRecord(req, data, wave, user, addr, exp)
+        def container = new WaveContainerRecord(req, data, wave, addr, exp)
         def token = '12345'
 
         when:

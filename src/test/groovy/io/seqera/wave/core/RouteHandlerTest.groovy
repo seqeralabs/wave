@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -24,6 +24,8 @@ import spock.lang.Unroll
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.token.ContainerTokenService
+import io.seqera.wave.tower.PlatformId
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -115,7 +117,7 @@ class RouteHandlerTest extends Specification {
         when:
         def route = new RouteHandler(tokenService).parse(REQ_PATH)
         then:
-        1 * tokenService.getRequest(ROUTE_TKN) >> new ContainerRequestData(null,null,REQ_IMAGE)
+        1 * tokenService.getRequest(ROUTE_TKN) >> new ContainerRequestData(PlatformId.NULL,REQ_IMAGE)
         and:
         route.image == ROUTE_IMAGE
         route.type == ROUTE_TYPE

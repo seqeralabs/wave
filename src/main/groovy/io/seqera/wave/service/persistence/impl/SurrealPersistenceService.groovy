@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -29,6 +29,9 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
+import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.metric.Metric
+import io.seqera.wave.service.metric.MetricFilter
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
@@ -38,6 +41,9 @@ import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+
+import static io.seqera.wave.service.metric.MetricConstants.ANONYMOUS
+
 /**
  * Implements a persistence service based based on SurrealDB
  *
@@ -90,8 +96,7 @@ class SurrealPersistenceService implements PersistenceService {
         // create wave_scan table
         final ret4 = surrealDb.sqlAsMap(authorization, "define table wave_scan_vuln SCHEMALESS")
         if( ret4.status != "OK")
-            throw new IllegalStateException("Unable to define SurrealDB table wave_scan_vuln - cause: $ret3")
-
+            throw new IllegalStateException("Unable to define SurrealDB table wave_scan_vuln - cause: $ret4")
     }
 
     private String getAuthorization() {
@@ -99,7 +104,7 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveBuild(WaveBuildRecord build) {
+    void createBuild(WaveBuildRecord build) {
         surrealDb.insertBuildAsync(authorization, build).subscribe({ result->
             log.trace "Build record saved ${result}"
         }, {error->
@@ -111,6 +116,33 @@ class SurrealPersistenceService implements PersistenceService {
         })
     }
 
+    @Override
+    void updateBuild(WaveBuildRecord build) {
+        // create the scan record
+        final statement = """\
+                                UPDATE wave_build
+                                SET 
+                                    digest = '${build.digest}',
+                                    duration = '${build.duration}',
+                                    exitStatus = ${build.exitStatus}
+                                where
+                                    buildId = '${build.buildId}' 
+                                """.stripIndent()
+        final result = surrealDb
+                                .sqlAsync(authorization, statement)
+                                .subscribe({result ->
+                                    log.trace "Update build record id: $build.buildId: ${result}"
+                                },
+                        {error->
+                            def msg = error.message
+                            if( error instanceof HttpClientResponseException ){
+                                msg += ":\n $error.response.body"
+                            }
+                            log.error("Error updating build record id: $build.buildId => ${msg}\n", error)
+                        })
+        log.trace "Scan update result=$result"
+    }
+
     void saveBuildBlocking(WaveBuildRecord record) {
         surrealDb.insertBuild(getAuthorization(), record)
     }
@@ -118,6 +150,24 @@ class SurrealPersistenceService implements PersistenceService {
     WaveBuildRecord loadBuild(String buildId) {
         if( !buildId )
             throw new IllegalArgumentException("Missing 'buildId' argument")
+        def result = loadBuild0(buildId)
+        if( result )
+            return result
+        // try to lookup legacy record
+        final legacyId = BuildRequest.legacyBuildId(buildId)
+        return legacyId ? loadBuild1(legacyId) : null
+    }
+
+    private WaveBuildRecord loadBuild0(String buildId) {
+        final query = "select * from wave_build where buildId = '$buildId'"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result[0] : null
+        return result
+    }
+
+    private WaveBuildRecord loadBuild1(String buildId) {
         final query = "select * from wave_build where buildId = '$buildId'"
         final json = surrealDb.sqlAsString(getAuthorization(), query)
         final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
@@ -125,6 +175,16 @@ class SurrealPersistenceService implements PersistenceService {
         final result = data && data[0].result ? data[0].result[0] : null
         if( !result && legacy )
             return legacy.loadBuild(buildId)
+        return result
+    }
+
+    @Override
+    WaveBuildRecord loadBuild(String targetImage, String digest) {
+        final query = "select * from wave_build where targetImage = '$targetImage' and digest = '$digest'"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result[0] : null
         return result
     }
 
@@ -220,4 +280,94 @@ class SurrealPersistenceService implements PersistenceService {
         return result
     }
 
+    // get builds count by specific metric (ip, and userEmail)
+    @Override
+    LinkedHashMap<String, Long> getBuildsCountByMetric(Metric metric, MetricFilter filter){
+        def statement = "SELECT ${metric.buildLabel}, count() as total_count FROM wave_build "+
+                                "${getBuildMetricFilter(filter)} GROUP BY ${metric.buildLabel}  ORDER BY total_count DESC LIMIT $filter.limit"
+        final map = surrealDb.sqlAsMap(authorization, statement)
+        def results = map.get("result") as List<Map>
+        log.trace("Builds count results by ${metric.buildLabel}: $results")
+        LinkedHashMap<String, Long> counts = new LinkedHashMap<>()
+        for(def result : results){
+            //if the userEmail is null, replace it with anonymous
+            counts.put((result.get(metric.buildLabel) ?: ANONYMOUS) as String, result.get("total_count") as Long)
+        }
+        return counts
+    }
+
+    // get total builds count
+    @Override
+    Long getBuildsCount(MetricFilter filter){
+        final statement = "SELECT count() as total_count FROM wave_build ${getBuildMetricFilter(filter)} GROUP ALL"
+        final map = surrealDb.sqlAsMap(authorization, statement)
+        def results = map.get("result") as List<Map>
+        log.trace("Total builds count results: $results")
+        if( results && results.size() > 0)
+            return results[0].get("total_count")? results[0].get("total_count") as Long : 0
+        else
+            return 0
+    }
+
+    static String getBuildMetricFilter(MetricFilter metricFilter){
+        def filter = ""
+        if (metricFilter.startDate && metricFilter.endDate) {
+            filter = "WHERE type::is::datetime(startTime) AND type::datetime(startTime) >= '$metricFilter.startDate' AND type::datetime(startTime) <= '$metricFilter.endDate'"
+            if (metricFilter.success != null) {
+                filter += metricFilter.success ? " AND exitStatus = 0" : " AND exitStatus != 0"
+            }
+        } else if (metricFilter.success != null) {
+            filter = metricFilter.success ? "WHERE exitStatus = 0" : "WHERE exitStatus != 0"
+        }
+
+        return filter
+    }
+
+
+    // get pulls count by specific metric (ip, and user.email)
+    @Override
+    LinkedHashMap<String, Long> getPullsCountByMetric(Metric metric, MetricFilter filter){
+        def statement = "SELECT ${metric.pullLabel}, count() as total_count  FROM wave_request "+
+                                "${getPullMetricFilter(filter)} GROUP BY ${metric.pullLabel} ORDER BY total_count DESC LIMIT $filter.limit"
+        final map = surrealDb.sqlAsMap(authorization, statement)
+        def results = map.get("result") as List<Map>
+        log.trace("Pulls count by ${metric.pullLabel} results: $results")
+        LinkedHashMap<String, Long> counts = new LinkedHashMap<>()
+        for(def result : results){
+            def key = result.get(metric.pullLabel)
+            if(metric == Metric.user) {
+                def user = result.get("user") as Map
+                key = user.get("email")
+            }
+            //if the user.email is null, replace it with anonymous
+            counts.put((key?:ANONYMOUS) as String, result.get("total_count") as Long)
+        }
+        return counts
+    }
+
+    // get total pulls count
+    @Override
+    Long getPullsCount(MetricFilter filter){
+        final statement = "SELECT count() as total_count FROM wave_request ${getPullMetricFilter(filter)}  GROUP ALL"
+        final map = surrealDb.sqlAsMap(authorization, statement)
+        def results = map.get("result") as List<Map>
+        log.trace("Total pulls count results: $results")
+        if( results && results.size() > 0)
+            return results[0].get("total_count")? results[0].get("total_count") as Long : 0
+        else
+            return 0
+    }
+
+    static String getPullMetricFilter(MetricFilter metricFilter){
+        def filter = ""
+        if( metricFilter.startDate && metricFilter.endDate ){
+            filter = "WHERE type::is::datetime(timestamp) AND type::datetime(timestamp) >= '$metricFilter.startDate' AND type::datetime(timestamp) <= '$metricFilter.endDate'"
+            if (metricFilter.fusion != null) {
+                filter += metricFilter.fusion ? " AND fusionVersion != NONE" : " AND fusionVersion = NONE"
+            }
+        } else if (metricFilter.fusion != null) {
+            filter = metricFilter.fusion ? "WHERE fusionVersion != NONE" : "WHERE fusionVersion = NONE"
+        }
+        return  filter
+    }
 }

@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -27,7 +27,7 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.tower.User
+import io.seqera.wave.tower.PlatformId
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -38,13 +38,13 @@ class ScanRequestTest extends Specification {
         given:
         def workspace = Path.of('/some/workspace')
         def platform = ContainerPlatform.of('amd64')
-        def build = new BuildRequest('FROM ubuntu', workspace, 'docker.io', null, null, BuildFormat.DOCKER, Mock(User), Mock(ContainerConfig), Mock(BuildContext), platform, '{json}', null, null, "", null)
+        def build = new BuildRequest('FROM ubuntu', workspace, 'docker.io', null, null, BuildFormat.DOCKER, Mock(PlatformId), Mock(ContainerConfig), Mock(BuildContext), platform, '{json}', null, null, "", null) .withBuildId('1')
 
         when:
         def scan = ScanRequest.fromBuild(build)
         then:
         scan.id == build.scanId
-        scan.buildId == build.id
+        scan.buildId == build.buildId
         scan.workDir != build.workDir
         scan.configJson == build.configJson
         scan.targetImage == build.targetImage

@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -42,5 +42,13 @@ interface ContainerTokenService {
      * @return the corresponding token string, or null if the token is unknown
      */
     ContainerRequestData getRequest(String token)
+
+    /**
+     * Evict the container request entry from the cache for the given container token
+     *
+     * @param token A container token string
+     * @return the corresponding token string, or null if the token is unknown
+     */
+    ContainerRequestData evictRequest(String token)
 
 }

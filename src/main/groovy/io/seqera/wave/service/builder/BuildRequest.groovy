@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -21,14 +21,14 @@ package io.seqera.wave.service.builder
 import java.nio.file.Path
 import java.time.Instant
 import java.time.OffsetDateTime
-import io.micronaut.core.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
+import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.tower.User
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.RegHelper
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
@@ -40,16 +40,18 @@ import static io.seqera.wave.util.StringUtils.trunc
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@EqualsAndHashCode(includes = 'id,targetImage')
+@EqualsAndHashCode(includes = 'containerId,targetImage,buildId')
 @CompileStatic
 class BuildRequest {
+
+    static final String SEP = '_'
 
     /**
      * Unique request Id. This is computed as a consistent hash generated from
      * the container build assets e.g. Dockerfile. Therefore the same container build
      * request should result in the same `id`
      */
-    final String id
+    final String containerId
 
     /**
      * The container file content corresponding to this request
@@ -69,7 +71,7 @@ class BuildRequest {
     /**
      * The build context work directory
      */
-    final Path workDir
+    final Path workspace
 
     /**
      * The target fully qualified image of the built container. It includes the target registry name
@@ -79,7 +81,7 @@ class BuildRequest {
     /**
      * The (tower) user made this request
      */
-    final User user
+    final PlatformId identity
 
     /**
      * Container platform
@@ -95,11 +97,6 @@ class BuildRequest {
      * Build request start time
      */
     final Instant startTime
-
-    /**
-     * Build job unique id
-     */
-    final String job
 
     /**
      * The client IP if available
@@ -141,31 +138,52 @@ class BuildRequest {
      */
     final BuildFormat format
     
-    /**
-     * Mark this request as not cached
-     */
-    volatile boolean uncached
+    volatile String buildId
 
-    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, BuildFormat format, User user, ContainerConfig containerConfig, BuildContext buildContext, ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId) {
-        this.id = computeDigest(containerFile, condaFile, spackFile, platform, repo, buildContext)
+    volatile Path workDir
+
+    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, BuildFormat format, PlatformId identity, ContainerConfig containerConfig, BuildContext buildContext, ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId) {
+        this.containerId = computeDigest(containerFile, condaFile, spackFile, platform, repo, buildContext)
         this.containerFile = containerFile
         this.containerConfig = containerConfig
         this.buildContext = buildContext
         this.condaFile = condaFile
         this.spackFile = spackFile
-        this.targetImage = makeTarget(format, repo, id, condaFile, spackFile)
+        this.targetImage = makeTarget(format, repo, containerId, condaFile, spackFile)
         this.format = format
-        this.user = user
+        this.identity = identity
         this.platform = platform
         this.configJson = configJson
         this.cacheRepository = cacheRepo
-        this.workDir = workspace.resolve(id).toAbsolutePath()
+        this.workspace = workspace
         this.offsetId = offsetId ?: OffsetDateTime.now().offset.id
         this.startTime = Instant.now()
-        this.job = "${id}-${startTime.toEpochMilli().toString().md5()[-5..-1]}"
         this.ip = ip
         this.isSpackBuild = spackFile
         this.scanId = scanId
+    }
+
+    BuildRequest(Map opts) {
+        this.containerId = opts.id
+        this.containerFile = opts.containerFile
+        this.condaFile = opts.condaFile
+        this.spackFile = opts.spackFile
+        this.workspace = opts.workspace as Path
+        this.targetImage = opts.targetImage
+        this.identity = opts.identity as PlatformId
+        this.platform = opts.platform as ContainerPlatform
+        this.cacheRepository = opts.cacheRepository
+        this.startTime = opts.startTime as Instant
+        this.ip = opts.ip
+        this.configJson = opts.configJson
+        this.offsetId = opts.offesetId
+        this.containerConfig = opts.containerConfig as ContainerConfig
+        this.isSpackBuild = opts.isSpackBuild
+        this.scanId = opts.scanId
+        this.buildContext = opts.buildContext as BuildContext
+        this.format = opts.format as BuildFormat
+        this.workDir = opts.workDir as Path
+        this.buildId = opts.buildId
     }
 
     static protected String makeTarget(BuildFormat format, String repo, String id, @Nullable String condaFile, @Nullable String spackFile) {
@@ -227,11 +245,11 @@ class BuildRequest {
 
     @Override
     String toString() {
-        return "BuildRequest[id=$id; targetImage=$targetImage; user=$user; dockerFile=${trunc(containerFile)}; condaFile=${trunc(condaFile)}; spackFile=${trunc(spackFile)}]"
+        return "BuildRequest[containerId=$containerId; targetImage=$targetImage; identity=$identity; dockerFile=${trunc(containerFile)}; condaFile=${trunc(condaFile)}; spackFile=${trunc(spackFile)}; buildId=$buildId]"
     }
 
-    String getId() {
-        return id
+    String getContainerId() {
+        return containerId
     }
 
     @Deprecated
@@ -259,8 +277,8 @@ class BuildRequest {
         return targetImage
     }
 
-    User getUser() {
-        return user
+    PlatformId getIdentity() {
+        return identity
     }
 
     ContainerPlatform getPlatform() {
@@ -273,10 +291,6 @@ class BuildRequest {
 
     Instant getStartTime() {
         return startTime
-    }
-
-    String getJob() {
-        return job
     }
 
     String getIp() {
@@ -298,4 +312,17 @@ class BuildRequest {
     boolean formatSingularity() {
         format==SINGULARITY
     }
+
+    BuildRequest withBuildId(String id) {
+        this.buildId = containerId + SEP + id
+        this.workDir = workspace.resolve(buildId).toAbsolutePath()
+        return this
+    }
+
+    static String legacyBuildId(String id) {
+        if( !id )
+            return null
+        return id.contains(SEP) ? id.tokenize(SEP)[0] : null
+    }
+
 }

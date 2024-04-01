@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -125,7 +125,7 @@ class PairingServiceTest extends Specification{
 
         expect:
         100.times {
-        assert PairingServiceImpl.makeKey('tower', 'https://api.tower.nf') == '7a0ebf8c7ef4b89227a0f6700d4322cb'
+        assert PairingServiceImpl.makeKey('tower', 'https://api.cloud.seqera.io') == '88c1f586e515fa84fb71dbc42d9f185d'
         }
 
     }

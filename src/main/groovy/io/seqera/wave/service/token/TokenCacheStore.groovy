@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -65,5 +65,10 @@ class TokenCacheStore extends AbstractCacheStore<ContainerRequestData> implement
     @Override
     void put(String key, ContainerRequestData value) {
         super.put(key, value)
+    }
+
+    @Override
+    void remove(String key) {
+        super.remove(key)
     }
 }

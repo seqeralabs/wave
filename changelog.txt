@@ -1,4 +1,52 @@
 # Wave changelog
+1.5.2 - 25 Mar 2024
+- Fix No such property: ioExecutor [f603868b]
+
+1.5.1 - 25 Mar 2024
+- Fix Thread pool selection on container controller [d882bd4d]
+- Fix trace slow endpoint duration [fb1eea96]
+
+1.5.0 - 25 Mar 2024 
+- Add fixed executor to future store [9f61abe9]
+- Add timeout retry limiter [0a98aa96]
+- Fix failing tests [eeb9ddfe]
+- Add thred pool monitor cron [a1cdcc13]
+- Bump corretto-17.0.10-al2023-jemalloc as base image [7238a86d]
+- Evict status redesigned (#419) [9cf07b56]
+- Add API and UI to evict a wave request from token cache  (#410) [5833c18d]
+- Add all values to entrypoint (#416) [7fef9a59]
+- Add documentation for Metrics API (#414) [6e16fc41]
+- Update aws sdk to version v2 (#415) [1cd5d496]
+- bumped actions/upload-artifact to v4 and fix tests (#417) [7f0d7866]
+
+1.4.0 - 27 Feb 2024
+- Add services to query Wave usage metadata  (#393) [6325b25c]
+- Add filter to trace slow endpoints [be49262f]
+- Add default to WaveContainerRecord when timestamp is null (#407) [f6eea93e]
+- Changed fusionVersion type to String (#411) [73d1cded]
+
+1.3.3 - 18 Feb 2024
+- Bump actions v4 [30a10876]
+- Add aws-java-sdk-sts and bump version 1.12.471 [c2ff7a8b]
+- Allow no default registries config [9523974e]
+- Improve request validation [b66b3de9]
+- Add error message when spack file is malformed (#361) [6439404b]
+- Add Wave configurations documentation  (#360) [3d167d99]
+- Add enterprise build container [fc6342a9]
+
+1.3.2 - 12 Feb 2024
+- Patch missing user condition on ContainerRequestData [9a8f2a5c]
+
+1.3.1 - 12 Feb 2024 
+- Fix compatibility for existing ContainerRequestData records [e665629f]
+- Improve license check [95a2755e]
+- Improve token request logging [930a7887]
+
+1.3.0 - 9 Feb 2024
+- Add support for container includes and inspect (#397) [57b62b69]
+- Remove support for Tower HTTP connector (#384) [180efe3c]
+- Update copyright info [197fd8ef]
+
 1.2.1 - 28 Jan 2024
 - Add support for SurrealDB v1.x (stable)  (#388) [e8ba40c7]
 - Remove TimedInputStream class [f59b02b3]

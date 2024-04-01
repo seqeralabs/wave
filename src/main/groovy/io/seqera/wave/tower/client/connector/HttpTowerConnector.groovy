@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -25,6 +25,7 @@ import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.http.HttpMethod
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.http.HttpClientFactory
@@ -41,6 +42,7 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
+@Requires(env = 'legacy-http-connector')
 class HttpTowerConnector extends TowerConnector {
 
     @Inject

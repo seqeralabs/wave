@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -25,9 +25,12 @@ import io.seqera.tower.crypto.EncryptedPacket
 import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.tower.client.CredentialsDescription
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.client.TowerClient
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+import static io.seqera.wave.WaveDefault.DOCKER_IO
+
 /**
  * Define operations to access container registry credentials from Tower
  *
@@ -45,37 +48,37 @@ class CredentialServiceImpl implements CredentialsService {
     private PairingService keyService
 
     @Override
-    ContainerRegistryKeys findRegistryCreds(ContainerPath container, Long userId, Long workspaceId, String towerToken, String towerEndpoint) {
-        if (!userId)
+    ContainerRegistryKeys findRegistryCreds(ContainerPath container, PlatformId identity) {
+        if (!identity.userId)
             throw new IllegalArgumentException("Missing userId parameter")
-        if (!towerToken)
+        if (!identity.accessToken)
             throw new IllegalArgumentException("Missing Tower access token")
 
-        final pairing = keyService.getPairingRecord(PairingService.TOWER_SERVICE, towerEndpoint)
+        final pairing = keyService.getPairingRecord(PairingService.TOWER_SERVICE, identity.towerEndpoint)
         if (!pairing)
-            throw new IllegalStateException("No exchange key registered for service ${PairingService.TOWER_SERVICE} at endpoint: ${towerEndpoint}")
+            throw new IllegalStateException("No exchange key registered for service ${PairingService.TOWER_SERVICE} at endpoint: ${identity.towerEndpoint}")
         if (pairing.isExpired())
-            log.debug("Exchange key registered for service ${PairingService.TOWER_SERVICE} at endpoint: ${towerEndpoint} used after expiration, should be renewed soon")
+            log.debug("Exchange key registered for service ${PairingService.TOWER_SERVICE} at endpoint: ${identity.towerEndpoint} used after expiration, should be renewed soon")
 
-        final all = towerClient.listCredentials(towerEndpoint, towerToken, workspaceId).get().credentials
+        final all = towerClient.listCredentials(identity.towerEndpoint, identity.accessToken, identity.workspaceId).get().credentials
 
         if (!all) {
-            log.debug "No credentials found for userId=$userId; workspaceId=$workspaceId; endpoint=$towerEndpoint"
+            log.debug "No credentials found for userId=$identity.userId; workspaceId=$identity.workspaceId; endpoint=$identity.towerEndpoint"
             return null
         }
 
         // find credentials with a matching registry
-        final repo = container.repository
+        final repo = container.repository ?: DOCKER_IO
         final creds = findBestMatchingCreds(repo,  all)
         if (!creds) {
-            log.debug "No credentials matching criteria for repository=$repo; userId=$userId; workspaceId=$workspaceId; endpoint=$towerEndpoint"
+            log.debug "No credentials matching criteria registryName=$container.registry; userId=$identity.userId; workspaceId=$identity.workspaceId; endpoint=$identity.towerEndpoint"
             return null
         }
 
         // log for debugging purposes
-        log.debug "Credentials matching criteria for repository=$repo; userId=$userId; workspaceId=$workspaceId; endpoint=$towerEndpoint => $creds"
+        log.debug "Credentials matching criteria registryName=$container.registry; userId=$identity.userId; workspaceId=$identity.workspaceId; endpoint=$identity.towerEndpoint => $creds"
         // now fetch the encrypted key
-        final encryptedCredentials = towerClient.fetchEncryptedCredentials(towerEndpoint, towerToken, creds.id, pairing.pairingId, workspaceId).get()
+        final encryptedCredentials = towerClient.fetchEncryptedCredentials(identity.towerEndpoint, identity.accessToken, creds.id, pairing.pairingId, identity.workspaceId).get()
         final privateKey = pairing.privateKey
         final credentials = decryptCredentials(privateKey, encryptedCredentials.keys)
         return parsePayload(credentials)

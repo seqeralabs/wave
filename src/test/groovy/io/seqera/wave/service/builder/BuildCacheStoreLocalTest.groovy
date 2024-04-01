@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -39,9 +39,9 @@ class BuildCacheStoreLocalTest extends Specification {
     private BuildConfig buildConfig
 
     BuildResult zero = BuildResult.create('0')
-    BuildResult one = BuildResult.completed('1', 0, 'done', Instant.now())
-    BuildResult two = BuildResult.completed('2', 0, 'done', Instant.now())
-    BuildResult three = BuildResult.completed('3', 0, 'done', Instant.now())
+    BuildResult one = BuildResult.completed('1', 0, 'done', Instant.now(), 'abc')
+    BuildResult two = BuildResult.completed('2', 0, 'done', Instant.now(), 'abc')
+    BuildResult three = BuildResult.completed('3', 0, 'done', Instant.now(), 'abc')
 
     def 'should get and put key values' () {
         given:

@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -28,6 +28,7 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.k8s.K8sService
 import io.seqera.wave.service.k8s.K8sServiceImpl
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
 /**
@@ -58,13 +59,13 @@ class KubeBuildStrategyTest extends Specification {
 
     def "request to build a container with right selector"(){
         given:
-        def USER = new User(id:1, email: 'foo@user.com')
+        def USER = new PlatformId(new User(id:1, email: 'foo@user.com'))
         def PATH = Files.createTempDirectory('test')
         def repo = 'docker.io/wave'
         def cache = 'docker.io/cache'
 
         when:
-        def req = new BuildRequest('from foo', PATH, repo, null, null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('amd64'),'{}', cache, null, "", null)
+        def req = new BuildRequest('from foo', PATH, repo, null, null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('amd64'),'{}', cache, null, "", null) .withBuildId('1')
         Files.createDirectories(req.workDir)
 
         def resp = strategy.build(req)
@@ -74,7 +75,7 @@ class KubeBuildStrategyTest extends Specification {
         1 * k8sService.buildContainer(_, _, _, _, _, _, [service:'wave-build']) >> null
 
         when:
-        def req2 = new BuildRequest('from foo', PATH, repo, null, null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('arm64'),'{}', cache, null, "", null)
+        def req2 = new BuildRequest('from foo', PATH, repo, null, null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('arm64'),'{}', cache, null, "", null) .withBuildId('1')
         Files.createDirectories(req2.workDir)
 
         def resp2 = strategy.build(req2)
@@ -87,7 +88,7 @@ class KubeBuildStrategyTest extends Specification {
 
     def "should get the correct image for a specific architecture"(){
         given:
-        def USER = new User(id:1, email: 'foo@user.com')
+        def USER = new PlatformId(new User(id:1, email: 'foo@user.com'))
         def PATH = Files.createTempDirectory('test')
         def repo = 'docker.io/wave'
         def cache = 'docker.io/cache'

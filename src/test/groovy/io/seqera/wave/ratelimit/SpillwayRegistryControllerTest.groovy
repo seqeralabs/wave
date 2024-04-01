@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -70,22 +70,20 @@ class SpillwayRegistryControllerTest extends Specification implements DockerRegi
     }
 
     void 'should check rate limit in ip of anonymous manifest'() {
+        given:
+        def max = configuration.pull.anonymous.max
         when:
         HttpRequest request = HttpRequest.GET("/v2/library/hello-world/manifests/sha256:975f4b14f326b05db86e16de00144f9c12257553bba9484fed41f9b6f2257800").headers({h->
             h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
             h.add('Accept', ContentType.DOCKER_MANIFEST_V1_JWS_TYPE)
             h.add('Accept', MediaType.APPLICATION_JSON)
         })
-        (0..configuration.pull.anonymous.max).each {
-            client.toBlocking().exchange(request, String)
-        }
+        max.times { client.toBlocking().exchange(request, String) }
         then:
         true
 
         when:
-        (0..configuration.pull.anonymous.max*2).each {
-            client.toBlocking().exchange(request, String)
-        }
+        (max*2).times {client.toBlocking().exchange(request, String) }
 
         then:
         def e = thrown(HttpClientResponseException)

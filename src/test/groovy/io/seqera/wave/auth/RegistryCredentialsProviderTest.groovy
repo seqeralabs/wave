@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -29,6 +29,8 @@ import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.ContainerRegistryKeys
 import io.seqera.wave.service.CredentialsService
 import io.seqera.wave.service.aws.AwsEcrService
+import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.tower.User
 import jakarta.inject.Inject
 /**
  *
@@ -109,11 +111,13 @@ class RegistryCredentialsProviderTest extends Specification {
         def credentialService = Mock(CredentialsService)
         def credentialsFactory = new RegistryCredentialsFactoryImpl(awsEcrService: Mock(AwsEcrService))
         def provider = Spy(new RegistryCredentialsProviderImpl(credentialsFactory: credentialsFactory, credentialsService: credentialService))
-
+        and:
+        def identity = new PlatformId(new User(id:USER_ID), WORKSPACE_ID, TOWER_TOKEN, TOWER_ENDPOINT)
         when:
-        def result = provider.getUserCredentials0(CONTAINER, USER_ID, WORKSPACE_ID, TOWER_TOKEN, TOWER_ENDPOINT)
+        def result = provider.getUserCredentials0(CONTAINER, identity)
+
         then:
-        1 * credentialService.findRegistryCreds(CONTAINER, USER_ID, WORKSPACE_ID, TOWER_TOKEN, TOWER_ENDPOINT) >> new ContainerRegistryKeys(userName:'usr1',password:'pwd2',registry:CONTAINER)
+        1 * credentialService.findRegistryCreds(CONTAINER, identity) >> new ContainerRegistryKeys(userName:'usr1',password:'pwd2',registry:CONTAINER)
         and:
         result.getUsername() == 'usr1'
         result.getPassword() == 'pwd2'

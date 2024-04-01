@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -18,10 +18,9 @@
 
 package io.seqera.wave.controller
 
-import io.micronaut.core.annotation.Nullable
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Controller
@@ -30,6 +29,7 @@ import io.micronaut.http.annotation.Produces
 import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
+import io.seqera.wave.exchange.BuildStatusResponse
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
@@ -69,6 +69,14 @@ class ContainerBuildController {
         return logs
                 ? HttpResponse.ok(logs)
                 : HttpResponse.<StreamedFile>notFound()
+    }
+
+    @Get("/v1alpha1/builds/{buildId}/status")
+    HttpResponse<BuildStatusResponse> getBuildStatus(String buildId){
+        final build = persistenceService.loadBuild(buildId)
+        build != null
+            ? HttpResponse.ok(build.toStatusResponse())
+            : HttpResponse.<BuildStatusResponse>notFound()
     }
 
 }

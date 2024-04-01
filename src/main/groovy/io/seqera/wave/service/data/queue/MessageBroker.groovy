@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -52,32 +52,6 @@ interface MessageBroker<M> {
      */
     M take(String target)
 
-    /**
-     * Create a mark with for the specified key
-     *
-     * @param key
-     *      The mark unique key
-     */
-    void mark(String key)
-
-    /**
-     * Remove the mark from the specified key
-     *
-     * @param key
-     *      The mark unique key
-     */
-    void unmark(String key)
-
-    /**
-     * Check if one or more marks with the specified prefix exists
-     *
-     * @param prefix
-     *      The prefix of the mark key
-     * @return
-     *      {@code true} when one or more marks exist with a key matching the specified prefix,
-     *      {@code false} otherwise
-     */
-    boolean hasMark(String prefix)
 }
 
 
