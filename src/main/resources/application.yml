@@ -36,6 +36,9 @@ micronaut:
     stream-executor:
       type: FIXED
       number-of-threads: 16
+    future-store-executor:
+      type : FIXED
+      number-of-threads : 16
   netty:
     event-loops:
       stream-pool:
@@ -46,6 +49,12 @@ micronaut:
         read-timeout: '30s'
         read-idle-timeout: '120s'
         event-loop-group: 'stream-pool'
+  security:
+    enabled: true
+    intercept-url-map:
+      - pattern: '/**'
+        access:
+          - isAnonymous()
 ---
 wave:
   allowAnonymous: true

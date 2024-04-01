@@ -44,6 +44,7 @@ dependencies {
     implementation("io.micronaut.reactor:micronaut-reactor-http-client")
     implementation("jakarta.annotation:jakarta.annotation-api")
     implementation("io.micronaut:micronaut-validation")
+    implementation 'io.micronaut.security:micronaut-security'
     implementation "org.codehaus.groovy:groovy-json"
     implementation "org.codehaus.groovy:groovy-nio"
     implementation 'com.google.guava:guava:32.1.2-jre'
@@ -67,12 +68,11 @@ dependencies {
     implementation("io.micronaut.aws:micronaut-aws-parameter-store")
     implementation "software.amazon.awssdk:ecr"
     implementation "software.amazon.awssdk:ecrpublic"
-    implementation 'com.amazonaws:aws-java-sdk-ses:1.12.471'
-    // include sts to allow the use of service account role - https://stackoverflow.com/a/73306570
-    implementation 'com.amazonaws:aws-java-sdk-sts:1.12.471'
+    implementation 'software.amazon.awssdk:ses'
     implementation 'org.yaml:snakeyaml:2.0'
     //object storage dependency
     implementation("io.micronaut.objectstorage:micronaut-object-storage-aws")
+    // include sts to allow the use of service account role - https://stackoverflow.com/a/73306570
     // this sts dependency is require by micronaut-aws-parameter-store,
     // not directly used by the app, for this reason keeping `runtimeOnly`
     runtimeOnly "software.amazon.awssdk:sts"
@@ -116,7 +116,7 @@ micronaut {
 //
 jib {
     from {
-        image = 'cr.seqera.io/public/nf-jdk:corretto-17.0.10-jemalloc'
+        image = 'cr.seqera.io/public/nf-jdk:corretto-17.0.10-al2023-jemalloc'
         platforms {
             platform { architecture = 'amd64'; os = 'linux' }
         }

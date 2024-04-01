@@ -20,8 +20,6 @@ package io.seqera.wave.service.builder
 
 import java.nio.file.Files
 import java.nio.file.Path
-import java.time.Duration
-import io.micronaut.core.annotation.Nullable
 
 import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
@@ -30,9 +28,10 @@ import io.kubernetes.client.openapi.ApiException
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
-import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.SpackConfig
+import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
 import io.seqera.wave.util.RegHelper
@@ -69,8 +68,11 @@ class KubeBuildStrategy extends BuildStrategy {
     @Inject
     private SpackConfig spackConfig
 
+    @Inject
+    private RegistryProxyService proxyService
+
     private String podName(BuildRequest req) {
-        return "build-${req.job}"
+        return "build-${req.buildId}"
     }
 
     @Override
@@ -101,10 +103,11 @@ class KubeBuildStrategy extends BuildStrategy {
             final terminated = k8sService.waitPod(pod, buildConfig.buildTimeout.toMillis())
             final stdout = k8sService.logsPod(name)
             if( terminated ) {
-                return BuildResult.completed(req.id, terminated.exitCode, stdout, req.startTime )
+                final digest = proxyService.getImageDigest(req.targetImage)
+                return BuildResult.completed(req.buildId, terminated.exitCode, stdout, req.startTime, digest)
             }
             else {
-                return BuildResult.completed(req.id, -1, stdout, req.startTime )
+                return BuildResult.failed(req.buildId, stdout, req.startTime )
             }
         }
         catch (ApiException e) {

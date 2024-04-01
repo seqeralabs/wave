@@ -19,12 +19,14 @@
 package io.seqera.wave.service.persistence
 
 import java.time.Instant
+import java.time.OffsetDateTime
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.FusionVersion
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.tower.User
@@ -151,6 +153,11 @@ class WaveContainerRecord {
      */
     final Boolean freeze
 
+    /**
+     * Whenever the request is for container with fusion
+     */
+    final String fusionVersion
+
     WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequestData data, String waveImage, String addr, Instant expiration) {
         this.user = data.identity.user
         this.workspaceId = request.towerWorkspaceId
@@ -167,12 +174,13 @@ class WaveContainerRecord {
         this.waveImage = waveImage
         this.expiration = expiration
         this.ipAddress = addr
-        final ts = parseOffsetDateTime(request.timestamp)
+        final ts = parseOffsetDateTime(request.timestamp) ?: OffsetDateTime.now()
         this.timestamp = ts?.toInstant()
         this.zoneId = ts?.getOffset()?.getId()
         this.buildId = data.buildId
         this.buildNew = data.buildId ? data.buildNew : null
         this.freeze = data.buildId ? data.freeze : null
+        this.fusionVersion = request?.containerConfig?.fusionVersion()?.number
     }
 
     WaveContainerRecord(WaveContainerRecord that, String sourceDigest, String waveDigest) {
@@ -195,6 +203,7 @@ class WaveContainerRecord {
         this.buildId = that.buildId
         this.buildNew = that.buildNew
         this.freeze = that.freeze
+        this.fusionVersion = that.fusionVersion
         // -- digest part 
         this.sourceDigest = sourceDigest
         this.waveDigest = waveDigest

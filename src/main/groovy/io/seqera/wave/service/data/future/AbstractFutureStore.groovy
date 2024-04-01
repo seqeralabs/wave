@@ -20,12 +20,16 @@ package io.seqera.wave.service.data.future
 
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeoutException
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.encoder.EncodingStrategy
+import jakarta.inject.Inject
+import jakarta.inject.Named
+
 /**
  * Implements a {@link FutureStore} that allow handling {@link CompletableFuture} objects
  * in a distributed environment.
@@ -49,6 +53,10 @@ abstract class AbstractFutureStore<V> implements FutureStore<String,V> {
 
     @Value('${wave.pairing.channel.awaitTimeout:100ms}')
     private volatile Duration pollInterval
+
+    @Inject
+    @Named('future-store-executor')
+    private ExecutorService executor
 
     AbstractFutureStore(FutureHash<String> store, EncodingStrategy<V> encodingStrategy) {
         this.store = store
@@ -85,7 +93,7 @@ abstract class AbstractFutureStore<V> implements FutureStore<String,V> {
                 // sleep for a while
                 sleep(pollInterval.toMillis())
             }
-        })
+        }, executor)
     }
 
     /**

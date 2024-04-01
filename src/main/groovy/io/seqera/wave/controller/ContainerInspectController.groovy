@@ -18,8 +18,8 @@
 
 package io.seqera.wave.controller
 
-
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -38,6 +38,8 @@ import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
+import jakarta.inject.Named
+
 /**
  * Implement container inspect capability
  *
@@ -59,12 +61,16 @@ class ContainerInspectController {
     private UserService userService
 
     @Inject
-    @Value('${tower.endpoint.url:`https://api.tower.nf`}')
+    @Value('${tower.endpoint.url:`https://api.cloud.seqera.io`}')
     private String towerEndpointUrl
 
     @Inject
     @Value('${wave.server.url}')
     private String serverUrl
+
+    @Inject
+    @Named(TaskExecutors.IO)
+    private ExecutorService ioExecutor
 
     @Post("/v1alpha1/inspect")
     CompletableFuture<HttpResponse<ContainerInspectResponse>> inspect(ContainerInspectRequest req) {
@@ -87,7 +93,7 @@ class ContainerInspectController {
         // find out the user associated with the specified tower access token
         return userService
                 .getUserByAccessTokenAsync(registration.endpoint, req.towerAccessToken)
-                .thenApply { User user -> makeResponse(req, PlatformId.of(user,req)) }
+                .thenApplyAsync({ User user -> makeResponse(req, PlatformId.of(user,req)) }, ioExecutor)
 
     }
 
