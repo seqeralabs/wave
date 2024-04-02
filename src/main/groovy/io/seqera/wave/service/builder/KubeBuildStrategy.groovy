@@ -72,7 +72,7 @@ class KubeBuildStrategy extends BuildStrategy {
     private RegistryProxyService proxyService
 
     protected String podName(BuildRequest req) {
-        return "build-${req.buildId}".replace('_', '-')
+        return "build-${req.buildId}".toString().replace('_', '-')
     }
 
     @Override
