@@ -34,7 +34,7 @@ dependencies {
     compileOnly("io.micronaut:micronaut-http-validation")
     implementation("jakarta.persistence:jakarta.persistence-api:3.0.0")
     api 'io.seqera:lib-mail:1.0.0'
-    api 'io.seqera:wave-api:0.8.0-beta1'
+    api 'io.seqera:wave-api:0.8.0-beta2'
     api 'io.seqera:wave-utils:0.12.0-beta1'
 
     implementation("io.micronaut:micronaut-http-client")
