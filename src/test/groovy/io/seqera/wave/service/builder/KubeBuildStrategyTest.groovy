@@ -111,4 +111,21 @@ class KubeBuildStrategyTest extends Specification {
         then:'should return singularity arm64 image'
         strategy.getBuildImage(req) == 'quay.io/singularity/singularity:v3.11.4-slim-arm64'
     }
+
+    def 'should get correct pod name for build' () {
+        given:
+        def USER = new PlatformId(new User(id:1, email: 'foo@user.com'))
+        def PATH = Files.createTempDirectory('test')
+        def repo = 'docker.io/wave'
+        def cache = 'docker.io/cache'
+        def req = new BuildRequest('from foo', PATH, repo, null, null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('amd64'),'{}', cache, null, "", null)
+        req = req.withBuildId('1')
+
+        when:
+        def podName = strategy.podName(req)
+
+        then:
+        req.buildId == '143ee73bcdac45b1_1'
+        podName == 'build-143ee73bcdac45b1-1'
+    }
 }

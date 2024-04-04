@@ -18,14 +18,12 @@
 
 package io.seqera.wave.service.aws
 
-import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
-import com.google.common.util.concurrent.UncheckedExecutionException
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -36,9 +34,8 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.ecr.EcrClient
 import software.amazon.awssdk.services.ecr.model.GetAuthorizationTokenRequest
-import software.amazon.awssdk.services.ecrpublic.model.GetAuthorizationTokenRequest as GetPublicAuthorizationTokenRequest
 import software.amazon.awssdk.services.ecrpublic.EcrPublicClient
-
+import software.amazon.awssdk.services.ecrpublic.model.GetAuthorizationTokenRequest as GetPublicAuthorizationTokenRequest
 /**
  * Implement AWS ECR login service
  *
@@ -131,8 +128,10 @@ class AwsEcrService {
             // fetch using the AWS ECR client
             return cache.get(new AwsCreds(accessKey,secretKey,region,isPublic))
         }
-        catch (UncheckedExecutionException | ExecutionException e) {
-            throw e.cause
+        catch (Exception e) {
+            final type = isPublic ? "ECR public" : "ECR"
+            final msg = "Unable to acquire AWS $type authorization token"
+            throw new AwsEcrAuthException(msg, e.cause ?: e)
         }
     }
 
