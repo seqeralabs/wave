@@ -468,7 +468,7 @@ class ContainerTokenControllerTest extends Specification {
         def persistence = Mock(PersistenceService)
         def controller = new ContainerTokenController(freezeService:  freeze, buildService: builder, dockerAuthService: dockerAuth,
                 registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService),
-                addressResolver: addressResolver, tokenService: tokenService, persistenceService: persistence)
+                addressResolver: addressResolver, tokenService: tokenService, persistenceService: persistence, serverUrl: 'http://wave.com')
 
         when:'packages with conda'
         def CHANNELS = ['conda-forge', 'defaults']
@@ -489,7 +489,7 @@ class ContainerTokenControllerTest extends Specification {
         verifyAll(response.body.get() as SubmitContainerTokenResponse) {
             targetImage == 'oras://docker.io/foo:9b266d5b5c455fe0'
             buildId == 'build123'
-            containerToken == 'wavetoken123'
+            containerToken == null
             cached == true
         }
     }

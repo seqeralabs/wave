@@ -22,9 +22,12 @@ import groovy.transform.CompileStatic
 import groovy.transform.PackageScope
 import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.config.CondaOpts
 import io.seqera.wave.config.SpackOpts
 import io.seqera.wave.exception.BadRequestException
+import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.token.TokenData
 import static io.seqera.wave.util.DockerHelper.addPackagesToSpackYaml
 import static io.seqera.wave.util.DockerHelper.condaEnvironmentToCondaYaml
 import static io.seqera.wave.util.DockerHelper.condaFileToDockerFile
@@ -145,5 +148,20 @@ class ContainerHelper {
         catch (IllegalArgumentException e) {
             throw new BadRequestException("Invalid '$field' attribute - make sure it encoded as a base64 string", e)
         }
+    }
+
+    static SubmitContainerTokenResponse makeResponseV1(ContainerRequestData data, TokenData token, String waveImage) {
+        final target = waveImage
+        final build = data.buildNew ? data.buildId : null
+        return new SubmitContainerTokenResponse(token.value, target, token.expiration, data.containerImage, build, null, null)
+    }
+
+    static SubmitContainerTokenResponse makeResponseV2(ContainerRequestData data, TokenData token, String waveImage) {
+        final target = data.freeze ? data.containerImage : waveImage
+        final build = data.buildId
+        final Boolean cached = !data.buildNew
+        final expiration = !data.freeze ? token.expiration : null
+        final tokenId = !data.freeze ? token.value : null
+        return new SubmitContainerTokenResponse(tokenId, target, expiration, null, build, cached, data.freeze)
     }
 }

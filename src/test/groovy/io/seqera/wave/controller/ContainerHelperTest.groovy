@@ -20,10 +20,14 @@ package io.seqera.wave.controller
 
 import spock.lang.Specification
 
+import java.time.Instant
+
 import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.config.CondaOpts
 import io.seqera.wave.config.SpackOpts
+import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.token.TokenData
 /**
  * Container helper methods
  *
@@ -305,5 +309,35 @@ class ContainerHelperTest extends Specification {
               specs: [foo, bar]
               concretizer: {unify: true, reuse: false}
             '''.stripIndent(true)
+    }
+
+    def 'should create response v1' () {
+        given:
+        def data = new ContainerRequestData(null,
+                'docker.io/some/container',
+                null,
+                null,
+                null,
+                null,
+                '123',
+                NEW_BUILD
+        )
+        def token = new TokenData('123abc', Instant.now().plusSeconds(100))
+        def target = 'wave.com/this/that'
+        when:
+        def result = ContainerHelper.makeResponseV1(data, token, target)
+        then:
+        result.containerToken == '123abc'
+        result.targetImage == 'wave.com/this/that'
+        result.expiration == token.expiration
+        result.containerImage == 'docker.io/some/container'
+        result.buildId == EXPECTED_BUILD_ID
+        result.cached == null
+        result.freeze == null
+
+        where: 
+        NEW_BUILD   | EXPECTED_BUILD_ID
+        false       | null
+        true        | '123'
     }
 }

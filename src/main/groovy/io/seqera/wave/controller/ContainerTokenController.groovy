@@ -78,6 +78,10 @@ import static ContainerHelper.condaFile0
 import static ContainerHelper.decodeBase64OrFail
 import static ContainerHelper.spackFile0
 import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
+
+import static io.seqera.wave.controller.ContainerHelper.makeResponseV2
+import static io.seqera.wave.controller.ContainerHelper.makeResponseV1
+
 /**
  * Implement a controller to receive container token requests
  * 
@@ -201,26 +205,18 @@ class ContainerTokenController {
         final ip = addressResolver.resolve(httpRequest)
         final data = makeRequestData(req, identity, ip)
         final token = tokenService.computeToken(data)
-        final target = v2 && data.freeze
-                                ? data.containerImage
-                                : targetImage(token.value, data.coordinates())
-        final build = v2
-                                ? data.buildId
-                                : (data.buildNew ? data.buildId : null)
-        final Boolean cached = v2
-                                ? !data.buildNew
-                                : null
-        final String container = !v2
-                                ? data.containerImage
-                                : null
-        final resp = new SubmitContainerTokenResponse(token.value, target, token.expiration, container, build, cached)
+        final target = targetImage(token.value, data.coordinates())
+        final resp = v2
+                        ? makeResponseV2(data, token, target)
+                        : makeResponseV1(data, token, target)
         // persist request
         storeContainerRequest0(req, data, token, target, ip)
         // log the response
-        log.debug "New container request fulfilled - token=$token.value; expiration=$token.expiration; container=$data.containerImage; build=$build; identity=$identity"
+        log.debug "New container request fulfilled - token=$token.value; expiration=$token.expiration; container=$data.containerImage; build=$resp.buildId; identity=$identity"
         // return response
         return HttpResponse.ok(resp)
     }
+
 
     protected void storeContainerRequest0(SubmitContainerTokenRequest req, ContainerRequestData data, TokenData token, String target, String ip) {
         try {
@@ -270,7 +266,7 @@ class ContainerTokenController {
                 offset)
     }
 
-   protected BuildTrack buildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
+    protected BuildTrack buildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
         final build = makeBuildRequest(req, identity, ip)
         final digest = registryProxyService.getImageDigest(build.targetImage)
         // check for dry-run execution
