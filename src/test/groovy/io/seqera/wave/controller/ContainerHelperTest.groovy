@@ -19,6 +19,7 @@
 package io.seqera.wave.controller
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.time.Instant
 
@@ -339,5 +340,38 @@ class ContainerHelperTest extends Specification {
         NEW_BUILD   | EXPECTED_BUILD_ID
         false       | null
         true        | '123'
+    }
+
+    @Unroll
+    def 'should create response v2' () {
+        given:
+        def data = new ContainerRequestData(null,
+                'docker.io/some/container',
+                null,
+                null,
+                null,
+                null,
+                '123',
+                NEW_BUILD,
+                FREEZE
+        )
+        def token = new TokenData('123abc', Instant.now().plusSeconds(100))
+        def target = 'wave.com/this/that'
+        when:
+        def result = ContainerHelper.makeResponseV2(data, token, target)
+        then:
+        verifyAll(result){
+            containerToken == TOKEN
+            targetImage == IMAGENAME
+            buildId == '123'
+            cached == CACHED
+            freeze == FREEZE
+        }
+        where:
+        NEW_BUILD   | FREEZE    | TOKEN     | IMAGENAME                 | CACHED
+        false       | false     | '123abc'  | 'wave.com/this/that'      | true
+        true        | true      | null      | 'docker.io/some/container'| false
+        false       | true      | null      | 'docker.io/some/container'| true
+        true        | false     | '123abc'  | 'wave.com/this/that'      | false
     }
 }
