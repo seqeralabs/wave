@@ -117,7 +117,8 @@ class ContainerTokenControllerTest extends Specification {
         def data = controller.makeRequestData(req, PlatformId.NULL, "")
         then:
         1 * freeze.freezeBuildRequest(req, _) >> req.copyWith(containerFile: 'FROM ubuntu:latest')
-        1 * controller.buildRequest(_,_,_) >> new BuildTrack('1', target, false)
+        1 * controller.makeBuildRequest(_,_,_) >> BUILD
+        1 * controller.checkBuild(BUILD,false) >> new BuildTrack('1', target, false)
         and:
         data.containerImage == target
 
@@ -151,7 +152,7 @@ class ContainerTokenControllerTest extends Specification {
         1 * proxyRegistry.getImageDigest(_) >> null
         1 * builder.buildImage(_) >> new BuildTrack('1', 'wave/build:be9ee6ac1eeff4b5')
         and:
-        data.containerFile == encode(DOCKER)
+        data.containerFile == DOCKER
         data.identity.userId == 100
         data.containerImage ==  'wave/build:be9ee6ac1eeff4b5'
         data.containerConfig == cfg
@@ -180,7 +181,7 @@ class ContainerTokenControllerTest extends Specification {
         1 * persistenceService.loadBuild(_,'abc')
         0 * builder.buildImage(_) >> null
         and:
-        data.containerFile == encode(DOCKER)
+        data.containerFile == DOCKER
         data.identity.userId == 100
         data.containerImage ==  'wave/build:be9ee6ac1eeff4b5'
         data.containerConfig == cfg
@@ -209,7 +210,7 @@ class ContainerTokenControllerTest extends Specification {
         1 * proxyRegistry.getImageDigest(_) >> '123'
         0 * builder.buildImage(_) >> null
         and:
-        data.containerFile == encode(DOCKER)
+        data.containerFile == DOCKER
         data.identity.userId == 100
         data.containerImage ==  'wave/build:be9ee6ac1eeff4b5'
         data.containerConfig == cfg
