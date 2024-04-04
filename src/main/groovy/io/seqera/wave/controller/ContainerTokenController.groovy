@@ -303,8 +303,8 @@ class ContainerTokenController {
             final build = makeBuildRequest(req, identity, ip)
             final track = checkBuild(build, req.dryRun)
             targetImage = track.targetImage
-            targetContent = build.containerFile?.trim()
-            condaContent = build.condaFile?.trim()
+            targetContent = build.containerFile
+            condaContent = build.condaFile
             buildId = track.id
             buildNew = !track.cached
         }
