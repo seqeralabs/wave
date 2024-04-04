@@ -325,6 +325,7 @@ class ContainerHelperTest extends Specification {
         )
         def token = new TokenData('123abc', Instant.now().plusSeconds(100))
         def target = 'wave.com/this/that'
+
         when:
         def result = ContainerHelper.makeResponseV1(data, token, target)
         then:
@@ -357,6 +358,7 @@ class ContainerHelperTest extends Specification {
         )
         def token = new TokenData('123abc', Instant.now().plusSeconds(100))
         def target = 'wave.com/this/that'
+
         when:
         def result = ContainerHelper.makeResponseV2(data, token, target)
         then:
@@ -367,6 +369,7 @@ class ContainerHelperTest extends Specification {
             cached == CACHED
             freeze == FREEZE
         }
+
         where:
         NEW_BUILD   | FREEZE    | TOKEN     | IMAGENAME                 | CACHED
         false       | false     | '123abc'  | 'wave.com/this/that'      | true
