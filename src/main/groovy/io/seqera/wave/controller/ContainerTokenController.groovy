@@ -266,11 +266,10 @@ class ContainerTokenController {
                 offset)
     }
 
-    protected BuildTrack buildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
-        final build = makeBuildRequest(req, identity, ip)
+    protected BuildTrack checkBuild(BuildRequest build, boolean dryRun) {
         final digest = registryProxyService.getImageDigest(build.targetImage)
         // check for dry-run execution
-        if( req.dryRun ) {
+        if( dryRun ) {
             log.debug "== Dry-run build request: $build"
             final dryId = build.containerId +  BuildRequest.SEP + '0'
             final cached = digest!=null
@@ -314,12 +313,13 @@ class ContainerTokenController {
         String buildId
         boolean buildNew
         if( req.containerFile ) {
-            final build = buildRequest(req, identity, ip)
-            targetImage = build.targetImage
-            targetContent = req.containerFile
-            condaContent = req.condaFile
-            buildId = build.id
-            buildNew = !build.cached
+            final build = makeBuildRequest(req, identity, ip)
+            final track = checkBuild(build, req.dryRun)
+            targetImage = track.targetImage
+            targetContent = build.containerFile
+            condaContent = build.condaFile
+            buildId = track.id
+            buildNew = !track.cached
         }
         else if( req.containerImage ) {
             // normalize container image
