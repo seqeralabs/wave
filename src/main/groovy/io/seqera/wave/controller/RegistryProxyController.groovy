@@ -19,6 +19,7 @@
 package io.seqera.wave.controller
 
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 import java.util.function.Consumer
 
 import groovy.transform.CompileStatic
@@ -58,6 +59,7 @@ import io.seqera.wave.storage.LazyDigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.util.Retryable
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Mono
 /**
@@ -104,6 +106,10 @@ class RegistryProxyController {
     @Inject
     private MetricsService metricsService
 
+    @Inject
+    @Named(TaskExecutors.IO)
+    private ExecutorService executor
+
     @Value('${wave.cache.digestStore.maxWeightMb:350}')
     int cacheMaxWeightMb
 
@@ -135,10 +141,10 @@ class RegistryProxyController {
 
         //increment metrics
         if( httpRequest.method==HttpMethod.GET && (route.manifest || route.isTag()) ) {
-            CompletableFuture.supplyAsync (() -> metricsService.incrementPullsCounter(route.identity.accessToken))
+            CompletableFuture.supplyAsync (() -> metricsService.incrementPullsCounter(route.identity.user.email), executor)
             final version = route.request?.containerConfig?.fusionVersion()
             if( version ) {
-                CompletableFuture.supplyAsync (() -> metricsService.incrementFusionPullsCounter(route.identity.accessToken))
+                CompletableFuture.supplyAsync (() -> metricsService.incrementFusionPullsCounter(route.identity.user.email), executor)
             }
         }
 

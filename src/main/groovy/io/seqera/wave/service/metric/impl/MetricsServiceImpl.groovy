@@ -23,9 +23,6 @@ import java.time.format.DateTimeFormatter
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.cache.annotation.Cacheable
-import io.micronaut.core.annotation.Nullable
-import io.seqera.wave.service.license.LicenseManClient
 import io.seqera.wave.service.metric.MetricConstants
 import io.seqera.wave.service.metric.MetricsCounterStore
 import io.seqera.wave.service.metric.MetricsService
@@ -43,10 +40,6 @@ class MetricsServiceImpl implements MetricsService {
 
     @Inject
     private MetricsCounterStore metricsCounterStore
-
-    @Inject
-    @Nullable
-    private LicenseManClient licenseManager
 
     DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
@@ -66,8 +59,8 @@ class MetricsServiceImpl implements MetricsService {
     }
 
     @Override
-    void incrementFusionPullsCounter(String token){
-        def org = getOrg(token)
+    void incrementFusionPullsCounter(String email){
+        def org = getOrg(email)
         def key = getFusionPullsKey(LocalDate.now().format(dateFormatter), null)
             metricsCounterStore.inc(key)
         log.trace("increment Fusion Pulls Count: $key")
@@ -80,8 +73,8 @@ class MetricsServiceImpl implements MetricsService {
     }
 
     @Override
-    void incrementBuildsCounter(String token){
-        def org = getOrg(token)
+    void incrementBuildsCounter(String email){
+        def org = getOrg(email)
         def key = getBuildsKey(LocalDate.now().format(dateFormatter), null)
         metricsCounterStore.inc(key)
         log.trace("increment Builds Count: $key")
@@ -94,8 +87,8 @@ class MetricsServiceImpl implements MetricsService {
     }
 
     @Override
-    void incrementPullsCounter(String token) {
-        def org = getOrg(token)
+    void incrementPullsCounter(String email) {
+        def org = getOrg(email)
         def key = getPullsKey(LocalDate.now().format(dateFormatter), null)
         metricsCounterStore.inc(key)
         log.trace("increment Pulls Count: $key")
@@ -107,9 +100,13 @@ class MetricsServiceImpl implements MetricsService {
         }
     }
 
-    @Cacheable('cache-1min')
-    protected String getOrg(String token) {
-        return licenseManager && token ? licenseManager.checkToken(token, "tower-enterprise").organization : null
+    protected static String getOrg(String email) {
+        def matcher = email =~ /@(.+)$/
+        if (matcher.find()) {
+            return matcher.group(1)
+        } else {
+            return null
+        }
     }
 
     protected static String getFusionPullsKey(String day, String org){

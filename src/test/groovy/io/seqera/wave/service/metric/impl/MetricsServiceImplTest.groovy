@@ -21,13 +21,10 @@ package io.seqera.wave.service.metric.impl
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import java.security.Key
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 import io.seqera.wave.service.counter.impl.LocalCounterProvider
-import io.seqera.wave.service.license.CheckTokenResponse
-import io.seqera.wave.service.license.LicenseManClient
 import io.seqera.wave.service.metric.MetricsCounterStore
 /**
  *
@@ -42,28 +39,17 @@ class MetricsServiceImplTest extends Specification {
         def date = LocalDate.now().format(dateFormatter)
         def localCounterProvider = new LocalCounterProvider()
         def metricsCounterStore = new MetricsCounterStore(localCounterProvider)
-        def licMan = Mock(LicenseManClient)
-        def metricsService = new MetricsServiceImpl(licenseManager: licMan, metricsCounterStore: metricsCounterStore)
+        def metricsService = new MetricsServiceImpl(metricsCounterStore: metricsCounterStore)
 
         when:
-        metricsService.incrementBuildsCounter('token1')
-        then:
-        1 * licMan.checkToken('token1', _) >> new CheckTokenResponse(organization: 'org1')
-
-        when:
-        metricsService.incrementBuildsCounter('token2')
-        then:
-        1 * licMan.checkToken('token2', _) >> new CheckTokenResponse(organization: 'org2')
-
-        when:
+        metricsService.incrementBuildsCounter('user1@org1.com')
+        metricsService.incrementBuildsCounter('user2@org2.com')
         metricsService.incrementBuildsCounter(null)
-        then:
-        0 * licMan.checkToken(_, _)
 
-        and:
+        then:
         metricsService.getBuildsMetrics(date, null) == 3
-        metricsService.getBuildsMetrics(null, 'org1') == 1
-        metricsService.getBuildsMetrics(date, 'org2') == 1
+        metricsService.getBuildsMetrics(null, 'org1.com') == 1
+        metricsService.getBuildsMetrics(date, 'org2.com') == 1
 
     }
 
@@ -72,27 +58,16 @@ class MetricsServiceImplTest extends Specification {
         def date = LocalDate.now().format(dateFormatter)
         def localCounterProvider = new LocalCounterProvider()
         def metricsCounterStore = new MetricsCounterStore(localCounterProvider)
-        def licMan = Mock(LicenseManClient)
-        def metricsService = new MetricsServiceImpl(licenseManager: licMan, metricsCounterStore: metricsCounterStore)
+        def metricsService = new MetricsServiceImpl(metricsCounterStore: metricsCounterStore)
 
         when:
-        metricsService.incrementPullsCounter('token1')
-        then:
-        1 * licMan.checkToken('token1', _) >> new CheckTokenResponse(organization: 'org1')
-
-        when:
-        metricsService.incrementPullsCounter('token2')
-        then:
-        1 * licMan.checkToken('token2', _) >> new CheckTokenResponse(organization: 'org2')
-
-        when:
+        metricsService.incrementPullsCounter('user1@org1.com')
+        metricsService.incrementPullsCounter('user2@org2.com')
         metricsService.incrementPullsCounter(null)
-        then:
-        0 * licMan.checkToken(_, _)
 
-        and:
-        metricsService.getPullsMetrics(null, 'org1') == 1
-        metricsService.getPullsMetrics(date, 'org2') == 1
+        then:
+        metricsService.getPullsMetrics(null, 'org1.com') == 1
+        metricsService.getPullsMetrics(date, 'org2.com') == 1
         metricsService.getPullsMetrics(date, null) == 3
 
     }
@@ -102,27 +77,16 @@ class MetricsServiceImplTest extends Specification {
         def date = LocalDate.now().format(dateFormatter)
         def localCounterProvider = new LocalCounterProvider()
         def metricsCounterStore = new MetricsCounterStore(localCounterProvider)
-        def licMan = Mock(LicenseManClient)
-        def metricsService = new MetricsServiceImpl(licenseManager: licMan, metricsCounterStore: metricsCounterStore)
+        def metricsService = new MetricsServiceImpl(metricsCounterStore: metricsCounterStore)
 
         when:
-        metricsService.incrementFusionPullsCounter('token1')
-        then:
-        1 * licMan.checkToken('token1', _) >> new CheckTokenResponse(organization: 'org1')
-
-        when:
-        metricsService.incrementFusionPullsCounter('token2')
-        then:
-        1 * licMan.checkToken('token2', _) >> new CheckTokenResponse(organization: 'org2')
-
-        when:
+        metricsService.incrementFusionPullsCounter('user1@org1.com')
+        metricsService.incrementFusionPullsCounter('user2@org2.com')
         metricsService.incrementFusionPullsCounter(null)
-        then:
-        0 * licMan.checkToken(_, _)
 
-        and:
-        metricsService.getFusionPullsMetrics(null, 'org1') == 1
-        metricsService.getFusionPullsMetrics(date, 'org2') == 1
+        then:
+        metricsService.getFusionPullsMetrics(null, 'org1.com') == 1
+        metricsService.getFusionPullsMetrics(date, 'org2.com') == 1
         metricsService.getFusionPullsMetrics(date, null) == 3
 
     }
@@ -164,5 +128,19 @@ class MetricsServiceImplTest extends Specification {
         null            | 'wave'    | 'fusion/o/wave'
         '2024-03-25'    | 'wave'    | 'fusion/o/wave/d/2024-03-25'
         '2024-03-25'    | null      | 'fusion/d/2024-03-25'
+    }
+
+    @Unroll
+    def'should get correct org name'(){
+        expect:
+        MetricsServiceImpl.getOrg(EMAIL) == ORG
+
+        where:
+        EMAIL               | ORG
+        'user@example.com'  | 'example.com'
+        'john.doe@test.org' | 'test.org'
+        'foo@bar.co.uk'     | 'bar.co.uk'
+        'invalid_email'     | null
+        null                | null
     }
 }

@@ -18,7 +18,6 @@
 
 package io.seqera.wave.controller
 
-import spock.lang.Shared
 import spock.lang.Specification
 
 import java.time.Duration
@@ -27,9 +26,6 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.client.WireMock
 import io.micronaut.context.annotation.Property
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
@@ -40,9 +36,7 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.ContainerRequestData
-import io.seqera.wave.service.license.CheckTokenResponse
 import io.seqera.wave.service.metric.MetricsService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
@@ -56,11 +50,7 @@ import jakarta.inject.Inject
  */
 @MicronautTest
 @Property(name = 'wave.metrics.enabled', value = 'true')
-@Property(name = 'license.server.url', value = 'http://localhost:7273')
 class MetricsControllerTest extends Specification {
-
-    @Shared
-    WireMockServer wiremockServer
 
     @Inject
     @Client("/")
@@ -77,28 +67,6 @@ class MetricsControllerTest extends Specification {
     DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
     def setup() {
-        wiremockServer = new WireMockServer(7273)
-        wiremockServer.start()
-        WireMock.configureFor("localhost", 7273)
-
-        def objectMapper = new ObjectMapper()
-
-        def checkTokenResponse = new CheckTokenResponse(organization: "org1")
-        def token1Response = objectMapper.writeValueAsString(checkTokenResponse)
-        checkTokenResponse = new CheckTokenResponse(organization: "org2")
-        def token2Response = objectMapper.writeValueAsString(checkTokenResponse)
-
-        WireMock.stubFor(WireMock.get(WireMock.urlEqualTo("/check?token=token1&product=tower-enterprise"))
-                .willReturn(WireMock.aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(token1Response)))
-        WireMock.stubFor(WireMock.get(WireMock.urlEqualTo("/check?token=token2&product=tower-enterprise"))
-                .willReturn(WireMock.aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(token2Response)))
-
         //add build records
         def build1 = new WaveBuildRecord(
                 buildId: 'test1',
@@ -521,8 +489,8 @@ class MetricsControllerTest extends Specification {
     def 'should get the correct builds count and http status code 200'() {
         given:
         def date = LocalDate.now().format(dateFormatter)
-        metricsService.incrementBuildsCounter('token1')
-        metricsService.incrementBuildsCounter('token2')
+        metricsService.incrementBuildsCounter('user1@org1.com')
+        metricsService.incrementBuildsCounter('user1@org2.com')
         metricsService.incrementBuildsCounter(null)
         when:'only date is provided'
         def req = HttpRequest.GET("/v1alpha2/metrics/builds?date=$date").basicAuth("username", "password")
@@ -533,7 +501,7 @@ class MetricsControllerTest extends Specification {
         res.status.code == 200
 
         when:'when date and org is provided'
-        req = HttpRequest.GET("/v1alpha2/metrics/builds?date=$date&org=org1").basicAuth("username", "password")
+        req = HttpRequest.GET("/v1alpha2/metrics/builds?date=$date&org=org1.com").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
@@ -545,8 +513,8 @@ class MetricsControllerTest extends Specification {
     def 'should get the correct pulls count and http status code 200'() {
         given:
         def date = LocalDate.now().format(dateFormatter)
-        metricsService.incrementPullsCounter('token1')
-        metricsService.incrementPullsCounter('token2')
+        metricsService.incrementPullsCounter('user1@org1.com')
+        metricsService.incrementPullsCounter('user2@org2.com')
         metricsService.incrementPullsCounter(null)
 
         when:'only date is provided'
@@ -558,7 +526,7 @@ class MetricsControllerTest extends Specification {
         res.status.code == 200
 
         when:'when date and org is provided'
-        req = HttpRequest.GET("/v1alpha2/metrics/pulls?date=$date&org=org1").basicAuth("username", "password")
+        req = HttpRequest.GET("/v1alpha2/metrics/pulls?date=$date&org=org2.com").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
@@ -570,8 +538,8 @@ class MetricsControllerTest extends Specification {
     def 'should get the correct fusion pulls count and http status code 200'() {
         given:
         def date = LocalDate.now().format(dateFormatter)
-        metricsService.incrementFusionPullsCounter('token1')
-        metricsService.incrementFusionPullsCounter('token2')
+        metricsService.incrementFusionPullsCounter('user1@org1.com')
+        metricsService.incrementFusionPullsCounter('user2@org2.com')
         metricsService.incrementFusionPullsCounter(null)
 
         when:'only date is provided'
@@ -583,7 +551,7 @@ class MetricsControllerTest extends Specification {
         res.status.code == 200
 
         when:'when date and org is provided'
-        req = HttpRequest.GET("/v1alpha2/metrics/fusion/pulls?date=$date&org=org1").basicAuth("username", "password")
+        req = HttpRequest.GET("/v1alpha2/metrics/fusion/pulls?date=$date&org=org2.com").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
@@ -610,9 +578,5 @@ class MetricsControllerTest extends Specification {
         e = thrown(HttpClientResponseException)
         e.message == 'Either date or org query parameter must be provided'
         e.status.code == 400
-    }
-
-    def cleanup() {
-        wiremockServer.stop()
     }
 }
