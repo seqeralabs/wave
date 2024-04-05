@@ -16,19 +16,21 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.exception
+package io.seqera.wave.service.aws
 
 import groovy.transform.CompileStatic
+import io.seqera.wave.exception.WaveException
 
 /**
- * Exception raised when an unexpected error is throw reading a binary stream
- * via {@link io.seqera.wave.util.TimedInputStream}
+ * Exception thrown when there's a AWS ECR authorization failure
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-class UnexpectedReadException extends IOException {
-    UnexpectedReadException(String message, Throwable t) {
-        super(message, t)
+class AwsEcrAuthException extends WaveException {
+
+    AwsEcrAuthException(String msg, Throwable t) {
+        super(msg, t)
     }
+
 }
