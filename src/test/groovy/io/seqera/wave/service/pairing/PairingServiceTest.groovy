@@ -154,4 +154,15 @@ class PairingServiceTest extends Specification{
         // they match
         return sig.verify(signature)
     }
+
+    def 'should patch endpoints' () {
+        expect:
+        PairingServiceImpl.patch0(ENDPOINT) == EXPECTED
+
+        where:
+        ENDPOINT                        | EXPECTED
+        'http://foo.com'                | 'http://foo.com'
+        'https://api.tower.nf'          | 'https://api.cloud.seqera.io'
+        'https://api.stage-tower.net'   | 'https://api.cloud.stage-seqera.io'
+    }
 }
