@@ -24,7 +24,6 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.tower.PlatformId
-import io.seqera.wave.tower.User
 import static io.seqera.wave.util.StringUtils.trunc
 /**
  * Model a container request
@@ -44,20 +43,9 @@ class ContainerRequestData {
     final String buildId
     final Boolean buildNew
     final Boolean freeze
-    // deprecated fields
-    final @Deprecated Long userId
-    final @Deprecated Long workspaceId
-    final @Deprecated String towerToken
-    final @Deprecated String towerEndpoint
 
     PlatformId getIdentity() {
-        return identity ?: legacyId()
-    }
-
-    private PlatformId legacyId() {
-        return userId 
-                ? new PlatformId(new User(id:userId), workspaceId, towerToken, towerEndpoint)
-                : PlatformId.NULL
+        return identity
     }
 
     ContainerCoordinates coordinates() { ContainerCoordinates.parse(containerImage) }

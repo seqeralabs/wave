@@ -147,11 +147,6 @@ class MoshiEncodingStrategyTest extends Specification {
         result.buildId == 'build-123'
         result.buildNew
         result.freeze
-        and:
-        !result.userId
-        !result.workspaceId
-        !result.towerToken
-        !result.towerEndpoint
     }
 
     def 'should deserialize legacy request data' () {
