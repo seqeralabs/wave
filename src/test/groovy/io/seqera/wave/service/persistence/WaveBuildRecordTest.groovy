@@ -25,13 +25,14 @@ import java.time.Duration
 import java.time.Instant
 
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.exchange.BuildStatusResponse
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.JacksonHelper
+import io.seqera.wave.api.BuildStatusResponse
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>

@@ -20,15 +20,22 @@ package io.seqera.wave.controller
 
 import spock.lang.Specification
 
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+
 import io.micronaut.context.annotation.Property
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
+import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
+import io.seqera.wave.config.CondaOpts
+import io.seqera.wave.config.SpackOpts
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
@@ -38,12 +45,15 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildTrack
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.builder.FreezeService
+import io.seqera.wave.service.builder.FreezeServiceImpl
 import io.seqera.wave.service.inclusion.ContainerInclusionService
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.service.pairing.PairingRecord
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.token.ContainerTokenService
+import io.seqera.wave.service.token.TokenData
 import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
@@ -447,4 +457,104 @@ class ContainerTokenControllerTest extends Specification {
         noExceptionThrown()
 
     }
+
+    def 'should create response with conda packages' () {
+        given:
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def freeze = new FreezeServiceImpl( inspectService: dockerAuth)
+        def builder = Mock(ContainerBuildService)
+        def proxyRegistry = Mock(RegistryProxyService)
+        def addressResolver = Mock(HttpClientAddressResolver)
+        def tokenService = Mock(ContainerTokenService)
+        def persistence = Mock(PersistenceService)
+        def controller = new ContainerTokenController(freezeService:  freeze, buildService: builder, dockerAuthService: dockerAuth,
+                registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService),
+                addressResolver: addressResolver, tokenService: tokenService, persistenceService: persistence, serverUrl: 'http://wave.com')
+
+        when:'packages with conda'
+        def CHANNELS = ['conda-forge', 'defaults']
+        def CONDA_OPTS = new CondaOpts([basePackages: 'foo::one bar::two'])
+        def PACKAGES = ['https://foo.com/lock.yml']
+        def packagesSpec = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
+        def req = new SubmitContainerTokenRequest(format: 'sif', packages: packagesSpec, freeze: true, buildRepository: 'docker.io/foo', towerAccessToken: '123')
+        def user = new User(email: 'foo@bar.com', userName: 'foo')
+        def id = PlatformId.of(user, req)
+        def response = controller.makeResponse(null, req, id, true)
+
+        then:
+        1 * builder.buildImage(_) >> new BuildTrack('build123', 'oras://docker.io/foo:9b266d5b5c455fe0', true)
+        and:
+        1 * tokenService.computeToken(_) >> new TokenData('wavetoken123', Instant.now().plus(1, ChronoUnit.HOURS))
+        and:
+        response.status.code == 200
+        verifyAll(response.body.get() as SubmitContainerTokenResponse) {
+            targetImage == 'oras://docker.io/foo:9b266d5b5c455fe0'
+            buildId == 'build123'
+            containerToken == null
+            cached == true
+        }
+    }
+
+    def 'should create response with spack packages' () {
+        given:
+        def dockerAuth = Mock(ContainerInspectServiceImpl)
+        def freeze = new FreezeServiceImpl( inspectService: dockerAuth)
+        def builder = Mock(ContainerBuildService)
+        def proxyRegistry = Mock(RegistryProxyService)
+        def addressResolver = Mock(HttpClientAddressResolver)
+        def tokenService = Mock(ContainerTokenService)
+        def persistence = Mock(PersistenceService)
+        def controller = new ContainerTokenController(freezeService:  freeze, buildService: builder, dockerAuthService: dockerAuth,
+                registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService),
+                addressResolver: addressResolver, tokenService: tokenService, persistenceService: persistence, serverUrl: 'https://wave.seqera.io')
+
+        when:'packages with spack'
+        def SPACK_OPTS = new SpackOpts([
+                basePackages: 'foo bar',
+                commands: ['run','--this','--that']
+        ])
+        def packages = new PackagesSpec(type: PackagesSpec.Type.SPACK, spackOpts: SPACK_OPTS)
+        def req = new SubmitContainerTokenRequest(format: 'docker', packages: packages)
+        def response = controller.makeResponse(null, req, new PlatformId(new User(id: 100), 10), true)
+
+        then:
+        1 * builder.buildImage(_) >> new BuildTrack('build123', 'foo:1234', true)
+        and:
+        1 * tokenService.computeToken(_) >> new TokenData('wavetoken123', Instant.now().plus(1, ChronoUnit.HOURS))
+        and:
+        response.status.code == 200
+        verifyAll(response.body.get() as SubmitContainerTokenResponse) {
+            targetImage == 'wave.seqera.io/wt/wavetoken123/library/foo:1234'
+            buildId == 'build123'
+            containerToken == 'wavetoken123'
+            cached == true
+        }
+    }
+
+    def 'should throw BadRequestException when more than one artifact (container image, container file or packages) is provided in the request' () {
+        given:
+        def controller = new ContainerTokenController(inclusionService: Mock(ContainerInclusionService), allowAnonymous: false)
+
+        when: 'container access token is not provided'
+        def req = new SubmitContainerTokenRequest(packages: new PackagesSpec())
+        controller.makeResponse(null, req, null, true)
+        then:
+        def e = thrown(BadRequestException)
+        e.message == "Missing user access token"
+
+        when: 'container image  and container file and packages are provided'
+        req = new SubmitContainerTokenRequest(containerFile: 'from foo', packages: new PackagesSpec())
+        controller.makeResponse(null, req, new PlatformId(new User(id: 100)), true)
+        then:
+        e = thrown(BadRequestException)
+        e.message == "Attribute `containerFile` and `packages` conflicts each other"
+
+        when: 'packages are provided without v2'
+        req = new SubmitContainerTokenRequest(packages: new PackagesSpec())
+        controller.makeResponse(null, req, new PlatformId(new User(id: 100)), false)
+        then:
+        e = thrown(BadRequestException)
+        e.message == "Attribute `packages` is not allowed"
+    }
+
 }

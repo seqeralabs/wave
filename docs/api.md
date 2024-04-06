@@ -45,6 +45,7 @@ The endpoint returns the name of the container request made available by Wave.
     towerWorkspaceId: number,
 }
 ```
+#### container token request attributes 
 
 | Attribute                           | Description                                                                                                                                        |
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -85,6 +86,90 @@ The endpoint returns the name of the container request made available by Wave.
 | `containerToken` | The unique token identifying the Wave container request e.g. `0123456789`.               |
 | `targetImage`    | The Wave container image name e.g. `wave.seqera.io/wt/0123456789/library/ubuntu:latest`. |
 | `expiration`     | The expiration timestamp of the Wave container using ISO-8601 format.                    |
+
+## `/v1alpha2/container`
+
+This endpoint allows you to submit a request to access a private container repository via Wave, or build a container image on-the-fly with a Dockerfile or Conda recipe file.
+
+The endpoint returns the name of the container request made available by Wave.
+
+### Request
+
+```json
+{
+    containerImage: string,
+    containerFile: string,
+    containerConfig: {
+        entrypoint: string[],
+        cmd: string[],
+        env: string[],
+        workingDir: string
+        layers: [
+            {
+                location: string,
+                gzipDigest: string,
+                gzipSize: string,
+                tarDigest: string
+            },
+            ...
+        ]
+    },
+    condaFile: string,
+    spackFile: string,
+    containerPlatform: string,
+    buildRepository: string,
+    cacheRepository: string,
+    timestamp: string,
+    fingerprint: string,
+    freeze: boolean,
+    towerAccessToken: string,
+    towerRefreshToken: string,
+    towerEndpoint: string,
+    towerWorkspaceId: number,
+    packages: {
+                  type: string,
+                  packages: string[],
+                  channels: string[],
+                  envFile: string,
+                  condaOpts: {
+                                mambaImage: string,
+                                commands: string[],
+                                basePackages: string
+                              }
+                  spackOpts:{
+                                commands: string[],
+                                basePackages: string
+                            }                     
+                  
+              }
+}
+```
+
+Note: You can read the description of al attributes except packages from [here](#container-token-request-attributes)
+
+
+| Attribute      | Description                                                                 |
+|----------------|-----------------------------------------------------------------------------|
+| `packages`     | this object specifies conda or spack packages environment information       |
+| `type`         | This represents the type of package builder. you can use `SPACK` or `CONDA` |
+| `packages`     | List of the packages names                                                  |
+| `channels`     | List of conda channels, which will be used to download packages             |
+| `envFile`      | The package environment file encoded as a base64 string.                    |
+| `mambaImage`   | Name of the docker image to be used in building conda containers            |
+| `commands`     | Command to be included in the container                                     |
+| `basePackages` | Names of base packages                                                      |
+
+### Response
+
+```json
+{
+    containerToken: string,
+    targetImage: string,
+    expiration: string,
+    buildId: string,
+    cached: boolean 
+}
+```
 
 ## `/service-info`
 

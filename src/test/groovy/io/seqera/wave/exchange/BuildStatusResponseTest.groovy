@@ -23,6 +23,7 @@ import spock.lang.Specification
 import java.time.Duration
 import java.time.Instant
 
+import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.util.JacksonHelper
 
 /**
