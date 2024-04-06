@@ -217,7 +217,6 @@ class ContainerTokenController {
         return HttpResponse.ok(resp)
     }
 
-
     protected void storeContainerRequest0(SubmitContainerTokenRequest req, ContainerRequestData data, TokenData token, String target, String ip) {
         try {
             final recrd = new WaveContainerRecord(req, data, target, ip, token.expiration)
