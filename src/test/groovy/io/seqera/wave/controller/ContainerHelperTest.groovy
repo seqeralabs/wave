@@ -49,7 +49,7 @@ class ContainerHelperTest extends Specification {
         then:
         result =='''\
                 BootStrap: docker
-                From: mambaorg/micromamba:1.5.5
+                From: mambaorg/micromamba:1.5.8-lunar
                 %post
                     micromamba install -y -n base -c conda-forge -c defaults -f https://foo.com/lock.yml
                     micromamba install -y -n base foo::one bar::two
@@ -72,7 +72,7 @@ class ContainerHelperTest extends Specification {
 
         then:
         result =='''\
-                FROM mambaorg/micromamba:1.5.5
+                FROM mambaorg/micromamba:1.5.8-lunar
                 RUN \\
                     micromamba install -y -n base -c conda-forge -c defaults -f https://foo.com/lock.yml \\
                     && micromamba install -y -n base foo::one bar::two \\
@@ -96,7 +96,7 @@ class ContainerHelperTest extends Specification {
         then:
         result =='''\
                 BootStrap: docker
-                From: mambaorg/micromamba:1.5.5
+                From: mambaorg/micromamba:1.5.8-lunar
                 %files
                     {{wave_context_dir}}/conda.yml /scratch/conda.yml
                 %post
@@ -120,7 +120,7 @@ class ContainerHelperTest extends Specification {
 
         then:
         result =='''\
-                FROM mambaorg/micromamba:1.5.5
+                FROM mambaorg/micromamba:1.5.8-lunar
                 COPY --chown=$MAMBA_USER:$MAMBA_USER conda.yml /tmp/conda.yml
                 RUN micromamba install -y -n base -f /tmp/conda.yml \\
                     && micromamba install -y -n base foo::one bar::two \\
