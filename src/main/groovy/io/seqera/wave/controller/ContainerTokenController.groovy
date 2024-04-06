@@ -74,9 +74,9 @@ import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
 import static io.seqera.wave.WaveDefault.TOWER
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
-import static ContainerHelper.condaFile0
+import static ContainerHelper.condaFileFromRequest
 import static ContainerHelper.decodeBase64OrFail
-import static ContainerHelper.spackFile0
+import static ContainerHelper.spackFileFromRequest
 import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
 
 import static io.seqera.wave.controller.ContainerHelper.makeResponseV2
@@ -198,7 +198,7 @@ class ContainerTokenController {
 
         if( v2 && req.packages ) {
             // generate the container file required to assemble the container
-            final generated = ContainerHelper.createContainerFile(req.packages, req.formatSingularity())
+            final generated = ContainerHelper.containerFileFromPackages(req.packages, req.formatSingularity())
             req = req.copyWith(containerFile: generated.bytes.encodeBase64().toString())
         }
 
@@ -237,8 +237,8 @@ class ContainerTokenController {
             throw new BadRequestException("Missing build cache repository attribute")
 
         final containerSpec = decodeBase64OrFail(req.containerFile, 'containerFile')
-        final condaContent = condaFile0(req)
-        final spackContent = spackFile0(req)
+        final condaContent = condaFileFromRequest(req)
+        final spackContent = spackFileFromRequest(req)
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
         final build = req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository ? buildConfig.defaultPublicRepository : buildConfig.defaultBuildRepository)

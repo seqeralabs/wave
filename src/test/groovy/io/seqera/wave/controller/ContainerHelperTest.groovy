@@ -44,7 +44,7 @@ class ContainerHelperTest extends Specification {
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
 
         when:
-        def result = ContainerHelper.createContainerFile(packages, true)
+        def result = ContainerHelper.containerFileFromPackages(packages, true)
 
         then:
         result =='''\
@@ -68,7 +68,7 @@ class ContainerHelperTest extends Specification {
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
 
         when:
-        def result = ContainerHelper.createContainerFile(packages, false)
+        def result = ContainerHelper.containerFileFromPackages(packages, false)
 
         then:
         result =='''\
@@ -91,7 +91,7 @@ class ContainerHelperTest extends Specification {
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
 
         when:
-        def result = ContainerHelper.createContainerFile(packages, true)
+        def result = ContainerHelper.containerFileFromPackages(packages, true)
 
         then:
         result =='''\
@@ -116,7 +116,7 @@ class ContainerHelperTest extends Specification {
         def packages = new PackagesSpec(type: PackagesSpec.Type.CONDA, entries:  PACKAGES, channels: CHANNELS, condaOpts: CONDA_OPTS)
 
         when:
-        def result = ContainerHelper.createContainerFile(packages, false)
+        def result = ContainerHelper.containerFileFromPackages(packages, false)
 
         then:
         result =='''\
@@ -139,7 +139,7 @@ class ContainerHelperTest extends Specification {
         def packages = new PackagesSpec(type: PackagesSpec.Type.SPACK, spackOpts: SPACK_OPTS)
 
         when:
-        def result = ContainerHelper.createContainerFile(packages, true)
+        def result = ContainerHelper.containerFileFromPackages(packages, true)
 
         then:
         result == '''\
@@ -169,7 +169,7 @@ class ContainerHelperTest extends Specification {
         def packages = new PackagesSpec(type: PackagesSpec.Type.SPACK, spackOpts: SPACK_OPTS)
 
         when:
-        def result = ContainerHelper.createContainerFile(packages, false)
+        def result = ContainerHelper.containerFileFromPackages(packages, false)
 
         then:
         result == '''\
@@ -202,7 +202,7 @@ class ContainerHelperTest extends Specification {
         def CONDA = 'this and that'
         def req = new SubmitContainerTokenRequest(condaFile: CONDA.bytes.encodeBase64().toString())
         when:
-        def result = ContainerHelper.condaFile0(req)
+        def result = ContainerHelper.condaFileFromRequest(req)
         then:
         result == CONDA
     }
@@ -221,7 +221,7 @@ class ContainerHelperTest extends Specification {
         def req = new SubmitContainerTokenRequest(packages: new PackagesSpec(type: PackagesSpec.Type.CONDA, environment: CONDA.bytes.encodeBase64().toString()))
 
         when:
-        def result = ContainerHelper.condaFile0(req)
+        def result = ContainerHelper.condaFileFromRequest(req)
         then:
         result == CONDA
     }
@@ -240,7 +240,7 @@ class ContainerHelperTest extends Specification {
         def req = new SubmitContainerTokenRequest(packages: spec)
 
         when:
-        def result = ContainerHelper.condaFile0(req)
+        def result = ContainerHelper.condaFileFromRequest(req)
         then:
         result == '''\
             channels:
@@ -259,7 +259,7 @@ class ContainerHelperTest extends Specification {
         def req = new SubmitContainerTokenRequest(packages: spec)
 
         when:
-        def result = ContainerHelper.condaFile0(req)
+        def result = ContainerHelper.condaFileFromRequest(req)
         then:
         result == '''\
             channels:
@@ -275,7 +275,7 @@ class ContainerHelperTest extends Specification {
         def SPACK = 'this and that'
         def req = new SubmitContainerTokenRequest(spackFile: SPACK.bytes.encodeBase64().toString())
         when:
-        def result = ContainerHelper.spackFile0(req)
+        def result = ContainerHelper.spackFileFromRequest(req)
         then:
         result == SPACK
     }
@@ -292,7 +292,7 @@ class ContainerHelperTest extends Specification {
         def req = new SubmitContainerTokenRequest(packages: spec)
 
         when:
-        def result = ContainerHelper.spackFile0(req)
+        def result = ContainerHelper.spackFileFromRequest(req)
         then:
         result == SPACK
     }
@@ -303,7 +303,7 @@ class ContainerHelperTest extends Specification {
         def req = new SubmitContainerTokenRequest(packages: spec)
 
         when:
-        def result = ContainerHelper.spackFile0(req)
+        def result = ContainerHelper.spackFileFromRequest(req)
         then:
         result == '''\
             spack:
@@ -363,18 +363,32 @@ class ContainerHelperTest extends Specification {
         def result = ContainerHelper.makeResponseV2(data, token, target)
         then:
         verifyAll(result){
-            containerToken == TOKEN
-            targetImage == IMAGENAME
+            containerToken == EXPECTED_TOKEN
+            targetImage == EXPECTED_IMAGE
             buildId == '123'
-            cached == CACHED
+            cached == EXPECTED_CACHE
             freeze == FREEZE
         }
 
         where:
-        NEW_BUILD   | FREEZE    | TOKEN     | IMAGENAME                 | CACHED
-        false       | false     | '123abc'  | 'wave.com/this/that'      | true
-        true        | true      | null      | 'docker.io/some/container'| false
-        false       | true      | null      | 'docker.io/some/container'| true
-        true        | false     | '123abc'  | 'wave.com/this/that'      | false
+        NEW_BUILD   | FREEZE    | EXPECTED_TOKEN | EXPECTED_IMAGE            | EXPECTED_CACHE
+        false       | false     | '123abc'       | 'wave.com/this/that'      | true
+        true        | false     | '123abc'       | 'wave.com/this/that'      | false
+        and:
+        false       | true      | null           | 'docker.io/some/container'| true
+        true        | true      | null           | 'docker.io/some/container'| false
+    }
+
+    def 'should check if is a conda lock file' () {
+        expect:
+        ContainerHelper.condaLockFile(null) == null
+        ContainerHelper.condaLockFile([]) == null
+        ContainerHelper.condaLockFile(['http://foo.com/some/lock']) == 'http://foo.com/some/lock'
+        ContainerHelper.condaLockFile(['https://foo.com/some/lock']) == 'https://foo.com/some/lock'
+
+        when:
+        ContainerHelper.condaLockFile(['http://foo.com','http://bar.com'])
+        then:
+        thrown(IllegalArgumentException)
     }
 }

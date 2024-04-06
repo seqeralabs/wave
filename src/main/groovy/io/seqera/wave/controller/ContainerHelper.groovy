@@ -47,16 +47,26 @@ import static io.seqera.wave.util.DockerHelper.spackPackagesToSpackYaml
 @PackageScope
 class ContainerHelper {
 
-    static String createContainerFile(PackagesSpec spec, boolean formatSingularity) {
+    /**
+     * Create a Containerfile from the specified packages specification
+     *
+     * @param spec
+     *      A {@link PackagesSpec} object modelling the packages to be included in the resulting container
+     * @param formatSingularity
+     *      When {@code false} creates a Dockerfile, when {@code true} creates a Singularity file
+     * @return
+     *      The corresponding Containerfile
+     */
+    static String containerFileFromPackages(PackagesSpec spec, boolean formatSingularity) {
         if( spec.type == PackagesSpec.Type.CONDA ) {
-            final lock = condaLock0(spec.entries)
+            final lockFile = condaLockFile(spec.entries)
             if( !spec.condaOpts )
                 spec.condaOpts = new CondaOpts()
             def result
-            if ( lock ) {
+            if ( lockFile ) {
                 result = formatSingularity
-                        ? condaPackagesToSingularityFile(lock, spec.channels, spec.condaOpts)
-                        : condaPackagesToDockerFile(lock, spec.channels, spec.condaOpts)
+                        ? condaPackagesToSingularityFile(lockFile, spec.channels, spec.condaOpts)
+                        : condaPackagesToDockerFile(lockFile, spec.channels, spec.condaOpts)
             } else {
                 result = formatSingularity
                         ? condaFileToSingularityFile(spec.condaOpts)
@@ -77,7 +87,7 @@ class ContainerHelper {
         throw new IllegalArgumentException("Unexpected packages spec type: $spec.type")
     }
 
-    static String condaFile0(SubmitContainerTokenRequest req) {
+    static String condaFileFromRequest(SubmitContainerTokenRequest req) {
         if( !req.packages )
             return decodeBase64OrFail(req.condaFile, 'condaFile')
 
@@ -91,7 +101,7 @@ class ContainerHelper {
             return condaEnvironmentToCondaYaml(decoded, req.packages.channels)
         }
 
-        if ( req.packages.entries && !condaLock0(req.packages.entries)) {
+        if ( req.packages.entries && !condaLockFile(req.packages.entries)) {
             // create a minimal conda file with package spec from user input
             final String packages = req.packages.entries.join(' ')
             return condaPackagesToCondaYaml(packages, req.packages.channels)
@@ -100,22 +110,19 @@ class ContainerHelper {
         return null;
     }
 
-    static String condaLock0(List<String> condaPackages) {
+    static protected String condaLockFile(List<String> condaPackages) {
         if( !condaPackages )
             return null;
-        Optional<String> result = condaPackages
-                .stream()
-                .filter(it->it.startsWith("http://") || it.startsWith("https://"))
-                .findFirst();
-        if( !result.isPresent() )
+        final result = condaPackages .findAll(it->it.startsWith("http://") || it.startsWith("https://"))
+        if( !result )
             return null;
-        if( condaPackages.size()!=1 ) {
+        if( condaPackages.size()>1 ) {
             throw new IllegalArgumentException("No more than one Conda lock remote file can be specified at the same time");
         }
-        return result.get();
+        return result[0]
     }
 
-    static String spackFile0(SubmitContainerTokenRequest req) {
+    static String spackFileFromRequest(SubmitContainerTokenRequest req) {
         if( !req.packages )
             return decodeBase64OrFail(req.spackFile,'spackFile')
 
