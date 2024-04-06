@@ -52,7 +52,7 @@ import io.seqera.wave.api.BuildStatusResponse
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-class ContainerBuildControllerTest extends Specification {
+class BuildControllerTest extends Specification {
 
     @MockBean(BuildLogServiceImpl)
     BuildLogService logsService() {

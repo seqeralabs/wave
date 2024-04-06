@@ -91,7 +91,7 @@ import static io.seqera.wave.controller.ContainerHelper.makeResponseV1
 @CompileStatic
 @Controller("/")
 @ExecuteOn(TaskExecutors.IO)
-class ContainerTokenController {
+class ContainerController {
 
     @Inject HttpClientAddressResolver addressResolver
     @Inject ContainerTokenService tokenService

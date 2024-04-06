@@ -43,7 +43,7 @@ import io.seqera.wave.api.BuildStatusResponse
 @CompileStatic
 @Controller("/")
 @ExecuteOn(TaskExecutors.IO)
-class ContainerBuildController {
+class BuildController {
 
     @Inject
     private PersistenceService persistenceService
