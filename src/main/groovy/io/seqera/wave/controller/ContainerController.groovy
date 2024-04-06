@@ -81,6 +81,8 @@ import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
 
 import static io.seqera.wave.controller.ContainerHelper.makeResponseV2
 import static io.seqera.wave.controller.ContainerHelper.makeResponseV1
+import static io.seqera.wave.controller.ContainerHelper.containerFileFromPackages
+import static java.util.concurrent.CompletableFuture.completedFuture
 
 /**
  * Implement a controller to receive container token requests
@@ -152,13 +154,20 @@ class ContainerController {
         log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl; default-build-repo: $buildConfig.defaultBuildRepository; default-cache-repo: $buildConfig.defaultCacheRepository; default-public-repo: $buildConfig.defaultPublicRepository"
     }
 
+    @Deprecated
     @Post('/container-token')
     @ExecuteOn(TaskExecutors.IO)
     CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
-        return getTokenImpl(httpRequest, req, false)
+        return getContainerImpl(httpRequest, req, false)
     }
 
-    protected CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getTokenImpl(HttpRequest httpRequest, SubmitContainerTokenRequest req, boolean v2) {
+    @Post('/v1alpha2/container')
+    @ExecuteOn(TaskExecutors.IO)
+    CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getTokenV2(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
+        return getContainerImpl(httpRequest, req, true)
+    }
+
+    protected CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getContainerImpl(HttpRequest httpRequest, SubmitContainerTokenRequest req, boolean v2) {
         validateContainerRequest(req)
 
         // this is needed for backward compatibility with old clients
@@ -168,7 +177,7 @@ class ContainerController {
 
         // anonymous access
         if( !req.towerAccessToken ) {
-            return CompletableFuture.completedFuture(makeResponse(httpRequest, req, PlatformId.NULL, v2))
+            return completedFuture(handleRequest(httpRequest, req, PlatformId.NULL, v2))
         }
 
         // We first check if the service is registered
@@ -181,10 +190,10 @@ class ContainerController {
         // find out the user associated with the specified tower access token
         return userService
                 .getUserByAccessTokenAsync(registration.endpoint, req.towerAccessToken)
-                .thenApplyAsync({ User user -> makeResponse(httpRequest, req, PlatformId.of(user,req), v2) }, ioExecutor)
+                .thenApplyAsync({ User user -> handleRequest(httpRequest, req, PlatformId.of(user,req), v2) }, ioExecutor)
     }
 
-    protected HttpResponse<SubmitContainerTokenResponse> makeResponse(HttpRequest httpRequest, SubmitContainerTokenRequest req, PlatformId identity, boolean v2) {
+    protected HttpResponse<SubmitContainerTokenResponse> handleRequest(HttpRequest httpRequest, SubmitContainerTokenRequest req, PlatformId identity, boolean v2) {
         if( !identity && !allowAnonymous )
             throw new BadRequestException("Missing user access token")
         if( v2 && req.containerFile && req.packages )
@@ -198,7 +207,7 @@ class ContainerController {
 
         if( v2 && req.packages ) {
             // generate the container file required to assemble the container
-            final generated = ContainerHelper.containerFileFromPackages(req.packages, req.formatSingularity())
+            final generated = containerFileFromPackages(req.packages, req.formatSingularity())
             req = req.copyWith(containerFile: generated.bytes.encodeBase64().toString())
         }
 
@@ -390,11 +399,6 @@ class ContainerController {
     HttpResponse<?> handleAuthorizationException() {
         return HttpResponse.unauthorized()
                 .header(WWW_AUTHENTICATE, "Basic realm=Wave Authentication")
-    }
-
-    @Post('/v1alpha2/container')
-    CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getTokenV2(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
-        return getTokenImpl(httpRequest, req, true)
     }
 
 }

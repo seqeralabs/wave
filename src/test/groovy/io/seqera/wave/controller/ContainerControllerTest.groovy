@@ -479,7 +479,7 @@ class ContainerControllerTest extends Specification {
         def req = new SubmitContainerTokenRequest(format: 'sif', packages: packagesSpec, freeze: true, buildRepository: 'docker.io/foo', towerAccessToken: '123')
         def user = new User(email: 'foo@bar.com', userName: 'foo')
         def id = PlatformId.of(user, req)
-        def response = controller.makeResponse(null, req, id, true)
+        def response = controller.handleRequest(null, req, id, true)
 
         then:
         1 * builder.buildImage(_) >> new BuildTrack('build123', 'oras://docker.io/foo:9b266d5b5c455fe0', true)
@@ -515,7 +515,7 @@ class ContainerControllerTest extends Specification {
         ])
         def packages = new PackagesSpec(type: PackagesSpec.Type.SPACK, spackOpts: SPACK_OPTS)
         def req = new SubmitContainerTokenRequest(format: 'docker', packages: packages)
-        def response = controller.makeResponse(null, req, new PlatformId(new User(id: 100), 10), true)
+        def response = controller.handleRequest(null, req, new PlatformId(new User(id: 100), 10), true)
 
         then:
         1 * builder.buildImage(_) >> new BuildTrack('build123', 'foo:1234', true)
@@ -537,21 +537,21 @@ class ContainerControllerTest extends Specification {
 
         when: 'container access token is not provided'
         def req = new SubmitContainerTokenRequest(packages: new PackagesSpec())
-        controller.makeResponse(null, req, null, true)
+        controller.handleRequest(null, req, null, true)
         then:
         def e = thrown(BadRequestException)
         e.message == "Missing user access token"
 
         when: 'container image  and container file and packages are provided'
         req = new SubmitContainerTokenRequest(containerFile: 'from foo', packages: new PackagesSpec())
-        controller.makeResponse(null, req, new PlatformId(new User(id: 100)), true)
+        controller.handleRequest(null, req, new PlatformId(new User(id: 100)), true)
         then:
         e = thrown(BadRequestException)
         e.message == "Attribute `containerFile` and `packages` conflicts each other"
 
         when: 'packages are provided without v2'
         req = new SubmitContainerTokenRequest(packages: new PackagesSpec())
-        controller.makeResponse(null, req, new PlatformId(new User(id: 100)), false)
+        controller.handleRequest(null, req, new PlatformId(new User(id: 100)), false)
         then:
         e = thrown(BadRequestException)
         e.message == "Attribute `packages` is not allowed"
