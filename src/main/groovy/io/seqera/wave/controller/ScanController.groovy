@@ -40,7 +40,7 @@ import jakarta.inject.Inject
 @Requires(property = 'wave.scan.enabled', value = 'true')
 @Controller("/")
 @ExecuteOn(TaskExecutors.IO)
-class ContainerScanController {
+class ScanController {
     
     @Inject
     private ContainerScanService containerScanService

@@ -39,7 +39,7 @@ import jakarta.inject.Inject
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @MicronautTest
-class ContainerScanControllerTest extends Specification {
+class ScanControllerTest extends Specification {
 
     @Inject
     @Client("/")
