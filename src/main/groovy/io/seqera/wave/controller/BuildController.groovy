@@ -29,11 +29,11 @@ import io.micronaut.http.annotation.Produces
 import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
-import io.seqera.wave.exchange.BuildStatusResponse
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import jakarta.inject.Inject
+import io.seqera.wave.api.BuildStatusResponse
 /**
  * Implements a controller for container builds
  *
@@ -43,7 +43,7 @@ import jakarta.inject.Inject
 @CompileStatic
 @Controller("/")
 @ExecuteOn(TaskExecutors.IO)
-class ContainerBuildController {
+class BuildController {
 
     @Inject
     private PersistenceService persistenceService

@@ -35,7 +35,6 @@ import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.exchange.BuildStatusResponse
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
@@ -46,12 +45,14 @@ import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
+import io.seqera.wave.api.BuildStatusResponse
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-class ContainerBuildControllerTest extends Specification {
+class BuildControllerTest extends Specification {
 
     @MockBean(BuildLogServiceImpl)
     BuildLogService logsService() {
