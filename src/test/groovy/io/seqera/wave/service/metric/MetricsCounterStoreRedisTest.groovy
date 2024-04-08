@@ -20,19 +20,37 @@ package io.seqera.wave.service.metric
 
 import spock.lang.Specification
 
-import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import jakarta.inject.Inject
+import io.micronaut.context.ApplicationContext
+import io.seqera.wave.test.RedisTestContainer
+import redis.clients.jedis.Jedis
+
 /**
+ * MetricsCounter tests based on Redis
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-@MicronautTest(environments = ['test'])
-class MetricsCounterStoreTest extends Specification {
+class MetricsCounterStoreRedisTest  extends Specification implements RedisTestContainer {
+    ApplicationContext applicationContext
 
-    @Inject
-    MetricsCounterStore metricsCounterStore
+    Jedis jedis
 
+    def setup() {
+        applicationContext = ApplicationContext.run([
+                wave:[ build:[ timeout: '5s' ]],
+                REDIS_HOST: redisHostName,
+                REDIS_PORT: redisPort
+        ], 'test', 'redis')
+        jedis = new Jedis(redisHostName, redisPort as int)
+        jedis.flushAll()
+    }
+
+    def cleanup(){
+        jedis.close()
+    }
     def 'should get correct count value' () {
+        given:
+        def metricsCounterStore = applicationContext.getBean(MetricsCounterStore)
+
         when:
         metricsCounterStore.inc('foo')
         metricsCounterStore.inc('foo')
@@ -42,5 +60,4 @@ class MetricsCounterStoreTest extends Specification {
         metricsCounterStore.get('foo') == 2
         metricsCounterStore.get('bar') == 1
     }
-
 }

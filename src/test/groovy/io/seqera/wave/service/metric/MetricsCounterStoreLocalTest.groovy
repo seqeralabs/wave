@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023-2024, Seqera Labs
+ *  Copyright (c) 2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -16,15 +16,31 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.license
+package io.seqera.wave.service.metric
 
-import java.time.Instant
+import spock.lang.Specification
+
+import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import jakarta.inject.Inject
 /**
- * Model the response for a License manager license token check request
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-class CheckTokenResponse {
-    String id // license ID
-    Instant expiration  // license expiration timestamp
+@MicronautTest
+class MetricsCounterStoreLocalTest extends Specification {
+
+    @Inject
+    MetricsCounterStore metricsCounterStore
+
+    def 'should get correct count value' () {
+        when:
+        metricsCounterStore.inc('foo')
+        metricsCounterStore.inc('foo')
+        metricsCounterStore.inc('bar')
+
+        then:
+        metricsCounterStore.get('foo') == 2
+        metricsCounterStore.get('bar') == 1
+    }
+
 }

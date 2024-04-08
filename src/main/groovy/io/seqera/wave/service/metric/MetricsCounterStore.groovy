@@ -31,11 +31,8 @@ import jakarta.inject.Singleton
 @CompileStatic
 class MetricsCounterStore extends AbstractCounterStore {
 
-    private CounterProvider provider
-
     MetricsCounterStore(CounterProvider provider) {
         super(provider)
-        this.provider = provider
     }
 
     @Override
