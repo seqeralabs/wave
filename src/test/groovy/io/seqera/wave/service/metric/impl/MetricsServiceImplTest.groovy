@@ -37,7 +37,7 @@ class MetricsServiceImplTest extends Specification {
 
     DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-    def 'should increment build count' () {
+    def 'should increment build count and return the correct count' () {
         given:
         def date = LocalDate.now().format(dateFormatter)
         def localCounterProvider = new LocalCounterProvider()
@@ -59,7 +59,7 @@ class MetricsServiceImplTest extends Specification {
         metricsService.getBuildsMetrics(date, 'org2.com') == 1
     }
 
-    def 'should increment pull count' () {
+    def 'should increment pull count and return the correct count' () {
         given:
         def date = LocalDate.now().format(dateFormatter)
         def localCounterProvider = new LocalCounterProvider()
@@ -81,7 +81,7 @@ class MetricsServiceImplTest extends Specification {
         metricsService.getPullsMetrics(date, null) == 3
     }
 
-    def 'should increment fusion pull count' () {
+    def 'should increment fusion pull count and return the correct count' () {
         given:
         def date = LocalDate.now().format(dateFormatter)
         def localCounterProvider = new LocalCounterProvider()

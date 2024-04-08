@@ -23,7 +23,6 @@ import spock.lang.Specification
 import io.micronaut.context.ApplicationContext
 import io.seqera.wave.test.RedisTestContainer
 import redis.clients.jedis.Jedis
-
 /**
  * MetricsCounter tests based on Redis
  *
@@ -47,6 +46,7 @@ class MetricsCounterStoreRedisTest  extends Specification implements RedisTestCo
     def cleanup(){
         jedis.close()
     }
+    
     def 'should get correct count value' () {
         given:
         def metricsCounterStore = applicationContext.getBean(MetricsCounterStore)

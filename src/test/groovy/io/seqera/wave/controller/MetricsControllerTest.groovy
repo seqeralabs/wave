@@ -496,7 +496,8 @@ class MetricsControllerTest extends Specification {
         metricsService.incrementBuildsCounter(platformId1)
         metricsService.incrementBuildsCounter(platformId2)
         metricsService.incrementBuildsCounter(null)
-        when:'only date is provided'
+
+        when: 'only date is provided'
         def req = HttpRequest.GET("/v1alpha2/metrics/builds?date=$date").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
@@ -504,7 +505,7 @@ class MetricsControllerTest extends Specification {
         res.body() == [count: 3]
         res.status.code == 200
 
-        when:'when date and org is provided'
+        when: 'date and org is provided'
         req = HttpRequest.GET("/v1alpha2/metrics/builds?date=$date&org=org1.com").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
@@ -512,7 +513,7 @@ class MetricsControllerTest extends Specification {
         res.body() == [count: 1]
         res.status.code == 200
 
-        when:'when date and org is provided'
+        when: 'only org is provided'
         req = HttpRequest.GET("/v1alpha2/metrics/builds?org=org1.com").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
@@ -532,7 +533,7 @@ class MetricsControllerTest extends Specification {
         metricsService.incrementPullsCounter(platformId2)
         metricsService.incrementPullsCounter(null)
 
-        when:'only date is provided'
+        when: 'only date is provided'
         def req = HttpRequest.GET("/v1alpha2/metrics/pulls?date=$date").basicAuth("username", "password")
         def res = client.toBlocking().exchange(req, Map)
 
@@ -540,7 +541,7 @@ class MetricsControllerTest extends Specification {
         res.body() == [count: 3]
         res.status.code == 200
 
-        when:'when date and org is provided'
+        when: 'date and org is provided'
         req = HttpRequest.GET("/v1alpha2/metrics/pulls?date=$date&org=org2.com").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
@@ -548,7 +549,7 @@ class MetricsControllerTest extends Specification {
         res.body() == [count: 1]
         res.status.code == 200
 
-        when:'when date and org is provided'
+        when: 'only org is provided'
         req = HttpRequest.GET("/v1alpha2/metrics/pulls?org=org2.com").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
@@ -576,7 +577,7 @@ class MetricsControllerTest extends Specification {
         res.body() == [count: 3]
         res.status.code == 200
 
-        when:'when date and org is provided'
+        when: 'date and org is provided'
         req = HttpRequest.GET("/v1alpha2/metrics/fusion/pulls?date=$date&org=org2.com").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
@@ -584,7 +585,7 @@ class MetricsControllerTest extends Specification {
         res.body() == [count: 1]
         res.status.code == 200
 
-        when:'when date and org is provided'
+        when: 'only org is provided'
         req = HttpRequest.GET("/v1alpha2/metrics/fusion/pulls?org=org2.com").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
@@ -594,7 +595,7 @@ class MetricsControllerTest extends Specification {
     }
 
     def 'should validate query parameters'() {
-        when:'wrong date format is provided'
+        when: 'wrong date format is provided'
         def req = HttpRequest.GET("/v1alpha2/metrics/pulls?date=2024-03-2").basicAuth("username", "password")
         client.toBlocking().exchange(req, Map)
 
@@ -603,7 +604,7 @@ class MetricsControllerTest extends Specification {
         e.message == 'date format should be yyyy-MM-dd'
         e.status.code == 400
 
-        when:'no query parameter is provided'
+        when: 'no query parameter is provided'
         req = HttpRequest.GET("/v1alpha2/metrics/builds").basicAuth("username", "password")
         client.toBlocking().exchange(req, Map)
 
