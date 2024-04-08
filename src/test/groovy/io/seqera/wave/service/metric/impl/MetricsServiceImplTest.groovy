@@ -26,6 +26,8 @@ import java.time.format.DateTimeFormatter
 
 import io.seqera.wave.service.counter.impl.LocalCounterProvider
 import io.seqera.wave.service.metric.MetricsCounterStore
+import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.tower.User
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
@@ -40,17 +42,20 @@ class MetricsServiceImplTest extends Specification {
         def localCounterProvider = new LocalCounterProvider()
         def metricsCounterStore = new MetricsCounterStore(localCounterProvider)
         def metricsService = new MetricsServiceImpl(metricsCounterStore: metricsCounterStore)
+        def user1 = new User(id: 1, userName: 'foo', email: 'user1@org1.com')
+        def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
+        def platformId1 = new PlatformId(user1, 101)
+        def platformId2 = new PlatformId(user2, 102)
 
         when:
-        metricsService.incrementBuildsCounter('user1@org1.com')
-        metricsService.incrementBuildsCounter('user2@org2.com')
+        metricsService.incrementBuildsCounter(platformId1)
+        metricsService.incrementBuildsCounter(platformId2)
         metricsService.incrementBuildsCounter(null)
 
         then:
         metricsService.getBuildsMetrics(date, null) == 3
         metricsService.getBuildsMetrics(null, 'org1.com') == 1
         metricsService.getBuildsMetrics(date, 'org2.com') == 1
-
     }
 
     def 'should increment pull count' () {
@@ -59,17 +64,20 @@ class MetricsServiceImplTest extends Specification {
         def localCounterProvider = new LocalCounterProvider()
         def metricsCounterStore = new MetricsCounterStore(localCounterProvider)
         def metricsService = new MetricsServiceImpl(metricsCounterStore: metricsCounterStore)
+        def user1 = new User(id: 1, userName: 'foo', email: 'user1@org1.com')
+        def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
+        def platformId1 = new PlatformId(user1, 101)
+        def platformId2 = new PlatformId(user2, 102)
 
         when:
-        metricsService.incrementPullsCounter('user1@org1.com')
-        metricsService.incrementPullsCounter('user2@org2.com')
+        metricsService.incrementPullsCounter(platformId1)
+        metricsService.incrementPullsCounter(platformId2)
         metricsService.incrementPullsCounter(null)
 
         then:
         metricsService.getPullsMetrics(null, 'org1.com') == 1
         metricsService.getPullsMetrics(date, 'org2.com') == 1
         metricsService.getPullsMetrics(date, null) == 3
-
     }
 
     def 'should increment fusion pull count' () {
@@ -78,17 +86,20 @@ class MetricsServiceImplTest extends Specification {
         def localCounterProvider = new LocalCounterProvider()
         def metricsCounterStore = new MetricsCounterStore(localCounterProvider)
         def metricsService = new MetricsServiceImpl(metricsCounterStore: metricsCounterStore)
+        def user1 = new User(id: 1, userName: 'foo', email: 'user1@org1.com')
+        def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
+        def platformId1 = new PlatformId(user1, 101)
+        def platformId2 = new PlatformId(user2, 102)
 
         when:
-        metricsService.incrementFusionPullsCounter('user1@org1.com')
-        metricsService.incrementFusionPullsCounter('user2@org2.com')
+        metricsService.incrementFusionPullsCounter(platformId1)
+        metricsService.incrementFusionPullsCounter(platformId2)
         metricsService.incrementFusionPullsCounter(null)
 
         then:
         metricsService.getFusionPullsMetrics(null, 'org1.com') == 1
         metricsService.getFusionPullsMetrics(date, 'org2.com') == 1
         metricsService.getFusionPullsMetrics(date, null) == 3
-
     }
 
     @Unroll

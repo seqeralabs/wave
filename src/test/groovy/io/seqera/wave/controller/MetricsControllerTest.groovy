@@ -489,8 +489,12 @@ class MetricsControllerTest extends Specification {
     def 'should get the correct builds count and http status code 200'() {
         given:
         def date = LocalDate.now().format(dateFormatter)
-        metricsService.incrementBuildsCounter('user1@org1.com')
-        metricsService.incrementBuildsCounter('user1@org2.com')
+        def user1 = new User(id: 1, userName: 'foo', email: 'user1@org1.com')
+        def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
+        def platformId1 = new PlatformId(user1, 101)
+        def platformId2 = new PlatformId(user2, 102)
+        metricsService.incrementBuildsCounter(platformId1)
+        metricsService.incrementBuildsCounter(platformId2)
         metricsService.incrementBuildsCounter(null)
         when:'only date is provided'
         def req = HttpRequest.GET("/v1alpha2/metrics/builds?date=$date").basicAuth("username", "password")
@@ -513,8 +517,12 @@ class MetricsControllerTest extends Specification {
     def 'should get the correct pulls count and http status code 200'() {
         given:
         def date = LocalDate.now().format(dateFormatter)
-        metricsService.incrementPullsCounter('user1@org1.com')
-        metricsService.incrementPullsCounter('user2@org2.com')
+        def user1 = new User(id: 1, userName: 'foo', email: 'user1@org1.com')
+        def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
+        def platformId1 = new PlatformId(user1, 101)
+        def platformId2 = new PlatformId(user2, 102)
+        metricsService.incrementPullsCounter(platformId1)
+        metricsService.incrementPullsCounter(platformId2)
         metricsService.incrementPullsCounter(null)
 
         when:'only date is provided'
@@ -538,8 +546,12 @@ class MetricsControllerTest extends Specification {
     def 'should get the correct fusion pulls count and http status code 200'() {
         given:
         def date = LocalDate.now().format(dateFormatter)
-        metricsService.incrementFusionPullsCounter('user1@org1.com')
-        metricsService.incrementFusionPullsCounter('user2@org2.com')
+        def user1 = new User(id: 1, userName: 'foo', email: 'user1@org1.com')
+        def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
+        def platformId1 = new PlatformId(user1, 101)
+        def platformId2 = new PlatformId(user2, 102)
+        metricsService.incrementFusionPullsCounter(platformId1)
+        metricsService.incrementFusionPullsCounter(platformId2)
         metricsService.incrementFusionPullsCounter(null)
 
         when:'only date is provided'

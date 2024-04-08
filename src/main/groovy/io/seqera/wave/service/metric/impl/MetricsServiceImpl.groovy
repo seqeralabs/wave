@@ -26,10 +26,11 @@ import groovy.util.logging.Slf4j
 import io.seqera.wave.service.metric.MetricConstants
 import io.seqera.wave.service.metric.MetricsCounterStore
 import io.seqera.wave.service.metric.MetricsService
+import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
- * Implements service to retrieve wave metrics
+ * Implements service to store and retrieve wave metrics from the counter store
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
@@ -59,8 +60,8 @@ class MetricsServiceImpl implements MetricsService {
     }
 
     @Override
-    void incrementFusionPullsCounter(String email){
-        def org = getOrg(email)
+    void incrementFusionPullsCounter(PlatformId platformId){
+        def org = getOrg(platformId?.user?.email)
         def key = getFusionPullsKey(LocalDate.now().format(dateFormatter), null)
             metricsCounterStore.inc(key)
         log.trace("increment Fusion Pulls Count: $key")
@@ -73,8 +74,8 @@ class MetricsServiceImpl implements MetricsService {
     }
 
     @Override
-    void incrementBuildsCounter(String email){
-        def org = getOrg(email)
+    void incrementBuildsCounter(PlatformId platformId){
+        def org = getOrg(platformId?.user?.email)
         def key = getBuildsKey(LocalDate.now().format(dateFormatter), null)
         metricsCounterStore.inc(key)
         log.trace("increment Builds Count: $key")
@@ -87,8 +88,8 @@ class MetricsServiceImpl implements MetricsService {
     }
 
     @Override
-    void incrementPullsCounter(String email) {
-        def org = getOrg(email)
+    void incrementPullsCounter(PlatformId platformId) {
+        def org = getOrg(platformId?.user?.email)
         def key = getPullsKey(LocalDate.now().format(dateFormatter), null)
         metricsCounterStore.inc(key)
         log.trace("increment Pulls Count: $key")

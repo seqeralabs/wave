@@ -18,8 +18,9 @@
 
 package io.seqera.wave.service.metric
 
+import io.seqera.wave.tower.PlatformId
 /**
- * Defines the interface to retrieve wave metrics from redis
+ * Defines the interface to store and retrieve wave metrics
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
@@ -54,21 +55,21 @@ interface MetricsService {
     /**
      * increment wave fusion pulls count
      *
-     * @param seqera platform token to get the org name
+     * @param seqera platform id
      */
-    void incrementFusionPullsCounter(String token)
+    void incrementFusionPullsCounter(PlatformId platformId)
 
     /**
      * increment wave builds count
      *
-     * @param seqera platform token to get the org name
+     * @param seqera platform id
      */
-    void incrementBuildsCounter(String token)
+    void incrementBuildsCounter(PlatformId platformId)
 
     /**
      * increment wave pulls count
      *
-     * @param seqera platform token to get the org name
+     * @param seqera platform id
      */
-    void incrementPullsCounter(String token)
+    void incrementPullsCounter(PlatformId platformId)
 }

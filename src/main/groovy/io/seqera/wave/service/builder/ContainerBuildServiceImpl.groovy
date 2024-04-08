@@ -236,7 +236,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
 
         //increment metrics
-        CompletableFuture.supplyAsync(() -> metricsService.incrementBuildsCounter(request.identity.user.email), executor)
+        CompletableFuture.supplyAsync(() -> metricsService.incrementBuildsCounter(request.identity), executor)
 
         // persist the container request
         persistenceService.createBuild(WaveBuildRecord.fromEvent(new BuildEvent(request)))
