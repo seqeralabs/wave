@@ -511,7 +511,6 @@ class MetricsControllerTest extends Specification {
         then: 'should get the correct count'
         res.body() == [count: 1]
         res.status.code == 200
-
     }
 
     def 'should get the correct pulls count and http status code 200'() {
@@ -540,7 +539,6 @@ class MetricsControllerTest extends Specification {
         then: 'should get the correct count'
         res.body() == [count: 1]
         res.status.code == 200
-
     }
 
     def 'should get the correct fusion pulls count and http status code 200'() {
@@ -569,7 +567,6 @@ class MetricsControllerTest extends Specification {
         then: 'should get the correct count'
         res.body() == [count: 1]
         res.status.code == 200
-
     }
 
     def 'should validate query parameters'() {
