@@ -511,6 +511,14 @@ class MetricsControllerTest extends Specification {
         then: 'should get the correct count'
         res.body() == [count: 1]
         res.status.code == 200
+
+        when:'when date and org is provided'
+        req = HttpRequest.GET("/v1alpha2/metrics/builds?org=org1.com").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [count: 1]
+        res.status.code == 200
     }
 
     def 'should get the correct pulls count and http status code 200'() {
@@ -534,6 +542,14 @@ class MetricsControllerTest extends Specification {
 
         when:'when date and org is provided'
         req = HttpRequest.GET("/v1alpha2/metrics/pulls?date=$date&org=org2.com").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [count: 1]
+        res.status.code == 200
+
+        when:'when date and org is provided'
+        req = HttpRequest.GET("/v1alpha2/metrics/pulls?org=org2.com").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
@@ -567,6 +583,14 @@ class MetricsControllerTest extends Specification {
         then: 'should get the correct count'
         res.body() == [count: 1]
         res.status.code == 200
+
+        when:'when date and org is provided'
+        req = HttpRequest.GET("/v1alpha2/metrics/fusion/pulls?org=org2.com").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [count: 1]
+        res.status.code == 200
     }
 
     def 'should validate query parameters'() {
@@ -579,7 +603,7 @@ class MetricsControllerTest extends Specification {
         e.message == 'date format should be yyyy-MM-dd'
         e.status.code == 400
 
-        when:'no query '
+        when:'no query parameter is provided'
         req = HttpRequest.GET("/v1alpha2/metrics/builds").basicAuth("username", "password")
         client.toBlocking().exchange(req, Map)
 

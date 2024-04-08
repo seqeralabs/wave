@@ -183,7 +183,7 @@ class MetricsController {
         if(!date && !org)
             throw new BadRequestException('Either date or org query parameter must be provided')
         def pattern = ~/\d{4}-\d{2}-\d{2}/
-        if(!(date ==~ pattern)){
+        if(date && !(date ==~ pattern)){
             throw new BadRequestException('date format should be yyyy-MM-dd')
         }
     }
