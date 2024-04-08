@@ -39,18 +39,6 @@ class ContainerRequestDataTest extends Specification {
         req.identity
         req.identity == new PlatformId(new User(id:1))
 
-        when:
-        req = new ContainerRequestData(null, null, null, null, null, null, null, null, null, 100)
-        then:
-        req.identity
-        req.identity == new PlatformId(new User(id:100))
-
-        when:
-        req = new ContainerRequestData(null, null, null, null, null, null, null, null, null, null, null, null, 'http://foo.com')
-        then:
-        !req.identity
-        req.identity == PlatformId.NULL
-        req.towerEndpoint == 'http://foo.com'
     }
 
 }

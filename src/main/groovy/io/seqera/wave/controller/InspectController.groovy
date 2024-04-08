@@ -49,7 +49,7 @@ import jakarta.inject.Named
 @CompileStatic
 @Controller("/")
 @ExecuteOn(TaskExecutors.IO)
-class ContainerInspectController {
+class InspectController {
 
     @Inject
     private ContainerInspectService inspectService

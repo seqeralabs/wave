@@ -18,6 +18,8 @@
 
 package io.seqera.wave.util
 
+
+import groovy.transform.CompileStatic
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildFormat
 
@@ -26,6 +28,7 @@ import io.seqera.wave.service.builder.BuildFormat
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@CompileStatic
 class SpackHelper {
 
     static String builderDockerTemplate() {

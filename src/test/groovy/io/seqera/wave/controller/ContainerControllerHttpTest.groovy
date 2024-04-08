@@ -49,7 +49,7 @@ import static io.seqera.wave.util.FutureUtils.completeExceptionally
  * @author : jorge <jorge.aguilera@seqera.io>
  */
 @MicronautTest
-class ContainerTokenControllerHttpTest extends Specification {
+class ContainerControllerHttpTest extends Specification {
 
     @Inject
     @Client("/")
