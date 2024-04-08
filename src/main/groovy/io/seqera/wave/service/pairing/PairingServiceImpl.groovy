@@ -74,8 +74,16 @@ class PairingServiceImpl implements PairingService {
 
     @Override
     PairingRecord getPairingRecord(String service, String endpoint) {
-        final uid = makeKey(service, endpoint)
+        final uid = makeKey(service, patch0(endpoint))
         return store.get(uid)
+    }
+
+    protected static String patch0(String endpoint) {
+        // api.stage-tower.net --> api.cloud.stage-seqera.io
+        // api.tower.nf --> api.cloud.seqera.io
+        endpoint
+                .replace('/api.stage-tower.net','/api.cloud.stage-seqera.io')
+                .replace('/api.tower.nf','/api.cloud.seqera.io')
     }
 
     protected static String makeKey(String service, String towerEndpoint) {
