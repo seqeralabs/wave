@@ -74,7 +74,7 @@ class PairingServiceImpl implements PairingService {
 
     @Override
     PairingRecord getPairingRecord(String service, String endpoint) {
-        final uid = makeKey(service, patch0(endpoint))
+        final uid = makeKey(service, endpoint)
         return store.get(uid)
     }
 
@@ -86,8 +86,8 @@ class PairingServiceImpl implements PairingService {
                 .replace('/api.tower.nf','/api.cloud.seqera.io')
     }
 
-    protected static String makeKey(String service, String towerEndpoint) {
-        final attrs = [service: service, towerEndpoint: towerEndpoint] as Map<String,Object>
+    protected static String makeKey(String service, String endpoint) {
+        final attrs = [service: service, towerEndpoint: patch0(endpoint)] as Map<String,Object>
         return DigestFunctions.md5(attrs)
     }
 
