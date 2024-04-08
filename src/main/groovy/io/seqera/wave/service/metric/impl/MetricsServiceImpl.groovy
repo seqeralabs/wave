@@ -78,16 +78,17 @@ class MetricsServiceImpl implements MetricsService {
         def org = getOrg(email)
         def key = getKey(prefix, LocalDate.now().format(dateFormatter), null)
         metricsCounterStore.inc(key)
-        log.trace("increment Pulls Count: $key")
+        log.trace("increment metrics count of: $key")
         if ( org ) {
             key = getKey(prefix, null, org)
             metricsCounterStore.inc(key)
-            log.trace("increment Pulls Count: $key")
+            log.trace("increment metrics count of: $key")
             key = getKey(prefix, LocalDate.now().format(dateFormatter), org)
             metricsCounterStore.inc(key)
-            log.trace("increment Pulls Count: $key")
+            log.trace("increment metrics count of: $key")
         }
     }
+
     protected static String getOrg(String email) {
         def matcher = email =~ /@(.+)$/
         if (matcher.find()) {
@@ -98,7 +99,6 @@ class MetricsServiceImpl implements MetricsService {
     }
 
     protected static String getKey(String prefix, String day, String org){
-
         if( day && org )
             return "$prefix/$MetricConstants.PREFIX_ORG/$org/$MetricConstants.PREFIX_DAY/$day"
 
