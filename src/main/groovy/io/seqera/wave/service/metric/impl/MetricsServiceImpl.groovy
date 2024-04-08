@@ -46,61 +46,48 @@ class MetricsServiceImpl implements MetricsService {
 
     @Override
     Long getBuildsMetrics(String date, String org) {
-        return metricsCounterStore.get(getBuildsKey(date, org)) ?: 0
+        return metricsCounterStore.get(getKey(MetricConstants.PREFIX_BUILDS, date, org)) ?: 0
     }
 
     @Override
     Long getPullsMetrics(String date, String org) {
-        return metricsCounterStore.get(getPullsKey(date, org)) ?: 0
+        return metricsCounterStore.get(getKey(MetricConstants.PREFIX_PULLS, date, org)) ?: 0
     }
 
     @Override
     Long getFusionPullsMetrics(String date, String org) {
-        return metricsCounterStore.get(getFusionPullsKey(date, org)) ?: 0
+        return metricsCounterStore.get(getKey(MetricConstants.PREFIX_FUSION, date, org)) ?: 0
     }
 
     @Override
     void incrementFusionPullsCounter(PlatformId platformId){
-        def org = getOrg(platformId?.user?.email)
-        def key = getFusionPullsKey(LocalDate.now().format(dateFormatter), null)
-            metricsCounterStore.inc(key)
-        log.trace("increment Fusion Pulls Count: $key")
-        if( org ){
-            key = getFusionPullsKey(null, org)
-            metricsCounterStore.inc(key)
-            key = getFusionPullsKey(LocalDate.now().format(dateFormatter), org)
-            metricsCounterStore.inc(key)
-        }
+        incrementCounter(MetricConstants.PREFIX_FUSION, platformId?.user?.email)
     }
 
     @Override
     void incrementBuildsCounter(PlatformId platformId){
-        def org = getOrg(platformId?.user?.email)
-        def key = getBuildsKey(LocalDate.now().format(dateFormatter), null)
-        metricsCounterStore.inc(key)
-        log.trace("increment Builds Count: $key")
-        if( org ) {
-            key = getBuildsKey(null, org)
-            metricsCounterStore.inc(key)
-            key = getBuildsKey(LocalDate.now().format(dateFormatter), org)
-            metricsCounterStore.inc(key)
-        }
+        incrementCounter(MetricConstants.PREFIX_BUILDS, platformId?.user?.email)
     }
 
     @Override
     void incrementPullsCounter(PlatformId platformId) {
-        def org = getOrg(platformId?.user?.email)
-        def key = getPullsKey(LocalDate.now().format(dateFormatter), null)
+        incrementCounter(MetricConstants.PREFIX_PULLS, platformId?.user?.email)
+    }
+
+    protected void incrementCounter(String prefix, String email) {
+        def org = getOrg(email)
+        def key = getKey(prefix, LocalDate.now().format(dateFormatter), null)
         metricsCounterStore.inc(key)
         log.trace("increment Pulls Count: $key")
         if ( org ) {
-            key = getPullsKey(null, org)
+            key = getKey(prefix, null, org)
             metricsCounterStore.inc(key)
-            key = getPullsKey(LocalDate.now().format(dateFormatter), org)
+            log.trace("increment Pulls Count: $key")
+            key = getKey(prefix, LocalDate.now().format(dateFormatter), org)
             metricsCounterStore.inc(key)
+            log.trace("increment Pulls Count: $key")
         }
     }
-
     protected static String getOrg(String email) {
         def matcher = email =~ /@(.+)$/
         if (matcher.find()) {
@@ -110,44 +97,16 @@ class MetricsServiceImpl implements MetricsService {
         }
     }
 
-    protected static String getFusionPullsKey(String day, String org){
+    protected static String getKey(String prefix, String day, String org){
 
         if( day && org )
-            return "$MetricConstants.PREFIX_FUSION_ORG/$org/d/$day"
+            return "$prefix/$MetricConstants.PREFIX_ORG/$org/$MetricConstants.PREFIX_DAY/$day"
 
         if( org )
-            return "$MetricConstants.PREFIX_FUSION_ORG/$org"
+            return "$prefix/$MetricConstants.PREFIX_ORG/$org"
 
         if( day )
-            return "$MetricConstants.PREFIX_FUSION_DAY/$day"
-
-        return null
-    }
-
-    protected static String getBuildsKey(String day, String org){
-
-        if( day && org )
-            return "$MetricConstants.PREFIX_BUILDS_ORG/$org/d/$day"
-
-        if( org )
-            return "$MetricConstants.PREFIX_BUILDS_ORG/$org"
-
-        if( day )
-            return "$MetricConstants.PREFIX_BUILDS_DAY/$day"
-
-        return null
-    }
-
-    protected static String getPullsKey(String day, String org){
-
-        if( day && org )
-            return "$MetricConstants.PREFIX_PULLS_ORG/$org/d/$day"
-
-        if( org )
-            return "$MetricConstants.PREFIX_PULLS_ORG/$org"
-
-        if( day )
-            return "$MetricConstants.PREFIX_PULLS_DAY/$day"
+            return "$prefix/$MetricConstants.PREFIX_DAY/$day"
 
         return null
     }

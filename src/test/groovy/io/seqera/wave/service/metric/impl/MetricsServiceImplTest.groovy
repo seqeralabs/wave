@@ -25,6 +25,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 import io.seqera.wave.service.counter.impl.LocalCounterProvider
+import io.seqera.wave.service.metric.MetricConstants
 import io.seqera.wave.service.metric.MetricsCounterStore
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
@@ -103,42 +104,24 @@ class MetricsServiceImplTest extends Specification {
     }
 
     @Unroll
-    def'should get correct builds metrics key'() {
+    def'should get correct metrics key'() {
         expect:
-        MetricsServiceImpl.getBuildsKey(DAY, ORG) == KEY
+        MetricsServiceImpl.getKey(PREFIX, DAY, ORG) == KEY
 
         where:
-        DAY             | ORG       | KEY
-        null            | null      | null
-        null            | 'wave'    | 'builds/o/wave'
-        '2024-03-25'    | 'wave'    | 'builds/o/wave/d/2024-03-25'
-        '2024-03-25'    | null      | 'builds/d/2024-03-25'
-    }
-
-    @Unroll
-    def'should get correct pulls metrics key'() {
-        expect:
-        MetricsServiceImpl.getPullsKey(DAY, ORG) == KEY
-
-        where:
-        DAY             | ORG       | KEY
-        null            | null      | null
-        null            | 'wave'    | 'pulls/o/wave'
-        '2024-03-25'    | 'wave'    | 'pulls/o/wave/d/2024-03-25'
-        '2024-03-25'    | null      | 'pulls/d/2024-03-25'
-    }
-
-    @Unroll
-    def'should get correct fusion pulls metrics key'() {
-        expect:
-        MetricsServiceImpl.getFusionPullsKey(DAY, ORG) == KEY
-
-        where:
-        DAY             | ORG       | KEY
-        null            | null      | null
-        null            | 'wave'    | 'fusion/o/wave'
-        '2024-03-25'    | 'wave'    | 'fusion/o/wave/d/2024-03-25'
-        '2024-03-25'    | null      | 'fusion/d/2024-03-25'
+        PREFIX                          | DAY           | ORG       | KEY
+        MetricConstants.PREFIX_BUILDS   | null          | null      | null
+        MetricConstants.PREFIX_BUILDS   | null          | 'wave'    | 'builds/o/wave'
+        MetricConstants.PREFIX_BUILDS   | '2024-03-25'  | 'wave'    | 'builds/o/wave/d/2024-03-25'
+        MetricConstants.PREFIX_BUILDS   | '2024-03-25'  | null      | 'builds/d/2024-03-25'
+        MetricConstants.PREFIX_PULLS    | null          | null      | null
+        MetricConstants.PREFIX_PULLS    | null          | 'wave'    | 'pulls/o/wave'
+        MetricConstants.PREFIX_PULLS    | '2024-03-25'  | 'wave'    | 'pulls/o/wave/d/2024-03-25'
+        MetricConstants.PREFIX_PULLS    | '2024-03-25'  | null      | 'pulls/d/2024-03-25'
+        MetricConstants.PREFIX_FUSION   | null          | null      | null
+        MetricConstants.PREFIX_FUSION   | null          | 'wave'    | 'fusion/o/wave'
+        MetricConstants.PREFIX_FUSION   | '2024-03-25'  | 'wave'    | 'fusion/o/wave/d/2024-03-25'
+        MetricConstants.PREFIX_FUSION   | '2024-03-25'  | null      | 'fusion/d/2024-03-25'
     }
 
     @Unroll
