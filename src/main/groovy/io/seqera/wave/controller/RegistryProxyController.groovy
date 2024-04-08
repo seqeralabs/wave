@@ -103,13 +103,6 @@ class RegistryProxyController {
     @Nullable
     private BlobCacheService blobCacheService
 
-    @Inject
-    private MetricsService metricsService
-
-    @Inject
-    @Named(TaskExecutors.IO)
-    private ExecutorService executor
-
     @Value('${wave.cache.digestStore.maxWeightMb:350}')
     int cacheMaxWeightMb
 
@@ -139,25 +132,12 @@ class RegistryProxyController {
             rateLimiterService?.acquirePull( new AcquireRequest(route.identity.userId as String, ip) )
         }
 
-        // update metrics
-        incMetricsCounters(route, httpRequest)
-
         // check if it's a container under build
         final future = handleFutureBuild0(route, httpRequest)
         if( future )
             return future
         else
             return CompletableFuture.completedFuture(handleGet0(route, httpRequest))
-    }
-
-    protected void incMetricsCounters(RoutePath route, HttpRequest httpRequest) {
-        if( httpRequest.method==HttpMethod.GET && (route.manifest || route.isTag()) ) {
-            CompletableFuture.supplyAsync (() -> metricsService.incrementPullsCounter(route.identity), executor)
-            final version = route.request?.containerConfig?.fusionVersion()
-            if( version ) {
-                CompletableFuture.supplyAsync (() -> metricsService.incrementFusionPullsCounter(route.identity), executor)
-            }
-        }
     }
 
     protected CompletableFuture<MutableHttpResponse<?>> handleFutureBuild0(RoutePath route, HttpRequest httpRequest){
