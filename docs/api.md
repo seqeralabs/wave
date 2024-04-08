@@ -399,6 +399,16 @@ These APIs are used to get the metrics about the container pulls through Wave.
 
 ### GET `/v1alpha2/metrics/pulls`
 
+This endpoint is used to get the total numbers of pulls performed through Wave.
+
+### Response
+
+```json
+{
+    count: integer
+}
+```
+
 #### Examples
 
 ```
@@ -420,6 +430,16 @@ These APIs are used to get the metrics about the container pulls through Wave.
 These APIs are used to get the metrics about the fusion based container pulls through Wave.
 
 ### GET `/v1alpha2/metrics/fusion/pulls`
+
+This endpoint is used to get the total numbers of pulls of fusion based containers performed through Wave.
+
+### Response
+
+```json
+{
+    count: integer
+}
+```
 
 #### Examples
 
