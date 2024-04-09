@@ -106,7 +106,7 @@ class TraceSlowEndpointPublisher<T extends HttpResponse<?>> extends Flux<T> {
     protected void traceResponse(HttpResponse<?> response) {
         final long delta = System.currentTimeMillis()-begin;
         if( delta>=duration.toMillis() )
-            log.warn("The following request is taking {}ms\n{}", delta, dumpRequest(request,response));
+            log.warn("Slow request detected - elapsed time {}\n{}", Duration.ofMillis(delta), dumpRequest(request,response));
     }
 
     @CompileStatic

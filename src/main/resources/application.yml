@@ -64,8 +64,8 @@ wave:
     kaniko-image: "gcr.io/kaniko-project/executor:v1.19.2"
     singularity-image: "quay.io/singularity/singularity:v3.11.4-slim"
     singularity-image-arm64: "quay.io/singularity/singularity:v3.11.4-slim-arm64"
-    repo: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/dev"
-    cache: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/cache"
+    repo: "hrma017/dev"
+    cache: "hrma017/cache"
     # note changing this should be matching the micronaut.server.idle-timeout (see above)
     timeout: 900s
     status:

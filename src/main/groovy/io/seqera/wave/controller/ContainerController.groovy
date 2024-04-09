@@ -50,8 +50,8 @@ import io.seqera.wave.exchange.DescribeWaveContainerResponse
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.UserService
-import io.seqera.wave.service.builder.BuildTrack
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.builder.BuildTrack
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.builder.FreezeService
 import io.seqera.wave.service.inclusion.ContainerInclusionService
@@ -75,7 +75,16 @@ import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
 import static io.seqera.wave.WaveDefault.TOWER
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
+import static ContainerHelper.condaFileFromRequest
+import static ContainerHelper.decodeBase64OrFail
+import static ContainerHelper.spackFileFromRequest
 import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
+
+import static io.seqera.wave.controller.ContainerHelper.makeResponseV2
+import static io.seqera.wave.controller.ContainerHelper.makeResponseV1
+import static io.seqera.wave.controller.ContainerHelper.containerFileFromPackages
+import static java.util.concurrent.CompletableFuture.completedFuture
+
 /**
  * Implement a controller to receive container token requests
  * 
@@ -85,7 +94,7 @@ import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
 @CompileStatic
 @Controller("/")
 @ExecuteOn(TaskExecutors.IO)
-class ContainerTokenController {
+class ContainerController {
 
     @Inject HttpClientAddressResolver addressResolver
     @Inject ContainerTokenService tokenService
@@ -101,7 +110,7 @@ class ContainerTokenController {
     String serverUrl
 
     @Inject
-    @Value('${tower.endpoint.url:`https://api.tower.nf`}')
+    @Value('${tower.endpoint.url:`https://api.cloud.seqera.io`}')
     String towerEndpointUrl
 
     @Value('${wave.scan.enabled:false}')
@@ -146,9 +155,20 @@ class ContainerTokenController {
         log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl; default-build-repo: $buildConfig.defaultBuildRepository; default-cache-repo: $buildConfig.defaultCacheRepository; default-public-repo: $buildConfig.defaultPublicRepository"
     }
 
+    @Deprecated
     @Post('/container-token')
     @ExecuteOn(TaskExecutors.IO)
     CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
+        return getContainerImpl(httpRequest, req, false)
+    }
+
+    @Post('/v1alpha2/container')
+    @ExecuteOn(TaskExecutors.IO)
+    CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getTokenV2(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
+        return getContainerImpl(httpRequest, req, true)
+    }
+
+    protected CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getContainerImpl(HttpRequest httpRequest, SubmitContainerTokenRequest req, boolean v2) {
         validateContainerRequest(req)
 
         // this is needed for backward compatibility with old clients
@@ -158,7 +178,7 @@ class ContainerTokenController {
 
         // anonymous access
         if( !req.towerAccessToken ) {
-            return CompletableFuture.completedFuture(makeResponse(httpRequest, req, PlatformId.NULL))
+            return completedFuture(handleRequest(httpRequest, req, PlatformId.NULL, v2))
         }
 
         // We first check if the service is registered
@@ -171,22 +191,38 @@ class ContainerTokenController {
         // find out the user associated with the specified tower access token
         return userService
                 .getUserByAccessTokenAsync(registration.endpoint, req.towerAccessToken)
-                .thenApplyAsync({ User user -> makeResponse(httpRequest, req, PlatformId.of(user,req)) }, ioExecutor)
+                .thenApplyAsync({ User user -> handleRequest(httpRequest, req, PlatformId.of(user,req), v2) }, ioExecutor)
     }
 
-    protected HttpResponse<SubmitContainerTokenResponse> makeResponse(HttpRequest httpRequest, SubmitContainerTokenRequest req, PlatformId identity) {
+    protected HttpResponse<SubmitContainerTokenResponse> handleRequest(HttpRequest httpRequest, SubmitContainerTokenRequest req, PlatformId identity, boolean v2) {
         if( !identity && !allowAnonymous )
             throw new BadRequestException("Missing user access token")
+        if( v2 && req.containerFile && req.packages )
+            throw new BadRequestException("Attribute `containerFile` and `packages` conflicts each other")
+        if( v2 && req.condaFile )
+            throw new BadRequestException("Attribute `condaFile` is deprecated - use `packages` instead")
+        if( v2 && req.spackFile )
+            throw new BadRequestException("Attribute `spackFile` is deprecated - use `packages` instead")
+        if( !v2 && req.packages )
+            throw new BadRequestException("Attribute `packages` is not allowed")
+
+        if( v2 && req.packages ) {
+            // generate the container file required to assemble the container
+            final generated = containerFileFromPackages(req.packages, req.formatSingularity())
+            req = req.copyWith(containerFile: generated.bytes.encodeBase64().toString())
+        }
+
         final ip = addressResolver.resolve(httpRequest)
         final data = makeRequestData(req, identity, ip)
         final token = tokenService.computeToken(data)
         final target = targetImage(token.value, data.coordinates())
-        final build = data.buildNew ? data.buildId : null
-        final resp = new SubmitContainerTokenResponse(token.value, target, token.expiration, data.containerImage, build)
+        final resp = v2
+                        ? makeResponseV2(data, token, target)
+                        : makeResponseV1(data, token, target)
         // persist request
         storeContainerRequest0(req, data, token, target, ip)
         // log the response
-        log.debug "New container request fulfilled - token=$token.value; expiration=$token.expiration; container=$data.containerImage; build=$build; identity=$identity"
+        log.debug "New container request fulfilled - token=$token.value; expiration=$token.expiration; container=$data.containerImage; build=$resp.buildId; identity=$identity"
         // return response
         return HttpResponse.ok(resp)
     }
@@ -198,21 +234,6 @@ class ContainerTokenController {
         }
         catch (Throwable e) {
             log.error("Unable to store container request with token: ${token}", e)
-        }
-    }
-
-    final protected String decodeBase64OrFail(String value, String field) {
-        if( !value )
-            return null
-        try {
-            final bytes = Base64.getDecoder().decode(value)
-            final check = Base64.getEncoder().encodeToString(bytes)
-            if( value!=check )
-                throw new IllegalArgumentException("Not a valid base64 encoded string")
-            return new String(bytes)
-        }
-        catch (IllegalArgumentException e) {
-            throw new BadRequestException("Invalid '$field' attribute - make sure it encoded as a base64 string", e)
         }
     }
 
@@ -229,8 +250,8 @@ class ContainerTokenController {
         }
 
         final containerSpec = decodeBase64OrFail(req.containerFile, 'containerFile')
-        final condaContent = decodeBase64OrFail(req.condaFile, 'condaFile')
-        final spackContent = decodeBase64OrFail(req.spackFile, 'spackFile')
+        final condaContent = condaFileFromRequest(req)
+        final spackContent = spackFileFromRequest(req)
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
         final build = req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository ? buildConfig.defaultPublicRepository : buildConfig.defaultBuildRepository)
@@ -259,11 +280,10 @@ class ContainerTokenController {
                 req.imageName)
     }
 
-    protected BuildTrack buildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
-        final build = makeBuildRequest(req, identity, ip)
+    protected BuildTrack checkBuild(BuildRequest build, boolean dryRun) {
         final digest = registryProxyService.getImageDigest(build.targetImage)
         // check for dry-run execution
-        if( req.dryRun ) {
+        if( dryRun ) {
             log.debug "== Dry-run build request: $build"
             final dryId = build.containerId +  BuildRequest.SEP + '0'
             final cached = digest!=null
@@ -307,12 +327,13 @@ class ContainerTokenController {
         String buildId
         boolean buildNew
         if( req.containerFile ) {
-            final build = buildRequest(req, identity, ip)
-            targetImage = build.targetImage
-            targetContent = req.containerFile
-            condaContent = req.condaFile
-            buildId = build.id
-            buildNew = !build.cached
+            final build = makeBuildRequest(req, identity, ip)
+            final track = checkBuild(build, req.dryRun)
+            targetImage = track.targetImage
+            targetContent = build.containerFile
+            condaContent = build.condaFile
+            buildId = track.id
+            buildNew = !track.cached
         }
         else if( req.containerImage ) {
             // normalize container image
@@ -385,4 +406,5 @@ class ContainerTokenController {
         return HttpResponse.unauthorized()
                 .header(WWW_AUTHENTICATE, "Basic realm=Wave Authentication")
     }
+
 }

@@ -52,6 +52,13 @@ trait RedisTestContainer {
         redisContainer.getMappedPort(6379)
     }
 
+    def setupSpec() {
+        if (!redisContainer.isRunning()) {
+            redisContainer.start()
+            log.debug "Started Redis test container"
+        }
+    }
+
     def cleanupSpec(){
         redisContainer.stop()
     }

@@ -49,7 +49,7 @@ import jakarta.inject.Named
 @CompileStatic
 @Controller("/")
 @ExecuteOn(TaskExecutors.IO)
-class ContainerInspectController {
+class InspectController {
 
     @Inject
     private ContainerInspectService inspectService
@@ -61,7 +61,7 @@ class ContainerInspectController {
     private UserService userService
 
     @Inject
-    @Value('${tower.endpoint.url:`https://api.tower.nf`}')
+    @Value('${tower.endpoint.url:`https://api.cloud.seqera.io`}')
     private String towerEndpointUrl
 
     @Inject

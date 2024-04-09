@@ -36,7 +36,7 @@ import jakarta.inject.Inject
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @MicronautTest
-class ContainerInspectControllerTest extends Specification {
+class InspectControllerTest extends Specification {
 
     @MockBean(BuildLogServiceImpl)
     BuildLogService logsService() {
