@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023-2024, Seqera Labs
+ *  Copyright (c) 2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -16,15 +16,28 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.counter.impl
+package io.seqera.wave.service.metric
+
+import groovy.transform.CompileStatic
+import io.seqera.wave.service.counter.AbstractCounterStore
+import io.seqera.wave.service.counter.impl.CounterProvider
+import jakarta.inject.Singleton
 /**
+ * Implement a persistent counter service for metrics
  *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-interface CounterProvider {
+@Singleton
+@CompileStatic
+class MetricsCounterStore extends AbstractCounterStore {
 
-    long inc(String key, String field, long value)
+    MetricsCounterStore(CounterProvider provider) {
+        super(provider)
+    }
 
-    Long get(String key, String field)
+    @Override
+    protected String getPrefix() {
+        return 'metrics/v1'
+    }
 
 }
