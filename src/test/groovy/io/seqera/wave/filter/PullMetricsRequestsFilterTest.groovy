@@ -27,13 +27,13 @@ import java.time.format.DateTimeFormatter
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Property
 import io.micronaut.http.HttpRequest
-import io.micronaut.http.HttpResponse
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
+import io.seqera.wave.model.ContentType
 import jakarta.inject.Inject
 /**
  *
@@ -55,15 +55,17 @@ class PullMetricsRequestsFilterTest extends Specification {
         def date = LocalDate.now().format(dateFormatter)
         def cfg = new ContainerConfig(workingDir: '/foo')
         def req = new SubmitContainerTokenRequest(towerWorkspaceId: 10,
-                containerImage: 'hello-world:sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6', containerConfig: cfg)
+                containerImage: 'hello-world:sha256:e2fc4e5012d16e7fe466f5291c476431beaa1f9b90a5c2125b493ed28e2aba57', containerConfig: cfg)
         when:
         def resp = httpClient
                 .toBlocking()
                 .exchange(HttpRequest.POST("container-token", req), SubmitContainerTokenResponse)
         and:
         def request = HttpRequest.GET("/v2/wt/${resp.body().containerToken}" +
-                "/library/hello-world/manifests/sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6")
-        HttpResponse<String> response = httpClient.toBlocking().exchange(request,String)
+                "/library/hello-world/manifests/sha256:e2fc4e5012d16e7fe466f5291c476431beaa1f9b90a5c2125b493ed28e2aba57")
+                .headers({h-> h.add('Accept', ContentType.OCI_IMAGE_MANIFEST_V1)
+        })
+        httpClient.toBlocking().exchange(request)
         and:
         req = HttpRequest.GET("/v1alpha2/metrics/pulls?date=$date").basicAuth("username", "password")
         def res = httpClient.toBlocking().exchange(req, Map)
