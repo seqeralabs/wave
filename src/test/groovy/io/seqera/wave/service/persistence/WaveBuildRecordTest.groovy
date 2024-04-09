@@ -56,6 +56,7 @@ class WaveBuildRecordTest extends Specification {
                 'docker.io/my/repo',
                 '12345',
                 "1.2.3.4",
+                null,
                 null )
         final result = new BuildResult(request.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         final event = new BuildEvent(request, result)
@@ -85,6 +86,7 @@ class WaveBuildRecordTest extends Specification {
                 'docker.io/my/repo',
                 '12345',
                 "1.2.3.4",
+                null,
                 null )
                 .withBuildId('123')
 

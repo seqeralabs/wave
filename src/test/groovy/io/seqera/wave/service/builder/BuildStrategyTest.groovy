@@ -129,7 +129,8 @@ class BuildStrategyTest extends Specification {
                 'docker.io/my/repo',
                 '12345',
                 "1.2.3.4",
-                null )
+                null,
+                null)
         then:
         build.containerId == '911d21120b4b505c'
         build.workspace == Path.of("some/path")
