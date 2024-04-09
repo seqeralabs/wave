@@ -3,7 +3,7 @@ surreal:
   default:
     ns : "seqera"
     db : "wave"
-    url: "http://0.0.0.0:8000"
+    url: "http://surrealdb:8000"
     user: "root"
     password: "root"
 ...
