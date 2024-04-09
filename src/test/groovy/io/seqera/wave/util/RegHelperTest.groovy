@@ -292,12 +292,12 @@ class RegHelperTest extends Specification {
         where:
         IMAGENAME               | ISVALID
         'foo'                   | true
-        'foo:1.1'               | true
-        'foo:SHA123asdf'        | true
+        'foo:'                  | false
+        'foo:SHA123asdf'        | false
         'foo/bar/foo'           | true
-        'foo/bar/foo:1.1.A'     | true
-        'foo/bar/foo:1.1-A'     | true
-        'foo/bar/foo:SHA123asdf'| true
+        'foo/bar/foo:1.1.A'     | false
+        'foo/bar/foo:1.1-A'     | false
+        'foo/bar/foo:SHA123asdf'| false
         'foo bar'               | false
         'foo*bar'               | false
         '/foo/bar'              | false

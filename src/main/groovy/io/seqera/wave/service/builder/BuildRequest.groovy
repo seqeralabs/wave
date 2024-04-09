@@ -142,7 +142,11 @@ class BuildRequest {
 
     volatile Path workDir
 
-    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, BuildFormat format, PlatformId identity, ContainerConfig containerConfig, BuildContext buildContext, ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId) {
+    final String imageName
+
+    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, BuildFormat format,
+                 PlatformId identity, ContainerConfig containerConfig, BuildContext buildContext, ContainerPlatform platform,
+                 String configJson, String cacheRepo, String scanId, String ip, String offsetId, String imageName) {
         this.containerId = computeDigest(containerFile, condaFile, spackFile, platform, repo, buildContext)
         this.containerFile = containerFile
         this.containerConfig = containerConfig
@@ -161,6 +165,7 @@ class BuildRequest {
         this.ip = ip
         this.isSpackBuild = spackFile
         this.scanId = scanId
+        this.imageName = imageName
     }
 
     BuildRequest(Map opts) {

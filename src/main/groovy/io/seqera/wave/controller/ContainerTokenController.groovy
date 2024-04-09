@@ -225,7 +225,7 @@ class ContainerTokenController {
             throw new BadRequestException("Missing build cache repository attribute")
         //validate custom image name
         if( req.imageName && !RegHelper.isValidImageName(req.imageName) ){
-            throw new BadRequestException("Supplied container image name '${req.imageName}' is not validate")
+            throw new BadRequestException("Supplied container image name '${req.imageName}' is not valid")
         }
 
         final containerSpec = decodeBase64OrFail(req.containerFile, 'containerFile')

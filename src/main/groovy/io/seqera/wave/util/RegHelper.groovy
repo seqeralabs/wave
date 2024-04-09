@@ -294,7 +294,7 @@ class RegHelper {
     }
 
     static boolean isValidImageName(String imageName){
-        final DOCKER_IMAGE_REGEX = /^(?:[a-zA-Z0-9-]+\.)?[a-zA-Z0-9-]+(?:\/[a-zA-Z0-9-]+)*(?::[a-zA-Z0-9-_.]+)?$/
+        final DOCKER_IMAGE_REGEX = /^(?:[a-zA-Z0-9-]+\.)?[a-zA-Z0-9-]+(?:\/[a-zA-Z0-9-]+)*$/
         return (imageName =~ DOCKER_IMAGE_REGEX).matches()
     }
 }
