@@ -24,7 +24,6 @@ import spock.lang.Specification
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Property
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
@@ -39,7 +38,6 @@ import jakarta.inject.Inject
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-@Slf4j
 @MicronautTest
 @Property(name = 'wave.metrics.enabled', value = 'true')
 class PullMetricsRequestsFilterTest extends Specification {
