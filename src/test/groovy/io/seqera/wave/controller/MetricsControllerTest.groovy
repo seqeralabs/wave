@@ -64,7 +64,7 @@ class MetricsControllerTest extends Specification {
 
     final PREFIX = '/v1alpha1/metrics'
 
-    DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+    final dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
     def setup() {
         //add build records
