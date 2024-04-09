@@ -54,6 +54,7 @@ class PullMetricsRequestsFilterTest extends Specification {
         def cfg = new ContainerConfig(workingDir: '/foo')
         def req = new SubmitContainerTokenRequest(towerWorkspaceId: 10,
                 containerImage: 'hello-world:sha256:e2fc4e5012d16e7fe466f5291c476431beaa1f9b90a5c2125b493ed28e2aba57', containerConfig: cfg)
+
         when:
         def resp = httpClient
                 .toBlocking()
@@ -61,8 +62,7 @@ class PullMetricsRequestsFilterTest extends Specification {
         and:
         def request = HttpRequest.GET("/v2/wt/${resp.body().containerToken}" +
                 "/library/hello-world/manifests/sha256:e2fc4e5012d16e7fe466f5291c476431beaa1f9b90a5c2125b493ed28e2aba57")
-                .headers({h-> h.add('Accept', ContentType.OCI_IMAGE_MANIFEST_V1)
-        })
+                .headers({h-> h.add('Accept', ContentType.OCI_IMAGE_MANIFEST_V1)})
         httpClient.toBlocking().exchange(request)
         and:
         req = HttpRequest.GET("/v1alpha2/metrics/pulls?date=$date").basicAuth("username", "password")
