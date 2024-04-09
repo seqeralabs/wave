@@ -19,7 +19,6 @@
 package io.seqera.wave.controller
 
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutorService
 import java.util.function.Consumer
 
 import groovy.transform.CompileStatic
@@ -51,7 +50,6 @@ import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.blob.BlobCacheService
 import io.seqera.wave.service.builder.ContainerBuildService
-import io.seqera.wave.service.metric.MetricsService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.DockerDigestStore
 import io.seqera.wave.storage.HttpDigestStore
@@ -59,7 +57,6 @@ import io.seqera.wave.storage.LazyDigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.util.Retryable
 import jakarta.inject.Inject
-import jakarta.inject.Named
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Mono
 /**

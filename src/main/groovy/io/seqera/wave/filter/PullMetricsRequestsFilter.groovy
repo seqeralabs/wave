@@ -38,6 +38,11 @@ import jakarta.inject.Inject
 import jakarta.inject.Named
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Flux
+import static io.seqera.wave.model.ContentType.DOCKER_MANIFEST_V1_JWS_TYPE
+import static io.seqera.wave.model.ContentType.DOCKER_MANIFEST_V1_TYPE
+import static io.seqera.wave.model.ContentType.DOCKER_MANIFEST_V2_TYPE
+import static io.seqera.wave.model.ContentType.OCI_IMAGE_MANIFEST_V1
+
 /**
  * Implements a filter to check whether a request is pull request or not
  * and then increment the metrics counters
@@ -45,9 +50,16 @@ import reactor.core.publisher.Flux
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @CompileStatic
-@Filter(value = '/**', methods = HttpMethod.GET)
+@Filter(value = '/v2/**', methods = HttpMethod.GET)
 @Requires(property = 'wave.metrics.enabled', value = 'true')
-class TracePullRequestsFilter  implements HttpServerFilter {
+class PullMetricsRequestsFilter implements HttpServerFilter {
+
+    private static final List<String> MANIFEST_TYPES = List.of(
+            DOCKER_MANIFEST_V2_TYPE,
+            OCI_IMAGE_MANIFEST_V1,
+            DOCKER_MANIFEST_V1_JWS_TYPE,
+            DOCKER_MANIFEST_V1_TYPE
+    )
 
     @Inject
     private MetricsService metricsService
@@ -59,9 +71,6 @@ class TracePullRequestsFilter  implements HttpServerFilter {
     @Named(TaskExecutors.IO)
     private ExecutorService executor
 
-    private static final String DOCKER_MANIFEST_V2_TYPE = "application/vnd.docker.distribution.manifest.v2+json";
-    private static final String OCI_IMAGE_MANIFEST_V1 = "application/vnd.oci.image.manifest.v1+json";
-
     @Override
     Publisher<MutableHttpResponse<?>> doFilter(HttpRequest<?> request, ServerFilterChain chain) {
         return Flux.from(chain.proceed(request))
@@ -72,7 +81,7 @@ class TracePullRequestsFilter  implements HttpServerFilter {
 
     protected void incMetricsCounters(HttpRequest request, HttpResponse response) {
         final contentType = response.headers.get(HttpHeaders.CONTENT_TYPE)
-        if(contentType && (contentType == DOCKER_MANIFEST_V2_TYPE || contentType == OCI_IMAGE_MANIFEST_V1)) {
+        if( contentType in MANIFEST_TYPES ) {
             final route = routeHelper.parse(request.path)
             CompletableFuture.supplyAsync(() -> metricsService.incrementPullsCounter(route.identity), executor)
             final version = route.request?.containerConfig?.fusionVersion()
@@ -80,5 +89,10 @@ class TracePullRequestsFilter  implements HttpServerFilter {
                 CompletableFuture.supplyAsync(() -> metricsService.incrementFusionPullsCounter(route.identity), executor)
             }
         }
+    }
+
+    @Override
+    int getOrder() {
+       FilterOrder.PULL_METRICS
     }
 }
