@@ -186,7 +186,7 @@ Provides basic information about the service status.
 }
 ```
 
-## Metrics APIs
+## Metrics APIs based on SurrealDB
 
 These APIs provide usage (builds and pulls) metrics of Wave per IP and user.
 These APIs required basic authentication, so you need to provide username and password while calling these APIs.
@@ -347,4 +347,113 @@ This endpoint is used to get the total numbers of pulls through Wave per user.
 ```
 % curl -u foo:bar "http://localhost:9090/v1alpha1/metrics/pulls/user?startDate=2024-02-29&endDate=2024-02-29&fusion=true"
 {"result":{"test_metrics@seqera.io":2}}
+```
+
+## Metrics APIs based on Redis
+
+These APIs provide usage (builds and pulls) metrics of Wave for a specific date and/or a specific organisation.
+These APIs required basic authentication, so you need to provide username and password while calling these APIs.
+
+All Metrics API endpoints have these two query parameters, at least one needs to provided to fetch the metrics:
+
+| Name | Description                                                           | sample Value |
+|------|-----------------------------------------------------------------------|--------------|
+| date | Format: `yyyy-mm-dd`, The data of the required metrics.               | 2024-04-08   |
+| org  | domain of the organisation used in their emails. e.g. `org=seqera.io` | seqera.io    |
+
+### Build Metrics API
+
+These APIs are used to get the metrics about the container builds by Wave.
+
+### GET `/v1alpha2/metrics/builds`
+
+This endpoint is used to get the total numbers of builds performed by Wave.
+
+### Response
+
+```json
+{
+    count: integer
+}
+```
+
+#### Examples
+
+```
+% curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/builds?date=2024-04-08&org=seqera.io"
+{"count":4}
+```
+
+```
+% curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/builds?date=2024-04-08"
+{"count":6}
+```
+
+```
+% curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/builds?org=seqera.io"
+{"count":4}
+```
+### Pull Metrics API
+
+These APIs are used to get the metrics about the container pulls through Wave.
+
+### GET `/v1alpha2/metrics/pulls`
+
+This endpoint is used to get the total numbers of pulls performed through Wave.
+
+### Response
+
+```json
+{
+    count: integer
+}
+```
+
+#### Examples
+
+```
+% curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/pulls?date=2024-04-08&org=seqera.io"
+{"count":5}
+```
+
+```
+% curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/pulls?date=2024-04-08"
+{"count":7}
+```
+
+```
+% curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/pulls?org=seqera.io"
+{"count":5}
+```
+### Fusion Pull Metrics API
+
+These APIs are used to get the metrics about the fusion based container pulls through Wave.
+
+### GET `/v1alpha2/metrics/fusion/pulls`
+
+This endpoint is used to get the total numbers of pulls of fusion based containers performed through Wave.
+
+### Response
+
+```json
+{
+    count: integer
+}
+```
+
+#### Examples
+
+```
+% curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/fusion/pulls?date=2024-04-08&org=seqera.io"
+{"count":2}
+```
+
+```
+% curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/fusion/pulls?date=2024-04-08"
+{"count":2}%
+```
+
+```
+% curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/fusion/pulls?org=seqera.io"
+{"count":2}
 ```

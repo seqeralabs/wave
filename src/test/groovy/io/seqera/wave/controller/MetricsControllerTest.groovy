@@ -37,6 +37,7 @@ import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.metric.MetricsService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
@@ -47,8 +48,8 @@ import jakarta.inject.Inject
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-@Property(name = 'wave.metrics.enabled', value = 'true')
 @MicronautTest
+@Property(name = 'wave.metrics.enabled', value = 'true')
 class MetricsControllerTest extends Specification {
 
     @Inject
@@ -58,7 +59,12 @@ class MetricsControllerTest extends Specification {
     @Inject
     PersistenceService persistenceService
 
+    @Inject
+    MetricsService metricsService
+
     final PREFIX = '/v1alpha1/metrics'
+
+    final dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
     def setup() {
         //add build records
@@ -478,5 +484,133 @@ class MetricsControllerTest extends Specification {
 
         expect: '1 day difference'
         Duration.between(MetricsController.parseStartDate(starDate), MetricsController.parseEndDate(endDate)).toString() == 'PT23H59M59.999999999S'
+    }
+
+    def 'should get the correct builds count and http status code 200'() {
+        given:
+        def date = LocalDate.now().format(dateFormatter)
+        def user1 = new User(id: 1, userName: 'foo', email: 'user1@org1.com')
+        def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
+        def platformId1 = new PlatformId(user1, 101)
+        def platformId2 = new PlatformId(user2, 102)
+        metricsService.incrementBuildsCounter(platformId1)
+        metricsService.incrementBuildsCounter(platformId2)
+        metricsService.incrementBuildsCounter(null)
+
+        when: 'only date is provided'
+        def req = HttpRequest.GET("/v1alpha2/metrics/builds?date=$date").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [count: 3]
+        res.status.code == 200
+
+        when: 'date and org is provided'
+        req = HttpRequest.GET("/v1alpha2/metrics/builds?date=$date&org=org1.com").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [count: 1]
+        res.status.code == 200
+
+        when: 'only org is provided'
+        req = HttpRequest.GET("/v1alpha2/metrics/builds?org=org1.com").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [count: 1]
+        res.status.code == 200
+    }
+
+    def 'should get the correct pulls count and http status code 200'() {
+        given:
+        def date = LocalDate.now().format(dateFormatter)
+        def user1 = new User(id: 1, userName: 'foo', email: 'user1@org1.com')
+        def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
+        def platformId1 = new PlatformId(user1, 101)
+        def platformId2 = new PlatformId(user2, 102)
+        metricsService.incrementPullsCounter(platformId1)
+        metricsService.incrementPullsCounter(platformId2)
+        metricsService.incrementPullsCounter(null)
+
+        when: 'only date is provided'
+        def req = HttpRequest.GET("/v1alpha2/metrics/pulls?date=$date").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [count: 3]
+        res.status.code == 200
+
+        when: 'date and org is provided'
+        req = HttpRequest.GET("/v1alpha2/metrics/pulls?date=$date&org=org2.com").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [count: 1]
+        res.status.code == 200
+
+        when: 'only org is provided'
+        req = HttpRequest.GET("/v1alpha2/metrics/pulls?org=org2.com").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [count: 1]
+        res.status.code == 200
+    }
+
+    def 'should get the correct fusion pulls count and http status code 200'() {
+        given:
+        def date = LocalDate.now().format(dateFormatter)
+        def user1 = new User(id: 1, userName: 'foo', email: 'user1@org1.com')
+        def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
+        def platformId1 = new PlatformId(user1, 101)
+        def platformId2 = new PlatformId(user2, 102)
+        metricsService.incrementFusionPullsCounter(platformId1)
+        metricsService.incrementFusionPullsCounter(platformId2)
+        metricsService.incrementFusionPullsCounter(null)
+
+        when:'only date is provided'
+        def req = HttpRequest.GET("/v1alpha2/metrics/fusion/pulls?date=$date").basicAuth("username", "password")
+        def res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [count: 3]
+        res.status.code == 200
+
+        when: 'date and org is provided'
+        req = HttpRequest.GET("/v1alpha2/metrics/fusion/pulls?date=$date&org=org2.com").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [count: 1]
+        res.status.code == 200
+
+        when: 'only org is provided'
+        req = HttpRequest.GET("/v1alpha2/metrics/fusion/pulls?org=org2.com").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct count'
+        res.body() == [count: 1]
+        res.status.code == 200
+    }
+
+    def 'should validate query parameters'() {
+        when: 'wrong date format is provided'
+        def req = HttpRequest.GET("/v1alpha2/metrics/pulls?date=2024-03-2").basicAuth("username", "password")
+        client.toBlocking().exchange(req, Map)
+
+        then: 'should get 400 response code and message'
+        def e = thrown(HttpClientResponseException)
+        e.message == 'date format should be yyyy-MM-dd'
+        e.status.code == 400
+
+        when: 'no query parameter is provided'
+        req = HttpRequest.GET("/v1alpha2/metrics/builds").basicAuth("username", "password")
+        client.toBlocking().exchange(req, Map)
+
+        then: 'should get 400 response code and message'
+        e = thrown(HttpClientResponseException)
+        e.message == 'Either date or org query parameter must be provided'
+        e.status.code == 400
     }
 }
