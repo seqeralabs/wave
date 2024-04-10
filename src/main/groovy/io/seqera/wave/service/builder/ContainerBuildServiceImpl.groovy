@@ -189,7 +189,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     protected static String getDockerLabels(Map<String, String> labels){
         StringBuilder labelsBuilder = new StringBuilder()
-        labelsBuilder.append("\nLabel ")
+        labelsBuilder.append("\nLABEL ")
         labels.each() { key, value ->
             labelsBuilder.append(key)
             labelsBuilder.append("=")

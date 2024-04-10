@@ -142,11 +142,6 @@ class BuildRequest {
 
     volatile Path workDir
 
-    /**
-     * Labels to be added in conda and spack build images
-     */
-    Map<String, String> labels
-
     BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, BuildFormat format, PlatformId identity, ContainerConfig containerConfig, BuildContext buildContext, ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId) {
         this.containerId = computeDigest(containerFile, condaFile, spackFile, platform, repo, buildContext)
         this.containerFile = containerFile
@@ -316,11 +311,6 @@ class BuildRequest {
 
     boolean formatSingularity() {
         format==SINGULARITY
-    }
-
-    BuildRequest withLabels(Map<String, String> labels){
-        this.labels = labels
-        return this
     }
 
     BuildRequest withBuildId(String id) {

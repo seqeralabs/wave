@@ -493,7 +493,7 @@ class ContainerBuildServiceTest extends Specification {
         def result = builder.addLabels(builder.containerFile0(REQ, context, null), REQ)
 
         then:
-        result.contains('Label arch=arm64 packageName=salmon version=1.0.0')
+        result.contains('LABEL arch=arm64 packageName=salmon version=1.0.0')
 
         cleanup:
         folder?.deleteDir()
