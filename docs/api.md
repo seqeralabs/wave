@@ -186,6 +186,22 @@ Provides basic information about the service status.
 }
 ```
 
+### POST `/v1alpha1/inspect`
+
+This endpoint provides the metadata for provided container image
+
+### Request
+
+```json
+{
+    containerImage: string,
+    towerAccessToken: string,
+    towerEndpoint: string,
+    towerWorkspaceId: string
+}
+```
+
+
 ## Metrics APIs based on SurrealDB
 
 These APIs provide usage (builds and pulls) metrics of Wave per IP and user.
