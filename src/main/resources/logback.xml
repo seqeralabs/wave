@@ -19,7 +19,7 @@
 
 <!DOCTYPE configuration [
   <!ENTITY ZeroWidthSpace "&#x200B;">
-]>
+]/>
 <configuration>
     <property name="WAVE_LOG_ROOT" value="${WAVE_LOG_ROOT:-.}" />
     <property name="WAVE_LOG_NAME" value="${WAVE_LOG_NAME:-wave}" />
