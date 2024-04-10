@@ -38,11 +38,14 @@ import io.micronaut.http.annotation.QueryValue
 import io.micronaut.security.annotation.Secured
 import io.micronaut.security.authentication.AuthorizationException
 import io.micronaut.security.rules.SecurityRule
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.metric.Metric
 import io.seqera.wave.service.metric.MetricFilter
 import io.seqera.wave.service.metric.MetricService
+import io.seqera.wave.service.metric.MetricsService
 import io.seqera.wave.service.metric.model.GetBuildsMetricsResponse
 import io.seqera.wave.service.metric.model.GetBuildsCountResponse
+import io.seqera.wave.service.metric.model.GetFusionPullsCountResponse
 import io.seqera.wave.service.metric.model.GetPullsCountResponse
 import io.seqera.wave.service.metric.model.GetPullsMetricsResponse
 import jakarta.inject.Inject
@@ -57,18 +60,22 @@ import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
 @CompileStatic
 @Requires(property = 'wave.metrics.enabled', value = 'true')
 @Secured(SecurityRule.IS_AUTHENTICATED)
-@Controller("/v1alpha1/metrics")
+@Controller
 class MetricsController {
-    @Inject
-    private MetricService metricsService
 
-    @Get(uri = "/builds/{metric}", produces = MediaType.APPLICATION_JSON)
+    @Inject
+    private MetricService metricService
+
+    @Inject
+    private MetricsService metricsService
+
+    @Get(uri = "/v1alpha1/metrics/builds/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getBuildMetrics(@PathVariable String metric,
                                     @Nullable @QueryValue Boolean success,
                                     @Nullable @QueryValue String startDate,
                                     @Nullable @QueryValue String endDate,
                                     @Nullable @QueryValue Integer limit) {
-        final result = metricsService.getBuildsMetric(
+        final result = metricService.getBuildsMetric(
                         Metric.valueOf(metric),
                         new MetricFilter.Builder()
                                 .dates(parseStartDate(startDate), parseEndDate(endDate))
@@ -78,11 +85,11 @@ class MetricsController {
         return HttpResponse.ok(new GetBuildsMetricsResponse(result))
     }
 
-    @Get(uri = "/builds", produces = MediaType.APPLICATION_JSON)
+    @Get(uri = "/v1alpha1/metrics/builds", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getBuildsCount(@Nullable @QueryValue Boolean success,
                                    @Nullable @QueryValue String startDate,
                                    @Nullable @QueryValue String endDate) {
-        final count = metricsService.getBuildsCount(
+        final count = metricService.getBuildsCount(
                         new MetricFilter.Builder()
                                 .dates(parseStartDate(startDate), parseEndDate(endDate))
                                 .success(success)
@@ -90,13 +97,13 @@ class MetricsController {
         return HttpResponse.ok(new GetBuildsCountResponse(count))
     }
 
-    @Get(uri = "/pulls/{metric}", produces = MediaType.APPLICATION_JSON)
-    HttpResponse<?> getPullsMetrics(@PathVariable String metric,
+    @Get(uri = "/v1alpha1/metrics/pulls/{metric}", produces = MediaType.APPLICATION_JSON)
+    HttpResponse<?> getPullMetrics(@PathVariable String metric,
                                     @Nullable @QueryValue String startDate,
                                     @Nullable @QueryValue String endDate,
                                     @Nullable @QueryValue Boolean fusion,
                                     @Nullable @QueryValue Integer limit) {
-        final result = metricsService.getPullsMetric(
+        final result = metricService.getPullsMetric(
                         Metric.valueOf(metric),
                         new MetricFilter.Builder()
                                 .dates(parseStartDate(startDate), parseEndDate(endDate))
@@ -107,16 +114,38 @@ class MetricsController {
 
     }
 
-    @Get(uri = "/pulls", produces = MediaType.APPLICATION_JSON)
+    @Get(uri = "/v1alpha1/metrics/pulls", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getPullsCount(@Nullable @QueryValue String startDate,
                                   @Nullable @QueryValue String endDate,
                                   @Nullable @QueryValue Boolean fusion) {
-        final count = metricsService.getPullsCount(
+        final count = metricService.getPullsCount(
                         new MetricFilter.Builder()
                                 .dates(parseStartDate(startDate), parseEndDate(endDate))
                                 .fusion(fusion)
                                 .build())
         return HttpResponse.ok(new GetPullsCountResponse(count))
+    }
+
+    @Get(uri = "/v1alpha2/metrics/builds", produces = MediaType.APPLICATION_JSON)
+    HttpResponse<?> getBuildsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
+        validateQueryParams(date, org)
+        final count = metricsService.getBuildsMetrics(date, org)
+        return HttpResponse.ok(new GetBuildsCountResponse(count))
+    }
+
+    @Get(uri = "/v1alpha2/metrics/pulls", produces = MediaType.APPLICATION_JSON)
+    HttpResponse<?> getPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
+        validateQueryParams(date, org)
+        final count = metricsService.getPullsMetrics(date, org)
+        return HttpResponse.ok(new GetPullsCountResponse(count))
+    }
+
+    @Get(uri = "/v1alpha2/metrics/fusion/pulls", produces = MediaType.APPLICATION_JSON)
+    HttpResponse<?> getFusionPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
+        validateQueryParams(date, org)
+        final count = metricsService.getFusionPullsMetrics(date, org)
+        return HttpResponse.ok(new GetFusionPullsCountResponse(count))
+
     }
 
     static Instant parseStartDate(String date) {
@@ -148,5 +177,14 @@ class MetricsController {
     HttpResponse<?> handleIllegalArgumentException() {
         return HttpResponse.badRequest([message: 'you have provided an invalid metric. ' +
                 'The valid metrics are: ' + Metric.values().collect({ it.name() }).join(', ')])
+    }
+
+    static void validateQueryParams(String date, String org) {
+        if(!date && !org)
+            throw new BadRequestException('Either date or org query parameter must be provided')
+        def pattern = ~/\d{4}-\d{2}-\d{2}/
+        if(date && !(date ==~ pattern)){
+            throw new BadRequestException('date format should be yyyy-MM-dd')
+        }
     }
 }
