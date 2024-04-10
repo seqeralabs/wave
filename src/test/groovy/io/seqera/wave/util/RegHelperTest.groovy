@@ -290,16 +290,21 @@ class RegHelperTest extends Specification {
         RegHelper.isValidImageName( IMAGENAME ) == ISVALID
 
         where:
-        IMAGENAME               | ISVALID
-        'foo'                   | true
-        'foo:'                  | false
-        'foo:SHA123asdf'        | false
-        'foo/bar/foo'           | true
-        'foo/bar/foo:1.1.A'     | false
-        'foo/bar/foo:1.1-A'     | false
-        'foo/bar/foo:SHA123asdf'| false
-        'foo bar'               | false
-        'foo*bar'               | false
-        '/foo/bar'              | false
+        IMAGENAME                   | ISVALID
+        'foo'                       | true
+        'foo:'                      | false
+        'foo@sha256:asdf'           | false
+        'foo/bar/foo'               | true
+        'foo/bar/foo:1.1.A'         | false
+        'foo/bar/foo:1.1-A'         | false
+        'foo/bar/foo@sha256:asdf'   | false
+        'foo bar'                   | false
+        'foo*bar'                   | false
+        '/foo/bar'                  | false
+        'foo__bar/bar'              | true
+        'foo___bar/bar'             | false
+        'foo---bar/bar'             | true
+        'foo---bar/bar_'            | false
+        'foo---bar/bar_foo'         | true
     }
 }
