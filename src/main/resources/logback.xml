@@ -16,6 +16,9 @@
   ~  along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
+<!DOCTYPE configuration [
+  <!ENTITY ZeroWidthSpace "&#x200B;">
+]>
 <configuration>
     <property name="WAVE_LOG_ROOT" value="${WAVE_LOG_ROOT:-.}" />
     <property name="WAVE_LOG_NAME" value="${WAVE_LOG_NAME:-wave}" />
@@ -43,7 +46,7 @@
             <totalSizeCap>200MB</totalSizeCap>
         </rollingPolicy>
         <encoder>
-            <pattern>%d{MMM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>&ZeroWidthSpace;[%d{MMM-dd HH:mm:ss.SSS}] [%t] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
