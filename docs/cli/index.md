@@ -20,7 +20,7 @@ You can integrate Wave CLI with your Seqera Platform instance by specifying a to
 The following CLI arguments are available for Seqera Platform integration:
 
 - `--tower-token`: A Seqera Platform auth token so that Wave can access your private registry credentials.
-- `--tower-endpoint`: For Enterprise customers, the URL endpoint for your instance, such as `https://api.tower.nf`.
+- `--tower-endpoint`: For Enterprise customers, the URL endpoint for your instance, such as `https://api.cloud.seqera.io`.
 - `--tower-workspace-id`: A Seqera Platform workspace ID, such as `1234567890`, where credentials may be stored.
 
 ### Environment variables
@@ -28,7 +28,7 @@ The following CLI arguments are available for Seqera Platform integration:
 The following environment variables are available for Seqera Platform integration:
 
 - `TOWER_API_ENDPOINT`: A Seqera Platform auth token so that Wave can access your private registry credentials.
-- `TOWER_ACCESS_TOKEN`: For Enterprise customers, the URL endpoint for your instance, such as `https://api.tower.nf`.
+- `TOWER_ACCESS_TOKEN`: For Enterprise customers, the URL endpoint for your instance, such as `https://api.cloud.seqera.io`.
 - `TOWER_WORKSPACE_ID`: A Seqera Platform workspace ID, such as `1234567890`, where credentials may be stored.
 
 ## Usage limits

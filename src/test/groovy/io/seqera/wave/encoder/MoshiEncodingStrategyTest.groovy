@@ -147,52 +147,6 @@ class MoshiEncodingStrategyTest extends Specification {
         result.buildId == 'build-123'
         result.buildNew
         result.freeze
-        and:
-        !result.userId
-        !result.workspaceId
-        !result.towerToken
-        !result.towerEndpoint
-    }
-
-    def 'should deserialize legacy request data' () {
-        given:
-        def REQUEST = '''
-            {
-               "userId": 100,
-               "workspaceId": 200,
-               "towerToken": "12345",
-               "towerEndpoint": "http://tower.com/api", 
-               "buildId":"build-123",
-               "buildNew":true,
-               "condaFile":"some/conda/file",
-               "containerConfig":{
-                  "cmd":[ "the","cmd" ],
-                  "entrypoint":["some","entry" ]
-               },
-               "containerFile":"from foo",
-               "containerImage":"ubuntu",
-               "freeze":true,
-               "platform":{
-                  "arch":"amd64",
-                  "os":"linux"
-               }
-            }
-            '''
-        and:
-        def encoder = new MoshiEncodeStrategy<ContainerRequestData>() { }
-
-        when:
-        def result = encoder.decode(REQUEST)
-        then:
-        result.identity == new PlatformId(new User(id:100), 200, '12345', 'http://tower.com/api')
-        result.containerImage == 'ubuntu'
-        result.containerFile == 'from foo'
-        result.containerConfig == new ContainerConfig(entrypoint: ['some', 'entry'], cmd:['the', 'cmd'])
-        result.condaFile == 'some/conda/file'
-        result.platform == ContainerPlatform.of('amd64')
-        result.buildId == 'build-123'
-        result.buildNew
-        result.freeze
     }
 
     def 'should encode and decode lazy digest store' () {

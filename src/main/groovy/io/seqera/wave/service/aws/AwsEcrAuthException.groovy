@@ -16,28 +16,21 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.exchange
+package io.seqera.wave.service.aws
 
-import java.time.Duration
-import java.time.Instant
-
-import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import io.seqera.wave.exception.WaveException
 
 /**
- * Model a build status response
- *
+ * Exception thrown when there's a AWS ECR authorization failure
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Canonical
 @CompileStatic
-class BuildStatusResponse {
-    enum Status { PENDING, COMPLETED }
+class AwsEcrAuthException extends WaveException {
 
-    final String id
-    final Status status
-    final Instant startTime
-    final Duration duration
-    final Boolean succeeded
+    AwsEcrAuthException(String msg, Throwable t) {
+        super(msg, t)
+    }
 
 }

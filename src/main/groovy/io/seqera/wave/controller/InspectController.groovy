@@ -39,6 +39,7 @@ import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
 import jakarta.inject.Named
+import static io.seqera.wave.controller.ContainerHelper.patchPlatformEndpoint
 
 /**
  * Implement container inspect capability
@@ -49,7 +50,7 @@ import jakarta.inject.Named
 @CompileStatic
 @Controller("/")
 @ExecuteOn(TaskExecutors.IO)
-class ContainerInspectController {
+class InspectController {
 
     @Inject
     private ContainerInspectService inspectService
@@ -61,7 +62,7 @@ class ContainerInspectController {
     private UserService userService
 
     @Inject
-    @Value('${tower.endpoint.url:`https://api.tower.nf`}')
+    @Value('${tower.endpoint.url:`https://api.cloud.seqera.io`}')
     private String towerEndpointUrl
 
     @Inject
@@ -78,6 +79,9 @@ class ContainerInspectController {
         // this is needed for backward compatibility with old clients
         if( !req.towerEndpoint ) {
             req.towerEndpoint = towerEndpointUrl
+        }
+        else {
+            req.towerEndpoint = patchPlatformEndpoint(req.towerEndpoint)
         }
 
         // anonymous access

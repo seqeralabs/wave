@@ -16,19 +16,19 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.exception
+package io.seqera.wave.service.metric.model
 
 import groovy.transform.CompileStatic
-
 /**
- * Exception raised when an unexpected error is throw reading a binary stream
- * via {@link io.seqera.wave.util.TimedInputStream}
- * 
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * Model a Wave fusion pulls count response
+ *
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @CompileStatic
-class UnexpectedReadException extends IOException {
-    UnexpectedReadException(String message, Throwable t) {
-        super(message, t)
+class GetFusionPullsCountResponse {
+    Long count
+
+    GetFusionPullsCountResponse(Long count) {
+        this.count = count
     }
 }
