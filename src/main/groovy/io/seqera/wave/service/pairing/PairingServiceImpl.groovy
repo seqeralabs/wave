@@ -54,19 +54,20 @@ class PairingServiceImpl implements PairingService {
 
     @Override
     PairingResponse acquirePairingKey(String service, String endpoint) {
-        final key = makeKey(service,endpoint)
+        final endpoint0 = patch0(endpoint)
+        final key = makeKey(service, endpoint0)
 
         def entry = store.get(key)
         if (!entry || entry.isExpired()) {
             final pairingId = LongRndKey.rndLong().toString()
-            log.debug "Pairing with service '${service}' at address $endpoint - pairing id: $pairingId (key: $key)"
+            log.debug "Pairing with service '${service}' at address $endpoint0 - pairing id: $pairingId (key: $key)"
             final keyPair = generate()
             final expiration = Instant.now() + lease
-            final newEntry = new PairingRecord(service, endpoint, pairingId, keyPair.getPrivate().getEncoded(), keyPair.getPublic().getEncoded(), expiration)
+            final newEntry = new PairingRecord(service, endpoint0, pairingId, keyPair.getPrivate().getEncoded(), keyPair.getPublic().getEncoded(), expiration)
             store.put(key,newEntry)
             entry = newEntry
         } else {
-            log.trace "Paired already with service '${service}' at address $endpoint - pairing id: $entry.pairingId (key: $key)"
+            log.trace "Paired already with service '${service}' at address $endpoint0 - pairing id: $entry.pairingId (key: $key)"
         }
 
         return new PairingResponse( pairingId: entry.pairingId, publicKey: entry.publicKey.encodeBase64() )
@@ -74,20 +75,23 @@ class PairingServiceImpl implements PairingService {
 
     @Override
     PairingRecord getPairingRecord(String service, String endpoint) {
-        final uid = makeKey(service, endpoint)
+        final uid = makeKey(service, patch0(endpoint))
         return store.get(uid)
     }
 
     protected static String patch0(String endpoint) {
         // api.stage-tower.net --> api.cloud.stage-seqera.io
         // api.tower.nf --> api.cloud.seqera.io
-        endpoint
+        final result = endpoint
                 .replace('/api.stage-tower.net','/api.cloud.stage-seqera.io')
                 .replace('/api.tower.nf','/api.cloud.seqera.io')
+        if( result != endpoint )
+            log.debug "Patched Platform endpoint: '$endpoint' with '$result'"
+        return result
     }
 
     protected static String makeKey(String service, String endpoint) {
-        final attrs = [service: service, towerEndpoint: patch0(endpoint)] as Map<String,Object>
+        final attrs = [service: service, towerEndpoint: endpoint] as Map<String,Object>
         return DigestFunctions.md5(attrs)
     }
 
