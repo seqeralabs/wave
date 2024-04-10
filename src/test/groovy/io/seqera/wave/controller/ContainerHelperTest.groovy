@@ -391,4 +391,15 @@ class ContainerHelperTest extends Specification {
         then:
         thrown(IllegalArgumentException)
     }
+
+    def 'should patch endpoints' () {
+        expect:
+        ContainerHelper.patchPlatformEndpoint(ENDPOINT) == EXPECTED
+
+        where:
+        ENDPOINT                        | EXPECTED
+        'http://foo.com'                | 'http://foo.com'
+        'https://api.tower.nf'          | 'https://api.cloud.seqera.io'
+        'https://api.stage-tower.net'   | 'https://api.cloud.stage-seqera.io'
+    }
 }

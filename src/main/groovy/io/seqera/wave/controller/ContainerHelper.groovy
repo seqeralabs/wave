@@ -20,6 +20,7 @@ package io.seqera.wave.controller
 
 import groovy.transform.CompileStatic
 import groovy.transform.PackageScope
+import groovy.util.logging.Slf4j
 import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
@@ -43,6 +44,7 @@ import static io.seqera.wave.util.DockerHelper.spackPackagesToSpackYaml
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
+@Slf4j
 @CompileStatic
 @PackageScope
 class ContainerHelper {
@@ -170,5 +172,16 @@ class ContainerHelper {
         final expiration = !data.freeze ? token.expiration : null
         final tokenId = !data.freeze ? token.value : null
         return new SubmitContainerTokenResponse(tokenId, target, expiration, null, build, cached, data.freeze)
+    }
+
+    static String patchPlatformEndpoint(String endpoint) {
+        // api.stage-tower.net --> api.cloud.stage-seqera.io
+        // api.tower.nf --> api.cloud.seqera.io
+        final result = endpoint
+                .replace('/api.stage-tower.net','/api.cloud.stage-seqera.io')
+                .replace('/api.tower.nf','/api.cloud.seqera.io')
+        if( result != endpoint )
+            log.debug "Patched Platform endpoint: '$endpoint' with '$result'"
+        return result
     }
 }
