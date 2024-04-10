@@ -157,7 +157,7 @@ class PairingServiceTest extends Specification{
 
     def 'should patch endpoints' () {
         expect:
-        PairingServiceImpl.patch0(ENDPOINT) == EXPECTED
+        PairingServiceImpl.patchPlatformEndpoint(ENDPOINT) == EXPECTED
 
         where:
         ENDPOINT                        | EXPECTED

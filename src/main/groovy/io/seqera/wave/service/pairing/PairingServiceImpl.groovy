@@ -54,7 +54,7 @@ class PairingServiceImpl implements PairingService {
 
     @Override
     PairingResponse acquirePairingKey(String service, String endpoint) {
-        final endpoint0 = patch0(endpoint)
+        final endpoint0 = patchPlatformEndpoint(endpoint)
         final key = makeKey(service, endpoint0)
 
         def entry = store.get(key)
@@ -75,11 +75,11 @@ class PairingServiceImpl implements PairingService {
 
     @Override
     PairingRecord getPairingRecord(String service, String endpoint) {
-        final uid = makeKey(service, patch0(endpoint))
+        final uid = makeKey(service, patchPlatformEndpoint(endpoint))
         return store.get(uid)
     }
 
-    protected static String patch0(String endpoint) {
+    static String patchPlatformEndpoint(String endpoint) {
         // api.stage-tower.net --> api.cloud.stage-seqera.io
         // api.tower.nf --> api.cloud.seqera.io
         final result = endpoint
