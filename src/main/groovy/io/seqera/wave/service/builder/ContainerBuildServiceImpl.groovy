@@ -166,17 +166,17 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     }
 
     //this method adds labels in singularity container
-    protected static String addLabels(String containerFile, BuildRequest req){
-        if(req.containerConfig.labels) {
+    protected static String addLabels(String containerFile, final BuildRequest req){
+        final labels = req.containerConfig?.labels
+        if(labels) {
             if (req.formatSingularity()) {
-                return containerFile + getSingularityLabels(req.containerConfig.labels)
+                return containerFile + getSingularityLabels(labels)
             }
             if (req.formatDocker()){
-                return containerFile + getDockerLabels(req.containerConfig.labels)
+                return containerFile + getDockerLabels(labels)
             }
-        }else{
-            return containerFile
         }
+        return containerFile
     }
 
     protected static String getSingularityLabels(Map<String, String> labels){
