@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8" ?>
 <!--
   ~  Wave, containers provisioning service
   ~  Copyright (c) 2023-2024, Seqera Labs
@@ -27,7 +28,7 @@
         <!-- ansi escape mess-up with non-ansi terminal and loggers -->
         <withJansi>false</withJansi>
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>&ZeroWidthSpace;[%d{HH:mm:ss.SSS}] [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
 <!--        <filter class="io.seqera.wave.util.LoggerLevelFilter">-->
 <!--            <level>${WAVE_LOG_LEVEL:-INFO}</level>-->
@@ -46,7 +47,7 @@
             <totalSizeCap>200MB</totalSizeCap>
         </rollingPolicy>
         <encoder>
-            <pattern>&ZeroWidthSpace;[%d{MMM-dd HH:mm:ss.SSS}] [%t] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{MMM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
