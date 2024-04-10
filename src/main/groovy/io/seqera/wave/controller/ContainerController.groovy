@@ -81,10 +81,9 @@ import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
 
 import static io.seqera.wave.controller.ContainerHelper.makeResponseV2
 import static io.seqera.wave.controller.ContainerHelper.makeResponseV1
+import static io.seqera.wave.controller.ContainerHelper.patchPlatformEndpoint
 import static io.seqera.wave.controller.ContainerHelper.containerFileFromPackages
 import static java.util.concurrent.CompletableFuture.completedFuture
-
-import static io.seqera.wave.service.pairing.PairingServiceImpl.patchPlatformEndpoint
 
 /**
  * Implement a controller to receive container token requests

@@ -155,14 +155,4 @@ class PairingServiceTest extends Specification{
         return sig.verify(signature)
     }
 
-    def 'should patch endpoints' () {
-        expect:
-        PairingServiceImpl.patchPlatformEndpoint(ENDPOINT) == EXPECTED
-
-        where:
-        ENDPOINT                        | EXPECTED
-        'http://foo.com'                | 'http://foo.com'
-        'https://api.tower.nf'          | 'https://api.cloud.seqera.io'
-        'https://api.stage-tower.net'   | 'https://api.cloud.stage-seqera.io'
-    }
 }
