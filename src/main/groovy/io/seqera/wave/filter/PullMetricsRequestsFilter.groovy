@@ -81,7 +81,7 @@ class PullMetricsRequestsFilter implements HttpServerFilter {
 
     protected void incMetricsCounters(HttpRequest request, HttpResponse response) {
         final contentType = response.headers.get(HttpHeaders.CONTENT_TYPE)
-        if( contentType in MANIFEST_TYPES ) {
+        if( contentType && contentType in MANIFEST_TYPES ) {
             final route = routeHelper.parse(request.path)
             CompletableFuture.supplyAsync(() -> metricsService.incrementPullsCounter(route.identity), executor)
             final version = route.request?.containerConfig?.fusionVersion()
