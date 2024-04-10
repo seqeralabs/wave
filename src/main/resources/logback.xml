@@ -19,8 +19,10 @@
 
 <!DOCTYPE configuration [
   <!ENTITY ZeroWidthSpace "&#x200B;">
-]/>
-<configuration>
+]>
+<configuration xmlns="http://ch.qos.logback/xml/ns/logback"
+               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:schemaLocation="http://ch.qos.logback/xml/ns/logback https://raw.githubusercontent.com/enricopulatzo/logback-XSD/master/src/main/xsd/logback.xsd">
     <property name="WAVE_LOG_ROOT" value="${WAVE_LOG_ROOT:-.}" />
     <property name="WAVE_LOG_NAME" value="${WAVE_LOG_NAME:-wave}" />
 
@@ -30,11 +32,6 @@
         <encoder>
             <pattern>&ZeroWidthSpace;[%d{HH:mm:ss.SSS}] [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
-<!--        <filter class="io.seqera.wave.util.LoggerLevelFilter">-->
-<!--            <level>${WAVE_LOG_LEVEL:-INFO}</level>-->
-<!--            <onMatch>ACCEPT</onMatch>-->
-<!--            <onMismatch>DENY</onMismatch>-->
-<!--        </filter>-->
     </appender>
 
     <appender name="ROLLING_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
