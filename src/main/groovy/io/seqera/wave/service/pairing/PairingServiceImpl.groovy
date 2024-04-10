@@ -54,7 +54,7 @@ class PairingServiceImpl implements PairingService {
 
     @Override
     PairingResponse acquirePairingKey(String service, String endpoint) {
-        final key = makeKey(service, endpoint)
+        final key = makeKey(service,endpoint)
 
         def entry = store.get(key)
         if (!entry || entry.isExpired()) {
@@ -78,8 +78,8 @@ class PairingServiceImpl implements PairingService {
         return store.get(uid)
     }
 
-    protected static String makeKey(String service, String endpoint) {
-        final attrs = [service: service, towerEndpoint: endpoint] as Map<String,Object>
+    protected static String makeKey(String service, String towerEndpoint) {
+        final attrs = [service: service, towerEndpoint: towerEndpoint] as Map<String,Object>
         return DigestFunctions.md5(attrs)
     }
 

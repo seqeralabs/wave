@@ -174,7 +174,6 @@ class ContainerHelper {
         return new SubmitContainerTokenResponse(tokenId, target, expiration, null, build, cached, data.freeze)
     }
 
-
     static String patchPlatformEndpoint(String endpoint) {
         // api.stage-tower.net --> api.cloud.stage-seqera.io
         // api.tower.nf --> api.cloud.seqera.io

@@ -154,5 +154,4 @@ class PairingServiceTest extends Specification{
         // they match
         return sig.verify(signature)
     }
-
 }
