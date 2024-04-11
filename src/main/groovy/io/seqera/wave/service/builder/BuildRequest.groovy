@@ -145,7 +145,7 @@ class BuildRequest {
     BuildRequest(String containerFile, Path workspace, String repo, String imageName, String condaFile, String spackFile,
                  BuildFormat format, PlatformId identity, ContainerConfig containerConfig, BuildContext buildContext,
                  ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId) {
-        this.containerId = computeDigest(containerFile, condaFile, spackFile, platform, repo, buildContext)
+        this.containerId = computeDigest(containerFile, condaFile, spackFile, platform, repo, imageName, buildContext)
         this.containerFile = containerFile
         this.containerConfig = containerConfig
         this.buildContext = buildContext
@@ -238,12 +238,13 @@ class BuildRequest {
         return tag ?: null
     }
 
-    static private String computeDigest(String containerFile, String condaFile, String spackFile, ContainerPlatform platform, String repository, BuildContext buildContext) {
+    static private String computeDigest(String containerFile, String condaFile, String spackFile, ContainerPlatform platform, String repository, String imageName, BuildContext buildContext) {
         final attrs = new LinkedHashMap<String,String>(10)
         attrs.containerFile = containerFile
         attrs.condaFile = condaFile
         attrs.platform = platform?.toString()
         attrs.repository = repository
+        if( imageName ) attrs.imageName = imageName
         if( spackFile ) attrs.spackFile = spackFile
         if( buildContext ) attrs.buildContext = buildContext.tarDigest
         return RegHelper.sipHash(attrs)
