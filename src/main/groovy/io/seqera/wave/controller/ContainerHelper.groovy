@@ -171,7 +171,7 @@ class ContainerHelper {
         final Boolean cached = !data.buildNew
         final expiration = !data.freeze ? token.expiration : null
         final tokenId = !data.freeze ? token.value : null
-        return new SubmitContainerTokenResponse(tokenId, target, expiration, null, build, cached, data.freeze)
+        return new SubmitContainerTokenResponse(tokenId, target, expiration, data.containerImage, build, cached, data.freeze)
     }
 
     static String patchPlatformEndpoint(String endpoint) {
