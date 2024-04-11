@@ -142,18 +142,16 @@ class BuildRequest {
 
     volatile Path workDir
 
-    final String imageName
-
-    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, BuildFormat format,
-                 PlatformId identity, ContainerConfig containerConfig, BuildContext buildContext, ContainerPlatform platform,
-                 String configJson, String cacheRepo, String scanId, String ip, String offsetId, String imageName) {
+    BuildRequest(String containerFile, Path workspace, String repo, String imageName, String condaFile, String spackFile,
+                 BuildFormat format, PlatformId identity, ContainerConfig containerConfig, BuildContext buildContext,
+                 ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId) {
         this.containerId = computeDigest(containerFile, condaFile, spackFile, platform, repo, buildContext)
         this.containerFile = containerFile
         this.containerConfig = containerConfig
         this.buildContext = buildContext
         this.condaFile = condaFile
         this.spackFile = spackFile
-        this.targetImage = makeTarget(format, repo, containerId, condaFile, spackFile, imageName)
+        this.targetImage = makeTarget(format, repo, imageName, containerId, condaFile, spackFile)
         this.format = format
         this.identity = identity
         this.platform = platform
@@ -165,7 +163,6 @@ class BuildRequest {
         this.ip = ip
         this.isSpackBuild = spackFile
         this.scanId = scanId
-        this.imageName = imageName
     }
 
     BuildRequest(Map opts) {
@@ -191,8 +188,8 @@ class BuildRequest {
         this.buildId = opts.buildId
     }
 
-    static protected String makeTarget(BuildFormat format, String repo, String id, @Nullable String condaFile,
-                                       @Nullable String spackFile, @Nullable String imageName) {
+    static protected String makeTarget(BuildFormat format, String repo, @Nullable String imageName, String id,
+                                       @Nullable String condaFile, @Nullable String spackFile) {
         assert id, "Argument 'id' cannot be null or empty"
         assert repo, "Argument 'repo' cannot be null or empty"
         assert format, "Argument 'format' cannot be null"

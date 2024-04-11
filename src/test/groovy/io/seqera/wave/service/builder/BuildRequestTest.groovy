@@ -243,10 +243,10 @@ class BuildRequestTest extends Specification {
 
     def 'should make request target' () {
         expect:
-        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', '12345', null, null, null)
+        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', null, '12345', null, null)
                 == 'quay.io/org/name:12345'
         and:
-        BuildRequest.makeTarget(BuildFormat.SINGULARITY, 'quay.io/org/name', '12345', null, null, null)
+        BuildRequest.makeTarget(BuildFormat.SINGULARITY, 'quay.io/org/name', null, '12345', null, null)
                 == 'oras://quay.io/org/name:12345'
 
         and:
@@ -254,7 +254,7 @@ class BuildRequestTest extends Specification {
         dependencies:
         - salmon=1.2.3
         '''
-        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', '12345', conda, null, null)
+        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', null, '12345', conda, null)
                 == 'quay.io/org/name:salmon-1.2.3--12345'
 
         and:
@@ -262,19 +262,19 @@ class BuildRequestTest extends Specification {
          spack:
             specs: [bwa@0.7.15]
         '''
-        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', '12345', null, spack, null)
+        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', null, '12345', null, spack)
                 == 'quay.io/org/name:bwa-0.7.15--12345'
 
         and: 'should return targetImage with provided custom container image name'
-        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', '12345', null, null, 'foo')
+        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', 'foo', '12345', null, null)
                 == 'quay.io/org/name/foo:12345'
 
         and:
-        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org', '12345', null, null, 'foo/bar')
+        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org', 'foo/bar', '12345', null, null)
                 == 'quay.io/org/foo/bar:12345'
 
         and:
-        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io', '12345', null, null, 'foo/bar')
+        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io', 'foo/bar', '12345', null, null)
                 == 'quay.io/foo/bar:12345'
 
     }

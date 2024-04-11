@@ -269,6 +269,7 @@ class ContainerController {
                 (spackContent ? prependBuilderTemplate(containerSpec,format) : containerSpec),
                 Path.of(buildConfig.buildWorkspace),
                 build,
+                req.imageName,
                 condaContent,
                 spackContent,
                 format,
@@ -280,8 +281,7 @@ class ContainerController {
                 cache,
                 scanId,
                 ip,
-                offset,
-                req.imageName)
+                offset)
     }
 
     protected BuildTrack checkBuild(BuildRequest build, boolean dryRun) {
