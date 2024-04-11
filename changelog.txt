@@ -1,4 +1,7 @@
 # Wave changelog
+1.6.1 - 11 Apr 2024
+- Undeprecate containerImage attribute in response object [23411028]
+
 1.6.0 - 10 Apr 2024 
 - Add metrics service based on Redis counters (#429) [ac84eadb]
 - Add v1alpha2 request endpoint (#423) [82d1cc49]
