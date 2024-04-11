@@ -22,9 +22,9 @@ import java.io.IOException;
 import com.squareup.moshi.JsonAdapter;
 import com.squareup.moshi.Moshi;
 import io.seqera.wave.api.ContainerInspectRequest;
-import io.seqera.wave.api.ContainerInspectResponse;
 import io.seqera.wave.api.SubmitContainerTokenRequest;
 import io.seqera.wave.api.SubmitContainerTokenResponse;
+import io.seqera.wave.cli.model.ContainerInspectResponseEx;
 
 /**
  * Helper class to encode and decode JSON payloads
@@ -54,8 +54,8 @@ public class JsonHelper {
         return adapter.toJson(request);
     }
 
-    public static String toJson(ContainerInspectResponse response) {
-        JsonAdapter<ContainerInspectResponse> adapter = moshi.adapter(ContainerInspectResponse.class);
+    public static String toJson(ContainerInspectResponseEx response) {
+        JsonAdapter<ContainerInspectResponseEx> adapter = moshi.adapter(ContainerInspectResponseEx.class);
         return adapter.toJson(response);
     }
 

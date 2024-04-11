@@ -18,8 +18,9 @@
 package io.seqera.wave.cli.json
 
 import io.seqera.wave.api.SubmitContainerTokenRequest
-import spock.lang.Specification;
-
+import io.seqera.wave.cli.model.ContainerInspectResponseEx
+import io.seqera.wave.core.spec.ContainerSpec
+import spock.lang.Specification
 /**
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -43,5 +44,15 @@ class JsonHelperTest extends Specification {
         result.containerImage == 'quay.io/nextflow/bash:latest'
     }
 
+    def 'should convert response to json' () {
+        given:
+        def spec = new ContainerSpec('docker.io', 'https://docker.io', 'ubuntu', '22.04', 'sha:12345', null, null)
+        def resp = new ContainerInspectResponseEx(spec)
+
+        when:
+        def result = JsonHelper.toJson(resp)
+        then:
+        result == '{"container":{"digest":"sha:12345","hostName":"https://docker.io","imageName":"ubuntu","reference":"22.04","registry":"docker.io"}}'
+    }
 
 }

@@ -25,8 +25,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 import dev.failsafe.Failsafe;
@@ -35,6 +37,7 @@ import dev.failsafe.RetryPolicy;
 import dev.failsafe.event.EventListener;
 import dev.failsafe.event.ExecutionAttemptedEvent;
 import dev.failsafe.function.CheckedSupplier;
+import io.seqera.wave.api.BuildStatusResponse;
 import io.seqera.wave.api.ContainerInspectRequest;
 import io.seqera.wave.api.ContainerInspectResponse;
 import io.seqera.wave.api.ServiceInfo;
@@ -112,7 +115,7 @@ public class Client {
 
     SubmitContainerTokenResponse submit(SubmitContainerTokenRequest request) {
         final String body = JsonHelper.toJson(request);
-        final URI uri = URI.create(endpoint + "/container-token");
+        final URI uri = URI.create(endpoint + "/v1alpha2/container");
         log.debug("Wave request: {} - payload: {}", uri, request);
         final HttpRequest req = HttpRequest.newBuilder()
                 .uri(uri)
@@ -194,24 +197,41 @@ public class Client {
         return URI.create(result);
     }
 
-    protected void awaitImage(String image) {
-        final URI manifest = imageToManifestUri(image);
+    void awaitCompletion(String buildId, Duration await) {
+        log.debug("Waiting for build completion: {} - timeout: {} Seconds", buildId, await.toSeconds());
+        final long startTime = Instant.now().toEpochMilli();
+        while (!isComplete(buildId)) {
+            if (System.currentTimeMillis() - startTime > await.toMillis()) {
+                break;
+            }
+        }
+    }
+
+    protected boolean isComplete(String buildId) {
+        final String statusEndpoint = endpoint + "/v1alpha1/builds/"+buildId+"/status";
         final HttpRequest req = HttpRequest.newBuilder()
-                .uri(manifest)
-                .headers(REQUEST_HEADERS)
-                .timeout(Duration.ofMinutes(5))
+                .uri(URI.create(statusEndpoint))
+                .headers("Content-Type","application/json")
                 .GET()
                 .build();
-        final long begin = System.currentTimeMillis();
-        final HttpResponse<String> resp = httpSend(req);
-        final int code = resp.statusCode();
-        if( code>=200 && code<400 ) {
-            final long delta = System.currentTimeMillis()-begin;
-            log.debug("Wave container available in {} [{}] {}", delta, code, resp.body());
+
+        try {
+            //interval of 10 seconds
+            TimeUnit.SECONDS.sleep(10);
+
+            final HttpResponse<String> resp = httpSend(req);
+            log.debug("Wave response: statusCode={}; body={}", resp.statusCode(), resp.body());
+            if( resp.statusCode()==200 ) {
+                BuildStatusResponse result = JsonHelper.fromJson(resp.body(), BuildStatusResponse.class);
+                return result.status == BuildStatusResponse.Status.COMPLETED;
+            }
+            else {
+                String msg = String.format("Wave invalid response: [%s] %s", resp.statusCode(), resp.body());
+                throw new BadClientResponseException(msg);
+            }
         }
-        else {
-            String message = String.format("Unexpected response for '%s': [%d] %s", manifest, resp.statusCode(), resp.body());
-            throw new IllegalStateException(message);
+        catch (IOException | FailsafeException | InterruptedException e) {
+            throw new ClientConnectionException("Unable to connect Wave service: " + endpoint, e);
         }
     }
 

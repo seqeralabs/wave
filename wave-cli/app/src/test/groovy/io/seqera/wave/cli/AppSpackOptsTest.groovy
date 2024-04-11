@@ -19,7 +19,9 @@ package io.seqera.wave.cli
 
 import java.nio.file.Files
 
+import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.cli.exception.IllegalCliArgumentException
+import io.seqera.wave.config.SpackOpts
 import picocli.CommandLine
 import spock.lang.Specification
 /**
@@ -128,10 +130,19 @@ class AppSpackOptsTest extends Specification {
         and:
         def req = app.createRequest()
         then:
-        new String(req.containerFile.decodeBase64()).startsWith("# Runner image")
-
+        req.packages.type == PackagesSpec.Type.SPACK
         and:
-        new String(req.spackFile.decodeBase64()) == SPACK_FILE
+        new String(req.packages.environment.decodeBase64())  == SPACK_FILE
+        and:
+        req.packages.spackOpts == new SpackOpts()
+        and:
+        !req.packages.condaOpts
+        !req.packages.channels
+        !req.packages.entries
+        !req.packages.channels
+        and:
+        !req.spackFile
+        !req.containerFile
 
         cleanup:
         folder?.deleteDir()
@@ -148,17 +159,18 @@ class AppSpackOptsTest extends Specification {
         and:
         def req = app.createRequest()
         then:
-        def spec = new String(req.containerFile.decodeBase64()).tokenize('\n')
-        spec[0] == '# Runner image'
-        spec[1] == 'FROM {{spack_runner_image}}'
-        spec[2] == 'COPY --from=builder /opt/spack-env /opt/spack-env'
-
+        req.packages.type == PackagesSpec.Type.SPACK
+        req.packages.entries == ['foo']
         and:
-        new String(req.spackFile.decodeBase64()) == '''\
-                spack:
-                  specs: [foo]
-                  concretizer: {unify: true, reuse: false}
-                '''.stripIndent(true)
+        !req.packages.environment
+        and:
+        req.packages.spackOpts == new SpackOpts()
+        and:
+        !req.packages.condaOpts
+        !req.packages.channels
+        and:
+        !req.spackFile
+        !req.containerFile
     }
 
     def 'should create container file from spack package and custom options' () {
@@ -176,39 +188,19 @@ class AppSpackOptsTest extends Specification {
         and:
         def req = app.createRequest()
         then:
-        new String(req.containerFile.decodeBase64()).startsWith("# Runner image")
-        new String(req.containerFile.decodeBase64()).contains("RUN one\n")
-        new String(req.containerFile.decodeBase64()).contains("RUN two\n")
-
+        req.packages.type == PackagesSpec.Type.SPACK
+        req.packages.entries == ['foo','bar']
         and:
-        new String(req.spackFile.decodeBase64()) == '''\
-                spack:
-                  specs: [foo, bar]
-                  concretizer: {unify: true, reuse: false}
-                '''.stripIndent(true)
-    }
-
-    def 'should create container file from spack package with singularity' () {
-        given:
-        def app = new App()
-        String[] args = ["--spack-package", "foo", "--singularity"]
-
-        when:
-        new CommandLine(app).parseArgs(args)
+        !req.packages.environment
         and:
-        def req = app.createRequest()
-        then:
-        def spec = new String(req.containerFile.decodeBase64()).tokenize('\n')
-        spec[0] == 'Bootstrap: docker'
-        spec[1] == 'From: {{spack_runner_image}}'
-        spec[2] == 'stage: final'
-
+        req.packages.spackOpts == new SpackOpts(commands: ['RUN one','RUN two'])
         and:
-        new String(req.spackFile.decodeBase64()) == '''\
-                spack:
-                  specs: [foo]
-                  concretizer: {unify: true, reuse: false}
-                '''.stripIndent(true)
+        !req.packages.condaOpts
+        !req.packages.channels
+        !req.packages.channels
+        and:
+        !req.spackFile
+        !req.containerFile
     }
 
 }

@@ -21,6 +21,9 @@ import java.time.Instant;
 
 import io.seqera.wave.api.ContainerInspectResponse;
 import io.seqera.wave.api.SubmitContainerTokenResponse;
+import io.seqera.wave.cli.model.ContainerInspectResponseEx;
+import io.seqera.wave.cli.model.ContainerSpecEx;
+import io.seqera.wave.cli.model.LayerRef;
 import io.seqera.wave.core.spec.ConfigSpec;
 import io.seqera.wave.core.spec.ContainerSpec;
 import io.seqera.wave.core.spec.ManifestSpec;
@@ -51,7 +54,7 @@ public class YamlHelper {
         return yaml.dump(resp);
     }
 
-    public static String toYaml(ContainerInspectResponse resp) {
+    public static String toYaml(ContainerInspectResponseEx resp) {
         final DumperOptions opts = new DumperOptions();
         opts.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
         opts.setAllowReadOnlyProperties(true);
@@ -59,9 +62,12 @@ public class YamlHelper {
         final Representer representer = new Representer(opts) {
             {
                 addClassTag(ContainerSpec.class, Tag.MAP);
+                addClassTag(ContainerSpecEx.class, Tag.MAP);
                 addClassTag(ConfigSpec.class, Tag.MAP);
                 addClassTag(ManifestSpec.class, Tag.MAP);
                 addClassTag(ContainerInspectResponse.class, Tag.MAP);
+                addClassTag(ContainerInspectResponseEx.class, Tag.MAP);
+                addClassTag(LayerRef.class, Tag.MAP);
                 representers.put(Instant.class, data -> representScalar(Tag.STR, data.toString()));
             }
         };

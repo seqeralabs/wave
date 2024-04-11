@@ -149,6 +149,16 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"io.seqera.wave.api.BuildStatusResponse",
+  "allDeclaredFields":true,
+  "queryAllPublicMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.seqera.wave.api.BuildStatusResponse$Status",
+  "fields":[{"name":"COMPLETED"}, {"name":"PENDING"}]
+},
+{
   "name":"io.seqera.wave.api.ContainerConfig",
   "allDeclaredFields":true,
   "methods":[{"name":"<init>","parameterTypes":[] }]
@@ -176,6 +186,15 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"io.seqera.wave.api.PackagesSpec",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.seqera.wave.api.PackagesSpec$Type",
+  "fields":[{"name":"CONDA"}, {"name":"SPACK"}]
+},
+{
   "name":"io.seqera.wave.api.ServiceInfo",
   "allDeclaredFields":true,
   "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"<init>","parameterTypes":["java.lang.String","java.lang.String"] }]
@@ -197,6 +216,12 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"io.seqera.wave.api.SubmitContainerTokenResponseBeanInfo"
+},
+{
+  "name":"io.seqera.wave.api.SubmitContainerTokenResponseCustomizer"
+},
+{
   "name":"io.seqera.wave.cli.App",
   "allDeclaredFields":true,
   "queryAllDeclaredMethods":true
@@ -208,16 +233,38 @@
 {
   "name":"io.seqera.wave.cli.json.DateTimeAdapter",
   "queryAllDeclaredMethods":true,
-  "methods":[{"name":"deserializeInstant","parameterTypes":["java.lang.String"] }, {"name":"serializeInstant","parameterTypes":["java.time.Instant"] }]
+  "methods":[{"name":"deserializeDuration","parameterTypes":["java.lang.String"] }, {"name":"deserializeInstant","parameterTypes":["java.lang.String"] }, {"name":"serializeInstant","parameterTypes":["java.time.Instant"] }]
 },
 {
   "name":"io.seqera.wave.cli.json.PathAdapter",
   "queryAllDeclaredMethods":true
 },
 {
+  "name":"io.seqera.wave.cli.model.ContainerInspectResponseEx",
+  "allDeclaredFields":true
+},
+{
+  "name":"io.seqera.wave.cli.model.ContainerSpecEx",
+  "allDeclaredFields":true
+},
+{
+  "name":"io.seqera.wave.cli.model.LayerRef",
+  "allDeclaredFields":true
+},
+{
   "name":"io.seqera.wave.cli.util.CliVersionProvider",
   "allDeclaredFields":true,
   "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.seqera.wave.config.CondaOpts",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.seqera.wave.config.SpackOpts",
+  "allDeclaredFields":true,
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {

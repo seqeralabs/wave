@@ -19,14 +19,13 @@ package io.seqera.wave.cli
 
 import java.nio.file.Files
 
-import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.client.WireMock
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration
+import com.sun.net.httpserver.HttpExchange
+import com.sun.net.httpserver.HttpHandler
+import com.sun.net.httpserver.HttpServer
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.cli.exception.IllegalCliArgumentException
 import picocli.CommandLine
 import spock.lang.Specification
-
 /**
  * Test App config prefixed options
  *
@@ -48,26 +47,6 @@ class AppConfigOptsTest extends Specification {
               ]
             }
             '''
-
-    WireMockServer wireMockServer
-    def setup() {
-        wireMockServer = new WireMockServer(WireMockConfiguration.wireMockConfig().port(8080))
-        wireMockServer.start()
-
-        WireMock.stubFor(
-                WireMock.get(WireMock.urlEqualTo("/api/data"))
-                        .willReturn(
-                                WireMock.aResponse()
-                                        .withStatus(200)
-                                        .withHeader("Content-Type", "application/json")
-                                        .withBody(CONFIG_JSON)
-                        )
-        )
-    }
-
-    def cleanup() {
-        wireMockServer.stop()
-    }
 
 
     def "test valid entrypoint"() {
@@ -218,13 +197,27 @@ class AppConfigOptsTest extends Specification {
 
     def "test valid config file from a URL"() {
         given:
+        HttpHandler handler = { HttpExchange exchange ->
+            String body = CONFIG_JSON
+            exchange.getResponseHeaders().add("Content-Type", "text/json")
+            exchange.sendResponseHeaders(200, body.size())
+            exchange.getResponseBody() << body
+            exchange.getResponseBody().close()
+
+        }
+
+        HttpServer server = HttpServer.create(new InetSocketAddress(9901), 0);
+        server.createContext("/", handler);
+        server.start()
+
+
         def app = new App()
-        String[] args = ["--config-file", "http://localhost:8080/api/data"]
+        String[] args = ["--config-file", "http://localhost:9901/api/data"]
 
         when:
         new CommandLine(app).parseArgs(args)
         then:
-        app.@configFile == "http://localhost:8080/api/data"
+        app.@configFile == "http://localhost:9901/api/data"
 
         when:
         def config = app.prepareConfig()
@@ -235,5 +228,8 @@ class AppConfigOptsTest extends Specification {
         layer.gzipDigest == "sha256:gzipDigest"
         layer.tarDigest == "sha256:tarDigest"
         layer.gzipSize == 100
+
+        cleanup:
+        server?.stop(0)
     }
 }
