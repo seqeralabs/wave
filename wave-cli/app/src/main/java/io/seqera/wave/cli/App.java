@@ -32,6 +32,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
@@ -57,6 +58,7 @@ import io.seqera.wave.cli.model.ContainerSpecEx;
 import io.seqera.wave.cli.util.BuildInfo;
 import io.seqera.wave.cli.util.CliVersionProvider;
 import io.seqera.wave.cli.util.DurationConverter;
+import io.seqera.wave.cli.util.GptHelper;
 import io.seqera.wave.cli.util.YamlHelper;
 import io.seqera.wave.config.CondaOpts;
 import io.seqera.wave.config.SpackOpts;
@@ -66,6 +68,7 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import static io.seqera.wave.cli.util.Checkers.isEmpty;
 import static io.seqera.wave.cli.util.Checkers.isEnvVar;
+import static io.seqera.wave.cli.util.StreamHelper.tryReadStdin;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Option;
 
@@ -192,7 +195,21 @@ public class App implements Runnable {
     private boolean inspect;
 
     @Option(names = {"--include"}, paramLabel = "false", description = "Include one or more containers in the specified base image")
-    List<String> includes;
+    private List<String> includes;
+
+    @CommandLine.Parameters
+    List<String> prompt;
+
+    static private String[] makeArgs(String[] args) {
+        String stdin = tryReadStdin();
+        if( stdin==null )
+            return args;
+
+        List<String> result = new ArrayList<>(Arrays.asList(args));
+        result.add("--");
+        result.add(stdin);
+        return result.toArray(new String[args.length+2]);
+    }
 
     public static void main(String[] args) {
         try {
@@ -208,7 +225,7 @@ public class App implements Runnable {
                 .usageMessage()
                 .footer(readExamples("usage-examples.txt"));
 
-            final CommandLine.ParseResult result = cli.parseArgs(args);
+            final CommandLine.ParseResult result = cli.parseArgs(makeArgs(args));
             if( result.matchedArgs().size()==0 || result.isUsageHelpRequested() ) {
                 cli.usage(System.out);
             }
@@ -290,7 +307,7 @@ public class App implements Runnable {
         if( !isEmpty(image) && !isEmpty(containerFile) )
             throw new IllegalCliArgumentException("Argument --image and --containerfile conflict each other - Specify an image name or a container file for the container to be provisioned");
 
-        if( isEmpty(image) && isEmpty(containerFile) && isEmpty(condaFile) && condaPackages==null  && isEmpty(spackFile) && spackPackages ==null  )
+        if( isEmpty(image) && isEmpty(containerFile) && isEmpty(condaFile) && condaPackages==null  && isEmpty(spackFile) && spackPackages==null && isEmpty(prompt) )
             throw new IllegalCliArgumentException("Provide either a image name or a container file for the Wave container to be provisioned");
 
         if( freeze && isEmpty(buildRepository) )
@@ -619,6 +636,10 @@ public class App implements Runnable {
                     .withType(PackagesSpec.Type.SPACK)
                     .withSpackOpts(spackOpts())
                     .withEntries(spackPackages);
+        }
+
+        if( !isEmpty(prompt) ) {
+            return GptHelper.grabPackages(prompt.stream().collect(Collectors.joining(" ")));
         }
 
         return null;

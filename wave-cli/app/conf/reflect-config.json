@@ -141,6 +141,71 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"dev.ai4j.openai4j.chat.AssistantMessage",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"dev.ai4j.openai4j.chat.ChatCompletionChoice",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"dev.ai4j.openai4j.chat.ChatCompletionRequest",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"dev.ai4j.openai4j.chat.ChatCompletionResponse",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"dev.ai4j.openai4j.chat.Delta",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"dev.ai4j.openai4j.chat.Function",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"dev.ai4j.openai4j.chat.FunctionCall",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"dev.ai4j.openai4j.chat.Parameters",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"dev.ai4j.openai4j.chat.ResponseFormat",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"dev.ai4j.openai4j.chat.Tool",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"dev.ai4j.openai4j.chat.ToolCall",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"dev.ai4j.openai4j.chat.ToolChoice",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"dev.ai4j.openai4j.shared.Usage",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
   "name":"groovy.lang.Closure"
 },
 {
@@ -311,6 +376,10 @@
   "name":"java.io.FilePermission"
 },
 {
+  "name":"java.lang.Class",
+  "methods":[{"name":"getRecordComponents","parameterTypes":[] }, {"name":"isRecord","parameterTypes":[] }]
+},
+{
   "name":"java.lang.Object",
   "allDeclaredFields":true,
   "queryAllDeclaredMethods":true,
@@ -335,6 +404,14 @@
 {
   "name":"java.lang.Thread",
   "fields":[{"name":"threadLocalRandomProbe"}]
+},
+{
+  "name":"java.lang.invoke.MethodHandles$Lookup",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.Class","int"] }]
+},
+{
+  "name":"java.lang.reflect.RecordComponent",
+  "methods":[{"name":"getName","parameterTypes":[] }, {"name":"getType","parameterTypes":[] }]
 },
 {
   "name":"java.net.NetPermission"
@@ -462,6 +539,10 @@
 },
 {
   "name":"java.util.Date"
+},
+{
+  "name":"java.util.ImmutableCollections$MapN",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
   "name":"java.util.PropertyPermission"
@@ -599,6 +680,10 @@
 },
 {
   "name":"sun.security.ssl.SSLContextImpl$DefaultSSLContext",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.ssl.SSLContextImpl$TLSContext",
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {

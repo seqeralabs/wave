@@ -5,6 +5,10 @@
   }, {
     "pattern":"\\QMETA-INF/services/ch.qos.logback.classic.spi.Configurator\\E"
   }, {
+    "pattern":"\\QMETA-INF/services/dev.ai4j.openai4j.spi.OpenAiClientBuilderFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/dev.langchain4j.model.openai.spi.OpenAiChatModelBuilderFactory\\E"
+  }, {
     "pattern":"\\QMETA-INF/services/java.lang.System$LoggerFinder\\E"
   }, {
     "pattern":"\\QMETA-INF/services/java.net.spi.InetAddressResolverProvider\\E"
@@ -18,6 +22,8 @@
     "pattern":"\\QMETA-INF/services/javax.xml.parsers.SAXParserFactory\\E"
   }, {
     "pattern":"\\QMETA-INF/services/org.slf4j.spi.SLF4JServiceProvider\\E"
+  }, {
+    "pattern":"\\Qcom/knuddels/jtokkit/cl100k_base.tiktoken\\E"
   }, {
     "pattern":"\\Qio/seqera/wave/cli/usage-examples.txt\\E"
   }, {

@@ -328,4 +328,16 @@ class AppTest extends Specification {
         and:
         app.@await == Duration.ofMinutes(15)
     }
+    
+    def 'should generate a container' () {
+        given:
+        def app = new App()
+        String[] args = [ 'Get a docker container']
+
+        when:
+        new CommandLine(app).parseArgs(args)
+        then:
+        app.prompt == ['Get a docker container']
+    }
+
 }
