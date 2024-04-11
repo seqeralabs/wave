@@ -36,14 +36,11 @@ import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
-import io.seqera.wave.service.persistence.legacy.SurrealLegacyService
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 import static io.seqera.wave.service.metric.MetricConstants.ANONYMOUS
-
 /**
  * Implements a persistence service based based on SurrealDB
  *
@@ -69,10 +66,6 @@ class SurrealPersistenceService implements PersistenceService {
     @Nullable
     @Value('${surreal.default.init-db}')
     private Boolean initDb
-
-    @Inject
-    @Nullable
-    private SurrealLegacyService legacy
 
     @EventListener
     void onApplicationStartup(ApplicationStartupEvent event) {
@@ -173,8 +166,6 @@ class SurrealPersistenceService implements PersistenceService {
         final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null
-        if( !result && legacy )
-            return legacy.loadBuild(buildId)
         return result
     }
 
@@ -230,8 +221,6 @@ class SurrealPersistenceService implements PersistenceService {
         final type = new TypeReference<ArrayList<SurrealResult<WaveContainerRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null
-        if( !result && legacy )
-            return legacy.loadContainerRequest(token)
         return result
     }
 
@@ -275,8 +264,6 @@ class SurrealPersistenceService implements PersistenceService {
         final type = new TypeReference<ArrayList<SurrealResult<WaveScanRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null
-        if( !result && legacy )
-            return legacy.loadScanRecord(scanId)
         return result
     }
 
