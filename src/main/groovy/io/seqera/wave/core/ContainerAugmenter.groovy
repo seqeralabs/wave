@@ -353,6 +353,16 @@ class ContainerAugmenter {
         if( containerConfig.workingDir ) {
             config.WorkingDir = containerConfig.workingDir
         }
+        if ( containerConfig.labels ) {
+             def labelsMap = new HashMap<>()
+            for(String label: containerConfig.labels){
+                if(label.contains('=')) {
+                    String[] singleLabelArray = label.split("=");
+                    labelsMap.put(singleLabelArray[0], singleLabelArray[1]);
+                }
+            }
+            config.Labels = labelsMap
+        }
         if( containerConfig.env ) {
             config.Env = appendEnv(config.Env as List, containerConfig.env)
         }

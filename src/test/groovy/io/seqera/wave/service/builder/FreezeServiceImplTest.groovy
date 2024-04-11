@@ -63,6 +63,7 @@ class FreezeServiceImplTest extends Specification  {
         config = new ContainerConfig(
                 workingDir: '/some/work/dir',
                 env: ['FOO=one', 'BAR=two'],
+                labels: ['FOO=one', 'BAR=two 2'],
                 cmd:['/this','--that'],
                 entrypoint: ['/my','--entry'],
                 layers: layers)
@@ -75,6 +76,7 @@ class FreezeServiceImplTest extends Specification  {
                 ADD layer-999fff.tar.gz /
                 WORKDIR /some/work/dir
                 ENV FOO=one BAR=two
+                LABEL FOO="one" BAR="two 2"
                 ENTRYPOINT ["/my", "--entry"]
                 CMD ["/this", "--that"]
                 '''.stripIndent()
@@ -117,7 +119,7 @@ class FreezeServiceImplTest extends Specification  {
         given:
         def l1 = new ContainerLayer('/some/loc', 'digest1')
         def l2 = new ContainerLayer('/other/loc', 'digest2')
-        def config = new ContainerConfig(env:['FOO=1', 'BAR=2'], entrypoint: ['bash', '--this', '--that'], layers: [l1, l2])
+        def config = new ContainerConfig(env:['FOO=1', 'BAR=2'], entrypoint: ['bash', '--this', '--that'], layers: [l1, l2], labels: ['FOO=1', 'BAR=value 2'])
         def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true, format: 'sif', containerConfig: config)
         when:
         def result = freezeService.createBuildFile(req, Mock(PlatformId))
@@ -133,6 +135,8 @@ class FreezeServiceImplTest extends Specification  {
               export FOO=1 BAR=2
             %runscript
               bash --this --that
+            %labels
+              FOO="1" BAR="value 2"
             '''.stripIndent(true)
 
     }
@@ -276,5 +280,10 @@ class FreezeServiceImplTest extends Specification  {
             BootStrap: docker
             From: ubuntu:latest
             '''.stripIndent()
+    }
+
+    def'should construct labels' () {
+        expect:
+        FreezeServiceImpl.constructLabels(['FOO=1', 'BAR=value 2']) == 'FOO="1" BAR="value 2"'
     }
 }

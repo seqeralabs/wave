@@ -145,6 +145,11 @@ class FreezeServiceImpl implements FreezeService {
             result += "  ${Escape.cli(containerConfig.entrypoint)}\n"
         }
 
+        //add Labels
+        if( containerConfig.labels ) {
+            result += '%labels\n'
+            result += "  ${constructLabels(containerConfig.labels)}\n"
+        }
         // config work dir is not supported
         // config command is not supported
 
@@ -166,6 +171,11 @@ class FreezeServiceImpl implements FreezeService {
         if( containerConfig.env ) {
             result += "ENV ${containerConfig.env.join(' ')}\n"
         }
+        // add Labels
+        // add ENV
+        if( containerConfig.labels ) {
+            result += "LABEL ${constructLabels(containerConfig.labels)}\n"
+        }
         // add ENTRY
         if( containerConfig.entrypoint ) {
             result += "ENTRYPOINT ${containerConfig.entrypoint.collect(it->"\"$it\"")}\n"
@@ -177,4 +187,10 @@ class FreezeServiceImpl implements FreezeService {
         return result
     }
 
+    static String constructLabels(List<String> labels) {
+        return labels.collect {label ->
+            def labelParts = label.split('=')
+            "${labelParts[0]}=\"${labelParts[1]}\""
+        }.join(' ')
+    }
 }

@@ -554,7 +554,7 @@ class ContainerAugmenterTest extends Specification {
         def manifest = new JsonSlurper().parseText(MANIFEST) as Map
 
         and:
-        def config = new ContainerConfig(workingDir: '/some/work/dir',entrypoint: ['my','entry'], env: ['THIS=THAT'])
+        def config = new ContainerConfig(workingDir: '/some/work/dir',entrypoint: ['my','entry'], env: ['THIS=THAT'], labels:   ['key=value','key2=value 2'])
         def scanner = new ContainerAugmenter().withContainerConfig(config)
         def history = new ArrayList(manifest.history)
 
@@ -580,6 +580,7 @@ class ContainerAugmenterTest extends Specification {
         v1Config.WorkingDir == '/some/work/dir'
         v1Config.Entrypoint == ['my','entry']
         v1Config.Env == ['PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', 'THIS=THAT']
+        v1Config.Labels == ['key2':'value 2', 'key':'value']
 
     }
 

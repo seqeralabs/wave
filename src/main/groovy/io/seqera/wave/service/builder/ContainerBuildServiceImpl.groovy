@@ -165,44 +165,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         }
     }
 
-    //this method adds labels in singularity container
-    protected static String addLabels(String containerFile, final BuildRequest req){
-        final labels = req.containerConfig?.labels
-        if(labels) {
-            if (req.formatSingularity()) {
-                return containerFile + getSingularityLabels(labels)
-            }
-            if (req.formatDocker()){
-                return containerFile + getDockerLabels(labels)
-            }
-        }
-        return containerFile
-    }
-
-    protected static String getSingularityLabels(Map<String, String> labels){
-        StringBuilder labelsBuilder = new StringBuilder()
-        labelsBuilder.append("\n%labels\n")
-        labels.each() { key, value ->
-            labelsBuilder.append(key)
-            labelsBuilder.append(" ")
-            labelsBuilder.append(value)
-            labelsBuilder.append("\n")
-        }
-        return labelsBuilder.toString()
-    }
-
-    protected static String getDockerLabels(Map<String, String> labels){
-        StringBuilder labelsBuilder = new StringBuilder()
-        labelsBuilder.append("\nLABEL ")
-        labels.each() { key, value ->
-            labelsBuilder.append(key)
-            labelsBuilder.append("=")
-            labelsBuilder.append(value)
-            labelsBuilder.append(" ")
-        }
-        return labelsBuilder.toString()
-    }
-
     protected BuildResult launch(BuildRequest req) {
         // launch an external process to build the container
         BuildResult resp=null
@@ -215,7 +177,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             catch (FileAlreadyExistsException e) { /* ignore it */ }
             // save the dockerfile
             final containerFile = req.workDir.resolve('Containerfile')
-            Files.write(containerFile, addLabels(containerFile0(req, context, spackConfig), req).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            Files.write(containerFile, containerFile0(req, context, spackConfig).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             // save build context
             if( req.buildContext ) {
                 saveBuildContext(req.buildContext, context, req.identity)
