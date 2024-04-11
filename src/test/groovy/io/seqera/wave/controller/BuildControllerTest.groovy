@@ -78,6 +78,7 @@ class BuildControllerTest extends Specification {
                 "buildrepo",
                 null,
                 null,
+                null,
                 BuildFormat.DOCKER,
                 PlatformId.NULL,
                 null,
@@ -87,7 +88,6 @@ class BuildControllerTest extends Specification {
                 'docker.io/my/repo',
                 '12345',
                 "1.2.3.4",
-                null,
                 null)
             .withBuildId('1')
         final result = new BuildResult(build.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)

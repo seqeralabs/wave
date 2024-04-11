@@ -120,6 +120,7 @@ class BuildStrategyTest extends Specification {
                 "buildrepo",
                 null,
                 null,
+                null,
                 BuildFormat.DOCKER,
                 PlatformId.NULL,
                 null,
@@ -129,7 +130,6 @@ class BuildStrategyTest extends Specification {
                 'docker.io/my/repo',
                 '12345',
                 "1.2.3.4",
-                null,
                 null)
         then:
         build.containerId == '911d21120b4b505c'

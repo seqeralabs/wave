@@ -55,6 +55,7 @@ class BuildRequestTest extends Specification {
                 BUILD_REPO,
                 null,
                 null,
+                null,
                 BuildFormat.DOCKER,
                 USER,
                 CONFIG,
@@ -64,8 +65,7 @@ class BuildRequestTest extends Specification {
                 CACHE_REPO,
                 SCAN_ID,
                 IP_ADDR,
-                OFFSET,
-                null)
+                OFFSET)
         then:
         req.containerId == '181ec22b26ae6d04'
         req.targetImage == "docker.io/wave:${req.containerId}"
@@ -97,6 +97,7 @@ class BuildRequestTest extends Specification {
                 CONTENT,
                 PATH,
                 BUILD_REPO,
+                null,
                 CONDA_RECIPE,
                 null,
                 BuildFormat.DOCKER,
@@ -108,8 +109,7 @@ class BuildRequestTest extends Specification {
                 CACHE_REPO,
                 SCAN_ID,
                 IP_ADDR,
-                OFFSET,
-                null)
+                OFFSET)
         then:
         req.containerId == '8026e3a63b5c863f'
         req.targetImage == 'docker.io/wave:samtools-1.0--8026e3a63b5c863f'
@@ -130,6 +130,7 @@ class BuildRequestTest extends Specification {
                 PATH,
                 BUILD_REPO,
                 null,
+                null,
                 SPACK_RECIPE,
                 BuildFormat.DOCKER,
                 USER,
@@ -140,8 +141,7 @@ class BuildRequestTest extends Specification {
                 CACHE_REPO,
                 SCAN_ID,
                 IP_ADDR,
-                OFFSET,
-                null)
+                OFFSET)
         then:
         req.containerId == '8726782b1d9bb8fb'
         req.targetImage == 'docker.io/wave:bwa-0.7.15--8726782b1d9bb8fb'
@@ -170,6 +170,7 @@ class BuildRequestTest extends Specification {
                 BUILD_REPO,
                 null,
                 null,
+                null,
                 BuildFormat.SINGULARITY,
                 USER,
                 CONFIG,
@@ -179,8 +180,7 @@ class BuildRequestTest extends Specification {
                 CACHE_REPO,
                 null,
                 IP_ADDR,
-                OFFSET,
-                null)
+                OFFSET)
         then:
         req.containerId == 'd78ba9cb01188668'
         req.targetImage == "oras://docker.io/wave:${req.containerId}"
@@ -207,13 +207,13 @@ class BuildRequestTest extends Specification {
         def repo = 'docker.io/wave'
         def cache = 'docker.io/cache'
         and:
-        def req1 = new BuildRequest('from foo', PATH, repo, null, null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null, null)
-        def req2 = new BuildRequest('from foo', PATH, repo, null, null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null, null)
-        def req3 = new BuildRequest('from bar', PATH, repo, null, null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null, null)
-        def req4 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.3', null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null, null)
-        def req5 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.3', null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null, null)
-        def req6 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.5', null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null, null)
-        def req7 = new BuildRequest('from bar', PATH, repo, 'salmon=1.2.5', null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", "UTC+2", null)
+        def req1 = new BuildRequest('from foo', PATH, repo, null, null, null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
+        def req2 = new BuildRequest('from foo', PATH, repo, null, null, null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
+        def req3 = new BuildRequest('from bar', PATH, repo, null, null, null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
+        def req4 = new BuildRequest('from bar', PATH, repo, null, 'salmon=1.2.3', null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
+        def req5 = new BuildRequest('from bar', PATH, repo, null, 'salmon=1.2.3', null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
+        def req6 = new BuildRequest('from bar', PATH, repo, null, 'salmon=1.2.5', null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
+        def req7 = new BuildRequest('from bar', PATH, repo, null, 'salmon=1.2.5', null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", "UTC+2")
 
         expect:
         req1 == req2

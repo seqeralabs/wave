@@ -45,6 +45,7 @@ class WaveBuildRecordTest extends Specification {
                 'FROM foo:latest',
                 Path.of("/some/path"),
                 "buildrepo",
+                null,
                 'conda::recipe',
                 'some-spack-recipe',
                 BuildFormat.DOCKER,
@@ -56,7 +57,6 @@ class WaveBuildRecordTest extends Specification {
                 'docker.io/my/repo',
                 '12345',
                 "1.2.3.4",
-                null,
                 null )
         final result = new BuildResult(request.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         final event = new BuildEvent(request, result)
@@ -77,6 +77,7 @@ class WaveBuildRecordTest extends Specification {
                 "buildrepo",
                 null,
                 null,
+                null,
                 BuildFormat.DOCKER,
                 PlatformId.NULL,
                 null,
@@ -86,7 +87,6 @@ class WaveBuildRecordTest extends Specification {
                 'docker.io/my/repo',
                 '12345',
                 "1.2.3.4",
-                null,
                 null )
                 .withBuildId('123')
 

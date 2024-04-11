@@ -65,7 +65,7 @@ class KubeBuildStrategyTest extends Specification {
         def cache = 'docker.io/cache'
 
         when:
-        def req = new BuildRequest('from foo', PATH, repo, null, null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('amd64'),'{}', cache, null, "", null, null) .withBuildId('1')
+        def req = new BuildRequest('from foo', PATH, repo, null, null, null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('amd64'),'{}', cache, null, "", null) .withBuildId('1')
         Files.createDirectories(req.workDir)
 
         def resp = strategy.build(req)
@@ -75,7 +75,7 @@ class KubeBuildStrategyTest extends Specification {
         1 * k8sService.buildContainer(_, _, _, _, _, _, [service:'wave-build']) >> null
 
         when:
-        def req2 = new BuildRequest('from foo', PATH, repo, null, null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('arm64'),'{}', cache, null, "", null, null) .withBuildId('1')
+        def req2 = new BuildRequest('from foo', PATH, repo, null, null, null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('arm64'),'{}', cache, null, "", null) .withBuildId('1')
         Files.createDirectories(req2.workDir)
 
         def resp2 = strategy.build(req2)
@@ -94,19 +94,19 @@ class KubeBuildStrategyTest extends Specification {
         def cache = 'docker.io/cache'
 
         when:'getting docker with amd64 arch in build request'
-        def req = new BuildRequest('from foo', PATH, repo, null, null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('amd64'),'{}', cache, null, "", null, null)
+        def req = new BuildRequest('from foo', PATH, repo, null, null, null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('amd64'),'{}', cache, null, "", null)
 
         then: 'should return kaniko image'
         strategy.getBuildImage(req) == 'gcr.io/kaniko-project/executor:v1.19.2'
 
         when:'getting singularity with amd64 arch in build request'
-        req = new BuildRequest('from foo', PATH, repo, null, null, BuildFormat.SINGULARITY, USER, null, null, ContainerPlatform.of('amd64'),'{}', cache, null, "", null, null)
+        req = new BuildRequest('from foo', PATH, repo, null, null, null, BuildFormat.SINGULARITY, USER, null, null, ContainerPlatform.of('amd64'),'{}', cache, null, "", null)
 
         then:'should return singularity amd64 image'
         strategy.getBuildImage(req) == 'quay.io/singularity/singularity:v3.11.4-slim'
 
         when:'getting singularity with arm64 arch in build request'
-        req = new BuildRequest('from foo', PATH, repo, null, null, BuildFormat.SINGULARITY, USER, null, null, ContainerPlatform.of('arm64'),'{}', cache, null, "", null, null)
+        req = new BuildRequest('from foo', PATH, repo, null, null, null, BuildFormat.SINGULARITY, USER, null, null, ContainerPlatform.of('arm64'),'{}', cache, null, "", null)
 
         then:'should return singularity arm64 image'
         strategy.getBuildImage(req) == 'quay.io/singularity/singularity:v3.11.4-slim-arm64'
@@ -118,7 +118,7 @@ class KubeBuildStrategyTest extends Specification {
         def PATH = Files.createTempDirectory('test')
         def repo = 'docker.io/wave'
         def cache = 'docker.io/cache'
-        def req = new BuildRequest('from foo', PATH, repo, null, null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('amd64'),'{}', cache, null, "", null, null)
+        def req = new BuildRequest('from foo', PATH, repo, null, null, null, BuildFormat.DOCKER, USER, null, null, ContainerPlatform.of('amd64'),'{}', cache, null, "", null)
         req = req.withBuildId('1')
 
         when:

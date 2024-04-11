@@ -104,8 +104,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         """
         def storage = applicationContext.getBean(SurrealPersistenceService)
         def request = new BuildRequest(dockerFile,
-                Path.of("."), "buildrepo", condaFile, null, BuildFormat.DOCKER, PlatformId.NULL, null, null,
-                ContainerPlatform.of('amd64'),'{auth}', null, null, "127.0.0.1", null, null) .withBuildId('1')
+                Path.of("."), "buildrepo", null, condaFile, null, BuildFormat.DOCKER, PlatformId.NULL, null, null,
+                ContainerPlatform.of('amd64'),'{auth}', null, null, "127.0.0.1", null) .withBuildId('1')
         def result = new BuildResult(request.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         def event = new BuildEvent(request, result)
         def build = WaveBuildRecord.fromEvent(event)
@@ -154,7 +154,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         storage.initializeDb()
         and:
         def service = applicationContext.getBean(SurrealPersistenceService)
-        def request = new BuildRequest("test", Path.of("."), "test", "test", null, BuildFormat.DOCKER, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', "test", null, "127.0.0.1", null, null) .withBuildId('123')
+        def request = new BuildRequest("test", Path.of("."), "test", null, "test", null, BuildFormat.DOCKER, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', "test", null, "127.0.0.1", null) .withBuildId('123')
         storage.createBuild( WaveBuildRecord.fromEvent(new BuildEvent(request)))
         sleep 100
         and:
@@ -174,7 +174,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         given:
         surrealContainer.stop()
         def service = applicationContext.getBean(SurrealPersistenceService)
-        def request = new BuildRequest("test", Path.of("."), "test", "test", null, BuildFormat.DOCKER, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', "test", null, "127.0.0.1", null, null) .withBuildId('123')
+        def request = new BuildRequest("test", Path.of("."), "test", null, "test", null, BuildFormat.DOCKER, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', "test", null, "127.0.0.1", null) .withBuildId('123')
         def result = new BuildResult(request.buildId, 0, "content", Instant.now(), Duration.ofSeconds(1), null)
         def event = new BuildEvent(request, result)
 
@@ -192,6 +192,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 'FROM foo:latest',
                 Path.of("/some/path"),
                 "buildrepo",
+                null,
                 'conda::recipe',
                 null,
                 BuildFormat.DOCKER,
@@ -203,7 +204,6 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 'docker.io/my/repo',
                 null,
                 "1.2.3.4",
-                null,
                 null )
                 .withBuildId('1')
         def result = new BuildResult(request.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
@@ -226,6 +226,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 'FROM foo:latest',
                 Path.of("/some/path"),
                 "buildrepo",
+                null,
                 'conda::recipe',
                 null,
                 BuildFormat.DOCKER,
@@ -237,7 +238,6 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 'docker.io/my/repo',
                 null,
                 "1.2.3.4",
-                null,
                 null )
                 .withBuildId('1')
         and:
