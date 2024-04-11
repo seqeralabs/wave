@@ -1,5 +1,13 @@
 WAVE CLI CHANGE-LOG
 ===================
+1.3.0 - 11 Apr 2024 
+- Add generative containers [26bb08de]
+- Use container-alpha1v2 endpoint (#62) [a923aacf]
+- change gc to g1gc for linux distribution of cli (#63) [9decb2a4]
+- Update default endpoint to api.cloud.seqera.io (#61) [416005cf]
+- bump github actions to v4 (#58) [2d0e2672]
+- Handle client connection errors [f5d6d9a5]
+
 1.2.0 - 12 Feb 2024
 - Add support for container includes option [01d5904d]
 - Add support for inspect option [a29f905f]
