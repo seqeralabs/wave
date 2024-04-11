@@ -354,24 +354,28 @@ class ContainerHelperTest extends Specification {
                 null,
                 '123',
                 NEW_BUILD,
-                FREEZE
+                IS_FREEZE
         )
         def token = new TokenData('123abc', Instant.now().plusSeconds(100))
         def target = 'wave.com/this/that'
+        and:
+        def EXPECTED_IMAGE = 'docker.io/some/container'
+        def EXPECTED_BUILD = '123'
 
         when:
         def result = ContainerHelper.makeResponseV2(data, token, target)
         then:
         verifyAll(result){
             containerToken == EXPECTED_TOKEN
-            targetImage == EXPECTED_IMAGE
-            buildId == '123'
+            containerImage == EXPECTED_IMAGE
+            targetImage == EXPECTED_TARGET
+            buildId == EXPECTED_BUILD
             cached == EXPECTED_CACHE
-            freeze == FREEZE
+            freeze == IS_FREEZE
         }
 
         where:
-        NEW_BUILD   | FREEZE    | EXPECTED_TOKEN | EXPECTED_IMAGE            | EXPECTED_CACHE
+        NEW_BUILD   | IS_FREEZE | EXPECTED_TOKEN | EXPECTED_TARGET           | EXPECTED_CACHE
         false       | false     | '123abc'       | 'wave.com/this/that'      | true
         true        | false     | '123abc'       | 'wave.com/this/that'      | false
         and:
