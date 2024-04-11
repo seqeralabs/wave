@@ -104,7 +104,7 @@ distributions:
   wave-cli-jar:
     type: SINGLE_JAR
     artifacts:
-      - path: "wave_jar/wave.jar"
+      - path: "wave-jar/wave.jar"
         transform: "wave-{{projectEffectiveVersion}}.jar"
 
 packagers:
