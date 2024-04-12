@@ -354,11 +354,11 @@ class ContainerAugmenter {
             config.WorkingDir = containerConfig.workingDir
         }
         if ( containerConfig.labels ) {
-             def labelsMap = new HashMap<>()
+            def labelsMap = new HashMap<>()
             for(String label: containerConfig.labels){
                 if(label.contains('=')) {
-                    String[] singleLabelArray = label.split("=");
-                    labelsMap.put(singleLabelArray[0], singleLabelArray[1]);
+                    String[] singleLabelArray = label.split("=")
+                    labelsMap.put(singleLabelArray[0], singleLabelArray[1])
                 }
             }
             config.Labels = labelsMap
