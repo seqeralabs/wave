@@ -139,17 +139,17 @@ class FreezeServiceImpl implements FreezeService {
             result += '%environment\n'
             result += "  export ${containerConfig.env.join(' ')}\n"
         }
+        //add Labels
+        if( containerConfig.labels ) {
+            result += '%labels\n'
+            result += "  ${constructLabels(containerConfig.labels)}\n"
+        }
         // add ENTRY
         if( containerConfig.entrypoint ) {
             result += '%runscript\n'
             result += "  ${Escape.cli(containerConfig.entrypoint)}\n"
         }
 
-        //add Labels
-        if( containerConfig.labels ) {
-            result += '%labels\n'
-            result += "  ${constructLabels(containerConfig.labels)}\n"
-        }
         // config work dir is not supported
         // config command is not supported
 
@@ -172,7 +172,6 @@ class FreezeServiceImpl implements FreezeService {
             result += "ENV ${containerConfig.env.join(' ')}\n"
         }
         // add Labels
-        // add ENV
         if( containerConfig.labels ) {
             result += "LABEL ${constructLabels(containerConfig.labels)}\n"
         }

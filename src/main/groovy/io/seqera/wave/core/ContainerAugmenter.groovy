@@ -353,6 +353,9 @@ class ContainerAugmenter {
         if( containerConfig.workingDir ) {
             config.WorkingDir = containerConfig.workingDir
         }
+        if( containerConfig.env ) {
+            config.Env = appendEnv(config.Env as List, containerConfig.env)
+        }
         if ( containerConfig.labels ) {
             def labelsMap = new HashMap<>()
             for(String label: containerConfig.labels){
@@ -362,9 +365,6 @@ class ContainerAugmenter {
                 }
             }
             config.Labels = labelsMap
-        }
-        if( containerConfig.env ) {
-            config.Env = appendEnv(config.Env as List, containerConfig.env)
         }
         if( entryChain ) {
             config.Env = appendEnv( config.Env as List, [ "WAVE_ENTRY_CHAIN="+entryChain ] )
