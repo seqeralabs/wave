@@ -98,15 +98,7 @@ class SurrealPersistenceService implements PersistenceService {
 
     @Override
     void createBuild(WaveBuildRecord build) {
-        surrealDb.insertBuildAsync(authorization, build).subscribe({ result->
-            log.trace "Build record saved ${result}"
-        }, {error->
-            def msg = error.message
-            if( error instanceof HttpClientResponseException ){
-                msg += ":\n $error.response.body"
-            }
-            log.error "Error saving build record ${msg}\n${build}", error
-        })
+        surrealDb.insertBuild(getAuthorization(), build)
     }
 
     @Override
@@ -134,10 +126,6 @@ class SurrealPersistenceService implements PersistenceService {
                             log.error("Error updating build record id: $build.buildId => ${msg}\n", error)
                         })
         log.trace "Scan update result=$result"
-    }
-
-    void saveBuildBlocking(WaveBuildRecord record) {
-        surrealDb.insertBuild(getAuthorization(), record)
     }
 
     WaveBuildRecord loadBuild(String buildId) {
