@@ -31,9 +31,11 @@ import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.api.ContainerInspectRequest
 import io.seqera.wave.api.ContainerInspectResponse
+import io.seqera.wave.core.spec.ObjectRef
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.UserService
 import io.seqera.wave.service.inspect.ContainerInspectService
+import io.seqera.wave.service.inspect.model.BlobURIResponse
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
@@ -74,25 +76,15 @@ class InspectController {
 
     @Post("/v1alpha1/inspect")
     CompletableFuture<HttpResponse<ContainerInspectResponse>> inspect(ContainerInspectRequest req) {
+        String endpoint = validateRequest(req)
 
-        // this is needed for backward compatibility with old clients
-        if( !req.towerEndpoint ) {
-            req.towerEndpoint = towerEndpointUrl
-        }
-
-        // anonymous access
-        if( !req.towerAccessToken ) {
+        if( !endpoint ) {
             return CompletableFuture.completedFuture(makeResponse(req, PlatformId.NULL))
         }
 
-        // We first check if the service is registered
-        final registration = pairingService.getPairingRecord(PairingService.TOWER_SERVICE, req.towerEndpoint)
-        if( !registration )
-            throw new BadRequestException("Tower instance '${req.towerEndpoint}' has not enabled to connect Wave service '$serverUrl'")
-
         // find out the user associated with the specified tower access token
         return userService
-                .getUserByAccessTokenAsync(registration.endpoint, req.towerAccessToken)
+                .getUserByAccessTokenAsync(endpoint, req.towerAccessToken)
                 .thenApplyAsync({ User user -> makeResponse(req, PlatformId.of(user,req)) }, ioExecutor)
 
     }
@@ -102,5 +94,50 @@ class InspectController {
         return spec
                 ? HttpResponse.ok(new ContainerInspectResponse(spec))
                 : HttpResponse.<ContainerInspectResponse>notFound()
+    }
+
+    @Post("/v1alpha1/blob/uri")
+    CompletableFuture<HttpResponse<BlobURIResponse>> inspectUrl(ContainerInspectRequest req) {
+        String endpoint = validateRequest(req)
+
+        if( !endpoint ) {
+            return CompletableFuture.completedFuture(getURIs(req, PlatformId.NULL))
+        }
+
+        return userService
+                .getUserByAccessTokenAsync(endpoint, req.towerAccessToken)
+                .thenApplyAsync({ User user -> getURIs(req, PlatformId.of(user,req)) }, ioExecutor)
+    }
+
+    protected HttpResponse<BlobURIResponse> getURIs(ContainerInspectRequest req, PlatformId identity) {
+        final spec = inspectService.containerSpec(req.containerImage, identity)
+        final layers = spec?.manifest?.layers
+        if(layers) {
+            List<String> uris = new ArrayList<>()
+            for (ObjectRef layer : layers) {
+                uris.add(spec.getHostName() + "/v2/" + spec.getImageName() + "/blobs/" + layer.digest)
+            }
+            return HttpResponse.ok(new BlobURIResponse(uris))
+        }
+        return HttpResponse.<BlobURIResponse>notFound()
+    }
+
+    String validateRequest(ContainerInspectRequest req) {
+        // this is needed for backward compatibility with old clients
+        if( !req.towerEndpoint ) {
+            req.towerEndpoint = towerEndpointUrl
+        }
+
+        // anonymous access
+        if( !req.towerAccessToken ) {
+            return null
+        }
+
+        // We first check if the service is registered
+        final registration = pairingService.getPairingRecord(PairingService.TOWER_SERVICE, req.towerEndpoint)
+        if( !registration )
+            throw new BadRequestException("Tower instance '${req.towerEndpoint}' has not enabled to connect Wave service '$serverUrl'")
+
+        return registration.endpoint
     }
 }
