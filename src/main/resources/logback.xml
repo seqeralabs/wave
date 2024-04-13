@@ -25,7 +25,7 @@
         <!-- ansi escape mess-up with non-ansi terminal and loggers -->
         <withJansi>false</withJansi>
         <encoder>
-            <pattern>[%d{HH:mm:ss.SSS}] [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
