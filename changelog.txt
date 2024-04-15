@@ -1,4 +1,28 @@
 # Wave changelog
+1.6.1 - 11 Apr 2024
+- Undeprecate containerImage attribute in response object [23411028]
+
+1.6.0 - 10 Apr 2024 
+- Add metrics service based on Redis counters (#429) [ac84eadb]
+- Add v1alpha2 request endpoint (#423) [82d1cc49]
+- Refactor build id & status endpoint (#421) [354358c6]
+- Fix platform migration (#444) [2db9e422]
+- Document build status endpoint (#447) [c38db704]
+- Fix inspect for oras-oci images [8b4e18e9]
+- Minor refactor [15cb3970]
+- Refactor controllers name [d68617ba]
+- Remove deprecated fields [5ca41532]
+- Patched tower endpoints to new ones (#440) [f78647e2]
+- Fix Containerfile encoding (#441) [d742aa67]
+- Improve error reporting for AWS ECR auth failure [06141219]
+- Remove unused exception [bc5570b3]
+- Fix syntax error repored by Intellij [343887a4]
+- Fix Build pod name (#438) [4e54ce1a]
+- Fix RedisTestContainer flaky test (#436) [a90b44e5]
+- Update platform api endpoint to api.cloud.seqera.io (#434) [1e43e8b1]
+- Use shorted ttl when creating build result object [7525c0f7]
+- Minor change in container view [bd783221]
+
 1.5.2 - 25 Mar 2024
 - Fix No such property: ioExecutor [f603868b]
 

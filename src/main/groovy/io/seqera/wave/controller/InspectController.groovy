@@ -41,6 +41,7 @@ import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
 import jakarta.inject.Named
+import static io.seqera.wave.controller.ContainerHelper.patchPlatformEndpoint
 
 /**
  * Implement container inspect capability
@@ -78,7 +79,7 @@ class InspectController {
     CompletableFuture<HttpResponse<ContainerInspectResponse>> inspect(ContainerInspectRequest req) {
         String endpoint = validateRequest(req)
 
-        if( !endpoint ) {
+        if( !req.towerAccessToken ) {
             return CompletableFuture.completedFuture(makeResponse(req, PlatformId.NULL))
         }
 
