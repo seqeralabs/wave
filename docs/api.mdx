@@ -4,13 +4,13 @@ title: API reference
 
 This page summarizes the API provided by the Wave container service.
 
-## `/container-token`
+## POST `/container-token`
 
 This endpoint allows you to submit a request to access a private container repository via Wave, or build a container image on-the-fly with a Dockerfile or Conda recipe file.
 
 The endpoint returns the name of the container request made available by Wave.
 
-### Request
+### Request body
 
 ```json
 {
@@ -87,13 +87,13 @@ The endpoint returns the name of the container request made available by Wave.
 | `targetImage`    | The Wave container image name e.g. `wave.seqera.io/wt/0123456789/library/ubuntu:latest`. |
 | `expiration`     | The expiration timestamp of the Wave container using ISO-8601 format.                    |
 
-## `/v1alpha2/container`
+## POST `/v1alpha2/container`
 
 This endpoint allows you to submit a request to access a private container repository via Wave, or build a container image on-the-fly with a Dockerfile or Conda recipe file.
 
 The endpoint returns the name of the container request made available by Wave.
 
-### Request
+### Request body
 
 ```json
 {
@@ -171,6 +171,105 @@ Note: You can read the description of al attributes except packages from [here](
 }
 ```
 
+### Examples
+
+1. Create docker image with conda packages
+
+##### Request
+
+```
+curl --location 'http://localhost:9090/v1alpha2/container' \
+--header 'Content-Type: application/json' \
+--data '{
+    "packages":{
+        "type": "CONDA",
+        "entries": ["salmon", "bwa"],
+        "channels": ["conda-forge", "bioconda"]
+    }
+}'
+```
+
+#### Response
+
+```
+{
+    "containerToken":"732b73aa17c8",
+    "targetImage":"0625dce899da.ngrok.app/wt/732b73aa17c8/hrma017/dev:salmon_bwa--5e49881e6ad74121",
+    "expiration":"2024-04-09T21:19:01.715321Z",
+    "buildId":"5e49881e6ad74121_1",
+    "cached":false,
+    "freeze":false
+}
+```
+
+2. Create singularity image with conda packages
+
+##### Request
+
+```
+curl --location 'http://localhost:9090/v1alpha2/container' \
+--header 'Content-Type: application/json' \
+--data '{
+    "format": "sif",
+    "containerPlatform": "arm64",
+    "packages":{
+        "type": "CONDA",
+        "entries": ["salmon"],
+        "channels": ["conda-forge", "bioconda"]
+    },
+    "freeze": true,
+    "buildRepository": <CONTAINER_REPOSITORY>,
+    "towerAccessToken":<YOUR_SEQERA_PLATFORM_TOWER_TOKEN>,
+    "towerEndpoint": "http://localhost:8008/api"
+}'
+```
+
+#### Response
+
+```
+{
+    "targetImage":"oras://<CONTAINER_REPOSITORY>:salmon--6c084f2e43f86a78",
+    "buildId":"6c084f2e43f86a78_1",
+    "cached":false,
+    "freeze":true
+}
+```
+
+Note: You need to add your container registry credentials in seqera platform to use freeze feature which is a requirement for singularity.
+
+
+## `/v1alpha1/builds/{buildId}/status`
+
+Provides status of build against buildId passed as path variable
+
+### Response
+
+```json
+{
+    serviceInfo: {
+        id: string,
+        status: string,
+        startTime: string,
+        duration: string,
+        succeeded: boolean
+    }
+}
+```
+Note: status can only be `PENDING` or `COMPLETED`.
+
+### Example
+
+```
+% curl --location 'http://localhost:9090/v1alpha1/builds/6c084f2e43f86a78_1/status'
+{
+    "id":"6c084f2e43f86a78_1",
+    "status":"COMPLETED",
+    "startTime":"2024-04-09T20:31:35.355423Z",
+    "duration":123.914989000,
+    "succeeded":true
+}
+```
+
 ## `/service-info`
 
 Provides basic information about the service status.
@@ -186,7 +285,7 @@ Provides basic information about the service status.
 }
 ```
 
-## Metrics APIs
+## Metrics APIs based on SurrealDB
 
 These APIs provide usage (builds and pulls) metrics of Wave per IP and user.
 These APIs required basic authentication, so you need to provide username and password while calling these APIs.
@@ -347,4 +446,113 @@ This endpoint is used to get the total numbers of pulls through Wave per user.
 ```
 % curl -u foo:bar "http://localhost:9090/v1alpha1/metrics/pulls/user?startDate=2024-02-29&endDate=2024-02-29&fusion=true"
 {"result":{"test_metrics@seqera.io":2}}
+```
+
+## Metrics APIs based on Redis
+
+These APIs provide usage (builds and pulls) metrics of Wave for a specific date and/or a specific organisation.
+These APIs required basic authentication, so you need to provide username and password while calling these APIs.
+
+All Metrics API endpoints have these two query parameters, at least one needs to provided to fetch the metrics:
+
+| Name | Description                                                           | sample Value |
+|------|-----------------------------------------------------------------------|--------------|
+| date | Format: `yyyy-mm-dd`, The data of the required metrics.               | 2024-04-08   |
+| org  | domain of the organisation used in their emails. e.g. `org=seqera.io` | seqera.io    |
+
+### Build Metrics API
+
+These APIs are used to get the metrics about the container builds by Wave.
+
+### GET `/v1alpha2/metrics/builds`
+
+This endpoint is used to get the total numbers of builds performed by Wave.
+
+### Response
+
+```json
+{
+    count: integer
+}
+```
+
+#### Examples
+
+```
+% curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/builds?date=2024-04-08&org=seqera.io"
+{"count":4}
+```
+
+```
+% curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/builds?date=2024-04-08"
+{"count":6}
+```
+
+```
+% curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/builds?org=seqera.io"
+{"count":4}
+```
+### Pull Metrics API
+
+These APIs are used to get the metrics about the container pulls through Wave.
+
+### GET `/v1alpha2/metrics/pulls`
+
+This endpoint is used to get the total numbers of pulls performed through Wave.
+
+### Response
+
+```json
+{
+    count: integer
+}
+```
+
+#### Examples
+
+```
+% curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/pulls?date=2024-04-08&org=seqera.io"
+{"count":5}
+```
+
+```
+% curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/pulls?date=2024-04-08"
+{"count":7}
+```
+
+```
+% curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/pulls?org=seqera.io"
+{"count":5}
+```
+### Fusion Pull Metrics API
+
+These APIs are used to get the metrics about the fusion based container pulls through Wave.
+
+### GET `/v1alpha2/metrics/fusion/pulls`
+
+This endpoint is used to get the total numbers of pulls of fusion based containers performed through Wave.
+
+### Response
+
+```json
+{
+    count: integer
+}
+```
+
+#### Examples
+
+```
+% curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/fusion/pulls?date=2024-04-08&org=seqera.io"
+{"count":2}
+```
+
+```
+% curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/fusion/pulls?date=2024-04-08"
+{"count":2}%
+```
+
+```
+% curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/fusion/pulls?org=seqera.io"
+{"count":2}
 ```

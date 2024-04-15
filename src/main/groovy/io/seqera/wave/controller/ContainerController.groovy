@@ -81,6 +81,7 @@ import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
 
 import static io.seqera.wave.controller.ContainerHelper.makeResponseV2
 import static io.seqera.wave.controller.ContainerHelper.makeResponseV1
+import static io.seqera.wave.controller.ContainerHelper.patchPlatformEndpoint
 import static io.seqera.wave.controller.ContainerHelper.containerFileFromPackages
 import static java.util.concurrent.CompletableFuture.completedFuture
 
@@ -173,6 +174,9 @@ class ContainerController {
         // this is needed for backward compatibility with old clients
         if( !req.towerEndpoint ) {
             req.towerEndpoint = towerEndpointUrl
+        }
+        else {
+            req.towerEndpoint = patchPlatformEndpoint(req.towerEndpoint)
         }
 
         // anonymous access
