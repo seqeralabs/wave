@@ -265,6 +265,7 @@ class BuildRequestTest extends Specification {
                 == 'quay.io/org/name:bwa-0.7.15--12345'
     }
 
+    @Unroll
     def 'should make target with custom image name'(){
         expect:
         BuildRequest.makeTarget(BuildFormat.DOCKER, REPOSITORY, IMAGENAME, '12345', null, null) == TARGET
@@ -276,7 +277,6 @@ class BuildRequestTest extends Specification {
         'quay.io/org'           | 'foo/bar'           | 'quay.io/org/foo/bar:12345'
         'quay.io'               | 'foo/bar'           | 'quay.io/foo/bar:12345'
     }
-
 
     @Unroll
     def 'should normalise tag' () {
