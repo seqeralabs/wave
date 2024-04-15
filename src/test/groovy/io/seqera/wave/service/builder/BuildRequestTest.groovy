@@ -256,7 +256,6 @@ class BuildRequestTest extends Specification {
         '''
         BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', null, '12345', conda, null)
                 == 'quay.io/org/name:salmon-1.2.3--12345'
-
         and:
         def spack = '''\
          spack:
@@ -264,20 +263,20 @@ class BuildRequestTest extends Specification {
         '''
         BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', null, '12345', null, spack)
                 == 'quay.io/org/name:bwa-0.7.15--12345'
-
-        and: 'should return targetImage with provided custom container image name'
-        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', 'foo', '12345', null, null)
-                == 'quay.io/org/name/foo:12345'
-
-        and:
-        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org', 'foo/bar', '12345', null, null)
-                == 'quay.io/org/foo/bar:12345'
-
-        and:
-        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io', 'foo/bar', '12345', null, null)
-                == 'quay.io/foo/bar:12345'
-
     }
+
+    def 'should make target with custom image name'(){
+        expect:
+        BuildRequest.makeTarget(BuildFormat.DOCKER, REPOSITORY, IMAGENAME, '12345', null, null) == TARGET
+        where:
+        REPOSITORY              | IMAGENAME           | TARGET
+        'quay.io/org/name'      | ''                  | 'quay.io/org/name:12345'
+        'quay.io/org/name'      | null                | 'quay.io/org/name:12345'
+        'quay.io/org/name'      | 'foo'               | 'quay.io/org/name/foo:12345'
+        'quay.io/org'           | 'foo/bar'           | 'quay.io/org/foo/bar:12345'
+        'quay.io'               | 'foo/bar'           | 'quay.io/foo/bar:12345'
+    }
+
 
     @Unroll
     def 'should normalise tag' () {
