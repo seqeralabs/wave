@@ -4,13 +4,13 @@ title: API reference
 
 This page summarizes the API provided by the Wave container service.
 
-## `/container-token`
+## POST `/container-token`
 
 This endpoint allows you to submit a request to access a private container repository via Wave, or build a container image on-the-fly with a Dockerfile or Conda recipe file.
 
 The endpoint returns the name of the container request made available by Wave.
 
-### Request
+### Request body
 
 ```json
 {
@@ -87,13 +87,13 @@ The endpoint returns the name of the container request made available by Wave.
 | `targetImage`    | The Wave container image name e.g. `wave.seqera.io/wt/0123456789/library/ubuntu:latest`. |
 | `expiration`     | The expiration timestamp of the Wave container using ISO-8601 format.                    |
 
-## `/v1alpha2/container`
+## POST `/v1alpha2/container`
 
 This endpoint allows you to submit a request to access a private container repository via Wave, or build a container image on-the-fly with a Dockerfile or Conda recipe file.
 
 The endpoint returns the name of the container request made available by Wave.
 
-### Request
+### Request body
 
 ```json
 {
@@ -168,6 +168,105 @@ Note: You can read the description of al attributes except packages from [here](
     expiration: string,
     buildId: string,
     cached: boolean 
+}
+```
+
+### Examples
+
+1. Create docker image with conda packages
+
+##### Request
+
+```
+curl --location 'http://localhost:9090/v1alpha2/container' \
+--header 'Content-Type: application/json' \
+--data '{
+    "packages":{
+        "type": "CONDA",
+        "entries": ["salmon", "bwa"],
+        "channels": ["conda-forge", "bioconda"]
+    }
+}'
+```
+
+#### Response
+
+```
+{
+    "containerToken":"732b73aa17c8",
+    "targetImage":"0625dce899da.ngrok.app/wt/732b73aa17c8/hrma017/dev:salmon_bwa--5e49881e6ad74121",
+    "expiration":"2024-04-09T21:19:01.715321Z",
+    "buildId":"5e49881e6ad74121_1",
+    "cached":false,
+    "freeze":false
+}
+```
+
+2. Create singularity image with conda packages
+
+##### Request
+
+```
+curl --location 'http://localhost:9090/v1alpha2/container' \
+--header 'Content-Type: application/json' \
+--data '{
+    "format": "sif",
+    "containerPlatform": "arm64",
+    "packages":{
+        "type": "CONDA",
+        "entries": ["salmon"],
+        "channels": ["conda-forge", "bioconda"]
+    },
+    "freeze": true,
+    "buildRepository": <CONTAINER_REPOSITORY>,
+    "towerAccessToken":<YOUR_SEQERA_PLATFORM_TOWER_TOKEN>,
+    "towerEndpoint": "http://localhost:8008/api"
+}'
+```
+
+#### Response
+
+```
+{
+    "targetImage":"oras://<CONTAINER_REPOSITORY>:salmon--6c084f2e43f86a78",
+    "buildId":"6c084f2e43f86a78_1",
+    "cached":false,
+    "freeze":true
+}
+```
+
+Note: You need to add your container registry credentials in seqera platform to use freeze feature which is a requirement for singularity.
+
+
+## `/v1alpha1/builds/{buildId}/status`
+
+Provides status of build against buildId passed as path variable
+
+### Response
+
+```json
+{
+    serviceInfo: {
+        id: string,
+        status: string,
+        startTime: string,
+        duration: string,
+        succeeded: boolean
+    }
+}
+```
+Note: status can only be `PENDING` or `COMPLETED`.
+
+### Example
+
+```
+% curl --location 'http://localhost:9090/v1alpha1/builds/6c084f2e43f86a78_1/status'
+{
+    "id":"6c084f2e43f86a78_1",
+    "status":"COMPLETED",
+    "startTime":"2024-04-09T20:31:35.355423Z",
+    "duration":123.914989000,
+    "succeeded":true
 }
 ```
 
