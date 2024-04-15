@@ -26,11 +26,11 @@ import groovy.transform.CompileStatic
  */
 @CompileStatic
 class BlobURIResponse {
-    List<String> uri;
+    List<String> uris;
 
     BlobURIResponse() {}
 
-    BlobURIResponse(List<String> uri) {
-        this.uri = uri
+    BlobURIResponse(List<String> uris) {
+        this.uris = uris
     }
 }

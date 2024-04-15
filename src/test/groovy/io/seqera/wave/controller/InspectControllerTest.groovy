@@ -28,6 +28,7 @@ import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerInspectRequest
 import io.seqera.wave.api.ContainerInspectResponse
+import io.seqera.wave.service.inspect.model.BlobURIResponse
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.logs.BuildLogServiceImpl
 import jakarta.inject.Inject
@@ -71,6 +72,19 @@ class InspectControllerTest extends Specification {
         resp.body().container.manifest.layers[0].size == 2152262
         resp.body().container.config.rootfs.type == 'layers'
         resp.body().container.config.rootfs.diff_ids == ['sha256:95c4a60383f7b6eb6f7b8e153a07cd6e896de0476763bef39d0f6cf3400624bd']
+    }
+
+    def 'should get list of blob URI' () {
+        when:
+        def inspect = new ContainerInspectRequest(containerImage:
+                'library/busybox@sha256:4be429a5fbb2e71ae7958bfa558bc637cf3a61baf40a708cb8fff532b39e52d0')
+        def req = HttpRequest.POST("/v1alpha1/blob/uri", inspect)
+        def resp = client.toBlocking().exchange(req, BlobURIResponse)
+
+        then:
+        resp.status() == HttpStatus.OK
+        and:
+        resp.body().uris == ['https://registry-1.docker.io/v2/library/busybox/blobs/sha256:7b2699543f22d5b8dc8d66a5873eb246767bca37232dee1e7a3b8c9956bceb0c']
     }
 
 }
