@@ -43,12 +43,13 @@ The endpoint returns the name of the container request made available by Wave.
     towerRefreshToken: string,
     towerEndpoint: string,
     towerWorkspaceId: number,
+    imageName: string
 }
 ```
 #### container token request attributes 
 
 | Attribute                           | Description                                                                                                                                        |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------|
 | `containerImage`                    | Name of the container to be served, e.g., `docker.io/library/ubuntu:latest` (optional). If omitted, the `containerFile` must be provided.          |
 | `containerConfig.entrypoint`        | The container entrypoint command e.g. `['/bin/bash']`                                                                                              |
 | `containerConfig.cmd`               | The launch command to be used by the Wave container, e.g., `['echo', 'Hello world']` (optional).                                                   |
@@ -67,9 +68,10 @@ The endpoint returns the name of the container request made available by Wave.
 | `timestamp`                         | Request submission timestap using ISO-8601.                                                                                                        |
 | `fingerprint`                       | Request unique fingerprint.                                                                                                                        |
 | `freeze`                            | The container provisioned will be stored in the specified repository in a permanently.                                                             |
-| `towerEndpoint`                     | Seqera Platform service endpoint from where container repositories credentials are retrieved (optional). Default `https://api.cloud.seqera.io`.                       |
+| `towerEndpoint`                     | Seqera Platform service endpoint from where container repositories credentials are retrieved (optional). Default `https://api.cloud.seqera.io`.    |
 | `towerAccessToken`                  | Access token of the user account granting the access to the Seqera Platform service specified via `towerEndpoint` (optional).                      |
 | `towerWorkspaceId`                  | ID of the Seqera Platform workspace from where the container repositories credentials are retrieved (optional). When omitted the personal workspace is used. |
+| `imageName`                         | Custom name for the container image build by wave                                                                                                  |
 
 ### Response
 
@@ -126,6 +128,7 @@ The endpoint returns the name of the container request made available by Wave.
     towerRefreshToken: string,
     towerEndpoint: string,
     towerWorkspaceId: number,
+    imageName: string
     packages: {
                   type: string,
                   packages: string[],
