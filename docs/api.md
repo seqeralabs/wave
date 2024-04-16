@@ -66,7 +66,7 @@ The endpoint returns the name of the container request made available by Wave.
 | `containerPlatform`                 | Target container architecture of the built container e.g. `linux/amd64` (optional). Currently only supporting amd64 and arm64.                                 |
 | `buildRepository`                   | Container repository where container builds should be pushed e.g. `docker.io/user/my-image` (optional).                                                        |
 | `cacheRepository`                   | Container repository used to cache build layers `docker.io/user/my-cache` (optional).                                                                          |
-| `timestamp`                         | Request submission timestap using ISO-8601.                                                                                                                    |
+| `timestamp`                         | Request submission timestamp using ISO-8601.                                                                                                                   |
 | `fingerprint`                       | Request unique fingerprint.                                                                                                                                    |
 | `freeze`                            | The container provisioned will be stored in the specified repository in a permanently.                                                                         |
 | `towerEndpoint`                     | Seqera Platform service endpoint from where container repositories credentials are retrieved (optional). Default `https://api.cloud.seqera.io`.                |
