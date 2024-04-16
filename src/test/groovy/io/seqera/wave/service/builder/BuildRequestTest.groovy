@@ -278,7 +278,6 @@ class BuildRequestTest extends Specification {
         'quay.io/org/'          | 'foo/bar'           | 'quay.io/org/foo/bar:12345'
         'quay.io'               | 'foo/bar'           | 'quay.io/foo/bar:12345'
         'quay.io/'              | 'foo/bar'           | 'quay.io/foo/bar:12345'
-        'quay.io/'              | 'foo/bar'           | 'quay.io/foo/bar:12345'
     }
 
     @Unroll
