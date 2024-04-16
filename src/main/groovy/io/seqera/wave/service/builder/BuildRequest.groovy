@@ -30,6 +30,7 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.RegHelper
+import io.seqera.wave.util.StringUtils
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static io.seqera.wave.util.RegHelper.guessCondaRecipeName
@@ -194,8 +195,9 @@ class BuildRequest {
         String prefix
         def tag = id
         if( imageName ){
-            return format==SINGULARITY ? "oras://${repo}/${imageName}:${tag}" : "${repo}/${imageName}:${tag}"
-        }else {
+            repo = StringUtils.pathConcat(repo, imageName)
+        }
+        else {
             if (condaFile && (prefix = guessCondaRecipeName(condaFile))) {
                 tag = "${normaliseTag(prefix)}--${id}"
             } else if (spackFile && (prefix = guessSpackRecipeName(spackFile))) {
