@@ -243,10 +243,10 @@ class BuildRequestTest extends Specification {
 
     def 'should make request target' () {
         expect:
-        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', null, '12345', null, null)
+        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', '12345', null, null, null)
                 == 'quay.io/org/name:12345'
         and:
-        BuildRequest.makeTarget(BuildFormat.SINGULARITY, 'quay.io/org/name', null, '12345', null, null)
+        BuildRequest.makeTarget(BuildFormat.SINGULARITY, 'quay.io/org/name', '12345', null, null, null)
                 == 'oras://quay.io/org/name:12345'
 
         and:
@@ -254,21 +254,21 @@ class BuildRequestTest extends Specification {
         dependencies:
         - salmon=1.2.3
         '''
-        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', null, '12345', conda, null)
+        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', '12345', null, conda, null)
                 == 'quay.io/org/name:salmon-1.2.3--12345'
         and:
         def spack = '''\
          spack:
             specs: [bwa@0.7.15]
         '''
-        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', null, '12345', null, spack)
+        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', '12345', null, null, spack)
                 == 'quay.io/org/name:bwa-0.7.15--12345'
     }
 
     @Unroll
     def 'should make target with custom image name'(){
         expect:
-        BuildRequest.makeTarget(BuildFormat.DOCKER, REPOSITORY, IMAGENAME, '12345', null, null) == TARGET
+        BuildRequest.makeTarget(BuildFormat.DOCKER, REPOSITORY, '12345', IMAGENAME, null, null) == TARGET
         where:
         REPOSITORY              | IMAGENAME           | TARGET
         'quay.io/org/name'      | ''                  | 'quay.io/org/name:12345'

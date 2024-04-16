@@ -27,6 +27,7 @@ import com.google.common.hash.Hashing
 import groovy.util.logging.Slf4j
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.test.ManifestConst
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -291,20 +292,21 @@ class RegHelperTest extends Specification {
 
         where:
         IMAGENAME                   | ISVALID
-        'foo'                       | true
         'foo:'                      | false
         'foo@sha256:asdf'           | false
-        'foo/bar/foo'               | true
         'foo/bar/foo:1.1.A'         | false
         'foo/bar/foo:1.1-A'         | false
         'foo/bar/foo@sha256:asdf'   | false
         'foo bar'                   | false
         'foo*bar'                   | false
         '/foo/bar'                  | false
-        'foo__bar/bar'              | true
         'foo___bar/bar'             | false
-        'foo---bar/bar'             | true
         'foo---bar/bar_'            | false
+        and:
+        'foo---bar/bar'             | true
+        'foo'                       | true
+        'foo/bar/foo'               | true
+        'foo__bar/bar'              | true
         'foo---bar/bar_foo'         | true
     }
 }
