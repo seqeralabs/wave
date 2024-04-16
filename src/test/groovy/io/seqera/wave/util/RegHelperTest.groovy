@@ -300,6 +300,7 @@ class RegHelperTest extends Specification {
         'foo bar'                   | false
         'foo*bar'                   | false
         '/foo/bar'                  | false
+        'foo/bar/'                  | false
         'foo___bar/bar'             | false
         'foo---bar/bar_'            | false
         and:

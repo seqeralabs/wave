@@ -480,7 +480,7 @@ class ContainerControllerTest extends Specification {
 
         then:
         def e = thrown(BadRequestException)
-        e.message == "Supplied container image name '$customImageName' is not valid"
+        e.message == "Provided image name is not valid - offending value 'foo bar'"
     }
 
     def 'should create response with conda packages' () {

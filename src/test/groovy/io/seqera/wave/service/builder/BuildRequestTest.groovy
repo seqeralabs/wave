@@ -271,8 +271,8 @@ class BuildRequestTest extends Specification {
         BuildRequest.makeTarget(BuildFormat.DOCKER, REPOSITORY, '12345', IMAGENAME, null, null) == TARGET
         where:
         REPOSITORY              | IMAGENAME           | TARGET
-        'quay.io/org/name'      | ''                  | 'quay.io/org/name:12345'
         'quay.io/org/name'      | null                | 'quay.io/org/name:12345'
+        'quay.io/org/name'      | ''                  | 'quay.io/org/name:12345'
         'quay.io/org/name'      | 'foo'               | 'quay.io/org/name/foo:12345'
         'quay.io/org'           | 'foo/bar'           | 'quay.io/org/foo/bar:12345'
         'quay.io'               | 'foo/bar'           | 'quay.io/foo/bar:12345'

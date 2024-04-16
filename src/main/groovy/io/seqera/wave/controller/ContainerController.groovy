@@ -207,9 +207,6 @@ class ContainerController {
             throw new BadRequestException("Attribute `spackFile` is deprecated - use `packages` instead")
         if( !v2 && req.packages )
             throw new BadRequestException("Attribute `packages` is not allowed")
-        if( req.imageName && !isValidImageName(req.imageName) )
-            throw new BadRequestException("Provided image name is not valid - offending value '${req.imageName}'")
-
         if( v2 && req.packages ) {
             // generate the container file required to assemble the container
             final generated = containerFileFromPackages(req.packages, req.formatSingularity())
@@ -311,6 +308,8 @@ class ContainerController {
             throw new BadRequestException("When freeze mode is enabled the target build repository must be specified - see 'wave.build.repository' setting")
         if( req.formatSingularity() && !req.freeze )
             throw new BadRequestException("Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting")
+        if( req.imageName && !isValidImageName(req.imageName) )
+            throw new BadRequestException("Provided image name is not valid - offending value '${req.imageName}'")
 
         // expand inclusions
         inclusionService.addContainerInclusions(req, identity)
