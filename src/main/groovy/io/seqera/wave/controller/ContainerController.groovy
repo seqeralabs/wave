@@ -68,24 +68,22 @@ import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
 import io.seqera.wave.util.LongRndKey
-import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
 import jakarta.inject.Named
-import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
-import static io.seqera.wave.WaveDefault.TOWER
-import static io.seqera.wave.service.builder.BuildFormat.DOCKER
-import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static ContainerHelper.condaFileFromRequest
 import static ContainerHelper.decodeBase64OrFail
 import static ContainerHelper.spackFileFromRequest
-import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
-
-import static io.seqera.wave.controller.ContainerHelper.makeResponseV2
-import static io.seqera.wave.controller.ContainerHelper.makeResponseV1
-import static io.seqera.wave.controller.ContainerHelper.patchPlatformEndpoint
+import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
+import static io.seqera.wave.WaveDefault.TOWER
 import static io.seqera.wave.controller.ContainerHelper.containerFileFromPackages
+import static io.seqera.wave.controller.ContainerHelper.makeResponseV1
+import static io.seqera.wave.controller.ContainerHelper.makeResponseV2
+import static io.seqera.wave.controller.ContainerHelper.patchPlatformEndpoint
+import static io.seqera.wave.service.builder.BuildFormat.DOCKER
+import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
+import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
 import static java.util.concurrent.CompletableFuture.completedFuture
-
+import static io.seqera.wave.util.RegHelper.isValidImageName
 /**
  * Implement a controller to receive container token requests
  * 
@@ -209,6 +207,8 @@ class ContainerController {
             throw new BadRequestException("Attribute `spackFile` is deprecated - use `packages` instead")
         if( !v2 && req.packages )
             throw new BadRequestException("Attribute `packages` is not allowed")
+        if( req.imageName && !isValidImageName(req.imageName) )
+            throw new BadRequestException("Provided image name is not valid - offending value '${req.imageName}'")
 
         if( v2 && req.packages ) {
             // generate the container file required to assemble the container
@@ -248,10 +248,6 @@ class ContainerController {
             throw new BadRequestException("Missing build repository attribute")
         if( !buildConfig.defaultCacheRepository )
             throw new BadRequestException("Missing build cache repository attribute")
-        //validate custom image name
-        if( req.imageName && !RegHelper.isValidImageName(req.imageName) ){
-            throw new BadRequestException("Supplied container image name '${req.imageName}' is not valid")
-        }
 
         final containerSpec = decodeBase64OrFail(req.containerFile, 'containerFile')
         final condaContent = condaFileFromRequest(req)
