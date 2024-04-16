@@ -25,6 +25,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.security.MessageDigest
 import java.security.SecureRandom
+import java.util.regex.Pattern
 
 import com.google.common.hash.Hashing
 import com.google.common.io.BaseEncoding
@@ -46,6 +47,8 @@ class RegHelper {
 
     final private static char PADDING = '_' as char
     final private static BaseEncoding BASE32 = BaseEncoding.base32() .withPadChar(PADDING)
+    final private static Pattern DOCKER_IMAGE_REGEX = ~/^[a-z0-9]+((\.|_|__|-+)[a-z0-9]+)*(\/[a-z0-9]+((\.|_|__|-+)[a-z0-9]+)*)*/
+
 
     // this clas is not to be extended
     private RegHelper(){
@@ -294,7 +297,6 @@ class RegHelper {
     }
 
     static boolean isValidImageName(String imageName){
-        final DOCKER_IMAGE_REGEX = /^[a-z0-9]+((\.|_|__|-+)[a-z0-9]+)*(\/[a-z0-9]+((\.|_|__|-+)[a-z0-9]+)*)*/
-        return (imageName =~ DOCKER_IMAGE_REGEX).matches()
+        return DOCKER_IMAGE_REGEX.matcher(imageName).matches()
     }
 }
