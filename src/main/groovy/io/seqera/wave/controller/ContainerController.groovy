@@ -208,7 +208,9 @@ class ContainerController {
             throw new BadRequestException("Attribute `spackFile` is deprecated - use `packages` instead")
         if( !v2 && req.packages )
             throw new BadRequestException("Attribute `packages` is not allowed")
-
+        if( !v2 && req.containerFile && req.freeze && (!req.buildRepository || req.buildRepository==buildConfig.defaultPublicRepository) )
+            throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode")
+        
         if( v2 && req.packages ) {
             // generate the container file required to assemble the container
             final generated = containerFileFromPackages(req.packages, req.formatSingularity())
