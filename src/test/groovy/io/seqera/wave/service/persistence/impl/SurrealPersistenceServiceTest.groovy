@@ -104,15 +104,15 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         """
         def storage = applicationContext.getBean(SurrealPersistenceService)
         final request = new BuildRequest(
-                'id1234',
+                'container1234',
                 dockerFile,
                 condaFile,
                 null,
                 Path.of("."),
-                'docker.io/my/repo:12234',
+                'docker.io/my/repo:container1234',
                 PlatformId.NULL,
                 ContainerPlatform.of('amd64'),
-                'docker.io/my/repo',
+                'docker.io/my/cache',
                 '127.0.0.1',
                 '{"config":"json"}',
                 null,
@@ -142,15 +142,15 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         and:
         def service = applicationContext.getBean(SurrealPersistenceService)
         final request = new BuildRequest(
-                'id1234',
+                'container1234',
                 'test',
                 'test',
                 'test',
                 Path.of("."),
-                'docker.io/my/repo:12234',
+                'docker.io/my/repo:container1234',
                 PlatformId.NULL,
                 ContainerPlatform.of('amd64'),
-                'docker.io/my/repo',
+                'docker.io/my/cache',
                 '127.0.0.1',
                 '{"config":"json"}',
                 null,
@@ -179,15 +179,15 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         surrealContainer.stop()
         def service = applicationContext.getBean(SurrealPersistenceService)
         final request = new BuildRequest(
-                'id1234',
+                'container1234',
                 'test',
                 'test',
                 'test',
                 Path.of("."),
-                'docker.io/my/repo:id1234',
+                'docker.io/my/repo:container1234',
                 PlatformId.NULL,
                 ContainerPlatform.of('amd64'),
-                'docker.io/my/repo',
+                'docker.io/my/cache',
                 '127.0.0.1',
                 '{"config":"json"}',
                 null,
@@ -210,15 +210,15 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         given:
         def persistence = applicationContext.getBean(SurrealPersistenceService)
         final request = new BuildRequest(
-                'id1234',
-                'test',
-                'test',
-                'test',
+                'container1234',
+                'FROM foo:latest',
+                'conda::recipe',
+                null,
                 Path.of("."),
-                'docker.io/my/repo:12234',
+                'docker.io/my/repo:container1234',
                 PlatformId.NULL,
                 ContainerPlatform.of('amd64'),
-                'docker.io/my/repo',
+                'docker.io/my/cache',
                 '127.0.0.1',
                 '{"config":"json"}',
                 null,
@@ -244,15 +244,15 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         given:
         def persistence = applicationContext.getBean(SurrealPersistenceService)
         final request = new BuildRequest(
-                'id1234',
+                'container1234',
                 'FROM foo:latest',
                 'conda::recipe',
                 null,
                 Path.of("/some/path"),
-                'buildrepo:recipe-id1234',
+                'buildrepo:recipe-container1234',
                 PlatformId.NULL,
                 ContainerPlatform.of('amd64'),
-                'docker.io/my/repo',
+                'docker.io/my/cache',
                 '127.0.0.1',
                 '{"config":"json"}',
                 null,

@@ -42,15 +42,15 @@ class WaveBuildRecordTest extends Specification {
     def 'should serialise-deserialize build record' () {
         given:
         final request = new BuildRequest(
-                'id1234',
+                'container1234',
                 'FROM foo:latest',
                 'conda::recipe',
                 'some-spack-recipe',
                 Path.of("/some/path"),
-                'docker.io/my/repo:12234',
+                'docker.io/my/repo:container1234',
                 PlatformId.NULL,
                 ContainerPlatform.of('amd64'),
-                'docker.io/my/repo',
+                'docker.io/my/cache',
                 '1.2.3.4',
                 '{"config":"json"}',
                 null,
@@ -73,15 +73,15 @@ class WaveBuildRecordTest extends Specification {
     def 'should convert to status response' () {
         given:
         final request = new BuildRequest(
-                'id1234',
+                'container1234',
                 'FROM foo:latest',
                 'conda::recipe',
                 'some-spack-recipe',
                 Path.of("/some/path"),
-                'docker.io/my/repo:12234',
+                'docker.io/my/repo:container1234',
                 PlatformId.NULL,
                 ContainerPlatform.of('amd64'),
-                'docker.io/my/repo',
+                'docker.io/my/cache',
                 '1.2.3.4',
                 '{"config":"json"}',
                 null,

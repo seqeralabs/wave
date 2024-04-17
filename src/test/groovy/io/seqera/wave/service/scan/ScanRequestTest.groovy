@@ -39,15 +39,15 @@ class ScanRequestTest extends Specification {
         def workspace = Path.of('/some/workspace')
         def platform = ContainerPlatform.of('amd64')
         final build = new BuildRequest(
-                'id1234',
-                'test',
-                'test',
-                'test',
+                'container1234',
+                'FROM ubuntu',
+                null,
+                null,
                 workspace,
-                'docker.io/my/repo:12234',
+                'docker.io/my/repo:container1234',
                 PlatformId.NULL,
                 platform,
-                'docker.io/my/repo',
+                'docker.io/my/cache',
                 '127.0.0.1',
                 '{"config":"json"}',
                 null,
