@@ -60,7 +60,7 @@ Referring to the SHA256 hash of a container imagine is a common best practice in
 
 To accommodate the new layers added to a container image augmented with Wave, you can use the freeze feature of Wave. In your pipeline configuration, ensure that you specify the following settings:
 
-```
+```groovy
 wave.enabled = true
 wave.freeze = true
 wave.strategy = ['dockerfile']
@@ -69,8 +69,8 @@ wave.build.repository = 'docker.io/<user>/<repository>'
 
 In your pipeline, you can use the SHA256 of the Wave augmented container, available in the target repository that you specify with the `wave.build.repository` parameter. For example:
 
-```
-docker.enabled = 'true'
+```groovy
+docker.enabled = true
 process.container = 'docker.io/<user>/my-bio-container@sha256:3235....ce8f'
 ```
 
