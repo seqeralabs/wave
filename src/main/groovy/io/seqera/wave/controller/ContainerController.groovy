@@ -255,16 +255,16 @@ class ContainerController {
         final spackContent = spackFileFromRequest(req)
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
-        final repository = req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository ? buildConfig.defaultPublicRepository : buildConfig.defaultBuildRepository)
+        final buildRepository = req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository ? buildConfig.defaultPublicRepository : buildConfig.defaultBuildRepository)
         final cacheRepository = req.cacheRepository ?: buildConfig.defaultCacheRepository
-        final configJson = dockerAuthService.credentialsConfigJson(containerSpec, repository, cacheRepository, identity)
+        final configJson = dockerAuthService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
         final scanId = scanEnabled && format==DOCKER ? LongRndKey.rndHex() : null
         final containerFile = spackContent ? prependBuilderTemplate(containerSpec,format) : containerSpec
         // create a unique digest to identify the build request
-        final containerId = BuildRequest.computeDigest(containerFile, condaContent, spackContent, platform, repository, req.buildContext)
-        final targetImage = BuildRequest.makeTarget(format, repository, containerId, condaContent, spackContent)
+        final containerId = BuildRequest.computeDigest(containerFile, condaContent, spackContent, platform, buildRepository, req.buildContext)
+        final targetImage = BuildRequest.makeTarget(format, buildRepository, containerId, condaContent, spackContent)
 
         return new BuildRequest(
                 containerId,
