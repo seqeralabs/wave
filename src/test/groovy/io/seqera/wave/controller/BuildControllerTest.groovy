@@ -77,14 +77,14 @@ class BuildControllerTest extends Specification {
         final format = BuildFormat.DOCKER
         final platform = ContainerPlatform.of('amd64')
         final containerId = BuildRequest.computeDigest(containerFile, null, null, platform, 'buildrepo', null)
-        final target = BuildRequest.makeTarget(format, repo, containerId, null, null)
+        final targetImage = BuildRequest.makeTarget(format, repo, containerId, null, null)
         final build = new BuildRequest(
                 containerId,
                 containerFile,
                 null,
                 null,
                 Path.of("/some/path"),
-                target,
+                targetImage,
                 PlatformId.NULL,
                 platform,
                 'cacherepo',

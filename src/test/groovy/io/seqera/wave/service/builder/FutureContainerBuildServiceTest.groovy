@@ -68,8 +68,8 @@ class FutureContainerBuildServiceTest extends Specification {
         """.stripIndent()
         and:
         def containerId = BuildRequest.computeDigest(dockerfile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def target = BuildRequest.makeTarget(BuildFormat.DOCKER, buildRepo, containerId, null, null)
-        def req = new BuildRequest(containerId, dockerfile, null, null, folder, target, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER).withBuildId('1')
+        def targetImage = BuildRequest.makeTarget(BuildFormat.DOCKER, buildRepo, containerId, null, null)
+        def req = new BuildRequest(containerId, dockerfile, null, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER).withBuildId('1')
 
         when:
         exitCode = EXIT_CODE

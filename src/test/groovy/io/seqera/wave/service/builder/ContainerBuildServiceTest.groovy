@@ -77,8 +77,8 @@ class ContainerBuildServiceTest extends Specification {
         and:
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, cacheRepo, Mock(PlatformId))
         def containerId = BuildRequest.computeDigest(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def target = BuildRequest.makeTarget(BuildFormat.DOCKER, buildRepo, containerId, null, null)
-        def req = new BuildRequest(containerId, dockerFile, null, null, folder, target, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", cfg, null,null , null, null, BuildFormat.DOCKER)
+        def targetImage = BuildRequest.makeTarget(BuildFormat.DOCKER, buildRepo, containerId, null, null)
+        def req = new BuildRequest(containerId, dockerFile, null, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", cfg, null,null , null, null, BuildFormat.DOCKER)
         .withBuildId('1')
 
         when:
@@ -109,8 +109,8 @@ class ContainerBuildServiceTest extends Specification {
         and:
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
         def containerId = BuildRequest.computeDigest(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def target = BuildRequest.makeTarget(BuildFormat.DOCKER, buildRepo, containerId, null, null)
-        def req = new BuildRequest(containerId, dockerFile, null, null, folder, target, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", cfg, null,null , null, null, BuildFormat.DOCKER)
+        def targetImage = BuildRequest.makeTarget(BuildFormat.DOCKER, buildRepo, containerId, null, null)
+        def req = new BuildRequest(containerId, dockerFile, null, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", cfg, null,null , null, null, BuildFormat.DOCKER)
                 .withBuildId('1')
 
         when:
@@ -142,8 +142,8 @@ class ContainerBuildServiceTest extends Specification {
         buildRepo = "quay.io/pditommaso/wave-tests"
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
         def containerId = BuildRequest.computeDigest(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def target = BuildRequest.makeTarget(BuildFormat.DOCKER, buildRepo, containerId, null, null)
-        def req = new BuildRequest(containerId, dockerFile, null, null, folder, target, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", cfg, null,null , null, null, BuildFormat.DOCKER)
+        def targetImage = BuildRequest.makeTarget(BuildFormat.DOCKER, buildRepo, containerId, null, null)
+        def req = new BuildRequest(containerId, dockerFile, null, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", cfg, null,null , null, null, BuildFormat.DOCKER)
                 .withBuildId('1')
 
         when:
@@ -174,8 +174,8 @@ class ContainerBuildServiceTest extends Specification {
         and:
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
         def containerId = BuildRequest.computeDigest(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def target = BuildRequest.makeTarget(BuildFormat.DOCKER, buildRepo, containerId, null, null)
-        def req = new BuildRequest(containerId, dockerFile, null, null, folder, target, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", cfg, null,null , null, null, BuildFormat.DOCKER)
+        def targetImage = BuildRequest.makeTarget(BuildFormat.DOCKER, buildRepo, containerId, null, null)
+        def req = new BuildRequest(containerId, dockerFile, null, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", cfg, null,null , null, null, BuildFormat.DOCKER)
                 .withBuildId('1')
 
         when:
@@ -219,8 +219,8 @@ class ContainerBuildServiceTest extends Specification {
         and:
         def spackConfig = new SpackConfig(cacheBucket: 's3://bucket/cache', secretMountPath: '/mnt/secret')
         def containerId = BuildRequest.computeDigest(dockerFile, condaFile, spackFile, ContainerPlatform.of('amd64'), buildRepo, null)
-        def target = BuildRequest.makeTarget(BuildFormat.DOCKER, buildRepo, containerId, condaFile, spackFile)
-        def req = new BuildRequest(containerId, dockerFile, condaFile, spackFile, folder, target, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", null, null,null , null, null, BuildFormat.DOCKER)
+        def targetImage = BuildRequest.makeTarget(BuildFormat.DOCKER, buildRepo, containerId, condaFile, spackFile)
+        def req = new BuildRequest(containerId, dockerFile, condaFile, spackFile, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", null, null,null , null, null, BuildFormat.DOCKER)
                 .withBuildId('1')
         and:
         def store = Mock(BuildStore)
@@ -253,8 +253,8 @@ class ContainerBuildServiceTest extends Specification {
         and:
         def dockerFile = 'FROM something; {{foo}}'
         def containerId = BuildRequest.computeDigest(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def target = BuildRequest.makeTarget(BuildFormat.DOCKER, buildRepo, containerId, null, null)
-        def req = new BuildRequest(containerId, dockerFile, null, null, folder, target, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", null, null,null , null, null, BuildFormat.DOCKER)
+        def targetImage = BuildRequest.makeTarget(BuildFormat.DOCKER, buildRepo, containerId, null, null)
+        def req = new BuildRequest(containerId, dockerFile, null, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", null, null,null , null, null, BuildFormat.DOCKER)
                 .withBuildId('1')
         and:
         def spack = Mock(SpackConfig)
@@ -280,8 +280,8 @@ class ContainerBuildServiceTest extends Specification {
         def dockerFile = SpackHelper.builderDockerTemplate()
         def spackFile = 'some spack packages'
         def containerId = BuildRequest.computeDigest(dockerFile, null, spackFile, ContainerPlatform.of('amd64'), 'buildRepo', null)
-        def target = BuildRequest.makeTarget(BuildFormat.DOCKER, 'buildRepo', containerId, null, spackFile)
-        def req = new BuildRequest(containerId, dockerFile, null, spackFile, folder, target, Mock(PlatformId), ContainerPlatform.of('amd64'), 'cacheRepo', "10.20.30.40", null, null,null , null, null, BuildFormat.DOCKER)
+        def targetImage = BuildRequest.makeTarget(BuildFormat.DOCKER, 'buildRepo', containerId, null, spackFile)
+        def req = new BuildRequest(containerId, dockerFile, null, spackFile, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), 'cacheRepo', "10.20.30.40", null, null,null , null, null, BuildFormat.DOCKER)
                 .withBuildId('1')
         and:
         def spack = Mock(SpackConfig)
@@ -312,8 +312,8 @@ class ContainerBuildServiceTest extends Specification {
         def dockerFile = SpackHelper.builderSingularityTemplate()
         def spackFile = 'some spack packages'
         def containerId = BuildRequest.computeDigest(dockerFile, null, spackFile, ContainerPlatform.of('amd64'), 'buildRepo', null)
-        def target = BuildRequest.makeTarget(BuildFormat.SINGULARITY, 'buildRepo', containerId, null, spackFile)
-        def req = new BuildRequest(containerId, dockerFile, null, spackFile, folder, target, Mock(PlatformId), ContainerPlatform.of('amd64'), 'cacheRepo', "10.20.30.40", null, null,null , null, null, BuildFormat.SINGULARITY)
+        def targetImage = BuildRequest.makeTarget(BuildFormat.SINGULARITY, 'buildRepo', containerId, null, spackFile)
+        def req = new BuildRequest(containerId, dockerFile, null, spackFile, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), 'cacheRepo', "10.20.30.40", null, null,null , null, null, BuildFormat.SINGULARITY)
                 .withBuildId('1')
         and:
         def spack = Mock(SpackConfig)
@@ -350,8 +350,8 @@ class ContainerBuildServiceTest extends Specification {
         and:
         def builder = new ContainerBuildServiceImpl()
         def containerId = BuildRequest.computeDigest(containerFile, null, null, ContainerPlatform.of('amd64'), 'buildRepo', null)
-        def target = BuildRequest.makeTarget(BuildFormat.SINGULARITY, 'buildRepo', containerId, null, null)
-        def req = new BuildRequest(containerId, containerFile, null, null, folder, target, Mock(PlatformId), ContainerPlatform.of('amd64'), 'cacheRepo', "10.20.30.40", null, null,null , null, null, BuildFormat.SINGULARITY).withBuildId('1')
+        def targetImage = BuildRequest.makeTarget(BuildFormat.SINGULARITY, 'buildRepo', containerId, null, null)
+        def req = new BuildRequest(containerId, containerFile, null, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), 'cacheRepo', "10.20.30.40", null, null,null , null, null, BuildFormat.SINGULARITY).withBuildId('1')
 
         when:
         def result = builder.containerFile0(req, Path.of('/some/context/'), null)
@@ -385,8 +385,8 @@ class ContainerBuildServiceTest extends Specification {
         and:
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
         def containerId = BuildRequest.computeDigest(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def target = BuildRequest.makeTarget(BuildFormat.DOCKER, buildRepo, containerId, null, null)
-        def req = new BuildRequest(containerId, dockerFile, null, null, folder, target, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", cfg, null,containerConfig , null, null, BuildFormat.DOCKER).withBuildId('1')
+        def targetImage = BuildRequest.makeTarget(BuildFormat.DOCKER, buildRepo, containerId, null, null)
+        def req = new BuildRequest(containerId, dockerFile, null, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", cfg, null,containerConfig , null, null, BuildFormat.DOCKER).withBuildId('1')
 
         when:
         def result = service.launch(req)
@@ -457,8 +457,8 @@ class ContainerBuildServiceTest extends Specification {
         def dockerFile = 'from foo'
         def buildRepo = 'quay.io/org/name'
         def containerId = BuildRequest.computeDigest(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def target = BuildRequest.makeTarget(BuildFormat.DOCKER, buildRepo, containerId, null, null)
-        def req = new BuildRequest(containerId, dockerFile, null, null, Path.of('/wsp'), target, Mock(PlatformId), ContainerPlatform.of('amd64'), 'cacheRepo', "10.20.30.40", '{"config":"json"}', null,config , null, null, BuildFormat.DOCKER).withBuildId('1')
+        def targetImage = BuildRequest.makeTarget(BuildFormat.DOCKER, buildRepo, containerId, null, null)
+        def req = new BuildRequest(containerId, dockerFile, null, null, Path.of('/wsp'), targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), 'cacheRepo', "10.20.30.40", '{"config":"json"}', null,config , null, null, BuildFormat.DOCKER).withBuildId('1')
 
         when:
         service.saveLayersToContext(req, folder)

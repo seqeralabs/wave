@@ -118,14 +118,14 @@ class BuildStrategyTest extends Specification {
         def workspace = Path.of("some/path")
         def buildrepo = 'buildrepo'
         def containerId = BuildRequest.computeDigest(content, null, null, ContainerPlatform.of('amd64'), buildrepo, null)
-        def target = BuildRequest.makeTarget(BuildFormat.DOCKER, buildrepo, containerId, null, null)
+        def targetImage = BuildRequest.makeTarget(BuildFormat.DOCKER, buildrepo, containerId, null, null)
         def build = new BuildRequest(
                 containerId,
                 content,
                 null,
                 null,
                 workspace,
-                target,
+                targetImage,
                 PlatformId.NULL,
                 ContainerPlatform.of('amd64'),
                 'caherepo',
