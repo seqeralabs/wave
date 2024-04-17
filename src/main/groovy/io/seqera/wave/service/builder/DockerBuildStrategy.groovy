@@ -174,15 +174,14 @@ class DockerBuildStrategy extends BuildStrategy {
         return wrapper
     }
 
-    protected String builderName(String buildId) {
+    protected List<String> builderName(String buildId) {
         def name = "build-${buildId}".toString().replace('_', '-')
-
-        return ['--name', name]
+        return List.of('--name', name)
     }
 
     @Override
     String getLogs(String buildId) {
-        def logCmd = ['docker', 'logs', builderName(buildId)]
+        def logCmd = ['docker', 'logs'] + builderName(buildId)
         final proc = new ProcessBuilder()
                 .command(logCmd)
                 .redirectErrorStream(true)
