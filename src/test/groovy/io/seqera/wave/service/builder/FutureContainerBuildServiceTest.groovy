@@ -69,7 +69,7 @@ class FutureContainerBuildServiceTest extends Specification {
         and:
         def id = BuildRequest.computeDigest(dockerfile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
         def target = BuildRequest.makeTarget(BuildFormat.DOCKER, buildRepo, id, null, null)
-        def req = new BuildRequest(id, dockerfile, null, null, folder, target, Mock(PlatformId), ContainerPlatform.of('amd64'), 'cacheRepo', "10.20.30.40", '{auth}', null,null , null, null, BuildFormat.DOCKER)
+        def req = new BuildRequest(id, dockerfile, null, null, folder, target, Mock(PlatformId), ContainerPlatform.of('amd64'), 'cacheRepo', "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER)
                 .withBuildId('1')
 
         when:

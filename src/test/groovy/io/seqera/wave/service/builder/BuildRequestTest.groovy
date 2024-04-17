@@ -64,7 +64,7 @@ class BuildRequestTest extends Specification {
                 PLATFORM,
                 CACHE_REPO,
                 IP_ADDR,
-                '{auth}',
+                '{"config":"json"}',
                 OFFSET,
                 CONFIG,
                 SCAN_ID,
@@ -77,13 +77,13 @@ class BuildRequestTest extends Specification {
         req.targetImage == "docker.io/wave:${req.containerId}"
         req.containerFile == CONTENT
         req.identity == USER
-        req.configJson == '{auth}'
+        req.configJson == '{"config":"json"}'
         req.cacheRepository == CACHE_REPO
         req.format == BuildFormat.DOCKER
         req.condaFile == null
         req.spackFile == null
         req.platform == ContainerPlatform.of('amd64')
-        req.configJson == '{auth}'
+        req.configJson == '{"config":"json"}'
         req.scanId == SCAN_ID
         req.ip == IP_ADDR
         req.offsetId == OFFSET
@@ -112,7 +112,7 @@ class BuildRequestTest extends Specification {
                 PLATFORM,
                 CACHE_REPO,
                 IP_ADDR,
-                '{auth}',
+                '{"config":"json"}',
                 OFFSET,
                 CONFIG,
                 SCAN_ID,
@@ -147,7 +147,7 @@ class BuildRequestTest extends Specification {
                 PLATFORM,
                 CACHE_REPO,
                 IP_ADDR,
-                '{auth}',
+                '{"config":"json"}',
                 OFFSET,
                 CONFIG,
                 SCAN_ID,
@@ -191,7 +191,7 @@ class BuildRequestTest extends Specification {
                 PLATFORM,
                 CACHE_REPO,
                 IP_ADDR,
-                '{auth}',
+                '{"config":"json"}',
                 OFFSET,
                 CONFIG,
                 null,
@@ -203,11 +203,11 @@ class BuildRequestTest extends Specification {
         req.targetImage == "oras://docker.io/wave:${req.containerId}"
         req.containerFile == CONTENT
         req.identity == USER
-        req.configJson == '{auth}'
+        req.configJson == '{"config":"json"}'
         req.cacheRepository == CACHE_REPO
         req.format == BuildFormat.SINGULARITY
         req.platform == ContainerPlatform.of('amd64')
-        req.configJson == '{auth}'
+        req.configJson == '{"config":"json"}'
         req.ip == IP_ADDR
         req.offsetId == OFFSET
         req.containerConfig == CONFIG
@@ -231,26 +231,26 @@ class BuildRequestTest extends Specification {
         and:
         def ID1 = BuildRequest.computeDigest(FOO_CONTENT, null, null, PLATFORM, BUILD_REPO, null)
         def TARGET1 = BuildRequest.makeTarget(FORMAT, BUILD_REPO, ID1, null, null)
-        def req1 = new BuildRequest(ID1, FOO_CONTENT, null, null, PATH, TARGET1, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{auth}', null, null, null, null, FORMAT)
+        def req1 = new BuildRequest(ID1, FOO_CONTENT, null, null, PATH, TARGET1, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT)
         and:
-        def req2 = new BuildRequest(ID1, FOO_CONTENT, null, null, PATH, TARGET1, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{auth}', null, null, null, null, FORMAT)
+        def req2 = new BuildRequest(ID1, FOO_CONTENT, null, null, PATH, TARGET1, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT)
         and:
         def ID3 = BuildRequest.computeDigest(BAR_CONTENT, null, null, PLATFORM, BUILD_REPO, null)
         def TARGET3 = BuildRequest.makeTarget(FORMAT, BUILD_REPO, ID3, null, null)
-        def req3 = new BuildRequest(ID3, BAR_CONTENT, null, null, PATH, TARGET3, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{auth}', null, null, null, null, FORMAT)
+        def req3 = new BuildRequest(ID3, BAR_CONTENT, null, null, PATH, TARGET3, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT)
         and:
         def ID4 = BuildRequest.computeDigest(BAR_CONTENT, CONDA_CONTENT, null, PLATFORM, BUILD_REPO, null)
         def TARGET4 = BuildRequest.makeTarget(FORMAT, BUILD_REPO, ID4, CONDA_CONTENT, null)
-        def req4 = new BuildRequest(ID4, BAR_CONTENT, CONDA_CONTENT, null, PATH, TARGET4, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{auth}', null, null, null, null, FORMAT)
+        def req4 = new BuildRequest(ID4, BAR_CONTENT, CONDA_CONTENT, null, PATH, TARGET4, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT)
         and:
-        def req5 = new BuildRequest(ID4, BAR_CONTENT, CONDA_CONTENT, null, PATH, TARGET4, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{auth}', null, null, null, null, FORMAT)
+        def req5 = new BuildRequest(ID4, BAR_CONTENT, CONDA_CONTENT, null, PATH, TARGET4, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT)
         and:
         CONDA_CONTENT = 'salmon=1.2.5'
         def ID6 = BuildRequest.computeDigest(BAR_CONTENT, CONDA_CONTENT, null, PLATFORM, BUILD_REPO, null)
         def TARGET6 = BuildRequest.makeTarget(FORMAT, BUILD_REPO, ID6, CONDA_CONTENT, null)
-        def req6 = new BuildRequest(ID4, BAR_CONTENT, CONDA_CONTENT, null, PATH, TARGET6, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{auth}', null, null, null, null, FORMAT)
+        def req6 = new BuildRequest(ID4, BAR_CONTENT, CONDA_CONTENT, null, PATH, TARGET6, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT)
         and:
-        def req7 = new BuildRequest(ID4, BAR_CONTENT, CONDA_CONTENT, null, PATH, TARGET6, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{auth}', "UTC+2", null, null, null, FORMAT)
+        def req7 = new BuildRequest(ID4, BAR_CONTENT, CONDA_CONTENT, null, PATH, TARGET6, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', "UTC+2", null, null, null, FORMAT)
 
         expect:
         req1 == req2

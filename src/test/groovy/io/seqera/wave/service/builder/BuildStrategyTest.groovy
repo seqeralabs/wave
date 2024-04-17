@@ -117,10 +117,10 @@ class BuildStrategyTest extends Specification {
         def content = 'FROM foo:latest'
         def workspace = Path.of("some/path")
         def buildrepo = 'buildrepo'
-        def id = BuildRequest.computeDigest(content, null, null, ContainerPlatform.of('amd64'), buildrepo, null)
-        def target = BuildRequest.makeTarget(BuildFormat.DOCKER, buildrepo, id, null, null)
+        def containerId = BuildRequest.computeDigest(content, null, null, ContainerPlatform.of('amd64'), buildrepo, null)
+        def target = BuildRequest.makeTarget(BuildFormat.DOCKER, buildrepo, containerId, null, null)
         def build = new BuildRequest(
-                id,
+                containerId,
                 content,
                 null,
                 null,
@@ -128,12 +128,12 @@ class BuildStrategyTest extends Specification {
                 target,
                 PlatformId.NULL,
                 ContainerPlatform.of('amd64'),
-                'docker.io/my/repo',
+                'caherepo',
                 "1.2.3.4",
-                '{auth}',
+                '{"config":"json"}',
                 null,
                 null,
-                '12345',
+                'scan12345',
                 null,
                 BuildFormat.DOCKER
         )

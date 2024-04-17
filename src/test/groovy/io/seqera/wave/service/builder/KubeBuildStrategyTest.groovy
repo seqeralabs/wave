@@ -102,7 +102,7 @@ class KubeBuildStrategyTest extends Specification {
         when:'getting docker with amd64 arch in build request'
         def id = BuildRequest.computeDigest(dockerfile, null, null, ContainerPlatform.of('amd64'), repo, null)
         def target = BuildRequest.makeTarget(BuildFormat.DOCKER, repo, id, null, null)
-        def req = new BuildRequest(id, dockerfile, null, null, PATH, target, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{auth}', null,null , null, null, BuildFormat.DOCKER)
+        def req = new BuildRequest(id, dockerfile, null, null, PATH, target, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER)
                 .withBuildId('1')
 
         then: 'should return kaniko image'
@@ -132,7 +132,7 @@ class KubeBuildStrategyTest extends Specification {
         def dockerfile = 'from foo'
         def id = BuildRequest.computeDigest(dockerfile, null, null, ContainerPlatform.of('amd64'), repo, null)
         def target = BuildRequest.makeTarget(BuildFormat.DOCKER, repo, id, null, null)
-        def req = new BuildRequest(id, dockerfile, null, null, PATH, target, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{auth}', null,null , null, null, BuildFormat.DOCKER)
+        def req = new BuildRequest(id, dockerfile, null, null, PATH, target, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER)
                 .withBuildId('1')
 
         when:

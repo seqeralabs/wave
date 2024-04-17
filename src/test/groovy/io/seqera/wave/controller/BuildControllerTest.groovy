@@ -89,7 +89,7 @@ class BuildControllerTest extends Specification {
                 platform,
                 'cacherepo',
                 "1.2.3.4",
-                '{auth}',
+                '{"config":"json"}',
                 null,
                 null,
                 'scan12345',

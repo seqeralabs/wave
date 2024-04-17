@@ -49,7 +49,7 @@ class ScanRequestTest extends Specification {
                 platform,
                 'docker.io/my/repo',
                 '127.0.0.1',
-                '{auth}',
+                '{"config":"json"}',
                 null,
                 null,
                 'scan12345',
