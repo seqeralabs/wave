@@ -262,10 +262,10 @@ class ContainerController {
         final offset = DataTimeUtils.offsetId(req.timestamp)
         final scanId = scanEnabled && format==DOCKER ? LongRndKey.rndHex() : null
         final containerFile = spackContent ? prependBuilderTemplate(containerSpec,format) : containerSpec
+        // create a unique digest to identify the build request
         final containerId = BuildRequest.computeDigest(containerFile, condaContent, spackContent, platform, repository, req.buildContext)
         final targetImage = BuildRequest.makeTarget(format, repository, containerId, condaContent, spackContent)
 
-        // create a unique digest to identify the request
         return new BuildRequest(
                 containerId,
                 containerFile,
@@ -285,8 +285,6 @@ class ContainerController {
                 format
         )
     }
-
-
 
     protected BuildTrack checkBuild(BuildRequest build, boolean dryRun) {
         final digest = registryProxyService.getImageDigest(build.targetImage)
