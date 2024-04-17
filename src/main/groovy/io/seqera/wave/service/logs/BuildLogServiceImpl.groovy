@@ -32,6 +32,9 @@ import io.micronaut.objectstorage.request.UploadRequest
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.builder.BuildStrategy
+import io.seqera.wave.service.builder.KubeBuildStrategy
+import io.seqera.wave.service.k8s.K8sService
 import io.seqera.wave.service.persistence.PersistenceService
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
@@ -55,6 +58,9 @@ class BuildLogServiceImpl implements BuildLogService {
 
     @Inject
     private PersistenceService persistenceService
+
+    @Inject
+    private BuildStrategy buildStrategy
 
     @Nullable
     @Value('${wave.build.logs.prefix}')
@@ -107,7 +113,13 @@ class BuildLogServiceImpl implements BuildLogService {
     private StreamedFile fetchLogStream0(String buildId) {
         if( !buildId ) return null
         final Optional<ObjectStorageEntry<?>> result = objectStorageOperations.retrieve(logKey(buildId))
-        return result.isPresent() ? result.get().toStreamedFile() : null
+        return result.isPresent() ? result.get().toStreamedFile() : fetchLogStream1(buildId)
+    }
+
+    private StreamedFile fetchLogStream1(String buildId) {
+        StreamedFile result = null
+        buildStrategy.getLogs(buildId)
+        return result
     }
 
     @Override

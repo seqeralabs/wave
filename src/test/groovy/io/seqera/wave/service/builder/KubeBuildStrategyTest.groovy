@@ -122,7 +122,7 @@ class KubeBuildStrategyTest extends Specification {
         req = req.withBuildId('1')
 
         when:
-        def podName = strategy.podName(req)
+        def podName = strategy.podName(req.buildId)
 
         then:
         req.buildId == '143ee73bcdac45b1_1'

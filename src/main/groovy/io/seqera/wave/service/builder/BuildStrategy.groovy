@@ -37,6 +37,8 @@ abstract class BuildStrategy {
 
     abstract BuildResult build(BuildRequest req)
 
+    abstract String getLogs(String buildId)
+
     void cleanup(BuildRequest req) {
         req.workDir?.deleteDir()
     }

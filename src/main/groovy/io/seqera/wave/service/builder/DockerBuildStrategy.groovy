@@ -113,7 +113,7 @@ class DockerBuildStrategy extends BuildStrategy {
                 ? cmdForKaniko( req.workDir, credsFile, spack, req.platform)
                 : cmdForSingularity( req.workDir, credsFile, spack, req.platform)
 
-        return dockerCmd + launchCmd(req)
+        return dockerCmd + builderName(req.buildId) +launchCmd(req)
     }
 
     protected List<String> cmdForKaniko(Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform ) {
@@ -172,5 +172,21 @@ class DockerBuildStrategy extends BuildStrategy {
 
         wrapper.add(buildConfig.singularityImage(platform))
         return wrapper
+    }
+
+    protected String builderName(String buildId) {
+        def name = "build-${buildId}".toString().replace('_', '-')
+
+        return ['--name', name]
+    }
+
+    @Override
+    String getLogs(String buildId) {
+        def logCmd = ['docker', 'logs', builderName(buildId)]
+        final proc = new ProcessBuilder()
+                .command(logCmd)
+                .redirectErrorStream(true)
+                .start()
+        return proc.inputStream.text
     }
 }

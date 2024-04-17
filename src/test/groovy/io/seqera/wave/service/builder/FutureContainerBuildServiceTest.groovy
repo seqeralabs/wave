@@ -53,6 +53,11 @@ class FutureContainerBuildServiceTest extends Specification {
             BuildResult build(BuildRequest req) {
                 new BuildResult("", exitCode, "a fake build result in a test", Instant.now(), Duration.ofSeconds(3), 'abc')
             }
+
+            @Override
+            String getLogs(String buildId) {
+                return "fake build logs"
+            }
         }
     }
 

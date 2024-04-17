@@ -442,7 +442,7 @@ class K8sServiceImpl implements K8sService {
         }
     }
 
-    /**
+/**
      * Fetch the logs of a pod
      *
      * @param name The pod name

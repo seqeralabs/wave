@@ -71,8 +71,8 @@ class KubeBuildStrategy extends BuildStrategy {
     @Inject
     private RegistryProxyService proxyService
 
-    protected String podName(BuildRequest req) {
-        return "build-${req.buildId}".toString().replace('_', '-')
+    protected String podName(String buildId) {
+        return "build-${buildId}".toString().replace('_', '-')
     }
 
     @Override
@@ -96,7 +96,7 @@ class KubeBuildStrategy extends BuildStrategy {
         try {
             final buildImage = getBuildImage(req)
             final buildCmd = launchCmd(req)
-            final name = podName(req)
+            final name = podName(req.buildId)
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
             final spackCfg0 = req.isSpackBuild ? spackConfig : null
             final pod = k8sService.buildContainer(name, buildImage, buildCmd, req.workDir, configFile, spackCfg0, selector)
@@ -130,13 +130,18 @@ class KubeBuildStrategy extends BuildStrategy {
     @Override
     void cleanup(BuildRequest req) {
         super.cleanup(req)
-        final name = podName(req)
+        final name = podName(req.buildId)
         try {
             k8sService.deletePod(name)
         }
         catch (Exception e) {
             log.warn ("Unable to delete pod=$name - cause: ${e.message ?: e}", e)
         }
+    }
+
+    @Override
+    String getLogs(String buildId) {
+        return k8sService.logsPod(podName(buildId))
     }
 
 }
