@@ -255,30 +255,38 @@ class ContainerController {
         final spackContent = spackFileFromRequest(req)
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
-        final build = req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository ? buildConfig.defaultPublicRepository : buildConfig.defaultBuildRepository)
-        final cache = req.cacheRepository ?: buildConfig.defaultCacheRepository
-        final configJson = dockerAuthService.credentialsConfigJson(containerSpec, build, cache, identity)
+        final repository = req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository ? buildConfig.defaultPublicRepository : buildConfig.defaultBuildRepository)
+        final cacheRepository = req.cacheRepository ?: buildConfig.defaultCacheRepository
+        final configJson = dockerAuthService.credentialsConfigJson(containerSpec, repository, cacheRepository, identity)
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
         final scanId = scanEnabled && format==DOCKER ? LongRndKey.rndHex() : null
+        final containerFile = spackContent ? prependBuilderTemplate(containerSpec,format) : containerSpec
+        final containerId = BuildRequest.computeDigest(containerFile, condaContent, spackContent, platform, repository, req.buildContext)
+        final targetImage = BuildRequest.makeTarget(format, repository, containerId, condaContent, spackContent)
+
         // create a unique digest to identify the request
         return new BuildRequest(
-                (spackContent ? prependBuilderTemplate(containerSpec,format) : containerSpec),
-                Path.of(buildConfig.buildWorkspace),
-                build,
+                containerId,
+                containerFile,
                 condaContent,
                 spackContent,
-                format,
+                Path.of(buildConfig.buildWorkspace),
+                targetImage,
                 identity,
-                containerConfig,
-                req.buildContext,
                 platform,
-                configJson,
-                cache,
-                scanId,
+                cacheRepository,
                 ip,
-                offset)
+                configJson,
+                offset,
+                containerConfig,
+                scanId,
+                req.buildContext,
+                format
+        )
     }
+
+
 
     protected BuildTrack checkBuild(BuildRequest build, boolean dryRun) {
         final digest = registryProxyService.getImageDigest(build.targetImage)

@@ -68,7 +68,9 @@ class BuildServiceRateLimitTest extends Specification{
         RUN echo hi > hello.txt
         """.stripIndent()
         and:
-        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, null, BuildFormat.DOCKER, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', cacheRepo, null, "127.0.0.1", null)
+        def ID = BuildRequest.computeDigest(dockerfile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def TARGET = BuildRequest.makeTarget(BuildFormat.DOCKER, buildRepo, ID, null, null)
+        def REQ = new BuildRequest(ID, dockerfile, null, null, folder, TARGET, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "127.0.0.1", '{auth}', null, null, null, null,BuildFormat.DOCKER)
 
         when:
         (0..configuration.build.authenticated.max).each {
@@ -90,7 +92,9 @@ class BuildServiceRateLimitTest extends Specification{
         RUN echo hi > hello.txt
         """.stripIndent()
         and:
-        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, null, BuildFormat.DOCKER, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', cacheRepo, null, "127.0.0.1", null)
+        def ID = BuildRequest.computeDigest(dockerfile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def TARGET = BuildRequest.makeTarget(BuildFormat.DOCKER, buildRepo, ID, null, null)
+        def REQ = new BuildRequest(ID, dockerfile, null, null, folder, TARGET, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "127.0.0.1", '{auth}', null, null, null, null,BuildFormat.DOCKER)
 
         when:
         (0..configuration.build.anonymous.max).each {

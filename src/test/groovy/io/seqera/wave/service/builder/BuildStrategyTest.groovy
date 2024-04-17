@@ -114,22 +114,30 @@ class BuildStrategyTest extends Specification {
 
     def 'should create request' () {
         when:
-        final build = new BuildRequest(
-                'FROM foo:latest',
-                Path.of("some/path"),
-                "buildrepo",
+        def content = 'FROM foo:latest'
+        def workspace = Path.of("some/path")
+        def buildrepo = 'buildrepo'
+        def id = BuildRequest.computeDigest(content, null, null, ContainerPlatform.of('amd64'), buildrepo, null)
+        def target = BuildRequest.makeTarget(BuildFormat.DOCKER, buildrepo, id, null, null)
+        def build = new BuildRequest(
+                id,
+                content,
                 null,
                 null,
-                BuildFormat.DOCKER,
+                workspace,
+                target,
                 PlatformId.NULL,
-                null,
-                null,
                 ContainerPlatform.of('amd64'),
-                '{auth}',
                 'docker.io/my/repo',
-                '12345',
                 "1.2.3.4",
-                null )
+                '{auth}',
+                null,
+                null,
+                '12345',
+                null,
+                BuildFormat.DOCKER
+        )
+
         then:
         build.containerId == '911d21120b4b505c'
         build.workspace == Path.of("some/path")

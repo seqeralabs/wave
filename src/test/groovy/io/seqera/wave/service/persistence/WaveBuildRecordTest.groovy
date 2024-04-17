@@ -42,21 +42,23 @@ class WaveBuildRecordTest extends Specification {
     def 'should serialise-deserialize build record' () {
         given:
         final request = new BuildRequest(
+                'id1234',
                 'FROM foo:latest',
-                Path.of("/some/path"),
-                "buildrepo",
                 'conda::recipe',
                 'some-spack-recipe',
-                BuildFormat.DOCKER,
+                Path.of("/some/path"),
+                'docker.io/my/repo:12234',
                 PlatformId.NULL,
-                null,
-                null,
                 ContainerPlatform.of('amd64'),
-                '{auth}',
                 'docker.io/my/repo',
-                '12345',
-                "1.2.3.4",
-                null )
+                '1.2.3.4',
+                '{auth}',
+                null,
+                null,
+                'scan12345',
+                null,
+                BuildFormat.DOCKER
+        )
         final result = new BuildResult(request.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         final event = new BuildEvent(request, result)
         final record = WaveBuildRecord.fromEvent(event)
@@ -71,22 +73,23 @@ class WaveBuildRecordTest extends Specification {
     def 'should convert to status response' () {
         given:
         final request = new BuildRequest(
+                'id1234',
                 'FROM foo:latest',
+                'conda::recipe',
+                'some-spack-recipe',
                 Path.of("/some/path"),
-                "buildrepo",
-                null,
-                null,
-                BuildFormat.DOCKER,
+                'docker.io/my/repo:12234',
                 PlatformId.NULL,
-                null,
-                null,
                 ContainerPlatform.of('amd64'),
-                '{auth}',
                 'docker.io/my/repo',
-                '12345',
-                "1.2.3.4",
-                null )
-                .withBuildId('123')
+                '1.2.3.4',
+                '{auth}',
+                null,
+                null,
+                'scan12345',
+                null,
+                BuildFormat.DOCKER
+        ).withBuildId('123')
 
         and:
         final event = new BuildEvent(request)

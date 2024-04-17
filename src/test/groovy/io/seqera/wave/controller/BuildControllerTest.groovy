@@ -72,22 +72,27 @@ class BuildControllerTest extends Specification {
 
     def 'should get container build record' () {
         given:
+        final repo = "buildrepo"
+        final format = BuildFormat.DOCKER
+        final id = '12345'
+        final target = BuildRequest.makeTarget(format, repo, id, null, null)
         final build = new BuildRequest(
+                null,
                 'FROM foo:latest',
+                null,
+                null,
                 Path.of("/some/path"),
-                "buildrepo",
-                null,
-                null,
-                BuildFormat.DOCKER,
+                target,
                 PlatformId.NULL,
-                null,
-                null,
                 ContainerPlatform.of('amd64'),
-                '{auth}',
-                'docker.io/my/repo',
-                '12345',
+                'cacherepo',
                 "1.2.3.4",
-                null )
+                '{auth}',
+                null,
+                null,
+                'scan12345',
+                null,
+                format)
             .withBuildId('1')
         final result = new BuildResult(build.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         final event = new BuildEvent(build, result)

@@ -38,7 +38,24 @@ class ScanRequestTest extends Specification {
         given:
         def workspace = Path.of('/some/workspace')
         def platform = ContainerPlatform.of('amd64')
-        def build = new BuildRequest('FROM ubuntu', workspace, 'docker.io', null, null, BuildFormat.DOCKER, Mock(PlatformId), Mock(ContainerConfig), Mock(BuildContext), platform, '{json}', null, null, "", null) .withBuildId('1')
+        final build = new BuildRequest(
+                'id1234',
+                'test',
+                'test',
+                'test',
+                workspace,
+                'docker.io/my/repo:12234',
+                PlatformId.NULL,
+                platform,
+                'docker.io/my/repo',
+                '127.0.0.1',
+                '{auth}',
+                null,
+                null,
+                'scan12345',
+                null,
+                BuildFormat.DOCKER
+        ).withBuildId('123')
 
         when:
         def scan = ScanRequest.fromBuild(build)
