@@ -49,12 +49,12 @@ class BuildRequestTest extends Specification {
         def CONTEXT = Mock(BuildContext)
         def PLATFORM = ContainerPlatform.of('amd64')
         def FORMAT = BuildFormat.DOCKER
-        def ID = BuildRequest.computeDigest(CONTENT, null, null, PLATFORM, BUILD_REPO, CONTEXT)
-        def TARGET = BuildRequest.makeTarget(FORMAT, BUILD_REPO, ID, null, null)
+        def CONTAINER_ID = BuildRequest.computeDigest(CONTENT, null, null, PLATFORM, BUILD_REPO, CONTEXT)
+        def TARGET = BuildRequest.makeTarget(FORMAT, BUILD_REPO, CONTAINER_ID, null, null)
 
         when:
         def req = new BuildRequest(
-                ID,
+                CONTAINER_ID,
                 CONTENT,
                 null,
                 null,
@@ -99,10 +99,10 @@ class BuildRequestTest extends Specification {
                     - samtools=1.0
                 '''
         and:
-        ID = BuildRequest.computeDigest(CONTENT, CONDA_RECIPE, null, PLATFORM, BUILD_REPO, CONTEXT)
-        TARGET = BuildRequest.makeTarget(FORMAT, BUILD_REPO, ID, CONDA_RECIPE, null)
+        CONTAINER_ID = BuildRequest.computeDigest(CONTENT, CONDA_RECIPE, null, PLATFORM, BUILD_REPO, CONTEXT)
+        TARGET = BuildRequest.makeTarget(FORMAT, BUILD_REPO, CONTAINER_ID, CONDA_RECIPE, null)
         req = new BuildRequest(
-                ID,
+                CONTAINER_ID,
                 CONTENT,
                 CONDA_RECIPE,
                 null,
@@ -134,10 +134,10 @@ class BuildRequestTest extends Specification {
             '''
 
         when:
-        ID = BuildRequest.computeDigest(CONTENT, null, SPACK_RECIPE, PLATFORM, BUILD_REPO, CONTEXT)
-        TARGET = BuildRequest.makeTarget(FORMAT, BUILD_REPO, ID, null, SPACK_RECIPE)
+        CONTAINER_ID = BuildRequest.computeDigest(CONTENT, null, SPACK_RECIPE, PLATFORM, BUILD_REPO, CONTEXT)
+        TARGET = BuildRequest.makeTarget(FORMAT, BUILD_REPO, CONTAINER_ID, null, SPACK_RECIPE)
         req = new BuildRequest(
-                ID,
+                CONTAINER_ID,
                 CONTENT,
                 null,
                 SPACK_RECIPE,
@@ -176,12 +176,12 @@ class BuildRequestTest extends Specification {
         def CONTEXT = Mock(BuildContext)
         def PLATFORM = ContainerPlatform.of('amd64')
         def FORMAT = BuildFormat.SINGULARITY
-        def ID = BuildRequest.computeDigest(CONTENT, null, null, PLATFORM, BUILD_REPO, CONTEXT)
-        def TARGET = BuildRequest.makeTarget(FORMAT, BUILD_REPO, ID, null, null)
+        def CONTAINER_ID = BuildRequest.computeDigest(CONTENT, null, null, PLATFORM, BUILD_REPO, CONTEXT)
+        def TARGET = BuildRequest.makeTarget(FORMAT, BUILD_REPO, CONTAINER_ID, null, null)
 
         when:
         def req = new BuildRequest(
-                ID,
+                CONTAINER_ID,
                 CONTENT,
                 null,
                 null,
@@ -229,28 +229,28 @@ class BuildRequestTest extends Specification {
         def FOO_CONTENT = 'from foo'
         def BAR_CONTENT = 'from bar'
         and:
-        def ID1 = BuildRequest.computeDigest(FOO_CONTENT, null, null, PLATFORM, BUILD_REPO, null)
-        def TARGET1 = BuildRequest.makeTarget(FORMAT, BUILD_REPO, ID1, null, null)
-        def req1 = new BuildRequest(ID1, FOO_CONTENT, null, null, PATH, TARGET1, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT)
+        def CONTAINER_ID1 = BuildRequest.computeDigest(FOO_CONTENT, null, null, PLATFORM, BUILD_REPO, null)
+        def TARGET1 = BuildRequest.makeTarget(FORMAT, BUILD_REPO, CONTAINER_ID1, null, null)
+        def req1 = new BuildRequest(CONTAINER_ID1, FOO_CONTENT, null, null, PATH, TARGET1, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT)
         and:
-        def req2 = new BuildRequest(ID1, FOO_CONTENT, null, null, PATH, TARGET1, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT)
+        def req2 = new BuildRequest(CONTAINER_ID1, FOO_CONTENT, null, null, PATH, TARGET1, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT)
         and:
-        def ID3 = BuildRequest.computeDigest(BAR_CONTENT, null, null, PLATFORM, BUILD_REPO, null)
-        def TARGET3 = BuildRequest.makeTarget(FORMAT, BUILD_REPO, ID3, null, null)
-        def req3 = new BuildRequest(ID3, BAR_CONTENT, null, null, PATH, TARGET3, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT)
+        def CONTAINER_ID3 = BuildRequest.computeDigest(BAR_CONTENT, null, null, PLATFORM, BUILD_REPO, null)
+        def TARGET3 = BuildRequest.makeTarget(FORMAT, BUILD_REPO, CONTAINER_ID3, null, null)
+        def req3 = new BuildRequest(CONTAINER_ID3, BAR_CONTENT, null, null, PATH, TARGET3, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT)
         and:
-        def ID4 = BuildRequest.computeDigest(BAR_CONTENT, CONDA_CONTENT, null, PLATFORM, BUILD_REPO, null)
-        def TARGET4 = BuildRequest.makeTarget(FORMAT, BUILD_REPO, ID4, CONDA_CONTENT, null)
-        def req4 = new BuildRequest(ID4, BAR_CONTENT, CONDA_CONTENT, null, PATH, TARGET4, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT)
+        def CONTAINER_ID4 = BuildRequest.computeDigest(BAR_CONTENT, CONDA_CONTENT, null, PLATFORM, BUILD_REPO, null)
+        def TARGET4 = BuildRequest.makeTarget(FORMAT, BUILD_REPO, CONTAINER_ID4, CONDA_CONTENT, null)
+        def req4 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, null, PATH, TARGET4, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT)
         and:
-        def req5 = new BuildRequest(ID4, BAR_CONTENT, CONDA_CONTENT, null, PATH, TARGET4, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT)
+        def req5 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, null, PATH, TARGET4, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT)
         and:
         CONDA_CONTENT = 'salmon=1.2.5'
-        def ID6 = BuildRequest.computeDigest(BAR_CONTENT, CONDA_CONTENT, null, PLATFORM, BUILD_REPO, null)
-        def TARGET6 = BuildRequest.makeTarget(FORMAT, BUILD_REPO, ID6, CONDA_CONTENT, null)
-        def req6 = new BuildRequest(ID4, BAR_CONTENT, CONDA_CONTENT, null, PATH, TARGET6, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT)
+        def CONTAINER_ID6 = BuildRequest.computeDigest(BAR_CONTENT, CONDA_CONTENT, null, PLATFORM, BUILD_REPO, null)
+        def TARGET6 = BuildRequest.makeTarget(FORMAT, BUILD_REPO, CONTAINER_ID6, CONDA_CONTENT, null)
+        def req6 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, null, PATH, TARGET6, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT)
         and:
-        def req7 = new BuildRequest(ID4, BAR_CONTENT, CONDA_CONTENT, null, PATH, TARGET6, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', "UTC+2", null, null, null, FORMAT)
+        def req7 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, null, PATH, TARGET6, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', "UTC+2", null, null, null, FORMAT)
 
         expect:
         req1 == req2
