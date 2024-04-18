@@ -213,7 +213,7 @@ class ContainerController {
         if( !v2 && req.containerFile && req.freeze && (!req.buildRepository || req.buildRepository==buildConfig.defaultPublicRepository) )
             throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode")
         if( !v2 && req.nameStrategy )
-            throw new BadRequestException("Attribute `nameStrategy` is only allowed by legacy container endpoint")
+            throw new BadRequestException("Attribute `nameStrategy` is not allowed by legacy container endpoint")
 
         if( v2 && req.packages ) {
             // generate the container file required to assemble the container
