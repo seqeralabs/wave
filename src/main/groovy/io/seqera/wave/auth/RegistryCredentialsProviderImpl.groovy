@@ -113,8 +113,7 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
             throw new IllegalArgumentException("Missing required parameter userId -- Unable to retrieve credentials for container repository '$container'")
 
         // use default credentials for default repositories
-        final repo = container.repository
-        if( repo==buildConfig.defaultBuildRepository || repo==buildConfig.defaultCacheRepository || repo==buildConfig.defaultPublicRepository)
+        if( container.sameRegistry(buildConfig.defaultBuildRepository) || container.sameRegistry(buildConfig.defaultCacheRepository) || container.sameRegistry(buildConfig.defaultPublicRepository) )
             return getDefaultCredentials(container)
 
         return getUserCredentials0(container.registry, identity)
