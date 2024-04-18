@@ -128,9 +128,9 @@ The endpoint returns the name of the container request made available by Wave.
     towerWorkspaceId: number,
     packages: {
                   type: string,
-                  packages: string[],
+                  environment: string,
+                  entries: string[],
                   channels: string[],
-                  envFile: string,
                   condaOpts: {
                                 mambaImage: string,
                                 commands: string[],
@@ -150,14 +150,14 @@ Note: You can read the description of al attributes except packages from [here](
 
 | Attribute      | Description                                                                 |
 |----------------|-----------------------------------------------------------------------------|
-| `packages`     | this object specifies conda or spack packages environment information       |
-| `type`         | This represents the type of package builder. you can use `SPACK` or `CONDA` |
-| `packages`     | List of the packages names                                                  |
-| `channels`     | List of conda channels, which will be used to download packages             |
-| `envFile`      | The package environment file encoded as a base64 string.                    |
-| `mambaImage`   | Name of the docker image to be used in building conda containers            |
-| `commands`     | Command to be included in the container                                     |
-| `basePackages` | Names of base packages                                                      |
+| `packages`     | This object specifies conda or spack packages environment information.      |
+| `environment`  | The package environment file encoded as a base64 string.                    |
+| `type`         | This represents the type of package builder. you can use `SPACK` or `CONDA`.|
+| `entries`      | List of the packages names.                                                 |
+| `channels`     | List of conda channels, which will be used to download packages.            |
+| `mambaImage`   | Name of the docker image to be used in building conda containers.           |
+| `commands`     | Command to be included in the container.                                    |
+| `basePackages` | Names of base packages.                                                     |
 
 ### Response
 
