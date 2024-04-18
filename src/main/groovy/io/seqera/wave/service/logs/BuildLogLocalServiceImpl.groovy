@@ -19,6 +19,8 @@
 package io.seqera.wave.service.logs
 
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -26,6 +28,8 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.MediaType
 import io.micronaut.http.server.types.files.StreamedFile
+import io.micronaut.runtime.event.annotation.EventListener
+import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildStrategy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -48,7 +52,14 @@ class BuildLogLocalServiceImpl  implements BuildLogService {
     @Value('${wave.build.logs.maxLength:100000}')
     private long maxLength
 
-    Map logStore = new HashMap<String, String>()
+    Map logStore = new ConcurrentHashMap<String, String>()
+
+    @EventListener
+    void onBuildEvent(BuildEvent event) {
+        if(event.result.logs) {
+            CompletableFuture.supplyAsync(() -> storeLog(event.result.id, event.result.logs))
+        }
+    }
 
     @Override
     void storeLog(String buildId, String log) {

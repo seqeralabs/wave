@@ -19,6 +19,7 @@
 package io.seqera.wave.service.k8s
 
 import java.nio.file.Path
+import java.util.stream.Collectors
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileDynamic
@@ -35,6 +36,7 @@ import io.kubernetes.client.openapi.models.V1JobBuilder
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodBuilder
+import io.kubernetes.client.openapi.models.V1PodStatus
 import io.kubernetes.client.openapi.models.V1ResourceRequirements
 import io.kubernetes.client.openapi.models.V1Volume
 import io.kubernetes.client.openapi.models.V1VolumeMount
@@ -442,7 +444,7 @@ class K8sServiceImpl implements K8sService {
         }
     }
 
-/**
+    /**
      * Fetch the logs of a pod
      *
      * @param name The pod name
@@ -456,6 +458,23 @@ class K8sServiceImpl implements K8sService {
         }
         catch (Exception e) {
             log.error "Unable to fetch logs for pod: $name", e
+            return null
+        }
+    }
+
+    /**
+     * Fetch current available logs of a running pod
+     *
+     * @param name The pod name
+     * @return The logs as a string or when logs are not available or cannot be accessed
+     */
+    @Override
+    String getCurrentLogsPod(String name) {
+        try {
+            return k8sClient.coreV1Api().readNamespacedPodLog(name, namespace, null, null, null, null, null, null, null, null, null)
+        } catch (Exception e) {
+            // logging trace here because errors are expected when the pod is not running
+            log.trace "Unable to fetch logs for pod: $name", e
             return null
         }
     }
