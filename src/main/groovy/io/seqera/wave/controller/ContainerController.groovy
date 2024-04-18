@@ -276,10 +276,12 @@ class ContainerController {
         final offset = DataTimeUtils.offsetId(req.timestamp)
         final scanId = scanEnabled && format==DOCKER ? LongRndKey.rndHex() : null
         final containerFile = spackContent ? prependBuilderTemplate(containerSpec,format) : containerSpec
+        // use 'imageSuffix' strategy by default for public repo images
+        final nameStrategy = req.nameStrategy==null && buildRepository && buildConfig.defaultPublicRepository && buildRepository.startsWith(buildConfig.defaultPublicRepository) ? ImageNameStrategy.imageSuffix : null
 
         // create a unique digest to identify the build request
         final containerId = BuildRequest.computeDigest(containerFile, condaContent, spackContent, platform, buildRepository, req.buildContext)
-        final targetImage = BuildRequest.makeTarget(format, buildRepository, containerId, condaContent, spackContent, req.nameStrategy)
+        final targetImage = BuildRequest.makeTarget(format, buildRepository, containerId, condaContent, spackContent, nameStrategy)
 
         return new BuildRequest(
                 containerId,
