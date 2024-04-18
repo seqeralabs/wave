@@ -280,7 +280,7 @@ class ContainerBuildServiceTest extends Specification {
         def dockerFile = SpackHelper.builderDockerTemplate()
         def spackFile = 'some spack packages'
         def containerId = BuildRequest.computeDigest(dockerFile, null, spackFile, ContainerPlatform.of('amd64'), 'buildRepo', null)
-        def targetImage = BuildRequest.makeTarget(BuildFormat.DOCKER, 'buildRepo', containerId, null, spackFile, null)
+        def targetImage = BuildRequest.makeTarget(BuildFormat.DOCKER, 'foo.com/repo', containerId, null, spackFile, null)
         def req = new BuildRequest(containerId, dockerFile, null, spackFile, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), 'cacheRepo', "10.20.30.40", null, null,null , null, null, BuildFormat.DOCKER)
                 .withBuildId('1')
         and:
@@ -312,7 +312,7 @@ class ContainerBuildServiceTest extends Specification {
         def dockerFile = SpackHelper.builderSingularityTemplate()
         def spackFile = 'some spack packages'
         def containerId = BuildRequest.computeDigest(dockerFile, null, spackFile, ContainerPlatform.of('amd64'), 'buildRepo', null)
-        def targetImage = BuildRequest.makeTarget(BuildFormat.SINGULARITY, 'buildRepo', containerId, null, spackFile, null)
+        def targetImage = BuildRequest.makeTarget(BuildFormat.SINGULARITY, 'foo.com/repo', containerId, null, spackFile, null)
         def req = new BuildRequest(containerId, dockerFile, null, spackFile, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), 'cacheRepo', "10.20.30.40", null, null,null , null, null, BuildFormat.SINGULARITY)
                 .withBuildId('1')
         and:
@@ -350,7 +350,7 @@ class ContainerBuildServiceTest extends Specification {
         and:
         def builder = new ContainerBuildServiceImpl()
         def containerId = BuildRequest.computeDigest(containerFile, null, null, ContainerPlatform.of('amd64'), 'buildRepo', null)
-        def targetImage = BuildRequest.makeTarget(BuildFormat.SINGULARITY, 'buildRepo', containerId, null, null, null)
+        def targetImage = BuildRequest.makeTarget(BuildFormat.SINGULARITY, 'foo.com/repo', containerId, null, null, null)
         def req = new BuildRequest(containerId, containerFile, null, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), 'cacheRepo', "10.20.30.40", null, null,null , null, null, BuildFormat.SINGULARITY).withBuildId('1')
 
         when:
