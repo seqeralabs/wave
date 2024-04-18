@@ -402,6 +402,28 @@ class BuildRequestTest extends Specification {
         '._-xyz._-'             | 'xyz'
     }
 
+    def 'should normalise name' () {
+        expect:
+        BuildRequest.normaliseName(NAME, 12)  == EXPECTED
+        where:
+        NAME                    | EXPECTED
+        null                    | null
+        ''                      | null
+        and:
+        'foo'                   | 'foo'
+        'foo/bar'               | 'foo/bar'
+        'FOO123'                | 'foo123'
+        'aa-bb_cc.dd'           | 'aa-bb_cc.dd'
+        and:
+        'one(two)three'         | 'onetwothree'
+        '12345_67890_12345'     | '12345_67890'
+        '123456789012345_1'     | '123456789012'
+        and:
+        'aa__'                  | 'aa'
+        'aa..--__'              | 'aa'
+        '..--__bb'              | 'bb'
+        '._-xyz._-'             | 'xyz'
+    }
 
     def 'should parse legacy id' () {
         expect:

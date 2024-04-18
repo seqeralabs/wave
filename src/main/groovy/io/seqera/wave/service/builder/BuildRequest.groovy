@@ -208,12 +208,12 @@ class BuildRequest {
         }
         else if( nameStrategy==ImageNameStrategy.imageSuffix )  {
             if( condaFile && (tools=guessCondaRecipeName(condaFile,true)) ) {
-                repo = StringUtils.pathConcat(repo, tools.names.join('_'))
+                repo = StringUtils.pathConcat(repo, normaliseName(tools.names.join('_')))
                 if( tools.versions?.size()==1 && tools.versions[0] )
                     tag = "${normaliseTag(tools.versions[0])}--${id}"
             }
             else if( spackFile && (tools=guessSpackRecipeName(spackFile, true)) ) {
-                repo = StringUtils.pathConcat(repo, tools.names.join('_'))
+                repo = StringUtils.pathConcat(repo, normaliseName(tools.names.join('_')))
                 if( tools.versions?.size()==1 && tools.versions[0] )
                     tag = "${normaliseTag(tools.versions[0])}--${id}"
             }
@@ -225,12 +225,11 @@ class BuildRequest {
         format==SINGULARITY ? "oras://${repo}:${tag}" : "${repo}:${tag}"
     }
 
-    static protected String normaliseTag(String tag, int maxLength=80) {
+    static protected String normalise0(String tag, int maxLength, String pattern) {
         assert maxLength>0, "Argument maxLength cannot be less or equals to zero"
         if( !tag )
             return null
-        // docker tag only allows [a-z0-9.-_]
-        tag = tag.replaceAll(/[^a-zA-Z0-9_.-]/,'')
+        tag = tag.replaceAll(/$pattern/,'')
         // only allow max 100 chars
         if( tag.length()>maxLength ) {
             // try to tokenize splitting by `_`
@@ -252,6 +251,14 @@ class BuildRequest {
         // remove trailing or leading special chars
         tag = tag.replaceAll(/^(\W|_)+|(\W|_)+$/,'')
         return tag ?: null
+    }
+
+    static protected String normaliseTag(String value, int maxLength=80) {
+        normalise0(value, maxLength, /[^a-zA-Z0-9_.-]/)
+    }
+
+    static protected String normaliseName(String value, int maxLength=255) {
+        value ? normalise0(value.toLowerCase(), maxLength, /[^a-z0-9_.\-\/]/) : null
     }
 
     static String computeDigest(String containerFile, String condaFile, String spackFile, ContainerPlatform platform, String repository, BuildContext buildContext) {

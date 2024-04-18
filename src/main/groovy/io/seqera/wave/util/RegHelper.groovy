@@ -206,13 +206,13 @@ class RegHelper {
                     final int p=it.indexOf('::')
                     if( p!=-1 )
                         it = it.substring(p+2)
+                    final pair = splitVersion(it, '=><')
                     if( split ) {
-                        final pair = splitVersion(it, '=')
                         it = pair.v1
                         versions.add(pair.v2)
                     }
-                    else
-                        it = it.replace('=','-')
+                    else if( pair.v2 )
+                        it = "${pair.v1}-${pair.v2}".toString()
                     if( it )
                         result.add(it)
                 }
@@ -231,10 +231,8 @@ class RegHelper {
     static Tuple2<String,String> splitVersion(String tool, String sep) {
         if( !tool )
             return null
-        final p = tool.indexOf(sep)
-        if( p==-1 )
-            return new Tuple2<>(tool, null)
-        return new Tuple2<String, String>(tool.substring(0,p), tool.substring(p+1))
+        final parts = tool.tokenize(sep)
+        return new Tuple2<String, String>(parts[0], parts[1])
     }
 
     static NameVersionPair guessSpackRecipeName(String spackFileContent, boolean split=false) {
