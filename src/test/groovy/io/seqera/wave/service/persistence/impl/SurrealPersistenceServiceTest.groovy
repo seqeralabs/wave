@@ -103,9 +103,24 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
             echo "Look ma' building 🐳🐳 on the fly!" > /hello.txt
         """
         def storage = applicationContext.getBean(SurrealPersistenceService)
-        def request = new BuildRequest(dockerFile,
-                Path.of("."), "buildrepo", condaFile, null, BuildFormat.DOCKER, PlatformId.NULL, null, null,
-                ContainerPlatform.of('amd64'),'{auth}', null, null, "127.0.0.1", null) .withBuildId('1')
+        final request = new BuildRequest(
+                'container1234',
+                dockerFile,
+                condaFile,
+                null,
+                Path.of("."),
+                'docker.io/my/repo:container1234',
+                PlatformId.NULL,
+                ContainerPlatform.of('amd64'),
+                'docker.io/my/cache',
+                '127.0.0.1',
+                '{"config":"json"}',
+                null,
+                null,
+                'scan12345',
+                null,
+                BuildFormat.DOCKER
+        ).withBuildId('1')
         def result = new BuildResult(request.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         def event = new BuildEvent(request, result)
         def build = WaveBuildRecord.fromEvent(event)
@@ -126,7 +141,24 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         storage.initializeDb()
         and:
         def service = applicationContext.getBean(SurrealPersistenceService)
-        def request = new BuildRequest("test", Path.of("."), "test", "test", null, BuildFormat.DOCKER, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', "test", null, "127.0.0.1", null) .withBuildId('123')
+        final request = new BuildRequest(
+                'container1234',
+                'test',
+                'test',
+                'test',
+                Path.of("."),
+                'docker.io/my/repo:container1234',
+                PlatformId.NULL,
+                ContainerPlatform.of('amd64'),
+                'docker.io/my/cache',
+                '127.0.0.1',
+                '{"config":"json"}',
+                null,
+                null,
+                'scan12345',
+                null,
+                BuildFormat.DOCKER
+        ).withBuildId('123')
         storage.createBuild( WaveBuildRecord.fromEvent(new BuildEvent(request)))
 
         and:
@@ -146,7 +178,24 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         given:
         surrealContainer.stop()
         def service = applicationContext.getBean(SurrealPersistenceService)
-        def request = new BuildRequest("test", Path.of("."), "test", "test", null, BuildFormat.DOCKER, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', "test", null, "127.0.0.1", null) .withBuildId('123')
+        final request = new BuildRequest(
+                'container1234',
+                'test',
+                'test',
+                'test',
+                Path.of("."),
+                'docker.io/my/repo:container1234',
+                PlatformId.NULL,
+                ContainerPlatform.of('amd64'),
+                'docker.io/my/cache',
+                '127.0.0.1',
+                '{"config":"json"}',
+                null,
+                null,
+                'scan12345',
+                null,
+                BuildFormat.DOCKER
+        ).withBuildId('123')
         def result = new BuildResult(request.buildId, 0, "content", Instant.now(), Duration.ofSeconds(1), null)
         def event = new BuildEvent(request, result)
 
@@ -160,23 +209,24 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
     def 'should load a build record' () {
         given:
         def persistence = applicationContext.getBean(SurrealPersistenceService)
-        def request = new BuildRequest(
+        final request = new BuildRequest(
+                'container1234',
                 'FROM foo:latest',
-                Path.of("/some/path"),
-                "buildrepo",
                 'conda::recipe',
                 null,
-                BuildFormat.DOCKER,
+                Path.of("."),
+                'docker.io/my/repo:container1234',
                 PlatformId.NULL,
-                null,
-                null,
                 ContainerPlatform.of('amd64'),
-                '{auth}',
-                'docker.io/my/repo',
+                'docker.io/my/cache',
+                '127.0.0.1',
+                '{"config":"json"}',
                 null,
-                "1.2.3.4",
-                null )
-                .withBuildId('1')
+                null,
+                'scan12345',
+                null,
+                BuildFormat.DOCKER
+        ).withBuildId('123')
         def result = new BuildResult(request.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         def event = new BuildEvent(request, result)
         def record = WaveBuildRecord.fromEvent(event)
@@ -193,23 +243,24 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
     def 'should save and update a build' () {
         given:
         def persistence = applicationContext.getBean(SurrealPersistenceService)
-        def request = new BuildRequest(
+        final request = new BuildRequest(
+                'container1234',
                 'FROM foo:latest',
-                Path.of("/some/path"),
-                "buildrepo",
                 'conda::recipe',
                 null,
-                BuildFormat.DOCKER,
+                Path.of("/some/path"),
+                'buildrepo:recipe-container1234',
                 PlatformId.NULL,
-                null,
-                null,
                 ContainerPlatform.of('amd64'),
-                '{auth}',
-                'docker.io/my/repo',
+                'docker.io/my/cache',
+                '127.0.0.1',
+                '{"config":"json"}',
                 null,
-                "1.2.3.4",
-                null )
-                .withBuildId('1')
+                null,
+                'scan12345',
+                null,
+                BuildFormat.DOCKER
+        ).withBuildId('123')
         and:
         def build1 = WaveBuildRecord.fromEvent(new BuildEvent(request, null))
 
