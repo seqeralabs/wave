@@ -578,9 +578,14 @@ class ContainerControllerTest extends Specification {
         null        | 'tagPrefix'   | null
         null        | 'imageSuffix' | null
         and:
+        'foo.com'   | null          | 'foo.com/library'
         'foo.com'   | 'none'        | 'foo.com/library/build'
-        'foo.com'   | null          | 'foo.com/library/build'
         'foo.com'   | 'tagPrefix'   | 'foo.com/library/build'
         'foo.com'   | 'imageSuffix' | 'foo.com/library'
+        and:
+        'foo.com/bar'   | null          | 'foo.com/bar'
+        'foo.com/bar'   | 'none'        | 'foo.com/bar'
+        'foo.com/bar'   | 'tagPrefix'   | 'foo.com/bar'
+        'foo.com/bar'   | 'imageSuffix' | 'foo.com/bar'
     }
 }

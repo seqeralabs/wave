@@ -251,7 +251,7 @@ class ContainerController {
             return null
         if( buildConfig.defaultPublicRepository.contains('/') )
             return buildConfig.defaultPublicRepository
-        return req.nameStrategy==ImageNameStrategy.imageSuffix
+        return !req.nameStrategy || req.nameStrategy==ImageNameStrategy.imageSuffix
                 ? StringUtils.pathConcat(buildConfig.defaultPublicRepository, 'library')
                 : StringUtils.pathConcat(buildConfig.defaultPublicRepository, 'library/build')
     }
