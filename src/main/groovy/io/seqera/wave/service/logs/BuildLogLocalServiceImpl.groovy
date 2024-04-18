@@ -34,7 +34,6 @@ import io.seqera.wave.service.builder.BuildStrategy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import org.apache.commons.io.input.BoundedInputStream
-
 /**
  * Implements Service  to manage logs from local storage
  *
@@ -52,7 +51,7 @@ class BuildLogLocalServiceImpl  implements BuildLogService {
     @Value('${wave.build.logs.maxLength:100000}')
     private long maxLength
 
-    Map logStore = new ConcurrentHashMap<String, String>()
+    Map<String, String> logStore = new ConcurrentHashMap()
 
     @EventListener
     void onBuildEvent(BuildEvent event) {
@@ -68,12 +67,12 @@ class BuildLogLocalServiceImpl  implements BuildLogService {
 
     @Override
     StreamedFile fetchLogStream(String buildId) {
-        String log = logStore.get(buildId) ?: buildStrategy.getLogs(buildId)
-        if( !log )
+        //replace all regex is removing color from log otherwise it will not be displayed correctly in browser
+        final logs = logStore.get(buildId) ?: buildStrategy.getLogs(buildId).replaceAll("\u001B\\[[;\\d]*m", "")
+        if( !logs )
             return null
-        def inputStream = new ByteArrayInputStream(log.getBytes(StandardCharsets.UTF_8))
-        def result = inputStream ? new StreamedFile(inputStream, MediaType.TEXT_PLAIN_TYPE) : null
-        return result
+        def inputStream = new ByteArrayInputStream(logs.getBytes(StandardCharsets.UTF_8))
+        return inputStream ? new StreamedFile(inputStream, MediaType.TEXT_HTML_TYPE) : null
     }
 
     @Override
