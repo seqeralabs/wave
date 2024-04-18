@@ -142,25 +142,25 @@ class BuildRequest {
 
     volatile Path workDir
 
-    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, BuildFormat format, PlatformId identity, ContainerConfig containerConfig, BuildContext buildContext, ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId) {
-        this.containerId = computeDigest(containerFile, condaFile, spackFile, platform, repo, buildContext)
+    BuildRequest(String containerId, String containerFile, String condaFile, String spackFile, Path workspace, String targetImage, PlatformId identity, ContainerPlatform platform, String cacheRepository, String ip, String configJson, String offsetId, ContainerConfig containerConfig, String scanId, BuildContext buildContext, BuildFormat format) {
+        this.containerId = containerId
         this.containerFile = containerFile
-        this.containerConfig = containerConfig
-        this.buildContext = buildContext
         this.condaFile = condaFile
         this.spackFile = spackFile
-        this.targetImage = makeTarget(format, repo, containerId, condaFile, spackFile)
-        this.format = format
+        this.workspace = workspace
+        this.targetImage = targetImage
         this.identity = identity
         this.platform = platform
-        this.configJson = configJson
-        this.cacheRepository = cacheRepo
-        this.workspace = workspace
-        this.offsetId = offsetId ?: OffsetDateTime.now().offset.id
+        this.cacheRepository = cacheRepository
         this.startTime = Instant.now()
         this.ip = ip
+        this.configJson = configJson
+        this.offsetId = offsetId ?: OffsetDateTime.now().offset.id
+        this.containerConfig = containerConfig
         this.isSpackBuild = spackFile
         this.scanId = scanId
+        this.buildContext = buildContext
+        this.format = format
     }
 
     BuildRequest(Map opts) {
@@ -186,7 +186,7 @@ class BuildRequest {
         this.buildId = opts.buildId
     }
 
-    static protected String makeTarget(BuildFormat format, String repo, String id, @Nullable String condaFile, @Nullable String spackFile) {
+    static String makeTarget(BuildFormat format, String repo, String id, @Nullable String condaFile, @Nullable String spackFile) {
         assert id, "Argument 'id' cannot be null or empty"
         assert repo, "Argument 'repo' cannot be null or empty"
         assert format, "Argument 'format' cannot be null"
@@ -232,7 +232,7 @@ class BuildRequest {
         return tag ?: null
     }
 
-    static private String computeDigest(String containerFile, String condaFile, String spackFile, ContainerPlatform platform, String repository, BuildContext buildContext) {
+    static String computeDigest(String containerFile, String condaFile, String spackFile, ContainerPlatform platform, String repository, BuildContext buildContext) {
         final attrs = new LinkedHashMap<String,String>(10)
         attrs.containerFile = containerFile
         attrs.condaFile = condaFile

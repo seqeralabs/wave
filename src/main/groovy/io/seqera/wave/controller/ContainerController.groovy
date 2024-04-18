@@ -208,7 +208,9 @@ class ContainerController {
             throw new BadRequestException("Attribute `spackFile` is deprecated - use `packages` instead")
         if( !v2 && req.packages )
             throw new BadRequestException("Attribute `packages` is not allowed")
-
+        if( !v2 && req.containerFile && req.freeze && (!req.buildRepository || req.buildRepository==buildConfig.defaultPublicRepository) )
+            throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode")
+        
         if( v2 && req.packages ) {
             // generate the container file required to assemble the container
             final generated = containerFileFromPackages(req.packages, req.formatSingularity())
@@ -253,29 +255,35 @@ class ContainerController {
         final spackContent = spackFileFromRequest(req)
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
-        final build = req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository ? buildConfig.defaultPublicRepository : buildConfig.defaultBuildRepository)
-        final cache = req.cacheRepository ?: buildConfig.defaultCacheRepository
-        final configJson = dockerAuthService.credentialsConfigJson(containerSpec, build, cache, identity)
+        final buildRepository = req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository ? buildConfig.defaultPublicRepository : buildConfig.defaultBuildRepository)
+        final cacheRepository = req.cacheRepository ?: buildConfig.defaultCacheRepository
+        final configJson = dockerAuthService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
         final scanId = scanEnabled && format==DOCKER ? LongRndKey.rndHex() : null
-        // create a unique digest to identify the request
+        final containerFile = spackContent ? prependBuilderTemplate(containerSpec,format) : containerSpec
+        // create a unique digest to identify the build request
+        final containerId = BuildRequest.computeDigest(containerFile, condaContent, spackContent, platform, buildRepository, req.buildContext)
+        final targetImage = BuildRequest.makeTarget(format, buildRepository, containerId, condaContent, spackContent)
+
         return new BuildRequest(
-                (spackContent ? prependBuilderTemplate(containerSpec,format) : containerSpec),
-                Path.of(buildConfig.buildWorkspace),
-                build,
+                containerId,
+                containerFile,
                 condaContent,
                 spackContent,
-                format,
+                Path.of(buildConfig.buildWorkspace),
+                targetImage,
                 identity,
-                containerConfig,
-                req.buildContext,
                 platform,
-                configJson,
-                cache,
-                scanId,
+                cacheRepository,
                 ip,
-                offset)
+                configJson,
+                offset,
+                containerConfig,
+                scanId,
+                req.buildContext,
+                format
+        )
     }
 
     protected BuildTrack checkBuild(BuildRequest build, boolean dryRun) {
