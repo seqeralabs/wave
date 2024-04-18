@@ -69,7 +69,7 @@ class BuildServiceRateLimitTest extends Specification{
         """.stripIndent()
         and:
         def CONTAINER_ID = BuildRequest.computeDigest(dockerfile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def TARGET_IMAGE = BuildRequest.makeTarget(BuildFormat.DOCKER, buildRepo, CONTAINER_ID, null, null)
+        def TARGET_IMAGE = BuildRequest.makeTarget(BuildFormat.DOCKER, buildRepo, CONTAINER_ID, null, null, null)
         def REQ = new BuildRequest(CONTAINER_ID, dockerfile, null, null, folder, TARGET_IMAGE, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "127.0.0.1", '{"config":"json"}', null, null, null, null,BuildFormat.DOCKER)
 
         when:
@@ -93,7 +93,7 @@ class BuildServiceRateLimitTest extends Specification{
         """.stripIndent()
         and:
         def CONTAINER_ID = BuildRequest.computeDigest(dockerfile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def TARGET_IMAGE = BuildRequest.makeTarget(BuildFormat.DOCKER, buildRepo, CONTAINER_ID, null, null)
+        def TARGET_IMAGE = BuildRequest.makeTarget(BuildFormat.DOCKER, buildRepo, CONTAINER_ID, null, null, null)
         def REQ = new BuildRequest(CONTAINER_ID, dockerfile, null, null, folder, TARGET_IMAGE, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "127.0.0.1", '{"config":"json"}', null, null, null, null,BuildFormat.DOCKER)
 
         when:

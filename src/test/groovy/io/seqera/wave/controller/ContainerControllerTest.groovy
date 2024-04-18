@@ -19,6 +19,7 @@
 package io.seqera.wave.controller
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -31,6 +32,7 @@ import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.server.util.HttpClientAddressResolver
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
@@ -557,4 +559,28 @@ class ContainerControllerTest extends Specification {
         e.message == "Attribute `packages` is not allowed"
     }
 
+    @Unroll
+    def 'should return default public repo' () {
+        given:
+        def controller = new ContainerController(
+                inclusionService: Mock(ContainerInclusionService),
+                allowAnonymous: false,
+                buildConfig: new BuildConfig(defaultPublicRepository: REPO)
+        )
+
+        expect:
+        controller.publicRepo(new SubmitContainerTokenRequest(nameStrategy: STRATEGY ? ImageNameStrategy.valueOf(STRATEGY) : null)) == EXPECTED
+
+        where:
+        REPO        | STRATEGY      | EXPECTED
+        null        | 'none'        | null
+        null        | null          | null
+        null        | 'tagPrefix'   | null
+        null        | 'imageSuffix' | null
+        and:
+        'foo.com'   | 'none'        | 'foo.com/library/build'
+        'foo.com'   | null          | 'foo.com/library/build'
+        'foo.com'   | 'tagPrefix'   | 'foo.com/library/build'
+        'foo.com'   | 'imageSuffix' | 'foo.com/library'
+    }
 }

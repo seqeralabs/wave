@@ -68,9 +68,7 @@ class RegistryCredentialsProviderImpl implements RegistryCredentialsProvider {
 
     @Override
     RegistryCredentials getDefaultCredentials(ContainerPath container) {
-        return container && container.repository==buildConfig.defaultPublicRepository
-                ? getDefaultRepoCredentials0(container)
-                : getDefaultCredentials0(container?.registry)
+        return getDefaultCredentials0(container?.registry)
     }
 
     protected RegistryCredentials getDefaultCredentials0(String registry) {

@@ -27,9 +27,13 @@ import groovy.transform.EqualsAndHashCode
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.util.NameVersionPair
 import io.seqera.wave.util.RegHelper
+import io.seqera.wave.util.StringUtils
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static io.seqera.wave.util.RegHelper.guessCondaRecipeName
@@ -186,18 +190,36 @@ class BuildRequest {
         this.buildId = opts.buildId
     }
 
-    static String makeTarget(BuildFormat format, String repo, String id, @Nullable String condaFile, @Nullable String spackFile) {
+    static String makeTarget(BuildFormat format, String repo, String id, @Nullable String condaFile, @Nullable String spackFile, @Nullable ImageNameStrategy nameStrategy) {
         assert id, "Argument 'id' cannot be null or empty"
         assert repo, "Argument 'repo' cannot be null or empty"
+        assert repo.contains('/'), "Argument 'repo' is not a valid container repository name"
         assert format, "Argument 'format' cannot be null"
 
-        String prefix
+        NameVersionPair tools
         def tag = id
-        if( condaFile && (prefix=guessCondaRecipeName(condaFile)) ) {
-            tag = "${normaliseTag(prefix)}--${id}"
+        if( nameStrategy==null || nameStrategy==ImageNameStrategy.tagPrefix ) {
+            if( condaFile && (tools=guessCondaRecipeName(condaFile,false)) ) {
+                tag = "${normaliseTag(tools.both().join('_'))}--${id}"
+            }
+            else if( spackFile && (tools=guessSpackRecipeName(spackFile,false)) ) {
+                tag = "${normaliseTag(tools.both().join('_'))}--${id}"
+            }
         }
-        else if( spackFile && (prefix=guessSpackRecipeName(spackFile)) ) {
-            tag = "${normaliseTag(prefix)}--${id}"
+        else if( nameStrategy==ImageNameStrategy.imageSuffix )  {
+            if( condaFile && (tools=guessCondaRecipeName(condaFile,true)) ) {
+                repo = StringUtils.pathConcat(repo, tools.names.join('_'))
+                if( tools.versions?.size()==1 && tools.versions[0] )
+                    tag = "${normaliseTag(tools.versions[0])}--${id}"
+            }
+            else if( spackFile && (tools=guessSpackRecipeName(spackFile, true)) ) {
+                repo = StringUtils.pathConcat(repo, tools.names.join('_'))
+                if( tools.versions?.size()==1 && tools.versions[0] )
+                    tag = "${normaliseTag(tools.versions[0])}--${id}"
+            }
+        }
+        else if( nameStrategy!=ImageNameStrategy.none ) {
+            throw new BadRequestException("Unsupported image naming strategy: '${nameStrategy}'")
         }
 
         format==SINGULARITY ? "oras://${repo}:${tag}" : "${repo}:${tag}"
