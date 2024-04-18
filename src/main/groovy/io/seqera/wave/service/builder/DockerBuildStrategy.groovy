@@ -110,13 +110,13 @@ class DockerBuildStrategy extends BuildStrategy {
         final spack = req.isSpackBuild ? spackConfig : null
 
         final dockerCmd = req.formatDocker()
-                ? cmdForKaniko( req.workDir, credsFile, spack, req.platform)
-                : cmdForSingularity( req.workDir, credsFile, spack, req.platform)
+                ? cmdForKaniko( req.workDir, credsFile, spack, req.platform, req.buildId)
+                : cmdForSingularity( req.workDir, credsFile, spack, req.platform, req.buildId)
 
-        return dockerCmd + builderName(req.buildId) +launchCmd(req)
+        return dockerCmd + launchCmd(req)
     }
 
-    protected List<String> cmdForKaniko(Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform ) {
+    protected List<String> cmdForKaniko(Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform, String buildId) {
         final wrapper = ['docker',
                          'run',
                          '--rm',
@@ -137,13 +137,17 @@ class DockerBuildStrategy extends BuildStrategy {
             wrapper.add('--platform')
             wrapper.add(platform.toString())
         }
+
+        //add builder name
+        wrapper.addAll(builderName(buildId))
+
         // the container image to be used t
         wrapper.add( buildConfig.kanikoImage )
         // return it
         return wrapper
     }
 
-    protected List<String> cmdForSingularity(Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform) {
+    protected List<String> cmdForSingularity(Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform, String buildId) {
         final wrapper = ['docker',
                          'run',
                          '--rm',
@@ -170,11 +174,14 @@ class DockerBuildStrategy extends BuildStrategy {
             wrapper.add(platform.toString())
         }
 
+        //add builder name
+        wrapper.addAll(builderName(buildId))
+
         wrapper.add(buildConfig.singularityImage(platform))
         return wrapper
     }
 
-    protected List<String> builderName(String buildId) {
+    protected static List<String> builderName(String buildId) {
         def name = "build-${buildId}".toString().replace('_', '-')
         return List.of('--name', name)
     }

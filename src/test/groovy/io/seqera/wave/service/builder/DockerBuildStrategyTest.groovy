@@ -45,16 +45,17 @@ class DockerBuildStrategyTest extends Specification {
         and:
         def work = Path.of('/work/foo')
         when:
-        def cmd = service.cmdForKaniko(work, null, null, null)
+        def cmd = service.cmdForKaniko(work, null, null, null, '1234')
         then:
         cmd == ['docker',
                 'run',
                 '--rm',
                 '-v', '/work/foo:/work/foo',
+                '--name', 'build-1234',
                 'gcr.io/kaniko-project/executor:v1.19.2']
 
         when:
-        cmd = service.cmdForKaniko(work, Path.of('/foo/creds.json'), null, ContainerPlatform.of('arm64'))
+        cmd = service.cmdForKaniko(work, Path.of('/foo/creds.json'), null, ContainerPlatform.of('arm64'), '1234')
         then:
         cmd == ['docker',
                 'run',
@@ -62,10 +63,11 @@ class DockerBuildStrategyTest extends Specification {
                 '-v', '/work/foo:/work/foo',
                 '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
                 '--platform', 'linux/arm64',
+                '--name', 'build-1234',
                 'gcr.io/kaniko-project/executor:v1.19.2']
 
         when:
-        cmd = service.cmdForKaniko(work, Path.of('/foo/creds.json'), spackConfig, null)
+        cmd = service.cmdForKaniko(work, Path.of('/foo/creds.json'), spackConfig, null, '1234')
         then:
         cmd == ['docker',
                 'run',
@@ -73,6 +75,7 @@ class DockerBuildStrategyTest extends Specification {
                 '-v', '/work/foo:/work/foo',
                 '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
                 '-v', '/host/spack/key:/opt/spack/key:ro',
+                '--name', 'build-1234',
                 'gcr.io/kaniko-project/executor:v1.19.2']
 
         cleanup:
@@ -87,6 +90,7 @@ class DockerBuildStrategyTest extends Specification {
         def creds = Path.of('/work/creds.json')
         and:
         def req = new BuildRequest(
+                buildId: '1234',
                 workDir: Path.of('/work/foo/89fb83ce6ec8627b'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'repo:89fb83ce6ec8627b',
@@ -100,6 +104,7 @@ class DockerBuildStrategyTest extends Specification {
                 '-v', '/work/foo/89fb83ce6ec8627b:/work/foo/89fb83ce6ec8627b',
                 '-v', '/work/creds.json:/kaniko/.docker/config.json:ro',
                 '--platform', 'linux/amd64',
+                '--name', 'build-1234',
                 'gcr.io/kaniko-project/executor:v1.19.2',
                 '--dockerfile', '/work/foo/89fb83ce6ec8627b/Containerfile',
                 '--context', '/work/foo/89fb83ce6ec8627b/context',
@@ -118,6 +123,7 @@ class DockerBuildStrategyTest extends Specification {
         def service = ctx.getBean(DockerBuildStrategy)
         and:
         def req = new BuildRequest(
+                buildId: '1234',
                 workDir: Path.of('/work/foo/89fb83ce6ec8627b'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'repo:89fb83ce6ec8627b',
@@ -151,6 +157,7 @@ class DockerBuildStrategyTest extends Specification {
         def creds = Path.of('/work/creds.json')
         and:
         def req = new BuildRequest(
+                buildId: '1234',
                 workDir: Path.of('/work/foo/d4869cc39b8d7d55'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'oras://repo:d4869cc39b8d7d55',
@@ -170,6 +177,7 @@ class DockerBuildStrategyTest extends Specification {
                 '-v', '/work/singularity-remote.yaml:/root/.singularity/remote.yaml:ro',
                 '-v', '/host/spack/key:/opt/spack/key:ro',
                 '--platform', 'linux/amd64',
+                '--name', 'build-1234',
                 'quay.io/singularity/singularity:v3.11.4-slim',
                 'sh',
                 '-c',
@@ -193,6 +201,7 @@ class DockerBuildStrategyTest extends Specification {
         def creds = Path.of('/work/creds.json')
         and:
         def req = new BuildRequest(
+                buildId: '1234',
                 workDir: Path.of('/work/foo/9c68af894bb2419c'),
                 platform: ContainerPlatform.of('linux/arm64'),
                 targetImage: 'oras://repo:9c68af894bb2419c',
@@ -212,6 +221,7 @@ class DockerBuildStrategyTest extends Specification {
                 '-v', '/work/singularity-remote.yaml:/root/.singularity/remote.yaml:ro',
                 '-v', '/host/spack/key:/opt/spack/key:ro',
                 '--platform', 'linux/arm64',
+                '--name', 'build-1234',
                 'quay.io/singularity/singularity:v3.11.4-slim-arm64',
                 'sh',
                 '-c',
