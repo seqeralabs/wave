@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.logs
 
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.CompletableFuture
 import io.micronaut.core.annotation.Nullable
 
@@ -25,6 +26,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.micronaut.http.MediaType
 import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.objectstorage.ObjectStorageEntry
 import io.micronaut.objectstorage.ObjectStorageOperations
@@ -33,8 +35,6 @@ import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildStrategy
-import io.seqera.wave.service.builder.KubeBuildStrategy
-import io.seqera.wave.service.k8s.K8sService
 import io.seqera.wave.service.persistence.PersistenceService
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
@@ -117,8 +117,9 @@ class BuildLogServiceImpl implements BuildLogService {
     }
 
     private StreamedFile fetchLogStream1(String buildId) {
-        StreamedFile result = null
-        buildStrategy.getLogs(buildId)
+        final log = buildStrategy.getLogs(buildId)
+        def inputStream = new ByteArrayInputStream(log.getBytes(StandardCharsets.UTF_8))
+        def result = inputStream ? new StreamedFile(inputStream, MediaType.TEXT_PLAIN_TYPE) : null
         return result
     }
 

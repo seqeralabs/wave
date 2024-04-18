@@ -139,7 +139,8 @@ class DockerBuildStrategy extends BuildStrategy {
         }
 
         //add builder name
-        wrapper.addAll(builderName(buildId))
+        wrapper.add('--name')
+        wrapper.add(builderName(buildId))
 
         // the container image to be used t
         wrapper.add( buildConfig.kanikoImage )
@@ -175,20 +176,21 @@ class DockerBuildStrategy extends BuildStrategy {
         }
 
         //add builder name
-        wrapper.addAll(builderName(buildId))
+        wrapper.add('--name')
+        wrapper.add(builderName(buildId))
 
         wrapper.add(buildConfig.singularityImage(platform))
         return wrapper
     }
 
-    protected static List<String> builderName(String buildId) {
-        def name = "build-${buildId}".toString().replace('_', '-')
-        return List.of('--name', name)
+    protected static String builderName(String buildId) {
+        return "build-${buildId}".toString().replace('_', '-')
     }
 
     @Override
     String getLogs(String buildId) {
         def logCmd = ['docker', 'logs'] + builderName(buildId)
+        log.info("Get build logs: ${logCmd.join(' ')}")
         final proc = new ProcessBuilder()
                 .command(logCmd)
                 .redirectErrorStream(true)
