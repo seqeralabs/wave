@@ -238,7 +238,7 @@ curl --location 'http://localhost:9090/v1alpha2/container' \
 Note: You need to add your container registry credentials in seqera platform to use freeze feature which is a requirement for singularity.
 
 
-## `/v1alpha1/builds/{buildId}/status`
+## GET `/v1alpha1/builds/{buildId}/status`
 
 Provides status of build against buildId passed as path variable
 
@@ -270,7 +270,7 @@ Note: status can only be `PENDING` or `COMPLETED`.
 }
 ```
 
-## `/service-info`
+## GET `/service-info`
 
 Provides basic information about the service status.
 
@@ -285,7 +285,7 @@ Provides basic information about the service status.
 }
 ```
 
-### POST `/v1alpha1/inspect`
+## POST `/v1alpha1/inspect`
 
 This endpoint provides the metadata for provided container image
 
@@ -300,6 +300,116 @@ This endpoint provides the metadata for provided container image
 }
 ```
 
+### Response
+```json
+{
+    container: {
+        registry: string,
+        hostName: string,
+        imageName: string,
+        reference: string,
+        digest: string,
+        config: {
+            architecture: string,
+            config: {
+                env: string[],
+                cmd: string[],
+                image: string
+            },
+            container: string,
+            created: string,
+            rootfs: {
+                type: string,
+                diff_ids: string[]
+            }
+        },
+        manifest: {
+            schemaVersion: integer,
+            mediaType: string,
+            config: {
+                mediaType: string,
+                digest: string,
+                size: integer
+            },
+            layers: [
+                {
+                    mediaType: string,
+                    digest: string,
+                    size: integer
+                }
+            ]
+        },
+        v1: boolean,
+        v2: boolean,
+        oci: boolean
+    }
+}
+}
+```
+
+### Example
+
+#### API call
+```text
+curl --location 'http://localhost:9090/v1alpha1/inspect' \
+--header 'Content-Type: application/json' \
+--data '{
+    "containerImage": "4837ea38a478.ngrok.app/wt/<WAVE_TOKEN>/<REPO>/<IMAGE>",
+    "towerAccessToken": "<TOWER_TOKEN>",
+    "towerEndpoint": "http://localhost:8000/api"
+}'
+```
+##### Response
+```json
+{
+    "container": {
+        "registry": "4837ea38a478.ngrok.app",
+        "hostName": "https://4837ea38a478.ngrok.app",
+        "imageName": "wt/<WAVE_TOKEN>/<REPO>/<IMAGE>",
+        "reference": "9b80535d04eceefd",
+        "digest": "sha256:1fcabdb850dc7c46646b3796fca01aca5721330252b586058e0d326705374dd5",
+        "config": {
+            "architecture": "amd64",
+            "config": {
+                "env": [
+                    "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+                ],
+                "cmd": [
+                    "/bin/sh"
+                ],
+                "image": "sha256:9a5ce069f40cfe0f2270eafbff0a0f2fa08f1add73571af9f78209e96bb8a5e9"
+            },
+            "container": "4189cbc534955765760c227f328ec1cdd52e8550681c2bf9f8f990b27b644f9c",
+            "created": "2024-04-19T14:38:17.047396956Z",
+            "rootfs": {
+                "type": "layers",
+                "diff_ids": [
+                    "sha256:d4fc045c9e3a848011de66f34b81f052d4f2c15a17bb196d637e526349601820"
+                ]
+            }
+        },
+        "manifest": {
+            "schemaVersion": 2,
+            "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+            "config": {
+                "mediaType": "application/vnd.docker.container.image.v1+json",
+                "digest": "sha256:639823e18eb8b62cf43e92bac114ae35c03c07449e4ee5c10f8ebf8d033877d6",
+                "size": 774
+            },
+            "layers": [
+                {
+                    "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+                    "digest": "sha256:4abcf20661432fb2d719aaf90656f55c287f8ca915dc1c92ec14ff61e67fbaf8",
+                    "size": 3408729
+                }
+            ]
+        },
+        "v1": false,
+        "v2": true,
+        "oci": false
+    }
+}
+```
 
 ## Metrics APIs based on SurrealDB
 
