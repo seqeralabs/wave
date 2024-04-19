@@ -18,6 +18,14 @@ micronaut:
     thread-selection: AUTO
     # note this should be >= the build timeout (which is 15 minutes) see below
     idle-timeout: 910s
+    cors :
+      enabled : true
+      configurations :
+        ui :
+          allowed-origins :
+            - https://seqera.io
+            - https://seqera-hub.netlify.app
+            - http://localhost:9090
   views :
     folder : io/seqera/wave
   router:
