@@ -188,13 +188,13 @@ class DockerBuildStrategy extends BuildStrategy {
     }
 
     @Override
-    String getLogs(String buildId) {
+    InputStream getLogs(String buildId) {
         def logCmd = ['docker', 'logs'] + builderName(buildId)
         log.info("Get build logs: ${logCmd.join(' ')}")
         final proc = new ProcessBuilder()
                 .command(logCmd)
                 .redirectErrorStream(true)
                 .start()
-        return proc.inputStream.text
+        return proc.inputStream
     }
 }

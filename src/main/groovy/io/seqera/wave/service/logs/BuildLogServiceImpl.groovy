@@ -117,14 +117,10 @@ class BuildLogServiceImpl implements BuildLogService {
     }
 
     private StreamedFile fetchLogStream1(String buildId) {
-        def logs = buildStrategy.getLogs(buildId)
-        if( !logs )
+        def logStream = buildStrategy.getLogs(buildId)
+        if( !logStream )
             return null
-        else
-        //replace all regex is removing color from log otherwise it will not be displayed correctly in browser
-            logs = logs.replaceAll("\u001B\\[[;\\d]*m", "")
-        def inputStream = new ByteArrayInputStream(logs.getBytes(StandardCharsets.UTF_8))
-        return inputStream ? new StreamedFile(inputStream, MediaType.TEXT_HTML_TYPE) : null
+        return logStream ? new StreamedFile(logStream, MediaType.APPLICATION_OCTET_STREAM_TYPE) : null
     }
 
     @Override

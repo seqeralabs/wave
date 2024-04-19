@@ -140,7 +140,7 @@ class KubeBuildStrategy extends BuildStrategy {
     }
 
     @Override
-    String getLogs(String buildId) {
+    InputStream getLogs(String buildId) {
         return k8sService.getCurrentLogsPod(podName(buildId))
     }
 
