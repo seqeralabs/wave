@@ -67,6 +67,8 @@ wave.strategy = ['dockerfile']
 wave.build.repository = 'docker.io/<user>/<repository>'
 ```
 
+You can run `nextflow inspect` to find the SHA256 hash of the Wave augmented container.
+
 In your pipeline, you can use the SHA256 of the Wave augmented container, available in the target repository that you specify with the `wave.build.repository` parameter. For example:
 
 ```groovy
