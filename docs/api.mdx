@@ -238,7 +238,7 @@ curl --location 'http://localhost:9090/v1alpha2/container' \
 Note: You need to add your container registry credentials in seqera platform to use freeze feature which is a requirement for singularity.
 
 
-## `/v1alpha1/builds/{buildId}/status`
+## GET `/v1alpha1/builds/{buildId}/status`
 
 Provides status of build against buildId passed as path variable
 
@@ -268,6 +268,36 @@ Note: status can only be `PENDING` or `COMPLETED`.
     "duration":123.914989000,
     "succeeded":true
 }
+```
+
+## GET `/v1alpha1/builds/{buildId}/logs`
+
+Provides logs of build against buildId passed as path variable
+
+### Response
+
+```text
+build container logs text
+```
+
+### Example
+
+```
+% curl --location 'http://localhost:9090/v1alpha1/builds/<BUILD_ID>/logs'
+INFO[0001] Retrieving image manifest alpine:latest
+INFO[0001] Retrieving image alpine:latest from registry index.docker.io
+INFO[0002] Retrieving image manifest alpine:latest
+INFO[0002] Returning cached image manifest
+INFO[0002] Built cross stage deps: map[]
+INFO[0002] Retrieving image manifest alpine:latest
+INFO[0002] Returning cached image manifest
+INFO[0002] Retrieving image manifest alpine:latest
+INFO[0002] Returning cached image manifest
+INFO[0002] Executing 0 build triggers
+INFO[0002] Building stage 'alpine:latest' [idx: '0', base-idx: '-1']
+INFO[0002] Skipping unpacking as no commands require it.
+INFO[0002] Pushing image to <REPO>/<IMAGE>
+INFO[0005] Pushed index.docker.io/<REPO>/<IMAGE>
 ```
 
 ## `/service-info`

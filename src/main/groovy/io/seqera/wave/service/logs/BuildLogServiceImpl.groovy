@@ -120,7 +120,7 @@ class BuildLogServiceImpl implements BuildLogService {
         def logStream = buildStrategy.getLogs(buildId)
         if( !logStream )
             return null
-        return logStream ? new StreamedFile(logStream, MediaType.TEXT_PLAIN_TYPE) : null
+        return logStream ? new StreamedFile(logStream, MediaType.APPLICATION_OCTET_STREAM_TYPE) : null
     }
 
     @Override
