@@ -52,7 +52,6 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.scan.Trivy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import okhttp3.Call
 /**
  * implements the support for Kubernetes cluster
  *
@@ -472,8 +471,9 @@ class K8sServiceImpl implements K8sService {
     @Override
     InputStream getCurrentLogsPod(String name) {
         try {
-            Call call = k8sClient.coreV1Api().readNamespacedPodLogCall(name, namespace, name, false, null, null, "false", false, null, null, null, null);
-            return call.execute().body().byteStream()
+            def logs = k8sClient.coreV1Api().readNamespacedPodLog(name, namespace, name, false, null, null, "false", false, null, null, null)
+            logs = logs ? logs.replaceAll("\u001B\\[[;\\d]*m", "") : null // strip ansi escape codes
+            return new ByteArrayInputStream(logs.getBytes())
         } catch (Exception e) {
             // logging trace here because errors are expected when the pod is not running
             log.trace "Unable to fetch logs for pod: $name", e
