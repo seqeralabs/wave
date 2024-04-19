@@ -55,8 +55,8 @@ class FutureContainerBuildServiceTest extends Specification {
             }
 
             @Override
-            String getLogs(String buildId) {
-                return "fake build logs"
+            InputStream getLogs(String buildId) {
+                return new ByteArrayInputStream("fake build logs".getBytes())
             }
         }
     }
