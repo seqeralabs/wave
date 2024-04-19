@@ -19,7 +19,6 @@
 package io.seqera.wave.service.k8s
 
 import java.nio.file.Path
-import java.util.stream.Collectors
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileDynamic
@@ -36,7 +35,6 @@ import io.kubernetes.client.openapi.models.V1JobBuilder
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodBuilder
-import io.kubernetes.client.openapi.models.V1PodStatus
 import io.kubernetes.client.openapi.models.V1ResourceRequirements
 import io.kubernetes.client.openapi.models.V1Volume
 import io.kubernetes.client.openapi.models.V1VolumeMount

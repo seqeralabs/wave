@@ -24,6 +24,7 @@ import java.nio.file.Path
 import java.time.Duration
 
 import io.kubernetes.client.custom.Quantity
+import io.kubernetes.client.openapi.apis.CoreV1Api
 import io.kubernetes.client.openapi.models.V1EnvVar
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
@@ -573,5 +574,24 @@ class K8sServiceImplTest extends Specification {
 
         cleanup:
         ctx.close()
+    }
+
+    def "should get pod logs"() {
+        given:
+        def k8sClient = Mock(K8sClient)
+        def k8sService = new K8sServiceImpl(k8sClient: k8sClient)
+        def name = "builder-pod"
+        def logs = "\u001B[31mINFO: Build is in progress"
+
+        when:
+        InputStream result = k8sService.getCurrentLogsPod(name)
+
+        then:
+        2 * k8sClient.coreV1Api() >> Mock(CoreV1Api)
+        1 * k8sClient.coreV1Api().readNamespacedPodLog(_, _, _, _, _, _, _, _, _, _, _) >> logs
+        and:
+        result instanceof ByteArrayInputStream
+        String resultString = result.text
+        resultString == "INFO: Build is in progress"
     }
 }
