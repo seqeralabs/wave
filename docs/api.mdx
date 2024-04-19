@@ -287,7 +287,7 @@ Provides basic information about the service status.
 
 ## POST `/v1alpha1/inspect`
 
-This endpoint provides the metadata for provided container image
+This endpoint returns the metadata about provided container image
 
 ### Request
 
@@ -301,6 +301,7 @@ This endpoint provides the metadata for provided container image
 ```
 
 ### Response
+
 ```json
 {
     container: {
@@ -344,28 +345,30 @@ This endpoint provides the metadata for provided container image
         oci: boolean
     }
 }
-}
 ```
 
 ### Example
 
 #### API call
+
 ```text
 curl --location 'http://localhost:9090/v1alpha1/inspect' \
 --header 'Content-Type: application/json' \
 --data '{
-    "containerImage": "4837ea38a478.ngrok.app/wt/<WAVE_TOKEN>/<REPO>/<IMAGE>",
+    "containerImage": "docker.io/<REPO>/<IMAGE>",
     "towerAccessToken": "<TOWER_TOKEN>",
     "towerEndpoint": "http://localhost:8000/api"
 }'
 ```
+
 ##### Response
+
 ```json
 {
     "container": {
-        "registry": "4837ea38a478.ngrok.app",
-        "hostName": "https://4837ea38a478.ngrok.app",
-        "imageName": "wt/<WAVE_TOKEN>/<REPO>/<IMAGE>",
+        "registry": "docker.io",
+        "hostName": "https://registry-1.docker.io",
+        "imageName": "<WAVE_TOKEN>/<REPO>/<IMAGE>",
         "reference": "9b80535d04eceefd",
         "digest": "sha256:1fcabdb850dc7c46646b3796fca01aca5721330252b586058e0d326705374dd5",
         "config": {
