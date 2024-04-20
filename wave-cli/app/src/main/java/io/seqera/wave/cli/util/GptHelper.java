@@ -29,6 +29,7 @@ import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.output.Response;
 import io.seqera.wave.api.PackagesSpec;
+import io.seqera.wave.cli.exception.BadClientResponseException;
 import io.seqera.wave.cli.json.JsonHelper;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -39,7 +40,7 @@ import org.slf4j.LoggerFactory;
  */
 public class GptHelper {
 
-    private static Logger log = LoggerFactory.getLogger(GptHelper.class);
+    private static final Logger log = LoggerFactory.getLogger(GptHelper.class);
 
     static private OpenAiChatModel client() {
         String key = System.getenv("OPENAI_API_KEY");
@@ -52,11 +53,21 @@ public class GptHelper {
        return OpenAiChatModel.builder()
                 .apiKey(key)
                 .modelName(model)
+                .maxRetries(1)
                 .build();
     }
 
-
     static public PackagesSpec grabPackages(String prompt) {
+        try {
+            return grabPackages0(prompt);
+        }
+        catch (RuntimeException e) {
+            String msg = "Unexpected OpenAI response - cause: " + e.getMessage();
+            throw new BadClientResponseException(msg, e);
+        }
+    }
+
+    static PackagesSpec grabPackages0(String prompt) {
         final Map<String,Object> items = Map.of("type","string", "description", "A Conda package specification provided as the pair name and version, separated by the equals character, for example: foo=1.2.3");
         final Map<String,Object> PACKAGES = Map.of("type", "array", "description", "A list of one more Conda package", "items", items);
         final Map<String,Object> CHANNELS = Map.of("type", "array", "description", "A list of one more Conda channels", "items", Map.of("type", "string", "description", "A Conda channel name"));
