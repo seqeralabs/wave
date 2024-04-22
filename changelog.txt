@@ -1,4 +1,57 @@
 # Wave changelog
+1.7.0 - 22 Apr 2024
+- Improve build container naming strategy (#460) [31d459ed]
+- Helper methods refactor [54d2301b] [052acb32]
+- Refactor BuildRequest class (#456) [030ca310]
+- Improve request validation [6a3c4c79]
+- Bump trivy 0.50.1 [06ee665e]
+- Bump kaniko 1.22.0 [38a24afd]
+- Bump surrealdb 1.4.2 [5daf4ca7]
+
+1.6.1 - 11 Apr 2024
+- Undeprecate containerImage attribute in response object [23411028]
+
+1.6.0 - 10 Apr 2024 
+- Add metrics service based on Redis counters (#429) [ac84eadb]
+- Add v1alpha2 request endpoint (#423) [82d1cc49]
+- Refactor build id & status endpoint (#421) [354358c6]
+- Fix platform migration (#444) [2db9e422]
+- Document build status endpoint (#447) [c38db704]
+- Fix inspect for oras-oci images [8b4e18e9]
+- Minor refactor [15cb3970]
+- Refactor controllers name [d68617ba]
+- Remove deprecated fields [5ca41532]
+- Patched tower endpoints to new ones (#440) [f78647e2]
+- Fix Containerfile encoding (#441) [d742aa67]
+- Improve error reporting for AWS ECR auth failure [06141219]
+- Remove unused exception [bc5570b3]
+- Fix syntax error repored by Intellij [343887a4]
+- Fix Build pod name (#438) [4e54ce1a]
+- Fix RedisTestContainer flaky test (#436) [a90b44e5]
+- Update platform api endpoint to api.cloud.seqera.io (#434) [1e43e8b1]
+- Use shorted ttl when creating build result object [7525c0f7]
+- Minor change in container view [bd783221]
+
+1.5.2 - 25 Mar 2024
+- Fix No such property: ioExecutor [f603868b]
+
+1.5.1 - 25 Mar 2024
+- Fix Thread pool selection on container controller [d882bd4d]
+- Fix trace slow endpoint duration [fb1eea96]
+
+1.5.0 - 25 Mar 2024 
+- Add fixed executor to future store [9f61abe9]
+- Add timeout retry limiter [0a98aa96]
+- Fix failing tests [eeb9ddfe]
+- Add thred pool monitor cron [a1cdcc13]
+- Bump corretto-17.0.10-al2023-jemalloc as base image [7238a86d]
+- Evict status redesigned (#419) [9cf07b56]
+- Add API and UI to evict a wave request from token cache  (#410) [5833c18d]
+- Add all values to entrypoint (#416) [7fef9a59]
+- Add documentation for Metrics API (#414) [6e16fc41]
+- Update aws sdk to version v2 (#415) [1cd5d496]
+- bumped actions/upload-artifact to v4 and fix tests (#417) [7f0d7866]
+
 1.4.0 - 27 Feb 2024
 - Add services to query Wave usage metadata  (#393) [6325b25c]
 - Add filter to trace slow endpoints [be49262f]
@@ -453,7 +506,7 @@ v0.25.8 - 22 Feb 2023
 
 v0.25.7 - 21 Feb 2023
 - Improve docker auth error reporting [eceffe85]
-- Fix log typo [ci skip] [030dbc67]
+- Fix log typo [030dbc67]
 
 v0.25.6 - 15 Feb 2023
 - Add landing redirection [ede9a242]
@@ -574,7 +627,7 @@ v0.22.0 - 23 Oct 2022
 - Improve the time format in the completion email (#169) [84357efe]
 - Make Tower user auth async (#166) [55f06451] <Jorge Aguilera>
 - Check if target image exist before building a new one (#173) [78a5fa2e]
-- Add basic k8s deployment [ci skip] [6c81171a]
+- Add basic k8s deployment [6c81171a]
 - Update ngrok launcher script [e72979ce]
 - Bump Micronaut 3.7.2 (#174) [28172705] 
 - Bump kaniko 1.9.1 (#175) [8bb72c47]

@@ -36,7 +36,7 @@ interface ContainerBuildService {
      * @return
      *      The container image where the resulting image is going to be hosted
      */
-    void buildImage(BuildRequest request)
+    BuildTrack buildImage(BuildRequest request)
 
     /**
      * Get a completable future that holds the build result

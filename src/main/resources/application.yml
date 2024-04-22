@@ -36,6 +36,9 @@ micronaut:
     stream-executor:
       type: FIXED
       number-of-threads: 16
+    future-store-executor:
+      type : FIXED
+      number-of-threads : 16
   netty:
     event-loops:
       stream-pool:
@@ -58,7 +61,7 @@ wave:
   server:
       url: "${WAVE_SERVER_URL:`http://localhost:9090`}"
   build:
-    kaniko-image: "gcr.io/kaniko-project/executor:v1.19.2"
+    kaniko-image: "gcr.io/kaniko-project/executor:v1.22.0"
     singularity-image: "quay.io/singularity/singularity:v3.11.4-slim"
     singularity-image-arm64: "quay.io/singularity/singularity:v3.11.4-slim-arm64"
     repo: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/dev"
@@ -75,7 +78,7 @@ wave:
       multiplier: '1.75'
   scan:
     image:
-      name: aquasec/trivy:0.47.0
+      name: aquasec/trivy:0.50.1
   blobCache:
     s5cmdImage: cr.seqera.io/public/wave/s5cmd:v2.2.2
 ---

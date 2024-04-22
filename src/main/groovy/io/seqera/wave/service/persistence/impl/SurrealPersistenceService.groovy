@@ -29,20 +29,18 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
+import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.metric.Metric
 import io.seqera.wave.service.metric.MetricFilter
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
-import io.seqera.wave.service.persistence.legacy.SurrealLegacyService
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 import static io.seqera.wave.service.metric.MetricConstants.ANONYMOUS
-
 /**
  * Implements a persistence service based based on SurrealDB
  *
@@ -68,10 +66,6 @@ class SurrealPersistenceService implements PersistenceService {
     @Nullable
     @Value('${surreal.default.init-db}')
     private Boolean initDb
-
-    @Inject
-    @Nullable
-    private SurrealLegacyService legacy
 
     @EventListener
     void onApplicationStartup(ApplicationStartupEvent event) {
@@ -103,32 +97,73 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
-    void saveBuild(WaveBuildRecord build) {
-        surrealDb.insertBuildAsync(authorization, build).subscribe({ result->
-            log.trace "Build record saved ${result}"
-        }, {error->
-            def msg = error.message
-            if( error instanceof HttpClientResponseException ){
-                msg += ":\n $error.response.body"
-            }
-            log.error "Error saving build record ${msg}\n${build}", error
-        })
+    void createBuild(WaveBuildRecord build) {
+        surrealDb.insertBuild(getAuthorization(), build)
     }
 
-    void saveBuildBlocking(WaveBuildRecord record) {
-        surrealDb.insertBuild(getAuthorization(), record)
+    @Override
+    void updateBuild(WaveBuildRecord build) {
+        // create the scan record
+        final statement = """\
+                                UPDATE wave_build
+                                SET 
+                                    digest = '${build.digest}',
+                                    duration = '${build.duration}',
+                                    exitStatus = ${build.exitStatus}
+                                where
+                                    buildId = '${build.buildId}' 
+                                """.stripIndent()
+        final result = surrealDb
+                                .sqlAsync(authorization, statement)
+                                .subscribe({result ->
+                                    log.trace "Update build record id: $build.buildId: ${result}"
+                                },
+                        {error->
+                            def msg = error.message
+                            if( error instanceof HttpClientResponseException ){
+                                msg += ":\n $error.response.body"
+                            }
+                            log.error("Error updating build record id: $build.buildId => ${msg}\n", error)
+                        })
+        log.trace "Scan update result=$result"
     }
 
     WaveBuildRecord loadBuild(String buildId) {
         if( !buildId )
             throw new IllegalArgumentException("Missing 'buildId' argument")
+        def result = loadBuild0(buildId)
+        if( result )
+            return result
+        // try to lookup legacy record
+        final legacyId = BuildRequest.legacyBuildId(buildId)
+        return legacyId ? loadBuild1(legacyId) : null
+    }
+
+    private WaveBuildRecord loadBuild0(String buildId) {
         final query = "select * from wave_build where buildId = '$buildId'"
         final json = surrealDb.sqlAsString(getAuthorization(), query)
         final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null
-        if( !result && legacy )
-            return legacy.loadBuild(buildId)
+        return result
+    }
+
+    private WaveBuildRecord loadBuild1(String buildId) {
+        final query = "select * from wave_build where buildId = '$buildId'"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result[0] : null
+        return result
+    }
+
+    @Override
+    WaveBuildRecord loadBuild(String targetImage, String digest) {
+        final query = "select * from wave_build where targetImage = '$targetImage' and digest = '$digest'"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result[0] : null
         return result
     }
 
@@ -174,8 +209,6 @@ class SurrealPersistenceService implements PersistenceService {
         final type = new TypeReference<ArrayList<SurrealResult<WaveContainerRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null
-        if( !result && legacy )
-            return legacy.loadContainerRequest(token)
         return result
     }
 
@@ -219,8 +252,6 @@ class SurrealPersistenceService implements PersistenceService {
         final type = new TypeReference<ArrayList<SurrealResult<WaveScanRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null
-        if( !result && legacy )
-            return legacy.loadScanRecord(scanId)
         return result
     }
 

@@ -49,12 +49,12 @@ class BasicAuthenticationProvider implements AuthenticationProvider {
             final user = authRequest.identity?.toString()
             final pass = authRequest.secret?.toString()
             if (accountService.isAuthorised(user, pass)) {
-                log.debug "Auth request OK - user '$user'; password: '${StringUtils.redact(pass)}'"
+                log.trace "Auth request OK - user '$user'; password: '${StringUtils.redact(pass)}'"
                 emitter.next(AuthenticationResponse.success((String) authRequest.identity))
                 emitter.complete()
             }
             else {
-                log.debug "Auth request FAILED - user '$user'; password: '${StringUtils.redact(pass)}'"
+                log.trace "Auth request FAILED - user '$user'; password: '${StringUtils.redact(pass)}'"
                 emitter.error(AuthenticationResponse.exception())
             }
         }, FluxSink.OverflowStrategy.ERROR)

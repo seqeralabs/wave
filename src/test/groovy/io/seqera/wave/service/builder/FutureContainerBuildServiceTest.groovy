@@ -31,6 +31,8 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
+import io.seqera.wave.util.ContainerHelper
+
 /**
  *
  * @author Jorge Aguilera <jorge.aguilera@seqera.ia>
@@ -51,7 +53,7 @@ class FutureContainerBuildServiceTest extends Specification {
         new BuildStrategy() {
             @Override
             BuildResult build(BuildRequest req) {
-                new BuildResult("", exitCode, "a fake build result in a test", Instant.now(), Duration.ofSeconds(3))
+                new BuildResult("", exitCode, "a fake build result in a test", Instant.now(), Duration.ofSeconds(3), 'abc')
             }
         }
     }
@@ -67,16 +69,18 @@ class FutureContainerBuildServiceTest extends Specification {
         RUN echo $EXIT_CODE > hello.txt
         """.stripIndent()
         and:
-        def REQ = new BuildRequest(dockerfile, folder, buildRepo, null, null, BuildFormat.DOCKER, Mock(PlatformId), null, null, ContainerPlatform.of('amd64'),'{auth}', cacheRepo, null, "", null)
+        def containerId = ContainerHelper.makeContainerId(dockerfile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
+        def req = new BuildRequest(containerId, dockerfile, null, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER).withBuildId('1')
 
         when:
         exitCode = EXIT_CODE
-        service.checkOrSubmit(REQ)
+        service.checkOrSubmit(req)
         then:
         noExceptionThrown()
 
         when:
-        def status = service.buildResult(REQ.targetImage).get()
+        def status = service.buildResult(req.targetImage).get()
         then:
         status.getExitStatus() == EXIT_CODE
 

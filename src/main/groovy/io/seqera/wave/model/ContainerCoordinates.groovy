@@ -51,6 +51,8 @@ class ContainerCoordinates implements ContainerPath {
     }
 
     static ContainerCoordinates parse(String path) {
+        if( !path )
+            throw new IllegalArgumentException("Container image name is not provided")
 
         final scheme = StringUtils.getUrlProtocol(path)
         if( scheme ) {

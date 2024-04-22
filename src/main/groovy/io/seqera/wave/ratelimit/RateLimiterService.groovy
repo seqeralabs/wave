@@ -30,4 +30,6 @@ interface RateLimiterService {
     void acquireBuild(AcquireRequest request) throws SlowDownException
 
     void acquirePull(AcquireRequest request) throws SlowDownException
+
+    boolean acquireTimeoutCounter(String endpoint)
 }
