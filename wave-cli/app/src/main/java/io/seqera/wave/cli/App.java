@@ -310,9 +310,6 @@ public class App implements Runnable {
         if( isEmpty(image) && isEmpty(containerFile) && isEmpty(condaFile) && condaPackages==null  && isEmpty(spackFile) && spackPackages==null && isEmpty(prompt) )
             throw new IllegalCliArgumentException("Provide either a image name or a container file for the Wave container to be provisioned");
 
-        if( freeze && isEmpty(buildRepository) )
-            throw new IllegalCliArgumentException("Specify the build repository where the freeze container will be pushed by using the --build-repo option");
-
         if( isEmpty(towerToken) && !isEmpty(buildRepository) )
             throw new IllegalCliArgumentException("Specify the Tower access token required to authenticate the access to the build repository either by using the --tower-token option or the TOWER_ACCESS_TOKEN environment variable");
 
