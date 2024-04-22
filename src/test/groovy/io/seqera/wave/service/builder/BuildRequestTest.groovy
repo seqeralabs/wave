@@ -18,8 +18,8 @@
 
 package io.seqera.wave.service.builder
 
+
 import spock.lang.Specification
-import spock.lang.Unroll
 
 import java.nio.file.Path
 import java.time.OffsetDateTime
@@ -29,6 +29,7 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
+import io.seqera.wave.util.ContainerHelper
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -49,8 +50,8 @@ class BuildRequestTest extends Specification {
         def CONTEXT = Mock(BuildContext)
         def PLATFORM = ContainerPlatform.of('amd64')
         def FORMAT = BuildFormat.DOCKER
-        def CONTAINER_ID = BuildRequest.computeDigest(CONTENT, null, null, PLATFORM, BUILD_REPO, CONTEXT)
-        def TARGET_IMAGE = BuildRequest.makeTarget(FORMAT, BUILD_REPO, CONTAINER_ID, null, null)
+        def CONTAINER_ID = ContainerHelper.makeContainerId(CONTENT, null, null, PLATFORM, BUILD_REPO, CONTEXT)
+        def TARGET_IMAGE = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID, null, null, null)
 
         when:
         def req = new BuildRequest(
@@ -99,8 +100,8 @@ class BuildRequestTest extends Specification {
                     - samtools=1.0
                 '''
         and:
-        CONTAINER_ID = BuildRequest.computeDigest(CONTENT, CONDA_RECIPE, null, PLATFORM, BUILD_REPO, CONTEXT)
-        TARGET_IMAGE = BuildRequest.makeTarget(FORMAT, BUILD_REPO, CONTAINER_ID, CONDA_RECIPE, null)
+        CONTAINER_ID = ContainerHelper.makeContainerId(CONTENT, CONDA_RECIPE, null, PLATFORM, BUILD_REPO, CONTEXT)
+        TARGET_IMAGE = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID, CONDA_RECIPE, null, null)
         req = new BuildRequest(
                 CONTAINER_ID,
                 CONTENT,
@@ -134,8 +135,8 @@ class BuildRequestTest extends Specification {
             '''
 
         when:
-        CONTAINER_ID = BuildRequest.computeDigest(CONTENT, null, SPACK_RECIPE, PLATFORM, BUILD_REPO, CONTEXT)
-        TARGET_IMAGE = BuildRequest.makeTarget(FORMAT, BUILD_REPO, CONTAINER_ID, null, SPACK_RECIPE)
+        CONTAINER_ID = ContainerHelper.makeContainerId(CONTENT, null, SPACK_RECIPE, PLATFORM, BUILD_REPO, CONTEXT)
+        TARGET_IMAGE = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID, null, SPACK_RECIPE, null)
         req = new BuildRequest(
                 CONTAINER_ID,
                 CONTENT,
@@ -176,8 +177,8 @@ class BuildRequestTest extends Specification {
         def CONTEXT = Mock(BuildContext)
         def PLATFORM = ContainerPlatform.of('amd64')
         def FORMAT = BuildFormat.SINGULARITY
-        def CONTAINER_ID = BuildRequest.computeDigest(CONTENT, null, null, PLATFORM, BUILD_REPO, CONTEXT)
-        def TARGET_IMAGE = BuildRequest.makeTarget(FORMAT, BUILD_REPO, CONTAINER_ID, null, null)
+        def CONTAINER_ID = ContainerHelper.makeContainerId(CONTENT, null, null, PLATFORM, BUILD_REPO, CONTEXT)
+        def TARGET_IMAGE = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID, null, null, null)
 
         when:
         def req = new BuildRequest(
@@ -229,25 +230,25 @@ class BuildRequestTest extends Specification {
         def FOO_CONTENT = 'from foo'
         def BAR_CONTENT = 'from bar'
         and:
-        def CONTAINER_ID1 = BuildRequest.computeDigest(FOO_CONTENT, null, null, PLATFORM, BUILD_REPO, null)
-        def TARGET_IMAGE1 = BuildRequest.makeTarget(FORMAT, BUILD_REPO, CONTAINER_ID1, null, null)
+        def CONTAINER_ID1 = ContainerHelper.makeContainerId(FOO_CONTENT, null, null, PLATFORM, BUILD_REPO, null)
+        def TARGET_IMAGE1 = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID1, null, null, null)
         def req1 = new BuildRequest(CONTAINER_ID1, FOO_CONTENT, null, null, PATH, TARGET_IMAGE1, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT)
         and:
         def req2 = new BuildRequest(CONTAINER_ID1, FOO_CONTENT, null, null, PATH, TARGET_IMAGE1, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT)
         and:
-        def CONTAINER_ID3 = BuildRequest.computeDigest(BAR_CONTENT, null, null, PLATFORM, BUILD_REPO, null)
-        def TARGET_IMAGE3 = BuildRequest.makeTarget(FORMAT, BUILD_REPO, CONTAINER_ID3, null, null)
+        def CONTAINER_ID3 = ContainerHelper.makeContainerId(BAR_CONTENT, null, null, PLATFORM, BUILD_REPO, null)
+        def TARGET_IMAGE3 = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID3, null, null, null)
         def req3 = new BuildRequest(CONTAINER_ID3, BAR_CONTENT, null, null, PATH, TARGET_IMAGE3, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT)
         and:
-        def CONTAINER_ID4 = BuildRequest.computeDigest(BAR_CONTENT, CONDA_CONTENT, null, PLATFORM, BUILD_REPO, null)
-        def TARGET_IMAGE4 = BuildRequest.makeTarget(FORMAT, BUILD_REPO, CONTAINER_ID4, CONDA_CONTENT, null)
+        def CONTAINER_ID4 = ContainerHelper.makeContainerId(BAR_CONTENT, CONDA_CONTENT, null, PLATFORM, BUILD_REPO, null)
+        def TARGET_IMAGE4 = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID4, CONDA_CONTENT, null, null)
         def req4 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, null, PATH, TARGET_IMAGE4, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT)
         and:
         def req5 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, null, PATH, TARGET_IMAGE4, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT)
         and:
         CONDA_CONTENT = 'salmon=1.2.5'
-        def CONTAINER_ID6 = BuildRequest.computeDigest(BAR_CONTENT, CONDA_CONTENT, null, PLATFORM, BUILD_REPO, null)
-        def TARGET_IMAGE6 = BuildRequest.makeTarget(FORMAT, BUILD_REPO, CONTAINER_ID6, CONDA_CONTENT, null)
+        def CONTAINER_ID6 = ContainerHelper.makeContainerId(BAR_CONTENT, CONDA_CONTENT, null, PLATFORM, BUILD_REPO, null)
+        def TARGET_IMAGE6 = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID6, CONDA_CONTENT, null, null)
         def req6 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, null, PATH, TARGET_IMAGE6, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', null, null, null, null, FORMAT)
         and:
         def req7 = new BuildRequest(CONTAINER_ID4, BAR_CONTENT, CONDA_CONTENT, null, PATH, TARGET_IMAGE6, USER, PLATFORM, CACHE_REPO, "10.20.30.40", '{"config":"json"}', "UTC+2", null, null, null, FORMAT)
@@ -277,56 +278,6 @@ class BuildRequestTest extends Specification {
         req1.offsetId == OffsetDateTime.now().offset.id
         req7.offsetId == 'UTC+2'
     }
-
-    def 'should make request target' () {
-        expect:
-        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', '12345', null, null)
-                == 'quay.io/org/name:12345'
-        and:
-        BuildRequest.makeTarget(BuildFormat.SINGULARITY, 'quay.io/org/name', '12345', null, null)
-                == 'oras://quay.io/org/name:12345'
-
-        and:
-        def conda = '''\
-        dependencies:
-        - salmon=1.2.3
-        '''
-        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', '12345', conda, null)
-                == 'quay.io/org/name:salmon-1.2.3--12345'
-
-        and:
-        def spack = '''\
-         spack:
-            specs: [bwa@0.7.15]
-        '''
-        BuildRequest.makeTarget(BuildFormat.DOCKER, 'quay.io/org/name', '12345', null, spack)
-                == 'quay.io/org/name:bwa-0.7.15--12345'
-
-    }
-
-    @Unroll
-    def 'should normalise tag' () {
-        expect:
-        BuildRequest.normaliseTag(TAG,12)  == EXPECTED
-        where:
-        TAG                     | EXPECTED
-        null                    | null
-        ''                      | null
-        and:
-        'foo'                   | 'foo'
-        'FOO123'                | 'FOO123'
-        'aa-bb_cc.dd'           | 'aa-bb_cc.dd'
-        and:
-        'one(two)three'         | 'onetwothree'
-        '12345_67890_12345'     | '12345_67890'
-        '123456789012345_1'     | '123456789012'
-        and:
-        'aa__'                  | 'aa'
-        'aa..--__'              | 'aa'
-        '..--__bb'              | 'bb'
-        '._-xyz._-'             | 'xyz'
-    }
-
 
     def 'should parse legacy id' () {
         expect:

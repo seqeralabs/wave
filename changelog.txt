@@ -1,4 +1,13 @@
 # Wave changelog
+1.7.0 - 22 Apr 2024
+- Improve build container naming strategy (#460) [31d459ed]
+- Helper methods refactor [54d2301b] [052acb32]
+- Refactor BuildRequest class (#456) [030ca310]
+- Improve request validation [6a3c4c79]
+- Bump trivy 0.50.1 [06ee665e]
+- Bump kaniko 1.22.0 [38a24afd]
+- Bump surrealdb 1.4.2 [5daf4ca7]
+
 1.6.1 - 11 Apr 2024
 - Undeprecate containerImage attribute in response object [23411028]
 
@@ -497,7 +506,7 @@ v0.25.8 - 22 Feb 2023
 
 v0.25.7 - 21 Feb 2023
 - Improve docker auth error reporting [eceffe85]
-- Fix log typo [ci skip] [030dbc67]
+- Fix log typo [030dbc67]
 
 v0.25.6 - 15 Feb 2023
 - Add landing redirection [ede9a242]
@@ -618,7 +627,7 @@ v0.22.0 - 23 Oct 2022
 - Improve the time format in the completion email (#169) [84357efe]
 - Make Tower user auth async (#166) [55f06451] <Jorge Aguilera>
 - Check if target image exist before building a new one (#173) [78a5fa2e]
-- Add basic k8s deployment [ci skip] [6c81171a]
+- Add basic k8s deployment [6c81171a]
 - Update ngrok launcher script [e72979ce]
 - Bump Micronaut 3.7.2 (#174) [28172705] 
 - Bump kaniko 1.9.1 (#175) [8bb72c47]

@@ -41,7 +41,7 @@ import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
 import jakarta.inject.Named
-import static io.seqera.wave.controller.ContainerHelper.patchPlatformEndpoint
+import static io.seqera.wave.util.ContainerHelper.patchPlatformEndpoint
 
 /**
  * Implement container inspect capability
