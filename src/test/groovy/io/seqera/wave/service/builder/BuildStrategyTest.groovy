@@ -25,6 +25,7 @@ import java.nio.file.Path
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.util.ContainerHelper
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -116,9 +117,9 @@ class BuildStrategyTest extends Specification {
         when:
         def content = 'FROM foo:latest'
         def workspace = Path.of("some/path")
-        def buildrepo = 'buildrepo'
-        def containerId = BuildRequest.computeDigest(content, null, null, ContainerPlatform.of('amd64'), buildrepo, null)
-        def targetImage = BuildRequest.makeTarget(BuildFormat.DOCKER, buildrepo, containerId, null, null)
+        def buildrepo = 'foo.com/repo'
+        def containerId = ContainerHelper.makeContainerId(content, null, null, ContainerPlatform.of('amd64'), buildrepo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildrepo, containerId, null, null, null)
         def build = new BuildRequest(
                 containerId,
                 content,
@@ -139,7 +140,7 @@ class BuildStrategyTest extends Specification {
         )
 
         then:
-        build.containerId == '911d21120b4b505c'
+        build.containerId == 'af15cb0a413a2d48'
         build.workspace == Path.of("some/path")
         and:
         !build.buildId
@@ -148,11 +149,11 @@ class BuildStrategyTest extends Specification {
         when:
         build.withBuildId('100')
         then:
-        build.containerId == '911d21120b4b505c'
+        build.containerId == 'af15cb0a413a2d48'
         build.workspace == Path.of("some/path")
         and:
-        build.buildId == '911d21120b4b505c_100'
-        build.workDir == Path.of('.').toRealPath().resolve('some/path/911d21120b4b505c_100')
+        build.buildId == 'af15cb0a413a2d48_100'
+        build.workDir == Path.of('.').toRealPath().resolve('some/path/af15cb0a413a2d48_100')
     }
 
 }

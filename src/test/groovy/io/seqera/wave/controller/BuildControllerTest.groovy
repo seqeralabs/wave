@@ -46,6 +46,7 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
 import io.seqera.wave.api.BuildStatusResponse
+import io.seqera.wave.util.ContainerHelper
 
 /**
  *
@@ -72,12 +73,12 @@ class BuildControllerTest extends Specification {
 
     def 'should get container build record' () {
         given:
-        final repo = "buildrepo"
+        final repo = "foo.com/repo"
         final containerFile = 'FROM foo:latest'
         final format = BuildFormat.DOCKER
         final platform = ContainerPlatform.of('amd64')
-        final containerId = BuildRequest.computeDigest(containerFile, null, null, platform, 'buildrepo', null)
-        final targetImage = BuildRequest.makeTarget(format, repo, containerId, null, null)
+        final containerId = ContainerHelper.makeContainerId(containerFile, null, null, platform, 'buildrepo', null)
+        final targetImage = ContainerHelper.makeTargetImage(format, repo, containerId, null, null, null)
         final build = new BuildRequest(
                 containerId,
                 containerFile,
