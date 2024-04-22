@@ -24,10 +24,12 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
+import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerInspectRequest
 import io.seqera.wave.api.ContainerInspectResponse
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.logs.BuildLogServiceImpl
 import jakarta.inject.Inject
@@ -73,4 +75,13 @@ class InspectControllerTest extends Specification {
         resp.body().container.config.rootfs.diff_ids == ['sha256:95c4a60383f7b6eb6f7b8e153a07cd6e896de0476763bef39d0f6cf3400624bd']
     }
 
+    def 'should get BadRequestException, when container image name is not provided' () {
+        when:
+        def inspect = new ContainerInspectRequest()
+        def req = HttpRequest.POST("/v1alpha1/inspect", inspect)
+        client.toBlocking().exchange(req, ContainerInspectResponse)
+        then:
+        def e = thrown(HttpClientResponseException)
+        e.message == 'Missing \'containerImage\' attribute'
+    }
 }
