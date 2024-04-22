@@ -1,5 +1,11 @@
 WAVE CLI CHANGE-LOG
 ===================
+1.3.1 - 22 Apr 2024
+- Remove build repository check [76c92766]
+- Improve error handling [b2cfdd3f]
+- Improve Gpt helper class [85a01baa]
+- Bump groovy 3.0.21 for tests [110ad94d]
+
 1.3.0 - 11 Apr 2024 
 - Add generative containers [26bb08de]
 - Use container-alpha1v2 endpoint (#62) [a923aacf]
