@@ -300,6 +300,15 @@ This endpoint returns the metadata about provided container image
 }
 ```
 
+#### inspect request attributes
+
+| Attribute                           | Description                                                                                                                                                 |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `containerImage`                    | Name of the container to be inpected, e.g., `docker.io/library/ubuntu:latest`                                                                               |
+| `towerEndpoint`                     | Seqera Platform service endpoint from where container repositories credentials are retrieved (optional). Default `https://api.cloud.seqera.io`.             |
+| `towerAccessToken`                  | Access token of the user account granting the access to the Seqera Platform service specified via `towerEndpoint` (optional).                               |
+| `towerWorkspaceId`                  | ID of the Seqera Platform workspace from where the container repositories credentials are retrieved (optional). When omitted the personal workspace is used.|
+
 ### Response
 
 ```json
