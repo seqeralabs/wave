@@ -24,11 +24,13 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
+import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerInspectRequest
 import io.seqera.wave.api.ContainerInspectResponse
 import io.seqera.wave.service.inspect.model.BlobURIResponse
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.logs.BuildLogServiceImpl
 import jakarta.inject.Inject
@@ -87,4 +89,13 @@ class InspectControllerTest extends Specification {
         resp.body().uris == ['https://registry-1.docker.io/v2/library/busybox/blobs/sha256:7b2699543f22d5b8dc8d66a5873eb246767bca37232dee1e7a3b8c9956bceb0c']
     }
 
+    def 'should get BadRequestException, when container image name is not provided' () {
+        when:
+        def inspect = new ContainerInspectRequest()
+        def req = HttpRequest.POST("/v1alpha1/inspect", inspect)
+        client.toBlocking().exchange(req, ContainerInspectResponse)
+        then:
+        def e = thrown(HttpClientResponseException)
+        e.message == 'Missing \'containerImage\' attribute'
+    }
 }

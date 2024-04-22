@@ -79,6 +79,18 @@ class InspectController {
     CompletableFuture<HttpResponse<ContainerInspectResponse>> inspect(ContainerInspectRequest req) {
         String endpoint = validateRequest(req)
 
+        if( !req.containerImage )
+            throw new BadRequestException("Missing 'containerImage' attribute")
+
+        // this is needed for backward compatibility with old clients
+        if( !req.towerEndpoint ) {
+            req.towerEndpoint = towerEndpointUrl
+        }
+        else {
+            req.towerEndpoint = patchPlatformEndpoint(req.towerEndpoint)
+        }
+
+        // anonymous access
         if( !req.towerAccessToken ) {
             return CompletableFuture.completedFuture(makeResponse(req, PlatformId.NULL))
         }
