@@ -167,7 +167,7 @@ class RegHelperTest extends Specification {
 
     }
 
-    def 'should create singularity remote ymal file' () {
+    def 'should create singularity remote yaml file' () {
 
         when:
         def ret = RegHelper.singularityRemoteFile('oras://quay.io/user/foo:latest')
@@ -202,7 +202,8 @@ class RegHelperTest extends Specification {
 
         expect:
         RegHelper.guessCondaRecipeName(null) == null
-        RegHelper.guessCondaRecipeName(CONDA) == 'rnaseq-nf'
+        RegHelper.guessCondaRecipeName(CONDA) == new NameVersionPair(['rnaseq-nf'])
+        RegHelper.guessCondaRecipeName(CONDA,true) == new NameVersionPair(['rnaseq-nf'], [null])
     }
 
     def 'should find conda name with anonymous recipe' () {
@@ -214,13 +215,18 @@ class RegHelperTest extends Specification {
               - conda-forge
             dependencies:
               # Default bismark
-              - salmon=1.6.0
-              - fastqc=0.11.9
+              - salmon>=1.6.0
+              - fastqc<=0.11.9
               - bioconda::multiqc=1.11
+              - samtools
+              - bwa>0.1
+              - bowtie2<0.2
             '''.stripIndent(true)
 
         expect:
-        RegHelper.guessCondaRecipeName(CONDA) == 'salmon-1.6.0_fastqc-0.11.9_multiqc-1.11'
+        RegHelper.guessCondaRecipeName(CONDA) == new NameVersionPair(['salmon-1.6.0', 'fastqc-0.11.9', 'multiqc-1.11', 'samtools', 'bwa-0.1', 'bowtie2-0.2'] as Set)
+        and:
+        RegHelper.guessCondaRecipeName(CONDA,true) == new NameVersionPair(['salmon', 'fastqc', 'multiqc', 'samtools', 'bwa', 'bowtie2'] as Set, ['1.6.0','0.11.9','1.11', null, '0.1','0.2'] as Set)
     }
 
     def 'should find spack recipe names from spack yaml file' () {
@@ -232,7 +238,9 @@ class RegHelperTest extends Specification {
 
         expect:
         RegHelper.guessSpackRecipeName(null) == null
-        RegHelper.guessSpackRecipeName(SPACK) == 'bwa-0.7.15_salmon-1.1.1_nano-1.0'
+        RegHelper.guessSpackRecipeName(SPACK) == new NameVersionPair(['bwa-0.7.15', 'salmon-1.1.1', 'nano-1.0'] as Set)
+        and:
+        RegHelper.guessSpackRecipeName(SPACK,true) == new NameVersionPair(['bwa', 'salmon', 'nano'] as Set, ['0.7.15', '1.1.1', '1.0'] as Set)
     }
 
     def 'should throw an exception when spack section is not present in spack yaml file' () {

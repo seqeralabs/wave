@@ -116,9 +116,9 @@ class BuildStrategyTest extends Specification {
         when:
         def content = 'FROM foo:latest'
         def workspace = Path.of("some/path")
-        def buildrepo = 'buildrepo'
+        def buildrepo = 'foo.com/repo'
         def containerId = BuildRequest.computeDigest(content, null, null, ContainerPlatform.of('amd64'), buildrepo, null)
-        def targetImage = BuildRequest.makeTarget(BuildFormat.DOCKER, buildrepo, containerId, null, null)
+        def targetImage = BuildRequest.makeTarget(BuildFormat.DOCKER, buildrepo, containerId, null, null, null)
         def build = new BuildRequest(
                 containerId,
                 content,
@@ -139,7 +139,7 @@ class BuildStrategyTest extends Specification {
         )
 
         then:
-        build.containerId == '911d21120b4b505c'
+        build.containerId == 'af15cb0a413a2d48'
         build.workspace == Path.of("some/path")
         and:
         !build.buildId
@@ -148,11 +148,11 @@ class BuildStrategyTest extends Specification {
         when:
         build.withBuildId('100')
         then:
-        build.containerId == '911d21120b4b505c'
+        build.containerId == 'af15cb0a413a2d48'
         build.workspace == Path.of("some/path")
         and:
-        build.buildId == '911d21120b4b505c_100'
-        build.workDir == Path.of('.').toRealPath().resolve('some/path/911d21120b4b505c_100')
+        build.buildId == 'af15cb0a413a2d48_100'
+        build.workDir == Path.of('.').toRealPath().resolve('some/path/af15cb0a413a2d48_100')
     }
 
 }

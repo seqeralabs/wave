@@ -39,6 +39,7 @@ import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.security.annotation.Secured
 import io.micronaut.security.authentication.AuthorizationException
 import io.micronaut.security.rules.SecurityRule
+import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.configuration.BuildConfig
@@ -68,6 +69,7 @@ import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
 import io.seqera.wave.util.LongRndKey
+import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
@@ -210,7 +212,9 @@ class ContainerController {
             throw new BadRequestException("Attribute `packages` is not allowed")
         if( !v2 && req.containerFile && req.freeze && (!req.buildRepository || req.buildRepository==buildConfig.defaultPublicRepository) )
             throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode")
-        
+        if( !v2 && req.nameStrategy )
+            throw new BadRequestException("Attribute `nameStrategy` is not allowed by legacy container endpoint")
+
         if( v2 && req.packages ) {
             // generate the container file required to assemble the container
             final generated = containerFileFromPackages(req.packages, req.formatSingularity())
@@ -242,6 +246,16 @@ class ContainerController {
         }
     }
 
+    protected String publicRepo(SubmitContainerTokenRequest req) {
+        if( !buildConfig.defaultPublicRepository )
+            return null
+        if( buildConfig.defaultPublicRepository.contains('/') )
+            return buildConfig.defaultPublicRepository
+        return !req.nameStrategy || req.nameStrategy==ImageNameStrategy.imageSuffix
+                ? StringUtils.pathConcat(buildConfig.defaultPublicRepository, 'library')
+                : StringUtils.pathConcat(buildConfig.defaultPublicRepository, 'library/build')
+    }
+
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
         if( !req.containerFile )
             throw new BadRequestException("Missing dockerfile content")
@@ -255,16 +269,19 @@ class ContainerController {
         final spackContent = spackFileFromRequest(req)
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
-        final buildRepository = req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository ? buildConfig.defaultPublicRepository : buildConfig.defaultBuildRepository)
+        final buildRepository = req.buildRepository ?: (req.freeze && publicRepo(req) ? publicRepo(req) : buildConfig.defaultBuildRepository)
         final cacheRepository = req.cacheRepository ?: buildConfig.defaultCacheRepository
         final configJson = dockerAuthService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
         final scanId = scanEnabled && format==DOCKER ? LongRndKey.rndHex() : null
         final containerFile = spackContent ? prependBuilderTemplate(containerSpec,format) : containerSpec
+        // use 'imageSuffix' strategy by default for public repo images
+        final nameStrategy = req.nameStrategy==null && buildRepository && buildConfig.defaultPublicRepository && buildRepository.startsWith(buildConfig.defaultPublicRepository) ? ImageNameStrategy.imageSuffix : null
+
         // create a unique digest to identify the build request
         final containerId = BuildRequest.computeDigest(containerFile, condaContent, spackContent, platform, buildRepository, req.buildContext)
-        final targetImage = BuildRequest.makeTarget(format, buildRepository, containerId, condaContent, spackContent)
+        final targetImage = BuildRequest.makeTarget(format, buildRepository, containerId, condaContent, spackContent, nameStrategy)
 
         return new BuildRequest(
                 containerId,
