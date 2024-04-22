@@ -27,14 +27,19 @@ import groovy.transform.EqualsAndHashCode
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.util.NameVersionPair
 import io.seqera.wave.util.RegHelper
+import io.seqera.wave.util.StringUtils
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
-import static io.seqera.wave.util.RegHelper.guessCondaRecipeName
-import static io.seqera.wave.util.RegHelper.guessSpackRecipeName
 import static io.seqera.wave.util.StringUtils.trunc
+import static io.seqera.wave.util.ContainerHelper.guessCondaRecipeName
+import static io.seqera.wave.util.ContainerHelper.guessSpackRecipeName
+
 /**
  * Model a container builder result
  *
@@ -186,29 +191,46 @@ class BuildRequest {
         this.buildId = opts.buildId
     }
 
-    static String makeTarget(BuildFormat format, String repo, String id, @Nullable String condaFile, @Nullable String spackFile) {
+    static String makeTarget(BuildFormat format, String repo, String id, @Nullable String condaFile, @Nullable String spackFile, @Nullable ImageNameStrategy nameStrategy) {
         assert id, "Argument 'id' cannot be null or empty"
         assert repo, "Argument 'repo' cannot be null or empty"
+        assert repo.contains('/'), "Argument 'repo' is not a valid container repository name"
         assert format, "Argument 'format' cannot be null"
 
-        String prefix
+        NameVersionPair tools
         def tag = id
-        if( condaFile && (prefix=guessCondaRecipeName(condaFile)) ) {
-            tag = "${normaliseTag(prefix)}--${id}"
+        if( nameStrategy==null || nameStrategy==ImageNameStrategy.tagPrefix ) {
+            if( condaFile && (tools=guessCondaRecipeName(condaFile,false)) ) {
+                tag = "${normaliseTag(tools.both().join('_'))}--${id}"
+            }
+            else if( spackFile && (tools=guessSpackRecipeName(spackFile,false)) ) {
+                tag = "${normaliseTag(tools.both().join('_'))}--${id}"
+            }
         }
-        else if( spackFile && (prefix=guessSpackRecipeName(spackFile)) ) {
-            tag = "${normaliseTag(prefix)}--${id}"
+        else if( nameStrategy==ImageNameStrategy.imageSuffix )  {
+            if( condaFile && (tools=guessCondaRecipeName(condaFile,true)) ) {
+                repo = StringUtils.pathConcat(repo, normaliseName(tools.names.join('_')))
+                if( tools.versions?.size()==1 && tools.versions[0] )
+                    tag = "${normaliseTag(tools.versions[0])}--${id}"
+            }
+            else if( spackFile && (tools=guessSpackRecipeName(spackFile, true)) ) {
+                repo = StringUtils.pathConcat(repo, normaliseName(tools.names.join('_')))
+                if( tools.versions?.size()==1 && tools.versions[0] )
+                    tag = "${normaliseTag(tools.versions[0])}--${id}"
+            }
+        }
+        else if( nameStrategy!=ImageNameStrategy.none ) {
+            throw new BadRequestException("Unsupported image naming strategy: '${nameStrategy}'")
         }
 
         format==SINGULARITY ? "oras://${repo}:${tag}" : "${repo}:${tag}"
     }
 
-    static protected String normaliseTag(String tag, int maxLength=80) {
+    static protected String normalise0(String tag, int maxLength, String pattern) {
         assert maxLength>0, "Argument maxLength cannot be less or equals to zero"
         if( !tag )
             return null
-        // docker tag only allows [a-z0-9.-_]
-        tag = tag.replaceAll(/[^a-zA-Z0-9_.-]/,'')
+        tag = tag.replaceAll(/$pattern/,'')
         // only allow max 100 chars
         if( tag.length()>maxLength ) {
             // try to tokenize splitting by `_`
@@ -230,6 +252,14 @@ class BuildRequest {
         // remove trailing or leading special chars
         tag = tag.replaceAll(/^(\W|_)+|(\W|_)+$/,'')
         return tag ?: null
+    }
+
+    static protected String normaliseTag(String value, int maxLength=80) {
+        normalise0(value, maxLength, /[^a-zA-Z0-9_.-]/)
+    }
+
+    static protected String normaliseName(String value, int maxLength=255) {
+        value ? normalise0(value.toLowerCase(), maxLength, /[^a-z0-9_.\-\/]/) : null
     }
 
     static String computeDigest(String containerFile, String condaFile, String spackFile, ContainerPlatform platform, String repository, BuildContext buildContext) {

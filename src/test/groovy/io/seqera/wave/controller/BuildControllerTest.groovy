@@ -72,12 +72,12 @@ class BuildControllerTest extends Specification {
 
     def 'should get container build record' () {
         given:
-        final repo = "buildrepo"
+        final repo = "foo.com/repo"
         final containerFile = 'FROM foo:latest'
         final format = BuildFormat.DOCKER
         final platform = ContainerPlatform.of('amd64')
         final containerId = BuildRequest.computeDigest(containerFile, null, null, platform, 'buildrepo', null)
-        final targetImage = BuildRequest.makeTarget(format, repo, containerId, null, null)
+        final targetImage = BuildRequest.makeTarget(format, repo, containerId, null, null, null)
         final build = new BuildRequest(
                 containerId,
                 containerFile,
