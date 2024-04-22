@@ -32,9 +32,7 @@ import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.api.ContainerLayer
-import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.model.ContainerCoordinates
-import org.yaml.snakeyaml.Yaml
 /**
  * Helper methods
  *
@@ -185,103 +183,6 @@ class RegHelper {
         - URI: ${coords.scheme}://${coords.registry}
           Insecure: false
         """.stripIndent()
-    }
-
-    static NameVersionPair guessCondaRecipeName(String condaFileContent, boolean split=false) {
-        if( !condaFileContent )
-            return null
-        try {
-            final yaml = (Map)new Yaml().load(condaFileContent)
-            if( yaml.name ) {
-                final name = yaml.name as String
-                return split
-                        ? new NameVersionPair([name], [null])
-                        : new NameVersionPair([name])
-            }
-
-            if( yaml.dependencies instanceof List ) {
-                final LinkedHashSet<String> versions = new LinkedHashSet<>()
-                final LinkedHashSet<String> result = new LinkedHashSet<>()
-                for( String it : yaml.dependencies ) {
-                    final int p=it.indexOf('::')
-                    if( p!=-1 )
-                        it = it.substring(p+2)
-                    final pair = splitVersion(it, '=><')
-                    if( split ) {
-                        it = pair.v1
-                        versions.add(pair.v2)
-                    }
-                    else if( pair.v2 )
-                        it = "${pair.v1}-${pair.v2}".toString()
-                    if( it )
-                        result.add(it)
-                }
-                return split
-                        ? new NameVersionPair(result, versions)
-                        : new NameVersionPair(result)
-            }
-            return null
-        }
-        catch (Exception e) {
-            log.warn "Unable to infer conda recipe name - cause: ${e.message}", e
-            return null
-        }
-    }
-
-    static Tuple2<String,String> splitVersion(String tool, String sep) {
-        if( !tool )
-            return null
-        final parts = tool.tokenize(sep)
-        return new Tuple2<String, String>(parts[0], parts[1])
-    }
-
-    static NameVersionPair guessSpackRecipeName(String spackFileContent, boolean split=false) {
-        if( !spackFileContent )
-            return null
-        try {
-            final yaml = new Yaml().load(spackFileContent) as Map
-            final spack = yaml.spack as Map
-
-            if( !spack ){
-                throw new BadRequestException('Malformed Spack environment file - missing "spack:" section')
-            }
-            if( !spack.specs ){
-                throw new BadRequestException('Malformed Spack environment file - missing "spack.specs:" section')
-            }
-
-            if( spack.specs instanceof List ) {
-                final LinkedHashSet<String> result = new LinkedHashSet()
-                final LinkedHashSet<String> versions = new LinkedHashSet()
-                for( String it : spack.specs ) {
-                    final p = it.indexOf(' ')
-                    // remove everything after the first blank because they are supposed package directives
-                    if( p!=-1 )
-                        it = it.substring(0,p)
-                    if( split ) {
-                        final pair = splitVersion(it, '@')
-                        it = pair.v1
-                        versions.add(pair.v2)
-                    }
-                    else {
-                        // replaces '@' version separator with `-`
-                        it = it.replace('@','-')
-                    }
-                    if( it )
-                        result.add(it)
-                }
-                return split
-                        ? new NameVersionPair(result, versions)
-                        : new NameVersionPair(result)
-            }
-            return null
-        }
-        catch (BadRequestException e) {
-            throw  e
-        }
-        catch (Throwable e) {
-            log.warn "Unable to infer spack recipe name - cause: ${e.message}", e
-            return null
-        }
     }
 
     static String sipHash(LinkedHashMap<String,String> values) {

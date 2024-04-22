@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.controller
+package io.seqera.wave.util
 
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -27,6 +27,7 @@ import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.config.CondaOpts
 import io.seqera.wave.config.SpackOpts
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.token.TokenData
 /**
@@ -405,5 +406,91 @@ class ContainerHelperTest extends Specification {
         'http://foo.com'                | 'http://foo.com'
         'https://api.tower.nf'          | 'https://api.cloud.seqera.io'
         'https://api.stage-tower.net'   | 'https://api.cloud.stage-seqera.io'
+    }
+
+    def 'should find conda name with named recipe' () {
+        given:
+        def CONDA = '''\
+            name: rnaseq-nf
+            channels:
+              - defaults
+              - bioconda
+              - conda-forge
+            dependencies:
+              # Default bismark
+              - salmon=1.6.0
+              - fastqc=0.11.9
+              - multiqc=1.11
+            '''.stripIndent(true)
+
+        expect:
+        ContainerHelper.guessCondaRecipeName(null) == null
+        ContainerHelper.guessCondaRecipeName(CONDA) == new NameVersionPair(['rnaseq-nf'])
+        ContainerHelper.guessCondaRecipeName(CONDA,true) == new NameVersionPair(['rnaseq-nf'], [null])
+    }
+
+    def 'should find conda name with anonymous recipe' () {
+        given:
+        def CONDA = '''\
+            channels:
+              - defaults
+              - bioconda
+              - conda-forge
+            dependencies:
+              # Default bismark
+              - salmon>=1.6.0
+              - fastqc<=0.11.9
+              - bioconda::multiqc=1.11
+              - samtools
+              - bwa>0.1
+              - bowtie2<0.2
+            '''.stripIndent(true)
+
+        expect:
+        ContainerHelper.guessCondaRecipeName(CONDA) == new NameVersionPair(['salmon-1.6.0', 'fastqc-0.11.9', 'multiqc-1.11', 'samtools', 'bwa-0.1', 'bowtie2-0.2'] as Set)
+        and:
+        ContainerHelper.guessCondaRecipeName(CONDA,true) == new NameVersionPair(['salmon', 'fastqc', 'multiqc', 'samtools', 'bwa', 'bowtie2'] as Set, ['1.6.0','0.11.9','1.11', null, '0.1','0.2'] as Set)
+    }
+
+    def 'should find spack recipe names from spack yaml file' () {
+        def SPACK = '''\
+            spack:
+              specs: [bwa@0.7.15, salmon@1.1.1, nano@1.0 x=one]
+              concretizer: {unify: true, reuse: true}
+            '''.stripIndent(true)
+
+        expect:
+        ContainerHelper.guessSpackRecipeName(null) == null
+        ContainerHelper.guessSpackRecipeName(SPACK) == new NameVersionPair(['bwa-0.7.15', 'salmon-1.1.1', 'nano-1.0'] as Set)
+        and:
+        ContainerHelper.guessSpackRecipeName(SPACK,true) == new NameVersionPair(['bwa', 'salmon', 'nano'] as Set, ['0.7.15', '1.1.1', '1.0'] as Set)
+    }
+
+    def 'should throw an exception when spack section is not present in spack yaml file' () {
+        def SPACK = '''\
+              specs: [bwa@0.7.15, salmon@1.1.1, nano@1.0 x=one]
+              concretizer: {unify: true, reuse: true}
+            '''.stripIndent(true)
+
+        when:
+        ContainerHelper.guessSpackRecipeName(SPACK)
+        then:
+        def e = thrown(BadRequestException)
+        and:
+        e.message == 'Malformed Spack environment file - missing "spack:" section'
+    }
+
+    def 'should throw an exception when spack.specs section is not present in spack yaml file' () {
+        def SPACK = '''\
+            spack:
+              concretizer: {unify: true, reuse: true}
+            '''.stripIndent(true)
+
+        when:
+        ContainerHelper.guessSpackRecipeName(SPACK)
+        then:
+        def e = thrown(BadRequestException)
+        and:
+        e.message == 'Malformed Spack environment file - missing "spack.specs:" section'
     }
 }

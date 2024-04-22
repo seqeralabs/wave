@@ -36,9 +36,10 @@ import io.seqera.wave.util.RegHelper
 import io.seqera.wave.util.StringUtils
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
-import static io.seqera.wave.util.RegHelper.guessCondaRecipeName
-import static io.seqera.wave.util.RegHelper.guessSpackRecipeName
 import static io.seqera.wave.util.StringUtils.trunc
+import static io.seqera.wave.util.ContainerHelper.guessCondaRecipeName
+import static io.seqera.wave.util.ContainerHelper.guessSpackRecipeName
+
 /**
  * Model a container builder result
  *

@@ -76,15 +76,15 @@ import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
 import static io.seqera.wave.WaveDefault.TOWER
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
-import static ContainerHelper.condaFileFromRequest
-import static ContainerHelper.decodeBase64OrFail
-import static ContainerHelper.spackFileFromRequest
+import static io.seqera.wave.util.ContainerHelper.condaFileFromRequest
+import static io.seqera.wave.util.ContainerHelper.decodeBase64OrFail
+import static io.seqera.wave.util.ContainerHelper.spackFileFromRequest
 import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
 
-import static io.seqera.wave.controller.ContainerHelper.makeResponseV2
-import static io.seqera.wave.controller.ContainerHelper.makeResponseV1
-import static io.seqera.wave.controller.ContainerHelper.patchPlatformEndpoint
-import static io.seqera.wave.controller.ContainerHelper.containerFileFromPackages
+import static io.seqera.wave.util.ContainerHelper.makeResponseV2
+import static io.seqera.wave.util.ContainerHelper.makeResponseV1
+import static io.seqera.wave.util.ContainerHelper.patchPlatformEndpoint
+import static io.seqera.wave.util.ContainerHelper.containerFileFromPackages
 import static java.util.concurrent.CompletableFuture.completedFuture
 
 /**
