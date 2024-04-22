@@ -22,7 +22,8 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 
 /**
- * Helper class to handle tool names and version
+ * Helper class to handle tool names and versions
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
