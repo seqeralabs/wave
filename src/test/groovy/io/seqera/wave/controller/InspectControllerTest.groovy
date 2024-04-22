@@ -82,6 +82,6 @@ class InspectControllerTest extends Specification {
         client.toBlocking().exchange(req, ContainerInspectResponse)
         then:
         def e = thrown(HttpClientResponseException)
-        e.message == 'Missing \'containerImage\' parameter'
+        e.message == 'Missing \'containerImage\' attribute'
     }
 }
