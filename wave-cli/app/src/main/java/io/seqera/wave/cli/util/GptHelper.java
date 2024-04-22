@@ -32,6 +32,7 @@ import io.seqera.wave.api.PackagesSpec;
 import io.seqera.wave.cli.exception.BadClientResponseException;
 import io.seqera.wave.cli.json.JsonHelper;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,20 +69,11 @@ public class GptHelper {
     }
 
     static PackagesSpec grabPackages0(String prompt) {
-        final Map<String,Object> items = Map.of("type","string", "description", "A Conda package specification provided as the pair name and version, separated by the equals character, for example: foo=1.2.3");
-        final Map<String,Object> PACKAGES = Map.of("type", "array", "description", "A list of one more Conda package", "items", items);
-        final Map<String,Object> CHANNELS = Map.of("type", "array", "description", "A list of one more Conda channels", "items", Map.of("type", "string", "description", "A Conda channel name"));
-        final Map<String,Map<String,Object>> properties = Map.of("packages", PACKAGES, "channels", CHANNELS);
-        final ToolParameters params = ToolParameters
-                .builder()
-                .properties(properties)
-                .required(List.of("packages"))
-                .build();
         final ToolSpecification toolSpec = ToolSpecification
                 .builder()
                 .name("wave_container")
-                .description(prompt)
-                .parameters(params)
+                .description("This function get a container with one or more tools specified via Conda packages. If the container image does not yet exists it does create it to fulfill the requirement")
+                .parameters(getToolParameters())
                 .build();
         final AiMessage msg = AiMessage.from(prompt);
 
@@ -94,6 +86,27 @@ public class GptHelper {
         log.debug("GPT response: {}", json);
 
         return jsonToPackageSpec(json);
+    }
+
+    protected static ToolParameters getToolParameters() {
+        return ToolParameters
+                .builder()
+                .properties(getToolProperties())
+                .required(List.of("packages"))
+                .build();
+    }
+
+    @NotNull
+    protected static Map<String, Map<String, Object>> getToolProperties() {
+        final Map<String,Object> PACKAGES = Map.of(
+                "type", "array",
+                "description", "A list of one more Conda package",
+                "items", Map.of("type","string", "description", "A Conda package specification provided as the pair name and version, separated by the equals character, for example: foo=1.2.3"));
+        final Map<String,Object> CHANNELS = Map.of(
+                "type", "array",
+                "description", "A list of one more Conda channels",
+                "items", Map.of("type", "string", "description", "A Conda channel name"));
+        return Map.of("packages", PACKAGES, "channels", CHANNELS);
     }
 
     static protected PackagesSpec jsonToPackageSpec(String json) {
