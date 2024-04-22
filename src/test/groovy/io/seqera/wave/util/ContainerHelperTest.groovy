@@ -493,4 +493,51 @@ class ContainerHelperTest extends Specification {
         and:
         e.message == 'Malformed Spack environment file - missing "spack.specs:" section'
     }
+
+    @Unroll
+    def 'should normalise tag' () {
+        expect:
+        ContainerHelper.normaliseTag(TAG,12)  == EXPECTED
+        where:
+        TAG                     | EXPECTED
+        null                    | null
+        ''                      | null
+        and:
+        'foo'                   | 'foo'
+        'FOO123'                | 'FOO123'
+        'aa-bb_cc.dd'           | 'aa-bb_cc.dd'
+        and:
+        'one(two)three'         | 'onetwothree'
+        '12345_67890_12345'     | '12345_67890'
+        '123456789012345_1'     | '123456789012'
+        and:
+        'aa__'                  | 'aa'
+        'aa..--__'              | 'aa'
+        '..--__bb'              | 'bb'
+        '._-xyz._-'             | 'xyz'
+    }
+
+    @Unroll
+    def 'should normalise name' () {
+        expect:
+        ContainerHelper.normaliseName(NAME, 12)  == EXPECTED
+        where:
+        NAME                    | EXPECTED
+        null                    | null
+        ''                      | null
+        and:
+        'foo'                   | 'foo'
+        'foo/bar'               | 'foo/bar'
+        'FOO123'                | 'foo123'
+        'aa-bb_cc.dd'           | 'aa-bb_cc.dd'
+        and:
+        'one(two)three'         | 'onetwothree'
+        '12345_67890_12345'     | '12345_67890'
+        '123456789012345_1'     | '123456789012'
+        and:
+        'aa__'                  | 'aa'
+        'aa..--__'              | 'aa'
+        '..--__bb'              | 'bb'
+        '._-xyz._-'             | 'xyz'
+    }
 }

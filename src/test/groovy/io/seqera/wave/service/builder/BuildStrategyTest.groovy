@@ -25,6 +25,7 @@ import java.nio.file.Path
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.util.ContainerHelper
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -117,8 +118,8 @@ class BuildStrategyTest extends Specification {
         def content = 'FROM foo:latest'
         def workspace = Path.of("some/path")
         def buildrepo = 'foo.com/repo'
-        def containerId = BuildRequest.computeDigest(content, null, null, ContainerPlatform.of('amd64'), buildrepo, null)
-        def targetImage = BuildRequest.makeTarget(BuildFormat.DOCKER, buildrepo, containerId, null, null, null)
+        def containerId = ContainerHelper.makeContainerId(content, null, null, ContainerPlatform.of('amd64'), buildrepo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildrepo, containerId, null, null, null)
         def build = new BuildRequest(
                 containerId,
                 content,

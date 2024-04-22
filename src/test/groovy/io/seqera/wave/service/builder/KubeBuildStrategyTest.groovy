@@ -31,6 +31,7 @@ import io.seqera.wave.service.k8s.K8sServiceImpl
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
+import io.seqera.wave.util.ContainerHelper
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -66,8 +67,8 @@ class KubeBuildStrategyTest extends Specification {
         def dockerfile = 'from foo'
 
         when:
-        def containerId = BuildRequest.computeDigest(dockerfile, null, null, ContainerPlatform.of('amd64'), repo, null)
-        def targetImage = BuildRequest.makeTarget(BuildFormat.DOCKER, repo, containerId, null, null, null)
+        def containerId = ContainerHelper.makeContainerId(dockerfile, null, null, ContainerPlatform.of('amd64'), repo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, repo, containerId, null, null, null)
         def req = new BuildRequest(containerId, dockerfile, null, null, PATH, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.DOCKER).withBuildId('1')
         Files.createDirectories(req.workDir)
 
@@ -98,8 +99,8 @@ class KubeBuildStrategyTest extends Specification {
         def dockerfile = 'from foo'
 
         when:'getting docker with amd64 arch in build request'
-        def containerId = BuildRequest.computeDigest(dockerfile, null, null, ContainerPlatform.of('amd64'), repo, null)
-        def targetImage = BuildRequest.makeTarget(BuildFormat.DOCKER, repo, containerId, null, null, null)
+        def containerId = ContainerHelper.makeContainerId(dockerfile, null, null, ContainerPlatform.of('amd64'), repo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, repo, containerId, null, null, null)
         def req = new BuildRequest(containerId, dockerfile, null, null, PATH, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER).withBuildId('1')
 
         then: 'should return kaniko image'
@@ -125,8 +126,8 @@ class KubeBuildStrategyTest extends Specification {
         def repo = 'docker.io/wave'
         def cache = 'docker.io/cache'
         def dockerfile = 'from foo'
-        def containerId = BuildRequest.computeDigest(dockerfile, null, null, ContainerPlatform.of('amd64'), repo, null)
-        def targetImage = BuildRequest.makeTarget(BuildFormat.DOCKER, repo, containerId, null, null, null)
+        def containerId = ContainerHelper.makeContainerId(dockerfile, null, null, ContainerPlatform.of('amd64'), repo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, repo, containerId, null, null, null)
         def req = new BuildRequest(containerId, dockerfile, null, null, PATH, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER).withBuildId('1')
 
         when:

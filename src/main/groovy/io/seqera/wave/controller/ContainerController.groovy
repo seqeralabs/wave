@@ -76,17 +76,17 @@ import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
 import static io.seqera.wave.WaveDefault.TOWER
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
+import static io.seqera.wave.util.ContainerHelper.makeContainerId
 import static io.seqera.wave.util.ContainerHelper.condaFileFromRequest
+import static io.seqera.wave.util.ContainerHelper.containerFileFromPackages
 import static io.seqera.wave.util.ContainerHelper.decodeBase64OrFail
+import static io.seqera.wave.util.ContainerHelper.makeResponseV1
+import static io.seqera.wave.util.ContainerHelper.makeResponseV2
+import static io.seqera.wave.util.ContainerHelper.makeTargetImage
+import static io.seqera.wave.util.ContainerHelper.patchPlatformEndpoint
 import static io.seqera.wave.util.ContainerHelper.spackFileFromRequest
 import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
-
-import static io.seqera.wave.util.ContainerHelper.makeResponseV2
-import static io.seqera.wave.util.ContainerHelper.makeResponseV1
-import static io.seqera.wave.util.ContainerHelper.patchPlatformEndpoint
-import static io.seqera.wave.util.ContainerHelper.containerFileFromPackages
 import static java.util.concurrent.CompletableFuture.completedFuture
-
 /**
  * Implement a controller to receive container token requests
  * 
@@ -280,8 +280,8 @@ class ContainerController {
         final nameStrategy = req.nameStrategy==null && buildRepository && buildConfig.defaultPublicRepository && buildRepository.startsWith(buildConfig.defaultPublicRepository) ? ImageNameStrategy.imageSuffix : null
 
         // create a unique digest to identify the build request
-        final containerId = BuildRequest.computeDigest(containerFile, condaContent, spackContent, platform, buildRepository, req.buildContext)
-        final targetImage = BuildRequest.makeTarget(format, buildRepository, containerId, condaContent, spackContent, nameStrategy)
+        final containerId = makeContainerId(containerFile, condaContent, spackContent, platform, buildRepository, req.buildContext)
+        final targetImage = makeTargetImage(format, buildRepository, containerId, condaContent, spackContent, nameStrategy)
 
         return new BuildRequest(
                 containerId,
