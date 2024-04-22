@@ -18,21 +18,18 @@
 
 package io.seqera.wave.service.builder
 
-import spock.lang.Shared
+
 import spock.lang.Specification
-import spock.lang.Unroll
 
 import java.nio.file.Path
 import java.time.OffsetDateTime
 
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
-import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import io.seqera.wave.util.ContainerHelper
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -280,105 +277,6 @@ class BuildRequestTest extends Specification {
         and:
         req1.offsetId == OffsetDateTime.now().offset.id
         req7.offsetId == 'UTC+2'
-    }
-
-    def 'should make request target' () {
-        expect:
-        ContainerHelper.makeTargetImage(BuildFormat.DOCKER, 'quay.io/org/name', '12345', null, null, null)
-                == 'quay.io/org/name:12345'
-        and:
-        ContainerHelper.makeTargetImage(BuildFormat.SINGULARITY, 'quay.io/org/name', '12345', null, null, null)
-                == 'oras://quay.io/org/name:12345'
-
-        and:
-        def conda = '''\
-        dependencies:
-        - salmon=1.2.3
-        '''
-        ContainerHelper.makeTargetImage(BuildFormat.DOCKER, 'quay.io/org/name', '12345', conda, null, null)
-                == 'quay.io/org/name:salmon-1.2.3--12345'
-
-        and:
-        def spack = '''\
-         spack:
-            specs: [bwa@0.7.15]
-        '''
-        ContainerHelper.makeTargetImage(BuildFormat.DOCKER, 'quay.io/org/name', '12345', null, spack, null)
-                == 'quay.io/org/name:bwa-0.7.15--12345'
-
-    }
-
-    @Shared def CONDA1 = '''\
-                dependencies:
-                    - samtools=1.0
-                '''
-
-    @Shared def CONDA2 = '''\
-                dependencies:
-                    - samtools=1.0
-                    - bamtools=2.0
-                    - multiqc=1.15
-                '''
-
-    @Shared def SPACK1 = '''\
-            spack:
-              specs: [bwa@0.7.15]
-            '''
-
-    @Shared def SPACK2 = '''\
-            spack:
-              specs: [bwa@0.7.15, salmon@1.1.1]
-        '''
-
-    @Unroll
-    def 'should make request target with name strategy' () {
-        expect:
-        ContainerHelper.makeTargetImage(
-                BuildFormat.valueOf(FORMAT),
-                REPO,
-                ID,
-                CONDA,
-                SPACK,
-                STRATEGY ? ImageNameStrategy.valueOf(STRATEGY) : null) == EXPECTED
-
-        where:
-        FORMAT        | REPO              | ID        | CONDA | SPACK | STRATEGY      | EXPECTED
-        'DOCKER'      | 'foo.com/build'   | '123'     | null  | null  | null          | 'foo.com/build:123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | null  | null  | 'none'        | 'foo.com/build:123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | null  | null  | 'tagPrefix'   | 'foo.com/build:123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | null  | null  | 'imageSuffix' | 'foo.com/build:123'
-        and:
-        'SINGULARITY' | 'foo.com/build'   | '123'     | null  | null  | null          | 'oras://foo.com/build:123'
-        'SINGULARITY' | 'foo.com/build'   | '123'     | null  | null  | 'none'        | 'oras://foo.com/build:123'
-        'SINGULARITY' | 'foo.com/build'   | '123'     | null  | null  | 'tagPrefix'   | 'oras://foo.com/build:123'
-        'SINGULARITY' | 'foo.com/build'   | '123'     | null  | null  | 'imageSuffix' | 'oras://foo.com/build:123'
-        and:
-        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA1| null  | null          | 'foo.com/build:samtools-1.0--123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA1| null  | 'none'        | 'foo.com/build:123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA1| null  | 'tagPrefix'   | 'foo.com/build:samtools-1.0--123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA1| null  | 'imageSuffix' | 'foo.com/build/samtools:1.0--123'
-        and:
-        'SINGULARITY' | 'foo.com/build'   | '123'     | CONDA1| null  | null          | 'oras://foo.com/build:samtools-1.0--123'
-        'SINGULARITY' | 'foo.com/build'   | '123'     | CONDA1| null  | 'none'        | 'oras://foo.com/build:123'
-        'SINGULARITY' | 'foo.com/build'   | '123'     | CONDA1| null  | 'tagPrefix'   | 'oras://foo.com/build:samtools-1.0--123'
-        'SINGULARITY' | 'foo.com/build'   | '123'     | CONDA1| null  | 'imageSuffix' | 'oras://foo.com/build/samtools:1.0--123'
-        and:
-        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA2| null  | null          | 'foo.com/build:samtools-1.0_bamtools-2.0_multiqc-1.15--123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA2| null  | 'none'        | 'foo.com/build:123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA2| null  | 'tagPrefix'   | 'foo.com/build:samtools-1.0_bamtools-2.0_multiqc-1.15--123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA2| null  | 'imageSuffix' | 'foo.com/build/samtools_bamtools_multiqc:123'
-
-        and:
-        'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK1| null          | 'foo.com/build:bwa-0.7.15--123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK1| 'none'        | 'foo.com/build:123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK1| 'tagPrefix'   | 'foo.com/build:bwa-0.7.15--123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK1| 'imageSuffix' | 'foo.com/build/bwa:0.7.15--123'
-
-        and:
-        'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK2| null          | 'foo.com/build:bwa-0.7.15_salmon-1.1.1--123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK2| 'none'        | 'foo.com/build:123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK2| 'tagPrefix'   | 'foo.com/build:bwa-0.7.15_salmon-1.1.1--123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK2| 'imageSuffix' | 'foo.com/build/bwa_salmon:123'
     }
 
     def 'should parse legacy id' () {
