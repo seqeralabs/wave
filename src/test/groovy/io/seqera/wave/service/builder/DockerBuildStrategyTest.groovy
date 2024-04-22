@@ -52,7 +52,7 @@ class DockerBuildStrategyTest extends Specification {
                 '--rm',
                 '-v', '/work/foo:/work/foo',
                 '--name', 'build-1234',
-                'gcr.io/kaniko-project/executor:v1.19.2']
+                'gcr.io/kaniko-project/executor:v1.22.0']
 
         when:
         cmd = service.cmdForKaniko(work, Path.of('/foo/creds.json'), null, ContainerPlatform.of('arm64'), '1234')
@@ -64,7 +64,7 @@ class DockerBuildStrategyTest extends Specification {
                 '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
                 '--platform', 'linux/arm64',
                 '--name', 'build-1234',
-                'gcr.io/kaniko-project/executor:v1.19.2']
+                'gcr.io/kaniko-project/executor:v1.22.0']
 
         when:
         cmd = service.cmdForKaniko(work, Path.of('/foo/creds.json'), spackConfig, null, '1234')
@@ -76,7 +76,7 @@ class DockerBuildStrategyTest extends Specification {
                 '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
                 '-v', '/host/spack/key:/opt/spack/key:ro',
                 '--name', 'build-1234',
-                'gcr.io/kaniko-project/executor:v1.19.2']
+                'gcr.io/kaniko-project/executor:v1.22.0']
 
         cleanup:
         ctx.close()
@@ -105,7 +105,7 @@ class DockerBuildStrategyTest extends Specification {
                 '-v', '/work/creds.json:/kaniko/.docker/config.json:ro',
                 '--platform', 'linux/amd64',
                 '--name', 'build-1234',
-                'gcr.io/kaniko-project/executor:v1.19.2',
+                'gcr.io/kaniko-project/executor:v1.22.0',
                 '--dockerfile', '/work/foo/89fb83ce6ec8627b/Containerfile',
                 '--context', '/work/foo/89fb83ce6ec8627b/context',
                 '--destination', 'repo:89fb83ce6ec8627b',
