@@ -1,0 +1,48 @@
+## Wave Usage Metrics
+
+Wave uses Redis to store its usage metrics for a specific date and/or a specific organisation.
+
+These are stored using the following keys:
+
+1. pulls/d/YYYY-MM-DD
+2. pulls/o/<organization>
+3. pulls/o/<organization>/d/YYYY-MM-DD
+4. fusion/d/YYYY-MM-DD
+5. fusion/o/<organization>
+6. fusion/o/<organization>/d/YYYY-MM-DD
+7. builds/d/YYYY-MM-DD
+8. builds/o/<organization>
+9. builds/o/<organization>/d/YYYY-MM-DD
+
+### Functionality
+
+#### Store Builds
+
+When wave launches a build, it also increments values of the following keys in Redis
+
+1. builds/d/YYYY-MM-DD
+2. builds/o/<organization>
+3. builds/o/<organization>/d/YYYY-MM-DD
+
+#### Store Pulls
+
+Wave tracks the container image pulls using io.seqera.wave.filter.PullMetricsRequestsFilter, where it checks if content-type header contains one of the following values:
+
+1. application/vnd.docker.distribution.manifest.v2+json
+2. application/vnd.oci.image.manifest.v1+json
+3. application/vnd.docker.distribution.manifest.v1+prettyjws
+4. application/vnd.docker.distribution.manifest.v1+json
+
+Then it increments values of the following keys in Redis:
+
+1. pulls/d/YYYY-MM-DD
+2. pulls/o/<organization>
+3. pulls/o/<organization>/d/YYYY-MM-DD
+
+Then it checks, if the pulled container has fusion, if its does then it increments values of the following keys in Redis:
+
+1. fusion/d/YYYY-MM-DD
+2. fusion/o/<organization>
+3. fusion/o/<organization>/d/YYYY-MM-DD
+
+Note: Keys with organization are only incremented if the user is authenticated means there is tower token in the request.
