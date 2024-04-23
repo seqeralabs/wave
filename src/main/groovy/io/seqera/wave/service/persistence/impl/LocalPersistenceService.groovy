@@ -20,7 +20,6 @@ package io.seqera.wave.service.persistence.impl
 
 import groovy.transform.CompileStatic
 import io.seqera.wave.core.ContainerDigestPair
-
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
