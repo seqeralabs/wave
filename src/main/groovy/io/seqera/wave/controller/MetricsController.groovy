@@ -69,6 +69,7 @@ class MetricsController {
     @Inject
     private MetricsService metricsService
 
+    @Deprecated
     @Get(uri = "/v1alpha1/metrics/builds/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getBuildMetrics(@PathVariable String metric,
                                     @Nullable @QueryValue Boolean success,
@@ -85,6 +86,7 @@ class MetricsController {
         return HttpResponse.ok(new GetBuildsMetricsResponse(result))
     }
 
+    @Deprecated
     @Get(uri = "/v1alpha1/metrics/builds", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getBuildsCount(@Nullable @QueryValue Boolean success,
                                    @Nullable @QueryValue String startDate,
@@ -97,6 +99,7 @@ class MetricsController {
         return HttpResponse.ok(new GetBuildsCountResponse(count))
     }
 
+    @Deprecated
     @Get(uri = "/v1alpha1/metrics/pulls/{metric}", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getPullMetrics(@PathVariable String metric,
                                     @Nullable @QueryValue String startDate,
@@ -114,6 +117,7 @@ class MetricsController {
 
     }
 
+    @Deprecated
     @Get(uri = "/v1alpha1/metrics/pulls", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getPullsCount(@Nullable @QueryValue String startDate,
                                   @Nullable @QueryValue String endDate,

@@ -23,6 +23,7 @@ package io.seqera.wave.service.metric
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
+@Deprecated
 interface MetricService {
     /**
      * get the builds count per metric

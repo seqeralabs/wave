@@ -33,6 +33,7 @@ import jakarta.inject.Singleton
  */
 @Slf4j
 @Singleton
+@Deprecated
 @CompileStatic
 class MetricServiceImpl implements MetricService {
     @Inject

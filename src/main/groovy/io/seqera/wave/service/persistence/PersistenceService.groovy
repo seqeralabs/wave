@@ -152,6 +152,7 @@ interface PersistenceService {
      * @param MetricFilters , to filter records extracted from storage
      * @return The {@link Map} of [{@link Metric}, total build count per metric ]
      */
+    @Deprecated
     Map<String, Long> getBuildsCountByMetric(Metric metric, MetricFilter filter)
 
     /**
@@ -160,6 +161,7 @@ interface PersistenceService {
      * @param MetricFilters , to filter records extracted from storage
      * @return The {@link Long} of total build count
      */
+    @Deprecated
     Long getBuildsCount(MetricFilter filter)
 
     /**
@@ -169,6 +171,7 @@ interface PersistenceService {
      * @param MetricFilters , to filter records extracted from storage
      * @return The {@link Map} of [{@link Metric}, total pull count per metric ]
      */
+    @Deprecated
     Map<String, Long> getPullsCountByMetric(Metric metric, MetricFilter filter)
 
     /**
@@ -177,5 +180,6 @@ interface PersistenceService {
      * @param MetricFilters , to filter records extracted from storage
      * @return The {@link Long} of total pull count
      */
+    @Deprecated
     Long getPullsCount(MetricFilter filter)
 }
