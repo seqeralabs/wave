@@ -47,9 +47,9 @@ Then it checks, if the pulled container has fusion, if its does then it incremen
 
 ### How keys are created
 
-1. When every a request is made to wave, first it increments the key with date. for example `builds/d/2024-04-23`.
-2. Keys with organization are only incremented if the user is authenticated means there is tower token in the request.
-3. Wave extract the domain from the email id (For example: `test_metrics@seqera.io`) of the user, which it gets from tower using the access token.
+1. When a request is made to wave, first it increments the key with date. for example `builds/d/2024-04-23`.
+2. Keys with organization are only incremented if the user is authenticated means there is seqera platform token in the request.
+3. Wave extract the domain from the email id (For example: `test_metrics@seqera.io`) of the user, which it gets from seqera platform using the access token.
 4. The organization value will be `seqera.io`
 5. Then it increments the key with organization. For example: `builds/o/seqera.io/d/2024-04-23` and `builds/o/seqera.io`
 
