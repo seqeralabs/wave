@@ -20,11 +20,8 @@ package io.seqera.wave.controller
 
 import spock.lang.Specification
 
-import java.time.Duration
-import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
 
 import io.micronaut.context.annotation.Property
 import io.micronaut.http.HttpRequest
@@ -32,15 +29,7 @@ import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.api.ContainerConfig
-import io.seqera.wave.api.ContainerLayer
-import io.seqera.wave.api.SubmitContainerTokenRequest
-import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.metric.MetricsService
-import io.seqera.wave.service.persistence.PersistenceService
-import io.seqera.wave.service.persistence.WaveBuildRecord
-import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
