@@ -19,13 +19,19 @@
 package io.seqera.wave.service.builder
 
 import java.time.Duration
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.encoder.MoshiEncodeStrategy
+import io.seqera.wave.exception.BuildTimeoutException
 import io.seqera.wave.service.cache.AbstractCacheStore
 import io.seqera.wave.service.cache.impl.CacheProvider
+import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 /**
  * Implements Cache store for {@link BuildResult}
@@ -38,6 +44,10 @@ import jakarta.inject.Singleton
 class BuildCacheStore extends AbstractCacheStore<BuildResult> implements BuildStore {
 
     private BuildConfig buildConfig
+
+    @Inject
+    @Named(TaskExecutors.IO)
+    ExecutorService ioExecutor
 
     BuildCacheStore(CacheProvider<String, String> provider, BuildConfig buildConfig ) {
         super(provider, new MoshiEncodeStrategy<BuildResult>() {})
@@ -92,4 +102,41 @@ class BuildCacheStore extends AbstractCacheStore<BuildResult> implements BuildSt
         remove(imageName)
     }
 
+    @Override
+    CompletableFuture<BuildResult> awaitBuild(String imageName) {
+        final result = getBuild(imageName)
+        if( !result )
+            return null
+        return CompletableFuture<BuildResult>.supplyAsync(() -> Waiter.awaitCompletion(this,imageName,result), ioExecutor)
+    }
+
+    /**
+     * Implement waiter common logic
+     */
+    private static class Waiter {
+
+        static BuildResult awaitCompletion(BuildStore store, String imageName, BuildResult current) {
+            final beg = System.currentTimeMillis()
+            // add 10% delay gap to prevent race condition with timeout expiration
+            final max = (store.timeout.toMillis() * 1.10) as long
+            while( true ) {
+                if( current==null ) {
+                    return BuildResult.unknown()
+                }
+
+                // check is completed
+                if( current.done() ) {
+                    return current
+                }
+                // check if it's timed out
+                final delta = System.currentTimeMillis()-beg
+                if( delta > max )
+                    throw new BuildTimeoutException("Build of container '$imageName' timed out")
+                // sleep a bit
+                Thread.sleep(store.delay.toMillis())
+                // fetch the build status again
+                current = store.getBuild(imageName)
+            }
+        }
+    }
 }

@@ -76,6 +76,9 @@ class InspectController {
     @Post("/v1alpha1/inspect")
     CompletableFuture<HttpResponse<ContainerInspectResponse>> inspect(ContainerInspectRequest req) {
 
+        if( !req.containerImage )
+            throw new BadRequestException("Missing 'containerImage' attribute")
+
         // this is needed for backward compatibility with old clients
         if( !req.towerEndpoint ) {
             req.towerEndpoint = towerEndpointUrl
