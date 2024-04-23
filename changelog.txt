@@ -1,4 +1,10 @@
 # Wave changelog
+1.7.1 - 23 Apr 2024
+- Tune thread pools [93e119ee] [0a5d08e7]
+- Added null check for container image name (#465) [30a6bdb6]
+- Move Redis tests config to setupSpec (#462) [d9fb2942]
+- Improve tests [9ab2cf42]
+
 1.7.0 - 22 Apr 2024
 - Improve build container naming strategy (#460) [31d459ed]
 - Helper methods refactor [54d2301b] [052acb32]

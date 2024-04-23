@@ -30,7 +30,6 @@ import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.exception.BuildTimeoutException
 import io.seqera.wave.service.cache.AbstractCacheStore
 import io.seqera.wave.service.cache.impl.CacheProvider
-import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 /**
@@ -45,13 +44,12 @@ class BuildCacheStore extends AbstractCacheStore<BuildResult> implements BuildSt
 
     private BuildConfig buildConfig
 
-    @Inject
-    @Named(TaskExecutors.IO)
-    ExecutorService ioExecutor
+    private ExecutorService ioExecutor
 
-    BuildCacheStore(CacheProvider<String, String> provider, BuildConfig buildConfig ) {
+    BuildCacheStore(CacheProvider<String, String> provider, BuildConfig buildConfig, @Named(TaskExecutors.IO) ExecutorService ioExecutor) {
         super(provider, new MoshiEncodeStrategy<BuildResult>() {})
         this.buildConfig = buildConfig
+        this.ioExecutor = ioExecutor
     }
 
     @Override
