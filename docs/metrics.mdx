@@ -18,7 +18,7 @@ These are stored using the following keys:
 
 #### Store Builds
 
-When wave launches a build, it also increments values of the following keys in Redis:
+When Wave launches a build, it also increments the values of following keys in Redis:
 
 1. builds/d/YYYY-MM-DD
 2. builds/o/<org>
@@ -33,13 +33,13 @@ Wave tracks the container image pulls using io.seqera.wave.filter.PullMetricsReq
 3. application/vnd.docker.distribution.manifest.v1+prettyjws
 4. application/vnd.docker.distribution.manifest.v1+json
 
-Then it increments values of the following keys in Redis:
+Then it increments the values of following keys in Redis:
 
 1. pulls/d/YYYY-MM-DD
 2. pulls/o/<org>
 3. pulls/o/<org>/d/YYYY-MM-DD
 
-Then it checks, if the pulled container has fusion, if its does then it increments values of the following keys in Redis:
+Then, if the pulled container uses fusion, it increments the values of following keys in Redis:
 
 1. fusion/d/YYYY-MM-DD
 2. fusion/o/<org>
