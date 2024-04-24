@@ -174,6 +174,5 @@ class MetricsServiceImplTest extends Specification {
         fusionOrgCounts.metrics == MetricConstants.PREFIX_FUSION
         fusionOrgCounts.count == 2
         fusionOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
-
     }
 }

@@ -52,7 +52,7 @@ abstract class AbstractCounterStore implements CounterStore {
     }
 
     @Override
-    Map<String, Long> getAllMatchingEntries(String key) {
-        provider.getAllMatchingEntries(getPrefix(), key)
+    Map<String, Long> getAllMatchingEntries(String pattern) {
+        provider.getAllMatchingEntries(getPrefix(), pattern)
     }
 }

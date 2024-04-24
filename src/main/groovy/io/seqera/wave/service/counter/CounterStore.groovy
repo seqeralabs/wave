@@ -30,8 +30,8 @@ interface CounterStore {
     Long get(String key)
 
     /**
-     * @param partialKey
-     * @return all the entries whose field matches 'key*
+     * @param pattern
+     * @return all the entries whose field matches 'pattern*'
      */
-    Map<String, Long> getAllMatchingEntries(String key)
+    Map<String, Long> getAllMatchingEntries(String pattern)
 }

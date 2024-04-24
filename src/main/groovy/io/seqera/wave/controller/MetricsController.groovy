@@ -18,6 +18,7 @@
 
 package io.seqera.wave.controller
 
+import java.util.regex.Pattern
 import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
@@ -56,11 +57,13 @@ class MetricsController {
     @Inject
     private MetricsService metricsService
 
+    static Pattern datePattern = Pattern.compile("\\d{4}-\\d{2}-\\d{2}");
+
     @Get(uri = "/v1alpha2/metrics/builds", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getBuildsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
         if(!date && !org)
             return HttpResponse.ok(metricsService.getOrgCount(MetricConstants.PREFIX_BUILDS))
-        validateQueryParams(date, org)
+        validateQueryParams(date)
         final count = metricsService.getBuildsMetrics(date, org)
         return HttpResponse.ok(new GetBuildsCountResponse(count))
     }
@@ -69,7 +72,7 @@ class MetricsController {
     HttpResponse<?> getPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
         if(!date && !org)
             return HttpResponse.ok(metricsService.getOrgCount(MetricConstants.PREFIX_PULLS))
-        validateQueryParams(date, org)
+        validateQueryParams(date)
         final count = metricsService.getPullsMetrics(date, org)
         return HttpResponse.ok(new GetPullsCountResponse(count))
     }
@@ -78,7 +81,7 @@ class MetricsController {
     HttpResponse<?> getFusionPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
         if(!date && !org)
             return HttpResponse.ok(metricsService.getOrgCount(MetricConstants.PREFIX_FUSION))
-        validateQueryParams(date, org)
+        validateQueryParams(date)
         final count = metricsService.getFusionPullsMetrics(date, org)
         return HttpResponse.ok(new GetFusionPullsCountResponse(count))
 
@@ -90,11 +93,8 @@ class MetricsController {
                 .header(WWW_AUTHENTICATE, "Basic realm=Wave Authentication")
     }
 
-    static void validateQueryParams(String date, String org) {
-        if(!date && !org)
-            throw new BadRequestException('Either date or org query parameter must be provided')
-        def pattern = ~/\d{4}-\d{2}-\d{2}/
-        if(date && !(date ==~ pattern)){
+    static void validateQueryParams(String date) {
+        if(date && !datePattern.matcher(date).matches()) {
             throw new BadRequestException('date format should be yyyy-MM-dd')
         }
     }
