@@ -137,4 +137,43 @@ class MetricsServiceImplTest extends Specification {
         'invalid_email'     | null
         null                | null
     }
+
+    def 'should get correct org count'(){
+        given:
+        def localCounterProvider = new LocalCounterProvider()
+        def metricsCounterStore = new MetricsCounterStore(localCounterProvider)
+        def metricsService = new MetricsServiceImpl(metricsCounterStore: metricsCounterStore)
+        def user1 = new User(id: 1, userName: 'foo', email: 'user1@org1.com')
+        def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
+        def platformId1 = new PlatformId(user1, 101)
+        def platformId2 = new PlatformId(user2, 102)
+
+        when:
+        metricsService.incrementBuildsCounter(platformId1)
+        metricsService.incrementBuildsCounter(platformId2)
+        metricsService.incrementBuildsCounter(null)
+        metricsService.incrementPullsCounter(platformId1)
+        metricsService.incrementPullsCounter(platformId2)
+        metricsService.incrementPullsCounter(null)
+        metricsService.incrementFusionPullsCounter(platformId1)
+        metricsService.incrementFusionPullsCounter(platformId2)
+        metricsService.incrementFusionPullsCounter(null)
+        and:
+        def buildOrgCounts = metricsService.getOrgCount(MetricConstants.PREFIX_BUILDS)
+        def pullOrgCounts = metricsService.getOrgCount(MetricConstants.PREFIX_PULLS)
+        def fusionOrgCounts = metricsService.getOrgCount(MetricConstants.PREFIX_FUSION)
+        then:
+        buildOrgCounts.metrics == MetricConstants.PREFIX_BUILDS
+        buildOrgCounts.count == 2
+        buildOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        and:
+        pullOrgCounts.metrics == MetricConstants.PREFIX_PULLS
+        pullOrgCounts.count == 2
+        pullOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        and:
+        fusionOrgCounts.metrics == MetricConstants.PREFIX_FUSION
+        fusionOrgCounts.count == 2
+        fusionOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+
+    }
 }

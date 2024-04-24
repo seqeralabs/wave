@@ -54,4 +54,19 @@ class LocalCounterProviderTest extends Specification {
         localCounterProvider.get('metrics-x', 'foo') == 1
     }
 
+    def 'should get correct org count' () {
+        when:
+        localCounterProvider.inc('metrics/v1', '/builds/o/foo', 1)
+        localCounterProvider.inc('metrics/v1', '/builds/o/bar', 1)
+        localCounterProvider.inc('metrics/v1', '/builds/o/abc', 2)
+        localCounterProvider.inc('metrics/v1', '/pulls/o/foo', 1)
+        localCounterProvider.inc('metrics/v1', '/pulls/o/bar', 2)
+        localCounterProvider.inc('metrics/v1', '/pulls/o/abc', 3)
+        localCounterProvider.inc('metrics/v1', '/pulls/o/abc/date/yyyy-mm-dd', 1)
+
+        then:
+        localCounterProvider.getAllMatchingEntries('metrics/v1', '/pulls/o') ==
+                ['/pulls/o/foo':1, '/pulls/o/bar':2, '/pulls/o/abc':3, '/pulls/o/abc/date/yyyy-mm-dd': 1]
+    }
+
 }

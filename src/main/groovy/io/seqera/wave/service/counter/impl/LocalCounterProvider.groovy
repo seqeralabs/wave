@@ -47,4 +47,16 @@ class LocalCounterProvider implements CounterProvider {
         return store.get(key)?.get(field)?.get()
     }
 
+    @Override
+    Map<String, Long> getAllMatchingEntries(String key, String pattern) {
+        def keyStore = store.get(key)
+        def matchingPairs = keyStore.findAll { k, v ->
+            k.contains(pattern)
+        }
+        Map<String, Long> result = [:]
+        matchingPairs.each { k, v ->
+            result.put(k, v as Long)
+        }
+        return result
+    }
 }

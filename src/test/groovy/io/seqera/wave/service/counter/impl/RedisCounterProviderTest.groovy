@@ -64,4 +64,18 @@ class RedisCounterProviderTest extends Specification implements RedisTestContain
         redisCounterProvider.get('metrics-x', 'foo') == 1
     }
 
+    def 'should get correct org count' () {
+        when:
+        redisCounterProvider.inc('metrics/v1', 'builds/o/foo', 1)
+        redisCounterProvider.inc('metrics/v1', 'builds/o/bar', 1)
+        redisCounterProvider.inc('metrics/v1', 'builds/o/abc', 2)
+        redisCounterProvider.inc('metrics/v1', 'pulls/o/foo', 1)
+        redisCounterProvider.inc('metrics/v1', 'pulls/o/bar', 2)
+        redisCounterProvider.inc('metrics/v1', 'pulls/o/abc', 3)
+        redisCounterProvider.inc('metrics/v1', 'pulls/o/abc/date/yyyy-mm-dd', 1)
+
+        then:
+        redisCounterProvider.getAllMatchingEntries('metrics/v1', 'pulls/o') ==
+                ['pulls/o/foo':1, 'pulls/o/bar':2, 'pulls/o/abc':3, 'pulls/o/abc/date/yyyy-mm-dd': 1]
+    }
 }

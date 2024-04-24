@@ -15,23 +15,21 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
-package io.seqera.wave.service.counter
+package io.seqera.wave.service.metric.model
 
 /**
- * Define the interface of a generic counter service
+ * Model for org metrics
  *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-interface CounterStore {
+class GetOrgCountResponse {
+    String metrics
+    Long count
+    Map<String, Long> orgs
 
-    long inc(String key, long value)
-
-    Long get(String key)
-
-    /**
-     * @param partialKey
-     * @return all the entries whose field matches 'key*
-     */
-    Map<String, Long> getAllMatchingEntries(String key)
+    GetOrgCountResponse(String metrics, Long count, Map<String, Long> orgs) {
+        this.metrics = metrics
+        this.count = count
+        this.orgs = orgs
+    }
 }

@@ -51,4 +51,8 @@ abstract class AbstractCounterStore implements CounterStore {
         provider.get(getPrefix(), key)
     }
 
+    @Override
+    Map<String, Long> getAllMatchingEntries(String key) {
+        provider.getAllMatchingEntries(getPrefix(), key)
+    }
 }

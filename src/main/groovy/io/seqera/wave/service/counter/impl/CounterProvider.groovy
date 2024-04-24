@@ -27,4 +27,11 @@ interface CounterProvider {
 
     Long get(String key, String field)
 
+    /**
+     *
+     * @param partialKey
+     * @param pattern
+     * @return all the entries whose field matches 'pattern*
+     */
+    Map<String, Long> getAllMatchingEntries(String partialKey, String pattern)
 }

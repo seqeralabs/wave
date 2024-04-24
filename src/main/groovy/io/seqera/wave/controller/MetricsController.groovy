@@ -33,6 +33,7 @@ import io.micronaut.security.annotation.Secured
 import io.micronaut.security.authentication.AuthorizationException
 import io.micronaut.security.rules.SecurityRule
 import io.seqera.wave.exception.BadRequestException
+import io.seqera.wave.service.metric.MetricConstants
 import io.seqera.wave.service.metric.MetricsService
 import io.seqera.wave.service.metric.model.GetBuildsCountResponse
 import io.seqera.wave.service.metric.model.GetFusionPullsCountResponse
@@ -57,6 +58,8 @@ class MetricsController {
 
     @Get(uri = "/v1alpha2/metrics/builds", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getBuildsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
+        if(!date && !org)
+            return HttpResponse.ok(metricsService.getOrgCount(MetricConstants.PREFIX_BUILDS))
         validateQueryParams(date, org)
         final count = metricsService.getBuildsMetrics(date, org)
         return HttpResponse.ok(new GetBuildsCountResponse(count))
@@ -64,6 +67,8 @@ class MetricsController {
 
     @Get(uri = "/v1alpha2/metrics/pulls", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
+        if(!date && !org)
+            return HttpResponse.ok(metricsService.getOrgCount(MetricConstants.PREFIX_PULLS))
         validateQueryParams(date, org)
         final count = metricsService.getPullsMetrics(date, org)
         return HttpResponse.ok(new GetPullsCountResponse(count))
@@ -71,6 +76,8 @@ class MetricsController {
 
     @Get(uri = "/v1alpha2/metrics/fusion/pulls", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getFusionPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
+        if(!date && !org)
+            return HttpResponse.ok(metricsService.getOrgCount(MetricConstants.PREFIX_FUSION))
         validateQueryParams(date, org)
         final count = metricsService.getFusionPullsMetrics(date, org)
         return HttpResponse.ok(new GetFusionPullsCountResponse(count))
