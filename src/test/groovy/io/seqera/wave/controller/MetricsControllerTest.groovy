@@ -143,7 +143,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct org count'
-        res.body() == [metrics:'builds', count:2, orgs:['org1.com': 1, 'org2.com': 1]]
+        res.body() == [metrics:'pulls', count:2, orgs:['org1.com': 1, 'org2.com': 1]]
         res.status.code == 200
     }
 
@@ -187,7 +187,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct org count'
-        res.body() == [metrics:'builds', count:2, orgs:['org1.com': 1, 'org2.com': 1]]
+        res.body() == [metrics:'fusion', count:2, orgs:['org1.com': 1, 'org2.com': 1]]
         res.status.code == 200
     }
 
