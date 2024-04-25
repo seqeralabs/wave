@@ -50,7 +50,6 @@ import static io.seqera.wave.util.LongRndKey.rndHex
 @CompileStatic
 @Singleton
 @ServerWebSocket("/pairing/{service}/token/{token}{?endpoint}")
-@ExecuteOn(TaskExecutors.IO)
 class PairingWebSocket {
 
     @Inject
