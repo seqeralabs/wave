@@ -58,7 +58,7 @@ class RedisCounterProvider implements CounterProvider {
             def scanResult = conn.hscan(key, "0", new ScanParams().match(pattern))
             def result = new HashMap<String, Long>()
             for(String entry : scanResult.result) {
-                def parts = entry.split('=')
+                def parts = entry.tokenize('=')
                 result.put(parts[0], parts[1] as Long)
             }
             return result
