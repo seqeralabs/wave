@@ -77,5 +77,7 @@ class RedisCounterProviderTest extends Specification implements RedisTestContain
         then:
         redisCounterProvider.getAllMatchingEntries('metrics/v1', 'pulls/o/*') ==
                 ['pulls/o/foo.es':1, 'pulls/o/bar.in':2, 'pulls/o/abc.au':3, 'pulls/o/abc.com/date/yyyy-mm-dd': 1]
+        and:
+        redisCounterProvider.getAllMatchingEntries('metrics/v1', 'fusion/o/*') == [:]
     }
 }

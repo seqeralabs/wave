@@ -162,6 +162,8 @@ class MetricsServiceImplTest extends Specification {
         def buildOrgCounts = metricsService.getOrgCount(MetricConstants.PREFIX_BUILDS)
         def pullOrgCounts = metricsService.getOrgCount(MetricConstants.PREFIX_PULLS)
         def fusionOrgCounts = metricsService.getOrgCount(MetricConstants.PREFIX_FUSION)
+        def emptyOrgCounts = metricsService.getOrgCount(null)
+
         then:
         buildOrgCounts.metrics == MetricConstants.PREFIX_BUILDS
         buildOrgCounts.count == 2
@@ -174,5 +176,9 @@ class MetricsServiceImplTest extends Specification {
         fusionOrgCounts.metrics == MetricConstants.PREFIX_FUSION
         fusionOrgCounts.count == 2
         fusionOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        and:
+        emptyOrgCounts.metrics == null
+        emptyOrgCounts.count == 0
+        emptyOrgCounts.orgs == [:]
     }
 }
