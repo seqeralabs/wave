@@ -65,7 +65,7 @@ class MetricsServiceImpl implements MetricsService {
         GetOrgCountResponse response = new GetOrgCountResponse(metrics, 0, [:])
         def orgCounts = metricsCounterStore.getAllMatchingEntries("$metrics/$MetricConstants.PREFIX_ORG/*")
         for(def entry : orgCounts) {
-            // this patter also return the records with org and date, so here we will filter out the records with date
+            // orgCounts also contains the records with org and date, so here it filter out the records with date
             if(!entry.key.contains("/$MetricConstants.PREFIX_DAY/")) {
                 response.count += entry.value
                 //split is used to extract the org name from the key like "metrics/o/seqera.io" => seqera.io
