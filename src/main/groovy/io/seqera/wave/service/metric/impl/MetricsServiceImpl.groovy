@@ -61,9 +61,9 @@ class MetricsServiceImpl implements MetricsService {
     }
 
     @Override
-    GetOrgCountResponse getOrgCount(String metrics){
-        GetOrgCountResponse response = new GetOrgCountResponse(metrics, 0, [:])
-        def orgCounts = metricsCounterStore.getAllMatchingEntries("$metrics/$MetricConstants.PREFIX_ORG/*")
+    GetOrgCountResponse getOrgCount(String metric){
+        final response = new GetOrgCountResponse(metric, 0, [:])
+        final orgCounts = metricsCounterStore.getAllMatchingEntries("$metric/$MetricConstants.PREFIX_ORG/*")
         for(def entry : orgCounts) {
             // orgCounts also contains the records with org and date, so here it filter out the records with date
             if(!entry.key.contains("/$MetricConstants.PREFIX_DAY/")) {

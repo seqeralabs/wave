@@ -77,8 +77,8 @@ interface MetricsService {
     /**
      * Get counts of all organisations
      *
-     * @param metrics
+     * @param metric
      * @return GetOrgCountResponse
      */
-    GetOrgCountResponse getOrgCount(String metrics)
+    GetOrgCountResponse getOrgCount(String metric)
 }

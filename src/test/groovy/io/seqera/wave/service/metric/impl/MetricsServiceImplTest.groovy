@@ -165,19 +165,19 @@ class MetricsServiceImplTest extends Specification {
         def emptyOrgCounts = metricsService.getOrgCount(null)
 
         then:
-        buildOrgCounts.metrics == MetricConstants.PREFIX_BUILDS
+        buildOrgCounts.metric == MetricConstants.PREFIX_BUILDS
         buildOrgCounts.count == 2
         buildOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
         and:
-        pullOrgCounts.metrics == MetricConstants.PREFIX_PULLS
+        pullOrgCounts.metric == MetricConstants.PREFIX_PULLS
         pullOrgCounts.count == 2
         pullOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
         and:
-        fusionOrgCounts.metrics == MetricConstants.PREFIX_FUSION
+        fusionOrgCounts.metric == MetricConstants.PREFIX_FUSION
         fusionOrgCounts.count == 2
         fusionOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
         and:
-        emptyOrgCounts.metrics == null
+        emptyOrgCounts.metric == null
         emptyOrgCounts.count == 0
         emptyOrgCounts.orgs == [:]
     }

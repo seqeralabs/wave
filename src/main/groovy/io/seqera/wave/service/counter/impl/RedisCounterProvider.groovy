@@ -55,10 +55,10 @@ class RedisCounterProvider implements CounterProvider {
     @Override
     Map<String, Long> getAllMatchingEntries(String key, String pattern) {
         try(Jedis conn=pool.getResource() ) {
-            def scanResult = conn.hscan(key, "0", new ScanParams().match(pattern))
-            def result = new HashMap<String, Long>()
+            final scanResult = conn.hscan(key, "0", new ScanParams().match(pattern))
+            final result = new HashMap<String, Long>()
             for(String entry : scanResult.result) {
-                def parts = entry.tokenize('=')
+                final parts = entry.tokenize('=')
                 result.put(parts[0], parts[1] as Long)
             }
             return result
