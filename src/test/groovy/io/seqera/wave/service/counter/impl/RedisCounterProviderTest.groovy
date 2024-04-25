@@ -66,16 +66,16 @@ class RedisCounterProviderTest extends Specification implements RedisTestContain
 
     def 'should get correct org count' () {
         when:
-        redisCounterProvider.inc('metrics/v1', 'builds/o/foo', 1)
-        redisCounterProvider.inc('metrics/v1', 'builds/o/bar', 1)
-        redisCounterProvider.inc('metrics/v1', 'builds/o/abc', 2)
-        redisCounterProvider.inc('metrics/v1', 'pulls/o/foo', 1)
-        redisCounterProvider.inc('metrics/v1', 'pulls/o/bar', 2)
-        redisCounterProvider.inc('metrics/v1', 'pulls/o/abc', 3)
-        redisCounterProvider.inc('metrics/v1', 'pulls/o/abc/date/yyyy-mm-dd', 1)
+        redisCounterProvider.inc('metrics/v1', 'builds/o/foo.com', 1)
+        redisCounterProvider.inc('metrics/v1', 'builds/o/bar.org', 1)
+        redisCounterProvider.inc('metrics/v1', 'builds/o/abc.it', 2)
+        redisCounterProvider.inc('metrics/v1', 'pulls/o/foo.es', 1)
+        redisCounterProvider.inc('metrics/v1', 'pulls/o/bar.in', 2)
+        redisCounterProvider.inc('metrics/v1', 'pulls/o/abc.au', 3)
+        redisCounterProvider.inc('metrics/v1', 'pulls/o/abc.com/date/yyyy-mm-dd', 1)
 
         then:
-        redisCounterProvider.getAllMatchingEntries('metrics/v1', 'pulls/o') ==
-                ['pulls/o/foo':1, 'pulls/o/bar':2, 'pulls/o/abc':3, 'pulls/o/abc/date/yyyy-mm-dd': 1]
+        redisCounterProvider.getAllMatchingEntries('metrics/v1', 'pulls/o/*') ==
+                ['pulls/o/foo.es':1, 'pulls/o/bar.in':2, 'pulls/o/abc.au':3, 'pulls/o/abc.com/date/yyyy-mm-dd': 1]
     }
 }

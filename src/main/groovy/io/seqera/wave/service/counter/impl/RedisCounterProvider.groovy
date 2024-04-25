@@ -57,7 +57,7 @@ class RedisCounterProvider implements CounterProvider {
     Map<String, Long> getAllMatchingEntries(String key, String pattern) {
         try(Jedis conn=pool.getResource() ) {
             Map<String, Long> result = [:]
-                def scanResult = conn.hscan(key, "0", new ScanParams().match("$pattern*"))
+                def scanResult = conn.hscan(key, "0", new ScanParams().match(pattern))
                 for(String entry : scanResult.result) {
                     def parts = entry.split('=')
                     result.put(parts[0], parts[1] as Long)
