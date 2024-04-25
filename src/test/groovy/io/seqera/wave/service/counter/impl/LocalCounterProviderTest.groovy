@@ -66,7 +66,7 @@ class LocalCounterProviderTest extends Specification {
 
         then:
         localCounterProvider.getAllMatchingEntries('metrics/v1', 'pulls/o/*') ==
-                ['pulls/o/foo.it':1, 'pulls/o/bar.es':2, 'pulls/o/abc.in':3, 'pulls/o/abc/date/yyyy-mm-dd': 1]
+                ['pulls/o/abc.com.au/date/yyyy-mm-dd':1, 'pulls/o/abc.in':3, 'pulls/o/bar.es':2, 'pulls/o/foo.it':1]
     }
 
 }
