@@ -60,7 +60,7 @@ class MetricsController {
     @Inject
     private MetricsService metricsService
 
-    static Pattern datePattern = Pattern.compile("\\d{4}-\\d{2}-\\d{2}");
+    static final private Pattern DATE_PATTERN = Pattern.compile("\\d{4}-\\d{2}-\\d{2}");
 
     @Get(uri = "/v1alpha2/metrics/builds", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getBuildsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
@@ -97,7 +97,7 @@ class MetricsController {
     }
 
     static void validateQueryParams(String date) {
-        if(date && !datePattern.matcher(date).matches()) {
+        if(date && !DATE_PATTERN.matcher(date).matches()) {
             throw new BadRequestException('date format should be yyyy-MM-dd')
         }
     }
