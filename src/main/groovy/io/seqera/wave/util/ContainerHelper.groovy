@@ -105,13 +105,17 @@ class ContainerHelper {
             // parse the attribute as a conda file path *and* append the base packages if any
             // note 'channel' is null, because they are expected to be provided in the conda file
             final decoded = decodeBase64OrFail(req.packages.environment, 'packages.envFile')
-            return condaEnvironmentToCondaYaml(decoded, req.packages.channels)
+            // order is not relevant, so sorting to improve caching
+            List<String> sortedChannels = req.packages.channels.sort()  
+            return condaEnvironmentToCondaYaml(decoded, sortedChannels)
         }
 
         if ( req.packages.entries && !condaLockFile(req.packages.entries)) {
             // create a minimal conda file with package spec from user input
-            final String packages = req.packages.entries.join(' ')
-            return condaPackagesToCondaYaml(packages, req.packages.channels)
+            // order is not relevant, so sorting to improve caching
+            List<String> sortedPackages = req.packages.entries.sort()
+            List<String> sortedChannels = req.packages.channels.sort()
+            return condaPackagesToCondaYaml(sortedPackages.join(' '), sortedChannels)
         }
 
         return null;
