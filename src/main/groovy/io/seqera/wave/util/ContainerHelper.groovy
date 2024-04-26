@@ -106,7 +106,7 @@ class ContainerHelper {
             // note 'channel' is null, because they are expected to be provided in the conda file
             final decoded = decodeBase64OrFail(req.packages.environment, 'packages.envFile')
             // order is not relevant, so sorting to improve caching
-            List<String> sortedChannels = req.packages.channels.sort()  
+            List<String> sortedChannels = req.packages.channels?.sort()
             return condaEnvironmentToCondaYaml(decoded, sortedChannels)
         }
 
@@ -114,7 +114,7 @@ class ContainerHelper {
             // create a minimal conda file with package spec from user input
             // order is not relevant, so sorting to improve caching
             List<String> sortedPackages = req.packages.entries.sort()
-            List<String> sortedChannels = req.packages.channels.sort()
+            List<String> sortedChannels = req.packages.channels?.sort()
             return condaPackagesToCondaYaml(sortedPackages.join(' '), sortedChannels)
         }
 

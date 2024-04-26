@@ -269,8 +269,8 @@ class ContainerHelperTest extends Specification {
             channels:
             - defaults
             dependencies:
-            - this
             - that
+            - this
             '''.stripIndent()
     }
 
