@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023-2024, Seqera Labs
+ *  Copyright (c) 2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -15,23 +15,21 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
-package io.seqera.wave.service.counter
+package io.seqera.wave.service.metric.model
 
 /**
- * Define the interface of a generic counter service
+ * Model organisations counts response
  *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-interface CounterStore {
+class GetOrgCountResponse {
+    String metric
+    Long count
+    Map<String, Long> orgs
 
-    long inc(String key, long value)
-
-    Long get(String key)
-
-    /**
-     * @param pattern
-     * @return all the entries whose field matches 'pattern'
-     */
-    Map<String, Long> getAllMatchingEntries(String pattern)
+    GetOrgCountResponse(String metric, Long count, Map<String, Long> orgs) {
+        this.metric = metric
+        this.count = count
+        this.orgs = orgs
+    }
 }

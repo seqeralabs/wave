@@ -93,6 +93,14 @@ class MetricsControllerTest extends Specification {
         then: 'should get the correct count'
         res.body() == [count: 1]
         res.status.code == 200
+
+        when: 'no param is provided'
+        req = HttpRequest.GET("/v1alpha2/metrics/builds").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct org count'
+        res.body() == [metric:'builds', count:2, orgs:['org1.com': 1, 'org2.com': 1]]
+        res.status.code == 200
     }
 
     def 'should get the correct pulls count and http status code 200'() {
@@ -128,6 +136,14 @@ class MetricsControllerTest extends Specification {
 
         then: 'should get the correct count'
         res.body() == [count: 1]
+        res.status.code == 200
+
+        when: 'no param is provided'
+        req = HttpRequest.GET("/v1alpha2/metrics/pulls").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct org count'
+        res.body() == [metric:'pulls', count:2, orgs:['org1.com': 1, 'org2.com': 1]]
         res.status.code == 200
     }
 
@@ -165,6 +181,14 @@ class MetricsControllerTest extends Specification {
         then: 'should get the correct count'
         res.body() == [count: 1]
         res.status.code == 200
+
+        when: 'no param is provided'
+        req = HttpRequest.GET("/v1alpha2/metrics/fusion/pulls").basicAuth("username", "password")
+        res = client.toBlocking().exchange(req, Map)
+
+        then: 'should get the correct org count'
+        res.body() == [metric:'fusion', count:2, orgs:['org1.com': 1, 'org2.com': 1]]
+        res.status.code == 200
     }
 
     def 'should validate query parameters'() {
@@ -175,15 +199,6 @@ class MetricsControllerTest extends Specification {
         then: 'should get 400 response code and message'
         def e = thrown(HttpClientResponseException)
         e.message == 'date format should be yyyy-MM-dd'
-        e.status.code == 400
-
-        when: 'no query parameter is provided'
-        req = HttpRequest.GET("/v1alpha2/metrics/builds").basicAuth("username", "password")
-        client.toBlocking().exchange(req, Map)
-
-        then: 'should get 400 response code and message'
-        e = thrown(HttpClientResponseException)
-        e.message == 'Either date or org query parameter must be provided'
         e.status.code == 400
     }
 }

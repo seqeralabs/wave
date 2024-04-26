@@ -18,6 +18,7 @@
 
 package io.seqera.wave.controller
 
+import java.util.regex.Pattern
 import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
@@ -35,6 +36,7 @@ import io.micronaut.security.annotation.Secured
 import io.micronaut.security.authentication.AuthorizationException
 import io.micronaut.security.rules.SecurityRule
 import io.seqera.wave.exception.BadRequestException
+import io.seqera.wave.service.metric.MetricConstants
 import io.seqera.wave.service.metric.MetricsService
 import io.seqera.wave.service.metric.model.GetBuildsCountResponse
 import io.seqera.wave.service.metric.model.GetFusionPullsCountResponse
@@ -58,23 +60,31 @@ class MetricsController {
     @Inject
     private MetricsService metricsService
 
+    static final private Pattern DATE_PATTERN = Pattern.compile("\\d{4}-\\d{2}-\\d{2}");
+
     @Get(uri = "/v1alpha2/metrics/builds", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getBuildsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
-        validateQueryParams(date, org)
+        if(!date && !org)
+            return HttpResponse.ok(metricsService.getOrgCount(MetricConstants.PREFIX_BUILDS))
+        validateQueryParams(date)
         final count = metricsService.getBuildsMetrics(date, org)
         return HttpResponse.ok(new GetBuildsCountResponse(count))
     }
 
     @Get(uri = "/v1alpha2/metrics/pulls", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
-        validateQueryParams(date, org)
+        if(!date && !org)
+            return HttpResponse.ok(metricsService.getOrgCount(MetricConstants.PREFIX_PULLS))
+        validateQueryParams(date)
         final count = metricsService.getPullsMetrics(date, org)
         return HttpResponse.ok(new GetPullsCountResponse(count))
     }
 
     @Get(uri = "/v1alpha2/metrics/fusion/pulls", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getFusionPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
-        validateQueryParams(date, org)
+        if(!date && !org)
+            return HttpResponse.ok(metricsService.getOrgCount(MetricConstants.PREFIX_FUSION))
+        validateQueryParams(date)
         final count = metricsService.getFusionPullsMetrics(date, org)
         return HttpResponse.ok(new GetFusionPullsCountResponse(count))
 
@@ -86,11 +96,8 @@ class MetricsController {
                 .header(WWW_AUTHENTICATE, "Basic realm=Wave Authentication")
     }
 
-    static void validateQueryParams(String date, String org) {
-        if(!date && !org)
-            throw new BadRequestException('Either date or org query parameter must be provided')
-        def pattern = ~/\d{4}-\d{2}-\d{2}/
-        if(date && !(date ==~ pattern)){
+    static void validateQueryParams(String date) {
+        if(date && !DATE_PATTERN.matcher(date).matches()) {
             throw new BadRequestException('date format should be yyyy-MM-dd')
         }
     }
