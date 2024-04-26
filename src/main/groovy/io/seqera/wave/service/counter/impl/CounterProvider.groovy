@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.counter.impl
 /**
+ * Contract interface for a generic distributed "counter" service
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
