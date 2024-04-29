@@ -44,7 +44,7 @@ interface K8sService {
 
     V1Pod getPod(String name)
 
-    String logsPod(String name)
+    String logsPod(String podName, String containerName)
 
     void deletePod(String name)
 

@@ -450,13 +450,13 @@ class K8sServiceImpl implements K8sService {
      * @return The logs as a string or when logs are not available or cannot be accessed
      */
     @Override
-    String logsPod(String name) {
+    String logsPod(String podName, String containerName) {
         try {
             final logs = k8sClient.podLogs()
-            logs.streamNamespacedPodLog(namespace, name, name).getText()
+            logs.streamNamespacedPodLog(namespace, podName, containerName).getText()
         }
         catch (Exception e) {
-            log.error "Unable to fetch logs for pod: $name", e
+            log.error "Unable to fetch logs for pod: $podName and container: $containerName", e
             return null
         }
     }
@@ -639,6 +639,7 @@ class K8sServiceImpl implements K8sService {
      * @return list of pods created by this job
      */
     V1PodList waitJob(V1Job job, Long timeout) {
+        sleep 5_000
         final startTime = System.currentTimeMillis()
         // wait for termination
         while (System.currentTimeMillis() - startTime < timeout) {
@@ -649,7 +650,6 @@ class K8sServiceImpl implements K8sService {
                         coreV1Api().
                         listNamespacedPod(namespace, null, null, null, null, "job-name=$name", null, null, null, null, null, null)
             }
-            sleep 5_000
             job = getJob(name)
         }
         return null

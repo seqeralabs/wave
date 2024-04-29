@@ -65,7 +65,7 @@ class K8sClientTest extends Specification {
         true
 
         when:
-        def str = k8sService.logsPod('my-pod')
+        def str = k8sService.logsPod('my-pod', 'my-pod')
         then:
         str
 

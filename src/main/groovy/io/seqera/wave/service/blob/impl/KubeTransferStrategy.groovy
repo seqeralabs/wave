@@ -50,7 +50,6 @@ class KubeTransferStrategy implements TransferStrategy {
     @Override
     BlobCacheInfo transfer(BlobCacheInfo info, List<String> command) {
         final name = getName(info)
-        log.info("command-> ${command.join(' ')}")
         final job = k8sService.transferJob(name, name, blobConfig.s5Image, command, blobConfig)
         final podList = k8sService.waitJob(job, blobConfig.transferTimeout.toMillis())
         if ( !podList || podList.items.size() < 1 ) {
@@ -59,7 +58,7 @@ class KubeTransferStrategy implements TransferStrategy {
         final podName = podList.items[0].metadata.name
         final pod = k8sService.getPod(podName)
         final terminated = k8sService.waitPod(pod, blobConfig.transferTimeout.toMillis())
-        final stdout = k8sService.logsPod(podName)
+        final stdout = k8sService.logsPod(podName, name)
         return terminated
                 ? info.completed(terminated.exitCode, stdout)
                 : info.failed(stdout)
