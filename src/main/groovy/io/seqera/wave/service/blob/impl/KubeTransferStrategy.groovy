@@ -26,6 +26,7 @@ import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.TransferStrategy
+import io.seqera.wave.service.blob.TransferTimeoutException
 import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Inject
 /**
@@ -48,9 +49,14 @@ class KubeTransferStrategy implements TransferStrategy {
 
     @Override
     BlobCacheInfo transfer(BlobCacheInfo info, List<String> command) {
-        final podName = getName(info, "pod")
-        final jobName = getName(info, "job")
-        final job = k8sService.transferJob(jobName, podName, blobConfig.s5Image, command, blobConfig)
+        final name = getName(info)
+        log.info("command-> ${command.join(' ')}")
+        final job = k8sService.transferJob(name, name, blobConfig.s5Image, command, blobConfig)
+        final podList = k8sService.waitJob(job, blobConfig.transferTimeout.toMillis())
+        if ( !podList || podList.items.size() < 1 ) {
+            throw new TransferTimeoutException("Blob transfer job timeout")
+        }
+        final podName = podList.items[0].metadata.name
         final pod = k8sService.getPod(podName)
         final terminated = k8sService.waitPod(pod, blobConfig.transferTimeout.toMillis())
         final stdout = k8sService.logsPod(podName)
@@ -59,8 +65,8 @@ class KubeTransferStrategy implements TransferStrategy {
                 : info.failed(stdout)
     }
 
-    protected static String getName(BlobCacheInfo info, String type) {
-        return "transfer-$type-" + Hashing
+    protected static String getName(BlobCacheInfo info) {
+        return "transfer-" + Hashing
                 .sipHash24()
                 .newHasher()
                 .putUnencodedChars(info.locationUri)

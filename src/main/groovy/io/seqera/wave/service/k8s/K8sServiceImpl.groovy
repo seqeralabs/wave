@@ -35,6 +35,7 @@ import io.kubernetes.client.openapi.models.V1JobBuilder
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodBuilder
+import io.kubernetes.client.openapi.models.V1PodList
 import io.kubernetes.client.openapi.models.V1ResourceRequirements
 import io.kubernetes.client.openapi.models.V1Volume
 import io.kubernetes.client.openapi.models.V1VolumeMount
@@ -602,7 +603,7 @@ class K8sServiceImpl implements K8sService {
             resources.putRequestsItem('memory', new Quantity(requestsMemory))
 
         def spec = builder.withNewSpec()
-                .withBackoffLimit(0)
+                .withBackoffLimit(blobConfig.BackoffLimit)
                 .withNewTemplate()
                 .editOrNewSpec()
                     .withServiceAccount(serviceAccount)
@@ -629,4 +630,28 @@ class K8sServiceImpl implements K8sService {
         return result
     }
 
+    /**
+     * Wait for a job to start a pod
+     *
+     * @param k8s job
+     * @param timeout
+     *      Max wait time in milliseconds
+     * @return list of pods created by this job
+     */
+    V1PodList waitJob(V1Job job, Long timeout) {
+        final startTime = System.currentTimeMillis()
+        // wait for termination
+        while (System.currentTimeMillis() - startTime < timeout) {
+            final name = job.metadata.name
+            final active = job.status?.getActive()
+            if (active && active > 0) {
+                return k8sClient.
+                        coreV1Api().
+                        listNamespacedPod(namespace, null, null, null, null, "job-name=$name", null, null, null, null, null, null)
+            }
+            sleep 5_000
+            job = getJob(name)
+        }
+        return null
+    }
 }

@@ -72,6 +72,9 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.s5cmdImage}')
     String s5Image
 
+    @Value('${wave.blobCache.BackoffLimit:3}')
+    Integer BackoffLimit
+
     @Nullable
     @Value('${wave.blobCache.requestsCpu}')
     String requestsCpu

@@ -23,6 +23,7 @@ import java.nio.file.Path
 import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1Pod
+import io.kubernetes.client.openapi.models.V1PodList
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.SpackConfig
@@ -56,5 +57,7 @@ interface K8sService {
     V1ContainerStateTerminated waitPod(V1Pod pod, long timeout)
 
     V1Job transferJob(String name, String podName, String containerImage, List<String> args, BlobCacheConfig blobConfig)
+
+    V1PodList waitJob(V1Job job, Long timeout)
 
 }
