@@ -54,26 +54,23 @@ If an access token isn't provided, the following rate limits apply:
 - 25 container builds per day
 - 250 container pulls per hour
 
-## Reproducible builds with SHA256 container image references
+## Known limitation
 
-Referring to the SHA256 hash of a container imagine is a common best practice in pipeline development. For example, the SHA256 hash for a container might be similar to `sha256:3235...ce8f`. If you use the Wave service to augment your containers, such as to add Fusion to a container, the original SHA256 hash of the image is no longer correct.
+### Use of sha256 digest in the image name
 
-To accommodate the new layers added to a container image augmented with Wave, you can use the freeze feature of Wave. In your pipeline configuration, ensure that you specify the following settings:
+The Wave does not support the use of sha256 digest in the image name, e.g. `ubuntu@sha256:3235...ce8f`, when using
+the augmentation process to extend container images.
+
+In order to reference a container via sha256 digest in the image name with Wave you will need to *freeze* image mode
+that will force the creation of a new container image using the container you have specified as base image.
+
+In your pipeline configuration, ensure that you specify the following settings:
 
 ```groovy
 wave.enabled = true
 wave.freeze = true
 wave.strategy = ['dockerfile']
 wave.build.repository = 'docker.io/<user>/<repository>'
-```
-
-You can run `nextflow inspect` to find the SHA256 hash of the Wave augmented container.
-
-In your pipeline, you can use the SHA256 of the Wave augmented container, available in the target repository that you specify with the `wave.build.repository` parameter. For example:
-
-```groovy
-docker.enabled = true
-process.container = 'docker.io/<user>/my-bio-container@sha256:3235....ce8f'
 ```
 
 ## Tutorials
