@@ -290,7 +290,6 @@ class ContainerHelper {
     static String makeTargetImage(BuildFormat format, String repo, String id, @Nullable String condaFile, @Nullable String spackFile, @Nullable ImageNameStrategy nameStrategy) {
         assert id, "Argument 'id' cannot be null or empty"
         assert repo, "Argument 'repo' cannot be null or empty"
-        assert repo.contains('/'), "Argument 'repo' is not a valid container repository name"
         assert format, "Argument 'format' cannot be null"
 
         NameVersionPair tools
@@ -319,7 +318,7 @@ class ContainerHelper {
             throw new BadRequestException("Unsupported image naming strategy: '${nameStrategy}'")
         }
 
-        format==SINGULARITY ? "oras://${repo}:${tag}" : "${repo}:${tag}"
+        format==SINGULARITY ? "oras://${normaliseRepo(repo)}:${tag}" : "${normaliseRepo(repo)}:${tag}"
     }
 
     static protected String normalise0(String tag, int maxLength, String pattern) {
@@ -356,6 +355,20 @@ class ContainerHelper {
 
     static protected String normaliseName(String value, int maxLength=255) {
         value ? normalise0(value.toLowerCase(), maxLength, /[^a-z0-9_.\-\/]/) : null
+    }
+
+    static protected String normaliseRepo(String value) {
+        if( !value )
+            return value
+        final parts = value.tokenize('/')
+        if( parts.size()>2 )
+            return value
+        if( parts.size()==1 ) {
+            return parts[0] + '/library/build'
+        }
+        else {
+            return parts[0] + '/library/' + parts[1]
+        }
     }
 
     static String makeContainerId(String containerFile, String condaFile, String spackFile, ContainerPlatform platform, String repository, BuildContext buildContext) {

@@ -545,6 +545,21 @@ class ContainerHelperTest extends Specification {
         '._-xyz._-'             | 'xyz'
     }
 
+    @Unroll
+    def 'should normalise repo' () {
+        expect:
+        ContainerHelper.normaliseRepo(REPO) == EXPECTED
+        where:
+        REPO                    | EXPECTED
+        null                    | null
+        'docker.io/a/b'         | 'docker.io/a/b'
+        'docker.io/a/b/c'       | 'docker.io/a/b/c'
+        'docker.io/foo'         | 'docker.io/library/foo'
+        'docker.io/foo/'        | 'docker.io/library/foo'
+        'docker.io'             | 'docker.io/library/build'
+        'docker.io/'            | 'docker.io/library/build'
+    }
+
     def 'should make request target' () {
         expect:
         ContainerHelper.makeTargetImage(BuildFormat.DOCKER, 'quay.io/org/name', '12345', null, null, null)
@@ -606,42 +621,51 @@ class ContainerHelperTest extends Specification {
 
         where:
         FORMAT        | REPO              | ID        | CONDA | SPACK | STRATEGY      | EXPECTED
-        'DOCKER'      | 'foo.com/build'   | '123'     | null  | null  | null          | 'foo.com/build:123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | null  | null  | 'none'        | 'foo.com/build:123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | null  | null  | 'tagPrefix'   | 'foo.com/build:123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | null  | null  | 'imageSuffix' | 'foo.com/build:123'
+        'DOCKER'      | 'foo.com/a/b'     | '123'     | null  | null  | null          | 'foo.com/a/b:123'
+        'DOCKER'      | 'foo.com/a/b'     | '123'     | null  | null  | 'none'        | 'foo.com/a/b:123'
+        'DOCKER'      | 'foo.com/a/b'     | '123'     | null  | null  | 'tagPrefix'   | 'foo.com/a/b:123'
+        'DOCKER'      | 'foo.com/a/b'     | '123'     | null  | null  | 'imageSuffix' | 'foo.com/a/b:123'
+        'DOCKER'      | 'foo.com'         | '123'     | null  | null  | 'imageSuffix' | 'foo.com/library/build:123'
         and:
-        'SINGULARITY' | 'foo.com/build'   | '123'     | null  | null  | null          | 'oras://foo.com/build:123'
-        'SINGULARITY' | 'foo.com/build'   | '123'     | null  | null  | 'none'        | 'oras://foo.com/build:123'
-        'SINGULARITY' | 'foo.com/build'   | '123'     | null  | null  | 'tagPrefix'   | 'oras://foo.com/build:123'
-        'SINGULARITY' | 'foo.com/build'   | '123'     | null  | null  | 'imageSuffix' | 'oras://foo.com/build:123'
+        'SINGULARITY' | 'foo.com/a/b'     | '123'     | null  | null  | null          | 'oras://foo.com/a/b:123'
+        'SINGULARITY' | 'foo.com/a/b'     | '123'     | null  | null  | 'none'        | 'oras://foo.com/a/b:123'
+        'SINGULARITY' | 'foo.com/a/b'     | '123'     | null  | null  | 'tagPrefix'   | 'oras://foo.com/a/b:123'
+        'SINGULARITY' | 'foo.com/a/b'     | '123'     | null  | null  | 'imageSuffix' | 'oras://foo.com/a/b:123'
+        'SINGULARITY' | 'foo.com'         | '123'     | null  | null  | 'imageSuffix' | 'oras://foo.com/library/build:123'
         and:
-        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA1| null  | null          | 'foo.com/build:samtools-1.0--123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA1| null  | 'none'        | 'foo.com/build:123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA1| null  | 'tagPrefix'   | 'foo.com/build:samtools-1.0--123'
+        'DOCKER'      | 'foo.com/a/b'     | '123'     | CONDA1| null  | null          | 'foo.com/a/b:samtools-1.0--123'
+        'DOCKER'      | 'foo.com/a/b'     | '123'     | CONDA1| null  | 'none'        | 'foo.com/a/b:123'
+        'DOCKER'      | 'foo.com/a/b'     | '123'     | CONDA1| null  | 'tagPrefix'   | 'foo.com/a/b:samtools-1.0--123'
+        'DOCKER'      | 'foo.com/a/b'     | '123'     | CONDA1| null  | 'imageSuffix' | 'foo.com/a/b/samtools:1.0--123'
+        'DOCKER'      | 'foo.com'         | '123'     | CONDA1| null  | 'imageSuffix' | 'foo.com/library/samtools:1.0--123'
+        'DOCKER'      | 'foo.com/library' | '123'     | CONDA1| null  | 'imageSuffix' | 'foo.com/library/samtools:1.0--123'
         'DOCKER'      | 'foo.com/build'   | '123'     | CONDA1| null  | 'imageSuffix' | 'foo.com/build/samtools:1.0--123'
+
         and:
-        'SINGULARITY' | 'foo.com/build'   | '123'     | CONDA1| null  | null          | 'oras://foo.com/build:samtools-1.0--123'
-        'SINGULARITY' | 'foo.com/build'   | '123'     | CONDA1| null  | 'none'        | 'oras://foo.com/build:123'
-        'SINGULARITY' | 'foo.com/build'   | '123'     | CONDA1| null  | 'tagPrefix'   | 'oras://foo.com/build:samtools-1.0--123'
+        'SINGULARITY' | 'foo.com/a/b'     | '123'     | CONDA1| null  | null          | 'oras://foo.com/a/b:samtools-1.0--123'
+        'SINGULARITY' | 'foo.com/a/b'     | '123'     | CONDA1| null  | 'none'        | 'oras://foo.com/a/b:123'
+        'SINGULARITY' | 'foo.com/a/b'     | '123'     | CONDA1| null  | 'tagPrefix'   | 'oras://foo.com/a/b:samtools-1.0--123'
+        'SINGULARITY' | 'foo.com/a/b'     | '123'     | CONDA1| null  | 'imageSuffix' | 'oras://foo.com/a/b/samtools:1.0--123'
+        'SINGULARITY' | 'foo.com/library' | '123'     | CONDA1| null  | 'imageSuffix' | 'oras://foo.com/library/samtools:1.0--123'
         'SINGULARITY' | 'foo.com/build'   | '123'     | CONDA1| null  | 'imageSuffix' | 'oras://foo.com/build/samtools:1.0--123'
-        and:
-        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA2| null  | null          | 'foo.com/build:samtools-1.0_bamtools-2.0_multiqc-1.15--123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA2| null  | 'none'        | 'foo.com/build:123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA2| null  | 'tagPrefix'   | 'foo.com/build:samtools-1.0_bamtools-2.0_multiqc-1.15--123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA2| null  | 'imageSuffix' | 'foo.com/build/samtools_bamtools_multiqc:123'
 
         and:
-        'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK1| null          | 'foo.com/build:bwa-0.7.15--123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK1| 'none'        | 'foo.com/build:123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK1| 'tagPrefix'   | 'foo.com/build:bwa-0.7.15--123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK1| 'imageSuffix' | 'foo.com/build/bwa:0.7.15--123'
+        'DOCKER'      | 'foo.com/a/b'     | '123'     | CONDA2| null  | null          | 'foo.com/a/b:samtools-1.0_bamtools-2.0_multiqc-1.15--123'
+        'DOCKER'      | 'foo.com/a/b'     | '123'     | CONDA2| null  | 'none'        | 'foo.com/a/b:123'
+        'DOCKER'      | 'foo.com/a/b'     | '123'     | CONDA2| null  | 'tagPrefix'   | 'foo.com/a/b:samtools-1.0_bamtools-2.0_multiqc-1.15--123'
+        'DOCKER'      | 'foo.com/a/b'     | '123'     | CONDA2| null  | 'imageSuffix' | 'foo.com/a/b/samtools_bamtools_multiqc:123'
 
         and:
-        'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK2| null          | 'foo.com/build:bwa-0.7.15_salmon-1.1.1--123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK2| 'none'        | 'foo.com/build:123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK2| 'tagPrefix'   | 'foo.com/build:bwa-0.7.15_salmon-1.1.1--123'
-        'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK2| 'imageSuffix' | 'foo.com/build/bwa_salmon:123'
+        'DOCKER'      | 'foo.com/a/b'     | '123'     | null  | SPACK1| null          | 'foo.com/a/b:bwa-0.7.15--123'
+        'DOCKER'      | 'foo.com/a/b'     | '123'     | null  | SPACK1| 'none'        | 'foo.com/a/b:123'
+        'DOCKER'      | 'foo.com/a/b'     | '123'     | null  | SPACK1| 'tagPrefix'   | 'foo.com/a/b:bwa-0.7.15--123'
+        'DOCKER'      | 'foo.com/a/b'     | '123'     | null  | SPACK1| 'imageSuffix' | 'foo.com/a/b/bwa:0.7.15--123'
+
+        and:
+        'DOCKER'      | 'foo.com/a/b'     | '123'     | null  | SPACK2| null          | 'foo.com/a/b:bwa-0.7.15_salmon-1.1.1--123'
+        'DOCKER'      | 'foo.com/a/b'     | '123'     | null  | SPACK2| 'none'        | 'foo.com/a/b:123'
+        'DOCKER'      | 'foo.com/a/b'     | '123'     | null  | SPACK2| 'tagPrefix'   | 'foo.com/a/b:bwa-0.7.15_salmon-1.1.1--123'
+        'DOCKER'      | 'foo.com/a/b'     | '123'     | null  | SPACK2| 'imageSuffix' | 'foo.com/a/b/bwa_salmon:123'
     }
 
     def 'should validate containerfile' () {

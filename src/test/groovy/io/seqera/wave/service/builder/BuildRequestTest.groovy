@@ -75,7 +75,7 @@ class BuildRequestTest extends Specification {
 
         then:
         req.containerId == '181ec22b26ae6d04'
-        req.targetImage == "docker.io/wave:${req.containerId}"
+        req.targetImage == "docker.io/library/wave:${req.containerId}"
         req.containerFile == CONTENT
         req.identity == USER
         req.configJson == '{"config":"json"}'
@@ -122,7 +122,7 @@ class BuildRequestTest extends Specification {
         )
         then:
         req.containerId == '8026e3a63b5c863f'
-        req.targetImage == 'docker.io/wave:samtools-1.0--8026e3a63b5c863f'
+        req.targetImage == 'docker.io/library/wave:samtools-1.0--8026e3a63b5c863f'
         req.condaFile == CONDA_RECIPE
         req.spackFile == null
         and:
@@ -157,7 +157,7 @@ class BuildRequestTest extends Specification {
         )
         then:
         req.containerId == '8726782b1d9bb8fb'
-        req.targetImage == 'docker.io/wave:bwa-0.7.15--8726782b1d9bb8fb'
+        req.targetImage == 'docker.io/library/wave:bwa-0.7.15--8726782b1d9bb8fb'
         req.spackFile == SPACK_RECIPE
         req.condaFile == null
         and:
@@ -201,7 +201,7 @@ class BuildRequestTest extends Specification {
         )
         then:
         req.containerId == 'd78ba9cb01188668'
-        req.targetImage == "oras://docker.io/wave:${req.containerId}"
+        req.targetImage == "oras://docker.io/library/wave:${req.containerId}"
         req.containerFile == CONTENT
         req.identity == USER
         req.configJson == '{"config":"json"}'
