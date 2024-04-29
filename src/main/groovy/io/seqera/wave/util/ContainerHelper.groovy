@@ -369,4 +369,12 @@ class ContainerHelper {
         return RegHelper.sipHash(attrs)
     }
 
+    static void checkContainerSpec(String file) {
+        if( !file )
+            return
+        if( file.contains('/.docker/config.json') )
+            throw new BadRequestException("Provided container file is not allowed (error code: 100)")
+        if( file.contains('/kaniko') )
+            throw new BadRequestException("Provided container file is not allowed (error code: 101)")
+    }
 }
