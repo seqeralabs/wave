@@ -26,6 +26,7 @@ import groovy.util.logging.Slf4j
 import io.seqera.wave.service.metric.MetricConstants
 import io.seqera.wave.service.metric.MetricsCounterStore
 import io.seqera.wave.service.metric.MetricsService
+import io.seqera.wave.service.metric.model.GetOrgCountResponse
 import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -57,6 +58,21 @@ class MetricsServiceImpl implements MetricsService {
     @Override
     Long getFusionPullsMetrics(String date, String org) {
         return metricsCounterStore.get(getKey(MetricConstants.PREFIX_FUSION, date, org)) ?: 0
+    }
+
+    @Override
+    GetOrgCountResponse getOrgCount(String metric){
+        final response = new GetOrgCountResponse(metric, 0, [:])
+        final orgCounts = metricsCounterStore.getAllMatchingEntries("$metric/$MetricConstants.PREFIX_ORG/*")
+        for(def entry : orgCounts) {
+            // orgCounts also contains the records with org and date, so here it filter out the records with date
+            if(!entry.key.contains("/$MetricConstants.PREFIX_DAY/")) {
+                response.count += entry.value
+                //split is used to extract the org name from the key like "metrics/o/seqera.io" => seqera.io
+                response.orgs.put(entry.key.split("/$MetricConstants.PREFIX_ORG/").last(), entry.value)
+            }
+        }
+        return response
     }
 
     @Override
@@ -110,4 +126,5 @@ class MetricsServiceImpl implements MetricsService {
 
         return null
     }
+
 }

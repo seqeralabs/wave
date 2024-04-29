@@ -25,9 +25,7 @@ import java.util.concurrent.CompletableFuture
 
 import com.google.common.hash.Hashing
 import groovy.util.logging.Slf4j
-import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.test.ManifestConst
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -167,7 +165,7 @@ class RegHelperTest extends Specification {
 
     }
 
-    def 'should create singularity remote ymal file' () {
+    def 'should create singularity remote yaml file' () {
 
         when:
         def ret = RegHelper.singularityRemoteFile('oras://quay.io/user/foo:latest')
@@ -183,84 +181,6 @@ class RegHelperTest extends Specification {
             - URI: oras://quay.io
               Insecure: false
             '''.stripIndent(true)
-    }
-
-    def 'should find conda name with named recipe' () {
-        given:
-        def CONDA = '''\
-            name: rnaseq-nf
-            channels:
-              - defaults
-              - bioconda
-              - conda-forge
-            dependencies:
-              # Default bismark
-              - salmon=1.6.0
-              - fastqc=0.11.9
-              - multiqc=1.11
-            '''.stripIndent(true)
-
-        expect:
-        RegHelper.guessCondaRecipeName(null) == null
-        RegHelper.guessCondaRecipeName(CONDA) == 'rnaseq-nf'
-    }
-
-    def 'should find conda name with anonymous recipe' () {
-        given:
-        def CONDA = '''\
-            channels:
-              - defaults
-              - bioconda
-              - conda-forge
-            dependencies:
-              # Default bismark
-              - salmon=1.6.0
-              - fastqc=0.11.9
-              - bioconda::multiqc=1.11
-            '''.stripIndent(true)
-
-        expect:
-        RegHelper.guessCondaRecipeName(CONDA) == 'salmon-1.6.0_fastqc-0.11.9_multiqc-1.11'
-    }
-
-    def 'should find spack recipe names from spack yaml file' () {
-        def SPACK = '''\
-            spack:
-              specs: [bwa@0.7.15, salmon@1.1.1, nano@1.0 x=one]
-              concretizer: {unify: true, reuse: true}
-            '''.stripIndent(true)
-
-        expect:
-        RegHelper.guessSpackRecipeName(null) == null
-        RegHelper.guessSpackRecipeName(SPACK) == 'bwa-0.7.15_salmon-1.1.1_nano-1.0'
-    }
-
-    def 'should throw an exception when spack section is not present in spack yaml file' () {
-        def SPACK = '''\
-              specs: [bwa@0.7.15, salmon@1.1.1, nano@1.0 x=one]
-              concretizer: {unify: true, reuse: true}
-            '''.stripIndent(true)
-
-        when:
-        RegHelper.guessSpackRecipeName(SPACK)
-        then:
-        def e = thrown(BadRequestException)
-        and:
-        e.message == 'Malformed Spack environment file - missing "spack:" section'
-    }
-
-    def 'should throw an exception when spack.specs section is not present in spack yaml file' () {
-        def SPACK = '''\
-            spack:
-              concretizer: {unify: true, reuse: true}
-            '''.stripIndent(true)
-
-        when:
-        RegHelper.guessSpackRecipeName(SPACK)
-        then:
-        def e = thrown(BadRequestException)
-        and:
-        e.message == 'Malformed Spack environment file - missing "spack.specs:" section'
     }
 
     def 'should compute sip hash' () {

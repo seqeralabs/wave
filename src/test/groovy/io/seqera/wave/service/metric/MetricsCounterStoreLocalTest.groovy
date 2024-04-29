@@ -43,4 +43,14 @@ class MetricsCounterStoreLocalTest extends Specification {
         metricsCounterStore.get('bar') == 1
     }
 
+    def 'should get correct org count value' () {
+        when:
+        metricsCounterStore.inc('builds/o/foo.com')
+        metricsCounterStore.inc('builds/o/bar.org')
+        metricsCounterStore.inc('pulls/o/bar.in')
+
+        then:
+        metricsCounterStore.getAllMatchingEntries('builds/o*') == ['builds/o/foo.com':1, 'builds/o/bar.org':1]
+        metricsCounterStore.getAllMatchingEntries('pulls/o*') == ['pulls/o/bar.in':1]
+    }
 }

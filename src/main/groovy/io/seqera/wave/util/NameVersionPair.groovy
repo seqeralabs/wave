@@ -16,19 +16,30 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.metric.model
+package io.seqera.wave.util
 
+import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+
 /**
- * Model a Wave builds per metric response
+ * Helper class to handle tool names and versions
  *
- * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-class GetBuildsMetricsResponse {
-    Map result
+@Canonical
+class NameVersionPair {
 
-    GetBuildsMetricsResponse(Map result) {
-        this.result = result
+    Collection<String> names
+    Collection<String> versions
+
+    List<String> both() {
+        final result = new ArrayList()
+        for( int i=0; i<names.size(); i++) {
+            final v = versions?[i]
+            result.add( v ? "${names[i]}-${v}".toString() : names[i] )
+        }
+        return result
     }
+
 }

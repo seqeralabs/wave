@@ -19,6 +19,8 @@
 package io.seqera.wave.service.logs
 
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
+
 import io.micronaut.core.annotation.Nullable
 
 import groovy.transform.CompileStatic
@@ -30,6 +32,7 @@ import io.micronaut.objectstorage.ObjectStorageEntry
 import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.request.UploadRequest
 import io.micronaut.runtime.event.annotation.EventListener
+import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.persistence.PersistenceService
@@ -66,6 +69,10 @@ class BuildLogServiceImpl implements BuildLogService {
     @Value('${wave.build.logs.maxLength:100000}')
     private long maxLength
 
+    @Inject
+    @Named(TaskExecutors.IO)
+    private volatile ExecutorService ioExecutor
+
     @PostConstruct
     private void init() {
         log.info "Creating Build log service bucket=$bucket; prefix=$prefix; maxLength: ${maxLength}"
@@ -83,7 +90,7 @@ class BuildLogServiceImpl implements BuildLogService {
     @EventListener
     void onBuildEvent(BuildEvent event) {
         if(event.result.logs) {
-            CompletableFuture.supplyAsync(() -> storeLog(event.result.id, event.result.logs))
+            CompletableFuture.supplyAsync(() -> storeLog(event.result.id, event.result.logs), ioExecutor)
         }
     }
 

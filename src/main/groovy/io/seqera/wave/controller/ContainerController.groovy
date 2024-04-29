@@ -39,6 +39,7 @@ import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.security.annotation.Secured
 import io.micronaut.security.authentication.AuthorizationException
 import io.micronaut.security.rules.SecurityRule
+import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.configuration.BuildConfig
@@ -74,17 +75,18 @@ import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
 import static io.seqera.wave.WaveDefault.TOWER
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
-import static ContainerHelper.condaFileFromRequest
-import static ContainerHelper.decodeBase64OrFail
-import static ContainerHelper.spackFileFromRequest
+import static io.seqera.wave.util.ContainerHelper.checkContainerSpec
+import static io.seqera.wave.util.ContainerHelper.condaFileFromRequest
+import static io.seqera.wave.util.ContainerHelper.containerFileFromPackages
+import static io.seqera.wave.util.ContainerHelper.decodeBase64OrFail
+import static io.seqera.wave.util.ContainerHelper.makeContainerId
+import static io.seqera.wave.util.ContainerHelper.makeResponseV1
+import static io.seqera.wave.util.ContainerHelper.makeResponseV2
+import static io.seqera.wave.util.ContainerHelper.makeTargetImage
+import static io.seqera.wave.util.ContainerHelper.patchPlatformEndpoint
+import static io.seqera.wave.util.ContainerHelper.spackFileFromRequest
 import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
-
-import static io.seqera.wave.controller.ContainerHelper.makeResponseV2
-import static io.seqera.wave.controller.ContainerHelper.makeResponseV1
-import static io.seqera.wave.controller.ContainerHelper.patchPlatformEndpoint
-import static io.seqera.wave.controller.ContainerHelper.containerFileFromPackages
 import static java.util.concurrent.CompletableFuture.completedFuture
-
 /**
  * Implement a controller to receive container token requests
  * 
@@ -208,6 +210,10 @@ class ContainerController {
             throw new BadRequestException("Attribute `spackFile` is deprecated - use `packages` instead")
         if( !v2 && req.packages )
             throw new BadRequestException("Attribute `packages` is not allowed")
+        if( !v2 && req.containerFile && req.freeze && (!req.buildRepository || req.buildRepository==buildConfig.defaultPublicRepository) )
+            throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode")
+        if( !v2 && req.nameStrategy )
+            throw new BadRequestException("Attribute `nameStrategy` is not allowed by legacy container endpoint")
 
         if( v2 && req.packages ) {
             // generate the container file required to assemble the container
@@ -253,29 +259,40 @@ class ContainerController {
         final spackContent = spackFileFromRequest(req)
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
-        final build = req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository ? buildConfig.defaultPublicRepository : buildConfig.defaultBuildRepository)
-        final cache = req.cacheRepository ?: buildConfig.defaultCacheRepository
-        final configJson = dockerAuthService.credentialsConfigJson(containerSpec, build, cache, identity)
+        final buildRepository = req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository ? buildConfig.defaultPublicRepository : buildConfig.defaultBuildRepository)
+        final cacheRepository = req.cacheRepository ?: buildConfig.defaultCacheRepository
+        final configJson = dockerAuthService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
         final scanId = scanEnabled && format==DOCKER ? LongRndKey.rndHex() : null
-        // create a unique digest to identify the request
+        final containerFile = spackContent ? prependBuilderTemplate(containerSpec,format) : containerSpec
+        // use 'imageSuffix' strategy by default for public repo images
+        final nameStrategy = req.nameStrategy==null && buildRepository && buildConfig.defaultPublicRepository && buildRepository.startsWith(buildConfig.defaultPublicRepository) ? ImageNameStrategy.imageSuffix : null
+
+        checkContainerSpec(containerSpec)
+
+        // create a unique digest to identify the build request
+        final containerId = makeContainerId(containerFile, condaContent, spackContent, platform, buildRepository, req.buildContext)
+        final targetImage = makeTargetImage(format, buildRepository, containerId, condaContent, spackContent, nameStrategy)
+
         return new BuildRequest(
-                (spackContent ? prependBuilderTemplate(containerSpec,format) : containerSpec),
-                Path.of(buildConfig.buildWorkspace),
-                build,
+                containerId,
+                containerFile,
                 condaContent,
                 spackContent,
-                format,
+                Path.of(buildConfig.buildWorkspace),
+                targetImage,
                 identity,
-                containerConfig,
-                req.buildContext,
                 platform,
-                configJson,
-                cache,
-                scanId,
+                cacheRepository,
                 ip,
-                offset)
+                configJson,
+                offset,
+                containerConfig,
+                scanId,
+                req.buildContext,
+                format
+        )
     }
 
     protected BuildTrack checkBuild(BuildRequest build, boolean dryRun) {

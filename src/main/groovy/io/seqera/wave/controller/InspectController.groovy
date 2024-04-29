@@ -39,7 +39,7 @@ import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
 import jakarta.inject.Named
-import static io.seqera.wave.controller.ContainerHelper.patchPlatformEndpoint
+import static io.seqera.wave.util.ContainerHelper.patchPlatformEndpoint
 
 /**
  * Implement container inspect capability
@@ -75,6 +75,9 @@ class InspectController {
 
     @Post("/v1alpha1/inspect")
     CompletableFuture<HttpResponse<ContainerInspectResponse>> inspect(ContainerInspectRequest req) {
+
+        if( !req.containerImage )
+            throw new BadRequestException("Missing 'containerImage' attribute")
 
         // this is needed for backward compatibility with old clients
         if( !req.towerEndpoint ) {

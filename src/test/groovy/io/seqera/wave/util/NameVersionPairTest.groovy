@@ -16,19 +16,28 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.metric.model
+package io.seqera.wave.util
 
-import groovy.transform.CompileStatic
+import spock.lang.Specification
+import spock.lang.Unroll
+
 /**
- * Model a Wave pulls count per metric response
  *
- * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@CompileStatic
-class GetPullsMetricsResponse {
-    Map result
+class NameVersionPairTest extends Specification {
 
-    GetPullsMetricsResponse(Map result) {
-        this.result = result
+    @Unroll
+    def 'should join both names and version' () {
+        expect:
+        new NameVersionPair(NAMES,VERS).both() == EXPECTED
+
+        where:
+        NAMES                       | VERS                  | EXPECTED
+        ['foo']                     | ['1.0']               | ['foo-1.0']
+        ['alpha','delta', 'gamma']  | ['1.0',null,'3.0']    | ['alpha-1.0', 'delta', 'gamma-3.0']
+        ['alpha','delta', 'gamma']  | ['1.0']               | ['alpha-1.0', 'delta', 'gamma']
+
     }
+
 }

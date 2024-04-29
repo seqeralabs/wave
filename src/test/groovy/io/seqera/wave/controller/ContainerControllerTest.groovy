@@ -193,7 +193,7 @@ class ContainerControllerTest extends Specification {
         and:
         data.containerFile == DOCKER
         data.identity.userId == 100
-        data.containerImage ==  'wave/build:be9ee6ac1eeff4b5'
+        data.containerImage ==  'wave/library/build:be9ee6ac1eeff4b5'
         data.containerConfig == cfg
         data.platform.toString() == 'linux/arm64'
     }
@@ -222,7 +222,7 @@ class ContainerControllerTest extends Specification {
         and:
         data.containerFile == DOCKER
         data.identity.userId == 100
-        data.containerImage ==  'wave/build:be9ee6ac1eeff4b5'
+        data.containerImage ==  'wave/library/build:be9ee6ac1eeff4b5'
         data.containerConfig == cfg
         data.platform.toString() == 'linux/arm64'
     }
@@ -238,7 +238,7 @@ class ContainerControllerTest extends Specification {
         then:
         build.containerId =~ /7efaa2ed59c58a16/
         build.containerFile == 'FROM foo'
-        build.targetImage == 'wave/build:7efaa2ed59c58a16'
+        build.targetImage == 'wave/library/build:7efaa2ed59c58a16'
         build.platform == ContainerPlatform.of('amd64')
         
         when:
@@ -247,7 +247,7 @@ class ContainerControllerTest extends Specification {
         then:
         build.containerId =~ /7efaa2ed59c58a16/
         build.containerFile == 'FROM foo'
-        build.targetImage == 'wave/build:7efaa2ed59c58a16'
+        build.targetImage == 'wave/library/build:7efaa2ed59c58a16'
         build.platform == ContainerPlatform.of('amd64')
 
         // using 'arm' platform changes the id
@@ -257,7 +257,7 @@ class ContainerControllerTest extends Specification {
         then:
         build.containerId =~ /be9ee6ac1eeff4b5/
         build.containerFile == 'FROM foo'
-        build.targetImage == 'wave/build:be9ee6ac1eeff4b5'
+        build.targetImage == 'wave/library/build:be9ee6ac1eeff4b5'
         build.platform == ContainerPlatform.of('arm64')
 
         when:
@@ -267,7 +267,7 @@ class ContainerControllerTest extends Specification {
         build.containerId =~ /c6dac2e544419f71/
         build.containerFile == 'FROM foo'
         build.condaFile == 'some::conda-recipe'
-        build.targetImage == 'wave/build:c6dac2e544419f71'
+        build.targetImage == 'wave/library/build:c6dac2e544419f71'
         build.platform == ContainerPlatform.of('arm64')
 
         when:
@@ -279,7 +279,7 @@ class ContainerControllerTest extends Specification {
         build.containerFile.startsWith('# Builder image\n')
         build.condaFile == null
         build.spackFile == 'some::spack-recipe'
-        build.targetImage == 'wave/build:b7d730d274d1e057'
+        build.targetImage == 'wave/library/build:b7d730d274d1e057'
         build.platform == ContainerPlatform.of('arm64')
     }
 
