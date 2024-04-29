@@ -69,7 +69,6 @@ import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
 import io.seqera.wave.util.LongRndKey
-import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
@@ -77,10 +76,10 @@ import static io.seqera.wave.WaveDefault.TOWER
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static io.seqera.wave.util.ContainerHelper.checkContainerSpec
-import static io.seqera.wave.util.ContainerHelper.makeContainerId
 import static io.seqera.wave.util.ContainerHelper.condaFileFromRequest
 import static io.seqera.wave.util.ContainerHelper.containerFileFromPackages
 import static io.seqera.wave.util.ContainerHelper.decodeBase64OrFail
+import static io.seqera.wave.util.ContainerHelper.makeContainerId
 import static io.seqera.wave.util.ContainerHelper.makeResponseV1
 import static io.seqera.wave.util.ContainerHelper.makeResponseV2
 import static io.seqera.wave.util.ContainerHelper.makeTargetImage
@@ -247,16 +246,6 @@ class ContainerController {
         }
     }
 
-    protected String publicRepo(SubmitContainerTokenRequest req) {
-        if( !buildConfig.defaultPublicRepository )
-            return null
-        if( buildConfig.defaultPublicRepository.contains('/') )
-            return buildConfig.defaultPublicRepository
-        return !req.nameStrategy || req.nameStrategy==ImageNameStrategy.imageSuffix
-                ? StringUtils.pathConcat(buildConfig.defaultPublicRepository, 'library')
-                : StringUtils.pathConcat(buildConfig.defaultPublicRepository, 'library/build')
-    }
-
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
         if( !req.containerFile )
             throw new BadRequestException("Missing dockerfile content")
@@ -270,7 +259,7 @@ class ContainerController {
         final spackContent = spackFileFromRequest(req)
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
-        final buildRepository = req.buildRepository ?: (req.freeze && publicRepo(req) ? publicRepo(req) : buildConfig.defaultBuildRepository)
+        final buildRepository = req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository ? buildConfig.defaultPublicRepository : buildConfig.defaultBuildRepository)
         final cacheRepository = req.cacheRepository ?: buildConfig.defaultCacheRepository
         final configJson = dockerAuthService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
         final containerConfig = req.freeze ? req.containerConfig : null
