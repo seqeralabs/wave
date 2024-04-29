@@ -576,10 +576,57 @@ class K8sServiceImpl implements K8sService {
         builder.build()
     }
 
-    protected List<V1EnvVar> toEnvList(Map<String,String> env) {
+    @Override
+    V1Job transferJob(String name, String podName, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
+        final spec = createTransferSpec(name, podName, containerImage, args, blobConfig)
+
+        return k8sClient
+                .batchV1Api()
+                .createNamespacedJob(namespace, spec, null, null, null,null)
+    }
+
+    V1Job createTransferSpec(String name, String podName, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
+
+        V1JobBuilder builder = new V1JobBuilder()
+
+        builder.withNewMetadata()
+                .withNamespace(namespace)
+                .withName(name)
+                .withLabels(labels)
+                .endMetadata()
+
+        final resources = new V1ResourceRequirements()
+        if (requestsCpu)
+            resources.putRequestsItem('cpu', new Quantity(requestsCpu))
+        if (requestsMemory)
+            resources.putRequestsItem('memory', new Quantity(requestsMemory))
+
+        def spec = builder.withNewSpec()
+                .withBackoffLimit(0)
+                .withNewTemplate()
+                .editOrNewSpec()
+                    .withServiceAccount(serviceAccount)
+                    .withActiveDeadlineSeconds(blobConfig.transferTimeout.toSeconds())
+                    .withRestartPolicy("Never")
+                    .addNewContainer()
+                        .withName(podName)
+                        .withImage(containerImage)
+                        .withArgs(args)
+                        .withResources(resources)
+                        .withEnv(toEnvList(blobConfig.getEnvironment()))
+                    .endContainer()
+                .endSpec()
+                .endTemplate()
+                .endSpec()
+
+        return spec.build()
+    }
+
+    protected static List<V1EnvVar> toEnvList(Map<String,String> env) {
         final result = new ArrayList<V1EnvVar>(env.size())
         for( Map.Entry<String,String> it : env )
             result.add( new V1EnvVar().name(it.key).value(it.value) )
         return result
     }
+
 }

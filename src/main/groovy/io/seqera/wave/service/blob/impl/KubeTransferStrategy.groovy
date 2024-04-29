@@ -48,8 +48,10 @@ class KubeTransferStrategy implements TransferStrategy {
 
     @Override
     BlobCacheInfo transfer(BlobCacheInfo info, List<String> command) {
-        final podName = podName(info)
-        final pod = k8sService.transferContainer(podName, blobConfig.s5Image, command, blobConfig)
+        final podName = getName(info, "pod")
+        final jobName = getName(info, "job")
+        final job = k8sService.transferJob(jobName, podName, blobConfig.s5Image, command, blobConfig)
+        final pod = k8sService.getPod(podName)
         final terminated = k8sService.waitPod(pod, blobConfig.transferTimeout.toMillis())
         final stdout = k8sService.logsPod(podName)
         return terminated
@@ -57,8 +59,8 @@ class KubeTransferStrategy implements TransferStrategy {
                 : info.failed(stdout)
     }
 
-    protected String podName(BlobCacheInfo info) {
-        return 'transfer-' + Hashing
+    protected static String getName(BlobCacheInfo info, String type) {
+        return "transfer-$type-" + Hashing
                 .sipHash24()
                 .newHasher()
                 .putUnencodedChars(info.locationUri)
