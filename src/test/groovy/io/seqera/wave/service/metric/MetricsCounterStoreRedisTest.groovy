@@ -40,10 +40,10 @@ class MetricsCounterStoreRedisTest  extends Specification implements RedisTestCo
                 REDIS_PORT: redisPort
         ], 'test', 'redis')
         jedis = new Jedis(redisHostName, redisPort as int)
-        jedis.flushAll()
     }
 
     def cleanup(){
+        jedis.flushAll()
         jedis.close()
     }
     
