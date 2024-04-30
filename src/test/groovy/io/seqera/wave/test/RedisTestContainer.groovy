@@ -18,7 +18,7 @@
 
 package io.seqera.wave.test
 
-import io.micronaut.core.io.socket.SocketUtils
+
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.testcontainers.containers.GenericContainer
@@ -33,6 +33,7 @@ trait RedisTestContainer {
     private static final Logger log = LoggerFactory.getLogger(RedisTestContainer)
 
     static GenericContainer redisContainer
+
 
     String getRedisHostName(){
         redisContainer.getHost()
