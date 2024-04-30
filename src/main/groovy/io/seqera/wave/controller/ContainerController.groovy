@@ -220,7 +220,7 @@ class ContainerController {
         }
 
         // prevent the use of dockerfile file without providing
-        if( req.containerFile && req.freeze && !isCustomRepo0(req.buildRepository))
+        if( req.containerFile && req.freeze && !isCustomRepo0(req.buildRepository) && (!v2 || (v2 && !req.packages)))
             throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode")
 
         final ip = addressResolver.resolve(httpRequest)
@@ -336,8 +336,6 @@ class ContainerController {
             throw new BadRequestException("Attributes 'containerImage' and 'containerFile' cannot be used in the same request")
         if( req.containerImage?.contains('@sha256:') && req.containerConfig && !req.freeze )
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
-        if( req.freeze && !req.buildRepository && !buildConfig.defaultPublicRepository )
-            throw new BadRequestException("When freeze mode is enabled the target build repository must be specified - see 'wave.build.repository' setting")
         if( req.formatSingularity() && !req.freeze )
             throw new BadRequestException("Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting")
 
