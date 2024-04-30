@@ -87,7 +87,7 @@ jobs:
 
       - name: Delete build workspace
         run: |
-          rm -rf /home/runner/work/wave/wave/build-workspace
+          sudo rm -rf /home/runner/work/wave/wave/build-workspace
 
       - name: Publish tests report
         if: failure()
