@@ -50,6 +50,7 @@ class SpillwayRedisRateLimiterTest extends Specification implements RedisTestCon
     }
 
     def cleanup(){
+        jedis.flushAll()
         jedis.close()
     }
 

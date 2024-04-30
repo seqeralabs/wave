@@ -46,8 +46,6 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
 
     EmbeddedServer embeddedServer
 
-    int port
-
     Jedis jedis
 
     def setup() {
@@ -65,6 +63,7 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
     }
 
     def cleanup(){
+        jedis.flushAll()
         jedis.close()
     }
 
