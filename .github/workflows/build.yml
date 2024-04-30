@@ -85,7 +85,7 @@ jobs:
           QUAY_PAT: ${{ secrets.QUAY_PAT }}
           GITHUB_TOKEN: ${{ secrets.GH_SEQERA_TOKEN }}
 
-      - name: delete build workspace
+      - name: Delete build workspace
         run: |
           rm -rf /home/runner/work/wave/wave/build-workspace
 
