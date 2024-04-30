@@ -210,8 +210,6 @@ class ContainerController {
             throw new BadRequestException("Attribute `spackFile` is deprecated - use `packages` instead")
         if( !v2 && req.packages )
             throw new BadRequestException("Attribute `packages` is not allowed")
-        if( !v2 && req.containerFile && req.freeze && (!req.buildRepository || req.buildRepository==buildConfig.defaultPublicRepository) )
-            throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode")
         if( !v2 && req.nameStrategy )
             throw new BadRequestException("Attribute `nameStrategy` is not allowed by legacy container endpoint")
 
@@ -220,6 +218,10 @@ class ContainerController {
             final generated = containerFileFromPackages(req.packages, req.formatSingularity())
             req = req.copyWith(containerFile: generated.bytes.encodeBase64().toString())
         }
+
+        // prevent the use of dockerfile file without providing
+        if( req.containerFile && req.freeze && !isCustomRepo0(req.buildRepository) && (!v2 || (v2 && !req.packages)))
+            throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode")
 
         final ip = addressResolver.resolve(httpRequest)
         final data = makeRequestData(req, identity, ip)
@@ -234,6 +236,18 @@ class ContainerController {
         log.debug "New container request fulfilled - token=$token.value; expiration=$token.expiration; container=$data.containerImage; build=$resp.buildId; identity=$identity"
         // return response
         return HttpResponse.ok(resp)
+    }
+
+    protected boolean isCustomRepo0(String repo) {
+        if( !repo )
+            return false
+        if( buildConfig.defaultPublicRepository && repo.startsWith(buildConfig.defaultPublicRepository) )
+            return false
+        if( buildConfig.defaultBuildRepository && repo.startsWith(buildConfig.defaultBuildRepository) )
+            return false
+        if( buildConfig.defaultCacheRepository && repo.startsWith(buildConfig.defaultCacheRepository) )
+            return false
+        return true
     }
 
     protected void storeContainerRequest0(SubmitContainerTokenRequest req, ContainerRequestData data, TokenData token, String target, String ip) {
@@ -322,8 +336,6 @@ class ContainerController {
             throw new BadRequestException("Attributes 'containerImage' and 'containerFile' cannot be used in the same request")
         if( req.containerImage?.contains('@sha256:') && req.containerConfig && !req.freeze )
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
-        if( req.freeze && !req.buildRepository && !buildConfig.defaultPublicRepository )
-            throw new BadRequestException("When freeze mode is enabled the target build repository must be specified - see 'wave.build.repository' setting")
         if( req.formatSingularity() && !req.freeze )
             throw new BadRequestException("Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting")
 
