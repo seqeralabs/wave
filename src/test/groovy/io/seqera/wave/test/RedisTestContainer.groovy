@@ -34,19 +34,18 @@ trait RedisTestContainer {
 
     static GenericContainer redisContainer
 
-    int redisPort = SocketUtils.findAvailableTcpPort()
     String getRedisHostName(){
         redisContainer.getHost()
     }
 
     String getRedisPort(){
-        redisContainer.getMappedPort(redisPort)
+        redisContainer.getMappedPort(6379)
     }
 
     def setupSpec() {
         log.debug "Starting Redis test container"
         redisContainer = new GenericContainer(DockerImageName.parse("redis:7.0.4-alpine"))
-                .withExposedPorts(redisPort)
+                .withExposedPorts(6379)
                 .waitingFor(Wait.forLogMessage(".*Ready to accept connections.*\\n", 1))
         redisContainer.start()
         log.debug "Started Redis test container"
