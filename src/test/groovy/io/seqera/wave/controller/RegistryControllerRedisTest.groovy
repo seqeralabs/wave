@@ -65,7 +65,6 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
     }
 
     def cleanup(){
-        jedis.flushAll()
         jedis.close()
     }
 

@@ -43,7 +43,6 @@ class MetricsCounterStoreRedisTest  extends Specification implements RedisTestCo
     }
 
     def cleanup(){
-        jedis.flushAll()
         jedis.close()
     }
     
