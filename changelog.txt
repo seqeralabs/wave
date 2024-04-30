@@ -1,4 +1,7 @@
 # Wave changelog
+1.7.4 - 30 Apr 2024
+- Prevent use community registry w/o packages (2) [9eb11031]
+
 1.7.3 - 30 Apr 2024 
 - Prevent use community registry w/o packages [24a409de]
 
