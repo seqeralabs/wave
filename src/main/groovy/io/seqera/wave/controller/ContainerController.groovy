@@ -260,6 +260,26 @@ class ContainerController {
         }
     }
 
+    protected String communityRepo(String repo, ImageNameStrategy strategy) {
+        assert repo, 'Missing default public repository setting'
+
+        final parts = repo.tokenize('/')
+        // check if the repository does not ue any reserved word
+        if( parts.size()>1 && buildConfig.reservedWords ) {
+            for( String it : parts[1..-1] ) {
+                if( buildConfig.reservedWords.contains(it) )
+                    throw new BadRequestException("Use of repository '$repo' is not allowed")
+            }
+        }
+
+        // the repository is fully qualified use as it is
+        if( parts.size()>1 ) {
+            return repo
+        }
+        else
+            return repo + (!strategy || strategy==ImageNameStrategy.imageSuffix ? '/library' : '/library/build')
+    }
+
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
         if( !req.containerFile )
             throw new BadRequestException("Missing dockerfile content")
@@ -273,7 +293,9 @@ class ContainerController {
         final spackContent = spackFileFromRequest(req)
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
-        final buildRepository = req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository ? buildConfig.defaultPublicRepository : buildConfig.defaultBuildRepository)
+        final buildRepository = req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository
+                ? communityRepo(buildConfig.defaultPublicRepository, req.nameStrategy)
+                : buildConfig.defaultBuildRepository)
         final cacheRepository = req.cacheRepository ?: buildConfig.defaultCacheRepository
         final configJson = dockerAuthService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
         final containerConfig = req.freeze ? req.containerConfig : null
@@ -281,7 +303,10 @@ class ContainerController {
         final scanId = scanEnabled && format==DOCKER ? LongRndKey.rndHex() : null
         final containerFile = spackContent ? prependBuilderTemplate(containerSpec,format) : containerSpec
         // use 'imageSuffix' strategy by default for public repo images
-        final nameStrategy = req.nameStrategy==null && buildRepository && buildConfig.defaultPublicRepository && buildRepository.startsWith(buildConfig.defaultPublicRepository) ? ImageNameStrategy.imageSuffix : null
+        final nameStrategy = req.nameStrategy==null
+                && buildRepository
+                && buildConfig.defaultPublicRepository
+                && buildRepository.startsWith(buildConfig.defaultPublicRepository) ? ImageNameStrategy.imageSuffix : null
 
         checkContainerSpec(containerSpec)
 
