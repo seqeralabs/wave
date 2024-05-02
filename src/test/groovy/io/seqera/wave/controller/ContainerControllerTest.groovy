@@ -562,52 +562,63 @@ class ContainerControllerTest extends Specification {
     @Unroll
     def 'should normalise community repo' () {
         given:
-        def config = new BuildConfig(reservedWords: ['build','library'] as Set)
+        def config = new BuildConfig(defaultPublicRepository: PUBLIC, reservedWords: ['build','library'] as Set)
         def controller = new ContainerController(buildConfig: config)
         expect:
-        controller.communityRepo(REPO, STRATEGY) == EXPECTED
+        controller.targetRepo(REPO, STRATEGY) == EXPECTED
         
         where:
-        REPO                | STRATEGY                      | EXPECTED
-        'foo.com/alpha'     | null                          | 'foo.com/alpha'
-        'foo.com/alpha'     | ImageNameStrategy.imageSuffix | 'foo.com/alpha'
-        'foo.com/alpha'     | ImageNameStrategy.tagPrefix   | 'foo.com/alpha'
+        REPO                | STRATEGY                      | PUBLIC        | EXPECTED
+        'foo.com/alpha'     | null                          | 'foo.com'     | 'foo.com/alpha'
+        'foo.com/alpha'     | ImageNameStrategy.imageSuffix | 'foo.com'     | 'foo.com/alpha'
+        'foo.com/alpha'     | ImageNameStrategy.tagPrefix   | 'foo.com'     | 'foo.com/alpha'
         and:
-        'foo.com/alpha/beta'| null                          | 'foo.com/alpha/beta'
-        'foo.com/alpha/beta'| ImageNameStrategy.imageSuffix | 'foo.com/alpha/beta'
-        'foo.com/alpha/beta'| ImageNameStrategy.tagPrefix   | 'foo.com/alpha/beta'
+        'foo.com/alpha/beta'| null                          | 'foo.com'     | 'foo.com/alpha/beta'
+        'foo.com/alpha/beta'| ImageNameStrategy.imageSuffix | 'foo.com'     | 'foo.com/alpha/beta'
+        'foo.com/alpha/beta'| ImageNameStrategy.tagPrefix   | 'foo.com'     | 'foo.com/alpha/beta'
         and:
-        'foo.com'           | null                          | 'foo.com/library'
-        'foo.com'           | ImageNameStrategy.imageSuffix | 'foo.com/library'
-        'foo.com'           | ImageNameStrategy.tagPrefix   | 'foo.com/library/build'
+        'foo.com'           | null                          | 'foo.com'     | 'foo.com/library'
+        'foo.com'           | ImageNameStrategy.imageSuffix | 'foo.com'     | 'foo.com/library'
+        'foo.com'           | ImageNameStrategy.tagPrefix   | 'foo.com'     | 'foo.com/library/build'
+        and:
+        'foo.com'           | null                          | null          | 'foo.com'
+        'foo.com/alpha'     | null                          | null          | 'foo.com/alpha'
+        'foo.com/alpha'     | ImageNameStrategy.imageSuffix | null          | 'foo.com/alpha'
+        'foo.com/alpha'     | ImageNameStrategy.tagPrefix   | null          | 'foo.com/alpha'
+        'foo.com/a/b/c'     | null                          | 'this.com'    | 'foo.com/a/b/c'
 
     }
 
     def 'should not allow reserved words' () {
         given:
-        def config = new BuildConfig(reservedWords: ['build','library'] as Set)
+        def config = new BuildConfig(defaultPublicRepository: 'foo.com',  reservedWords: ['build','library'] as Set)
         def controller = new ContainerController(buildConfig: config)
 
         when:
-        controller.communityRepo('foo.com/library', null)
+        controller.targetRepo('foo.com/library', null)
         then:
         def e = thrown(BadRequestException)
         e.message == "Use of repository 'foo.com/library' is not allowed"
 
         when:
-        controller.communityRepo('foo.com/build', null)
+        controller.targetRepo('foo.com/build', null)
         then:
         e = thrown(BadRequestException)
         e.message == "Use of repository 'foo.com/build' is not allowed"
 
         when:
-        controller.communityRepo('foo.com/bar/build', null)
+        controller.targetRepo('foo.com/bar/build', null)
         then:
         e = thrown(BadRequestException)
         e.message == "Use of repository 'foo.com/bar/build' is not allowed"
 
         when:
-        controller.communityRepo('foo.com/ok', null)
+        controller.targetRepo('foo.com/ok', null)
+        then:
+        noExceptionThrown()
+
+        when:
+        controller.targetRepo('bar.com/build', null)
         then:
         noExceptionThrown()
     }

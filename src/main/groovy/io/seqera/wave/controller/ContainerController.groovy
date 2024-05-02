@@ -260,11 +260,16 @@ class ContainerController {
         }
     }
 
-    protected String communityRepo(String repo, ImageNameStrategy strategy) {
+    protected String targetRepo(String repo, ImageNameStrategy strategy) {
         assert repo, 'Missing default public repository setting'
+        // ignore everything that's not a public (community) repo
+        if( !buildConfig.defaultPublicRepository )
+            return repo
+        if( !repo.startsWith(buildConfig.defaultPublicRepository))
+            return repo
 
-        final parts = repo.tokenize('/')
         // check if the repository does not ue any reserved word
+        final parts = repo.tokenize('/')
         if( parts.size()>1 && buildConfig.reservedWords ) {
             for( String it : parts[1..-1] ) {
                 if( buildConfig.reservedWords.contains(it) )
@@ -293,9 +298,9 @@ class ContainerController {
         final spackContent = spackFileFromRequest(req)
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
-        final buildRepository = req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository
-                ? communityRepo(buildConfig.defaultPublicRepository, req.nameStrategy)
-                : buildConfig.defaultBuildRepository)
+        final buildRepository = targetRepo( req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository
+                ? buildConfig.defaultPublicRepository
+                : buildConfig.defaultBuildRepository), req.nameStrategy)
         final cacheRepository = req.cacheRepository ?: buildConfig.defaultCacheRepository
         final configJson = dockerAuthService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
         final containerConfig = req.freeze ? req.containerConfig : null
