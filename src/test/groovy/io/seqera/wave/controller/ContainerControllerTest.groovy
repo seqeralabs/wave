@@ -577,7 +577,7 @@ class ContainerControllerTest extends Specification {
         'foo.com/alpha/beta'| ImageNameStrategy.imageSuffix | 'foo.com'     | 'foo.com/alpha/beta'
         'foo.com/alpha/beta'| ImageNameStrategy.tagPrefix   | 'foo.com'     | 'foo.com/alpha/beta'
         and:
-        'foo.com'           | null                          | 'foo.com'     | 'foo.com/library'
+        'foo.com'           | null                          | 'foo.com'     | 'foo.com/library/build'
         'foo.com'           | ImageNameStrategy.imageSuffix | 'foo.com'     | 'foo.com/library'
         'foo.com'           | ImageNameStrategy.tagPrefix   | 'foo.com'     | 'foo.com/library/build'
         and:
