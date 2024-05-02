@@ -166,8 +166,6 @@ class BlobCacheServiceImpl implements BlobCacheService {
         final s5cmd = s5cmd(route, info)
 
         final command = List.of(
-                'sleep',
-                blobConfig.delay.toSeconds().toString(),
                 'sh',
                 '-c',
                 Escape.cli(curl) + ' | ' + Escape.cli(s5cmd) )
