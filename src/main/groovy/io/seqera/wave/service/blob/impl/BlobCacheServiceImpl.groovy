@@ -168,7 +168,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
         final command = List.of(
                 'sh',
                 '-c',
-                Escape.cli(curl) + ' | ' + Escape.cli(s5cmd) )
+                'sleep '+blobConfig.delay.toSeconds().toString()+' && '+Escape.cli(curl) + ' | ' + Escape.cli(s5cmd) )
 
         log.trace "== Blob cache transfer command: ${command.join(' ')}"
         return command

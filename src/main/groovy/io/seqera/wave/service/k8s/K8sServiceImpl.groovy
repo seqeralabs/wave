@@ -568,7 +568,6 @@ class K8sServiceImpl implements K8sService {
                 .withName(name)
                 .withImage(containerImage)
                 .withEnv(toEnvList(blobConfig.getEnvironment()))
-                .withCommand("/bin/sh", "-c", 'sleep '+blobConfig.getDelay().toSeconds())
                 .withArgs(args)
                 .withResources(requests)
                 .endContainer()
