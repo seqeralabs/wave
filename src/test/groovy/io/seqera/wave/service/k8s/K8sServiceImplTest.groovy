@@ -510,6 +510,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
         def config = Mock(BlobCacheConfig) {
             getTransferTimeout() >> Duration.ofSeconds(20)
+            getDelay()  >> Duration.ofSeconds(10)
             getEnvironment() >> [:]
         }
 
@@ -546,6 +547,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
         def config = Mock(BlobCacheConfig) {
             getTransferTimeout() >> Duration.ofSeconds(20)
+            getDelay()  >> Duration.ofSeconds(10)
             getEnvironment() >> ['FOO':'one', 'BAR':'two']
             getRequestsCpu() >> '2'
             getRequestsMemory() >> '8Gi'
