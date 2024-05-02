@@ -19,6 +19,8 @@ package io.seqera.wave.service.blob.impl
 
 import spock.lang.Specification
 
+import java.time.Duration
+
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RoutePath
@@ -64,7 +66,7 @@ class BlobCacheServiceImplTest extends Specification implements AwsS3TestContain
     def 'should get transfer command' () {
         given:
         def proxyService = Mock(RegistryProxyService)
-        def service = new BlobCacheServiceImpl( blobConfig: new BlobCacheConfig(storageBucket: 's3://store/blobs/'), proxyService: proxyService )
+        def service = new BlobCacheServiceImpl( blobConfig: new BlobCacheConfig(storageBucket: 's3://store/blobs/', delay: Duration.ofSeconds(10)), proxyService: proxyService )
         def route = RoutePath.v2manifestPath(ContainerCoordinates.parse('ubuntu@sha256:aabbcc'))
         and:
         def headers = ['content-type': 'something']
@@ -78,7 +80,7 @@ class BlobCacheServiceImplTest extends Specification implements AwsS3TestContain
         result == [
                 'sh',
                 '-c',
-                "curl -X GET 'http://foo' | s5cmd --json pipe --content-type something 's3://store/blobs/docker.io/v2/library/ubuntu/manifests/sha256:aabbcc'"
+                "sleep 10 && curl -X GET 'http://foo' | s5cmd --json pipe --content-type something 's3://store/blobs/docker.io/v2/library/ubuntu/manifests/sha256:aabbcc'"
         ]
     }
 
