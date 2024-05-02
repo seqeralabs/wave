@@ -78,6 +78,9 @@ class BuildConfig {
     @Value('${wave.build.compress-caching:true}')
     Boolean compressCaching = true
 
+    @Value('${wave.build.reserved-words:[]}')
+    Set<String> reservedWords
+
     @PostConstruct
     private void init() {
         log.debug("Builder config: " +
