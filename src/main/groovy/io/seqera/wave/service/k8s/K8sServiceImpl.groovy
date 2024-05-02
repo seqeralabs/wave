@@ -568,7 +568,7 @@ class K8sServiceImpl implements K8sService {
                 .withName(name)
                 .withImage(containerImage)
                 .withEnv(toEnvList(blobConfig.getEnvironment()))
-                .withCommand('sleep', blobConfig.transferTimeout.toSeconds().toString())
+                .withCommand('sleep', blobConfig.delay.toSeconds().toString())
                 .withArgs(args)
                 .withResources(requests)
                 .endContainer()
