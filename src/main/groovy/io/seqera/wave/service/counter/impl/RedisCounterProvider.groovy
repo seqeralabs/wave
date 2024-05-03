@@ -40,7 +40,7 @@ class RedisCounterProvider implements CounterProvider {
     private JedisPool pool
 
     @Value('${redis.hscan.count:10000}')
-    private String hscanCount
+    private Integer hscanCount
 
     @Override
     long inc(String key, String field, long value) {
