@@ -268,7 +268,10 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         final ret2 = buildStore.getBuild(request.targetImage)
         if( ret2 ) {
             log.info "== Hit build cache for request: $request"
-            return new BuildTrack(ret2.id, request.targetImage, true)
+            // note: mark as cached only if the build result is 'done'
+            // if the build is still in progress it should be marked as not cached
+            // so that the client will wait for the container completion
+            return new BuildTrack(ret2.id, request.targetImage, ret2.done())
         }
         // invalid state
         throw new IllegalStateException("Unable to determine build status for '$request.targetImage'")
