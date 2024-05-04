@@ -1,4 +1,22 @@
 # Wave changelog
+1.7.5 - 2 May 2024
+- Fix community repo naming normalisation [a9b12d76]
+
+1.7.4 - 30 Apr 2024
+- Prevent use community registry w/o packages (2) [9eb11031]
+
+1.7.3 - 30 Apr 2024 
+- Prevent use community registry w/o packages [24a409de]
+
+1.7.2 - 29 Apr 2024 
+- Improve default container name handling [5325f2b1]
+- Improve error reporting [d6058919]
+- Prevent accessing to docker config [1c3d08d1]
+- Update metric service to get aggregated metrics  =(#472) [8ee9309f]
+- Update timeout max-rate to 20/2m [af0e4607]
+- Use IO executor consistently (#471) [ed57ce28]
+- Remove deprecated metrics v1alpha1 (#467) [3da8302d]
+
 1.7.1 - 23 Apr 2024
 - Tune thread pools [93e119ee] [0a5d08e7]
 - Added null check for container image name (#465) [30a6bdb6]

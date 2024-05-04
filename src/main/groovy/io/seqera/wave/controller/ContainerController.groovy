@@ -69,17 +69,17 @@ import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
 import io.seqera.wave.util.LongRndKey
-import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
 import static io.seqera.wave.WaveDefault.TOWER
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
-import static io.seqera.wave.util.ContainerHelper.makeContainerId
+import static io.seqera.wave.util.ContainerHelper.checkContainerSpec
 import static io.seqera.wave.util.ContainerHelper.condaFileFromRequest
 import static io.seqera.wave.util.ContainerHelper.containerFileFromPackages
 import static io.seqera.wave.util.ContainerHelper.decodeBase64OrFail
+import static io.seqera.wave.util.ContainerHelper.makeContainerId
 import static io.seqera.wave.util.ContainerHelper.makeResponseV1
 import static io.seqera.wave.util.ContainerHelper.makeResponseV2
 import static io.seqera.wave.util.ContainerHelper.makeTargetImage
@@ -210,8 +210,6 @@ class ContainerController {
             throw new BadRequestException("Attribute `spackFile` is deprecated - use `packages` instead")
         if( !v2 && req.packages )
             throw new BadRequestException("Attribute `packages` is not allowed")
-        if( !v2 && req.containerFile && req.freeze && (!req.buildRepository || req.buildRepository==buildConfig.defaultPublicRepository) )
-            throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode")
         if( !v2 && req.nameStrategy )
             throw new BadRequestException("Attribute `nameStrategy` is not allowed by legacy container endpoint")
 
@@ -220,6 +218,10 @@ class ContainerController {
             final generated = containerFileFromPackages(req.packages, req.formatSingularity())
             req = req.copyWith(containerFile: generated.bytes.encodeBase64().toString())
         }
+
+        // prevent the use of dockerfile file without providing
+        if( req.containerFile && req.freeze && !isCustomRepo0(req.buildRepository) && (!v2 || (v2 && !req.packages)))
+            throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode")
 
         final ip = addressResolver.resolve(httpRequest)
         final data = makeRequestData(req, identity, ip)
@@ -236,6 +238,18 @@ class ContainerController {
         return HttpResponse.ok(resp)
     }
 
+    protected boolean isCustomRepo0(String repo) {
+        if( !repo )
+            return false
+        if( buildConfig.defaultPublicRepository && repo.startsWith(buildConfig.defaultPublicRepository) )
+            return false
+        if( buildConfig.defaultBuildRepository && repo.startsWith(buildConfig.defaultBuildRepository) )
+            return false
+        if( buildConfig.defaultCacheRepository && repo.startsWith(buildConfig.defaultCacheRepository) )
+            return false
+        return true
+    }
+
     protected void storeContainerRequest0(SubmitContainerTokenRequest req, ContainerRequestData data, TokenData token, String target, String ip) {
         try {
             final recrd = new WaveContainerRecord(req, data, target, ip, token.expiration)
@@ -246,14 +260,29 @@ class ContainerController {
         }
     }
 
-    protected String publicRepo(SubmitContainerTokenRequest req) {
+    protected String targetRepo(String repo, ImageNameStrategy strategy) {
+        assert repo, 'Missing default public repository setting'
+        // ignore everything that's not a public (community) repo
         if( !buildConfig.defaultPublicRepository )
-            return null
-        if( buildConfig.defaultPublicRepository.contains('/') )
-            return buildConfig.defaultPublicRepository
-        return !req.nameStrategy || req.nameStrategy==ImageNameStrategy.imageSuffix
-                ? StringUtils.pathConcat(buildConfig.defaultPublicRepository, 'library')
-                : StringUtils.pathConcat(buildConfig.defaultPublicRepository, 'library/build')
+            return repo
+        if( !repo.startsWith(buildConfig.defaultPublicRepository))
+            return repo
+
+        // check if the repository does not ue any reserved word
+        final parts = repo.tokenize('/')
+        if( parts.size()>1 && buildConfig.reservedWords ) {
+            for( String it : parts[1..-1] ) {
+                if( buildConfig.reservedWords.contains(it) )
+                    throw new BadRequestException("Use of repository '$repo' is not allowed")
+            }
+        }
+
+        // the repository is fully qualified use as it is
+        if( parts.size()>1 ) {
+            return repo
+        }
+        else
+            return repo + (!strategy || strategy==ImageNameStrategy.imageSuffix ? '/library' : '/library/build')
     }
 
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
@@ -269,7 +298,9 @@ class ContainerController {
         final spackContent = spackFileFromRequest(req)
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
-        final buildRepository = req.buildRepository ?: (req.freeze && publicRepo(req) ? publicRepo(req) : buildConfig.defaultBuildRepository)
+        final buildRepository = targetRepo( req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository
+                ? buildConfig.defaultPublicRepository
+                : buildConfig.defaultBuildRepository), req.nameStrategy)
         final cacheRepository = req.cacheRepository ?: buildConfig.defaultCacheRepository
         final configJson = dockerAuthService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
         final containerConfig = req.freeze ? req.containerConfig : null
@@ -277,7 +308,12 @@ class ContainerController {
         final scanId = scanEnabled && format==DOCKER ? LongRndKey.rndHex() : null
         final containerFile = spackContent ? prependBuilderTemplate(containerSpec,format) : containerSpec
         // use 'imageSuffix' strategy by default for public repo images
-        final nameStrategy = req.nameStrategy==null && buildRepository && buildConfig.defaultPublicRepository && buildRepository.startsWith(buildConfig.defaultPublicRepository) ? ImageNameStrategy.imageSuffix : null
+        final nameStrategy = req.nameStrategy==null
+                && buildRepository
+                && buildConfig.defaultPublicRepository
+                && buildRepository.startsWith(buildConfig.defaultPublicRepository) ? ImageNameStrategy.imageSuffix : null
+
+        checkContainerSpec(containerSpec)
 
         // create a unique digest to identify the build request
         final containerId = makeContainerId(containerFile, condaContent, spackContent, platform, buildRepository, req.buildContext)
@@ -330,8 +366,6 @@ class ContainerController {
             throw new BadRequestException("Attributes 'containerImage' and 'containerFile' cannot be used in the same request")
         if( req.containerImage?.contains('@sha256:') && req.containerConfig && !req.freeze )
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
-        if( req.freeze && !req.buildRepository && !buildConfig.defaultPublicRepository )
-            throw new BadRequestException("When freeze mode is enabled the target build repository must be specified - see 'wave.build.repository' setting")
         if( req.formatSingularity() && !req.freeze )
             throw new BadRequestException("Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting")
 

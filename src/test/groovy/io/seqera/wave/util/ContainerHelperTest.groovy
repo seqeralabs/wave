@@ -644,4 +644,26 @@ class ContainerHelperTest extends Specification {
         'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK2| 'imageSuffix' | 'foo.com/build/bwa_salmon:123'
     }
 
+    def 'should validate containerfile' () {
+        when:
+        ContainerHelper.checkContainerSpec(null)
+        then:
+        noExceptionThrown()
+
+        when:
+        ContainerHelper.checkContainerSpec('FROM foo')
+        then:
+        noExceptionThrown()
+
+        when:
+        ContainerHelper.checkContainerSpec('RUN /kaniko/foo')
+        then:
+        thrown(BadRequestException)
+
+        when:
+        ContainerHelper.checkContainerSpec('RUN /.docker/config.json')
+        then:
+        thrown(BadRequestException)
+
+    }
 }

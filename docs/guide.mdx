@@ -54,6 +54,25 @@ If an access token isn't provided, the following rate limits apply:
 - 25 container builds per day
 - 250 container pulls per hour
 
+## Known limitation
+
+### Use of sha256 digest in the image name
+
+The Wave does not support the use of sha256 digest in the image name, e.g. `ubuntu@sha256:3235...ce8f`, when using
+the augmentation process to extend container images.
+
+In order to reference a container via sha256 digest in the image name with Wave you will need to *freeze* image mode
+that will force the creation of a new container image using the container you have specified as base image.
+
+In your pipeline configuration, ensure that you specify the following settings:
+
+```groovy
+wave.enabled = true
+wave.freeze = true
+wave.strategy = ['dockerfile']
+wave.build.repository = 'docker.io/<user>/<repository>'
+```
+
 ## Tutorials
 
 ### Authenticate private repositories

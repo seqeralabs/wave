@@ -40,10 +40,10 @@ class MetricsCounterStoreRedisTest  extends Specification implements RedisTestCo
                 REDIS_PORT: redisPort
         ], 'test', 'redis')
         jedis = new Jedis(redisHostName, redisPort as int)
-        jedis.flushAll()
     }
 
     def cleanup(){
+        jedis.flushAll()
         jedis.close()
     }
     
@@ -59,5 +59,19 @@ class MetricsCounterStoreRedisTest  extends Specification implements RedisTestCo
         then:
         metricsCounterStore.get('foo') == 2
         metricsCounterStore.get('bar') == 1
+    }
+
+    def 'should get correct org count value' () {
+        given:
+        def metricsCounterStore = applicationContext.getBean(MetricsCounterStore)
+
+        when:
+        metricsCounterStore.inc('builds/o/foo.com')
+        metricsCounterStore.inc('builds/o/bar.org')
+        metricsCounterStore.inc('pulls/o/bar.in')
+
+        then:
+        metricsCounterStore.getAllMatchingEntries('builds/o*') == ['builds/o/foo.com':1, 'builds/o/bar.org':1]
+        metricsCounterStore.getAllMatchingEntries('pulls/o*') == ['pulls/o/bar.in':1]
     }
 }

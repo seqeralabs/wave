@@ -290,7 +290,6 @@ class ContainerHelper {
     static String makeTargetImage(BuildFormat format, String repo, String id, @Nullable String condaFile, @Nullable String spackFile, @Nullable ImageNameStrategy nameStrategy) {
         assert id, "Argument 'id' cannot be null or empty"
         assert repo, "Argument 'repo' cannot be null or empty"
-        assert repo.contains('/'), "Argument 'repo' is not a valid container repository name"
         assert format, "Argument 'format' cannot be null"
 
         NameVersionPair tools
@@ -369,4 +368,12 @@ class ContainerHelper {
         return RegHelper.sipHash(attrs)
     }
 
+    static void checkContainerSpec(String file) {
+        if( !file )
+            return
+        if( file.contains('/.docker/config.json') )
+            throw new BadRequestException("Provided container file is not allowed (error code: 100)")
+        if( file.contains('/kaniko') )
+            throw new BadRequestException("Provided container file is not allowed (error code: 101)")
+    }
 }
