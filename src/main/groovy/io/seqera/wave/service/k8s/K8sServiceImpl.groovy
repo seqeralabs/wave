@@ -644,8 +644,8 @@ class K8sServiceImpl implements K8sService {
         // wait for termination
         while (System.currentTimeMillis() - startTime < timeout) {
             final name = job.metadata.name
-            final active = job.status?.getActive()
-            if (active && active > 0) {
+            final status = getJobStatus(name)
+            if (status != JobStatus.Pending) {
                 return k8sClient.
                         coreV1Api().
                         listNamespacedPod(namespace, null, null, null, null, "job-name=$name", null, null, null, null, null, null)
