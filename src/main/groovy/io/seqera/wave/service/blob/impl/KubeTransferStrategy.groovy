@@ -50,7 +50,7 @@ class KubeTransferStrategy implements TransferStrategy {
     @Override
     BlobCacheInfo transfer(BlobCacheInfo info, List<String> command) {
         final name = getName(info)
-        final job = k8sService.transferJob(name, name, blobConfig.s5Image, command, blobConfig)
+        final job = k8sService.transferJob(name, blobConfig.s5Image, command, blobConfig)
         final podList = k8sService.waitJob(job, blobConfig.transferTimeout.toMillis())
         if ( !podList || podList.items.size() < 1 ) {
             throw new TransferTimeoutException("Blob transfer job timeout")

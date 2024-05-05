@@ -578,15 +578,15 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
-    V1Job transferJob(String name, String podName, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
-        final spec = createTransferSpec(name, podName, containerImage, args, blobConfig)
+    V1Job transferJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
+        final spec = createTransferSpec(name, containerImage, args, blobConfig)
 
         return k8sClient
                 .batchV1Api()
                 .createNamespacedJob(namespace, spec, null, null, null,null)
     }
 
-    V1Job createTransferSpec(String name, String podName, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
+    V1Job createTransferSpec(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
 
         V1JobBuilder builder = new V1JobBuilder()
 
@@ -610,7 +610,7 @@ class K8sServiceImpl implements K8sService {
                     .withActiveDeadlineSeconds(blobConfig.transferTimeout.toSeconds())
                     .withRestartPolicy("Never")
                     .addNewContainer()
-                        .withName(podName)
+                        .withName(name)
                         .withImage(containerImage)
                         .withArgs(args)
                         .withResources(resources)
