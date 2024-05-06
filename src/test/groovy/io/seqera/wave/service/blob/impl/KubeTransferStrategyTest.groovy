@@ -21,6 +21,7 @@ package io.seqera.wave.service.blob.impl
 import spock.lang.Specification
 
 import java.time.Duration
+import java.time.OffsetDateTime
 
 import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1Job
@@ -45,7 +46,7 @@ class KubeTransferStrategyTest extends Specification {
 
         List<String> command = ["command1", "command2"]
         String podName = "pod-123"
-        def pod = new V1Pod(metadata: [name: podName])
+        def pod = new V1Pod(metadata: [name: podName, creationTimestamp: OffsetDateTime.now()])
         pod.status = new V1PodStatus(phase: "Succeeded")
         def podList = new V1PodList(items: [pod])
         String stdout = "success"
@@ -79,7 +80,7 @@ class KubeTransferStrategyTest extends Specification {
 
         List<String> command = ["command1", "command2"]
         String podName = "pod-123"
-        def pod = new V1Pod(metadata: [name: podName])
+        def pod = new V1Pod(metadata: [name: podName, creationTimestamp: OffsetDateTime.now()])
         pod.status = new V1PodStatus(phase: "Succeeded")
         def podList = new V1PodList(items: [pod])
         String stdout = "failed"

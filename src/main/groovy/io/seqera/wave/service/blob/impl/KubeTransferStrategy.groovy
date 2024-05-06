@@ -57,7 +57,15 @@ class KubeTransferStrategy implements TransferStrategy {
         if( size < 1 )
             throw new TransferTimeoutException("Transfer job timeout")
 
-        final podName = podList.items[size - 1].metadata.name
+        // Find the latest created pod among the pods associated with the job
+        def latestPod = podList.getItems().get(0)
+        for (def pod : podList.items) {
+            if (pod.metadata.creationTimestamp.isAfter(latestPod.metadata.creationTimestamp)) {
+                latestPod = pod
+            }
+        }
+
+        final podName = latestPod.metadata.name
         final pod = k8sService.getPod(podName)
         final terminated = k8sService.waitPod(pod, name, blobConfig.transferTimeout.toMillis())
         final stdout = k8sService.logsPod(podName, name)
