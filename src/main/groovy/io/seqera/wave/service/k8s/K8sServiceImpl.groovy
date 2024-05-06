@@ -466,8 +466,8 @@ class K8sServiceImpl implements K8sService {
      * @return The logs as a string or when logs are not available or cannot be accessed
      */
     @Override
-    String logsPod(String podName) {
-        logsPod(podName, podName)
+    String logsPod(String name) {
+        logsPod(name, name)
     }
 
     /**
@@ -607,14 +607,14 @@ class K8sServiceImpl implements K8sService {
 
     @Override
     V1Job transferJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
-        final spec = createTransferSpec(name, containerImage, args, blobConfig)
+        final spec = createTransferJobSpec(name, containerImage, args, blobConfig)
 
         return k8sClient
                 .batchV1Api()
                 .createNamespacedJob(namespace, spec, null, null, null,null)
     }
 
-    V1Job createTransferSpec(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
+    V1Job createTransferJobSpec(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
 
         V1JobBuilder builder = new V1JobBuilder()
 
@@ -624,14 +624,14 @@ class K8sServiceImpl implements K8sService {
                 .withLabels(labels)
                 .endMetadata()
 
-        final resources = new V1ResourceRequirements()
-        if (requestsCpu)
-            resources.putRequestsItem('cpu', new Quantity(requestsCpu))
-        if (requestsMemory)
-            resources.putRequestsItem('memory', new Quantity(requestsMemory))
+        final requests = new V1ResourceRequirements()
+        if( blobConfig.requestsCpu )
+            requests.putRequestsItem('cpu', new Quantity(blobConfig.requestsCpu))
+        if( blobConfig.requestsMemory )
+            requests.putRequestsItem('memory', new Quantity(blobConfig.requestsMemory))
 
         def spec = builder.withNewSpec()
-                .withBackoffLimit(blobConfig.BackoffLimit)
+                .withBackoffLimit(blobConfig.backoffLimit)
                 .withNewTemplate()
                 .editOrNewSpec()
                     .withServiceAccount(serviceAccount)
@@ -641,7 +641,7 @@ class K8sServiceImpl implements K8sService {
                         .withName(name)
                         .withImage(containerImage)
                         .withArgs(args)
-                        .withResources(resources)
+                        .withResources(requests)
                         .withEnv(toEnvList(blobConfig.getEnvironment()))
                     .endContainer()
                 .endSpec()
