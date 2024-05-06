@@ -631,7 +631,7 @@ class K8sServiceImpl implements K8sService {
     }
 
     /**
-     * Wait for a job to start a pod
+     * Wait for a job to complete
      *
      * @param k8s job
      * @param timeout
