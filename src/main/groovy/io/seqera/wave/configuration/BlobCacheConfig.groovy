@@ -72,9 +72,6 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.s5cmdImage}')
     String s5Image
 
-    @Value('${wave.blobCache.BackoffLimit:3}')
-    Integer BackoffLimit
-
     @Nullable
     @Value('${wave.blobCache.requestsCpu}')
     String requestsCpu
@@ -86,6 +83,9 @@ class BlobCacheConfig {
     @Nullable
     @Value('${wave.blobCache.url-signature-duration:30m}')
     Duration urlSignatureDuration
+
+    @Value('${wave.blobCache.backoffLimit:3}')
+    Integer backoffLimit
 
     Map<String,String> getEnvironment() {
         final result = new HashMap<String,String>(10)
