@@ -55,7 +55,7 @@ class KubeTransferStrategy implements TransferStrategy {
         final size = podList.items.size()
 
         if( size < 1 )
-            throw new TransferTimeoutException("Transfer job timeout")
+            throw new TransferTimeoutException("Transfer job timed out")
 
         // Find the latest created pod among the pods associated with the job
         def latestPod = podList.getItems().get(0)
