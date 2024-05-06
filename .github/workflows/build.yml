@@ -86,6 +86,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_SEQERA_TOKEN }}
 
       - name: Delete build workspace
+        if: failure()
         run: |
           sudo rm -rf /home/runner/work/wave/wave/build-workspace
 
