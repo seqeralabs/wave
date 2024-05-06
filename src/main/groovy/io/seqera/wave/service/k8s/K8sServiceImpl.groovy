@@ -605,6 +605,27 @@ class K8sServiceImpl implements K8sService {
         builder.build()
     }
 
+    protected static List<V1EnvVar> toEnvList(Map<String,String> env) {
+        final result = new ArrayList<V1EnvVar>(env.size())
+        for( Map.Entry<String,String> it : env )
+            result.add( new V1EnvVar().name(it.key).value(it.value) )
+        return result
+    }
+
+    /**
+     * Create a Job for blob transfer
+     *
+     * @param name
+     *      The name of job and container
+     * @param containerImage
+     *      The container image to be used
+     * @param args
+     *      The transfer command to be performed
+     * @param blobConfig
+     *      The config to be used for transfer
+     * @return
+     *      The {@link V1Job} description the submitted job
+     */
     @Override
     V1Job transferJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
         final spec = createTransferJobSpec(name, containerImage, args, blobConfig)
@@ -634,28 +655,21 @@ class K8sServiceImpl implements K8sService {
                 .withBackoffLimit(blobConfig.backoffLimit)
                 .withNewTemplate()
                 .editOrNewSpec()
-                    .withServiceAccount(serviceAccount)
-                    .withActiveDeadlineSeconds(blobConfig.transferTimeout.toSeconds())
-                    .withRestartPolicy("Never")
-                    .addNewContainer()
-                        .withName(name)
-                        .withImage(containerImage)
-                        .withArgs(args)
-                        .withResources(requests)
-                        .withEnv(toEnvList(blobConfig.getEnvironment()))
-                    .endContainer()
+                .withServiceAccount(serviceAccount)
+                .withActiveDeadlineSeconds(blobConfig.transferTimeout.toSeconds())
+                .withRestartPolicy("Never")
+                .addNewContainer()
+                .withName(name)
+                .withImage(containerImage)
+                .withArgs(args)
+                .withResources(requests)
+                .withEnv(toEnvList(blobConfig.getEnvironment()))
+                .endContainer()
                 .endSpec()
                 .endTemplate()
                 .endSpec()
 
         return spec.build()
-    }
-
-    protected static List<V1EnvVar> toEnvList(Map<String,String> env) {
-        final result = new ArrayList<V1EnvVar>(env.size())
-        for( Map.Entry<String,String> it : env )
-            result.add( new V1EnvVar().name(it.key).value(it.value) )
-        return result
     }
 
     /**
