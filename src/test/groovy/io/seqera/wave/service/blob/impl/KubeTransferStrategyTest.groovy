@@ -44,15 +44,16 @@ class KubeTransferStrategyTest extends Specification {
             getBackoffLimit() >> 3
         }
 
-        List<String> command = ["command1", "command2"]
-        String podName = "pod-123"
+        List<String> command = ["transfer", "blob"]
+        final jobName = "job-123"
+        def podName = "$jobName-abc"
         def pod = new V1Pod(metadata: [name: podName, creationTimestamp: OffsetDateTime.now()])
         pod.status = new V1PodStatus(phase: "Succeeded")
         def podList = new V1PodList(items: [pod])
         String stdout = "success"
 
         def k8sService = Mock(K8sService)
-        k8sService.transferJob(_, _, _, _) >> new V1Job(metadata: [name: "job-123"])
+        k8sService.transferJob(_, _, _, _) >> new V1Job(metadata: [name: jobName])
         k8sService.waitJob(_, _) >> podList
         k8sService.getPod(_) >> pod
         k8sService.waitPod(_, _, _) >> new V1ContainerStateTerminated().exitCode(0)
@@ -78,15 +79,16 @@ class KubeTransferStrategyTest extends Specification {
             getBackoffLimit() >> 3
         }
 
-        List<String> command = ["command1", "command2"]
-        String podName = "pod-123"
+        List<String> command = ["transfer", "blob"]
+        final jobName = "job-123"
+        def podName = "$jobName-abc"
         def pod = new V1Pod(metadata: [name: podName, creationTimestamp: OffsetDateTime.now()])
         pod.status = new V1PodStatus(phase: "Succeeded")
         def podList = new V1PodList(items: [pod])
         String stdout = "failed"
 
         def k8sService = Mock(K8sService)
-        k8sService.transferJob(_, _, _, _) >> new V1Job(metadata: [name: "job-123"])
+        k8sService.transferJob(_, _, _, _) >> new V1Job(metadata: [name: jobName])
         k8sService.waitJob(_, _) >> podList
         k8sService.getPod(_) >> pod
         k8sService.waitPod(_, _, _) >> new V1ContainerStateTerminated().exitCode(1)

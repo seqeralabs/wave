@@ -605,7 +605,7 @@ class K8sServiceImpl implements K8sService {
         builder.build()
     }
 
-    protected static List<V1EnvVar> toEnvList(Map<String,String> env) {
+    protected List<V1EnvVar> toEnvList(Map<String,String> env) {
         final result = new ArrayList<V1EnvVar>(env.size())
         for( Map.Entry<String,String> it : env )
             result.add( new V1EnvVar().name(it.key).value(it.value) )
@@ -678,7 +678,7 @@ class K8sServiceImpl implements K8sService {
      * @param k8s job
      * @param timeout
      *      Max wait time in milliseconds
-     * @return list of pods created by this job
+     * @return list of pods created by the job
      */
     V1PodList waitJob(V1Job job, Long timeout) {
         sleep 5_000
