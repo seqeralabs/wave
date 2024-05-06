@@ -101,7 +101,7 @@ class KubeBuildStrategy extends BuildStrategy {
             final spackCfg0 = req.isSpackBuild ? spackConfig : null
             final pod = k8sService.buildContainer(name, buildImage, buildCmd, req.workDir, configFile, spackCfg0, selector)
             final terminated = k8sService.waitPod(pod, buildConfig.buildTimeout.toMillis())
-            final stdout = k8sService.logsPod(name, name)
+            final stdout = k8sService.logsPod(name)
             if( terminated ) {
                 final digest = proxyService.getImageDigest(req.targetImage)
                 return BuildResult.completed(req.buildId, terminated.exitCode, stdout, req.startTime, digest)

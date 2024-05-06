@@ -99,7 +99,7 @@ class KubeScanStrategy extends ScanStrategy {
                 return ScanResult.success(req, startTime, TrivyResultProcessor.process(reportFile.text))
             }
             else{
-                final stdout = k8sService.logsPod(podName, podName)
+                final stdout = k8sService.logsPod(podName)
                 log.info("Container scan failed for scan id: ${req.id} - stdout: $stdout")
                 return ScanResult.failure(req, startTime)
             }

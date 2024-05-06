@@ -65,6 +65,26 @@ class K8sClientTest extends Specification {
         true
 
         when:
+        def str = k8sService.logsPod('my-pod')
+        then:
+        str
+
+    }
+
+    def 'should create pod' () {
+        when:
+        def pod = k8sService.buildContainer(
+                'my-pod',
+                'busybox',
+                ['cat','/kaniko/.docker/config.json'],
+                Path.of('/work/dir'),
+                Path.of('/creds'),
+                Path.of('/spack/dir'),
+                ['my-creds': 'selector'])
+        then:
+        true
+
+        when:
         def str = k8sService.logsPod('my-pod', 'my-pod')
         then:
         str

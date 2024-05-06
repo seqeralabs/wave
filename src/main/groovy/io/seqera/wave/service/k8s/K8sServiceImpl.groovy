@@ -417,13 +417,29 @@ class K8sServiceImpl implements K8sService {
      */
     @Override
     V1ContainerStateTerminated waitPod(V1Pod pod, long timeout) {
+        return waitPod(pod, pod.metadata.name, timeout)
+    }
+
+    /**
+     * Wait for a pod a completion
+     *
+     * @param pod
+     *      The pod name
+     * @param timeout
+     *      Max wait time in milliseconds
+     * @return
+     *      An instance of {@link V1ContainerStateTerminated} representing the termination state
+     *      or {@code null} if the state cannot be determined or timeout was reached,
+     */
+    @Override
+    V1ContainerStateTerminated waitPod(V1Pod pod, String containerName, long timeout) {
         final name = pod.metadata.name
         final start = System.currentTimeMillis()
         // wait for termination
         while( true ) {
             final phase = pod.status?.phase
             if(  phase && phase != 'Pending' ) {
-                final status = pod.status.containerStatuses.find( it -> it.name==name )
+                final status = pod.status.containerStatuses.find( it -> it.name==containerName )
                 if( !status )
                     return null
                 if( !status.state )
@@ -450,6 +466,17 @@ class K8sServiceImpl implements K8sService {
      * @return The logs as a string or when logs are not available or cannot be accessed
      */
     @Override
+    String logsPod(String podName) {
+        logsPod(podName, podName)
+    }
+
+    /**
+     * Fetch the logs of a pod
+     *
+     * @param name The pod name
+     * @return The logs as a string or when logs are not available or cannot be accessed
+     */
+    @Override
     String logsPod(String podName, String containerName) {
         try {
             final logs = k8sClient.podLogs()
@@ -460,6 +487,7 @@ class K8sServiceImpl implements K8sService {
             return null
         }
     }
+
 
     /**
      * Delete a pod

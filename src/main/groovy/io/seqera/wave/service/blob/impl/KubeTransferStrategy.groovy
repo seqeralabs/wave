@@ -53,9 +53,13 @@ class KubeTransferStrategy implements TransferStrategy {
         final job = k8sService.transferJob(name, blobConfig.s5Image, command, blobConfig)
         final podList = k8sService.waitJob(job, blobConfig.transferTimeout.toMillis())
         final size = podList.items.size()
+
+        if( size < 1 )
+            throw new TransferTimeoutException("Transfer job timeout")
+
         final podName = podList.items[size - 1].metadata.name
         final pod = k8sService.getPod(podName)
-        final terminated = k8sService.waitPod(pod, blobConfig.transferTimeout.toMillis())
+        final terminated = k8sService.waitPod(pod, name, blobConfig.transferTimeout.toMillis())
         final stdout = k8sService.logsPod(podName, name)
         return terminated
                 ? info.completed(terminated.exitCode, stdout)
