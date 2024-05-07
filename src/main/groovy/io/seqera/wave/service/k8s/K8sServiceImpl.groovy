@@ -605,13 +605,6 @@ class K8sServiceImpl implements K8sService {
         builder.build()
     }
 
-    @Override
-    void deleteJob(String name) {
-        k8sClient
-                .batchV1Api()
-                .deleteNamespacedJob(name, namespace, null, null, null, null, null, null)
-    }
-
     protected List<V1EnvVar> toEnvList(Map<String,String> env) {
         final result = new ArrayList<V1EnvVar>(env.size())
         for( Map.Entry<String,String> it : env )
@@ -702,5 +695,17 @@ class K8sServiceImpl implements K8sService {
             job = getJob(name)
         }
         return null
+    }
+
+    /**
+     * Delete a pod
+     *
+     * @param name The name of the pod to be deleted
+     */
+    @Override
+    void deleteJob(String name) {
+        k8sClient
+                .batchV1Api()
+                .deleteNamespacedJob(name, namespace, null, null, null, null,"Background", null)
     }
 }
