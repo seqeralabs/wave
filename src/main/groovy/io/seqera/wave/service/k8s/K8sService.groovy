@@ -54,4 +54,6 @@ interface K8sService {
     V1Pod transferContainer(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig)
 
     V1ContainerStateTerminated waitPod(V1Pod pod, long timeout)
+
+    void deleteJob(String name)
 }

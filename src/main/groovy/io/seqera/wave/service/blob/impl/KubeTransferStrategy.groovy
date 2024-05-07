@@ -57,6 +57,11 @@ class KubeTransferStrategy implements TransferStrategy {
                 : info.failed(stdout)
     }
 
+    @Override
+    void cleanup() {
+        k8sService.deleteJob(podName(blobConfig))
+    }
+
     protected String podName(BlobCacheInfo info) {
         return 'transfer-' + Hashing
                 .sipHash24()

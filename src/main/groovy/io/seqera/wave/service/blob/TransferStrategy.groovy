@@ -26,4 +26,5 @@ interface TransferStrategy {
 
     BlobCacheInfo transfer(BlobCacheInfo info, List<String> command)
 
+    void cleanup()
 }
