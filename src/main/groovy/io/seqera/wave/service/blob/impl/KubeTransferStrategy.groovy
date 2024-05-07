@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.blob.impl
 
-import com.google.common.hash.Hashing
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Replaces
