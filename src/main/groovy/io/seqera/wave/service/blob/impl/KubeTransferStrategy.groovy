@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.blob.impl
 
+import com.google.common.hash.Hashing
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Replaces
@@ -78,4 +79,12 @@ class KubeTransferStrategy implements TransferStrategy {
         k8sService.deleteJob(getName(info))
     }
 
+    protected static String getName(BlobCacheInfo info) {
+        return "transfer-" + Hashing
+                .sipHash24()
+                .newHasher()
+                .putUnencodedChars(info.locationUri)
+                .putUnencodedChars(info.creationTime.toString())
+                .hash()
+    }
 }

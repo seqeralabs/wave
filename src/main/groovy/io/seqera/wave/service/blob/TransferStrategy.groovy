@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.blob
 
-import com.google.common.hash.Hashing
 /**
  * Defines the contract to transfer a layer blob into a remote object storage
  *
@@ -30,12 +29,4 @@ interface TransferStrategy {
 
     void cleanup(BlobCacheInfo info)
 
-    default String getName(BlobCacheInfo info) {
-        return "transfer-" + Hashing
-                .sipHash24()
-                .newHasher()
-                .putUnencodedChars(info.locationUri)
-                .putUnencodedChars(info.creationTime.toString())
-                .hash()
-    }
 }

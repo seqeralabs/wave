@@ -45,7 +45,7 @@ class DockerTransferStrategy implements TransferStrategy {
 
     @Override
     BlobCacheInfo transfer(BlobCacheInfo info, List<String> command) {
-        final proc = createProcess(info, command).start()
+        final proc = createProcess(command).start()
         // wait for the completion and save thr result
         final completed = proc.waitFor(blobConfig.transferTimeout.toSeconds(), TimeUnit.SECONDS)
         final int status = completed ? proc.exitValue() : -1
@@ -53,13 +53,11 @@ class DockerTransferStrategy implements TransferStrategy {
         return info.completed(status, logs)
     }
 
-    protected ProcessBuilder createProcess(BlobCacheInfo info, List<String> command) {
+    protected ProcessBuilder createProcess(List<String> command) {
         // compose the docker command
         final cli = new ArrayList<String>(10)
         cli.add('docker')
         cli.add('run')
-        cli.add('--name')
-        cli.add(getName(info))
         cli.add('-e')
         cli.add('AWS_ACCESS_KEY_ID')
         cli.add('-e')
@@ -78,18 +76,6 @@ class DockerTransferStrategy implements TransferStrategy {
 
     @Override
     void cleanup(BlobCacheInfo info) {
-        deleteProcess(info).start()
-    }
-
-    protected ProcessBuilder deleteProcess(BlobCacheInfo info) {
-        final cli = new ArrayList<String>(10)
-        cli.add('docker')
-        cli.add('rm')
-        cli.add('-f')
-        cli.add(getName(info))
-        final builder = new ProcessBuilder()
-        builder.command(cli)
-        builder.redirectErrorStream(true)
-        return builder
+        //delete docker container
     }
 }
