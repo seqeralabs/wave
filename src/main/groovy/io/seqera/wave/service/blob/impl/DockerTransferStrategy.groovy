@@ -60,6 +60,8 @@ class DockerTransferStrategy implements TransferStrategy {
         cli.add('rm')
         cli.add('-f')
         cli.add(getName(info))
+        final builder = new ProcessBuilder()
+        builder.command(cli).start()
     }
 
     protected ProcessBuilder createProcess(BlobCacheInfo info, List<String> command) {
