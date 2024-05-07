@@ -53,17 +53,6 @@ class DockerTransferStrategy implements TransferStrategy {
         return info.completed(status, logs)
     }
 
-    @Override
-    void cleanup(BlobCacheInfo info) {
-        final cli = new ArrayList<String>(10)
-        cli.add('docker')
-        cli.add('rm')
-        cli.add('-f')
-        cli.add(getName(info))
-        final builder = new ProcessBuilder()
-        builder.command(cli).start()
-    }
-
     protected ProcessBuilder createProcess(BlobCacheInfo info, List<String> command) {
         // compose the docker command
         final cli = new ArrayList<String>(10)
@@ -82,6 +71,23 @@ class DockerTransferStrategy implements TransferStrategy {
         // proc builder
         final builder = new ProcessBuilder()
         builder.environment().putAll(blobConfig.getEnvironment())
+        builder.command(cli)
+        builder.redirectErrorStream(true)
+        return builder
+    }
+
+    @Override
+    void cleanup(BlobCacheInfo info) {
+        deleteProcess(info).start()
+    }
+
+    protected ProcessBuilder deleteProcess(BlobCacheInfo info) {
+        final cli = new ArrayList<String>(10)
+        cli.add('docker')
+        cli.add('rm')
+        cli.add('-f')
+        cli.add(getName(info))
+        final builder = new ProcessBuilder()
         builder.command(cli)
         builder.redirectErrorStream(true)
         return builder

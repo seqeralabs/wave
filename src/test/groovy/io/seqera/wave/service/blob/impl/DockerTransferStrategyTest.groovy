@@ -63,4 +63,21 @@ class DockerTransferStrategyTest extends Specification {
         and:
         result.redirectErrorStream()
     }
+
+    def 'should create delete cli' () {
+        given:
+        def strategy = new DockerTransferStrategy()
+        def info = BlobCacheInfo.create('s3://foo/bar.txt', null)
+
+        when:
+        def result = strategy.deleteProcess(info)
+
+        then:
+        result.command() == [
+                'docker',
+                'rm',
+                '-f',
+                strategy.getName(info)
+        ]
+    }
 }
