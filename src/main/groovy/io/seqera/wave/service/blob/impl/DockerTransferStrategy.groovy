@@ -45,7 +45,7 @@ class DockerTransferStrategy implements TransferStrategy {
 
     @Override
     BlobCacheInfo transfer(BlobCacheInfo info, List<String> command) {
-        final proc = createProcess(command).start()
+        final proc = createProcess(info, command).start()
         // wait for the completion and save thr result
         final completed = proc.waitFor(blobConfig.transferTimeout.toSeconds(), TimeUnit.SECONDS)
         final int status = completed ? proc.exitValue() : -1
