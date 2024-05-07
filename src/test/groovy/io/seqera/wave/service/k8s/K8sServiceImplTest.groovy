@@ -574,4 +574,84 @@ class K8sServiceImplTest extends Specification {
         cleanup:
         ctx.close()
     }
+
+    def 'should create transfer job spec with defaults' () {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'my-ns',
+                'wave.build.k8s.configPath': '/home/kube.config' ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def config = Mock(BlobCacheConfig) {
+            getTransferTimeout() >> Duration.ofSeconds(20)
+            getEnvironment() >> [:]
+            getBackoffLimit() >> 3
+        }
+
+        when:
+        def result = k8sService.createTransferJobSpec('foo', 'my-image:latest', ['this','that'], config)
+        result
+        then:
+        result.metadata.name == 'foo'
+        result.metadata.namespace == 'my-ns'
+        and:
+        result.spec.backoffLimit == 3
+        and:
+        verifyAll(result.spec.template.spec) {
+            activeDeadlineSeconds == 20
+            serviceAccount == null
+            containers.get(0).name == 'foo'
+            containers.get(0).image == 'my-image:latest'
+            containers.get(0).args ==  ['this','that']
+            !containers.get(0).getEnv()
+            !containers.get(0).getResources().limits
+            !containers.get(0).getResources().requests
+        }
+        ctx.close()
+    }
+
+    def 'should create transfer job spec with custom settings' () {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'my-ns',
+                'wave.build.k8s.service-account': 'foo-sa',
+                'wave.build.k8s.configPath': '/home/kube.config' ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def config = Mock(BlobCacheConfig) {
+            getTransferTimeout() >> Duration.ofSeconds(20)
+            getEnvironment() >> ['FOO':'one', 'BAR':'two']
+            getRequestsCpu() >> '2'
+            getRequestsMemory() >> '8Gi'
+            getBackoffLimit() >> 3
+        }
+
+        when:
+        def result = k8sService.createTransferJobSpec('foo', 'my-image:latest', ['this','that'], config)
+        then:
+        result.metadata.name == 'foo'
+        result.metadata.namespace == 'my-ns'
+        and:
+        result.spec.backoffLimit == 3
+        and:
+        verifyAll(result.spec.template.spec) {
+            activeDeadlineSeconds == 20
+            serviceAccount == 'foo-sa'
+            containers.get(0).name == 'foo'
+            containers.get(0).image == 'my-image:latest'
+            containers.get(0).args ==  ['this','that']
+            containers.get(0).getEnv().get(0) == new V1EnvVar().name('FOO').value('one')
+            containers.get(0).getEnv().get(1) == new V1EnvVar().name('BAR').value('two')
+            containers.get(0).getResources().requests.get('cpu') == new Quantity('2')
+            containers.get(0).getResources().requests.get('memory') == new Quantity('8Gi')
+            !containers.get(0).getResources().limits
+        }
+
+        cleanup:
+        ctx.close()
+    }
 }

@@ -26,6 +26,7 @@ import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.TransferStrategy
+import io.seqera.wave.service.blob.TransferTimeoutException
 import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Inject
 /**
@@ -48,10 +49,26 @@ class KubeTransferStrategy implements TransferStrategy {
 
     @Override
     BlobCacheInfo transfer(BlobCacheInfo info, List<String> command) {
-        final podName = podName(info)
-        final pod = k8sService.transferContainer(podName, blobConfig.s5Image, command, blobConfig)
-        final terminated = k8sService.waitPod(pod, blobConfig.transferTimeout.toMillis())
-        final stdout = k8sService.logsPod(podName)
+        final name = getName(info)
+        final job = k8sService.transferJob(name, blobConfig.s5Image, command, blobConfig)
+        final podList = k8sService.waitJob(job, blobConfig.transferTimeout.toMillis())
+        final size = podList.items.size()
+
+        if( size < 1 )
+            throw new TransferTimeoutException("Transfer job timed out")
+
+        // Find the latest created pod among the pods associated with the job
+        def latestPod = podList.getItems().get(0)
+        for (def pod : podList.items) {
+            if (pod.metadata.creationTimestamp.isAfter(latestPod.metadata.creationTimestamp)) {
+                latestPod = pod
+            }
+        }
+
+        final podName = latestPod.metadata.name
+        final pod = k8sService.getPod(podName)
+        final terminated = k8sService.waitPod(pod, name, blobConfig.transferTimeout.toMillis())
+        final stdout = k8sService.logsPod(podName, name)
         return terminated
                 ? info.completed(terminated.exitCode, stdout)
                 : info.failed(stdout)
@@ -62,8 +79,8 @@ class KubeTransferStrategy implements TransferStrategy {
         k8sService.deleteJob(podName(blobConfig))
     }
 
-    protected String podName(BlobCacheInfo info) {
-        return 'transfer-' + Hashing
+    protected static String getName(BlobCacheInfo info) {
+        return "transfer-" + Hashing
                 .sipHash24()
                 .newHasher()
                 .putUnencodedChars(info.locationUri)

@@ -84,6 +84,9 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.url-signature-duration:30m}')
     Duration urlSignatureDuration
 
+    @Value('${wave.blobCache.backoffLimit:3}')
+    Integer backoffLimit
+
     Map<String,String> getEnvironment() {
         final result = new HashMap<String,String>(10)
         if( storageRegion ) {

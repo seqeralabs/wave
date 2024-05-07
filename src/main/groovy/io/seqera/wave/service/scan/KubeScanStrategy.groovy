@@ -28,7 +28,6 @@ import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.openapi.ApiException
-import io.kubernetes.client.openapi.models.V1Job
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
@@ -89,7 +88,6 @@ class KubeScanStrategy extends ScanStrategy {
 
             final reportFile = req.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
 
-            V1Job job
             final trivyCommand = scanCommand(req.targetImage, reportFile, scanConfig)
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
             final pod = k8sService.scanContainer(podName, scanConfig.scanImage, trivyCommand, req.workDir, configFile, scanConfig, selector)
