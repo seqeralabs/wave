@@ -38,6 +38,7 @@ import io.seqera.wave.service.blob.BlobSigningService
 import io.seqera.wave.service.blob.BlobStore
 import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.blob.TransferTimeoutException
+import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.util.Escape
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.StringUtils
@@ -81,6 +82,9 @@ class BlobCacheServiceImpl implements BlobCacheService {
 
     @Inject
     private HttpClientConfig httpConfig
+
+    @Inject
+    private CleanupStrategy cleanup
 
     private HttpClient httpClient
 
@@ -193,6 +197,10 @@ class BlobCacheServiceImpl implements BlobCacheService {
             final ttl = result.succeeded()
                     ? blobConfig.statusDuration
                     : blobConfig.statusDelay.multipliedBy(10)
+
+            // delete job if successful
+            if( cleanup.shouldCleanup(result.exitStatus) )
+                transferStrategy.cleanup(info)
 
             blobStore.storeBlob(route.targetPath, result, ttl)
             return result
