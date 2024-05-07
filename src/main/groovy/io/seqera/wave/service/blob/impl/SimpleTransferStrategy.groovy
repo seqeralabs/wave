@@ -47,6 +47,11 @@ class SimpleTransferStrategy implements TransferStrategy {
         return info.completed(status, logs)
     }
 
+    @Override
+    void cleanup(BlobCacheInfo info) {
+        // do nothing
+    }
+
     protected ProcessBuilder createProcess(List<String> cli) {
         // builder
         final builder = new ProcessBuilder()

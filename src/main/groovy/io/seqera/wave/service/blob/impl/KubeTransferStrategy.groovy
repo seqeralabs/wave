@@ -75,16 +75,8 @@ class KubeTransferStrategy implements TransferStrategy {
     }
 
     @Override
-    void cleanup() {
-        k8sService.deleteJob(podName(blobConfig))
+    void cleanup(BlobCacheInfo info) {
+        k8sService.deleteJob(getName(info))
     }
 
-    protected static String getName(BlobCacheInfo info) {
-        return "transfer-" + Hashing
-                .sipHash24()
-                .newHasher()
-                .putUnencodedChars(info.locationUri)
-                .putUnencodedChars(info.creationTime.toString())
-                .hash()
-    }
 }

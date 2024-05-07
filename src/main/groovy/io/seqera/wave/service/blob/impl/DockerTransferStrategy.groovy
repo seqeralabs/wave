@@ -53,11 +53,22 @@ class DockerTransferStrategy implements TransferStrategy {
         return info.completed(status, logs)
     }
 
-    protected ProcessBuilder createProcess(List<String> command) {
+    @Override
+    void cleanup(BlobCacheInfo info) {
+        final cli = new ArrayList<String>(10)
+        cli.add('docker')
+        cli.add('rm')
+        cli.add('-f')
+        cli.add(getName(info))
+    }
+
+    protected ProcessBuilder createProcess(BlobCacheInfo info, List<String> command) {
         // compose the docker command
         final cli = new ArrayList<String>(10)
         cli.add('docker')
         cli.add('run')
+        cli.add('--name')
+        cli.add(getName(info))
         cli.add('-e')
         cli.add('AWS_ACCESS_KEY_ID')
         cli.add('-e')
