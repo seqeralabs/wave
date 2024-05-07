@@ -265,10 +265,10 @@ class ContainerController {
         // ignore everything that's not a public (community) repo
         if( !buildConfig.defaultPublicRepository )
             return repo
-        if( !repo.startsWith(buildConfig.defaultPublicRepository))
+        if( !repo.startsWith(buildConfig.defaultPublicRepository) )
             return repo
 
-        // check if the repository does not ue any reserved word
+        // check if the repository does use any reserved word
         final parts = repo.tokenize('/')
         if( parts.size()>1 && buildConfig.reservedWords ) {
             for( String it : parts[1..-1] ) {
@@ -282,7 +282,7 @@ class ContainerController {
             return repo
         }
         else
-            return repo + (!strategy || strategy==ImageNameStrategy.imageSuffix ? '/library' : '/library/build')
+            return repo + (strategy==ImageNameStrategy.imageSuffix ? '/library' : '/library/build')
     }
 
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
