@@ -698,9 +698,9 @@ class K8sServiceImpl implements K8sService {
     }
 
     /**
-     * Delete a pod
+     * Delete a job
      *
-     * @param name The name of the pod to be deleted
+     * @param name, name of the job to be deleted
      */
     @Override
     void deleteJob(String name) {

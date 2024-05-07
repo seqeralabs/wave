@@ -198,7 +198,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
                     ? blobConfig.statusDuration
                     : blobConfig.statusDelay.multipliedBy(10)
 
-            // delete job if successful
+            // delete job
             if( cleanup.shouldCleanup(result.exitStatus) )
                 transferStrategy.cleanup(info)
 

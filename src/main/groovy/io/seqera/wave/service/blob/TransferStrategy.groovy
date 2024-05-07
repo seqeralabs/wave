@@ -19,7 +19,6 @@
 package io.seqera.wave.service.blob
 
 import com.google.common.hash.Hashing
-
 /**
  * Defines the contract to transfer a layer blob into a remote object storage
  *
