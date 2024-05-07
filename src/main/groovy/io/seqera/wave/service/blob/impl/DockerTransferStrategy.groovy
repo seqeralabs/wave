@@ -73,9 +73,4 @@ class DockerTransferStrategy implements TransferStrategy {
         builder.redirectErrorStream(true)
         return builder
     }
-
-    @Override
-    void cleanup(BlobCacheInfo info) {
-        //delete docker container
-    }
 }
