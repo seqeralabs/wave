@@ -432,6 +432,22 @@ class ContainerHelperTest extends Specification {
         ContainerHelper.guessCondaRecipeName(CONDA,true) == new NameVersionPair(['rnaseq-nf'], [null])
     }
 
+    def 'should find conda name with pip packages' () {
+        given:
+        def CONDA = '''\
+                channels:
+                - bioconda
+                - conda-forge
+                dependencies:
+                - pip
+                - pip:
+                  - pandas==2.2.2
+            '''.stripIndent(true)
+
+        expect:
+        ContainerHelper.guessCondaRecipeName(CONDA) == new NameVersionPair(['pandas'], ['2.2.2'])
+    }
+
     def 'should find conda name with anonymous recipe' () {
         given:
         def CONDA = '''\
