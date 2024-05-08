@@ -432,22 +432,6 @@ class ContainerHelperTest extends Specification {
         ContainerHelper.guessCondaRecipeName(CONDA,true) == new NameVersionPair(['rnaseq-nf'], [null])
     }
 
-    def 'should find conda name with pip packages' () {
-        given:
-        def CONDA = '''\
-                channels:
-                - bioconda
-                - conda-forge
-                dependencies:
-                - pip
-                - pip:
-                  - pandas==2.2.2
-            '''.stripIndent(true)
-
-        expect:
-        ContainerHelper.guessCondaRecipeName(CONDA) == new NameVersionPair(['pandas'], ['2.2.2'])
-    }
-
     def 'should find conda name with anonymous recipe' () {
         given:
         def CONDA = '''\
@@ -470,6 +454,23 @@ class ContainerHelperTest extends Specification {
         ContainerHelper.guessCondaRecipeName(CONDA) == new NameVersionPair(['salmon-1.6.0', 'fastqc-0.11.9', 'multiqc-1.11', 'samtools', 'bwa-0.1', 'bowtie2-0.2', 'mem-0.3'] as Set)
         and:
         ContainerHelper.guessCondaRecipeName(CONDA,true) == new NameVersionPair(['salmon', 'fastqc', 'multiqc', 'samtools', 'bwa', 'bowtie2', 'mem'] as Set, ['1.6.0','0.11.9','1.11', null, '0.1','0.2', '0.3'] as Set)
+    }
+
+    def 'should find conda name with pip packages' () {
+        given:
+        def CONDA = '''\
+                channels:
+                - bioconda
+                - conda-forge
+                dependencies:
+                - pip
+                - pip:
+                  - pandas==2.2.2
+            '''.stripIndent(true)
+
+        expect:
+        ContainerHelper.guessCondaRecipeName(CONDA) == new NameVersionPair(['pip','pandas-2.2.2'] as Set)
+        ContainerHelper.guessCondaRecipeName(CONDA,true) == new NameVersionPair(['pip','pandas'] as Set, [null, '2.2.2'] as Set)
     }
 
     def 'should find spack recipe names from spack yaml file' () {
