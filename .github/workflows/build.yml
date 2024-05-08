@@ -72,6 +72,10 @@ jobs:
           AZURECR_PAT: ${{ secrets.AZURECR_PAT }}
           GOOGLECR_KEYS: ${{ secrets.GOOGLECR_KEYS }}
 
+      - name: Cleanup build workspace
+        run: |
+          sudo rm -rf /home/runner/work/wave/wave/build-workspace
+
       - name: Release
         if: "contains(github.event.head_commit.message, '[release]')"
         run: |
@@ -84,10 +88,6 @@ jobs:
           DOCKER_PAT: ${{ secrets.DOCKER_PAT }}
           QUAY_PAT: ${{ secrets.QUAY_PAT }}
           GITHUB_TOKEN: ${{ secrets.GH_SEQERA_TOKEN }}
-
-      - name: Delete build workspace
-        run: |
-          sudo rm -rf /home/runner/work/wave/wave/build-workspace
 
       - name: Publish tests report
         if: failure()
