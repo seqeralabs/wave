@@ -456,6 +456,23 @@ class ContainerHelperTest extends Specification {
         ContainerHelper.guessCondaRecipeName(CONDA,true) == new NameVersionPair(['salmon', 'fastqc', 'multiqc', 'samtools', 'bwa', 'bowtie2', 'mem'] as Set, ['1.6.0','0.11.9','1.11', null, '0.1','0.2', '0.3'] as Set)
     }
 
+    def 'should find conda name with pip packages' () {
+        given:
+        def CONDA = '''\
+                channels:
+                - bioconda
+                - conda-forge
+                dependencies:
+                - pip
+                - pip:
+                  - pandas==2.2.2
+            '''.stripIndent(true)
+
+        expect:
+        ContainerHelper.guessCondaRecipeName(CONDA) == new NameVersionPair(['pip','pandas-2.2.2'] as Set)
+        ContainerHelper.guessCondaRecipeName(CONDA,true) == new NameVersionPair(['pip','pandas'] as Set, [null, '2.2.2'] as Set)
+    }
+
     def 'should find spack recipe names from spack yaml file' () {
         def SPACK = '''\
             spack:
@@ -583,6 +600,27 @@ class ContainerHelperTest extends Specification {
                     - multiqc=1.15
                 '''
 
+    @Shared def PIP1 = '''\
+                channels:
+                - bioconda
+                - conda-forge
+                dependencies:
+                - pip
+                - pip:
+                  - pandas==2.2.2
+            '''.stripIndent(true)
+
+    @Shared def PIP2 = '''\
+                channels:
+                - bioconda
+                - conda-forge
+                dependencies:
+                - pip
+                - pip:
+                  - pandas==2.2.2
+                  - numpy=1.0
+            '''.stripIndent(true)
+
     @Shared def SPACK1 = '''\
             spack:
               specs: [bwa@0.7.15]
@@ -630,6 +668,16 @@ class ContainerHelperTest extends Specification {
         'DOCKER'      | 'foo.com/build'   | '123'     | CONDA2| null  | 'none'        | 'foo.com/build:123'
         'DOCKER'      | 'foo.com/build'   | '123'     | CONDA2| null  | 'tagPrefix'   | 'foo.com/build:samtools-1.0_bamtools-2.0_multiqc-1.15--123'
         'DOCKER'      | 'foo.com/build'   | '123'     | CONDA2| null  | 'imageSuffix' | 'foo.com/build/samtools_bamtools_multiqc:123'
+        and:
+        'DOCKER'      | 'foo.com/build'   | '123'     | PIP1 | null | null          | 'foo.com/build:pip_pandas-2.2.2--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | PIP1 | null | 'none'        | 'foo.com/build:123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | PIP1 | null | 'tagPrefix'   | 'foo.com/build:pip_pandas-2.2.2--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | PIP1 | null | 'imageSuffix' | 'foo.com/build/pip_pandas:123'
+        and:
+        'DOCKER'      | 'foo.com/build'   | '123'     | PIP2 | null | null          | 'foo.com/build:pip_pandas-2.2.2_numpy-1.0--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | PIP2 | null | 'tagPrefix'   | 'foo.com/build:pip_pandas-2.2.2_numpy-1.0--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | PIP2 | null | 'imageSuffix' | 'foo.com/build/pip_pandas_numpy:123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | PIP2 | null | 'none'        | 'foo.com/build:123'
 
         and:
         'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK1| null          | 'foo.com/build:bwa-0.7.15--123'
