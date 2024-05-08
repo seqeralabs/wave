@@ -1,4 +1,9 @@
 # Wave changelog
+1.7.6 - 8 May 2024
+- Fix the handling of pip packages with Conda (#493) [35d9c1fd]
+- Fix Community repo name composition when namingStrategy is not specified [385c53cc]
+- Fix aggregate metrics issue (#487) [e4279602]
+
 1.7.5 - 2 May 2024
 - Fix community repo naming normalisation [a9b12d76]
 
