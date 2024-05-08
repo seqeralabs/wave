@@ -20,15 +20,19 @@ package io.seqera.wave.service
 
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
+import java.util.concurrent.ExecutorService
+
 import io.micronaut.core.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.exception.UnauthorizedException
 import io.seqera.wave.tower.User
 import io.seqera.wave.tower.client.TowerClient
 import io.seqera.wave.tower.client.UserInfoResponse
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 /**
  * Define a service to access a Tower user
@@ -44,19 +48,23 @@ class UserServiceImpl implements UserService {
     @Nullable
     private TowerClient towerClient
 
+    @Inject
+    @Named(TaskExecutors.IO)
+    private ExecutorService ioExecutor
+
     @Override
     CompletableFuture<User> getUserByAccessTokenAsync(String endpoint, String encodedToken) {
         if( !towerClient )
             throw new IllegalStateException("Missing Tower client - make sure the 'tower' micronaut environment has been provided")
 
-        towerClient.userInfo(endpoint,encodedToken).handle( (UserInfoResponse resp, Throwable error) -> {
+        towerClient.userInfo(endpoint,encodedToken).handleAsync( (UserInfoResponse resp, Throwable error) -> {
             if( error )
                 throw error
             if (!resp || !resp.user)
                 throw new UnauthorizedException("Unauthorized - Make sure you have provided a valid access token")
             log.debug("Authorized user=$resp.user")
             return resp.user
-        })
+        }, ioExecutor)
     }
 
     @Override
