@@ -180,6 +180,9 @@ class ContainerHelper {
     }
 
     static String patchPlatformEndpoint(String endpoint) {
+        if( !endpoint )
+            return null
+
         // api.stage-tower.net --> api.cloud.stage-seqera.io
         // api.tower.nf --> api.cloud.seqera.io
         final result = endpoint
