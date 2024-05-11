@@ -171,14 +171,15 @@ class ContainerController {
     }
 
     protected CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getContainerImpl(HttpRequest httpRequest, SubmitContainerTokenRequest req, boolean v2) {
+        // patch platform endpoint
+        req.towerEndpoint = patchPlatformEndpoint(req.towerEndpoint)
+
+        // validate request
         validateContainerRequest(req)
 
         // this is needed for backward compatibility with old clients
         if( !req.towerEndpoint ) {
             req.towerEndpoint = towerEndpointUrl
-        }
-        else {
-            req.towerEndpoint = patchPlatformEndpoint(req.towerEndpoint)
         }
 
         // anonymous access

@@ -406,6 +406,7 @@ class ContainerHelperTest extends Specification {
 
         where:
         ENDPOINT                        | EXPECTED
+        null                            | null
         'http://foo.com'                | 'http://foo.com'
         'https://api.tower.nf'          | 'https://api.cloud.seqera.io'
         'https://api.stage-tower.net'   | 'https://api.cloud.stage-seqera.io'
