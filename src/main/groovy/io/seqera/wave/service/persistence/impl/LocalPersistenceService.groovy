@@ -33,7 +33,7 @@ import jakarta.inject.Singleton
  */
 @Singleton
 @CompileStatic
-@TraceElapsedTime
+@TraceElapsedTime(thresholdMillis = 100)
 class LocalPersistenceService implements PersistenceService {
 
     private Map<String,WaveBuildRecord> buildStore = new HashMap<>()

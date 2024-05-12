@@ -45,7 +45,7 @@ class TraceElapsedTimeInterceptor implements MethodInterceptor<Object,Object> {
     Object intercept(MethodInvocationContext<Object, Object> context) {
         // get the threshold value from the TraceElapsedTime annotation
         final annot = context.getAnnotation(TraceElapsedTime)
-        final threshold = annot.intValue('threshold').orElse(0)
+        final threshold = annot.intValue('thresholdMillis').orElse(0)
 
         // apply it
         final begin = System.currentTimeMillis()

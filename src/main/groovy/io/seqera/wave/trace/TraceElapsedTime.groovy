@@ -18,11 +18,14 @@
 
 package io.seqera.wave.trace
 
-import io.micronaut.aop.Around
-import java.lang.annotation.*
-import static java.lang.annotation.ElementType.*
-import static java.lang.annotation.RetentionPolicy.RUNTIME
+import java.lang.annotation.Documented
+import java.lang.annotation.Retention
+import java.lang.annotation.Target
 
+import io.micronaut.aop.Around
+import static java.lang.annotation.ElementType.METHOD
+import static java.lang.annotation.ElementType.TYPE
+import static java.lang.annotation.RetentionPolicy.RUNTIME
 /**
  * When applied to a method or a class the elapsed time to carry out the method execution
  * is reported in the application log file
@@ -34,5 +37,5 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME
 @Target([TYPE, METHOD])
 @Around
 @interface TraceElapsedTime {
-    int threshold() default 0
+    int thresholdMillis() default 0
 }

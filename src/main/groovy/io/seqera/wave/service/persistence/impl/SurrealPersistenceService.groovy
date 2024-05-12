@@ -50,7 +50,7 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-@TraceElapsedTime
+@TraceElapsedTime(thresholdMillis = 100)
 class SurrealPersistenceService implements PersistenceService {
 
     @Inject
