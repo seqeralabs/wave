@@ -220,8 +220,12 @@ class ContainerController {
             req = req.copyWith(containerFile: generated.bytes.encodeBase64().toString())
         }
 
-        // prevent the use of dockerfile file without providing
+        // prevent the use of container file and freeze without a custom build repository
         if( req.containerFile && req.freeze && !isCustomRepo0(req.buildRepository) && (!v2 || (v2 && !req.packages)))
+            throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode")
+
+        // prevent the use of container image and freeze without a custom build repository
+        if( req.containerImage && req.freeze && !isCustomRepo0(req.buildRepository) )
             throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode")
 
         final ip = addressResolver.resolve(httpRequest)
