@@ -20,7 +20,6 @@ package io.seqera.wave.controller
 
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutorService
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
@@ -70,9 +69,7 @@ import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
 import io.seqera.wave.util.LongRndKey
 import jakarta.inject.Inject
-import jakarta.inject.Named
 import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
-import static io.seqera.wave.WaveDefault.TOWER
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static io.seqera.wave.util.ContainerHelper.checkContainerSpec
@@ -87,6 +84,8 @@ import static io.seqera.wave.util.ContainerHelper.patchPlatformEndpoint
 import static io.seqera.wave.util.ContainerHelper.spackFileFromRequest
 import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
 import static java.util.concurrent.CompletableFuture.completedFuture
+import static io.seqera.wave.service.pairing.PairingService.TOWER_SERVICE
+
 /**
  * Implement a controller to receive container token requests
  * 
@@ -148,10 +147,6 @@ class ContainerController {
     @Inject
     ContainerInclusionService inclusionService
 
-    @Inject
-    @Named(TaskExecutors.IO)
-    ExecutorService ioExecutor
-
     @PostConstruct
     private void init() {
         log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl; default-build-repo: $buildConfig.defaultBuildRepository; default-cache-repo: $buildConfig.defaultCacheRepository; default-public-repo: $buildConfig.defaultPublicRepository"
@@ -187,17 +182,17 @@ class ContainerController {
             return completedFuture(handleRequest(httpRequest, req, PlatformId.NULL, v2))
         }
 
-        // We first check if the service is registered
-        final registration = pairingService.getPairingRecord(PairingService.TOWER_SERVICE, req.towerEndpoint)
+        // first check if the service is registered
+        final registration = pairingService.getPairingRecord(TOWER_SERVICE, req.towerEndpoint)
         if( !registration )
-            throw new BadRequestException("Tower instance '${req.towerEndpoint}' has not enabled to connect Wave service '$serverUrl'")
+            throw new BadRequestException("Missing pairing record for Tower endpoint '$req.towerEndpoint'")
 
         // store the tower JWT tokens
         jwtAuthStore.putJwtAuth(req.towerEndpoint, req.towerRefreshToken, req.towerAccessToken)
         // find out the user associated with the specified tower access token
         return userService
                 .getUserByAccessTokenAsync(registration.endpoint, req.towerAccessToken)
-                .thenApplyAsync({ User user -> handleRequest(httpRequest, req, PlatformId.of(user,req), v2) }, ioExecutor)
+                .thenApply((User user) -> handleRequest(httpRequest, req, PlatformId.of(user,req), v2))
     }
 
     protected HttpResponse<SubmitContainerTokenResponse> handleRequest(HttpRequest httpRequest, SubmitContainerTokenRequest req, PlatformId identity, boolean v2) {
@@ -448,12 +443,6 @@ class ContainerController {
     }
 
     void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException{
-        if( req.towerEndpoint && req.towerAccessToken ) {
-            // check the endpoint has been registered via the pairing process
-            if( !pairingService.getPairingRecord(TOWER, req.towerEndpoint) )
-                throw new BadRequestException("Missing pairing record for Tower endpoint '$req.towerEndpoint'")
-        }
-
         String msg
         // check valid image name
         msg = validationService.checkContainerName(req.containerImage)
