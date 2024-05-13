@@ -72,7 +72,6 @@ import io.seqera.wave.util.LongRndKey
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
-import static io.seqera.wave.WaveDefault.TOWER
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static io.seqera.wave.util.ContainerHelper.checkContainerSpec
@@ -87,6 +86,8 @@ import static io.seqera.wave.util.ContainerHelper.patchPlatformEndpoint
 import static io.seqera.wave.util.ContainerHelper.spackFileFromRequest
 import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
 import static java.util.concurrent.CompletableFuture.completedFuture
+import static io.seqera.wave.service.pairing.PairingService.TOWER_SERVICE
+
 /**
  * Implement a controller to receive container token requests
  * 
@@ -187,10 +188,10 @@ class ContainerController {
             return completedFuture(handleRequest(httpRequest, req, PlatformId.NULL, v2))
         }
 
-        // We first check if the service is registered
-        final registration = pairingService.getPairingRecord(PairingService.TOWER_SERVICE, req.towerEndpoint)
+        // first check if the service is registered
+        final registration = pairingService.getPairingRecord(TOWER_SERVICE, req.towerEndpoint)
         if( !registration )
-            throw new BadRequestException("Tower instance '${req.towerEndpoint}' has not enabled to connect Wave service '$serverUrl'")
+            throw new BadRequestException("Missing pairing record for Tower endpoint '$req.towerEndpoint'")
 
         // store the tower JWT tokens
         jwtAuthStore.putJwtAuth(req.towerEndpoint, req.towerRefreshToken, req.towerAccessToken)
@@ -441,12 +442,6 @@ class ContainerController {
     }
 
     void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException{
-        if( req.towerEndpoint && req.towerAccessToken ) {
-            // check the endpoint has been registered via the pairing process
-            if( !pairingService.getPairingRecord(TOWER, req.towerEndpoint) )
-                throw new BadRequestException("Missing pairing record for Tower endpoint '$req.towerEndpoint'")
-        }
-
         String msg
         // check valid image name
         msg = validationService.checkContainerName(req.containerImage)
