@@ -563,28 +563,28 @@ class ContainerControllerTest extends Specification {
         controller.handleRequest(null, req, new PlatformId(new User(id: 100)), false)
         then:
         e = thrown(BadRequestException)
-        e.message == "Attribute `buildRepository` must be specified when using freeze mode"
+        e.message == "Attribute `buildRepository` must be specified when using freeze mode [1]"
 
         when:
         req = new SubmitContainerTokenRequest(containerFile: 'from foo', freeze: true)
         controller.handleRequest(null, req, new PlatformId(new User(id: 100)), true)
         then:
         e = thrown(BadRequestException)
-        e.message == "Attribute `buildRepository` must be specified when using freeze mode"
+        e.message == "Attribute `buildRepository` must be specified when using freeze mode [1]"
 
         when:
         req = new SubmitContainerTokenRequest(containerImage: 'alpine', freeze: true)
         controller.handleRequest(null, req, new PlatformId(new User(id: 100)), false)
         then:
         e = thrown(BadRequestException)
-        e.message == "Attribute `buildRepository` must be specified when using freeze mode"
+        e.message == "Attribute `buildRepository` must be specified when using freeze mode [2]"
 
         when:
         req = new SubmitContainerTokenRequest(containerImage: 'alpine', freeze: true)
         controller.handleRequest(null, req, new PlatformId(new User(id: 100)), true)
         then:
         e = thrown(BadRequestException)
-        e.message == "Attribute `buildRepository` must be specified when using freeze mode"
+        e.message == "Attribute `buildRepository` must be specified when using freeze mode [2]"
     }
 
     @Unroll
