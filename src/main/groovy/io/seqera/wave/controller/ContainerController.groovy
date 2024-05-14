@@ -284,8 +284,12 @@ class ContainerController {
         if( parts.size()>1 ) {
             return repo
         }
-        else
-            return repo + (strategy==ImageNameStrategy.imageSuffix ? '/library' : '/library/build')
+
+        else {
+            // consider strategy==null the same as 'imageSuffix' considering this is only going to be applied
+            // to community registry which only allows build with Packages spec
+            return repo + (strategy==null || strategy==ImageNameStrategy.imageSuffix ? '/library' : '/library/build')
+        }
     }
 
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
