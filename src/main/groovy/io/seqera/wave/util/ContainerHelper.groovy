@@ -326,20 +326,20 @@ class ContainerHelper {
         def tag = id
         if( nameStrategy==null || nameStrategy==ImageNameStrategy.tagPrefix ) {
             if( condaFile && (tools=guessCondaRecipeName(condaFile,false)) ) {
-                tag = "${normaliseTag(tools.both().join('_'))}--${id}"
+                tag = "${normaliseTag(tools.qualifiedNames())}--${id}"
             }
             else if( spackFile && (tools=guessSpackRecipeName(spackFile,false)) ) {
-                tag = "${normaliseTag(tools.both().join('_'))}--${id}"
+                tag = "${normaliseTag(tools.qualifiedNames())}--${id}"
             }
         }
         else if( nameStrategy==ImageNameStrategy.imageSuffix )  {
             if( condaFile && (tools=guessCondaRecipeName(condaFile,true)) ) {
-                repo = StringUtils.pathConcat(repo, normaliseName(tools.names.join('_')))
+                repo = StringUtils.pathConcat(repo, normaliseName(tools.friendlyNames()))
                 if( tools.versions?.size()==1 && tools.versions[0] )
                     tag = "${normaliseTag(tools.versions[0])}--${id}"
             }
             else if( spackFile && (tools=guessSpackRecipeName(spackFile, true)) ) {
-                repo = StringUtils.pathConcat(repo, normaliseName(tools.names.join('_')))
+                repo = StringUtils.pathConcat(repo, normaliseName(tools.friendlyNames()))
                 if( tools.versions?.size()==1 && tools.versions[0] )
                     tag = "${normaliseTag(tools.versions[0])}--${id}"
             }

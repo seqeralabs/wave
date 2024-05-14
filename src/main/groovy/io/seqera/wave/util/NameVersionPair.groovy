@@ -30,10 +30,13 @@ import groovy.transform.CompileStatic
 @Canonical
 class NameVersionPair {
 
+    private static final String SUFFIX = 'pruned'
+    private static final int MAX = 5
+
     Collection<String> names
     Collection<String> versions
 
-    List<String> both() {
+    private List<String> both() {
         final result = new ArrayList()
         for( int i=0; i<names.size(); i++) {
             final v = versions?[i]
@@ -42,4 +45,22 @@ class NameVersionPair {
         return result
     }
 
+    String friendlyNames(String sep='_') {
+        if( !names )
+            return null
+        if( names.size()<=MAX )
+            return names.join(sep)
+        else
+            return new ArrayList<>(names)[0..MAX-2].join(sep) + sep + SUFFIX
+    }
+
+    String qualifiedNames(String sep='_') {
+        final ret = both()
+        if( !ret )
+            return null
+        if( ret.size()<=MAX )
+            return ret.join(sep)
+        else
+            return new ArrayList<>(ret)[0..MAX-2].join(sep) + sep + SUFFIX
+    }
 }

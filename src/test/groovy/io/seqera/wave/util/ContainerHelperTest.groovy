@@ -601,6 +601,17 @@ class ContainerHelperTest extends Specification {
                     - multiqc=1.15
                 '''
 
+    @Shared def CONDA3 = '''\
+                dependencies:
+                    - samtools=1.0
+                    - bamtools=2.0
+                    - multiqc=1.15
+                    - bwa=1.2.3
+                    - xx
+                    - yy
+                    - zz
+                '''
+
     @Shared def PIP1 = '''\
                 channels:
                 - bioconda
@@ -669,6 +680,11 @@ class ContainerHelperTest extends Specification {
         'DOCKER'      | 'foo.com/build'   | '123'     | CONDA2| null  | 'none'        | 'foo.com/build:123'
         'DOCKER'      | 'foo.com/build'   | '123'     | CONDA2| null  | 'tagPrefix'   | 'foo.com/build:samtools-1.0_bamtools-2.0_multiqc-1.15--123'
         'DOCKER'      | 'foo.com/build'   | '123'     | CONDA2| null  | 'imageSuffix' | 'foo.com/build/samtools_bamtools_multiqc:123'
+        and:
+        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA3| null  | null          | 'foo.com/build:samtools-1.0_bamtools-2.0_multiqc-1.15_bwa-1.2.3_pruned--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA3| null  | 'none'        | 'foo.com/build:123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA3| null  | 'tagPrefix'   | 'foo.com/build:samtools-1.0_bamtools-2.0_multiqc-1.15_bwa-1.2.3_pruned--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA3| null  | 'imageSuffix' | 'foo.com/build/samtools_bamtools_multiqc_bwa_pruned:123'
         and:
         'DOCKER'      | 'foo.com/build'   | '123'     | PIP1 | null | null          | 'foo.com/build:pip_pandas-2.2.2--123'
         'DOCKER'      | 'foo.com/build'   | '123'     | PIP1 | null | 'none'        | 'foo.com/build:123'
