@@ -1,0 +1,28 @@
+---
+title: Use Wave to build Conda-based containers for Nextflow pipelines
+---
+
+Wave allows the provisioning of containers based on the `process-conda` [directive][process-conda] used by the processes in your pipeline. This is a quick alternative to building Conda packages in the local computer. Moreover, this enables the use of Conda packages in your pipeline when deploying in cloud-native platforms such as AWS Batch and Kubernetes, which do not allow the (easy) use of the Conda package manager.
+
+With Wave enabled in your pipeline, simply define the `conda` requirements in the pipeline processes, provided the same process does not also specify a `container` directive or a Dockerfile.
+
+In the latter case, add the following setting to your pipeline configuration:
+
+```groovy
+wave.strategy = ['conda']
+```
+
+The above setting instructs Wave to use the `conda` directive to provision the pipeline containers and ignore the `container` directive and any Dockerfile(s).
+
+:::tip
+Some configuration options in the `conda` scope are used when Wave is used to build Conda-based containers.
+For example, the Conda channels and their priority can be set with `conda.channels`:
+
+```groovy
+wave.strategy = ['conda']
+conda.channels = 'seqera,conda-forge,bioconda,defaults'
+```
+
+:::
+
+[process-conda]: https://www.nextflow.io/docs/latest/process.html#conda
