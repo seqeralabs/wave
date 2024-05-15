@@ -83,9 +83,6 @@ class BlobCacheServiceImpl implements BlobCacheService {
     @Inject
     private HttpClientConfig httpConfig
 
-    @Inject
-    private CleanupStrategy cleanup
-
     private HttpClient httpClient
 
     @PostConstruct
@@ -197,10 +194,6 @@ class BlobCacheServiceImpl implements BlobCacheService {
             final ttl = result.succeeded()
                     ? blobConfig.statusDuration
                     : blobConfig.statusDelay.multipliedBy(10)
-
-            // delete job
-            if( cleanup.shouldCleanup(result.exitStatus) )
-                transferStrategy.cleanup(info)
 
             blobStore.storeBlob(route.targetPath, result, ttl)
             return result

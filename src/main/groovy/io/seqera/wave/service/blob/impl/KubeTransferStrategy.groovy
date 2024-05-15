@@ -18,17 +18,24 @@
 
 package io.seqera.wave.service.blob.impl
 
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
+
 import com.google.common.hash.Hashing
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Replaces
 import io.micronaut.context.annotation.Requires
+import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.blob.TransferTimeoutException
+import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Inject
+import jakarta.inject.Named
+
 /**
  * Implements {@link TransferStrategy} that runs s5cmd using a
  * Kubernetes job
@@ -46,6 +53,13 @@ class KubeTransferStrategy implements TransferStrategy {
 
     @Inject
     private K8sService k8sService
+
+    @Inject
+    private CleanupStrategy cleanup
+
+    @Inject
+    @Named(TaskExecutors.IO)
+    private ExecutorService executor
 
     @Override
     BlobCacheInfo transfer(BlobCacheInfo info, List<String> command) {
@@ -69,14 +83,17 @@ class KubeTransferStrategy implements TransferStrategy {
         final pod = k8sService.getPod(podName)
         final terminated = k8sService.waitPod(pod, name, blobConfig.transferTimeout.toMillis())
         final stdout = k8sService.logsPod(podName, name)
-        return terminated
+
+        def result = terminated
                 ? info.completed(terminated.exitCode, stdout)
                 : info.failed(stdout)
-    }
 
-    @Override
-    void cleanup(BlobCacheInfo info) {
-        k8sService.deleteJob(getName(info))
+        // delete job
+        if( cleanup.shouldCleanup(terminated.exitCode) ) {
+            CompletableFuture.supplyAsync (() -> k8sService.deleteJob(job.metadata.name), executor)
+        }
+
+        return result
     }
 
     protected static String getName(BlobCacheInfo info) {
