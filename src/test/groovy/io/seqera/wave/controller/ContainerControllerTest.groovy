@@ -510,6 +510,34 @@ class ContainerControllerTest extends Specification {
         then:
         e = thrown(BadRequestException)
         e.message == "Attribute `packages` is not allowed"
+
+        when:
+        req = new SubmitContainerTokenRequest(containerFile: 'from foo', freeze: true)
+        controller.handleRequest(null, req, new PlatformId(new User(id: 100)), false)
+        then:
+        e = thrown(BadRequestException)
+        e.message == "Attribute `buildRepository` must be specified when using freeze mode [1]"
+
+        when:
+        req = new SubmitContainerTokenRequest(containerFile: 'from foo', freeze: true)
+        controller.handleRequest(null, req, new PlatformId(new User(id: 100)), true)
+        then:
+        e = thrown(BadRequestException)
+        e.message == "Attribute `buildRepository` must be specified when using freeze mode [1]"
+
+        when:
+        req = new SubmitContainerTokenRequest(containerImage: 'alpine', freeze: true)
+        controller.handleRequest(null, req, new PlatformId(new User(id: 100)), false)
+        then:
+        e = thrown(BadRequestException)
+        e.message == "Attribute `buildRepository` must be specified when using freeze mode [2]"
+
+        when:
+        req = new SubmitContainerTokenRequest(containerImage: 'alpine', freeze: true)
+        controller.handleRequest(null, req, new PlatformId(new User(id: 100)), true)
+        then:
+        e = thrown(BadRequestException)
+        e.message == "Attribute `buildRepository` must be specified when using freeze mode [2]"
     }
 
     @Unroll
@@ -530,7 +558,7 @@ class ContainerControllerTest extends Specification {
         'foo.com/alpha/beta'| ImageNameStrategy.imageSuffix | 'foo.com'     | 'foo.com/alpha/beta'
         'foo.com/alpha/beta'| ImageNameStrategy.tagPrefix   | 'foo.com'     | 'foo.com/alpha/beta'
         and:
-        'foo.com'           | null                          | 'foo.com'     | 'foo.com/library/build'
+        'foo.com'           | null                          | 'foo.com'     | 'foo.com/library'
         'foo.com'           | ImageNameStrategy.imageSuffix | 'foo.com'     | 'foo.com/library'
         'foo.com'           | ImageNameStrategy.tagPrefix   | 'foo.com'     | 'foo.com/library/build'
         and:

@@ -209,15 +209,22 @@ class ContainerController {
         if( !v2 && req.nameStrategy )
             throw new BadRequestException("Attribute `nameStrategy` is not allowed by legacy container endpoint")
 
+        // prevent the use of container file and freeze without a custom build repository
+        if( req.containerFile && req.freeze && !isCustomRepo0(req.buildRepository) && (!v2 || (v2 && !req.packages)))
+            throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode [1]")
+
+        // prevent the use of container image and freeze without a custom build repository
+        if( req.containerImage && req.freeze && !isCustomRepo0(req.buildRepository) )
+            throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode [2]")
+
+        if( v2 && req.packages && req.freeze && !isCustomRepo0(req.buildRepository) && !buildConfig.defaultPublicRepository )
+            throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode [3]")
+
         if( v2 && req.packages ) {
             // generate the container file required to assemble the container
             final generated = containerFileFromPackages(req.packages, req.formatSingularity())
             req = req.copyWith(containerFile: generated.bytes.encodeBase64().toString())
         }
-
-        // prevent the use of dockerfile file without providing
-        if( req.containerFile && req.freeze && !isCustomRepo0(req.buildRepository) && (!v2 || (v2 && !req.packages)))
-            throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode")
 
         final ip = addressResolver.resolve(httpRequest)
         final data = makeRequestData(req, identity, ip)
@@ -277,8 +284,12 @@ class ContainerController {
         if( parts.size()>1 ) {
             return repo
         }
-        else
-            return repo + (strategy==ImageNameStrategy.imageSuffix ? '/library' : '/library/build')
+
+        else {
+            // consider strategy==null the same as 'imageSuffix' considering this is only going to be applied
+            // to community registry which only allows build with Packages spec
+            return repo + (strategy==null || strategy==ImageNameStrategy.imageSuffix ? '/library' : '/library/build')
+        }
     }
 
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
