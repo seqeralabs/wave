@@ -180,6 +180,9 @@ class ContainerHelper {
     }
 
     static String patchPlatformEndpoint(String endpoint) {
+        if( !endpoint )
+            return null
+
         // api.stage-tower.net --> api.cloud.stage-seqera.io
         // api.tower.nf --> api.cloud.seqera.io
         final result = endpoint
@@ -189,6 +192,29 @@ class ContainerHelper {
             log.debug "Patched Platform endpoint: '$endpoint' with '$result'"
         return result
     }
+
+    static List<String> normaliseDeps0(List deps) {
+        final result = new ArrayList(20)
+        for( def it : deps ) {
+            if( it instanceof CharSequence )
+                result.add(it.toString())
+            else if( it instanceof Map ) {
+                for( Map.Entry entry : (it as Map) ){
+                    if( entry.key=='pip' && entry.value instanceof List ) {
+                        for( String elem : entry.value as List ) {
+                            result.add('pip:' + elem)
+                        }
+                    }
+                    else
+                        throw new IllegalStateException("Unexpected Conda dependencies format - offending value: $deps")
+                }
+            }
+            else
+                throw new IllegalStateException("Unexpected Conda dependencies format - offending value: $deps")
+        }
+        return result
+    }
+
 
     static NameVersionPair guessCondaRecipeName(String condaFileContent, boolean split=false) {
         if( !condaFileContent )
@@ -205,7 +231,11 @@ class ContainerHelper {
             if( yaml.dependencies instanceof List ) {
                 final LinkedHashSet<String> versions = new LinkedHashSet<>()
                 final LinkedHashSet<String> result = new LinkedHashSet<>()
-                for( String it : yaml.dependencies ) {
+                for( String it : normaliseDeps0(yaml.dependencies as List) ) {
+                    //strip `pip:` prefix
+                    if( it.startsWith('pip:') && it.length()>4 && it[4]!=':')
+                        it = it.substring(4)
+                    // strip channel prefix
                     final int p=it.indexOf('::')
                     if( p!=-1 )
                         it = it.substring(p+2)
@@ -296,20 +326,20 @@ class ContainerHelper {
         def tag = id
         if( nameStrategy==null || nameStrategy==ImageNameStrategy.tagPrefix ) {
             if( condaFile && (tools=guessCondaRecipeName(condaFile,false)) ) {
-                tag = "${normaliseTag(tools.both().join('_'))}--${id}"
+                tag = "${normaliseTag(tools.qualifiedNames())}--${id}"
             }
             else if( spackFile && (tools=guessSpackRecipeName(spackFile,false)) ) {
-                tag = "${normaliseTag(tools.both().join('_'))}--${id}"
+                tag = "${normaliseTag(tools.qualifiedNames())}--${id}"
             }
         }
         else if( nameStrategy==ImageNameStrategy.imageSuffix )  {
             if( condaFile && (tools=guessCondaRecipeName(condaFile,true)) ) {
-                repo = StringUtils.pathConcat(repo, normaliseName(tools.names.join('_')))
+                repo = StringUtils.pathConcat(repo, normaliseName(tools.friendlyNames()))
                 if( tools.versions?.size()==1 && tools.versions[0] )
                     tag = "${normaliseTag(tools.versions[0])}--${id}"
             }
             else if( spackFile && (tools=guessSpackRecipeName(spackFile, true)) ) {
-                repo = StringUtils.pathConcat(repo, normaliseName(tools.names.join('_')))
+                repo = StringUtils.pathConcat(repo, normaliseName(tools.friendlyNames()))
                 if( tools.versions?.size()==1 && tools.versions[0] )
                     tag = "${normaliseTag(tools.versions[0])}--${id}"
             }

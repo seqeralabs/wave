@@ -19,7 +19,6 @@
 package io.seqera.wave.controller
 
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutorService
 import java.util.function.Consumer
 
 import groovy.transform.CompileStatic
@@ -58,7 +57,6 @@ import io.seqera.wave.storage.LazyDigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.util.Retryable
 import jakarta.inject.Inject
-import jakarta.inject.Named
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Mono
 /**
@@ -104,10 +102,6 @@ class RegistryProxyController {
 
     @Value('${wave.cache.digestStore.maxWeightMb:350}')
     private int cacheMaxWeightMb
-
-    @Inject
-    @Named(TaskExecutors.IO)
-    ExecutorService ioExecutor
 
     @Error
     HttpResponse<RegistryErrorResponse> handleError(HttpRequest request, Throwable t) {

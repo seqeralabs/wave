@@ -114,7 +114,7 @@ abstract class TowerConnector {
     protected <T> CompletableFuture<T> sendAsync0(String endpoint, URI uri, String authorization, Class<T> type, int attempt0) {
         final msgId = rndHex()
         final attempt = newAttempt(attempt0)
-        // note: use a local variable for the executor, othereise it will fail to reference the `ioExecutor` in the closure
+        // note: use a local variable for the executor, otherwise it will fail to reference the `ioExecutor` in the closure
         final exec0 = this.ioExecutor
         return sendAsync1(endpoint, uri, authorization, msgId, true)
                 .thenCompose { resp ->
