@@ -17,7 +17,6 @@
  */
 
 package io.seqera.wave.service.blob
-
 /**
  * Defines the contract to transfer a layer blob into a remote object storage
  *
