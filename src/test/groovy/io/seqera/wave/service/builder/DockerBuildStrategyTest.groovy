@@ -45,41 +45,41 @@ class DockerBuildStrategyTest extends Specification {
         and:
         def work = Path.of('/work/foo')
         when:
-        def cmd = service.cmdForKaniko(work, null, null, null)
+        def cmd = service.cmdForBuildkit(work, null, null, null)
         then:
         cmd == ['docker',
                 'run',
                 '--rm',
                 '-v', '/work/foo:/work/foo',
-                'gcr.io/kaniko-project/executor:v1.22.0']
+                'moby/buildkit:v0.13.2-rootless']
 
         when:
-        cmd = service.cmdForKaniko(work, Path.of('/foo/creds.json'), null, ContainerPlatform.of('arm64'))
+        cmd = service.cmdForBuildkit(work, Path.of('/foo/creds.json'), null, ContainerPlatform.of('arm64'))
         then:
         cmd == ['docker',
                 'run',
                 '--rm',
                 '-v', '/work/foo:/work/foo',
-                '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
+                '-v', '/foo/creds.json:/home/user/.docker/config.json:ro',
                 '--platform', 'linux/arm64',
-                'gcr.io/kaniko-project/executor:v1.22.0']
+                'moby/buildkit:v0.13.2-rootless']
 
         when:
-        cmd = service.cmdForKaniko(work, Path.of('/foo/creds.json'), spackConfig, null)
+        cmd = service.cmdForBuildkit(work, Path.of('/foo/creds.json'), spackConfig, null)
         then:
         cmd == ['docker',
                 'run',
                 '--rm',
                 '-v', '/work/foo:/work/foo',
-                '-v', '/foo/creds.json:/kaniko/.docker/config.json:ro',
+                '-v', '/foo/creds.json:/home/user/.docker/config.json:ro',
                 '-v', '/host/spack/key:/opt/spack/key:ro',
-                'gcr.io/kaniko-project/executor:v1.22.0']
+                'moby/buildkit:v0.13.2-rootless']
 
         cleanup:
         ctx.close()
     }
 
-    def 'should get kaniko build command' () {
+    def 'should get buildkit build command' () {
         given:
         def ctx = ApplicationContext.run()
         def service = ctx.getBean(DockerBuildStrategy)
@@ -98,15 +98,26 @@ class DockerBuildStrategyTest extends Specification {
                 'run',
                 '--rm',
                 '-v', '/work/foo/89fb83ce6ec8627b:/work/foo/89fb83ce6ec8627b',
-                '-v', '/work/creds.json:/kaniko/.docker/config.json:ro',
+                '-v', '/work/creds.json:/home/user/.docker/config.json:ro',
                 '--platform', 'linux/amd64',
-                'gcr.io/kaniko-project/executor:v1.22.0',
-                '--dockerfile', '/work/foo/89fb83ce6ec8627b/Containerfile',
-                '--context', '/work/foo/89fb83ce6ec8627b/context',
-                '--destination', 'repo:89fb83ce6ec8627b',
-                '--cache=true',
-                '--custom-platform', 'linux/amd64',
-                '--cache-repo', 'reg.io/wave/build/cache' ]
+                'moby/buildkit:v0.13.2-rootless',
+                'build',
+                '--frontend',
+                'dockerfile.v0',
+                '--local',
+                'dockerfile=/work/foo/89fb83ce6ec8627b',
+                '--opt',
+                'filename=/work/foo/89fb83ce6ec8627b/Containerfile',
+                '--local',
+                'context=/work/foo/89fb83ce6ec8627b/context',
+                '--output',
+                'type=image,name=repo:89fb83ce6ec8627b,push=true',
+                '--opt',
+                'platform=linux/amd64',
+                '--export-cache',
+                'type=registry,ref=reg.io/wave/build/cache',
+                '--import-cache',
+                'type=registry,ref=reg.io/wave/build/cache' ]
 
         cleanup:
         ctx.close()
@@ -126,12 +137,23 @@ class DockerBuildStrategyTest extends Specification {
         def cmd = service.launchCmd(req)
         then:
         cmd == [
-                '--dockerfile', '/work/foo/89fb83ce6ec8627b/Containerfile',
-                '--context', '/work/foo/89fb83ce6ec8627b/context',
-                '--destination', 'repo:89fb83ce6ec8627b',
-                '--cache=true',
-                '--custom-platform', 'linux/amd64',
-                '--cache-repo', 'reg.io/wave/build/cache',
+                'build',
+                '--frontend',
+                'dockerfile.v0',
+                '--local',
+                'dockerfile=/work/foo/89fb83ce6ec8627b',
+                '--opt',
+                'filename=/work/foo/89fb83ce6ec8627b/Containerfile',
+                '--local',
+                'context=/work/foo/89fb83ce6ec8627b/context',
+                '--output',
+                'type=image,name=repo:89fb83ce6ec8627b,push=true',
+                '--opt',
+                'platform=linux/amd64',
+                '--export-cache',
+                'type=registry,ref=reg.io/wave/build/cache',
+                '--import-cache',
+                'type=registry,ref=reg.io/wave/build/cache',
                 '--compressed-caching=false' ]
 
         cleanup:

@@ -124,7 +124,7 @@ class DockerBuildStrategy extends BuildStrategy {
 
         if( credsFile ) {
             wrapper.add('-v')
-            wrapper.add("$credsFile:/root/.docker/config.json:ro".toString())
+            wrapper.add("$credsFile:/home/user/.docker/config.json:ro".toString())
         }
 
         if( spackConfig ) {

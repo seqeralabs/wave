@@ -341,7 +341,7 @@ class K8sServiceImpl implements K8sService {
 
         if( credsFile ){
             if( !singularity ) {
-                mounts.add(0, mountHostPath(credsFile, storageMountPath, '/kaniko/.docker/config.json'))
+                mounts.add(0, mountHostPath(credsFile, storageMountPath, '/root/.docker/config.json'))
             }
             else {
                 final remoteFile = credsFile.resolveSibling('singularity-remote.yaml')
