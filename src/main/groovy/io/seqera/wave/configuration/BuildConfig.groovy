@@ -36,8 +36,8 @@ import jakarta.inject.Singleton
 @Slf4j
 class BuildConfig {
 
-    @Value('${wave.build.kaniko-image}')
-    String kanikoImage
+    @Value('${wave.build.buildkit-image}')
+    String buildkitImage
 
     @Value('${wave.build.singularity-image}')
     String singularityImage
@@ -84,7 +84,7 @@ class BuildConfig {
     @PostConstruct
     private void init() {
         log.debug("Builder config: " +
-                "kaniko-image=${kanikoImage}; " +
+                "buildkit-image=${buildkitImage}; " +
                 "singularity-image=${singularityImage}; " +
                 "singularity-image-amr64=${singularityImageArm64}; " +
                 "default-build-repository=${defaultBuildRepository}; " +

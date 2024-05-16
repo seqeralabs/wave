@@ -110,13 +110,13 @@ class DockerBuildStrategy extends BuildStrategy {
         final spack = req.isSpackBuild ? spackConfig : null
 
         final dockerCmd = req.formatDocker()
-                ? cmdForKaniko( req.workDir, credsFile, spack, req.platform)
+                ? cmdForBuildkit( req.workDir, credsFile, spack, req.platform)
                 : cmdForSingularity( req.workDir, credsFile, spack, req.platform)
 
         return dockerCmd + launchCmd(req)
     }
 
-    protected List<String> cmdForKaniko(Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform ) {
+    protected List<String> cmdForBuildkit(Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform ) {
         final wrapper = ['docker',
                          'run',
                          '--rm',
@@ -124,7 +124,7 @@ class DockerBuildStrategy extends BuildStrategy {
 
         if( credsFile ) {
             wrapper.add('-v')
-            wrapper.add("$credsFile:/kaniko/.docker/config.json:ro".toString())
+            wrapper.add("$credsFile:/root/.docker/config.json:ro".toString())
         }
 
         if( spackConfig ) {
@@ -137,12 +137,11 @@ class DockerBuildStrategy extends BuildStrategy {
             wrapper.add('--platform')
             wrapper.add(platform.toString())
         }
-        // the container image to be used t
-        wrapper.add( buildConfig.kanikoImage )
+        // the container image to be used to build
+        wrapper.add( buildConfig.buildkitImage )
         // return it
         return wrapper
     }
-
     protected List<String> cmdForSingularity(Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform) {
         final wrapper = ['docker',
                          'run',

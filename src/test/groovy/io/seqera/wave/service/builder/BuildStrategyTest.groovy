@@ -32,7 +32,7 @@ import io.seqera.wave.util.ContainerHelper
  */
 class BuildStrategyTest extends Specification {
 
-    def 'should get kaniko command' () {
+    def 'should get buildkit command' () {
         given:
         def cache = 'reg.io/wave/build/cache'
         def service = Spy(BuildStrategy)
@@ -48,21 +48,27 @@ class BuildStrategyTest extends Specification {
         def cmd = service.launchCmd(req)
         then:
         cmd == [
-                '--dockerfile',
-                '/work/foo/c168dba125e28777/Containerfile',
-                '--context',
-                '/work/foo/c168dba125e28777/context',
-                '--destination',
-                'quay.io/wave:c168dba125e28777',
-                '--cache=true',
-                '--custom-platform',
-                'linux/amd64',
-                '--cache-repo',
-                'reg.io/wave/build/cache',
+                'build',
+                '--frontend',
+                'dockerfile.v0',
+                '--local',
+                'dockerfile=/work/foo/c168dba125e28777',
+                '--opt',
+                'filename=/work/foo/c168dba125e28777/Containerfile',
+                '--local',
+                'context=/work/foo/c168dba125e28777/context',
+                '--output',
+                'type=image,name=quay.io/wave:c168dba125e28777,push=true',
+                '--opt',
+                'platform=linux/amd64',
+                '--export-cache',
+                'type=registry,ref=reg.io/wave/build/cache',
+                '--import-cache',
+                'type=registry,ref=reg.io/wave/build/cache'
         ]
     }
 
-    def 'should get kaniko command with build context' () {
+    def 'should get buildkit command with build context' () {
         given:
         def cache = 'reg.io/wave/build/cache'
         def service = Spy(BuildStrategy)
@@ -78,17 +84,23 @@ class BuildStrategyTest extends Specification {
         def cmd = service.launchCmd(req)
         then:
         cmd == [
-                '--dockerfile',
-                '/work/foo/3980470531b4a52a/Containerfile',
-                '--context',
-                '/work/foo/3980470531b4a52a/context',
-                '--destination',
-                'quay.io/wave:3980470531b4a52a',
-                '--cache=true',
-                '--custom-platform',
-                'linux/amd64',
-                '--cache-repo',
-                'reg.io/wave/build/cache',
+                'build',
+                '--frontend',
+                'dockerfile.v0',
+                '--local',
+                'dockerfile=/work/foo/3980470531b4a52a',
+                '--opt',
+                'filename=/work/foo/3980470531b4a52a/Containerfile',
+                '--local',
+                'context=/work/foo/3980470531b4a52a/context',
+                '--output',
+                'type=image,name=quay.io/wave:3980470531b4a52a,push=true',
+                '--opt',
+                'platform=linux/amd64',
+                '--export-cache',
+                'type=registry,ref=reg.io/wave/build/cache',
+                '--import-cache',
+                'type=registry,ref=reg.io/wave/build/cache'
         ]
     }
 

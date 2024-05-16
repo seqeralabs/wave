@@ -55,18 +55,25 @@ abstract class BuildStrategy {
     protected List<String> dockerLaunchCmd(BuildRequest req) {
         final result = new ArrayList(10)
         result
-                << "--dockerfile"
-                << "$req.workDir/Containerfile".toString()
-                << "--context"
-                << "$req.workDir/context".toString()
-                << "--destination"
-                << req.targetImage
-                << "--cache=true"
-                << "--custom-platform"
-                << req.platform.toString()
+                << "build"
+                << "--frontend"
+                << "dockerfile.v0"
+                << "--local"
+                << "dockerfile=$req.workDir".toString()
+                << "--opt"
+                << "filename=$req.workDir/Containerfile".toString()
+                << "--local"
+                << "context=$req.workDir/context".toString()
+                << "--output"
+                << "type=image,name=$req.targetImage,push=true".toString()
+                << "--opt"
+                << "platform=$req.platform".toString()
 
         if( req.cacheRepository ) {
-            result << "--cache-repo" << req.cacheRepository
+            result << "--export-cache"
+            result << "type=registry,ref=$req.cacheRepository".toString()
+            result << "--import-cache"
+            result << "type=registry,ref=$req.cacheRepository".toString()
         }
 
         if( !buildConfig.compressCaching ){
@@ -74,16 +81,16 @@ abstract class BuildStrategy {
         }
 
         if(req.spackFile){
-            result << '--build-arg'
-            result << 'AWS_STS_REGIONAL_ENDPOINTS=$(AWS_STS_REGIONAL_ENDPOINTS)'
-            result << '--build-arg'
-            result << 'AWS_REGION=$(AWS_REGION)'
-            result << '--build-arg'
-            result << 'AWS_DEFAULT_REGION=$(AWS_DEFAULT_REGION)'
-            result << '--build-arg'
-            result << 'AWS_ROLE_ARN=$(AWS_ROLE_ARN)'
-            result << '--build-arg'
-            result << 'AWS_WEB_IDENTITY_TOKEN_FILE=$(AWS_WEB_IDENTITY_TOKEN_FILE)'
+            result << '--opt'
+            result << 'build-arg:AWS_STS_REGIONAL_ENDPOINTS=$(AWS_STS_REGIONAL_ENDPOINTS)'
+            result << '--opt'
+            result << 'build-arg:AWS_REGION=$(AWS_REGION)'
+            result << '--opt'
+            result << 'build-arg:AWS_DEFAULT_REGION=$(AWS_DEFAULT_REGION)'
+            result << '--opt'
+            result << 'build-arg:AWS_ROLE_ARN=$(AWS_ROLE_ARN)'
+            result << '--opt'
+            result << 'build-arg:AWS_WEB_IDENTITY_TOKEN_FILE=$(AWS_WEB_IDENTITY_TOKEN_FILE)'
         }
 
         return result
