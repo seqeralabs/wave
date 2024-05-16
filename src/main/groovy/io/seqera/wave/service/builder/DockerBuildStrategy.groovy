@@ -137,6 +137,9 @@ class DockerBuildStrategy extends BuildStrategy {
             wrapper.add('--platform')
             wrapper.add(platform.toString())
         }
+
+        wrapper.add('--privileged')
+
         // the container image to be used to build
         wrapper.add( buildConfig.buildkitImage )
         // return it

@@ -61,7 +61,7 @@ abstract class BuildStrategy {
                 << "--local"
                 << "dockerfile=$req.workDir".toString()
                 << "--opt"
-                << "filename=$req.workDir/Containerfile".toString()
+                << "filename=Containerfile"
                 << "--local"
                 << "context=$req.workDir/context".toString()
                 << "--output"
@@ -70,9 +70,9 @@ abstract class BuildStrategy {
                 << "platform=$req.platform".toString()
 
         if( req.cacheRepository ) {
-            result << "--export-cache"
-            result << "type=registry,ref=$req.cacheRepository".toString()
             result << "--import-cache"
+            result << "type=registry,ref=$req.cacheRepository".toString()
+            result << "--export-cache"
             result << "type=registry,ref=$req.cacheRepository".toString()
         }
 
