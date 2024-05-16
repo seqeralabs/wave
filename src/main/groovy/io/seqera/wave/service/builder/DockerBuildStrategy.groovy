@@ -138,8 +138,9 @@ class DockerBuildStrategy extends BuildStrategy {
             wrapper.add(platform.toString())
         }
 
-        wrapper.add('--privileged')
-
+        //add entry point
+        wrapper.add('--entrypoint')
+        wrapper.add('buildctl-daemonless.sh')
         // the container image to be used to build
         wrapper.add( buildConfig.buildkitImage )
         // return it
