@@ -25,6 +25,7 @@ import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.openapi.ApiException
+import io.kubernetes.client.openapi.models.V1Pod
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
@@ -33,6 +34,7 @@ import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
+import io.seqera.wave.exception.BuildTimeoutException
 import io.seqera.wave.service.k8s.K8sService
 import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
@@ -99,9 +101,9 @@ class KubeBuildStrategy extends BuildStrategy {
             final name = podName(req)
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
             final spackCfg0 = req.isSpackBuild ? spackConfig : null
-            final pod = k8sService.buildContainer(name, buildImage, buildCmd, req.workDir, configFile, spackCfg0, selector)
-            final terminated = k8sService.waitPod(pod, buildConfig.buildTimeout.toMillis())
-            final stdout = k8sService.logsPod(name)
+            final pod = launchContainerBuild(name, buildImage, buildCmd, req, configFile, spackCfg0, selector)
+            final terminated = k8sService.waitPod(pod, name, buildConfig. buildTimeout.toMillis())
+            final stdout = k8sService.logsPod(pod.metadata.name, name)
             if( terminated ) {
                 final digest = proxyService.getImageDigest(req.targetImage)
                 return BuildResult.completed(req.buildId, terminated.exitCode, stdout, req.startTime, digest)
@@ -132,10 +134,33 @@ class KubeBuildStrategy extends BuildStrategy {
         super.cleanup(req)
         final name = podName(req)
         try {
-            k8sService.deletePod(name)
+            k8sService.deleteJob(name)
         }
         catch (Exception e) {
-            log.warn ("Unable to delete pod=$name - cause: ${e.message ?: e}", e)
+            log.warn ("Unable to delete job=$name - cause: ${e.message ?: e}", e)
+        }
+    }
+
+    protected V1Pod  launchContainerBuild(String name, String buildImage, List<String> buildCmd, BuildRequest req, Path configFile, SpackConfig spackConfig, Map<String,String> nodeSelector){
+        if(req.formatSingularity()) {
+            return k8sService.buildContainer(name, buildImage, buildCmd, req.workDir, configFile, spackConfig, nodeSelector)
+        }else {
+            final job = k8sService.buildJob(name, buildImage, buildCmd, req.workDir, configFile, spackConfig, nodeSelector)
+            final podList = k8sService.waitJob(job, buildConfig. buildTimeout.toMillis())
+            final size = podList.items.size()
+
+            if( size < 1 )
+                throw new BuildTimeoutException("Build job timed out with build id: $req.buildId")
+
+            // Find the latest created pod among the pods associated with the job
+            def latestPod = podList.getItems().get(0)
+            for (def pod : podList.items) {
+                if (pod.metadata.creationTimestamp.isAfter(latestPod.metadata.creationTimestamp)) {
+                    latestPod = pod
+                }
+            }
+
+            return k8sService.getPod(latestPod.metadata.name)
         }
     }
 

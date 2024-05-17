@@ -107,4 +107,12 @@ class BuildConfig {
     String getSingularityImageArm64(){
         return singularityImageArm64 ?: singularityImage + "-arm64"
     }
+
+    Map<String,String> getEnvironment() {
+        return  ['BUILDKITD_FLAGS': '--oci-worker-no-process-sandbox']
+    }
+
+    String getBuildCommand(){
+        return 'buildctl-daemonless.sh'
+    }
 }
