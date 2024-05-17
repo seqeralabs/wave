@@ -1,5 +1,9 @@
 WAVE CLI CHANGE-LOG
 ===================
+1.4.0 - 17 May 2024
+- Add cli opts shortcuts (#68) [ae79c6f9]
+- Remove seqera from default Conda channels (#67) [d7b12893]
+
 1.3.1 - 22 Apr 2024
 - Remove build repository check [76c92766]
 - Improve error handling [b2cfdd3f]
