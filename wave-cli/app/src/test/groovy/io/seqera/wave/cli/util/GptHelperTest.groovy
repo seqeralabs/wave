@@ -45,6 +45,6 @@ class GptHelperTest extends Specification {
         when:
         def spec = GptHelper.grabPackages("Give me a container image for multiqc 1.15")
         then:
-        spec == new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['multiqc=1.15'], channels: ['bioconda','conda-forge','defaults'])
+        spec == new PackagesSpec(type: PackagesSpec.Type.CONDA, entries: ['multiqc=1.15'], channels: ['bioconda','conda-forge'])
     }
 }

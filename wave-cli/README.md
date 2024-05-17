@@ -117,7 +117,6 @@ docker run $container sh -c 'bamtools --version && samtools --version'
     cat << EOF > ./conda.yaml
     name: my-conda
     channels:
-    - defaults
     - bioconda
     - conda-forge
     dependencies:

@@ -158,7 +158,7 @@ public class App implements Runnable {
     private List<String> condaRunCommands;
 
     @Option(names = {"--conda-channels"}, paramLabel = "''", description = "Conda channels used to build the container (default: ${DEFAULT-VALUE}).")
-    private String condaChannels = "seqera,conda-forge,bioconda,defaults";
+    private String condaChannels = "conda-forge,bioconda";
 
     @Option(names = {"--spack-file"}, paramLabel = "''",  description = "A Spack file used to build the container e.g. /some/path/spack.yaml.")
     private String spackFile;

@@ -141,7 +141,7 @@ class AppCondaOptsTest extends Specification {
             '''.stripIndent(true)
         and:
         req.packages.condaOpts == new CondaOpts(mambaImage: CondaOpts.DEFAULT_MAMBA_IMAGE, basePackages: CondaOpts.DEFAULT_PACKAGES)
-        req.packages.channels == ['seqera', 'conda-forge', 'bioconda', 'defaults']
+        req.packages.channels == ['conda-forge', 'bioconda']
         and:
         !req.packages.entries
         and:
@@ -166,7 +166,7 @@ class AppCondaOptsTest extends Specification {
         req.packages.entries == ['foo']
         and:
         req.packages.condaOpts == new CondaOpts(mambaImage: CondaOpts.DEFAULT_MAMBA_IMAGE, basePackages: CondaOpts.DEFAULT_PACKAGES)
-        req.packages.channels == ['seqera', 'conda-forge', 'bioconda', 'defaults']
+        req.packages.channels == ['conda-forge', 'bioconda']
         and:
         !req.packages.environment
         and:
@@ -187,7 +187,7 @@ class AppCondaOptsTest extends Specification {
         req.packages.entries == ['https://host.com/file-lock.yml']
         and:
         req.packages.condaOpts == new CondaOpts(mambaImage: CondaOpts.DEFAULT_MAMBA_IMAGE, basePackages: CondaOpts.DEFAULT_PACKAGES)
-        req.packages.channels == ['seqera', 'conda-forge', 'bioconda', 'defaults']
+        req.packages.channels == ['conda-forge', 'bioconda']
         and:
         !req.packages.environment
         and:

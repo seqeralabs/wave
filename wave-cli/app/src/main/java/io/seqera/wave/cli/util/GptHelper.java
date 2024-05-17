@@ -117,7 +117,7 @@ public class GptHelper {
                 throw new IllegalArgumentException("Unable to resolve packages from json response: " + json);
             List<String> channels = (List<String>) object.get("channels");
             if( Checkers.isEmpty(channels) )
-                channels = List.of("bioconda","conda-forge","defaults");
+                channels = List.of("bioconda","conda-forge");
             return new PackagesSpec()
                     .withType(PackagesSpec.Type.CONDA)
                     .withEntries(packages)
