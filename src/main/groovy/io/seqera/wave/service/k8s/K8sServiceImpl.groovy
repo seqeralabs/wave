@@ -696,4 +696,16 @@ class K8sServiceImpl implements K8sService {
         }
         return null
     }
+
+    /**
+     * Delete a job
+     *
+     * @param name, name of the job to be deleted
+     */
+    @Override
+    void deleteJob(String name) {
+        k8sClient
+                .batchV1Api()
+                .deleteNamespacedJob(name, namespace, null, null, null, null,"Background", null)
+    }
 }
