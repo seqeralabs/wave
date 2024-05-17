@@ -488,7 +488,6 @@ class K8sServiceImpl implements K8sService {
         }
     }
 
-
     /**
      * Delete a pod
      *
