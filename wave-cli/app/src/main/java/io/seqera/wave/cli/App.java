@@ -115,7 +115,7 @@ public class App implements Runnable {
     @Option(names = {"--wave-endpoint"}, paramLabel = "''", description = "Wave service endpoint e.g. https://wave.seqera.io.")
     private String waveEndpoint;
 
-    @Option(names = {"--freeze"}, paramLabel = "false",  description = "Request a container freeze.")
+    @Option(names = {"--freeze", "-F"}, paramLabel = "false",  description = "Request a container freeze.")
     private boolean freeze;
 
     @Option(names = {"--platform"}, paramLabel = "''", description = "Platform to be used for the container build. One of: linux/amd64, linux/arm64.")
@@ -148,7 +148,7 @@ public class App implements Runnable {
     @Option(names = {"--conda-file"}, paramLabel = "''", description = "A Conda file used to build the container e.g. /some/path/conda.yaml.")
     private String condaFile;
 
-    @Option(names = {"--conda-package"}, paramLabel = "''", description = "One or more Conda packages used to build the container e.g. bioconda::samtools=1.17.")
+    @Option(names = {"--conda-package", "--conda"}, paramLabel = "''", description = "One or more Conda packages used to build the container e.g. bioconda::samtools=1.17.")
     private List<String> condaPackages;
 
     @Option(names = {"--conda-base-image"}, paramLabel = "''", description = "Conda base image used to to build the container (default: ${DEFAULT-VALUE}).")
