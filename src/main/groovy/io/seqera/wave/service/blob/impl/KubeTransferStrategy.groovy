@@ -84,7 +84,7 @@ class KubeTransferStrategy implements TransferStrategy {
         final terminated = k8sService.waitPod(pod, name, blobConfig.transferTimeout.toMillis())
         final stdout = k8sService.logsPod(podName, name)
 
-        def result = terminated
+        final result = terminated
                 ? info.completed(terminated.exitCode, stdout)
                 : info.failed(stdout)
 
