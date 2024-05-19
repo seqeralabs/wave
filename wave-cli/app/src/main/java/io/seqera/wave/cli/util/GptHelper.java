@@ -18,6 +18,7 @@
 package io.seqera.wave.cli.util;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +30,7 @@ import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.output.Response;
 import io.seqera.wave.api.PackagesSpec;
+import io.seqera.wave.cli.App;
 import io.seqera.wave.cli.exception.BadClientResponseException;
 import io.seqera.wave.cli.json.JsonHelper;
 import org.apache.commons.lang3.StringUtils;
@@ -117,7 +119,7 @@ public class GptHelper {
                 throw new IllegalArgumentException("Unable to resolve packages from json response: " + json);
             List<String> channels = (List<String>) object.get("channels");
             if( Checkers.isEmpty(channels) )
-                channels = List.of("bioconda","conda-forge");
+                channels = Arrays.asList(App.DEFAULT_CONDA_CHANNELS.split(","));
             return new PackagesSpec()
                     .withType(PackagesSpec.Type.CONDA)
                     .withEntries(packages)

@@ -82,6 +82,8 @@ import static picocli.CommandLine.Option;
         usageHelpAutoWidth = true)
 public class App implements Runnable {
 
+    static public final String DEFAULT_CONDA_CHANNELS = "conda-forge,bioconda";
+
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(App.class);
 
     private static final boolean isWindows = System.getProperty("os.name").toLowerCase().contains("windows");
@@ -158,7 +160,7 @@ public class App implements Runnable {
     private List<String> condaRunCommands;
 
     @Option(names = {"--conda-channels"}, paramLabel = "''", description = "Conda channels used to build the container (default: ${DEFAULT-VALUE}).")
-    private String condaChannels = "conda-forge,bioconda";
+    private String condaChannels = DEFAULT_CONDA_CHANNELS;
 
     @Option(names = {"--spack-file"}, paramLabel = "''",  description = "A Spack file used to build the container e.g. /some/path/spack.yaml.")
     private String spackFile;
