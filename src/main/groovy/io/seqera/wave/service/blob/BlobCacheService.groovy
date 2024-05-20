@@ -42,9 +42,10 @@ interface BlobCacheService {
      * information.
      *
      * @param route The HTTP request of a container layer blob
-     * @param headers The HTTP headers of a container layer blob
+     * @param requestHeaders The HTTP headers of the upstream request
+     * @param responseHeaders The HTTP headers of the response providing the blob to be cached
      * @return
      */
-    BlobCacheInfo retrieveBlobCache(RoutePath route, Map<String,List<String>> headers)
+    BlobCacheInfo retrieveBlobCache(RoutePath route, Map<String,List<String>> requestHeaders, Map<String,List<String>> responseHeaders)
 
 }

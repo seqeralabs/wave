@@ -19,6 +19,7 @@
 package io.seqera.wave.core
 
 import groovy.transform.CompileStatic
+import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.context.annotation.Context
@@ -220,6 +221,7 @@ class RegistryProxyService {
                 : null
     }
 
+    @ToString(includeNames = true, includePackage = false)
     static class DelegateResponse {
         int statusCode
         Map<String,List<String>> headers
