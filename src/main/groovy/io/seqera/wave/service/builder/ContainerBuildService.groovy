@@ -20,12 +20,17 @@ package io.seqera.wave.service.builder
 
 import java.util.concurrent.CompletableFuture
 
+import groovy.transform.CompileStatic
+import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.RoutePath
+import io.seqera.wave.service.persistence.WaveBuildRecord
+
 /**
  * Declare container build service interface
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@CompileStatic
 interface ContainerBuildService {
 
     /**
@@ -65,4 +70,64 @@ interface ContainerBuildService {
                 : null
     }
 
+
+    // --- build record
+
+    @EventListener
+    default void onBuildEvent(BuildEvent event) {
+        saveBuildRecord(event)
+    }
+
+    /**
+     * Store a build record for the given {@link BuildRequest} object.
+     *
+     * This method is expected to store the build record associated with the request
+     * *only* in the short term store caching system, ie. without hitting the
+     * long-term SurrealDB storage
+     *
+     * @param request The build request that needs to be storage
+     */
+    default void createBuildRecord(BuildRequest request) {
+        final record0 = WaveBuildRecord.fromEvent(new BuildEvent(request))
+        createBuildRecord(record0.buildId, record0)
+    }
+
+    /**
+     * Store the build record associated with the specified event both in the
+     * short-term cache (redis) and long-term persistence layer (surrealdb)
+     *
+     * @param event The {@link BuildEvent} object for which the build record needs to be stored
+     */
+    default void saveBuildRecord(BuildEvent event) {
+        final record0 = WaveBuildRecord.fromEvent(event)
+        saveBuildRecord(record0.buildId, record0)
+    }
+
+    /**
+     * Store a build record object.
+     *
+     * This method is expected to store the build record *only* in the short term store cache (redis),
+     * ie. without hitting the long-term storage (surrealdb)
+     *
+     * @param buildId The Id of the build record
+     * @param value The {@link WaveBuildRecord} to be stored
+     */
+    void createBuildRecord(String buildId, WaveBuildRecord value)
+
+    /**
+     * Store the specified build record  both in the short-term cache (redis)
+     * and long-term persistence layer (surrealdb)
+     *
+     * @param buildId The Id of the build record
+     * @param value The {@link WaveBuildRecord} to be stored
+     */
+    void saveBuildRecord(String buildId, WaveBuildRecord value)
+
+    /**
+     * Retrieve the build record for the specified id.
+     *
+     * @param buildId The ID of the build record to be retrieve
+     * @return The {@link WaveBuildRecord} associated with the corresponding Id, or {@code null} if it cannot be found
+     */
+    WaveBuildRecord getBuildRecord(String buildId)
 }

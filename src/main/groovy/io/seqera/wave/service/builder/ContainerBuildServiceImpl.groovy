@@ -39,6 +39,7 @@ import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.exception.HttpServerRetryableErrorException
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
+import io.seqera.wave.service.builder.store.BuildRecordStore
 import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.metric.MetricsService
 import io.seqera.wave.service.persistence.PersistenceService
@@ -115,6 +116,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     @Inject
     private MetricsService metricsService
 
+    @Inject
+    BuildRecordStore buildRecordStore
+    
     /**
      * Build a container image for the given {@link BuildRequest}
      *
@@ -237,8 +241,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         //increment metrics
         CompletableFuture.supplyAsync(() -> metricsService.incrementBuildsCounter(request.identity), executor)
 
-        // persist the container request
-        persistenceService.createBuild(WaveBuildRecord.fromEvent(new BuildEvent(request)))
+        // save the container request in the underlying storage
+        createBuildRecord(request)
 
         // launch the build async
         CompletableFuture
@@ -341,4 +345,34 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 .retryCondition((Throwable t) -> t instanceof SocketException || t instanceof HttpServerRetryableErrorException)
                 .onRetry((event)-> log.warn("$message - event: $event"))
     }
+
+    // **************************************************************
+    // **               build record implementation
+    // **************************************************************
+
+    /**
+     * @Inherited
+     */
+    @Override
+    void createBuildRecord(String buildId, WaveBuildRecord value) {
+        buildRecordStore.putBuildRecord(buildId, value)
+    }
+
+    /**
+     * @Inherited
+     */
+    @Override
+    void saveBuildRecord(String buildId, WaveBuildRecord value) {
+        buildRecordStore.putBuildRecord(buildId, value)
+        persistenceService.saveBuild(value)
+    }
+
+    /**
+     * @Inherited
+     */
+    @Override
+    WaveBuildRecord getBuildRecord(String buildId) {
+        return buildRecordStore.getBuildRecord(buildId) ?: persistenceService.loadBuild(buildId)
+    }
+
 }

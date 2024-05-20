@@ -125,7 +125,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         when:
         storage.initializeDb()
         and:
-        storage.createBuild(build)
+        storage.saveBuild(build)
         then:
         def stored = storage.loadBuild(request.buildId)
         stored.buildId == request.buildId
@@ -156,7 +156,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 null,
                 BuildFormat.DOCKER
         ).withBuildId('123')
-        storage.createBuild( WaveBuildRecord.fromEvent(new BuildEvent(request)))
+        storage.saveBuild( WaveBuildRecord.fromEvent(new BuildEvent(request)))
 
         and:
         def result = new BuildResult(request.buildId, 0, "content", Instant.now(), Duration.ofSeconds(1), 'abc123')
@@ -229,7 +229,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def record = WaveBuildRecord.fromEvent(event)
 
         and:
-        persistence.createBuild(record)
+        persistence.saveBuild(record)
 
         when:
         def loaded = persistence.loadBuild(record.buildId)
@@ -259,29 +259,17 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 BuildFormat.DOCKER
         ).withBuildId('123')
         and:
-        def build1 = WaveBuildRecord.fromEvent(new BuildEvent(request, null))
+        def result = BuildResult.completed(request.buildId, 1, 'Hello', Instant.now().minusSeconds(60), 'xyz')
+
+        and:
+        def build1 = WaveBuildRecord.fromEvent(new BuildEvent(request, result))
 
         when:
-        persistence.createBuild(build1)
+        persistence.saveBuild(build1)
+        sleep 100
         then:
         persistence.loadBuild(request.buildId) == build1
 
-        when:
-        def result = BuildResult.completed(request.buildId, 1, 'Hello', Instant.now().minusSeconds(60), 'xyz')
-        and:
-        final build2 = WaveBuildRecord.fromEvent(new BuildEvent(request, result))
-        persistence.updateBuild(build2)
-        // short sleep because the update is async
-        sleep 200
-        then:
-        def result2 = persistence.loadBuild(request.buildId)
-        and:
-        result2.buildId == build2.buildId
-        result2.dockerFile == build2.dockerFile
-        and:
-        result2.startTime == build2.startTime
-        result2.duration == build2.duration
-        result2.digest == build2.digest
     }
 
     def 'should load a request record' () {
