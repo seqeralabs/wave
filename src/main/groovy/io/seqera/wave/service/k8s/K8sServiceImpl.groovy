@@ -644,7 +644,7 @@ class K8sServiceImpl implements K8sService {
                 .withNewSpec()
                 .withNewTemplate()
                 .withNewMetadata()
-                    .addToAnnotations(buildConfig.getBuildKitAnnotations(name))
+                    .addToAnnotations(buildConfig.getAnnotations(name))
                 .endMetadata()
                 .editOrNewSpec()
                     .withNodeSelector(nodeSelector)

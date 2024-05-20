@@ -116,7 +116,7 @@ class BuildConfig {
         return 'buildctl-daemonless.sh'
     }
 
-     Map<String, String> getBuildKitAnnotations(String containerName) {
+    Map<String, String> getAnnotations(String containerName) {
         final key = "container.apparmor.security.beta.kubernetes.io/$containerName".toString()
         return Map.of(key, "unconfined")
     }
