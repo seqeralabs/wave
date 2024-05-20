@@ -644,7 +644,7 @@ class K8sServiceImpl implements K8sService {
                 .withNewSpec()
                 .withNewTemplate()
                 .withNewMetadata()
-                    .addToAnnotations(getBuildKitAnnotations(name))
+                    .addToAnnotations(buildConfig.getBuildKitAnnotations(name))
                 .endMetadata()
                 .editOrNewSpec()
                     .withNodeSelector(nodeSelector)
@@ -722,8 +722,4 @@ class K8sServiceImpl implements K8sService {
                 .deleteNamespacedJob(name, namespace, null, null, null, null,"Background", null)
     }
 
-    private static Map<String, String> getBuildKitAnnotations(String containerName) {
-        final key = "container.apparmor.security.beta.kubernetes.io/$containerName".toString()
-        return Map.of(key, "unconfined")
-    }
 }
