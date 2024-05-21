@@ -305,6 +305,11 @@
   "queryAllDeclaredMethods":true
 },
 {
+  "name":"io.seqera.wave.cli.json.LayerRefAdapter",
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"toJson","parameterTypes":["io.seqera.wave.core.spec.ObjectRef"] }]
+},
+{
   "name":"io.seqera.wave.cli.model.ContainerInspectResponseEx",
   "allDeclaredFields":true
 },
