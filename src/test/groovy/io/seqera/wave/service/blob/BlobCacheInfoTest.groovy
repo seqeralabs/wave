@@ -47,9 +47,9 @@ class BlobCacheInfoTest extends Specification {
 
         where:
         HEADERS                     | EXPECTED
-        ['Content-Type': ['alpha']]     | 'alpha'
-        ['Content-type': ['delta']]     | 'delta'
-        ['content-type': ['gamma']]     | 'gamma'
+        ['Content-Type': ['alpha']] | 'alpha'
+        ['Content-type': ['delta']] | 'delta'
+        ['content-type': ['gamma']] | 'gamma'
 
     }
 

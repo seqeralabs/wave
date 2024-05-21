@@ -317,7 +317,7 @@ class RegistryProxyController {
     }
 
     MutableHttpResponse<?> fromDownloadResponse(final DelegateResponse resp, RoutePath route, Map<String, List<String>> headers) {
-        log.debug "== Blob cache upastream $resp"
+        log.debug "== Blob cache upstream $resp"
         final blobCache = blobCacheService .retrieveBlobCache(route, headers, resp.headers)
         log.debug "== Blob cache response [succeeded=${blobCache.succeeded()}] $blobCache"
         if( !blobCache.succeeded() ) {
