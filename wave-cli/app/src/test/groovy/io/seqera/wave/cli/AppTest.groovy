@@ -17,6 +17,7 @@
 
 package io.seqera.wave.cli
 
+import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.cli.util.DurationConverter
 
 import java.nio.file.Files
@@ -338,6 +339,38 @@ class AppTest extends Specification {
         new CommandLine(app).parseArgs(args)
         then:
         app.prompt == ['Get a docker container']
+    }
+
+    def 'should get the correct name strategy'(){
+        given:
+        def app = new App()
+        String[] args = ["-i", "ubuntu:latest", "--name-strategy", "tagPrefix"]
+
+        when:
+        def cli = new CommandLine(app)
+        cli.parseArgs(args)
+        and:
+        app.validateArgs()
+        then:
+        noExceptionThrown()
+        and:
+        app.@nameStrategy == ImageNameStrategy.tagPrefix
+    }
+
+    def 'should fail when passing incorrect name strategy'(){
+        given:
+        def app = new App()
+        String[] args = ["-i", "ubuntu:latest", "--name-strategy", "wrong"]
+
+        when:
+        def cli = new CommandLine(app)
+        cli.parseArgs(args)
+        and:
+        app.validateArgs()
+        then:
+        def e = thrown(CommandLine.ParameterException)
+        and:
+        e.getMessage() == "Invalid value for option '--name-strategy': expected one of [none, tagPrefix, imageSuffix] (case-sensitive) but was 'wrong'"
     }
 
 }

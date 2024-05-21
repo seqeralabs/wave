@@ -40,15 +40,7 @@ import java.util.stream.Collectors;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import io.seqera.wave.api.BuildContext;
-import io.seqera.wave.api.ContainerConfig;
-import io.seqera.wave.api.ContainerInspectRequest;
-import io.seqera.wave.api.ContainerInspectResponse;
-import io.seqera.wave.api.ContainerLayer;
-import io.seqera.wave.api.PackagesSpec;
-import io.seqera.wave.api.ServiceInfo;
-import io.seqera.wave.api.SubmitContainerTokenRequest;
-import io.seqera.wave.api.SubmitContainerTokenResponse;
+import io.seqera.wave.api.*;
 import io.seqera.wave.cli.exception.BadClientResponseException;
 import io.seqera.wave.cli.exception.ClientConnectionException;
 import io.seqera.wave.cli.exception.IllegalCliArgumentException;
@@ -198,6 +190,9 @@ public class App implements Runnable {
 
     @Option(names = {"--include"}, paramLabel = "false", description = "Include one or more containers in the specified base image")
     private List<String> includes;
+
+    @Option(names = {"--name-strategy"}, paramLabel = "false", description = "Specify the name strategy for the container name, it can be 'none' or 'tagPrefix' or 'imageSuffix'")
+    private ImageNameStrategy nameStrategy;
 
     @CommandLine.Parameters
     List<String> prompt;
@@ -419,7 +414,7 @@ public class App implements Runnable {
                 .withFreezeMode(freeze)
                 .withDryRun(dryRun)
                 .withContainerIncludes(includes)
-                ;
+                .withNameStrategy(nameStrategy);
     }
 
     public void inspect() {
