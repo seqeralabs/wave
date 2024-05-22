@@ -357,6 +357,22 @@ class AppTest extends Specification {
         app.@nameStrategy == ImageNameStrategy.tagPrefix
     }
 
+    def 'should get the correct name strategy'(){
+        given:
+        def app = new App()
+        String[] args = ["-i", "ubuntu:latest", "--name-strategy", "imageSuffix"]
+
+        when:
+        def cli = new CommandLine(app)
+        cli.parseArgs(args)
+        and:
+        app.validateArgs()
+        then:
+        noExceptionThrown()
+        and:
+        app.@nameStrategy == ImageNameStrategy.imageSuffix
+    }
+
     def 'should fail when passing incorrect name strategy'(){
         given:
         def app = new App()

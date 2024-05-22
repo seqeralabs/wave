@@ -310,6 +310,11 @@
   "methods":[{"name":"toJson","parameterTypes":["io.seqera.wave.core.spec.ObjectRef"] }]
 },
 {
+  "name":"io.seqera.wave.cli.json.ImageNameStrategyAdapter",
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"toJson","parameterTypes":["io.seqera.wave.api.ImageNameStrategy"] }, {"name":"fromJson","parameterTypes":["java.lang.String"] }]
+},
+{
   "name":"io.seqera.wave.cli.model.ContainerInspectResponseEx",
   "allDeclaredFields":true
 },

@@ -38,6 +38,7 @@ public class JsonHelper {
             .add(new DateTimeAdapter())
             .add(new PathAdapter())
             .add(new LayerRefAdapter())
+            .add(new ImageNameStrategyAdapter())
             .build();
 
     public static String toJson(SubmitContainerTokenRequest request) {
