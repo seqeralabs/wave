@@ -54,7 +54,7 @@ class BuildStrategyTest extends Specification {
                 '--local',
                 'dockerfile=/work/foo/c168dba125e28777',
                 '--opt',
-                'filename=/work/foo/c168dba125e28777/Containerfile',
+                'filename=Containerfile',
                 '--local',
                 'context=/work/foo/c168dba125e28777/context',
                 '--output',
@@ -62,9 +62,9 @@ class BuildStrategyTest extends Specification {
                 '--opt',
                 'platform=linux/amd64',
                 '--export-cache',
-                'type=registry,ref=reg.io/wave/build/cache',
+                'type=registry,ref=reg.io/wave/build/cache:cache,mode=max,ignore-error=true,force-compression=true',
                 '--import-cache',
-                'type=registry,ref=reg.io/wave/build/cache'
+                'type=registry,ref=reg.io/wave/build/cache:cache'
         ]
     }
 
@@ -90,7 +90,7 @@ class BuildStrategyTest extends Specification {
                 '--local',
                 'dockerfile=/work/foo/3980470531b4a52a',
                 '--opt',
-                'filename=/work/foo/3980470531b4a52a/Containerfile',
+                'filename=Containerfile',
                 '--local',
                 'context=/work/foo/3980470531b4a52a/context',
                 '--output',
@@ -98,9 +98,9 @@ class BuildStrategyTest extends Specification {
                 '--opt',
                 'platform=linux/amd64',
                 '--export-cache',
-                'type=registry,ref=reg.io/wave/build/cache',
+                'type=registry,ref=reg.io/wave/build/cache:cache,mode=max,ignore-error=true,force-compression=true',
                 '--import-cache',
-                'type=registry,ref=reg.io/wave/build/cache'
+                'type=registry,ref=reg.io/wave/build/cache:cache'
         ]
     }
 

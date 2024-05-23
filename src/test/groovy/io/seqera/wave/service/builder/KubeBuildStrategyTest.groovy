@@ -21,7 +21,14 @@ package io.seqera.wave.service.builder
 import spock.lang.Specification
 
 import java.nio.file.Files
+import java.time.OffsetDateTime
 
+import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
+import io.kubernetes.client.openapi.models.V1Job
+import io.kubernetes.client.openapi.models.V1ObjectMeta
+import io.kubernetes.client.openapi.models.V1Pod
+import io.kubernetes.client.openapi.models.V1PodList
+import io.kubernetes.client.openapi.models.V1PodStatus
 import io.micronaut.context.annotation.Property
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
@@ -66,6 +73,16 @@ class KubeBuildStrategyTest extends Specification {
         def cache = 'docker.io/cache'
         def dockerfile = 'from foo'
 
+        def pod = new V1Pod(metadata: [name: 'podName', creationTimestamp: OffsetDateTime.now()])
+        pod.status = new V1PodStatus(phase: "Succeeded")
+        def podList = new V1PodList(items: [pod])
+
+        k8sService.buildJob(_, _, _, _, _, _, [service:'wave-build']) >> new V1Job(metadata: [name: 'jobName'])
+        k8sService.waitJob(_, _) >> podList
+        k8sService.getPod(_) >> pod
+        k8sService.waitPod(_, _, _) >> new V1ContainerStateTerminated().exitCode(0)
+        k8sService.logsPod(_, _) >> 'stdout'
+
         when:
         def containerId = ContainerHelper.makeContainerId(dockerfile, null, null, ContainerPlatform.of('amd64'), repo, null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, repo, containerId, null, null, null)
@@ -73,10 +90,9 @@ class KubeBuildStrategyTest extends Specification {
         Files.createDirectories(req.workDir)
 
         def resp = strategy.build(req)
+
         then:
         resp
-        and:
-        1 * k8sService.buildContainer(_, _, _, _, _, _, [service:'wave-build']) >> null
 
         when:
         def req2 = new BuildRequest(containerId, dockerfile, null, null, PATH, targetImage, USER, ContainerPlatform.of('arm64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.DOCKER).withBuildId('1')
@@ -86,7 +102,7 @@ class KubeBuildStrategyTest extends Specification {
         then:
         resp2
         and:
-        1 * k8sService.buildContainer(_, _, _, _, _, _, [service:'wave-build-arm64']) >> null
+        1 * k8sService.buildJob(_, _, _, _, _, _, [service:'wave-build-arm64']) >> null
 
     }
 
@@ -103,8 +119,8 @@ class KubeBuildStrategyTest extends Specification {
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, repo, containerId, null, null, null)
         def req = new BuildRequest(containerId, dockerfile, null, null, PATH, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER).withBuildId('1')
 
-        then: 'should return kaniko image'
-        strategy.getBuildImage(req) == 'gcr.io/kaniko-project/executor:v1.22.0'
+        then: 'should return buildkit image'
+        strategy.getBuildImage(req) == 'moby/buildkit:v0.13.2-rootless'
 
         when:'getting singularity with amd64 arch in build request'
         req = new BuildRequest(containerId, dockerfile, null, null, PATH, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.SINGULARITY).withBuildId('1')

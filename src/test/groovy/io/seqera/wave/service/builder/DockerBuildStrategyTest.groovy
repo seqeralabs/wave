@@ -50,7 +50,10 @@ class DockerBuildStrategyTest extends Specification {
         cmd == ['docker',
                 'run',
                 '--rm',
+                '--privileged',
                 '-v', '/work/foo:/work/foo',
+                '--entrypoint',
+                'buildctl-daemonless.sh',
                 'moby/buildkit:v0.13.2-rootless']
 
         when:
@@ -59,7 +62,10 @@ class DockerBuildStrategyTest extends Specification {
         cmd == ['docker',
                 'run',
                 '--rm',
+                '--privileged',
                 '-v', '/work/foo:/work/foo',
+                '--entrypoint',
+                'buildctl-daemonless.sh',
                 '-v', '/foo/creds.json:/home/user/.docker/config.json:ro',
                 '--platform', 'linux/arm64',
                 'moby/buildkit:v0.13.2-rootless']
@@ -70,7 +76,10 @@ class DockerBuildStrategyTest extends Specification {
         cmd == ['docker',
                 'run',
                 '--rm',
+                '--privileged',
                 '-v', '/work/foo:/work/foo',
+                '--entrypoint',
+                'buildctl-daemonless.sh',
                 '-v', '/foo/creds.json:/home/user/.docker/config.json:ro',
                 '-v', '/host/spack/key:/opt/spack/key:ro',
                 'moby/buildkit:v0.13.2-rootless']
@@ -97,7 +106,10 @@ class DockerBuildStrategyTest extends Specification {
         cmd == ['docker',
                 'run',
                 '--rm',
+                '--privileged',
                 '-v', '/work/foo/89fb83ce6ec8627b:/work/foo/89fb83ce6ec8627b',
+                '--entrypoint',
+                'buildctl-daemonless.sh',
                 '-v', '/work/creds.json:/home/user/.docker/config.json:ro',
                 '--platform', 'linux/amd64',
                 'moby/buildkit:v0.13.2-rootless',
@@ -107,7 +119,7 @@ class DockerBuildStrategyTest extends Specification {
                 '--local',
                 'dockerfile=/work/foo/89fb83ce6ec8627b',
                 '--opt',
-                'filename=/work/foo/89fb83ce6ec8627b/Containerfile',
+                'filename=Containerfile',
                 '--local',
                 'context=/work/foo/89fb83ce6ec8627b/context',
                 '--output',
@@ -115,9 +127,9 @@ class DockerBuildStrategyTest extends Specification {
                 '--opt',
                 'platform=linux/amd64',
                 '--export-cache',
-                'type=registry,ref=reg.io/wave/build/cache',
+                'type=registry,ref=reg.io/wave/build/cache:cache,mode=max,ignore-error=true,force-compression=true',
                 '--import-cache',
-                'type=registry,ref=reg.io/wave/build/cache' ]
+                'type=registry,ref=reg.io/wave/build/cache:cache' ]
 
         cleanup:
         ctx.close()
@@ -143,7 +155,7 @@ class DockerBuildStrategyTest extends Specification {
                 '--local',
                 'dockerfile=/work/foo/89fb83ce6ec8627b',
                 '--opt',
-                'filename=/work/foo/89fb83ce6ec8627b/Containerfile',
+                'filename=Containerfile',
                 '--local',
                 'context=/work/foo/89fb83ce6ec8627b/context',
                 '--output',
@@ -151,10 +163,9 @@ class DockerBuildStrategyTest extends Specification {
                 '--opt',
                 'platform=linux/amd64',
                 '--export-cache',
-                'type=registry,ref=reg.io/wave/build/cache',
+                'type=registry,ref=reg.io/wave/build/cache:cache,mode=max,ignore-error=true',
                 '--import-cache',
-                'type=registry,ref=reg.io/wave/build/cache',
-                '--compressed-caching=false' ]
+                'type=registry,ref=reg.io/wave/build/cache:cache']
 
         cleanup:
         ctx.close()

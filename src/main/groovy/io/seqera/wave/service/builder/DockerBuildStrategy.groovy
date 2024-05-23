@@ -117,16 +117,12 @@ class DockerBuildStrategy extends BuildStrategy {
     }
 
     protected List<String> cmdForBuildkit(Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform ) {
+        //checkout the documentation here to know more about these options https://github.com/moby/buildkit/blob/master/docs/rootless.md#docker
         final wrapper = ['docker',
                          'run',
-                         '--security-opt',
-                         'seccomp=unconfined',
-                         '--security-opt',
-                         'apparmor=unconfined',
-                         '-e',
-                         'BUILDKITD_FLAGS=--oci-worker-no-process-sandbox',
-                         '-v',
-                         "$workDir:$workDir".toString(),
+                         '--rm',
+                         '--privileged',
+                         '-v', "$workDir:$workDir".toString(),
                          '--entrypoint',
                          'buildctl-daemonless.sh']
 
@@ -146,14 +142,12 @@ class DockerBuildStrategy extends BuildStrategy {
             wrapper.add(platform.toString())
         }
 
-        //add entry point
-        wrapper.add('--entrypoint')
-        wrapper.add('buildctl-daemonless.sh')
         // the container image to be used to build
         wrapper.add( buildConfig.buildkitImage )
         // return it
         return wrapper
     }
+
     protected List<String> cmdForSingularity(Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform) {
         final wrapper = ['docker',
                          'run',

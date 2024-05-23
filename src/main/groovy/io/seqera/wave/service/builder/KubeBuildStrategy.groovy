@@ -147,7 +147,7 @@ class KubeBuildStrategy extends BuildStrategy {
         }else {
             final job = k8sService.buildJob(name, buildImage, buildCmd, req.workDir, configFile, spackConfig, nodeSelector)
             final podList = k8sService.waitJob(job, buildConfig. buildTimeout.toMillis())
-            final size = podList.items.size()
+            final int size = podList?.items?.size()
 
             if( size < 1 )
                 throw new BuildTimeoutException("Build job timed out with build id: $req.buildId")

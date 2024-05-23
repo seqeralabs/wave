@@ -190,7 +190,7 @@ class K8sServiceImplTest extends Specification {
         ctx.close()
     }
 
-    def 'should create build pod for kaniko' () {
+    def 'should create build pod for buildkit' () {
         given:
         def PROPS = [
                 'wave.build.workspace': '/build/work',
@@ -204,31 +204,29 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), Path.of('/build/work/xyz/config.json'), null, [:])
+        def result = k8sService.buildJobSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), Path.of('/build/work/xyz/config.json'), null, [:])
         then:
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
         and:
-        result.spec.activeDeadlineSeconds == 10
-        and:
-        result.spec.containers.get(0).name == 'foo'
-        result.spec.containers.get(0).image == 'my-image:latest'
-        result.spec.containers.get(0).args ==  ['this','that']
-        result.spec.containers.get(0).command == null
-        and:
-        result.spec.containers.get(0).volumeMounts.size() == 2
-        and:
-        result.spec.containers.get(0).volumeMounts.get(0).name == 'build-data'
-        result.spec.containers.get(0).volumeMounts.get(0).mountPath == '/kaniko/.docker/config.json'
-        result.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz/config.json'
-        and:
-        result.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
-        result.spec.containers.get(0).volumeMounts.get(1).mountPath == '/build/work/xyz'
-        result.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz'
-
-        and:
-        result.spec.volumes.get(0).name == 'build-data'
-        result.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
+        verifyAll(result.spec.template.spec) {
+            activeDeadlineSeconds == 10
+            containers.get(0).name == 'foo'
+            containers.get(0).image == 'my-image:latest'
+            containers.get(0).args ==  ['this','that']
+            containers.get(0).env.name == ['BUILDKITD_FLAGS']
+            containers.get(0).env.value == ['--oci-worker-no-process-sandbox']
+            containers.get(0).command == ['buildctl-daemonless.sh']
+            containers.get(0).volumeMounts.size() == 2
+            containers.get(0).volumeMounts.get(0).name == 'build-data'
+            containers.get(0).volumeMounts.get(0).mountPath == '/home/user/.docker/config.json'
+            containers.get(0).volumeMounts.get(0).subPath == 'work/xyz/config.json'
+            containers.get(0).volumeMounts.get(1).name == 'build-data'
+            containers.get(0).volumeMounts.get(1).mountPath == '/build/work/xyz'
+            containers.get(0).volumeMounts.get(1).subPath == 'work/xyz'
+            volumes.get(0).name == 'build-data'
+            volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
+        }
 
         cleanup:
         ctx.close()
