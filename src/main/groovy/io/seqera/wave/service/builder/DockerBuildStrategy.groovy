@@ -124,7 +124,7 @@ class DockerBuildStrategy extends BuildStrategy {
                          '--privileged',
                          '-v', "$workDir:$workDir".toString(),
                          '--entrypoint',
-                         'buildctl-daemonless.sh']
+                         buildConfig.buildCommand]
 
         if( credsFile ) {
             wrapper.add('-v')
