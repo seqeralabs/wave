@@ -72,7 +72,7 @@ jobs:
           AZURECR_PAT: ${{ secrets.AZURECR_PAT }}
           GOOGLECR_KEYS: ${{ secrets.GOOGLECR_KEYS }}
 
-      - name: Cleanup build workspace
+      - name: Cleanup trivy cache
         run: |
           sudo rm -rf /home/runner/work/wave/wave/build-workspace/.trivy-cache
 

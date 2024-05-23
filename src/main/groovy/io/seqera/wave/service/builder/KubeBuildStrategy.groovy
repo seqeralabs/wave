@@ -73,7 +73,7 @@ class KubeBuildStrategy extends BuildStrategy {
     @Inject
     private RegistryProxyService proxyService
 
-    protected String podName(BuildRequest req) {
+    protected String jobName(BuildRequest req) {
         return "build-${req.buildId}".toString().replace('_', '-')
     }
 
@@ -98,7 +98,7 @@ class KubeBuildStrategy extends BuildStrategy {
         try {
             final buildImage = getBuildImage(req)
             final buildCmd = launchCmd(req)
-            final name = podName(req)
+            final name = jobName(req)
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
             final spackCfg0 = req.isSpackBuild ? spackConfig : null
             final pod = launchContainerBuild(name, buildImage, buildCmd, req, configFile, spackCfg0, selector)
@@ -132,7 +132,7 @@ class KubeBuildStrategy extends BuildStrategy {
     @Override
     void cleanup(BuildRequest req) {
         super.cleanup(req)
-        final name = podName(req)
+        final name = jobName(req)
         try {
             k8sService.deleteJob(name)
         }
@@ -160,7 +160,7 @@ class KubeBuildStrategy extends BuildStrategy {
                 }
             }
 
-            return k8sService.getPod(latestPod.metadata.name)
+            return latestPod
         }
     }
 
