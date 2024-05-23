@@ -119,8 +119,16 @@ class DockerBuildStrategy extends BuildStrategy {
     protected List<String> cmdForBuildkit(Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform ) {
         final wrapper = ['docker',
                          'run',
-                         '--rm',
-                         '-v', "$workDir:$workDir".toString()]
+                         '--security-opt',
+                         'seccomp=unconfined',
+                         '--security-opt',
+                         'apparmor=unconfined',
+                         '-e',
+                         'BUILDKITD_FLAGS=--oci-worker-no-process-sandbox',
+                         '-v',
+                         "$workDir:$workDir".toString(),
+                         '--entrypoint',
+                         'buildctl-daemonless.sh']
 
         if( credsFile ) {
             wrapper.add('-v')

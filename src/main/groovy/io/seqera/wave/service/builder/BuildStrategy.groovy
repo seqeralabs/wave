@@ -70,14 +70,14 @@ abstract class BuildStrategy {
                 << "platform=$req.platform".toString()
 
         if( req.cacheRepository ) {
-            result << "--import-cache"
-            def cache = "type=registry,ref=$req.cacheRepository:$req.containerId,mode=max,ignore-error=true".toString()
+            result << "--export-cache"
+            def cache = "type=registry,ref=$req.cacheRepository:cache,mode=max,ignore-error=true".toString()
             if( buildConfig.compressCaching ){
                 cache += ',force-compression=true'
             }
             result << cache
-            result << "--export-cache"
-            result << "type=registry,ref=$req.cacheRepository:$req.containerId".toString()
+            result << "--import-cache"
+            result << "type=registry,ref=$req.cacheRepository:cache".toString()
         }
 
         if(req.spackFile){
