@@ -96,6 +96,7 @@ class DockerBuildStrategyTest extends Specification {
         def creds = Path.of('/work/creds.json')
         and:
         def req = new BuildRequest(
+                id: '89fb83ce6ec8627b',
                 workDir: Path.of('/work/foo/89fb83ce6ec8627b'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'repo:89fb83ce6ec8627b',
@@ -127,9 +128,9 @@ class DockerBuildStrategyTest extends Specification {
                 '--opt',
                 'platform=linux/amd64',
                 '--export-cache',
-                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:cache,mode=max,ignore-error=true,force-compression=true',
+                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:89fb83ce6ec8627b,mode=max,ignore-error=true,force-compression=true',
                 '--import-cache',
-                'type=registry,ref=reg.io/wave/build/cache:cache' ]
+                'type=registry,ref=reg.io/wave/build/cache:89fb83ce6ec8627b' ]
 
         cleanup:
         ctx.close()
@@ -141,6 +142,7 @@ class DockerBuildStrategyTest extends Specification {
         def service = ctx.getBean(DockerBuildStrategy)
         and:
         def req = new BuildRequest(
+                id: '89fb83ce6ec8627b',
                 workDir: Path.of('/work/foo/89fb83ce6ec8627b'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'repo:89fb83ce6ec8627b',
@@ -163,9 +165,9 @@ class DockerBuildStrategyTest extends Specification {
                 '--opt',
                 'platform=linux/amd64',
                 '--export-cache',
-                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:cache,mode=max,ignore-error=true',
+                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:89fb83ce6ec8627b,mode=max,ignore-error=true',
                 '--import-cache',
-                'type=registry,ref=reg.io/wave/build/cache:cache']
+                'type=registry,ref=reg.io/wave/build/cache:89fb83ce6ec8627b']
 
         cleanup:
         ctx.close()

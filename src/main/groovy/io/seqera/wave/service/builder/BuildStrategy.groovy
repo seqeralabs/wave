@@ -71,13 +71,13 @@ abstract class BuildStrategy {
 
         if( req.cacheRepository ) {
             result << "--export-cache"
-            def cache = "type=registry,image-manifest=true,ref=$req.cacheRepository:cache,mode=max,ignore-error=true".toString()
+            def cache = "type=registry,image-manifest=true,ref=$req.cacheRepository:$req.containerId,mode=max,ignore-error=true".toString()
             if( buildConfig.compressCaching ){
                 cache += ',force-compression=true'
             }
             result << cache
             result << "--import-cache"
-            result << "type=registry,ref=$req.cacheRepository:cache".toString()
+            result << "type=registry,ref=$req.cacheRepository:$req.containerId".toString()
         }
 
         if(req.spackFile){

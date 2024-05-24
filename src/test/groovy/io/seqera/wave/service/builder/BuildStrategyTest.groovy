@@ -39,6 +39,7 @@ class BuildStrategyTest extends Specification {
         service.@buildConfig = new BuildConfig()
         and:
         def req = new BuildRequest(
+                id: 'c168dba125e28777',
                 workDir: Path.of('/work/foo/c168dba125e28777'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'quay.io/wave:c168dba125e28777',
@@ -62,9 +63,9 @@ class BuildStrategyTest extends Specification {
                 '--opt',
                 'platform=linux/amd64',
                 '--export-cache',
-                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:cache,mode=max,ignore-error=true,force-compression=true',
+                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,force-compression=true',
                 '--import-cache',
-                'type=registry,ref=reg.io/wave/build/cache:cache'
+                'type=registry,ref=reg.io/wave/build/cache:c168dba125e28777'
         ]
     }
 
@@ -75,6 +76,7 @@ class BuildStrategyTest extends Specification {
         service.@buildConfig = new BuildConfig()
         and:
         def req = new BuildRequest(
+                id: 'c168dba125e28777',
                 workDir: Path.of('/work/foo/3980470531b4a52a'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'quay.io/wave:3980470531b4a52a',
@@ -98,9 +100,9 @@ class BuildStrategyTest extends Specification {
                 '--opt',
                 'platform=linux/amd64',
                 '--export-cache',
-                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:cache,mode=max,ignore-error=true,force-compression=true',
+                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,force-compression=true',
                 '--import-cache',
-                'type=registry,ref=reg.io/wave/build/cache:cache'
+                'type=registry,ref=reg.io/wave/build/cache:c168dba125e28777'
         ]
     }
 
