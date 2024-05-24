@@ -127,7 +127,7 @@ class DockerBuildStrategyTest extends Specification {
                 '--opt',
                 'platform=linux/amd64',
                 '--export-cache',
-                'type=registry,ref=reg.io/wave/build/cache:cache,mode=max,ignore-error=true,force-compression=true',
+                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:cache,mode=max,ignore-error=true,force-compression=true',
                 '--import-cache',
                 'type=registry,ref=reg.io/wave/build/cache:cache' ]
 
@@ -163,7 +163,7 @@ class DockerBuildStrategyTest extends Specification {
                 '--opt',
                 'platform=linux/amd64',
                 '--export-cache',
-                'type=registry,ref=reg.io/wave/build/cache:cache,mode=max,ignore-error=true',
+                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:cache,mode=max,ignore-error=true',
                 '--import-cache',
                 'type=registry,ref=reg.io/wave/build/cache:cache']
 
