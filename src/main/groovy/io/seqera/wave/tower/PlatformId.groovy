@@ -39,9 +39,10 @@ class PlatformId {
     final Long workspaceId
     final String accessToken
     final String towerEndpoint
+    final String refreshToken
 
     boolean asBoolean() {
-        user!=null || workspaceId!=null || accessToken || towerEndpoint
+        user!=null || workspaceId!=null || accessToken || towerEndpoint || refreshToken
     }
 
     Long getUserId() {
@@ -53,7 +54,8 @@ class PlatformId {
                 user,
                 request.towerWorkspaceId,
                 request.towerAccessToken,
-                request.towerEndpoint)
+                request.towerEndpoint,
+                request.towerRefreshToken)
     }
 
     static PlatformId of(User user, ContainerInspectRequest request) {

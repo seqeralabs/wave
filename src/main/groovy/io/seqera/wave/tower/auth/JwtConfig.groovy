@@ -16,22 +16,31 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service
+package io.seqera.wave.tower.auth
 
-import java.util.concurrent.CompletableFuture
+import java.time.Duration
 
-import io.seqera.wave.tower.User
-import io.seqera.wave.tower.auth.JwtAuth
+import groovy.transform.CompileStatic
+import groovy.transform.ToString
+import io.micronaut.context.annotation.Value
+import jakarta.inject.Singleton
 
 /**
- * Declare a service to access a Tower user
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface UserService {
+@Singleton
+@CompileStatic
+@ToString(includeNames = true, includePackage = false)
+class JwtConfig {
 
-    User getUserByAccessToken(String endpoint, JwtAuth auth)
+    @Value('${tower.jwt.refresh.interval:30s}')
+    Duration refreshInterval
 
-    CompletableFuture<User> getUserByAccessTokenAsync(String endpoint, JwtAuth auth)
+    @Value('${tower.jwt.heartbeat.interval:5s}')
+    Duration heartbeatInterval
+
+    @Value('${tower.jwt.heartbeat.delay:5s}')
+    Duration heartbeatDelay
 
 }

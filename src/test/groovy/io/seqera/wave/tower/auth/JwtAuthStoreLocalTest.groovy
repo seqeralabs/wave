@@ -16,22 +16,40 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service
+package io.seqera.wave.tower.auth
 
-import java.util.concurrent.CompletableFuture
+import spock.lang.Specification
 
-import io.seqera.wave.tower.User
-import io.seqera.wave.tower.auth.JwtAuth
+import java.time.Instant
+
+import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import jakarta.inject.Inject
 
 /**
- * Declare a service to access a Tower user
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface UserService {
+@MicronautTest
+class JwtAuthStoreLocalTest extends Specification {
 
-    User getUserByAccessToken(String endpoint, JwtAuth auth)
+    @Inject
+    JwtAuthStore store
 
-    CompletableFuture<User> getUserByAccessTokenAsync(String endpoint, JwtAuth auth)
-
+    def 'should put and get jwt tokens' () {
+        given:
+        def now = Instant.now();
+        and:
+        def auth = new JwtAuth(
+                'http://foo.com',
+                'token-12345',
+                'bearer-12345',
+                'refresh-12345',
+                now )
+        when:
+        store.putJwtAuth(auth)
+        then:
+        store.getJwtAuth(auth) == auth
+        and:
+        store.get(auth.key()) == store.get(auth.key())
+    }
 }

@@ -16,22 +16,38 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service
+package io.seqera.wave.memstore.range
 
-import java.util.concurrent.CompletableFuture
 
-import io.seqera.wave.tower.User
-import io.seqera.wave.tower.auth.JwtAuth
-
+import groovy.transform.CompileStatic
+import io.seqera.wave.memstore.range.impl.RangeProvider
 /**
- * Declare a service to access a Tower user
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface UserService {
+@CompileStatic
+abstract class AbstractRangeStore implements RangeStore {
 
-    User getUserByAccessToken(String endpoint, JwtAuth auth)
+    private RangeProvider delegate
 
-    CompletableFuture<User> getUserByAccessTokenAsync(String endpoint, JwtAuth auth)
+    protected abstract String getKey()
+
+    AbstractRangeStore(RangeProvider provider) {
+        this.delegate = provider
+    }
+
+    @Override
+    void add(String name, double  score) {
+        delegate.add(getKey(), name, score)
+    }
+
+    @Override
+    List<String> getRange(double min, double max, int count) {
+        return getRange(min, max, count, true)
+    }
+
+    List<String> getRange(double min, double max, int count, boolean remove) {
+        return delegate.getRange(getKey(), min, max, count, remove) ?: List.<String>of()
+    }
 
 }

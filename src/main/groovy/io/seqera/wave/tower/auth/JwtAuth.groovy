@@ -18,8 +18,13 @@
 
 package io.seqera.wave.tower.auth
 
-import groovy.transform.Canonical
+import java.time.Instant
 
+import groovy.transform.Canonical
+import io.seqera.wave.api.ContainerInspectRequest
+import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.util.DigestFunctions
+import static io.seqera.wave.util.StringUtils.trunc
 /**
  * Models JWT authorization tokens
  * used to connect with Tower service
@@ -27,14 +32,69 @@ import groovy.transform.Canonical
 @Canonical
 class JwtAuth {
 
+
+    /**
+     * The target endpoint
+     */
+    final String endpoint
+
+    /**
+     * The auth token as sent in the request
+     */
+    final String token
+
     /**
      * The bearer authorization token
      */
-    String bearer
+    final String bearer
 
     /**
      * The refresh token to request an updated authorization token
      */
-    String refresh
-    
+    final String refresh
+
+    /**
+     * When this token should expire
+     */
+    final Instant expiration
+
+    final String key() {
+        return 'jwt-' + DigestFunctions.md5("${endpoint}:${token}")
+    }
+
+    JwtAuth withBearer(String value) {
+        new JwtAuth(endpoint, token, value, refresh, expiration)
+    }
+
+    JwtAuth withRefresh(String value) {
+        new JwtAuth(endpoint, token, bearer, value, expiration)
+    }
+
+    @Override
+    String toString() {
+        return "JwtAuth{" +
+                "endpoint='" + endpoint + '\'' +
+                ", token='" + trunc(token,15) + '\'' +
+                ", bearer='" + trunc(bearer,15) + '\'' +
+                ", refresh='" + trunc(refresh,15) + '\'' +
+                ", expiration=" + expiration +
+                '}';
+    }
+
+    static JwtAuth from(PlatformId platformId) {
+        new JwtAuth(
+                platformId.towerEndpoint,
+                platformId.accessToken,
+                platformId.accessToken,
+                platformId.refreshToken,
+        )
+    }
+
+    static JwtAuth from(ContainerInspectRequest req) {
+        new JwtAuth(
+                req.towerEndpoint,
+                req.towerAccessToken,
+                req.towerAccessToken )
+    }
+
 }

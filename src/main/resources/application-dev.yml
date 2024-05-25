@@ -38,4 +38,5 @@ logger:
     io.seqera.wave.service.data: 'TRACE'
     io.seqera.wave.service.pairing: 'TRACE'
     io.seqera.wave.tower.client.connector: 'TRACE'
+    io.seqera.wave.tower.auth: 'TRACE'
 ...

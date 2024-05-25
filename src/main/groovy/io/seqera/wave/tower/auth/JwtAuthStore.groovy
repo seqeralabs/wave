@@ -18,16 +18,18 @@
 
 package io.seqera.wave.tower.auth
 
+
+import java.time.Duration
+import java.time.Instant
+
 import groovy.transform.CompileStatic
+import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.configuration.TokenConfig
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.cache.AbstractCacheStore
 import io.seqera.wave.service.cache.impl.CacheProvider
-
-import java.time.Duration
-
-import io.seqera.wave.util.DigestFunctions
+import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 /**
  * Implements storage for {@link JwtAuth} record
  *
@@ -35,6 +37,15 @@ import jakarta.inject.Singleton
 @Singleton
 @CompileStatic
 class JwtAuthStore extends AbstractCacheStore<JwtAuth> {
+
+    @Inject
+    private JwtConfig jwtConfig
+
+    @Inject
+    private TokenConfig tokenConfig
+
+    @Inject
+    private JwtTimer jwtTimer
 
     JwtAuthStore(CacheProvider<String, String> provider) {
         super(provider, new MoshiEncodeStrategy<JwtAuth>() {})
@@ -55,23 +66,37 @@ class JwtAuthStore extends AbstractCacheStore<JwtAuth> {
         return Duration.ofDays(30)
     }
 
-    void putJwtAuth(String endpoint, String providedRefreshToken, String providedAccessToken) {
-        if (providedRefreshToken) {
-            final tokens = new JwtAuth(providedAccessToken, providedRefreshToken)
-            this.put(tokensKey(endpoint, providedAccessToken), tokens)
+    JwtAuth getJwtAuth(JwtAuth auth) {
+        return auth && auth.refresh
+                ? this.get(auth.key())
+                : null
+    }
+
+    void putJwtAuth(JwtAuth auth) {
+        this.put(auth.key(), auth)
+    }
+
+    JwtAuth create(SubmitContainerTokenRequest req) {
+        final auth = create0(req)
+        // do not override the stored jwt token, because it may
+        // may be newer than the one in the request
+        if( putIfAbsent(auth.key(), auth) ) {
+            jwtTimer.setRefreshTimer(auth)
         }
+        return auth
     }
 
-    JwtAuth putJwtAuth(String endpoint, String originalAccessToken, JwtAuth tokens) {
-        this.put(tokensKey(endpoint, originalAccessToken), tokens)
-        return tokens
+    protected JwtAuth create0(SubmitContainerTokenRequest req) {
+        final result = new JwtAuth(
+                req.towerEndpoint,
+                req.towerAccessToken,
+                req.towerAccessToken,
+                req.towerRefreshToken,
+                expiration() )
+        return result
     }
 
-    JwtAuth getJwtAuth(String endpoint, String accessToken) {
-        return this.get(tokensKey(endpoint, accessToken)) ?: new JwtAuth(accessToken)
-    }
-
-    private static String tokensKey(String endpoint, String initialRefreshToken) {
-        return DigestFunctions.md5("${endpoint}:${initialRefreshToken}")
+    protected Instant expiration() {
+        Instant.now().plus(tokenConfig.cache.duration)
     }
 }

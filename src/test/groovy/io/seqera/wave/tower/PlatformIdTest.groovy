@@ -38,6 +38,7 @@ class PlatformIdTest extends Specification {
         new PlatformId(null, 1)
         new PlatformId(null, null, 'foo')
         new PlatformId(null, null, null, 'foo')
+        new PlatformId(null, null, null, null, 'xyz')
     }
 
     def 'should create form a container request' () {
@@ -45,13 +46,15 @@ class PlatformIdTest extends Specification {
         def id = PlatformId.of(new User(id:1), new SubmitContainerTokenRequest(
                 towerWorkspaceId: 100,
                 towerEndpoint: 'http://foo.com',
-                towerAccessToken: 'token-123' ))
+                towerAccessToken: 'token-123',
+                towerRefreshToken: 'refresh-123'))
         then:
         id.userId == 1
         id.user.id == 1
         id.workspaceId == 100
         id.towerEndpoint == 'http://foo.com'
         id.accessToken == 'token-123'
+        id.refreshToken == 'refresh-123'
     }
 
     def 'should create form a inspect request' () {

@@ -23,6 +23,7 @@ import java.util.concurrent.CompletableFuture
 import groovy.transform.CompileStatic
 import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.core.annotation.Nullable
+import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.client.connector.TowerConnector
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -40,10 +41,10 @@ class TowerClient {
     @Inject
     private TowerConnector connector
 
-    protected <T> CompletableFuture<T> getAsync(URI uri, String endpoint, @Nullable String authorization, Class<T> type) {
+    protected <T> CompletableFuture<T> getAsync(URI uri, String endpoint, @Nullable JwtAuth auth, Class<T> type) {
         assert uri, "Missing uri argument"
         assert endpoint, "Missing endpoint argument"
-        return connector.sendAsync(endpoint, uri, authorization, type)
+        return connector.sendAsync(endpoint, uri, auth, type)
     }
 
     @Cacheable('cache-20sec')
@@ -53,21 +54,21 @@ class TowerClient {
     }
 
     @Cacheable('cache-20sec')
-    CompletableFuture<UserInfoResponse> userInfo(String towerEndpoint, String authorization) {
+    CompletableFuture<UserInfoResponse> userInfo(String towerEndpoint, JwtAuth auth) {
         final uri = userInfoEndpoint(towerEndpoint)
-        return getAsync(uri, towerEndpoint, authorization, UserInfoResponse)
+        return getAsync(uri, towerEndpoint, auth, UserInfoResponse)
     }
 
     @Cacheable('cache-20sec')
-    CompletableFuture<ListCredentialsResponse> listCredentials(String towerEndpoint, String authorization, Long workspaceId) {
+    CompletableFuture<ListCredentialsResponse> listCredentials(String towerEndpoint, JwtAuth auth, Long workspaceId) {
         final uri = listCredentialsEndpoint(towerEndpoint, workspaceId)
-        return getAsync(uri, towerEndpoint, authorization, ListCredentialsResponse)
+        return getAsync(uri, towerEndpoint, auth, ListCredentialsResponse)
     }
 
     @Cacheable('cache-20sec')
-    CompletableFuture<GetCredentialsKeysResponse> fetchEncryptedCredentials(String towerEndpoint, String authorization, String credentialsId, String pairingId, Long workspaceId) {
+    CompletableFuture<GetCredentialsKeysResponse> fetchEncryptedCredentials(String towerEndpoint, JwtAuth auth, String credentialsId, String pairingId, Long workspaceId) {
         final uri = fetchCredentialsEndpoint(towerEndpoint, credentialsId, pairingId, workspaceId)
-        return getAsync(uri, towerEndpoint, authorization, GetCredentialsKeysResponse)
+        return getAsync(uri, towerEndpoint, auth, GetCredentialsKeysResponse)
     }
 
     protected static URI fetchCredentialsEndpoint(String towerEndpoint, String credentialsId, String pairingId, Long workspaceId) {

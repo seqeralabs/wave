@@ -16,22 +16,43 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service
+package io.seqera.wave.tower.auth
 
-import java.util.concurrent.CompletableFuture
+import java.time.Instant
 
-import io.seqera.wave.tower.User
-import io.seqera.wave.tower.auth.JwtAuth
-
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
+import io.seqera.wave.memstore.range.AbstractRangeStore
+import io.seqera.wave.memstore.range.impl.RangeProvider
+import jakarta.inject.Inject
+import jakarta.inject.Singleton
 /**
- * Declare a service to access a Tower user
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface UserService {
+@Slf4j
+@Singleton
+@CompileStatic
+class JwtTimer extends AbstractRangeStore {
 
-    User getUserByAccessToken(String endpoint, JwtAuth auth)
+    @Inject
+    private JwtConfig jwtConfig
 
-    CompletableFuture<User> getUserByAccessTokenAsync(String endpoint, JwtAuth auth)
+    JwtTimer(RangeProvider provider) {
+        super(provider)
+    }
 
+    @Override
+    final protected String getKey() {
+        return 'tower-jwt-timerange'
+    }
+
+    protected long expireSecs() {
+        Instant.now().epochSecond + jwtConfig.refreshInterval.toSeconds()
+    }
+
+    void setRefreshTimer(JwtAuth auth) {
+        log.debug "JWT set refresh timer $auth"
+        this.add(auth.key(), expireSecs())
+    }
 }
