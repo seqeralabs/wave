@@ -58,6 +58,7 @@ import io.seqera.wave.service.token.TokenData
 import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
+import io.seqera.wave.tower.auth.JwtAuthStore
 import jakarta.inject.Inject
 /**
  *
@@ -75,6 +76,13 @@ class ContainerControllerTest extends Specification {
 
     @Inject
     BuildConfig buildConfig
+
+    @Inject
+    JwtAuthStore jwtStore
+
+    def setup() {
+        jwtStore.clear()
+    }
 
     def 'should create request data' () {
         given:
