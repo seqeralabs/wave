@@ -40,17 +40,19 @@ class JwtAuthStoreLocalTest extends Specification {
         def now = Instant.now();
         and:
         def auth = new JwtAuth(
+                'key-1234',
                 'http://foo.com',
                 'bearer-12345',
                 'refresh-12345',
                 now,
                 now )
         when:
-        store.store(JwtAuth.key(auth), auth)
+        store.store(auth)
         then:
-        store.refresh(auth) == store.get(JwtAuth.key(auth))
+        store.refresh(auth) == store.get(auth.key)
         and:
-        with(store.get(JwtAuth.key(auth))) {
+        with(store.get(auth.key)) {
+            key == auth.key
             endpoint == auth.endpoint
             bearer == auth.bearer
             refresh == auth.refresh

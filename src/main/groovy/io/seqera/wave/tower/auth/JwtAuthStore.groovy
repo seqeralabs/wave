@@ -68,36 +68,44 @@ class JwtAuthStore extends AbstractCacheStore<JwtAuth> {
     JwtAuth refresh(JwtAuth auth) {
         final shouldRefresh = auth && auth.refresh
         if( shouldRefresh ) {
-            final key = JwtAuth.key(auth)
-            final result = this.get(key)
+            assert auth.key
+            final result = this.get(auth.key)
             if( log.isTraceEnabled() ) {
                 final msg = result!=null
-                    ? "JWT record found in store - key=$key; entry=$result"
-                    : "JWT record not found in store - key=$key; entry=$auth"
+                    ? "JWT record found in store - $result"
+                    : "JWT record not found in store - $auth"
                 log.trace(msg)
             }
-            return result
+            if( result && !result.key ) {
+                final now = Instant.now()
+                final patched = result.withKey(auth.key).withCreatedAt(now).withUpdatedAt(now)
+                log.warn "JWT patched legacy record - $patched"
+                return patched
+            }
+            else {
+                return result
+            }
         }
         return auth
     }
 
-    void store(String key, JwtAuth auth) {
+    void store(JwtAuth auth) {
         final now = Instant.now()
         final entry = auth.withUpdatedAt(now)
-        this.put(key, entry)
-        log.debug "JWT updating refreshed record - key=$key; entry=$entry"
+        this.put(auth.key, entry)
+        log.debug "JWT updating refreshed record - $entry"
     }
 
-    boolean storeIfAbsent(String key, JwtAuth auth) {
+    boolean storeIfAbsent(JwtAuth auth) {
         // do not override the stored jwt token, because it may
         // may be newer than the one in the request
         final now = Instant.now()
         final entry = auth
                 .withCreatedAt(now)
                 .withUpdatedAt(now)
-        if( super.putIfAbsent(key, entry) ) {
-            log.debug "JWT storing new record - key=$key; entry=$entry"
-            jwtTimer.setRefreshTimer(key)
+        if( super.putIfAbsent(auth.key, entry) ) {
+            log.debug "JWT storing new record - $entry"
+            jwtTimer.setRefreshTimer(entry.key)
             return true
         }
         else

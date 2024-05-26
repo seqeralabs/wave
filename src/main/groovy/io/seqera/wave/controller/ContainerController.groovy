@@ -191,7 +191,7 @@ class ContainerController {
         // to avoid overridden a newer refresh token that may have 
         final auth = JwtAuth.from(req)
         if( auth.refresh )
-            jwtAuthStore.storeIfAbsent(JwtAuth.key(req), auth)
+            jwtAuthStore.storeIfAbsent(auth)
 
         // find out the user associated with the specified tower access token
         return userService

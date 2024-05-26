@@ -35,6 +35,7 @@ class JwtAuthTest extends Specification {
         def now = Instant.now();
         and:
         def auth = new JwtAuth(
+                'key-12345',
                 'http://foo.com',
                 'bearer-12345',
                 'refresh-12345',
@@ -42,10 +43,23 @@ class JwtAuthTest extends Specification {
                 now )
 
         when:
+        def auth1 = auth.withKey('key-098765')
+        then:
+        auth1 != auth
+        and:
+        auth1.key == 'key-098765'
+        auth1.endpoint == auth.endpoint
+        auth1.bearer == auth.bearer
+        auth1.refresh == auth.refresh
+        auth1.createdAt == auth.createdAt
+        auth1.updatedAt == auth.updatedAt
+
+        when:
         def auth2 = auth.withBearer('new-bearer')
         then:
         auth2 != auth
         and:
+        auth2.key == auth.key
         auth2.endpoint == auth.endpoint
         auth2.bearer == 'new-bearer'
         auth2.refresh == auth.refresh
@@ -57,6 +71,7 @@ class JwtAuthTest extends Specification {
         then:
         auth3 != auth
         and:
+        auth3.key == auth.key
         auth3.endpoint == auth.endpoint
         auth3.bearer == auth.bearer
         auth3.refresh == 'new-refresh'
@@ -69,6 +84,7 @@ class JwtAuthTest extends Specification {
         then:
         auth4 != auth
         and:
+        auth4.key == auth.key
         auth4.endpoint == auth.endpoint
         auth4.bearer == auth.bearer
         auth4.refresh == auth.refresh
@@ -81,6 +97,7 @@ class JwtAuthTest extends Specification {
         then:
         auth5 != auth
         and:
+        auth5.key == auth.key
         auth5.endpoint == auth.endpoint
         auth5.bearer == auth.bearer
         auth5.refresh == auth.refresh

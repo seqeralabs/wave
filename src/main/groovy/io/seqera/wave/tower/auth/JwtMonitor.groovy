@@ -94,22 +94,22 @@ class JwtMonitor implements Runnable {
         }
         // ignore record without an empty refresh field
         if( !entry.refresh ) {
-            log.info "JWT record refresh ignored - key=$key; entry=$entry"
+            log.info "JWT record refresh ignored - entry=$entry"
             return
         }
         // check that's a `createdAt` field (it may be missing in legacy records)
         if( !entry.createdAt ) {
-            log.warn "JWT record has no receivedAt timestamp - key=$key; entry=$entry"
+            log.warn "JWT record has no receivedAt timestamp - entry=$entry"
             return
         }
         // check if the JWT record is expired
         final deadline = entry.createdAt + tokenConfig.cache.duration
         if( now > deadline ) {
-            log.info "JWT record expired - key=$key; entry=$entry; deadline=$deadline; "
+            log.info "JWT record expired - entry=$entry; deadline=$deadline; "
             return
         }
 
-        log.debug "JWT refresh request - key=$key; entry=$entry; deadline=$deadline"
+        log.debug "JWT refresh request - entry=$entry; deadline=$deadline"
         towerClient.userInfo(entry.endpoint, entry)
         jwtTimeStore.setRefreshTimer(key)
     }

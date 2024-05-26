@@ -37,6 +37,8 @@ import static io.seqera.wave.util.StringUtils.trunc
 @CompileStatic
 class JwtAuth {
 
+    final String key
+
     /**
      * The target endpoint
      */
@@ -64,26 +66,31 @@ class JwtAuth {
      */
     final Instant updatedAt
 
+    JwtAuth withKey(String value) {
+        new JwtAuth(value, endpoint, bearer, refresh, createdAt, updatedAt)
+    }
+
     JwtAuth withBearer(String value) {
-        new JwtAuth(endpoint, value, refresh, createdAt, updatedAt)
+        new JwtAuth(key, endpoint, value, refresh, createdAt, updatedAt)
     }
 
     JwtAuth withRefresh(String value) {
-        new JwtAuth(endpoint, bearer, value, createdAt, updatedAt)
+        new JwtAuth(key, endpoint, bearer, value, createdAt, updatedAt)
     }
 
     JwtAuth withCreatedAt(Instant value) {
-        new JwtAuth(endpoint, bearer, refresh, value, updatedAt)
+        new JwtAuth(key, endpoint, bearer, refresh, value, updatedAt)
     }
 
     JwtAuth withUpdatedAt(Instant value) {
-        new JwtAuth(endpoint, bearer, refresh, createdAt, value)
+        new JwtAuth(key, endpoint, bearer, refresh, createdAt, value)
     }
 
     @Override
     String toString() {
         return "JwtAuth{" +
-                "endpoint='" + endpoint + '\'' +
+                "key='" + key + '\'' +
+                ", endpoint='" + endpoint + '\'' +
                 ", bearer='" + trunc0(bearer) + '\'' +
                 ", refresh='" + trunc0(refresh) + '\'' +
                 ", createdAt=" + createdAt +
@@ -109,6 +116,7 @@ class JwtAuth {
 
     static JwtAuth of(PlatformId platformId) {
         new JwtAuth(
+                key(platformId.towerEndpoint, platformId.towerEndpoint),
                 platformId.towerEndpoint,
                 platformId.accessToken,
                 platformId.refreshToken,
@@ -117,12 +125,14 @@ class JwtAuth {
 
     static JwtAuth of(ContainerInspectRequest req) {
         new JwtAuth(
+                key(req.towerEndpoint, req.towerAccessToken),
                 req.towerEndpoint,
                 req.towerAccessToken )
     }
 
     static JwtAuth of(String endpoint, String token, String refresh=null) {
         new JwtAuth(
+                key(endpoint, token),
                 endpoint,
                 token,
                 refresh)
@@ -130,6 +140,7 @@ class JwtAuth {
 
     static JwtAuth from(SubmitContainerTokenRequest req) {
         return new JwtAuth(
+                key(req.towerEndpoint,req.towerAccessToken),
                 req.towerEndpoint,
                 req.towerAccessToken,
                 req.towerRefreshToken )

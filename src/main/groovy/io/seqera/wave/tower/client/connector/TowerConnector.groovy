@@ -249,7 +249,7 @@ abstract class TowerConnector {
                     }
                     final cookies = resp.headers?['set-cookie'] ?: List.<String>of()
                     final newAuth = parseTokens(cookies, auth)
-                    jwtStore.store(JwtAuth.key(auth), newAuth)
+                    jwtStore.store(newAuth)
                     return newAuth
                 }
 
