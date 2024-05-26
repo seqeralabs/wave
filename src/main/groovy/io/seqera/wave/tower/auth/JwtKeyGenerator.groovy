@@ -1,0 +1,57 @@
+/*
+ * Copyright (c) 2019-2020, Seqera Labs.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * This Source Code Form is "Incompatible With Secondary Licenses", as
+ * defined by the Mozilla Public License, v. 2.0.
+ */
+
+package io.seqera.wave.tower.auth
+
+import groovy.transform.CompileStatic
+import io.micronaut.aop.chain.MethodInterceptorChain
+import io.micronaut.cache.interceptor.CacheKeyGenerator
+import io.micronaut.cache.interceptor.DefaultCacheKeyGenerator
+import io.micronaut.core.annotation.AnnotationMetadata
+import io.micronaut.core.annotation.Introspected
+/**
+ * A with {@link CacheKeyGenerator} which includes the class and method method in the cache key
+ *
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ */
+@Introspected
+@CompileStatic
+class JwtKeyGenerator implements CacheKeyGenerator {
+
+    DefaultCacheKeyGenerator delegate = new DefaultCacheKeyGenerator()
+
+    @Override
+    Object generateKey(AnnotationMetadata meta, Object... params) {
+        if( meta instanceof MethodInterceptorChain ) {
+            return delegate.generateKey(meta, patch(params))
+        }
+        throw new IllegalArgumentException()
+    }
+
+    protected Object[] patch(Object... params) {
+        final result = new Object[params.size()]
+        for( int i=0; i<params.length; i++ ) {
+            final it = params[i]
+            if( it instanceof JwtAuth ) {
+                final jwt = it as JwtAuth
+                final fields = new ArrayList(10)
+                fields.add(jwt.endpoint)
+                fields.add(jwt.bearer)
+                fields.add(jwt.refresh)
+                result[i] = fields.join('.')
+            }
+            else {
+                result[i] = params[i]
+            }
+        }
+        return result
+    }
+}

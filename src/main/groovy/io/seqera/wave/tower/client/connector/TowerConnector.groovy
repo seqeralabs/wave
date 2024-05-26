@@ -41,6 +41,7 @@ import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
 import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.auth.JwtAuthStore
+import io.seqera.wave.tower.auth.JwtKeyGenerator
 import io.seqera.wave.tower.client.TowerClient
 import io.seqera.wave.util.ExponentialAttempt
 import io.seqera.wave.util.JacksonHelper
@@ -222,7 +223,7 @@ abstract class TowerConnector {
      * @param refreshToken
      * @return
      */
-    @Cacheable('cache-1min')
+    @Cacheable(cacheNames='cache-1min', keyGenerator = JwtKeyGenerator)
     synchronized protected CompletableFuture<JwtAuth> refreshJwtToken(String endpoint, JwtAuth auth) {
         final body = "grant_type=refresh_token&refresh_token=${URLEncoder.encode(auth.refresh, 'UTF-8')}"
         final uri = refreshTokenEndpoint(endpoint)
