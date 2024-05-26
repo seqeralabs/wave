@@ -96,7 +96,7 @@ class CredentialsServiceTest extends Specification {
                 registry: 'docker.io' )
         and:
         def identity = new PlatformId(new User(id:userId), workspaceId,token,towerEndpoint)
-        def auth = JwtAuth.from(identity)
+        def auth = JwtAuth.of(identity)
 
         when: 'look those registry credentials from tower'
         def credentials = credentialsService.findRegistryCreds("quay.io",identity)
@@ -136,7 +136,7 @@ class CredentialsServiceTest extends Specification {
     def 'should return no registry credentials if the user has no credentials in tower' () {
         given:
         def identity = new PlatformId(new User(id:10), 10,"token",'tower.io')
-        def auth = JwtAuth.from(identity)
+        def auth = JwtAuth.of(identity)
         when:
         def credentials = credentialsService.findRegistryCreds('quay.io', identity)
         then: 'a key is found'
@@ -168,7 +168,7 @@ class CredentialsServiceTest extends Specification {
         )
         and:
         def identity = new PlatformId(new User(id:10), 10,"token",'tower.io')
-        def auth = JwtAuth.from(identity)
+        def auth = JwtAuth.of(identity)
 
         when:
         def credentials = credentialsService.findRegistryCreds('quay.io', identity)

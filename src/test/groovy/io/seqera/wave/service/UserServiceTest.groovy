@@ -55,7 +55,7 @@ class UserServiceTest extends Specification {
         given:
         def endpoint = "https://foo.com/tower"
         def token = "a valid token"
-        def auth = JwtAuth.from(endpoint, token)
+        def auth = JwtAuth.of(endpoint, token)
 
         when: // a valid token
         def user = service.getUserByAccessToken(endpoint, auth)
@@ -70,7 +70,7 @@ class UserServiceTest extends Specification {
         given:
         def endpoint = "https://foo.com/tower"
         def token = "a invalid token"
-        def auth = JwtAuth.from(endpoint, token)
+        def auth = JwtAuth.of(endpoint, token)
 
         when: // an invalid token
         service.getUserByAccessToken(endpoint,auth)

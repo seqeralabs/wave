@@ -80,7 +80,7 @@ class JwtAuth {
                 '}';
     }
 
-    static JwtAuth from(PlatformId platformId) {
+    static JwtAuth of(PlatformId platformId) {
         new JwtAuth(
                 platformId.towerEndpoint,
                 platformId.accessToken,
@@ -89,14 +89,14 @@ class JwtAuth {
         )
     }
 
-    static JwtAuth from(ContainerInspectRequest req) {
+    static JwtAuth of(ContainerInspectRequest req) {
         new JwtAuth(
                 req.towerEndpoint,
                 req.towerAccessToken,
                 req.towerAccessToken )
     }
 
-    static JwtAuth from(String endpoint, String token) {
-        new JwtAuth(endpoint, token, token)
+    static JwtAuth of(String endpoint, String token, String refresh=null) {
+        new JwtAuth(endpoint, token, token, refresh)
     }
 }

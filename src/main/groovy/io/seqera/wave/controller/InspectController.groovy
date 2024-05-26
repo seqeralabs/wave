@@ -93,7 +93,7 @@ class InspectController {
 
         // find out the user associated with the specified tower access token
         return userService
-                .getUserByAccessTokenAsync(registration.endpoint, JwtAuth.from(req))
+                .getUserByAccessTokenAsync(registration.endpoint, JwtAuth.of(req))
                 .thenApply((User user) -> makeResponse(req, PlatformId.of(user,req)) )
 
     }
