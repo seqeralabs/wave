@@ -54,21 +54,21 @@ class TowerClient {
     }
 
     @Cacheable('cache-20sec')
-    CompletableFuture<UserInfoResponse> userInfo(String towerEndpoint, JwtAuth auth) {
+    CompletableFuture<UserInfoResponse> userInfo(String towerEndpoint, JwtAuth authorization) {
         final uri = userInfoEndpoint(towerEndpoint)
-        return getAsync(uri, towerEndpoint, auth, UserInfoResponse)
+        return getAsync(uri, towerEndpoint, authorization, UserInfoResponse)
     }
 
     @Cacheable('cache-20sec')
-    CompletableFuture<ListCredentialsResponse> listCredentials(String towerEndpoint, JwtAuth auth, Long workspaceId) {
+    CompletableFuture<ListCredentialsResponse> listCredentials(String towerEndpoint, JwtAuth authorization, Long workspaceId) {
         final uri = listCredentialsEndpoint(towerEndpoint, workspaceId)
-        return getAsync(uri, towerEndpoint, auth, ListCredentialsResponse)
+        return getAsync(uri, towerEndpoint, authorization, ListCredentialsResponse)
     }
 
     @Cacheable('cache-20sec')
-    CompletableFuture<GetCredentialsKeysResponse> fetchEncryptedCredentials(String towerEndpoint, JwtAuth auth, String credentialsId, String pairingId, Long workspaceId) {
+    CompletableFuture<GetCredentialsKeysResponse> fetchEncryptedCredentials(String towerEndpoint, JwtAuth authoriazation, String credentialsId, String pairingId, Long workspaceId) {
         final uri = fetchCredentialsEndpoint(towerEndpoint, credentialsId, pairingId, workspaceId)
-        return getAsync(uri, towerEndpoint, auth, GetCredentialsKeysResponse)
+        return getAsync(uri, towerEndpoint, authoriazation, GetCredentialsKeysResponse)
     }
 
     protected static URI fetchCredentialsEndpoint(String towerEndpoint, String credentialsId, String pairingId, Long workspaceId) {
