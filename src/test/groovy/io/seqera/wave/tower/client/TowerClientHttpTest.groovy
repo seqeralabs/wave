@@ -128,6 +128,7 @@ class TowerClientHttpTest extends Specification{
 
     def setup() {
         jwtAuthStore.clear()
+        cacheManager.getCache("cache-1min").invalidateAll()
         cacheManager.getCache("cache-20sec").invalidateAll()
     }
 
