@@ -69,7 +69,7 @@ class JwtMonitor implements Runnable {
     void run() {
         final now = Instant.now()
         final keys = jwtTimeStore.getRange(0, now.epochSecond, jwtConfig.monitorCount)
-        log.trace "JWT keys=$keys"
+
         for( String it : keys ) {
             try {
                 check0(it, now)
