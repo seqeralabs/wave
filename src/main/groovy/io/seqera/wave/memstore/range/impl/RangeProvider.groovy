@@ -18,7 +18,8 @@
 
 package io.seqera.wave.memstore.range.impl
 /**
- *
+ * Contract for range store provider
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 interface RangeProvider {
