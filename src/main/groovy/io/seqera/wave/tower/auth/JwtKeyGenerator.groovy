@@ -28,6 +28,7 @@ import io.micronaut.core.annotation.Introspected
 @Slf4j
 @Introspected
 @CompileStatic
+@Deprecated
 class JwtKeyGenerator implements CacheKeyGenerator {
 
     DefaultCacheKeyGenerator delegate = new DefaultCacheKeyGenerator()
