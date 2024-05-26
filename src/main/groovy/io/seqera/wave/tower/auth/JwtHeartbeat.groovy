@@ -24,6 +24,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
 import io.micronaut.scheduling.TaskScheduler
+import io.seqera.wave.configuration.TokenConfig
 import io.seqera.wave.tower.client.TowerClient
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
@@ -52,37 +53,46 @@ class JwtHeartbeat implements Runnable {
     TaskScheduler scheduler
 
     @Inject
-    private JwtConfig config
+    private JwtConfig jwtConfig
+
+    @Inject
+    private TokenConfig tokenConfig
 
     @PostConstruct
     private init() {
-        log.info "Creating JWT heartbeat - $config"
-        scheduler.scheduleAtFixedRate(config.heartbeatDelay, config.heartbeatInterval, this)
+        log.info "Creating JWT heartbeat - $jwtConfig"
+        scheduler.scheduleAtFixedRate(jwtConfig.heartbeatDelay, jwtConfig.heartbeatInterval, this)
     }
 
     void run() {
         final now = Instant.now()
-        final keys = jwtTimer.getRange(0, now.epochSecond, 10)
-        for( String it : keys ) {
+        final allKeys = jwtTimer.getRange(0, now.epochSecond, 10)
+        for( String key : allKeys ) {
             // get the jwt info the given "timer" and refresh it
-            final jwt = authStore.get(it)
+            final jwt = authStore.get(key)
             if( !jwt ) {
-                log.warn "JWT record not found for key $jwt"
+                log.warn "JWT record not found for key - $jwt"
                 continue
             }
-            if( now > jwt.expiration ) {
-                log.debug "JWT record expired $jwt"
+            if( !jwt.createdAt ) {
+                log.warn "JWT record has no receivedAt timestamp - $jwt"
+                continue
+            }
+            final deadline = jwt.createdAt + tokenConfig.cache.duration
+            if( now > deadline ) {
+                log.debug "JWT record expired - $jwt"
                 continue
             }
 
             if( jwt.refresh ) {
-                log.debug "JWT refresh for $jwt"
+                log.debug "JWT record refresh attempt - $jwt"
                 towerClient.userInfo(jwt.endpoint, jwt)
-                jwtTimer.setRefreshTimer(jwt)
+                jwtTimer.setRefreshTimer(key)
             }
             else {
-                log.debug "JWT refresh ignored for $jwt"
+                log.debug "JWT record refresh ignored - $jwt"
             }
         }
     }
+
 }

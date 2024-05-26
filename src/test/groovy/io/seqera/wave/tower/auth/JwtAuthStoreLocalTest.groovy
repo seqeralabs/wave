@@ -41,15 +41,21 @@ class JwtAuthStoreLocalTest extends Specification {
         and:
         def auth = new JwtAuth(
                 'http://foo.com',
-                'token-12345',
                 'bearer-12345',
                 'refresh-12345',
+                now,
                 now )
         when:
-        store.putJwtAuth(auth)
+        store.store(JwtAuth.key(auth), auth)
         then:
-        store.getJwtAuth(auth) == auth
+        store.refresh(auth) == store.get(JwtAuth.key(auth))
         and:
-        store.get(auth.key()) == store.get(auth.key())
+        with(store.get(JwtAuth.key(auth))) {
+            endpoint == auth.endpoint
+            bearer == auth.bearer
+            refresh == auth.refresh
+            createdAt == auth.createdAt
+            updatedAt >= auth.updatedAt
+        }
     }
 }

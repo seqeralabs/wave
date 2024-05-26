@@ -51,8 +51,8 @@ class JwtTimer extends AbstractRangeStore {
         Instant.now().epochSecond + jwtConfig.refreshInterval.toSeconds()
     }
 
-    void setRefreshTimer(JwtAuth auth) {
-        log.debug "JWT set refresh timer $auth"
-        this.add(auth.key(), expireSecs())
+    void setRefreshTimer(String key) {
+        log.debug "JWT set refresh timer $key"
+        this.add(key, expireSecs())
     }
 }

@@ -18,13 +18,10 @@
 
 package io.seqera.wave.tower.auth
 
-
 import java.time.Duration
 import java.time.Instant
 
 import groovy.transform.CompileStatic
-import io.seqera.wave.api.SubmitContainerTokenRequest
-import io.seqera.wave.configuration.TokenConfig
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.cache.AbstractCacheStore
 import io.seqera.wave.service.cache.impl.CacheProvider
@@ -37,12 +34,6 @@ import jakarta.inject.Singleton
 @Singleton
 @CompileStatic
 class JwtAuthStore extends AbstractCacheStore<JwtAuth> {
-
-    @Inject
-    private JwtConfig jwtConfig
-
-    @Inject
-    private TokenConfig tokenConfig
 
     @Inject
     private JwtTimer jwtTimer
@@ -66,37 +57,35 @@ class JwtAuthStore extends AbstractCacheStore<JwtAuth> {
         return Duration.ofDays(30)
     }
 
-    JwtAuth getJwtAuth(JwtAuth auth) {
+    /**
+     * Try loading a {@link JwtAuth} object with an updated refresh token
+     *
+     * @param auth The {@link JwtAuth} object as provided in the request
+     * @return The "refreshed" {@link JwtAuth} object or {@code null} if cannot be found
+     */
+    JwtAuth refresh(JwtAuth auth) {
         return auth && auth.refresh
-                ? this.get(auth.key())
+                ? this.get(JwtAuth.key(auth))
                 : null
     }
 
-    void putJwtAuth(JwtAuth auth) {
-        this.put(auth.key(), auth)
+    void store(String key, JwtAuth auth) {
+        this.put(key, auth.withUpdatedAt(Instant.now()))
     }
 
-    JwtAuth create(SubmitContainerTokenRequest req) {
-        final auth = create0(req)
+    boolean storeIfAbsent(String key, JwtAuth auth) {
         // do not override the stored jwt token, because it may
         // may be newer than the one in the request
-        if( putIfAbsent(auth.key(), auth) ) {
-            jwtTimer.setRefreshTimer(auth)
+        final now = Instant.now()
+        final copy = auth
+                .withCreatedAt(now)
+                .withUpdatedAt(now)
+        if( super.putIfAbsent(key, copy) ) {
+            jwtTimer.setRefreshTimer(key)
+            return true
         }
-        return auth
+        else
+            return false
     }
 
-    protected JwtAuth create0(SubmitContainerTokenRequest req) {
-        final result = new JwtAuth(
-                req.towerEndpoint,
-                req.towerAccessToken,
-                req.towerAccessToken,
-                req.towerRefreshToken,
-                expiration() )
-        return result
-    }
-
-    protected Instant expiration() {
-        Instant.now().plus(tokenConfig.cache.duration)
-    }
 }

@@ -65,6 +65,7 @@ import io.seqera.wave.service.token.TokenData
 import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
+import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
 import io.seqera.wave.util.LongRndKey
@@ -186,9 +187,15 @@ class ContainerController {
         if( !registration )
             throw new BadRequestException("Missing pairing record for Tower endpoint '$req.towerEndpoint'")
 
+        // store the jwt record only the very first time it has been
+        // to avoid overridden a newer refresh token that may have 
+        final auth = JwtAuth.from(req)
+        if( auth.refresh )
+            jwtAuthStore.storeIfAbsent(JwtAuth.key(req), auth)
+
         // find out the user associated with the specified tower access token
         return userService
-                .getUserByAccessTokenAsync(registration.endpoint, jwtAuthStore.create(req))
+                .getUserByAccessTokenAsync(registration.endpoint, auth)
                 .thenApply((User user) -> handleRequest(httpRequest, req, PlatformId.of(user,req), v2))
     }
 

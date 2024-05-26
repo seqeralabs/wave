@@ -22,6 +22,8 @@ import spock.lang.Specification
 
 import java.time.Instant
 
+import io.seqera.wave.api.SubmitContainerTokenRequest
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -34,37 +36,70 @@ class JwtAuthTest extends Specification {
         and:
         def auth = new JwtAuth(
                 'http://foo.com',
-                'token-12345',
                 'bearer-12345',
                 'refresh-12345',
+                now,
                 now )
-
-        expect:
-        auth.key() == 'ddc895f371f1bdd9b0be104ce093a61b'
 
         when:
         def auth2 = auth.withBearer('new-bearer')
         then:
         auth2 != auth
         and:
-        auth2.key() == auth.key()
         auth2.endpoint == auth.endpoint
-        auth2.token == auth.token
         auth2.bearer == 'new-bearer'
         auth2.refresh == auth.refresh
-        auth2.expiration == auth.expiration
+        auth2.createdAt == auth.createdAt
+        auth2.updatedAt == auth.updatedAt
 
         when:
         def auth3 = auth.withRefresh('new-refresh')
         then:
         auth3 != auth
         and:
-        auth3.key() == auth.key()
         auth3.endpoint == auth.endpoint
-        auth3.token == auth.token
         auth3.bearer == auth.bearer
         auth3.refresh == 'new-refresh'
-        auth3.expiration == auth.expiration
+        auth3.createdAt == auth.createdAt
+        auth3.updatedAt == auth.updatedAt
 
+        when:
+        def t1 = Instant.now()
+        def auth4 = auth.withCreatedAt(t1)
+        then:
+        auth4 != auth
+        and:
+        auth4.endpoint == auth.endpoint
+        auth4.bearer == auth.bearer
+        auth4.refresh == auth.refresh
+        auth4.createdAt == t1
+        auth4.updatedAt == auth.updatedAt
+
+        when:
+        def t2 = Instant.now()
+        def auth5 = auth.withUpdatedAt(t2)
+        then:
+        auth5 != auth
+        and:
+        auth5.endpoint == auth.endpoint
+        auth5.bearer == auth.bearer
+        auth5.refresh == auth.refresh
+        auth5.createdAt == auth.createdAt
+        auth5.updatedAt == t2
+    }
+
+    def 'should create auth key' () {
+        given:
+        def endpoint = 'http://foo.com'
+        def token = '12345'
+        and:
+        def KEY = 'fd76d447889fe70c013cbc532ff72a40'
+        
+        expect:
+        JwtAuth.key(endpoint,token) == KEY
+        and:
+        JwtAuth.key(new JwtAuth(endpoint, token)) == KEY
+        and:
+        JwtAuth.key(new SubmitContainerTokenRequest(towerAccessToken: token, towerEndpoint: endpoint)) == KEY
     }
 }

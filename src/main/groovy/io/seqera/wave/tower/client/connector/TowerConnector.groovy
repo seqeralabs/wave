@@ -185,7 +185,7 @@ abstract class TowerConnector {
      */
     private CompletableFuture<ProxyHttpResponse> sendAsync1(String endpoint, final URI uri, final JwtAuth auth, String msgId, final boolean canRefresh) {
         // check the most updated JWT tokens
-        final JwtAuth tokens = jwtStore.getJwtAuth(auth) ?: auth
+        final JwtAuth tokens = jwtStore.refresh(auth) ?: auth
         log.trace "Tower GET '$uri' - can refresh=$canRefresh; msgId=$msgId; tokens=$tokens"
         // submit the request
         final request = new ProxyHttpRequest(
@@ -249,8 +249,8 @@ abstract class TowerConnector {
                     }
                     final cookies = resp.headers?['set-cookie'] ?: List.<String>of()
                     final newAuth = parseTokens(cookies, auth)
-                    log.debug "JWT refreshing record: $auth"
-                    jwtStore.putJwtAuth(newAuth)
+                    log.debug "JWT storing refreshed record: $auth"
+                    jwtStore.store(JwtAuth.key(auth), newAuth)
                     return newAuth
                 }
 
