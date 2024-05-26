@@ -12,6 +12,7 @@
 package io.seqera.wave.tower.auth
 
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.micronaut.aop.chain.MethodInterceptorChain
 import io.micronaut.cache.interceptor.CacheKeyGenerator
 import io.micronaut.cache.interceptor.DefaultCacheKeyGenerator
@@ -24,6 +25,7 @@ import io.micronaut.core.annotation.Introspected
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @Introspected
 @CompileStatic
 class JwtKeyGenerator implements CacheKeyGenerator {
@@ -33,7 +35,9 @@ class JwtKeyGenerator implements CacheKeyGenerator {
     @Override
     Object generateKey(AnnotationMetadata meta, Object... params) {
         if( meta instanceof MethodInterceptorChain ) {
-            return delegate.generateKey(meta, patch(params))
+            final ret = delegate.generateKey(meta, patch(params))
+            log.debug "JWT cache key=${ret.hashCode()} - params=$params"
+            return ret
         }
         throw new IllegalArgumentException()
     }

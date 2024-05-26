@@ -66,27 +66,26 @@ class JwtAuthStore extends AbstractCacheStore<JwtAuth> {
      * @return The "refreshed" {@link JwtAuth} object or {@code null} if cannot be found
      */
     JwtAuth refresh(JwtAuth auth) {
-        final shouldRefresh = auth && auth.refresh
-        if( shouldRefresh ) {
-            assert auth.key
-            final result = this.get(auth.key)
-            if( log.isTraceEnabled() ) {
-                final msg = result!=null
+        if( !auth )
+            return null
+        if( !auth.key )
+            throw new IllegalArgumentException("Missing JWT auth key attribute")
+        final result = this.get(auth.key)
+        if( log.isTraceEnabled() ) {
+            final msg = result!=null
                     ? "JWT record found in store - $result"
                     : "JWT record not found in store - $auth"
-                log.trace(msg)
-            }
-            if( result && !result.key ) {
-                final now = Instant.now()
-                final patched = result.withKey(auth.key).withCreatedAt(now).withUpdatedAt(now)
-                log.warn "JWT patched legacy record - $patched"
-                return patched
-            }
-            else {
-                return result
-            }
+            log.trace(msg)
         }
-        return auth
+        if( result && !result.key ) {
+            final now = Instant.now()
+            final patched = result.withKey(auth.key).withCreatedAt(now).withUpdatedAt(now)
+            log.warn "JWT patched legacy record - $patched"
+            return patched
+        }
+        else {
+            return result
+        }
     }
 
     void store(JwtAuth auth) {

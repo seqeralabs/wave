@@ -113,9 +113,7 @@ class JwtAuth {
         new JwtAuth(
                 key(platformId.towerEndpoint, platformId.accessToken),
                 platformId.towerEndpoint,
-                platformId.accessToken,
-                platformId.refreshToken,
-        )
+                platformId.accessToken )
     }
 
     static JwtAuth of(ContainerInspectRequest req) {

@@ -223,8 +223,8 @@ abstract class TowerConnector {
      * @param refreshToken
      * @return
      */
-    @Cacheable(cacheNames='cache-1min', keyGenerator = JwtKeyGenerator)
-    synchronized protected CompletableFuture<JwtAuth> refreshJwtToken(String endpoint, JwtAuth auth) {
+    @Cacheable(cacheNames='cache-1min', keyGenerator = JwtKeyGenerator, atomic=true)
+    protected CompletableFuture<JwtAuth> refreshJwtToken(String endpoint, JwtAuth auth) {
         final body = "grant_type=refresh_token&refresh_token=${URLEncoder.encode(auth.refresh, 'UTF-8')}"
         final uri = refreshTokenEndpoint(endpoint)
         log.trace "Tower Refresh '$uri'"
