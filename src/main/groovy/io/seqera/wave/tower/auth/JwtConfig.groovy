@@ -48,12 +48,15 @@ class JwtConfig {
     Duration monitorInterval
 
     /**
-     * Determine the delay after the bootstrap, after which
+     * Determine the delay after which the JWT monitor service is launcher on boostrap
      */
     @Value('${wave.jwt.monitor.delay:5s}')
     Duration monitorDelay
 
-    @Value('${wave.jwt.monitor.count:10}')
+    /**
+     * Determine the number of JWT record that are processed in monitoring cycle
+     */
+    @Value('${wave.jwt.monitor.count:100}')
     int monitorCount
 
 }

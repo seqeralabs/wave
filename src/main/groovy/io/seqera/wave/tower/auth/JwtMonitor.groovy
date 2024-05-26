@@ -96,12 +96,12 @@ class JwtMonitor implements Runnable {
             log.debug "JWT record refresh ignored - $jwt"
             return
         }
-        // check that's a `createdAt` field (itr may be missing in legacy records)
+        // check that's a `createdAt` field (it may be missing in legacy records)
         if( !jwt.createdAt ) {
             log.warn "JWT record has no receivedAt timestamp - $jwt"
             return
         }
-        // i
+        // check if the JWT record is expired
         final deadline = jwt.createdAt + tokenConfig.cache.duration
         if( now > deadline ) {
             log.debug "JWT record expired - $jwt"
