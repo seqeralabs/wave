@@ -18,7 +18,9 @@ import io.micronaut.cache.interceptor.DefaultCacheKeyGenerator
 import io.micronaut.core.annotation.AnnotationMetadata
 import io.micronaut.core.annotation.Introspected
 /**
- * A with {@link CacheKeyGenerator} which includes the class and method method in the cache key
+ * A with {@link CacheKeyGenerator} that only includes the field {@link JwtAuth#endpoint},
+ * {@link JwtAuth#bearer} and {@link JwtAuth#refresh} when using {@link JwtAuth} class,
+ * and use default behavior for any other class.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
