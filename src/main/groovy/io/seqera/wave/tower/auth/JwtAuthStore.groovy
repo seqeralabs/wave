@@ -66,15 +66,26 @@ class JwtAuthStore extends AbstractCacheStore<JwtAuth> {
      * @return The "refreshed" {@link JwtAuth} object or {@code null} if cannot be found
      */
     JwtAuth refresh(JwtAuth auth) {
-        return auth && auth.refresh
-                ? this.get(JwtAuth.key(auth))
-                : null
+        final shouldRefresh = auth && auth.refresh
+        if( shouldRefresh ) {
+            final key = JwtAuth.key(auth)
+            final result = this.get(key)
+            if( log.isTraceEnabled() ) {
+                final msg = result!=null
+                    ? "JWT record found in store - key=$key; entry=$result"
+                    : "JWT record not found in store - key=$key; entry=$auth"
+                log.trace(msg)
+            }
+            return result
+        }
+        return auth
     }
 
     void store(String key, JwtAuth auth) {
-        final entry = auth.withUpdatedAt(Instant.now())
+        final now = Instant.now()
+        final entry = auth.withUpdatedAt(now)
         this.put(key, entry)
-        log.debug "JWT refreshing record key=$key; entry=$entry"
+        log.debug "JWT updating refreshed record - key=$key; entry=$entry"
     }
 
     boolean storeIfAbsent(String key, JwtAuth auth) {

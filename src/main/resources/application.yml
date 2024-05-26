@@ -3,10 +3,13 @@ micronaut:
   application:
     name: wave-app
   caches :
+    # IMPORTANT: use `expire-after-write` strategy to guarantee cached entries are not retained more than the declared period.
+    # Using `expire-after-read` can cause an entry to be retained in the cache more than expected if it is hit continuously
+    # with a frequency shorter than the declared cache period.
     cache-20sec:
-      expire-after-access: 20s
+      expire-after-write: 20s
     cache-1min:
-      expire-after-access: 1m
+      expire-after-write: 1m
     # Discovery client by default uses a cache for results. This is a transitive behaviour
     # introduced by prometheus and management dependencies and below line disables as
     # it is unused at the moment by the wave project. See https://micronaut-projects.github.io/micronaut-discovery-client/latest/guide/#introduction

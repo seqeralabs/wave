@@ -184,7 +184,7 @@ abstract class TowerConnector {
      *      A future of the unparsed response
      */
     private CompletableFuture<ProxyHttpResponse> sendAsync1(String endpoint, final URI uri, final JwtAuth auth, String msgId, final boolean canRefresh) {
-        // check the most updated JWT tokens
+        // check the most updated JWT token
         final JwtAuth tokens = jwtStore.refresh(auth) ?: auth
         log.trace "Tower GET '$uri' - can refresh=$canRefresh; msgId=$msgId; tokens=$tokens"
         // submit the request
@@ -196,7 +196,7 @@ abstract class TowerConnector {
         )
 
         final response = sendAsync(endpoint, request)
-        // when accessing unauthorised resources, refresh token is not needed
+        // when accessing unauthorised resources, token refresh is not needed
         if( !auth )
             return response
 
@@ -205,8 +205,8 @@ abstract class TowerConnector {
                     log.trace "Tower GET '$uri' response => msgId:$msgId; status: ${resp.status}; content: ${resp.body}"
                     if (resp.status == 401 && tokens.refresh && canRefresh) {
                         final refreshId = rndHex()
-                        return refreshJwtToken(endpoint, auth)
-                                .thenCompose((JwtAuth it) -> sendAsync1(endpoint, uri, auth, refreshId, false))
+                        return refreshJwtToken(endpoint, tokens)
+                                .thenCompose((JwtAuth it) -> sendAsync1(endpoint, uri, tokens, refreshId, false))
                     } else {
                         return CompletableFuture.completedFuture(resp)
                     }

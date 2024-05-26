@@ -49,11 +49,12 @@ class JwtTimeStore extends AbstractRangeStore {
         return 'tower-jwt-timestore/v1'
     }
 
+    void setRefreshTimer(String key) {
+        this.add(key, expireSecs0())
+    }
+
     private long expireSecs0() {
         Instant.now().epochSecond + jwtConfig.refreshInterval.toSeconds()
     }
 
-    void setRefreshTimer(String key) {
-        this.add(key, expireSecs0())
-    }
 }
