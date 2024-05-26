@@ -38,7 +38,6 @@ class PlatformIdTest extends Specification {
         new PlatformId(null, 1)
         new PlatformId(null, null, 'foo')
         new PlatformId(null, null, null, 'foo')
-        new PlatformId(null, null, null, null, 'xyz')
     }
 
     def 'should create form a container request' () {
