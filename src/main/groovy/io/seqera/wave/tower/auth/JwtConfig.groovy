@@ -34,16 +34,26 @@ import jakarta.inject.Singleton
 @ToString(includeNames = true, includePackage = false)
 class JwtConfig {
 
-    @Value('${tower.jwt.refresh.interval:30s}')
+    /**
+     * Determine the frequency of the JWT token refresh requests.
+     * This value should be shorter than the Platform JWT *refresh* token lifespan.
+     */
+    @Value('${wave.jwt.refresh.interval:30s}')
     Duration refreshInterval
 
-    @Value('${tower.jwt.heartbeat.interval:5s}')
-    Duration heartbeatInterval
+    /**
+     * Determine the frequency of the JWT status check made my Wave.
+     */
+    @Value('${wave.jwt.monitor.interval:5s}')
+    Duration monitorInterval
 
-    @Value('${tower.jwt.heartbeat.delay:5s}')
-    Duration heartbeatDelay
+    /**
+     * Determine the delay after the bootstrap, after which
+     */
+    @Value('${wave.jwt.monitor.delay:5s}')
+    Duration monitorDelay
 
-    @Value('${tower.jwt.heartbeat.count:10}')
-    int heartbeatCount
+    @Value('${wave.jwt.monitor.count:10}')
+    int monitorCount
 
 }

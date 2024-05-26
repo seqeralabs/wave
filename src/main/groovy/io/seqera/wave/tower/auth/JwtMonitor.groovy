@@ -29,13 +29,15 @@ import io.seqera.wave.tower.client.TowerClient
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 /**
+ * Implement a service that monitor JWT token record and
+ * periodically refresh them to avoid they expiry
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @Context
 @CompileStatic
-class JwtHeartbeat implements Runnable {
+class JwtMonitor implements Runnable {
 
     @Inject
     private JwtAuthStore authStore
@@ -50,7 +52,7 @@ class JwtHeartbeat implements Runnable {
     private JwtTimeStore jwtTimeStore
 
     @Inject
-    TaskScheduler scheduler
+    private TaskScheduler scheduler
 
     @Inject
     private JwtConfig jwtConfig
@@ -61,12 +63,12 @@ class JwtHeartbeat implements Runnable {
     @PostConstruct
     private init() {
         log.info "Creating JWT heartbeat - $jwtConfig"
-        scheduler.scheduleAtFixedRate(jwtConfig.heartbeatDelay, jwtConfig.heartbeatInterval, this)
+        scheduler.scheduleAtFixedRate(jwtConfig.monitorDelay, jwtConfig.monitorInterval, this)
     }
 
     void run() {
         final now = Instant.now()
-        final keys = jwtTimeStore.getRange(0, now.epochSecond, jwtConfig.heartbeatCount)
+        final keys = jwtTimeStore.getRange(0, now.epochSecond, jwtConfig.monitorCount)
         for( String it : keys ) {
             try {
                 check0(it, now)
