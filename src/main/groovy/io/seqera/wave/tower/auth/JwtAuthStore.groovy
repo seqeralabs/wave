@@ -38,7 +38,7 @@ import jakarta.inject.Singleton
 class JwtAuthStore extends AbstractCacheStore<JwtAuth> {
 
     @Inject
-    private JwtTimeStore jwtTimer
+    private JwtTimeStore jwtTimeStore
 
     JwtAuthStore(CacheProvider<String, String> provider) {
         super(provider, new MoshiEncodeStrategy<JwtAuth>() {})
@@ -104,7 +104,7 @@ class JwtAuthStore extends AbstractCacheStore<JwtAuth> {
                 .withUpdatedAt(now)
         if( super.putIfAbsent(auth.key, entry) ) {
             log.debug "JWT storing new record - $entry"
-            jwtTimer.setRefreshTimer(entry.key)
+            jwtTimeStore.setRefreshTimer(entry.key)
             return true
         }
         else
