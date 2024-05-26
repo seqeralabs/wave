@@ -106,14 +106,6 @@ class JwtAuth {
         return DigestFunctions.md5("${endpoint}:${token}")
     }
 
-    static String key(JwtAuth auth) {
-        return key(auth.endpoint, auth.bearer)
-    }
-
-    static String key(SubmitContainerTokenRequest req) {
-        return key(req.towerEndpoint, req.towerAccessToken)
-    }
-
     static JwtAuth of(PlatformId platformId) {
         new JwtAuth(
                 key(platformId.towerEndpoint, platformId.towerEndpoint),

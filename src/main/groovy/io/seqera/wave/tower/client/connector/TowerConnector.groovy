@@ -29,6 +29,7 @@ import java.util.function.Function
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpMethod
