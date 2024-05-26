@@ -47,7 +47,7 @@ class JwtHeartbeat implements Runnable {
     private TaskScheduler taskScheduler
 
     @Inject
-    private JwtTimer jwtTimer
+    private JwtTimeStore jwtTimeStore
 
     @Inject
     TaskScheduler scheduler
@@ -66,33 +66,49 @@ class JwtHeartbeat implements Runnable {
 
     void run() {
         final now = Instant.now()
-        final allKeys = jwtTimer.getRange(0, now.epochSecond, 10)
-        for( String key : allKeys ) {
-            // get the jwt info the given "timer" and refresh it
-            final jwt = authStore.get(key)
-            if( !jwt ) {
-                log.warn "JWT record not found for key - $jwt"
-                continue
+        final keys = jwtTimeStore.getRange(0, now.epochSecond, jwtConfig.heartbeatCount)
+        for( String it : keys ) {
+            try {
+                check0(it, now)
             }
-            if( !jwt.createdAt ) {
-                log.warn "JWT record has no receivedAt timestamp - $jwt"
-                continue
+            catch (InterruptedException e) {
+                Thread.interrupted()
             }
-            final deadline = jwt.createdAt + tokenConfig.cache.duration
-            if( now > deadline ) {
-                log.debug "JWT record expired - $jwt"
-                continue
-            }
-
-            if( jwt.refresh ) {
-                log.debug "JWT record refresh attempt - $jwt"
-                towerClient.userInfo(jwt.endpoint, jwt)
-                jwtTimer.setRefreshTimer(key)
-            }
-            else {
-                log.debug "JWT record refresh ignored - $jwt"
+            catch (Throwable t) {
+                log.error("Unexpected error in JWT heartbeat while processing key: $it", t)
             }
         }
+    }
+
+    protected void check0(String key, Instant now) {
+        log.trace "JWT checking record status for key: $key"
+
+        // get the jwt info the given "timer" and refresh it
+        final jwt = authStore.get(key)
+        if( !jwt ) {
+            log.warn "JWT record not found for key: $key"
+            return
+        }
+        // ignore record without an empty refresh field
+        if( !jwt.refresh ) {
+            log.debug "JWT record refresh ignored - $jwt"
+            return
+        }
+        // check that's a `createdAt` field (itr may be missing in legacy records)
+        if( !jwt.createdAt ) {
+            log.warn "JWT record has no receivedAt timestamp - $jwt"
+            return
+        }
+        // i
+        final deadline = jwt.createdAt + tokenConfig.cache.duration
+        if( now > deadline ) {
+            log.debug "JWT record expired - $jwt"
+            return
+        }
+
+        log.debug "JWT record refresh attempt - $jwt"
+        towerClient.userInfo(jwt.endpoint, jwt)
+        jwtTimeStore.setRefreshTimer(key)
     }
 
 }

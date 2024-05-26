@@ -18,41 +18,47 @@
 
 package io.seqera.wave.tower.auth
 
+import spock.lang.Specification
+
 import java.time.Instant
 
-import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
-import io.seqera.wave.memstore.range.AbstractRangeStore
-import io.seqera.wave.memstore.range.impl.RangeProvider
+import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import jakarta.inject.Inject
-import jakarta.inject.Singleton
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Slf4j
-@Singleton
-@CompileStatic
-class JwtTimer extends AbstractRangeStore {
+@MicronautTest
+class JwtTimeLocalTest extends Specification {
 
     @Inject
-    private JwtConfig jwtConfig
+    JwtTimeStore timer
 
-    JwtTimer(RangeProvider provider) {
-        super(provider)
+    def 'should add and get token timers' () {
+        given:
+        def now = Instant.now().epochSecond
+
+        expect:
+        timer.getRange(0, now, 10) == []
+
+        when:
+        timer.add('foo', now-1)
+        timer.add('bar', now-2)
+        then:
+        timer.getRange(0, now, 1) == ['bar']
+        timer.getRange(0, now, 1) == ['foo']
+        timer.getRange(0, now, 1) == []
+
+        when:
+        timer.add('foo', now+1)
+        timer.add('bar', now+2)
+        then:
+        timer.getRange(0, now, 1) == []
+        and:
+        timer.getRange(0, now+5, 5) == ['foo','bar']
+        and:
+        timer.getRange(0, now+5, 5) == []
     }
 
-    @Override
-    final protected String getKey() {
-        return 'tower-jwt-timerange'
-    }
-
-    protected long expireSecs() {
-        Instant.now().epochSecond + jwtConfig.refreshInterval.toSeconds()
-    }
-
-    void setRefreshTimer(String key) {
-        log.debug "JWT set refresh timer $key"
-        this.add(key, expireSecs())
-    }
 }

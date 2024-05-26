@@ -22,6 +22,7 @@ package io.seqera.wave.memstore.range
 import groovy.transform.CompileStatic
 import io.seqera.wave.memstore.range.impl.RangeProvider
 /**
+ * Abstract implementation for range set similar to Redis `zrange`
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

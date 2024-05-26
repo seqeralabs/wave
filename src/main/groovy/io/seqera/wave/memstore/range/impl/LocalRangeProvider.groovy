@@ -24,6 +24,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import jakarta.inject.Singleton
 /**
+ * Local based implementation for a range set
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

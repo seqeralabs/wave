@@ -28,6 +28,7 @@ import redis.clients.jedis.JedisPool
 import redis.clients.jedis.resps.Tuple
 
 /**
+ * Redis base implementation for range set
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

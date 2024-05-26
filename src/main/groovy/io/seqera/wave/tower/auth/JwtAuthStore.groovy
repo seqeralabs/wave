@@ -22,6 +22,7 @@ import java.time.Duration
 import java.time.Instant
 
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.cache.AbstractCacheStore
 import io.seqera.wave.service.cache.impl.CacheProvider
@@ -31,12 +32,13 @@ import jakarta.inject.Singleton
  * Implements storage for {@link JwtAuth} record
  *
  */
+@Slf4j
 @Singleton
 @CompileStatic
 class JwtAuthStore extends AbstractCacheStore<JwtAuth> {
 
     @Inject
-    private JwtTimer jwtTimer
+    private JwtTimeStore jwtTimer
 
     JwtAuthStore(CacheProvider<String, String> provider) {
         super(provider, new MoshiEncodeStrategy<JwtAuth>() {})
@@ -70,17 +72,20 @@ class JwtAuthStore extends AbstractCacheStore<JwtAuth> {
     }
 
     void store(String key, JwtAuth auth) {
-        this.put(key, auth.withUpdatedAt(Instant.now()))
+        final entry = auth.withUpdatedAt(Instant.now())
+        this.put(key, entry)
+        log.debug "JWT refreshing record key=$key; entry=$entry"
     }
 
     boolean storeIfAbsent(String key, JwtAuth auth) {
         // do not override the stored jwt token, because it may
         // may be newer than the one in the request
         final now = Instant.now()
-        final copy = auth
+        final entry = auth
                 .withCreatedAt(now)
                 .withUpdatedAt(now)
-        if( super.putIfAbsent(key, copy) ) {
+        if( super.putIfAbsent(key, entry) ) {
+            log.debug "JWT storing new record - key=$key; entry=$entry"
             jwtTimer.setRefreshTimer(key)
             return true
         }

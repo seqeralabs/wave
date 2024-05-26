@@ -43,4 +43,7 @@ class JwtConfig {
     @Value('${tower.jwt.heartbeat.delay:5s}')
     Duration heartbeatDelay
 
+    @Value('${tower.jwt.heartbeat.count:10}')
+    int heartbeatCount
+
 }

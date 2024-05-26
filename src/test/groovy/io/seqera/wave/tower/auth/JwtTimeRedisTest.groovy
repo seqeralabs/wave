@@ -30,12 +30,12 @@ import io.seqera.wave.test.RedisTestContainer
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class JwtTimerRedisTest extends Specification implements RedisTestContainer{
+class JwtTimeRedisTest extends Specification implements RedisTestContainer{
 
     @Shared
     ApplicationContext applicationContext
 
-    JwtTimer timer
+    JwtTimeStore timer
 
     def setup() {
         applicationContext = ApplicationContext.run([
@@ -43,7 +43,7 @@ class JwtTimerRedisTest extends Specification implements RedisTestContainer{
                 REDIS_PORT: redisPort
         ], 'test', 'redis')
         and:
-        timer = applicationContext.getBean(JwtTimer)
+        timer = applicationContext.getBean(JwtTimeStore)
     }
 
     def 'should add and get token timers' () {

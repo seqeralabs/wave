@@ -249,7 +249,6 @@ abstract class TowerConnector {
                     }
                     final cookies = resp.headers?['set-cookie'] ?: List.<String>of()
                     final newAuth = parseTokens(cookies, auth)
-                    log.debug "JWT storing refreshed record: $auth"
                     jwtStore.store(JwtAuth.key(auth), newAuth)
                     return newAuth
                 }

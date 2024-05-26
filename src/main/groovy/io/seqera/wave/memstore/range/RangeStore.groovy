@@ -18,6 +18,7 @@
 
 package io.seqera.wave.memstore.range
 /**
+ * Define the contract for a storage range set similar to Redis `zrange`
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
