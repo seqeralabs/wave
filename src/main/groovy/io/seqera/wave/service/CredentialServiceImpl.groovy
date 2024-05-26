@@ -24,7 +24,6 @@ import io.seqera.tower.crypto.AsymmetricCipher
 import io.seqera.tower.crypto.EncryptedPacket
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.tower.PlatformId
-import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.client.TowerClient
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -58,7 +57,7 @@ class CredentialServiceImpl implements CredentialsService {
         if (pairing.isExpired())
             log.debug("Exchange key registered for service ${PairingService.TOWER_SERVICE} at endpoint: ${identity.towerEndpoint} used after expiration, should be renewed soon")
 
-        final all = towerClient.listCredentials(identity.towerEndpoint, JwtAuth.of(identity), identity.workspaceId).get().credentials
+        final all = towerClient.listCredentials(identity.towerEndpoint, identity.accessToken, identity.workspaceId).get().credentials
 
         if (!all) {
             log.debug "No credentials found for userId=$identity.userId; workspaceId=$identity.workspaceId; endpoint=$identity.towerEndpoint"
@@ -87,7 +86,7 @@ class CredentialServiceImpl implements CredentialsService {
         // log for debugging purposes
         log.debug "Credentials matching criteria registryName=$registryName; userId=$identity.userId; workspaceId=$identity.workspaceId; endpoint=$identity.towerEndpoint => $creds"
         // now fetch the encrypted key
-        final encryptedCredentials = towerClient.fetchEncryptedCredentials(identity.towerEndpoint, JwtAuth.of(identity), creds.id, pairing.pairingId, identity.workspaceId).get()
+        final encryptedCredentials = towerClient.fetchEncryptedCredentials(identity.towerEndpoint, identity.accessToken, creds.id, pairing.pairingId, identity.workspaceId).get()
         final privateKey = pairing.privateKey
         final credentials = decryptCredentials(privateKey, encryptedCredentials.keys)
         return parsePayload(credentials)

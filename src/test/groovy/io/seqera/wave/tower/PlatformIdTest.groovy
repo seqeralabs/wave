@@ -54,7 +54,6 @@ class PlatformIdTest extends Specification {
         id.workspaceId == 100
         id.towerEndpoint == 'http://foo.com'
         id.accessToken == 'token-123'
-        id.refreshToken == 'refresh-123'
     }
 
     def 'should create form a inspect request' () {

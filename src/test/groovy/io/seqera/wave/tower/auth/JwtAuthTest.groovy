@@ -21,9 +21,6 @@ package io.seqera.wave.tower.auth
 import spock.lang.Specification
 
 import java.time.Instant
-
-import io.seqera.wave.api.SubmitContainerTokenRequest
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -99,7 +96,5 @@ class JwtAuthTest extends Specification {
         JwtAuth.key(endpoint,token) == KEY
         and:
         JwtAuth.key(new JwtAuth(endpoint, token)) == KEY
-        and:
-        JwtAuth.key(new SubmitContainerTokenRequest(towerAccessToken: token, towerEndpoint: endpoint)) == KEY
     }
 }

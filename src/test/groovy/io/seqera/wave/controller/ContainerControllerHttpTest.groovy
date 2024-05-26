@@ -40,7 +40,6 @@ import io.seqera.wave.service.pairing.PairingRecord
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.PairingServiceImpl
 import io.seqera.wave.tower.User
-import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.client.TowerClient
 import io.seqera.wave.tower.client.UserInfoResponse
 import jakarta.inject.Inject
@@ -91,10 +90,9 @@ class ContainerControllerHttpTest extends Specification {
         def endpoint = 'http://tower.nf'
         def token = '12345'
         def refresh = '2'
-        def auth = JwtAuth.of(endpoint, token, refresh)
         and:
         pairingService.getPairingRecord(TOWER_SERVICE, endpoint) >> { new PairingRecord('tower', endpoint) }
-        towerClient.userInfo(endpoint,auth) >> CompletableFuture.completedFuture(new UserInfoResponse(user:new User(id:1)))
+        towerClient.userInfo(endpoint, token) >> CompletableFuture.completedFuture(new UserInfoResponse(user:new User(id:1)))
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
@@ -114,10 +112,9 @@ class ContainerControllerHttpTest extends Specification {
         def endpoint = 'http://tower.nf'
         def token = 'foo'
         def refresh = 'foo2'
-        def auth = JwtAuth.of(endpoint, token, refresh)
         and:
         pairingService.getPairingRecord(TOWER_SERVICE, endpoint) >> { new PairingRecord('tower', endpoint) }
-        towerClient.userInfo(endpoint, auth) >> completeExceptionally(new HttpResponseException(401, "Auth error"))
+        towerClient.userInfo(endpoint, token) >> completeExceptionally(new HttpResponseException(401, "Auth error"))
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
@@ -276,10 +273,8 @@ class ContainerControllerHttpTest extends Specification {
         def token = '12345'
         def refresh = "2"
         and:
-        def auth = JwtAuth.of(endpoint, token, refresh)
-        and:
         pairingService.getPairingRecord(TOWER_SERVICE, endpoint) >> { new PairingRecord('tower', endpoint) }
-        towerClient.userInfo(endpoint, auth) >> CompletableFuture.completedFuture(new UserInfoResponse(user:new User(id:1)))
+        towerClient.userInfo(endpoint, token) >> CompletableFuture.completedFuture(new UserInfoResponse(user:new User(id:1)))
 
         and:
         def cfg = new ContainerConfig(workingDir: '/foo')

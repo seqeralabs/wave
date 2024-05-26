@@ -23,6 +23,7 @@ import java.time.Instant
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.cache.AbstractCacheStore
 import io.seqera.wave.service.cache.impl.CacheProvider
@@ -86,6 +87,12 @@ class JwtAuthStore extends AbstractCacheStore<JwtAuth> {
         final entry = auth.withUpdatedAt(now)
         this.put(key, entry)
         log.debug "JWT updating refreshed record - key=$key; entry=$entry"
+    }
+
+    boolean storeIfAbsent(SubmitContainerTokenRequest req) {
+        final key = JwtAuth.key(req.towerEndpoint, req.towerAccessToken)
+        final auth = JwtAuth.from(req)
+        return storeIfAbsent(key, auth)
     }
 
     boolean storeIfAbsent(String key, JwtAuth auth) {

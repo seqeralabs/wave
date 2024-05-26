@@ -97,10 +97,6 @@ class JwtAuth {
         return key(auth.endpoint, auth.bearer)
     }
 
-    static String key(SubmitContainerTokenRequest req) {
-        return key(req.towerEndpoint, req.towerAccessToken)
-    }
-
     static JwtAuth of(PlatformId platformId) {
         new JwtAuth(
                 platformId.towerEndpoint,

@@ -36,7 +36,6 @@ import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
-import io.seqera.wave.tower.auth.JwtAuth
 import jakarta.inject.Inject
 import static io.seqera.wave.util.ContainerHelper.patchPlatformEndpoint
 /**
@@ -93,7 +92,7 @@ class InspectController {
 
         // find out the user associated with the specified tower access token
         return userService
-                .getUserByAccessTokenAsync(registration.endpoint, JwtAuth.of(req))
+                .getUserByAccessTokenAsync(registration.endpoint, req.towerAccessToken)
                 .thenApply((User user) -> makeResponse(req, PlatformId.of(user,req)) )
 
     }

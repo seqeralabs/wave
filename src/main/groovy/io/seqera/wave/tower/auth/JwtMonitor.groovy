@@ -109,7 +109,7 @@ class JwtMonitor implements Runnable {
         }
 
         log.debug "JWT refresh request - entry=$entry; deadline=$deadline"
-        towerClient.userInfo(entry.endpoint, entry)
+        towerClient.userInfo(entry.endpoint, entry.bearer)
         jwtTimeStore.setRefreshTimer(key)
     }
 

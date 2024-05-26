@@ -29,6 +29,7 @@ import java.util.function.Function
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpMethod
@@ -95,8 +96,8 @@ abstract class TowerConnector {
      *      the type of the model to convert into
      * @return a future of T
      */
-    public <T> CompletableFuture<T> sendAsync(String endpoint, URI uri, JwtAuth auth, Class<T> type) {
-        return sendAsync0(endpoint, uri, auth, type, 1)
+    public <T> CompletableFuture<T> sendAsync(String endpoint, URI uri, String auth, Class<T> type) {
+        return sendAsync0(endpoint, uri, JwtAuth.of(endpoint, auth), type, 1)
     }
 
     protected ExponentialAttempt newAttempt(int attempt) {
@@ -221,7 +222,8 @@ abstract class TowerConnector {
      * @param refreshToken
      * @return
      */
-    protected CompletableFuture<JwtAuth> refreshJwtToken(String endpoint, JwtAuth auth) {
+    @Cacheable('cache-1min')
+    synchronized protected CompletableFuture<JwtAuth> refreshJwtToken(String endpoint, JwtAuth auth) {
         final body = "grant_type=refresh_token&refresh_token=${URLEncoder.encode(auth.refresh, 'UTF-8')}"
         final uri = refreshTokenEndpoint(endpoint)
         log.trace "Tower Refresh '$uri'"

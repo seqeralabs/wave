@@ -65,7 +65,6 @@ import io.seqera.wave.service.token.TokenData
 import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
-import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
 import io.seqera.wave.util.LongRndKey
@@ -189,13 +188,12 @@ class ContainerController {
 
         // store the jwt record only the very first time it has been
         // to avoid overridden a newer refresh token that may have 
-        final auth = JwtAuth.from(req)
-        if( auth.refresh )
-            jwtAuthStore.storeIfAbsent(JwtAuth.key(req), auth)
+        if( req.towerRefreshToken )
+            jwtAuthStore.storeIfAbsent(req)
 
         // find out the user associated with the specified tower access token
         return userService
-                .getUserByAccessTokenAsync(registration.endpoint, auth)
+                .getUserByAccessTokenAsync(registration.endpoint, req.towerAccessToken)
                 .thenApply((User user) -> handleRequest(httpRequest, req, PlatformId.of(user,req), v2))
     }
 
