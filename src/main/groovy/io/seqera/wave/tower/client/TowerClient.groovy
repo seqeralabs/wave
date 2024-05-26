@@ -46,25 +46,25 @@ class TowerClient {
         return connector.sendAsync(endpoint, uri, authorization, type)
     }
 
-    @Cacheable('cache-20sec')
+    @Cacheable(value = 'cache-20sec', atomic = true)
     CompletableFuture<ServiceInfoResponse> serviceInfo(String towerEndpoint) {
         final uri = serviceInfoEndpoint(towerEndpoint)
         return getAsync(uri, towerEndpoint, null, ServiceInfoResponse)
     }
 
-    @Cacheable('cache-20sec')
+    @Cacheable(value = 'cache-20sec', atomic = true)
     CompletableFuture<UserInfoResponse> userInfo(String towerEndpoint, String authorization) {
         final uri = userInfoEndpoint(towerEndpoint)
         return getAsync(uri, towerEndpoint, authorization, UserInfoResponse)
     }
 
-    @Cacheable('cache-20sec')
+    @Cacheable(value = 'cache-20sec', atomic = true)
     CompletableFuture<ListCredentialsResponse> listCredentials(String towerEndpoint, String authorization, Long workspaceId) {
         final uri = listCredentialsEndpoint(towerEndpoint, workspaceId)
         return getAsync(uri, towerEndpoint, authorization, ListCredentialsResponse)
     }
 
-    @Cacheable('cache-20sec')
+    @Cacheable(value = 'cache-20sec', atomic = true)
     CompletableFuture<GetCredentialsKeysResponse> fetchEncryptedCredentials(String towerEndpoint, String authorization, String credentialsId, String pairingId, Long workspaceId) {
         final uri = fetchCredentialsEndpoint(towerEndpoint, credentialsId, pairingId, workspaceId)
         return getAsync(uri, towerEndpoint, authorization, GetCredentialsKeysResponse)
