@@ -38,13 +38,13 @@ class JwtConfig {
      * Determine the frequency of the JWT token refresh requests.
      * This value should be shorter than the Platform JWT *refresh* token lifespan.
      */
-    @Value('${wave.jwt.refresh.interval:30s}')
+    @Value('${wave.jwt.refresh.interval:1h}')
     Duration refreshInterval
 
     /**
      * Determine the frequency of the JWT status check made my Wave.
      */
-    @Value('${wave.jwt.monitor.interval:5s}')
+    @Value('${wave.jwt.monitor.interval:1m}')
     Duration monitorInterval
 
     /**

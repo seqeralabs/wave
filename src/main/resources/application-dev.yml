@@ -14,6 +14,11 @@ wave:
   trace:
     slow-endpoint:
       duration: 1s
+  jwt:
+    refresh:
+      interval: '10s'
+    monitor:
+      interval: '5s'
 ---
 endpoints:
   metrics:
