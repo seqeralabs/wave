@@ -41,10 +41,10 @@ class TowerClient {
     @Inject
     private TowerConnector connector
 
-    protected <T> CompletableFuture<T> getAsync(URI uri, String endpoint, @Nullable JwtAuth auth, Class<T> type) {
+    protected <T> CompletableFuture<T> getAsync(URI uri, String endpoint, @Nullable JwtAuth authorization, Class<T> type) {
         assert uri, "Missing uri argument"
         assert endpoint, "Missing endpoint argument"
-        return connector.sendAsync(endpoint, uri, auth, type)
+        return connector.sendAsync(endpoint, uri, authorization, type)
     }
 
     @Cacheable('cache-20sec')
@@ -66,9 +66,9 @@ class TowerClient {
     }
 
     @Cacheable('cache-20sec')
-    CompletableFuture<GetCredentialsKeysResponse> fetchEncryptedCredentials(String towerEndpoint, JwtAuth authoriazation, String credentialsId, String pairingId, Long workspaceId) {
+    CompletableFuture<GetCredentialsKeysResponse> fetchEncryptedCredentials(String towerEndpoint, JwtAuth authorization, String credentialsId, String pairingId, Long workspaceId) {
         final uri = fetchCredentialsEndpoint(towerEndpoint, credentialsId, pairingId, workspaceId)
-        return getAsync(uri, towerEndpoint, authoriazation, GetCredentialsKeysResponse)
+        return getAsync(uri, towerEndpoint, authorization, GetCredentialsKeysResponse)
     }
 
     protected static URI fetchCredentialsEndpoint(String towerEndpoint, String credentialsId, String pairingId, Long workspaceId) {

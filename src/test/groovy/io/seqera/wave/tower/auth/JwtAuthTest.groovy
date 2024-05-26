@@ -40,7 +40,7 @@ class JwtAuthTest extends Specification {
                 now )
 
         expect:
-        auth.key() == 'jwt-ddc895f371f1bdd9b0be104ce093a61b'
+        auth.key() == 'ddc895f371f1bdd9b0be104ce093a61b'
 
         when:
         def auth2 = auth.withBearer('new-bearer')

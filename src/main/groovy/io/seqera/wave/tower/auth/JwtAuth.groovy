@@ -59,7 +59,7 @@ class JwtAuth {
     final Instant expiration
 
     final String key() {
-        return 'jwt-' + DigestFunctions.md5("${endpoint}:${token}")
+        return DigestFunctions.md5("${endpoint}:${token}")
     }
 
     JwtAuth withBearer(String value) {
