@@ -78,10 +78,10 @@ class ContainerControllerTest extends Specification {
     BuildConfig buildConfig
 
     @Inject
-    JwtAuthStore jwtStore
+    JwtAuthStore jwtAuthStore
 
     def setup() {
-        jwtStore.clear()
+        jwtAuthStore.clear()
     }
 
     def 'should create request data' () {

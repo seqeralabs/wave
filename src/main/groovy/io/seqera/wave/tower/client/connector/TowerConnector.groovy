@@ -60,7 +60,7 @@ import static io.seqera.wave.util.LongRndKey.rndHex
 abstract class TowerConnector {
 
     @Inject
-    private JwtAuthStore jwtStore
+    private JwtAuthStore jwtAuthStore
 
     @Value('${wave.pairing.channel.maxAttempts:6}')
     private int maxAttempts
@@ -186,7 +186,7 @@ abstract class TowerConnector {
      */
     private CompletableFuture<ProxyHttpResponse> sendAsync1(String endpoint, final URI uri, final JwtAuth auth, String msgId, final boolean canRefresh) {
         // check the most updated JWT token
-        final JwtAuth tokens = jwtStore.refresh(auth) ?: auth
+        final JwtAuth tokens = jwtAuthStore.refresh(auth) ?: auth
         log.trace "Tower GET '$uri' - can refresh=$canRefresh; msgId=$msgId; tokens=$tokens"
         // submit the request
         final request = new ProxyHttpRequest(
@@ -251,7 +251,7 @@ abstract class TowerConnector {
                     }
                     final cookies = resp.headers?['set-cookie'] ?: List.<String>of()
                     final newAuth = parseTokens(cookies, auth)
-                    jwtStore.store(newAuth)
+                    jwtAuthStore.store(newAuth)
                     return newAuth
                 }
 
