@@ -43,11 +43,11 @@ class JwtKeyGenerator implements CacheKeyGenerator {
         for( int i=0; i<params.length; i++ ) {
             final it = params[i]
             if( it instanceof JwtAuth ) {
-                final jwt = it as JwtAuth
+                final auth = it as JwtAuth
                 final fields = new ArrayList(10)
-                fields.add(jwt.endpoint)
-                fields.add(jwt.bearer)
-                fields.add(jwt.refresh)
+                fields.add(auth.endpoint)
+                fields.add(auth.bearer)
+                fields.add(auth.refresh)
                 result[i] = fields.join('.')
             }
             else {

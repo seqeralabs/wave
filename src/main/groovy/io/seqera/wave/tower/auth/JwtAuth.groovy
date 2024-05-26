@@ -37,6 +37,9 @@ import static io.seqera.wave.util.StringUtils.trunc
 @CompileStatic
 class JwtAuth {
 
+    /**
+     * Unique JWT token identifier
+     */
     final String key
 
     /**

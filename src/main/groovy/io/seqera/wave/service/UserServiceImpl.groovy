@@ -50,7 +50,7 @@ class UserServiceImpl implements UserService {
         if( !towerClient )
             throw new IllegalStateException("Missing Tower client - make sure the 'tower' micronaut environment has been provided")
 
-        towerClient.userInfo(endpoint,auth).handle( (UserInfoResponse resp, Throwable error) -> {
+        towerClient.userInfo(endpoint, auth).handle( (UserInfoResponse resp, Throwable error) -> {
             if( error )
                 throw error
             if (!resp || !resp.user)
