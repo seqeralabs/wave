@@ -189,7 +189,7 @@ class ContainerController {
 
         // store the jwt record only the very first time it has been
         // to avoid overridden a newer refresh token that may have 
-        final auth = JwtAuth.from(req)
+        final auth = JwtAuth.of(req)
         if( auth.refresh )
             jwtAuthStore.storeIfAbsent(auth)
 

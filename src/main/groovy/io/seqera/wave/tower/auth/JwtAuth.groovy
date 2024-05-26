@@ -108,7 +108,7 @@ class JwtAuth {
 
     static JwtAuth of(PlatformId platformId) {
         new JwtAuth(
-                key(platformId.towerEndpoint, platformId.towerEndpoint),
+                key(platformId.towerEndpoint, platformId.accessToken),
                 platformId.towerEndpoint,
                 platformId.accessToken,
                 platformId.refreshToken,
@@ -130,7 +130,7 @@ class JwtAuth {
                 refresh)
     }
 
-    static JwtAuth from(SubmitContainerTokenRequest req) {
+    static JwtAuth of(SubmitContainerTokenRequest req) {
         return new JwtAuth(
                 key(req.towerEndpoint,req.towerAccessToken),
                 req.towerEndpoint,
