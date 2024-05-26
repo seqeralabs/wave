@@ -26,6 +26,7 @@ import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.tower.User
+import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.client.TowerClient
 import io.seqera.wave.tower.client.UserInfoResponse
 import jakarta.inject.Inject
@@ -54,12 +55,12 @@ class UserServiceTest extends Specification {
         given:
         def endpoint = "https://foo.com/tower"
         def token = "a valid token"
-
+        def auth = JwtAuth.from(endpoint, token)
 
         when: // a valid token
-        def user = service.getUserByAccessToken(endpoint,token)
+        def user = service.getUserByAccessToken(endpoint, auth)
         then:
-        1 * client.userInfo(endpoint,token) >> CompletableFuture.completedFuture(new UserInfoResponse(user:new User(id: 1)))
+        1 * client.userInfo(endpoint,auth) >> CompletableFuture.completedFuture(new UserInfoResponse(user:new User(id: 1)))
         and:
         user.id == 1
 
@@ -69,11 +70,12 @@ class UserServiceTest extends Specification {
         given:
         def endpoint = "https://foo.com/tower"
         def token = "a invalid token"
+        def auth = JwtAuth.from(endpoint, token)
 
         when: // an invalid token
-        service.getUserByAccessToken(endpoint,token)
+        service.getUserByAccessToken(endpoint,auth)
         then:
-        1 * client.userInfo(endpoint,token) >> completeExceptionally(new HttpResponseException(401, "Auth error"))
+        1 * client.userInfo(endpoint,auth) >> completeExceptionally(new HttpResponseException(401, "Auth error"))
         and:
         def exp = thrown(HttpResponseException)
         exp.statusCode().code == 401

@@ -32,7 +32,6 @@ import static io.seqera.wave.util.StringUtils.trunc
 @Canonical
 class JwtAuth {
 
-
     /**
      * The target endpoint
      */
@@ -97,4 +96,7 @@ class JwtAuth {
                 req.towerAccessToken )
     }
 
+    static JwtAuth from(String endpoint, String token) {
+        new JwtAuth(endpoint, token, token)
+    }
 }

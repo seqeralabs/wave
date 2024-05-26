@@ -57,8 +57,8 @@ class JwtTimerRedisTest extends Specification implements RedisTestContainer{
         timer.add('foo', now-1)
         timer.add('bar', now-2)
         then:
-        timer.getRange(0, now, 1) == ['foo']
         timer.getRange(0, now, 1) == ['bar']
+        timer.getRange(0, now, 1) == ['foo']
         timer.getRange(0, now, 1) == []
 
         when:
