@@ -126,4 +126,19 @@ class JwtAuthTest extends Specification {
         and:
         JwtAuth.of(new SubmitContainerTokenRequest(towerEndpoint: endpoint, towerAccessToken: token)).key == KEY
     }
+
+    def 'should validate equals and hashcode' () {
+        given:
+        def now = Instant.now()
+        def j1 = new JwtAuth('1', '2', '3', '4', now, now)
+        def j2 = new JwtAuth('1', '2', '3', '4', now, now)
+        def j3 =  new JwtAuth('X', '2', '3', '4', now, now)
+
+        expect:
+        j1 == j2
+        j1 != j3 
+        and:
+        j1.hashCode() == j2.hashCode()
+        j1.hashCode() != j3.hashCode()
+    }
 }

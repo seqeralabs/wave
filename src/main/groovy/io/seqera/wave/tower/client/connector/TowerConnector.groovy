@@ -26,10 +26,12 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.function.Function
 
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
+import com.google.common.cache.LoadingCache
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpMethod
@@ -81,6 +83,18 @@ abstract class TowerConnector {
     @Inject
     @Named(TaskExecutors.IO)
     private volatile ExecutorService ioExecutor
+
+    private CacheLoader<JwtRefreshParams, CompletableFuture<JwtAuth>> loader = new CacheLoader<JwtRefreshParams, CompletableFuture<JwtAuth>>() {
+        @Override
+        CompletableFuture<JwtAuth> load(JwtRefreshParams params) throws Exception {
+            return refreshJwtToken0(params.endpoint, params.auth)
+        }
+    }
+
+    private LoadingCache<JwtRefreshParams, CompletableFuture<JwtAuth>> refreshCache = CacheBuilder<JwtRefreshParams, CompletableFuture<JwtAuth>>
+            .newBuilder()
+            .expireAfterWrite(1, TimeUnit.MINUTES)
+            .build(loader)
 
     /**
      * Generic async get with authorization
@@ -215,18 +229,20 @@ abstract class TowerConnector {
     }
 
     /**
-     * POST request to refresh the authToken
+     * POST request to refresh the client JWT refresh token
      *
-     * @param endpoint
-     * @param originalAuthToken used as a key for the token service
-     * @param refreshToken
-     * @return
+     * @param endpoint The target endpoint
+     * @param auth A {@link JwtAuth} object holding the JWT access and refresh token
+     * @return The refreshed {@link JwtAuth} object
      */
-    @Cacheable(cacheNames='cache-1min', atomic=true)
     protected CompletableFuture<JwtAuth> refreshJwtToken(String endpoint, JwtAuth auth) {
+        return refreshCache.get(new JwtRefreshParams(endpoint,auth))
+    }
+
+    protected CompletableFuture<JwtAuth> refreshJwtToken0(String endpoint, JwtAuth auth) {
         final body = "grant_type=refresh_token&refresh_token=${URLEncoder.encode(auth.refresh, 'UTF-8')}"
         final uri = refreshTokenEndpoint(endpoint)
-        log.trace "Tower Refresh '$uri'"
+        log.trace "Tower Refresh '$uri' request; auth=$auth"
 
         final msgId = rndHex()
         final request = new ProxyHttpRequest(
