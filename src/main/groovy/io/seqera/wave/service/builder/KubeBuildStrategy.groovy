@@ -73,7 +73,7 @@ class KubeBuildStrategy extends BuildStrategy {
     @Inject
     private RegistryProxyService proxyService
 
-    protected String jobName(BuildRequest req) {
+    protected String getName(BuildRequest req) {
         return "build-${req.buildId}".toString().replace('_', '-')
     }
 
@@ -98,11 +98,11 @@ class KubeBuildStrategy extends BuildStrategy {
         try {
             final buildImage = getBuildImage(req)
             final buildCmd = launchCmd(req)
-            final name = jobName(req)
+            final name = getName(req)
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
             final spackCfg0 = req.isSpackBuild ? spackConfig : null
             final pod = launchContainerBuild(name, buildImage, buildCmd, req, configFile, spackCfg0, selector)
-            final terminated = k8sService.waitPod(pod, name, buildConfig. buildTimeout.toMillis())
+            final terminated = k8sService.waitPod(pod, name, buildConfig.buildTimeout.toMillis())
             final stdout = k8sService.logsPod(pod.metadata.name, name)
             if( terminated ) {
                 final digest = proxyService.getImageDigest(req.targetImage)
@@ -132,7 +132,7 @@ class KubeBuildStrategy extends BuildStrategy {
     @Override
     void cleanup(BuildRequest req) {
         super.cleanup(req)
-        final name = jobName(req)
+        final name = getName(req)
         try {
             if( req.formatDocker() )
                 k8sService.deleteJob(name)
@@ -140,13 +140,13 @@ class KubeBuildStrategy extends BuildStrategy {
                 k8sService.deletePod(name)
         }
         catch (Exception e) {
-            log.warn ("Unable to delete job=$name - cause: ${e.message ?: e}", e)
+            log.warn ("Unable to delete job or pod with name=$name - cause: ${e.message ?: e}", e)
         }
     }
 
     protected V1Pod  launchContainerBuild(String name, String buildImage, List<String> buildCmd, BuildRequest req, Path configFile, SpackConfig spackConfig, Map<String,String> nodeSelector){
         if(req.formatSingularity()) {
-            return k8sService.buildContainer(name, buildImage, buildCmd, req.workDir, configFile, spackConfig, nodeSelector)
+            return k8sService.buildPod(name, buildImage, buildCmd, req.workDir, configFile, spackConfig, nodeSelector)
         }else {
             final job = k8sService.buildJob(name, buildImage, buildCmd, req.workDir, configFile, spackConfig, nodeSelector)
             final podList = k8sService.waitJob(job, buildConfig. buildTimeout.toMillis())
