@@ -134,7 +134,10 @@ class KubeBuildStrategy extends BuildStrategy {
         super.cleanup(req)
         final name = jobName(req)
         try {
-            k8sService.deleteJob(name)
+            if( req.formatDocker() )
+                k8sService.deleteJob(name)
+            else
+                k8sService.deletePod(name)
         }
         catch (Exception e) {
             log.warn ("Unable to delete job=$name - cause: ${e.message ?: e}", e)
