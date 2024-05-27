@@ -146,7 +146,7 @@ class KubeBuildStrategy extends BuildStrategy {
 
     protected V1Pod  launchContainerBuild(String name, String buildImage, List<String> buildCmd, BuildRequest req, Path configFile, SpackConfig spackConfig, Map<String,String> nodeSelector){
         if(req.formatSingularity()) {
-            return k8sService.buildPod(name, buildImage, buildCmd, req.workDir, configFile, spackConfig, nodeSelector)
+            return k8sService.buildContainer(name, buildImage, buildCmd, req.workDir, configFile, spackConfig, nodeSelector)
         }else {
             final job = k8sService.buildJob(name, buildImage, buildCmd, req.workDir, configFile, spackConfig, nodeSelector)
             final podList = k8sService.waitJob(job, buildConfig. buildTimeout.toMillis())
