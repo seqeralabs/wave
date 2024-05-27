@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.function.Function
 
+import com.google.common.cache.Cache
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
@@ -95,6 +96,11 @@ abstract class TowerConnector {
             .newBuilder()
             .expireAfterWrite(1, TimeUnit.MINUTES)
             .build(loader)
+
+    /** Only for testing - do not use */
+    Cache<JwtRefreshParams, CompletableFuture<JwtAuth>> refreshCache0() {
+        return refreshCache
+    }
 
     /**
      * Generic async get with authorization

@@ -126,10 +126,14 @@ class TowerClientHttpTest extends Specification{
     @Inject
     CacheManager cacheManager
 
+    @Inject
+    TowerConnector towerConnector
+
     def setup() {
         jwtAuthStore.clear()
         cacheManager.getCache("cache-1min").invalidateAll()
         cacheManager.getCache("cache-20sec").invalidateAll()
+        towerConnector.refreshCache0().invalidateAll()
     }
 
     private String getHostName() {
