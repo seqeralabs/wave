@@ -77,7 +77,7 @@ graalvmNative {
             configurationFileDirectories.from(file('conf'))
 
             if (System.env.getOrDefault("PLATFORM", "") == "linux-x86_64") {
-                buildArgs(['--static', '--libc=musl', '--gc=G1'])
+                buildArgs(['--static', '--libc=musl', '--gc=G1', '-march=compatibility'])
             }
 
             javaLauncher = javaToolchains.launcherFor {
