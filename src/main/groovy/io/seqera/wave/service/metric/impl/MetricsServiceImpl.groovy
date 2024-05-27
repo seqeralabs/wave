@@ -47,17 +47,17 @@ class MetricsServiceImpl implements MetricsService {
 
     @Override
     Long getBuildsMetrics(String date, String org) {
-        return metricsCounterStore.get(getKey(MetricConstants.PREFIX_BUILDS, date, org)) ?: 0
+        return metricsCounterStore.get(getKey(MetricConstants.PREFIX_BUILDS, date, org)) ?: 0L
     }
 
     @Override
     Long getPullsMetrics(String date, String org) {
-        return metricsCounterStore.get(getKey(MetricConstants.PREFIX_PULLS, date, org)) ?: 0
+        return metricsCounterStore.get(getKey(MetricConstants.PREFIX_PULLS, date, org)) ?: 0L
     }
 
     @Override
     Long getFusionPullsMetrics(String date, String org) {
-        return metricsCounterStore.get(getKey(MetricConstants.PREFIX_FUSION, date, org)) ?: 0
+        return metricsCounterStore.get(getKey(MetricConstants.PREFIX_FUSION, date, org)) ?: 0L
     }
 
     @Override
