@@ -114,7 +114,7 @@ abstract class TowerConnector {
     protected <T> CompletableFuture<T> sendAsync0(String endpoint, URI uri, String authorization, Class<T> type, int attempt0) {
         final msgId = rndHex()
         final attempt = newAttempt(attempt0)
-        // note: use a local variable for the executor, othereise it will fail to reference the `ioExecutor` in the closure
+        // note: use a local variable for the executor, otherwise it will fail to reference the `ioExecutor` in the closure
         final exec0 = this.ioExecutor
         return sendAsync1(endpoint, uri, authorization, msgId, true)
                 .thenCompose { resp ->
@@ -130,9 +130,7 @@ abstract class TowerConnector {
                         default:
                             def body = resp.body
                             def msg = "Unexpected status code ${resp.status} while accessing Tower resource: $uri"
-                            if (body)
-                                msg += " - response: ${body}"
-                            throw new HttpResponseException(resp.status, msg)
+                            throw new HttpResponseException(resp.status, msg, body)
                     }
                 }
                 .exceptionallyCompose((Throwable err)-> {
@@ -239,11 +237,15 @@ abstract class TowerConnector {
 
         return sendAsync(endpoint, request)
                 .thenApply { resp ->
-                    log.trace "Tower Refresh '$uri' response; msgId=${msgId}\n- status : ${resp.status}\n- headers: ${RegHelper.dumpHeaders(resp.headers)}\n- content: ${resp.body}"
-                    if ( !resp || resp.status >= 400 ) {
-                        def msg = "Unexpected Tower response refreshing JWT token"
-                        if( resp ) msg += " [${resp.status}]"
+                    if( resp==null )
+                        throw new HttpResponseException(500, "Missing Tower response refreshing JWT token: ${request.uri}")
+                    if ( resp.status >= 400 ) {
+                        log.debug "Tower Refresh '$uri' response; msgId=${msgId}\n- status : ${resp.status}\n- headers: ${RegHelper.dumpHeaders(resp.headers)}\n- content: ${resp.body}"
+                        final msg = "Unexpected Tower response refreshing JWT token: ${request.uri}"
                         throw new HttpResponseException(resp.status, msg, resp.body)
+                    }
+                    else if( log.isTraceEnabled() ) {
+                        log.trace "Tower Refresh '$uri' response; msgId=${msgId}\n- status : ${resp.status}\n- headers: ${RegHelper.dumpHeaders(resp.headers)}\n- content: ${resp.body}"
                     }
                     final cookies = resp.headers?['set-cookie'] ?: []
                     final jwtAuth = parseTokens(cookies, refreshToken)

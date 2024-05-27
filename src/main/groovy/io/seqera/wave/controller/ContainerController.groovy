@@ -20,7 +20,6 @@ package io.seqera.wave.controller
 
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutorService
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
@@ -70,17 +69,15 @@ import io.seqera.wave.tower.User
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
 import io.seqera.wave.util.LongRndKey
-import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
-import jakarta.inject.Named
 import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
-import static io.seqera.wave.WaveDefault.TOWER
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
-import static io.seqera.wave.util.ContainerHelper.makeContainerId
+import static io.seqera.wave.util.ContainerHelper.checkContainerSpec
 import static io.seqera.wave.util.ContainerHelper.condaFileFromRequest
 import static io.seqera.wave.util.ContainerHelper.containerFileFromPackages
 import static io.seqera.wave.util.ContainerHelper.decodeBase64OrFail
+import static io.seqera.wave.util.ContainerHelper.makeContainerId
 import static io.seqera.wave.util.ContainerHelper.makeResponseV1
 import static io.seqera.wave.util.ContainerHelper.makeResponseV2
 import static io.seqera.wave.util.ContainerHelper.makeTargetImage
@@ -88,6 +85,8 @@ import static io.seqera.wave.util.ContainerHelper.patchPlatformEndpoint
 import static io.seqera.wave.util.ContainerHelper.spackFileFromRequest
 import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
 import static java.util.concurrent.CompletableFuture.completedFuture
+import static io.seqera.wave.service.pairing.PairingService.TOWER_SERVICE
+
 /**
  * Implement a controller to receive container token requests
  * 
@@ -149,10 +148,6 @@ class ContainerController {
     @Inject
     ContainerInclusionService inclusionService
 
-    @Inject
-    @Named(TaskExecutors.IO)
-    ExecutorService ioExecutor
-
     @PostConstruct
     private void init() {
         log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl; default-build-repo: $buildConfig.defaultBuildRepository; default-cache-repo: $buildConfig.defaultCacheRepository; default-public-repo: $buildConfig.defaultPublicRepository"
@@ -173,14 +168,15 @@ class ContainerController {
     }
 
     protected CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getContainerImpl(HttpRequest httpRequest, SubmitContainerTokenRequest req, boolean v2) {
+        // patch platform endpoint
+        req.towerEndpoint = patchPlatformEndpoint(req.towerEndpoint)
+
+        // validate request
         validateContainerRequest(req)
 
         // this is needed for backward compatibility with old clients
         if( !req.towerEndpoint ) {
             req.towerEndpoint = towerEndpointUrl
-        }
-        else {
-            req.towerEndpoint = patchPlatformEndpoint(req.towerEndpoint)
         }
 
         // anonymous access
@@ -188,17 +184,17 @@ class ContainerController {
             return completedFuture(handleRequest(httpRequest, req, PlatformId.NULL, v2))
         }
 
-        // We first check if the service is registered
-        final registration = pairingService.getPairingRecord(PairingService.TOWER_SERVICE, req.towerEndpoint)
+        // first check if the service is registered
+        final registration = pairingService.getPairingRecord(TOWER_SERVICE, req.towerEndpoint)
         if( !registration )
-            throw new BadRequestException("Tower instance '${req.towerEndpoint}' has not enabled to connect Wave service '$serverUrl'")
+            throw new BadRequestException("Missing pairing record for Tower endpoint '$req.towerEndpoint'")
 
         // store the tower JWT tokens
         jwtAuthStore.putJwtAuth(req.towerEndpoint, req.towerRefreshToken, req.towerAccessToken)
         // find out the user associated with the specified tower access token
         return userService
                 .getUserByAccessTokenAsync(registration.endpoint, req.towerAccessToken)
-                .thenApplyAsync({ User user -> handleRequest(httpRequest, req, PlatformId.of(user,req), v2) }, ioExecutor)
+                .thenApply((User user) -> handleRequest(httpRequest, req, PlatformId.of(user,req), v2))
     }
 
     protected HttpResponse<SubmitContainerTokenResponse> handleRequest(HttpRequest httpRequest, SubmitContainerTokenRequest req, PlatformId identity, boolean v2) {
@@ -212,10 +208,19 @@ class ContainerController {
             throw new BadRequestException("Attribute `spackFile` is deprecated - use `packages` instead")
         if( !v2 && req.packages )
             throw new BadRequestException("Attribute `packages` is not allowed")
-        if( !v2 && req.containerFile && req.freeze && (!req.buildRepository || req.buildRepository==buildConfig.defaultPublicRepository) )
-            throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode")
         if( !v2 && req.nameStrategy )
             throw new BadRequestException("Attribute `nameStrategy` is not allowed by legacy container endpoint")
+
+        // prevent the use of container file and freeze without a custom build repository
+        if( req.containerFile && req.freeze && !isCustomRepo0(req.buildRepository) && (!v2 || (v2 && !req.packages)))
+            throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode [1]")
+
+        // prevent the use of container image and freeze without a custom build repository
+        if( req.containerImage && req.freeze && !isCustomRepo0(req.buildRepository) )
+            throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode [2]")
+
+        if( v2 && req.packages && req.freeze && !isCustomRepo0(req.buildRepository) && !buildConfig.defaultPublicRepository )
+            throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode [3]")
 
         if( v2 && req.packages ) {
             // generate the container file required to assemble the container
@@ -238,6 +243,18 @@ class ContainerController {
         return HttpResponse.ok(resp)
     }
 
+    protected boolean isCustomRepo0(String repo) {
+        if( !repo )
+            return false
+        if( buildConfig.defaultPublicRepository && repo.startsWith(buildConfig.defaultPublicRepository) )
+            return false
+        if( buildConfig.defaultBuildRepository && repo.startsWith(buildConfig.defaultBuildRepository) )
+            return false
+        if( buildConfig.defaultCacheRepository && repo.startsWith(buildConfig.defaultCacheRepository) )
+            return false
+        return true
+    }
+
     protected void storeContainerRequest0(SubmitContainerTokenRequest req, ContainerRequestData data, TokenData token, String target, String ip) {
         try {
             final recrd = new WaveContainerRecord(req, data, target, ip, token.expiration)
@@ -248,14 +265,33 @@ class ContainerController {
         }
     }
 
-    protected String publicRepo(SubmitContainerTokenRequest req) {
+    protected String targetRepo(String repo, ImageNameStrategy strategy) {
+        assert repo, 'Missing default public repository setting'
+        // ignore everything that's not a public (community) repo
         if( !buildConfig.defaultPublicRepository )
-            return null
-        if( buildConfig.defaultPublicRepository.contains('/') )
-            return buildConfig.defaultPublicRepository
-        return !req.nameStrategy || req.nameStrategy==ImageNameStrategy.imageSuffix
-                ? StringUtils.pathConcat(buildConfig.defaultPublicRepository, 'library')
-                : StringUtils.pathConcat(buildConfig.defaultPublicRepository, 'library/build')
+            return repo
+        if( !repo.startsWith(buildConfig.defaultPublicRepository) )
+            return repo
+
+        // check if the repository does use any reserved word
+        final parts = repo.tokenize('/')
+        if( parts.size()>1 && buildConfig.reservedWords ) {
+            for( String it : parts[1..-1] ) {
+                if( buildConfig.reservedWords.contains(it) )
+                    throw new BadRequestException("Use of repository '$repo' is not allowed")
+            }
+        }
+
+        // the repository is fully qualified use as it is
+        if( parts.size()>1 ) {
+            return repo
+        }
+
+        else {
+            // consider strategy==null the same as 'imageSuffix' considering this is only going to be applied
+            // to community registry which only allows build with Packages spec
+            return repo + (strategy==null || strategy==ImageNameStrategy.imageSuffix ? '/library' : '/library/build')
+        }
     }
 
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
@@ -271,7 +307,9 @@ class ContainerController {
         final spackContent = spackFileFromRequest(req)
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
-        final buildRepository = req.buildRepository ?: (req.freeze && publicRepo(req) ? publicRepo(req) : buildConfig.defaultBuildRepository)
+        final buildRepository = targetRepo( req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository
+                ? buildConfig.defaultPublicRepository
+                : buildConfig.defaultBuildRepository), req.nameStrategy)
         final cacheRepository = req.cacheRepository ?: buildConfig.defaultCacheRepository
         final configJson = dockerAuthService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
         final containerConfig = req.freeze ? req.containerConfig : null
@@ -279,7 +317,12 @@ class ContainerController {
         final scanId = scanEnabled && format==DOCKER ? LongRndKey.rndHex() : null
         final containerFile = spackContent ? prependBuilderTemplate(containerSpec,format) : containerSpec
         // use 'imageSuffix' strategy by default for public repo images
-        final nameStrategy = req.nameStrategy==null && buildRepository && buildConfig.defaultPublicRepository && buildRepository.startsWith(buildConfig.defaultPublicRepository) ? ImageNameStrategy.imageSuffix : null
+        final nameStrategy = req.nameStrategy==null
+                && buildRepository
+                && buildConfig.defaultPublicRepository
+                && buildRepository.startsWith(buildConfig.defaultPublicRepository) ? ImageNameStrategy.imageSuffix : null
+
+        checkContainerSpec(containerSpec)
 
         // create a unique digest to identify the build request
         final containerId = makeContainerId(containerFile, condaContent, spackContent, platform, buildRepository, req.buildContext)
@@ -332,8 +375,6 @@ class ContainerController {
             throw new BadRequestException("Attributes 'containerImage' and 'containerFile' cannot be used in the same request")
         if( req.containerImage?.contains('@sha256:') && req.containerConfig && !req.freeze )
             throw new BadRequestException("Container requests made using a SHA256 as tag does not support the 'containerConfig' attribute")
-        if( req.freeze && !req.buildRepository && !buildConfig.defaultPublicRepository )
-            throw new BadRequestException("When freeze mode is enabled the target build repository must be specified - see 'wave.build.repository' setting")
         if( req.formatSingularity() && !req.freeze )
             throw new BadRequestException("Singularity build is only allowed enabling freeze mode - see 'wave.freeze' setting")
 
@@ -408,12 +449,6 @@ class ContainerController {
     }
 
     void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException{
-        if( req.towerEndpoint && req.towerAccessToken ) {
-            // check the endpoint has been registered via the pairing process
-            if( !pairingService.getPairingRecord(TOWER, req.towerEndpoint) )
-                throw new BadRequestException("Missing pairing record for Tower endpoint '$req.towerEndpoint'")
-        }
-
         String msg
         // check valid image name
         msg = validationService.checkContainerName(req.containerImage)

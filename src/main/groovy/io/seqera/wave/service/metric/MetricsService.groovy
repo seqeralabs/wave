@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.metric
 
+import io.seqera.wave.service.metric.model.GetOrgCountResponse
 import io.seqera.wave.tower.PlatformId
 /**
  * Defines the interface to store and retrieve wave metrics
@@ -72,4 +73,12 @@ interface MetricsService {
      * @param seqera platform id
      */
     void incrementPullsCounter(PlatformId platformId)
+
+    /**
+     * Get counts of all organisations
+     *
+     * @param metric
+     * @return GetOrgCountResponse
+     */
+    GetOrgCountResponse getOrgCount(String metric)
 }

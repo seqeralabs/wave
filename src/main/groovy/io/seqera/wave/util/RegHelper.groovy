@@ -110,7 +110,9 @@ class RegHelper {
     }
 
     static String dumpHeaders(Map<String, List<String>> headers) {
-        def result = new StringBuilder()
+        if( !headers )
+            null
+        final result = new StringBuilder()
         for( Map.Entry<String,List<String>> entry : headers )  {
             for( String val : entry.value )
                 result.append("\n  $entry.key=$val")

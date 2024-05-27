@@ -46,13 +46,32 @@ The Wave service implements API rate limits for API calls. Authenticated users h
 
 If an access token is provided, the following rate limits apply:
 
-- 100 container images per hour
-- 1,000 container images per minute
+- 100 container builds per hour
+- 1,000 container pulls per minute
 
 If an access token isn't provided, the following rate limits apply:
 
 - 25 container builds per day
 - 250 container pulls per hour
+
+## Known limitation
+
+### Use of sha256 digest in the image name
+
+The Wave does not support the use of sha256 digest in the image name, e.g. `ubuntu@sha256:3235...ce8f`, when using
+the augmentation process to extend container images.
+
+In order to reference a container via sha256 digest in the image name with Wave you will need to *freeze* image mode
+that will force the creation of a new container image using the container you have specified as base image.
+
+In your pipeline configuration, ensure that you specify the following settings:
+
+```groovy
+wave.enabled = true
+wave.freeze = true
+wave.strategy = ['dockerfile']
+wave.build.repository = 'docker.io/<user>/<repository>'
+```
 
 ## Tutorials
 
