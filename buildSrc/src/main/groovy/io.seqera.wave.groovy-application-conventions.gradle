@@ -12,7 +12,7 @@ plugins {
 
 group = 'io.seqera'
 
-tasks.withType(Test) {
+tasks.withType(Test).configureEach {
     // note: "--enable-preview" is required to use virtual thread on Java 19 and 20
-    jvmArgs (["--enable-preview"])
+    jvmArgs(["--enable-preview"])
 }

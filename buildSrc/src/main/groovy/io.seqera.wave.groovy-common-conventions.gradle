@@ -22,7 +22,7 @@ compileJava {
     options.release.set(11)
 }
 
-tasks.withType(GroovyCompile) {
+tasks.withType(GroovyCompile).configureEach {
     sourceCompatibility = '17'
     targetCompatibility = '17'
 }
