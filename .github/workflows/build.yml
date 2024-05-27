@@ -75,7 +75,7 @@ jobs:
       - name: Cleanup build workspace
         if: always()
         run: |
-          sudo rm -rf /home/runner/work/wave/wave/build-workspace/.trivy-cache
+          sudo rm -rf /home/runner/work/wave/wave/build-workspace
 
       - name: Release
         if: "contains(github.event.head_commit.message, '[release]')"
