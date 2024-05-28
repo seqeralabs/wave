@@ -53,8 +53,8 @@ dependencies {
     testImplementation ('org.spockframework:spock-junit4:2.3-groovy-4.0') { exclude group: 'org.codehaus.groovy'; exclude group: 'net.bytebuddy' }
 }
 
-tasks.withType(Test) {
-    jvmArgs ([
+tasks.withType(Test).configureEach {
+    jvmArgs([
             '--enable-preview',
             '--add-opens=java.base/java.lang=ALL-UNNAMED',
             '--add-opens=java.base/java.io=ALL-UNNAMED',
