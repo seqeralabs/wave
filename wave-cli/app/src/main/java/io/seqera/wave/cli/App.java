@@ -191,7 +191,7 @@ public class App implements Runnable {
     @Option(names = {"--include"}, paramLabel = "false", description = "Include one or more containers in the specified base image")
     private List<String> includes;
 
-    @Option(names = {"--name-strategy"}, paramLabel = "false", description = "Specify the name strategy for the container name, it can be 'none' or 'tagPrefix' or 'imageSuffix'")
+    @Option(names = {"--name-strategy"}, paramLabel = "false", description = "Specify the name strategy for the container name, it can be 'none' or 'tagPrefix' or 'imageSuffix'", hidden = true)
     private ImageNameStrategy nameStrategy;
 
     @CommandLine.Parameters
