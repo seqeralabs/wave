@@ -95,7 +95,15 @@ class SurrealPersistenceService implements PersistenceService {
 
     @Override
     void saveBuild(WaveBuildRecord build) {
-        surrealDb.insertBuildAsync(getAuthorization(), build)
+        surrealDb.insertBuildAsync(getAuthorization(), build).subscribe({ result->
+            log.trace "Build request with id '$build.buildId' saved record: ${result}"
+        }, {error->
+            def msg = error.message
+            if( error instanceof HttpClientResponseException ){
+                msg += ":\n $error.response.body"
+            }
+            log.error("Error saving Build request record ${msg}\n${build}", error)
+        })
     }
 
     @Override
@@ -104,6 +112,7 @@ class SurrealPersistenceService implements PersistenceService {
             throw new IllegalArgumentException("Missing 'buildId' argument")
         final query = "select * from wave_build where buildId = '$buildId'"
         final json = surrealDb.sqlAsString(getAuthorization(), query)
+        log.info("Build request with buildId '$buildId' loaded: ${json}")
         final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null

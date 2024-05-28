@@ -160,9 +160,11 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
 
         and:
         persistence.saveBuild(record)
-        sleep 100
+
         when:
+        sleep 100
         def loaded = persistence.loadBuild(record.buildId)
+
         then:
         loaded == record
     }
