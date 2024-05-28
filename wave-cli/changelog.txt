@@ -1,5 +1,13 @@
 WAVE CLI CHANGE-LOG
 ===================
+1.4.1 - 28 May 2024
+- Add uri in wave inpect json output (#70) [08b17e4f]
+- Add --name-strategy option to wave cli (#71) [269df0e5]
+- fixed image strategy (#72) [eedd906e]
+- Fix conda channels ordering for gpt client [ed3c0be3]
+- Fix compatibility issues with old x86 machines (#74) [014154b7]
+- changed macos-latest to macos-12 (#76) [bf7e255f]
+
 1.4.0 - 17 May 2024
 - Add cli opts shortcuts (#68) [ae79c6f9]
 - Remove seqera from default Conda channels (#67) [d7b12893]
