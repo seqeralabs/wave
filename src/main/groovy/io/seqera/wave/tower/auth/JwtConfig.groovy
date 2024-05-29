@@ -44,7 +44,7 @@ class JwtConfig {
     /**
      * Determine the frequency of the JWT status check made my Wave.
      */
-    @Value('${wave.jwt.monitor.interval:1m}')
+    @Value('${wave.jwt.monitor.interval:10s}')
     Duration monitorInterval
 
     /**
