@@ -318,12 +318,13 @@ class ContainerController {
         final nameStrategy = req.nameStrategy==null
                 && buildRepository
                 && buildConfig.defaultPublicRepository
-                && buildRepository.startsWith(buildConfig.defaultPublicRepository) ? ImageNameStrategy.imageSuffix : null
+                && buildRepository.startsWith(buildConfig.defaultPublicRepository) ? ImageNameStrategy.imageSuffix : req.nameStrategy
 
         checkContainerSpec(containerSpec)
 
         // create a unique digest to identify the build request
         final containerId = makeContainerId(containerFile, condaContent, spackContent, platform, buildRepository, req.buildContext)
+        log.info("########## strategy $req.nameStrategy")
         final targetImage = makeTargetImage(format, buildRepository, containerId, condaContent, spackContent, nameStrategy)
 
         return new BuildRequest(
