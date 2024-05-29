@@ -324,7 +324,6 @@ class ContainerController {
 
         // create a unique digest to identify the build request
         final containerId = makeContainerId(containerFile, condaContent, spackContent, platform, buildRepository, req.buildContext)
-        log.info("########## strategy $req.nameStrategy")
         final targetImage = makeTargetImage(format, buildRepository, containerId, condaContent, spackContent, nameStrategy)
 
         return new BuildRequest(

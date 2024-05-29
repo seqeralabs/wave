@@ -347,6 +347,7 @@ class ContainerHelper {
         else if( nameStrategy!=ImageNameStrategy.none ) {
             throw new BadRequestException("Unsupported image naming strategy: '${nameStrategy}'")
         }
+
         format==SINGULARITY ? "oras://${repo}:${tag}" : "${repo}:${tag}"
     }
 
