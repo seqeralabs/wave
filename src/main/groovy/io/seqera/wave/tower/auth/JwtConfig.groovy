@@ -56,7 +56,7 @@ class JwtConfig {
     /**
      * Determine the number of JWT record that are processed in monitoring cycle
      */
-    @Value('${wave.jwt.monitor.count:100}')
+    @Value('${wave.jwt.monitor.count:10}')
     int monitorCount
 
 }
