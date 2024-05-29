@@ -208,7 +208,7 @@ class RegistryProxyService {
         }
     }
 
-    @Cacheable('cache-1min')
+    @Cacheable(value = 'cache-1min', atomic = true)
     @Retryable(includes=[IOException, HttpException])
     protected String getImageDigest0(String image) {
         final coords = ContainerCoordinates.parse(image)
