@@ -16,22 +16,16 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service
-
-import java.util.concurrent.CompletableFuture
-
-import io.seqera.wave.tower.User
-import io.seqera.wave.tower.auth.JwtAuth
-
+package io.seqera.wave.memstore.range.impl
 /**
- * Declare a service to access a Tower user
- *
+ * Contract for range store provider
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface UserService {
+interface RangeProvider {
 
-    User getUserByAccessToken(String endpoint, JwtAuth auth)
+    void add(String key, String member, double score)
 
-    CompletableFuture<User> getUserByAccessTokenAsync(String endpoint, JwtAuth auth)
+    List<String> getRange(String key, double min, double max, int count, boolean remove)
 
 }

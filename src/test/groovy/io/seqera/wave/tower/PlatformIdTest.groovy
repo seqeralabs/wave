@@ -45,7 +45,8 @@ class PlatformIdTest extends Specification {
         def id = PlatformId.of(new User(id:1), new SubmitContainerTokenRequest(
                 towerWorkspaceId: 100,
                 towerEndpoint: 'http://foo.com',
-                towerAccessToken: 'token-123' ))
+                towerAccessToken: 'token-123',
+                towerRefreshToken: 'refresh-123'))
         then:
         id.userId == 1
         id.user.id == 1

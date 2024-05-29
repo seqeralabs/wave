@@ -65,6 +65,7 @@ import io.seqera.wave.service.token.TokenData
 import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
+import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
 import io.seqera.wave.util.LongRndKey
@@ -72,6 +73,7 @@ import jakarta.inject.Inject
 import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
+import static io.seqera.wave.service.pairing.PairingService.TOWER_SERVICE
 import static io.seqera.wave.util.ContainerHelper.checkContainerSpec
 import static io.seqera.wave.util.ContainerHelper.condaFileFromRequest
 import static io.seqera.wave.util.ContainerHelper.containerFileFromPackages
@@ -84,8 +86,6 @@ import static io.seqera.wave.util.ContainerHelper.patchPlatformEndpoint
 import static io.seqera.wave.util.ContainerHelper.spackFileFromRequest
 import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
 import static java.util.concurrent.CompletableFuture.completedFuture
-import static io.seqera.wave.service.pairing.PairingService.TOWER_SERVICE
-
 /**
  * Implement a controller to receive container token requests
  * 
@@ -187,11 +187,15 @@ class ContainerController {
         if( !registration )
             throw new BadRequestException("Missing pairing record for Tower endpoint '$req.towerEndpoint'")
 
-        // store the tower JWT tokens
-        jwtAuthStore.putJwtAuth(req.towerEndpoint, req.towerRefreshToken, req.towerAccessToken)
+        // store the jwt record only the very first time it has been
+        // to avoid overridden a newer refresh token that may have 
+        final auth = JwtAuth.of(req)
+        if( auth.refresh )
+            jwtAuthStore.storeIfAbsent(auth)
+
         // find out the user associated with the specified tower access token
         return userService
-                .getUserByAccessTokenAsync(registration.endpoint, req.towerAccessToken)
+                .getUserByAccessTokenAsync(registration.endpoint, auth)
                 .thenApply((User user) -> handleRequest(httpRequest, req, PlatformId.of(user,req), v2))
     }
 
