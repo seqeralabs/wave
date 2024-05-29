@@ -1,4 +1,11 @@
 # Wave changelog
+1.7.9 - 29 May 2024
+- Improve JWT refresh handling  (#512) [751edb03]
+- Mark release as draft when ending with -Ax -Bx -RCx [ci skip] [66ba7ea7]
+- Removed unused imports (#510) [182e3f0d]
+- Fix Use atomic strategy for Cacheable ops [923ae67c]
+- Fix failing build [8adb52ab]
+
 1.7.8 - 15 May 2024
 - Prevent container freeze without custom repo (#499) [ec5932df]
 - Improve pairing record check (#500) [7ce86dc9]
