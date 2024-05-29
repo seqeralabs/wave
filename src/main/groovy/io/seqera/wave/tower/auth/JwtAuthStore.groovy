@@ -18,23 +18,27 @@
 
 package io.seqera.wave.tower.auth
 
+import java.time.Duration
+import java.time.Instant
+
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.cache.AbstractCacheStore
 import io.seqera.wave.service.cache.impl.CacheProvider
-
-import java.time.Duration
-
-import io.seqera.wave.util.DigestFunctions
+import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 /**
  * Implements storage for {@link JwtAuth} record
  *
  */
+@Slf4j
 @Singleton
 @CompileStatic
 class JwtAuthStore extends AbstractCacheStore<JwtAuth> {
+
+    @Inject
+    private JwtTimeStore jwtTimeStore
 
     JwtAuthStore(CacheProvider<String, String> provider) {
         super(provider, new MoshiEncodeStrategy<JwtAuth>() {})
@@ -55,23 +59,56 @@ class JwtAuthStore extends AbstractCacheStore<JwtAuth> {
         return Duration.ofDays(30)
     }
 
-    void putJwtAuth(String endpoint, String providedRefreshToken, String providedAccessToken) {
-        if (providedRefreshToken) {
-            final tokens = new JwtAuth(providedAccessToken, providedRefreshToken)
-            this.put(tokensKey(endpoint, providedAccessToken), tokens)
+    /**
+     * Try loading a {@link JwtAuth} object with an updated refresh token
+     *
+     * @param auth The {@link JwtAuth} object as provided in the request
+     * @return The "refreshed" {@link JwtAuth} object or {@code null} if cannot be found
+     */
+    JwtAuth refresh(JwtAuth auth) {
+        if( !auth )
+            return null
+        if( !auth.key )
+            throw new IllegalArgumentException("Missing JWT auth key attribute")
+        final result = this.get(auth.key)
+        if( log.isTraceEnabled() ) {
+            final msg = result!=null
+                    ? "JWT record found in store - $result"
+                    : "JWT record not found in store - $auth"
+            log.trace(msg)
+        }
+        if( result && !result.key ) {
+            final now = Instant.now()
+            final patched = result.withKey(auth.key).withCreatedAt(now).withUpdatedAt(now)
+            log.warn "JWT patched legacy record - $patched"
+            return patched
+        }
+        else {
+            return result
         }
     }
 
-    JwtAuth putJwtAuth(String endpoint, String originalAccessToken, JwtAuth tokens) {
-        this.put(tokensKey(endpoint, originalAccessToken), tokens)
-        return tokens
+    void store(JwtAuth auth) {
+        final now = Instant.now()
+        final entry = auth.withUpdatedAt(now)
+        this.put(auth.key, entry)
+        log.debug "JWT updating refreshed record - $entry"
     }
 
-    JwtAuth getJwtAuth(String endpoint, String accessToken) {
-        return this.get(tokensKey(endpoint, accessToken)) ?: new JwtAuth(accessToken)
+    boolean storeIfAbsent(JwtAuth auth) {
+        // do not override the stored jwt token, because it may
+        // may be newer than the one in the request
+        final now = Instant.now()
+        final entry = auth
+                .withCreatedAt(now)
+                .withUpdatedAt(now)
+        if( super.putIfAbsent(auth.key, entry) ) {
+            log.debug "JWT storing new record - $entry"
+            jwtTimeStore.setRefreshTimer(entry.key)
+            return true
+        }
+        else
+            return false
     }
 
-    private static String tokensKey(String endpoint, String initialRefreshToken) {
-        return DigestFunctions.md5("${endpoint}:${initialRefreshToken}")
-    }
 }
