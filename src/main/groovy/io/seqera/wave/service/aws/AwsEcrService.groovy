@@ -120,7 +120,7 @@ class AwsEcrService {
      */
     String getLoginToken(String accessKey, String secretKey, String region, boolean isPublic) {
         assert accessKey, "Missing AWS accessKey argument"
-        assert secretKey, "Missing AWS secretKet argument"
+        assert secretKey, "Missing AWS secretKey argument"
         assert region, "Missing AWS region argument"
 
         try {
