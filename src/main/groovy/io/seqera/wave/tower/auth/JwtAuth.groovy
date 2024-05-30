@@ -73,6 +73,10 @@ class JwtAuth {
         new JwtAuth(value, endpoint, bearer, refresh, createdAt, updatedAt)
     }
 
+    JwtAuth withEndpoint(String value) {
+        new JwtAuth(key, value, bearer, refresh, createdAt, updatedAt)
+    }
+
     JwtAuth withBearer(String value) {
         new JwtAuth(key, endpoint, value, refresh, createdAt, updatedAt)
     }
