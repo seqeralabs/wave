@@ -127,7 +127,7 @@ class ContainerInspectServiceImplTest extends Specification {
         and:
         def result = ContainerInspectServiceImpl.inspectItems(DOCKERFILE)
         then:
-        // capture both the repository name and the explicity entrypoint
+        // capture both the repository name and the explicit entrypoint
         // the entrypoint is returned first because it has higher priority
         result == [
                 new ContainerInspectServiceImpl.InspectEntrypoint(["this","--that"]),

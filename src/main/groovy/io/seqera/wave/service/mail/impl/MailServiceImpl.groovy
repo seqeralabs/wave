@@ -63,7 +63,7 @@ class MailServiceImpl implements MailService {
             sendCompletionEmail(event.request, event.result)
         }
         catch (Exception e) {
-            log.warn "Unable to send completion notication - reason: ${e.message ?: e}"
+            log.warn "Unable to send completion notification - reason: ${e.message ?: e}"
         }
     }
 
