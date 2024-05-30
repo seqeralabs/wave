@@ -16,18 +16,22 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.controller
+package io.seqera.wave.util
 
+import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
 
 import java.time.Instant
 
+import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.config.CondaOpts
 import io.seqera.wave.config.SpackOpts
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.token.TokenData
 /**
  * Container helper methods
@@ -402,8 +406,329 @@ class ContainerHelperTest extends Specification {
 
         where:
         ENDPOINT                        | EXPECTED
+        null                            | null
         'http://foo.com'                | 'http://foo.com'
         'https://api.tower.nf'          | 'https://api.cloud.seqera.io'
         'https://api.stage-tower.net'   | 'https://api.cloud.stage-seqera.io'
+    }
+
+    def 'should find conda name with named recipe' () {
+        given:
+        def CONDA = '''\
+            name: rnaseq-nf
+            channels:
+              - defaults
+              - bioconda
+              - conda-forge
+            dependencies:
+              # Default bismark
+              - salmon=1.6.0
+              - fastqc=0.11.9
+              - multiqc=1.11
+            '''.stripIndent(true)
+
+        expect:
+        ContainerHelper.guessCondaRecipeName(null) == null
+        ContainerHelper.guessCondaRecipeName(CONDA) == new NameVersionPair(['rnaseq-nf'])
+        ContainerHelper.guessCondaRecipeName(CONDA,true) == new NameVersionPair(['rnaseq-nf'], [null])
+    }
+
+    def 'should find conda name with anonymous recipe' () {
+        given:
+        def CONDA = '''\
+            channels:
+              - defaults
+              - bioconda
+              - conda-forge
+            dependencies:
+              # Default bismark
+              - salmon>=1.6.0
+              - fastqc<=0.11.9
+              - bioconda::multiqc=1.11
+              - samtools
+              - bwa>0.1
+              - bowtie2<0.2
+              - mem==0.3
+            '''.stripIndent(true)
+
+        expect:
+        ContainerHelper.guessCondaRecipeName(CONDA) == new NameVersionPair(['salmon-1.6.0', 'fastqc-0.11.9', 'multiqc-1.11', 'samtools', 'bwa-0.1', 'bowtie2-0.2', 'mem-0.3'] as Set)
+        and:
+        ContainerHelper.guessCondaRecipeName(CONDA,true) == new NameVersionPair(['salmon', 'fastqc', 'multiqc', 'samtools', 'bwa', 'bowtie2', 'mem'] as Set, ['1.6.0','0.11.9','1.11', null, '0.1','0.2', '0.3'] as Set)
+    }
+
+    def 'should find conda name with pip packages' () {
+        given:
+        def CONDA = '''\
+                channels:
+                - bioconda
+                - conda-forge
+                dependencies:
+                - pip
+                - pip:
+                  - pandas==2.2.2
+            '''.stripIndent(true)
+
+        expect:
+        ContainerHelper.guessCondaRecipeName(CONDA) == new NameVersionPair(['pip','pandas-2.2.2'] as Set)
+        ContainerHelper.guessCondaRecipeName(CONDA,true) == new NameVersionPair(['pip','pandas'] as Set, [null, '2.2.2'] as Set)
+    }
+
+    def 'should find spack recipe names from spack yaml file' () {
+        def SPACK = '''\
+            spack:
+              specs: [bwa@0.7.15, salmon@1.1.1, nano@1.0 x=one]
+              concretizer: {unify: true, reuse: true}
+            '''.stripIndent(true)
+
+        expect:
+        ContainerHelper.guessSpackRecipeName(null) == null
+        ContainerHelper.guessSpackRecipeName(SPACK) == new NameVersionPair(['bwa-0.7.15', 'salmon-1.1.1', 'nano-1.0'] as Set)
+        and:
+        ContainerHelper.guessSpackRecipeName(SPACK,true) == new NameVersionPair(['bwa', 'salmon', 'nano'] as Set, ['0.7.15', '1.1.1', '1.0'] as Set)
+    }
+
+    def 'should throw an exception when spack section is not present in spack yaml file' () {
+        def SPACK = '''\
+              specs: [bwa@0.7.15, salmon@1.1.1, nano@1.0 x=one]
+              concretizer: {unify: true, reuse: true}
+            '''.stripIndent(true)
+
+        when:
+        ContainerHelper.guessSpackRecipeName(SPACK)
+        then:
+        def e = thrown(BadRequestException)
+        and:
+        e.message == 'Malformed Spack environment file - missing "spack:" section'
+    }
+
+    def 'should throw an exception when spack.specs section is not present in spack yaml file' () {
+        def SPACK = '''\
+            spack:
+              concretizer: {unify: true, reuse: true}
+            '''.stripIndent(true)
+
+        when:
+        ContainerHelper.guessSpackRecipeName(SPACK)
+        then:
+        def e = thrown(BadRequestException)
+        and:
+        e.message == 'Malformed Spack environment file - missing "spack.specs:" section'
+    }
+
+    @Unroll
+    def 'should normalise tag' () {
+        expect:
+        ContainerHelper.normaliseTag(TAG,12)  == EXPECTED
+        where:
+        TAG                     | EXPECTED
+        null                    | null
+        ''                      | null
+        and:
+        'foo'                   | 'foo'
+        'FOO123'                | 'FOO123'
+        'aa-bb_cc.dd'           | 'aa-bb_cc.dd'
+        and:
+        'one(two)three'         | 'onetwothree'
+        '12345_67890_12345'     | '12345_67890'
+        '123456789012345_1'     | '123456789012'
+        and:
+        'aa__'                  | 'aa'
+        'aa..--__'              | 'aa'
+        '..--__bb'              | 'bb'
+        '._-xyz._-'             | 'xyz'
+    }
+
+    @Unroll
+    def 'should normalise name' () {
+        expect:
+        ContainerHelper.normaliseName(NAME, 12)  == EXPECTED
+        where:
+        NAME                    | EXPECTED
+        null                    | null
+        ''                      | null
+        and:
+        'foo'                   | 'foo'
+        'foo/bar'               | 'foo/bar'
+        'FOO123'                | 'foo123'
+        'aa-bb_cc.dd'           | 'aa-bb_cc.dd'
+        and:
+        'one(two)three'         | 'onetwothree'
+        '12345_67890_12345'     | '12345_67890'
+        '123456789012345_1'     | '123456789012'
+        and:
+        'aa__'                  | 'aa'
+        'aa..--__'              | 'aa'
+        '..--__bb'              | 'bb'
+        '._-xyz._-'             | 'xyz'
+    }
+
+    def 'should make request target' () {
+        expect:
+        ContainerHelper.makeTargetImage(BuildFormat.DOCKER, 'quay.io/org/name', '12345', null, null, null)
+                == 'quay.io/org/name:12345'
+        and:
+        ContainerHelper.makeTargetImage(BuildFormat.SINGULARITY, 'quay.io/org/name', '12345', null, null, null)
+                == 'oras://quay.io/org/name:12345'
+
+        and:
+        def conda = '''\
+        dependencies:
+        - salmon=1.2.3
+        '''
+        ContainerHelper.makeTargetImage(BuildFormat.DOCKER, 'quay.io/org/name', '12345', conda, null, null)
+                == 'quay.io/org/name:salmon-1.2.3--12345'
+
+        and:
+        def spack = '''\
+         spack:
+            specs: [bwa@0.7.15]
+        '''
+        ContainerHelper.makeTargetImage(BuildFormat.DOCKER, 'quay.io/org/name', '12345', null, spack, null)
+                == 'quay.io/org/name:bwa-0.7.15--12345'
+
+    }
+
+    @Shared def CONDA1 = '''\
+                dependencies:
+                    - samtools=1.0
+                '''
+
+    @Shared def CONDA2 = '''\
+                dependencies:
+                    - samtools=1.0
+                    - bamtools=2.0
+                    - multiqc=1.15
+                '''
+
+    @Shared def CONDA3 = '''\
+                dependencies:
+                    - samtools=1.0
+                    - bamtools=2.0
+                    - multiqc=1.15
+                    - bwa=1.2.3
+                    - xx
+                    - yy
+                    - zz
+                '''
+
+    @Shared def PIP1 = '''\
+                channels:
+                - bioconda
+                - conda-forge
+                dependencies:
+                - pip
+                - pip:
+                  - pandas==2.2.2
+            '''.stripIndent(true)
+
+    @Shared def PIP2 = '''\
+                channels:
+                - bioconda
+                - conda-forge
+                dependencies:
+                - pip
+                - pip:
+                  - pandas==2.2.2
+                  - numpy=1.0
+            '''.stripIndent(true)
+
+    @Shared def SPACK1 = '''\
+            spack:
+              specs: [bwa@0.7.15]
+            '''
+
+    @Shared def SPACK2 = '''\
+            spack:
+              specs: [bwa@0.7.15, salmon@1.1.1]
+        '''
+
+    @Unroll
+    def 'should make request target with name strategy' () {
+        expect:
+        ContainerHelper.makeTargetImage(
+                BuildFormat.valueOf(FORMAT),
+                REPO,
+                ID,
+                CONDA,
+                SPACK,
+                STRATEGY ? ImageNameStrategy.valueOf(STRATEGY) : null) == EXPECTED
+
+        where:
+        FORMAT        | REPO              | ID        | CONDA | SPACK | STRATEGY      | EXPECTED
+        'DOCKER'      | 'foo.com/build'   | '123'     | null  | null  | null          | 'foo.com/build:123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | null  | null  | 'none'        | 'foo.com/build:123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | null  | null  | 'tagPrefix'   | 'foo.com/build:123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | null  | null  | 'imageSuffix' | 'foo.com/build:123'
+        and:
+        'SINGULARITY' | 'foo.com/build'   | '123'     | null  | null  | null          | 'oras://foo.com/build:123'
+        'SINGULARITY' | 'foo.com/build'   | '123'     | null  | null  | 'none'        | 'oras://foo.com/build:123'
+        'SINGULARITY' | 'foo.com/build'   | '123'     | null  | null  | 'tagPrefix'   | 'oras://foo.com/build:123'
+        'SINGULARITY' | 'foo.com/build'   | '123'     | null  | null  | 'imageSuffix' | 'oras://foo.com/build:123'
+        and:
+        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA1| null  | null          | 'foo.com/build:samtools-1.0--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA1| null  | 'none'        | 'foo.com/build:123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA1| null  | 'tagPrefix'   | 'foo.com/build:samtools-1.0--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA1| null  | 'imageSuffix' | 'foo.com/build/samtools:1.0--123'
+        and:
+        'SINGULARITY' | 'foo.com/build'   | '123'     | CONDA1| null  | null          | 'oras://foo.com/build:samtools-1.0--123'
+        'SINGULARITY' | 'foo.com/build'   | '123'     | CONDA1| null  | 'none'        | 'oras://foo.com/build:123'
+        'SINGULARITY' | 'foo.com/build'   | '123'     | CONDA1| null  | 'tagPrefix'   | 'oras://foo.com/build:samtools-1.0--123'
+        'SINGULARITY' | 'foo.com/build'   | '123'     | CONDA1| null  | 'imageSuffix' | 'oras://foo.com/build/samtools:1.0--123'
+        and:
+        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA2| null  | null          | 'foo.com/build:samtools-1.0_bamtools-2.0_multiqc-1.15--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA2| null  | 'none'        | 'foo.com/build:123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA2| null  | 'tagPrefix'   | 'foo.com/build:samtools-1.0_bamtools-2.0_multiqc-1.15--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA2| null  | 'imageSuffix' | 'foo.com/build/samtools_bamtools_multiqc:123'
+        and:
+        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA3| null  | null          | 'foo.com/build:samtools-1.0_bamtools-2.0_multiqc-1.15_bwa-1.2.3_pruned--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA3| null  | 'none'        | 'foo.com/build:123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA3| null  | 'tagPrefix'   | 'foo.com/build:samtools-1.0_bamtools-2.0_multiqc-1.15_bwa-1.2.3_pruned--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | CONDA3| null  | 'imageSuffix' | 'foo.com/build/samtools_bamtools_multiqc_bwa_pruned:123'
+        and:
+        'DOCKER'      | 'foo.com/build'   | '123'     | PIP1 | null | null          | 'foo.com/build:pip_pandas-2.2.2--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | PIP1 | null | 'none'        | 'foo.com/build:123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | PIP1 | null | 'tagPrefix'   | 'foo.com/build:pip_pandas-2.2.2--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | PIP1 | null | 'imageSuffix' | 'foo.com/build/pip_pandas:123'
+        and:
+        'DOCKER'      | 'foo.com/build'   | '123'     | PIP2 | null | null          | 'foo.com/build:pip_pandas-2.2.2_numpy-1.0--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | PIP2 | null | 'tagPrefix'   | 'foo.com/build:pip_pandas-2.2.2_numpy-1.0--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | PIP2 | null | 'imageSuffix' | 'foo.com/build/pip_pandas_numpy:123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | PIP2 | null | 'none'        | 'foo.com/build:123'
+
+        and:
+        'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK1| null          | 'foo.com/build:bwa-0.7.15--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK1| 'none'        | 'foo.com/build:123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK1| 'tagPrefix'   | 'foo.com/build:bwa-0.7.15--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK1| 'imageSuffix' | 'foo.com/build/bwa:0.7.15--123'
+
+        and:
+        'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK2| null          | 'foo.com/build:bwa-0.7.15_salmon-1.1.1--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK2| 'none'        | 'foo.com/build:123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK2| 'tagPrefix'   | 'foo.com/build:bwa-0.7.15_salmon-1.1.1--123'
+        'DOCKER'      | 'foo.com/build'   | '123'     | null  | SPACK2| 'imageSuffix' | 'foo.com/build/bwa_salmon:123'
+    }
+
+    def 'should validate containerfile' () {
+        when:
+        ContainerHelper.checkContainerSpec(null)
+        then:
+        noExceptionThrown()
+
+        when:
+        ContainerHelper.checkContainerSpec('FROM foo')
+        then:
+        noExceptionThrown()
+
+        when:
+        ContainerHelper.checkContainerSpec('RUN /kaniko/foo')
+        then:
+        thrown(BadRequestException)
+
+        when:
+        ContainerHelper.checkContainerSpec('RUN /.docker/config.json')
+        then:
+        thrown(BadRequestException)
+
     }
 }

@@ -16,46 +16,45 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.metric.impl
+package io.seqera.wave.tower.auth
+
+import java.time.Instant
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.seqera.wave.service.metric.Metric
-import io.seqera.wave.service.metric.MetricFilter
-import io.seqera.wave.service.metric.MetricService
-import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.memstore.range.AbstractRangeStore
+import io.seqera.wave.memstore.range.impl.RangeProvider
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
- * Implements service to retrieve wave metrics
+ * Implements linear store for JWT record keys to track
+ * tokens that needs to be refreshed periodically
  *
- * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @Singleton
 @CompileStatic
-class MetricServiceImpl implements MetricService {
+class JwtTimeStore extends AbstractRangeStore {
+
     @Inject
-    private PersistenceService persistenceService
+    private JwtConfig jwtConfig
 
-    @Override
-    Map<String, Long> getBuildsMetric(Metric metric, MetricFilter filter) {
-        persistenceService.getBuildsCountByMetric(metric, filter)
+    JwtTimeStore(RangeProvider provider) {
+        super(provider)
     }
 
     @Override
-    Map<String, Long> getPullsMetric(Metric metric, MetricFilter filter) {
-        persistenceService.getPullsCountByMetric(metric, filter)
+    final protected String getKey() {
+        return 'tower-jwt-timestore/v1'
     }
 
-    @Override
-    Long getPullsCount(MetricFilter filter) {
-        persistenceService.getPullsCount(filter)
+    void setRefreshTimer(String key) {
+        this.add(key, expireSecs0())
     }
 
-    @Override
-    Long getBuildsCount(MetricFilter filter) {
-        persistenceService.getBuildsCount(filter)
+    private long expireSecs0() {
+        Instant.now().epochSecond + jwtConfig.refreshInterval.toSeconds()
     }
 
 }

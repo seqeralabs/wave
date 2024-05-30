@@ -19,7 +19,6 @@
 package io.seqera.wave.controller
 
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -37,10 +36,9 @@ import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
+import io.seqera.wave.tower.auth.JwtAuth
 import jakarta.inject.Inject
-import jakarta.inject.Named
-import static io.seqera.wave.controller.ContainerHelper.patchPlatformEndpoint
-
+import static io.seqera.wave.util.ContainerHelper.patchPlatformEndpoint
 /**
  * Implement container inspect capability
  *
@@ -69,12 +67,11 @@ class InspectController {
     @Value('${wave.server.url}')
     private String serverUrl
 
-    @Inject
-    @Named(TaskExecutors.IO)
-    private ExecutorService ioExecutor
-
     @Post("/v1alpha1/inspect")
     CompletableFuture<HttpResponse<ContainerInspectResponse>> inspect(ContainerInspectRequest req) {
+
+        if( !req.containerImage )
+            throw new BadRequestException("Missing 'containerImage' attribute")
 
         // this is needed for backward compatibility with old clients
         if( !req.towerEndpoint ) {
@@ -96,8 +93,8 @@ class InspectController {
 
         // find out the user associated with the specified tower access token
         return userService
-                .getUserByAccessTokenAsync(registration.endpoint, req.towerAccessToken)
-                .thenApplyAsync({ User user -> makeResponse(req, PlatformId.of(user,req)) }, ioExecutor)
+                .getUserByAccessTokenAsync(registration.endpoint, JwtAuth.of(req))
+                .thenApply((User user) -> makeResponse(req, PlatformId.of(user,req)) )
 
     }
 

@@ -54,10 +54,8 @@ class HttpResponseException extends WaveException implements HttpError {
     @Override
     String getMessage() {
         def result = super.getMessage()
-        if( statusCode!=null )
-            result += " - HTTP status=${statusCode.code}"
-        if( response )
-            result += " - response=$response"
+        result += " - HTTP status=${statusCode?.code ?: '-'}"
+        result += " - response=${response ?: '-'}"
         return result
     }
 }

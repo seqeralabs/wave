@@ -29,4 +29,9 @@ interface CounterStore {
 
     Long get(String key)
 
+    /**
+     * @param pattern
+     * @return all the entries whose field matches 'pattern'
+     */
+    Map<String, Long> getAllMatchingEntries(String pattern)
 }

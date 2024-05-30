@@ -62,4 +62,19 @@ interface ContainerPath {
      * @return The container name
      */
     String getTargetContainer()
+
+    /**
+     * Check is the container object and the specified repo have the same repository
+     * @param repository
+     *      The repository name to check e.g. {@code docker.io/user/name}
+     * @return
+     *      {@code true} if the container has the same registry has the specified repo or {@code false} otherwise
+     */
+    default boolean sameRegistry(String repository) {
+        if( !repository )
+            return false
+        final p = repository.indexOf('/')
+        final reg = p!=-1 ? repository.substring(0,p) : repository
+        return getRegistry()==reg
+    }
 }

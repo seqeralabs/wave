@@ -3,10 +3,13 @@ micronaut:
   application:
     name: wave-app
   caches :
+    # IMPORTANT: use `expire-after-write` strategy to guarantee cached entries are not retained more than the declared period.
+    # Using `expire-after-read` can cause an entry to be retained in the cache more than expected if it is hit continuously
+    # with a frequency shorter than the declared cache period.
     cache-20sec:
-      expire-after-access: 20s
+      expire-after-write: 20s
     cache-1min:
-      expire-after-access: 1m
+      expire-after-write: 1m
     # Discovery client by default uses a cache for results. This is a transitive behaviour
     # introduced by prometheus and management dependencies and below line disables as
     # it is unused at the moment by the wave project. See https://micronaut-projects.github.io/micronaut-discovery-client/latest/guide/#introduction
@@ -38,7 +41,7 @@ micronaut:
       number-of-threads: 16
     future-store-executor:
       type : FIXED
-      number-of-threads : 16
+      number-of-threads : 32
   netty:
     event-loops:
       stream-pool:
@@ -61,7 +64,7 @@ wave:
   server:
       url: "${WAVE_SERVER_URL:`http://localhost:9090`}"
   build:
-    kaniko-image: "gcr.io/kaniko-project/executor:v1.19.2"
+    kaniko-image: "gcr.io/kaniko-project/executor:v1.22.0"
     singularity-image: "quay.io/singularity/singularity:v3.11.4-slim"
     singularity-image-arm64: "quay.io/singularity/singularity:v3.11.4-slim-arm64"
     repo: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/dev"
@@ -78,7 +81,7 @@ wave:
       multiplier: '1.75'
   scan:
     image:
-      name: aquasec/trivy:0.47.0
+      name: aquasec/trivy:0.50.1
   blobCache:
     s5cmdImage: cr.seqera.io/public/wave/s5cmd:v2.2.2
 ---

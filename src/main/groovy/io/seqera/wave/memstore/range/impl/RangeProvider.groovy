@@ -16,19 +16,16 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.metric.model
-
-import groovy.transform.CompileStatic
+package io.seqera.wave.memstore.range.impl
 /**
- * Model a Wave builds per metric response
- *
- * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * Contract for range store provider
+ * 
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@CompileStatic
-class GetBuildsMetricsResponse {
-    Map result
+interface RangeProvider {
 
-    GetBuildsMetricsResponse(Map result) {
-        this.result = result
-    }
+    void add(String key, String member, double score)
+
+    List<String> getRange(String key, double min, double max, int count, boolean remove)
+
 }

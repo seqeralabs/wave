@@ -16,19 +16,15 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.metric.model
-
-import groovy.transform.CompileStatic
+package io.seqera.wave.memstore.range
 /**
- * Model a Wave pulls count per metric response
+ * Define the contract for a storage range set similar to Redis `zrange`
  *
- * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@CompileStatic
-class GetPullsMetricsResponse {
-    Map result
+interface RangeStore {
 
-    GetPullsMetricsResponse(Map result) {
-        this.result = result
-    }
+    void add(String member, double score)
+
+    List<String> getRange(double min, double max, int count)
 }

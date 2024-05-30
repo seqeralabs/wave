@@ -21,6 +21,7 @@ package io.seqera.wave.service
 import java.util.concurrent.CompletableFuture
 
 import io.seqera.wave.tower.User
+import io.seqera.wave.tower.auth.JwtAuth
 
 /**
  * Declare a service to access a Tower user
@@ -29,8 +30,8 @@ import io.seqera.wave.tower.User
  */
 interface UserService {
 
-    User getUserByAccessToken(String endpoint, String accessToken)
+    User getUserByAccessToken(String endpoint, JwtAuth auth)
 
-    CompletableFuture<User> getUserByAccessTokenAsync(String endpoint, String accessToken)
+    CompletableFuture<User> getUserByAccessTokenAsync(String endpoint, JwtAuth auth)
 
 }

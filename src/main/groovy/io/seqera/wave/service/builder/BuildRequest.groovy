@@ -24,16 +24,12 @@ import java.time.OffsetDateTime
 
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
-import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
-import io.seqera.wave.util.RegHelper
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
-import static io.seqera.wave.util.RegHelper.guessCondaRecipeName
-import static io.seqera.wave.util.RegHelper.guessSpackRecipeName
 import static io.seqera.wave.util.StringUtils.trunc
 /**
  * Model a container builder result
@@ -142,25 +138,25 @@ class BuildRequest {
 
     volatile Path workDir
 
-    BuildRequest(String containerFile, Path workspace, String repo, String condaFile, String spackFile, BuildFormat format, PlatformId identity, ContainerConfig containerConfig, BuildContext buildContext, ContainerPlatform platform, String configJson, String cacheRepo, String scanId, String ip, String offsetId) {
-        this.containerId = computeDigest(containerFile, condaFile, spackFile, platform, repo, buildContext)
+    BuildRequest(String containerId, String containerFile, String condaFile, String spackFile, Path workspace, String targetImage, PlatformId identity, ContainerPlatform platform, String cacheRepository, String ip, String configJson, String offsetId, ContainerConfig containerConfig, String scanId, BuildContext buildContext, BuildFormat format) {
+        this.containerId = containerId
         this.containerFile = containerFile
-        this.containerConfig = containerConfig
-        this.buildContext = buildContext
         this.condaFile = condaFile
         this.spackFile = spackFile
-        this.targetImage = makeTarget(format, repo, containerId, condaFile, spackFile)
-        this.format = format
+        this.workspace = workspace
+        this.targetImage = targetImage
         this.identity = identity
         this.platform = platform
-        this.configJson = configJson
-        this.cacheRepository = cacheRepo
-        this.workspace = workspace
-        this.offsetId = offsetId ?: OffsetDateTime.now().offset.id
+        this.cacheRepository = cacheRepository
         this.startTime = Instant.now()
         this.ip = ip
+        this.configJson = configJson
+        this.offsetId = offsetId ?: OffsetDateTime.now().offset.id
+        this.containerConfig = containerConfig
         this.isSpackBuild = spackFile
         this.scanId = scanId
+        this.buildContext = buildContext
+        this.format = format
     }
 
     BuildRequest(Map opts) {
@@ -184,63 +180,6 @@ class BuildRequest {
         this.format = opts.format as BuildFormat
         this.workDir = opts.workDir as Path
         this.buildId = opts.buildId
-    }
-
-    static protected String makeTarget(BuildFormat format, String repo, String id, @Nullable String condaFile, @Nullable String spackFile) {
-        assert id, "Argument 'id' cannot be null or empty"
-        assert repo, "Argument 'repo' cannot be null or empty"
-        assert format, "Argument 'format' cannot be null"
-
-        String prefix
-        def tag = id
-        if( condaFile && (prefix=guessCondaRecipeName(condaFile)) ) {
-            tag = "${normaliseTag(prefix)}--${id}"
-        }
-        else if( spackFile && (prefix=guessSpackRecipeName(spackFile)) ) {
-            tag = "${normaliseTag(prefix)}--${id}"
-        }
-
-        format==SINGULARITY ? "oras://${repo}:${tag}" : "${repo}:${tag}"
-    }
-
-    static protected String normaliseTag(String tag, int maxLength=80) {
-        assert maxLength>0, "Argument maxLength cannot be less or equals to zero"
-        if( !tag )
-            return null
-        // docker tag only allows [a-z0-9.-_]
-        tag = tag.replaceAll(/[^a-zA-Z0-9_.-]/,'')
-        // only allow max 100 chars
-        if( tag.length()>maxLength ) {
-            // try to tokenize splitting by `_`
-            def result = ''
-            def parts = tag.tokenize('_')
-            for( String it : parts ) {
-                if( result )
-                    result += '_'
-                result += it
-                if( result.size()>maxLength )
-                    break
-            }
-            tag = result
-        }
-        // still too long, trunc it
-        if( tag.length()>maxLength ) {
-            tag = tag.substring(0,maxLength)
-        }
-        // remove trailing or leading special chars
-        tag = tag.replaceAll(/^(\W|_)+|(\W|_)+$/,'')
-        return tag ?: null
-    }
-
-    static private String computeDigest(String containerFile, String condaFile, String spackFile, ContainerPlatform platform, String repository, BuildContext buildContext) {
-        final attrs = new LinkedHashMap<String,String>(10)
-        attrs.containerFile = containerFile
-        attrs.condaFile = condaFile
-        attrs.platform = platform?.toString()
-        attrs.repository = repository
-        if( spackFile ) attrs.spackFile = spackFile
-        if( buildContext ) attrs.buildContext = buildContext.tarDigest
-        return RegHelper.sipHash(attrs)
     }
 
     @Override

@@ -71,7 +71,7 @@ class PlatformId {
         return "PlatformId(" +
                 "user=" + user +
                 ", workspaceId=" + workspaceId +
-                ", accessToken=" + StringUtils.trunc(accessToken,10) +
+                ", accessToken=" + StringUtils.trunc(accessToken,25) +
                 ", towerEndpoint=" + towerEndpoint +
                 ", workflowId=" + workflowId +
                 ')';
