@@ -40,7 +40,7 @@ class SimpleTransferStrategy implements TransferStrategy {
     @Override
     BlobCacheInfo transfer(BlobCacheInfo info, List<String> cli) {
         final proc = createProcess(cli).start()
-        // wait for the completion and save thr result
+        // wait for the completion and save the result
         final completed = proc.waitFor(blobConfig.transferTimeout.toSeconds(), TimeUnit.SECONDS)
         final int status = completed ? proc.exitValue() : -1
         final logs = proc.inputStream.text
