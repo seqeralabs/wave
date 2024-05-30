@@ -50,7 +50,7 @@ class LocalCounterProvider implements CounterProvider {
 
     @Override
     Map<String, Long> getAllMatchingEntries(String key, String pattern) {
-        Pattern compiledPattern = Pattern.compile(pattern.replace('*', '[^/]+'))
+        Pattern compiledPattern = Pattern.compile(pattern.replace('*', '.*'))
         Map keyStore = store.get(key)
         Map<String, Long> result = [:]
         if (keyStore){

@@ -72,12 +72,14 @@ class RedisCounterProviderTest extends Specification implements RedisTestContain
         redisCounterProvider.inc('metrics/v1', 'pulls/o/foo.es', 1)
         redisCounterProvider.inc('metrics/v1', 'pulls/o/bar.in', 2)
         redisCounterProvider.inc('metrics/v1', 'pulls/o/abc.au', 3)
-        redisCounterProvider.inc('metrics/v1', 'pulls/o/abc.com/date/yyyy-mm-dd', 1)
+        redisCounterProvider.inc('metrics/v1', 'pulls/o/abc.com.au/d/2024-05-30', 1)
+        redisCounterProvider.inc('metrics/v1', 'pulls/o/abc.com.au/d/2024-05-31', 1)
 
         then:
         redisCounterProvider.getAllMatchingEntries('metrics/v1', 'pulls/o/*') ==
-                ['pulls/o/foo.es':1, 'pulls/o/bar.in':2, 'pulls/o/abc.au':3, 'pulls/o/abc.com/date/yyyy-mm-dd': 1]
+                ['pulls/o/abc.in':3, 'pulls/o/bar.es':2, 'pulls/o/foo.it':1, 'pulls/o/abc.com.au/d/2024-05-30':1, 'pulls/o/abc.com.au/d/2024-05-31':1]
         and:
-        redisCounterProvider.getAllMatchingEntries('metrics/v1', 'fusion/o/*') == [:]
+        redisCounterProvider.getAllMatchingEntries('metrics/v1', 'pulls/o/*/d/2024-05-30') ==
+                ['pulls/o/abc.com.au/d/2024-05-30':1]
     }
 }
