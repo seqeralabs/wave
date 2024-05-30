@@ -7,7 +7,7 @@ rate-limit:
     anonymous: 100/1h
     authenticated: 100/1m
   timeout-errors:
-    maxRate: 10/2m
+    maxRate: 20/2m
   httpRequest:
     timeout-duration : 500ms
     limit-refresh-period : 1s

@@ -40,6 +40,7 @@ import io.seqera.wave.exception.HttpServerRetryableErrorException
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.cleanup.CleanupStrategy
+import io.seqera.wave.service.metric.MetricsService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.stream.StreamService
@@ -110,6 +111,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     @Inject
     PersistenceService persistenceService
+
+    @Inject
+    private MetricsService metricsService
 
     /**
      * Build a container image for the given {@link BuildRequest}
@@ -230,6 +234,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             throw e
         }
 
+        //increment metrics
+        CompletableFuture.supplyAsync(() -> metricsService.incrementBuildsCounter(request.identity), executor)
+
         // persist the container request
         persistenceService.createBuild(WaveBuildRecord.fromEvent(new BuildEvent(request)))
 
@@ -261,7 +268,10 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         final ret2 = buildStore.getBuild(request.targetImage)
         if( ret2 ) {
             log.info "== Hit build cache for request: $request"
-            return new BuildTrack(ret2.id, request.targetImage, true)
+            // note: mark as cached only if the build result is 'done'
+            // if the build is still in progress it should be marked as not cached
+            // so that the client will wait for the container completion
+            return new BuildTrack(ret2.id, request.targetImage, ret2.done())
         }
         // invalid state
         throw new IllegalStateException("Unable to determine build status for '$request.targetImage'")

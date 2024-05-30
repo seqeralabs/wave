@@ -42,4 +42,21 @@ class LocalCounterProvider implements CounterProvider {
         return result.computeIfAbsent(field, (it)-> new AtomicLong(0)).addAndGet(value)
     }
 
+    @Override
+    Long get(String key, String field) {
+        return store.get(key)?.get(field)?.get()
+    }
+
+    @Override
+    Map<String, Long> getAllMatchingEntries(String key, String pattern) {
+        def keyStore = store.get(key)
+        Map<String, Long> result = [:]
+        if (keyStore){
+            def matchingPairs = keyStore.findAll { k, v -> k =~ pattern }
+            matchingPairs.each { k, v ->
+            result.put(k, v as Long)
+            }
+        }
+        return result
+    }
 }

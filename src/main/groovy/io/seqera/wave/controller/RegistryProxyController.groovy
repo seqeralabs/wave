@@ -101,9 +101,7 @@ class RegistryProxyController {
     private BlobCacheService blobCacheService
 
     @Value('${wave.cache.digestStore.maxWeightMb:350}')
-    int cacheMaxWeightMb
-
-    private static final int _1MB = 1024 * 1024
+    private int cacheMaxWeightMb
 
     @Error
     HttpResponse<RegistryErrorResponse> handleError(HttpRequest request, Throwable t) {

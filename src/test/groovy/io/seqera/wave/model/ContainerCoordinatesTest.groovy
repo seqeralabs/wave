@@ -93,4 +93,12 @@ class ContainerCoordinatesTest extends Specification {
         'http:foo.com:80'       | false
 
     }
+
+    def'should throw exception when container image name is not provided'() {
+        when:
+        ContainerCoordinates.parse(null)
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message == 'Container image name is not provided'
+    }
 }

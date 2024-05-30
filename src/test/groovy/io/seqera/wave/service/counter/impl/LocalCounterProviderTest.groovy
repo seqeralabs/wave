@@ -41,5 +41,32 @@ class LocalCounterProviderTest extends Specification {
         and:
         localCounterProvider.inc('build-x', 'foo', -12) == 0
     }
+  
+    def 'should get correct count value' () {
+        when:
+        localCounterProvider.inc('build-x', 'foo', 1)
+        localCounterProvider.inc('build-x', 'foo', 1)
+        localCounterProvider.inc('metrics-x', 'foo', 1)
+
+        then:
+        localCounterProvider.get('build-x', 'foo') == 2
+        and:
+        localCounterProvider.get('metrics-x', 'foo') == 1
+    }
+
+    def 'should get correct org count' () {
+        when:
+        localCounterProvider.inc('metrics/v1', 'builds/o/foo.com', 1)
+        localCounterProvider.inc('metrics/v1', 'builds/o/bar.io', 1)
+        localCounterProvider.inc('metrics/v1', 'builds/o/abc.org', 2)
+        localCounterProvider.inc('metrics/v1', 'pulls/o/foo.it', 1)
+        localCounterProvider.inc('metrics/v1', 'pulls/o/bar.es', 2)
+        localCounterProvider.inc('metrics/v1', 'pulls/o/abc.in', 3)
+        localCounterProvider.inc('metrics/v1', 'pulls/o/abc.com.au/date/yyyy-mm-dd', 1)
+
+        then:
+        localCounterProvider.getAllMatchingEntries('metrics/v1', 'pulls/o/*') ==
+                ['pulls/o/abc.com.au/date/yyyy-mm-dd':1, 'pulls/o/abc.in':3, 'pulls/o/bar.es':2, 'pulls/o/foo.it':1]
+    }
 
 }

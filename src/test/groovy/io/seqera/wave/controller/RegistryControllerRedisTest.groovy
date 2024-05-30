@@ -61,11 +61,11 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         ], 'test', 'h2', 'redis')
 
         jedis = new Jedis(redisHostName, redisPort as int)
-        jedis.flushAll()
         initRegistryContainer(applicationContext)
     }
 
     def cleanup(){
+        jedis.flushAll()
         jedis.close()
     }
 

@@ -93,22 +93,16 @@
 
     {{#if request_container_config}}
         <h3>Container config</h3>
-        <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">
-            {{request_container_config}}
-        </pre>
+        <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{request_container_config}}</pre>
     {{/if}}
 
     <!-- build info -->
     {{#if build_container_file}}
         <h3>Docker file</h3>
-        <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">
-            {{build_container_file}}
-        </pre>
+        <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{build_container_file}}</pre>
 
         <h3>Conda file</h3>
-        <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">
-            {{build_conda_file}}
-        </pre>
+        <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{build_conda_file}}</pre>
 
         <table cellpadding="4" >
             <tr>

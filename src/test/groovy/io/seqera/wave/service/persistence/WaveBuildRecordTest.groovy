@@ -25,13 +25,14 @@ import java.time.Duration
 import java.time.Instant
 
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.exchange.BuildStatusResponse
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.JacksonHelper
+import io.seqera.wave.api.BuildStatusResponse
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -41,21 +42,23 @@ class WaveBuildRecordTest extends Specification {
     def 'should serialise-deserialize build record' () {
         given:
         final request = new BuildRequest(
+                'container1234',
                 'FROM foo:latest',
-                Path.of("/some/path"),
-                "buildrepo",
                 'conda::recipe',
                 'some-spack-recipe',
-                BuildFormat.DOCKER,
+                Path.of("/some/path"),
+                'docker.io/my/repo:container1234',
                 PlatformId.NULL,
-                null,
-                null,
                 ContainerPlatform.of('amd64'),
-                '{auth}',
-                'docker.io/my/repo',
-                '12345',
-                "1.2.3.4",
-                null )
+                'docker.io/my/cache',
+                '1.2.3.4',
+                '{"config":"json"}',
+                null,
+                null,
+                'scan12345',
+                null,
+                BuildFormat.DOCKER
+        )
         final result = new BuildResult(request.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         final event = new BuildEvent(request, result)
         final record = WaveBuildRecord.fromEvent(event)
@@ -70,22 +73,23 @@ class WaveBuildRecordTest extends Specification {
     def 'should convert to status response' () {
         given:
         final request = new BuildRequest(
+                'container1234',
                 'FROM foo:latest',
+                'conda::recipe',
+                'some-spack-recipe',
                 Path.of("/some/path"),
-                "buildrepo",
-                null,
-                null,
-                BuildFormat.DOCKER,
+                'docker.io/my/repo:container1234',
                 PlatformId.NULL,
-                null,
-                null,
                 ContainerPlatform.of('amd64'),
-                '{auth}',
-                'docker.io/my/repo',
-                '12345',
-                "1.2.3.4",
-                null )
-                .withBuildId('123')
+                'docker.io/my/cache',
+                '1.2.3.4',
+                '{"config":"json"}',
+                null,
+                null,
+                'scan12345',
+                null,
+                BuildFormat.DOCKER
+        ).withBuildId('123')
 
         and:
         final event = new BuildEvent(request)

@@ -32,9 +32,7 @@ import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.api.ContainerLayer
-import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.model.ContainerCoordinates
-import org.yaml.snakeyaml.Yaml
 /**
  * Helper methods
  *
@@ -47,7 +45,7 @@ class RegHelper {
     final private static char PADDING = '_' as char
     final private static BaseEncoding BASE32 = BaseEncoding.base32() .withPadChar(PADDING)
 
-    // this clas is not to be extended
+    // this class is not to be extended
     private RegHelper(){
         throw new AssertionError()
     }
@@ -112,7 +110,9 @@ class RegHelper {
     }
 
     static String dumpHeaders(Map<String, List<String>> headers) {
-        def result = new StringBuilder()
+        if( !headers )
+            null
+        final result = new StringBuilder()
         for( Map.Entry<String,List<String>> entry : headers )  {
             for( String val : entry.value )
                 result.append("\n  $entry.key=$val")
@@ -185,74 +185,6 @@ class RegHelper {
         - URI: ${coords.scheme}://${coords.registry}
           Insecure: false
         """.stripIndent()
-    }
-
-
-    static String guessCondaRecipeName(String condaFileContent) {
-        if( !condaFileContent )
-            return null
-        try {
-            final yaml = (Map)new Yaml().load(condaFileContent)
-            if( yaml.name )
-                return yaml.name
-            if( yaml.dependencies instanceof List ) {
-                final LinkedHashSet<String> result = new LinkedHashSet()
-                for( String it : yaml.dependencies ) {
-                    final int p=it.indexOf('::')
-                    if( p!=-1 )
-                        it = it.substring(p+2)
-                    it = it.replace('=','-')
-                    if( it )
-                        result.add(it)
-                }
-                return result.join('_')
-            }
-            return null
-        }
-        catch (Exception e) {
-            log.warn "Unable to infer conda recipe name - cause: ${e.message}", e
-            return null
-        }
-    }
-
-
-    static String guessSpackRecipeName(String spackFileContent) {
-        if( !spackFileContent )
-            return null
-        try {
-            final yaml = new Yaml().load(spackFileContent) as Map
-            final spack = yaml.spack as Map
-
-            if( !spack ){
-                throw new BadRequestException('Malformed Spack environment file - missing "spack:" section')
-            }
-            if( !spack.specs ){
-                throw new BadRequestException('Malformed Spack environment file - missing "spack.specs:" section')
-            }
-
-            if( spack.specs instanceof List ) {
-                final LinkedHashSet<String> result = new LinkedHashSet()
-                for( String it : spack.specs ) {
-                    final p = it.indexOf(' ')
-                    // remove everything after the first blank because they are supposed package directives
-                    if( p!=-1 )
-                        it = it.substring(0,p)
-                    // replaces '@' version separator with `'`
-                    it = it.replace('@','-')
-                    if( it )
-                        result.add(it)
-                }
-                return result.join('_')
-            }
-            return null
-        }
-        catch (BadRequestException e) {
-            throw  e
-        }
-        catch (Throwable e) {
-            log.warn "Unable to infer spack recipe name - cause: ${e.message}", e
-            return null
-        }
     }
 
     static String sipHash(LinkedHashMap<String,String> values) {

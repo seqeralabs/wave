@@ -35,6 +35,7 @@ import io.seqera.wave.service.pairing.PairingRecord
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
+import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.client.CredentialsDescription
 import io.seqera.wave.tower.client.GetCredentialsKeysResponse
 import io.seqera.wave.tower.client.ListCredentialsResponse
@@ -97,6 +98,7 @@ class CredentialsServiceTest extends Specification {
                 registry: 'docker.io' )
         and:
         def identity = new PlatformId(new User(id:userId), workspaceId,token,towerEndpoint)
+        def auth = JwtAuth.of(identity)
 
         when: 'look those registry credentials from tower'
         def container = ContainerCoordinates.parse("quay.io/foo")
@@ -106,12 +108,12 @@ class CredentialsServiceTest extends Specification {
         1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE, towerEndpoint) >> keyRecord
 
         and: 'credentials are listed once and return a potential match'
-        1 * towerClient.listCredentials(towerEndpoint,token,workspaceId) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
+        1 * towerClient.listCredentials(towerEndpoint,auth,workspaceId) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
                 credentials: [nonContainerRegistryCredentials, credentialsDescription,otherRegistryCredentials]
         ))
 
         and: 'they match and the encrypted credentials are fetched'
-        1 * towerClient.fetchEncryptedCredentials(towerEndpoint, token, credentialsId, keyId, workspaceId) >> CompletableFuture.completedFuture(encryptedCredentialsFromTower(keypair.getPublic(), registryCredentials))
+        1 * towerClient.fetchEncryptedCredentials(towerEndpoint, auth, credentialsId, keyId, workspaceId) >> CompletableFuture.completedFuture(encryptedCredentialsFromTower(keypair.getPublic(), registryCredentials))
 
         and:
         credentials.userName == 'me'
@@ -139,6 +141,7 @@ class CredentialsServiceTest extends Specification {
         given:
         def container = ContainerCoordinates.parse('quay.io/foo')
         def identity = new PlatformId(new User(id:10), 10,"token",'tower.io')
+        def auth = JwtAuth.of(identity)
         when:
         def credentials = credentialsService.findRegistryCreds(container,  identity)
 
@@ -151,7 +154,7 @@ class CredentialsServiceTest extends Specification {
                 expiration: Instant.now() + Duration.ofSeconds(5)
         )
         and: 'credentials are listed but are empty'
-        1 * towerClient.listCredentials('tower.io',"token",10) >> CompletableFuture.completedFuture(new ListCredentialsResponse(credentials: []))
+        1 * towerClient.listCredentials('tower.io',auth,10) >> CompletableFuture.completedFuture(new ListCredentialsResponse(credentials: []))
 
         and: 'no registry credentials are returned'
         credentials == null
@@ -171,6 +174,7 @@ class CredentialsServiceTest extends Specification {
         )
         and:
         def identity = new PlatformId(new User(id:10), 10,"token",'tower.io')
+        def auth = JwtAuth.of(identity)
 
         when:
         def container = ContainerCoordinates.parse('quay.io/foo')
@@ -186,7 +190,7 @@ class CredentialsServiceTest extends Specification {
         )
 
         and: 'non matching credentials are listed'
-        1 * towerClient.listCredentials('tower.io',"token",10) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
+        1 * towerClient.listCredentials('tower.io',auth,10) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
                 credentials: [nonContainerRegistryCredentials,otherRegistryCredentials]
         ))
 

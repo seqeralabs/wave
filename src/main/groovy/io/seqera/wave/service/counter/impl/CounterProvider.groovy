@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.counter.impl
 /**
+ * Contract interface for a generic distributed "counter" service
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -25,4 +26,13 @@ interface CounterProvider {
 
     long inc(String key, String field, long value)
 
+    Long get(String key, String field)
+
+    /**
+     *
+     * @param key
+     * @param pattern
+     * @return all the entries whose field matches 'pattern'
+     */
+    Map<String, Long> getAllMatchingEntries(String key, String pattern)
 }
