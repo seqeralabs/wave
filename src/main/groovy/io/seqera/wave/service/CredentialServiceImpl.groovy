@@ -102,7 +102,7 @@ class CredentialServiceImpl implements CredentialsService {
     }
 
     CredentialsDescription findComputeCreds(PlatformId identity) {
-        final describeWorkflowLaunchResponse = towerClient.fetchWorkflowLaunchInfo(identity.towerEndpoint,identity.accessToken,identity.workflowId)
+        final describeWorkflowLaunchResponse = towerClient.fetchWorkflowLaunchInfo(identity.towerEndpoint, JwtAuth.of(identity), identity.workflowId)
         if(describeWorkflowLaunchResponse) {
             ComputeEnv computeEnv = describeWorkflowLaunchResponse.get()?.launch?.computeEnv
             if (computeEnv && (computeEnv.platform == 'aws-batch' || computeEnv.platform == 'google-batch')) {

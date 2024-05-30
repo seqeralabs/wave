@@ -114,9 +114,9 @@ class TowerClient {
         StringUtils.removeEnd(endpoint, "/")
     }
 
-    CompletableFuture<DescribeWorkflowLaunchResponse> fetchWorkflowLaunchInfo(String towerEndpoint, String authorization, String workflowId){
+    CompletableFuture<DescribeWorkflowLaunchResponse> fetchWorkflowLaunchInfo(String towerEndpoint, JwtAuth authorization, String workflowId){
         def uri = workflowLaunchInfoEndpoint(towerEndpoint,workflowId)
-        return getAsync(uri, towerEndpoint, authorization,DescribeWorkflowLaunchResponse.class)
+        return getAsync(uri, towerEndpoint, authorization, DescribeWorkflowLaunchResponse.class)
     }
     protected static URI workflowLaunchInfoEndpoint(String towerEndpoint, String workflowId) {
         return URI.create("${checkEndpoint(towerEndpoint)}/workflow/${workflowId}/launch")
