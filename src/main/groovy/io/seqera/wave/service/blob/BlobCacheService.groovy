@@ -31,7 +31,7 @@ interface BlobCacheService {
 
     /**
      * Store a container blob into the cache storage that allows fast retrieval
-     * via HTTP content delivery network, and retuns a {@link BlobCacheInfo} object
+     * via HTTP content delivery network, and returns a {@link BlobCacheInfo} object
      * holding the HTTP download URI.
      *
      * Note this method is thread safe is expected to be thread safe across multiple replicas.
