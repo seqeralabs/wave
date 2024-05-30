@@ -65,7 +65,7 @@ class JwtAuth {
     final Instant createdAt
 
     /**
-     * The instant when the objct was last updated
+     * The instant when the object was last updated
      */
     final Instant updatedAt
 
