@@ -27,33 +27,6 @@ import io.seqera.wave.tower.PlatformId
  */
 interface MetricsService {
     /**
-     * get the Wave builds metrics
-     *
-     * @param date, date of the required metrics
-     * @param org, org of the required metrics
-     * @return Long, builds counts
-     */
-    Long getBuildsMetrics(String date, String org)
-
-    /**
-     * get the Wave pulls metrics
-     *
-     * @param date, date of the required metrics
-     * @param org, org of the required metrics
-     * @return Long, pulls counts
-     */
-    Long getPullsMetrics(String date, String org)
-
-    /**
-     * get the Wave fusion pulls metrics
-     *
-     * @param date, date of the required metrics
-     * @param org, org of the required metrics
-     * @return Long, fusion pulls counts
-     */
-    Long getFusionPullsMetrics(String date, String org)
-
-    /**
      * increment wave fusion pulls count
      *
      * @param seqera platform id
@@ -80,13 +53,13 @@ interface MetricsService {
      * @param metric
      * @return GetOrgCountResponse
      */
-    GetOrgCountResponse getOrgCount(String metric)
+    GetOrgCountResponse getAllOrgCount(String metric)
 
     /**
-     * Get counts of all organisations per date
+     * Get counts per organisations or per date or per both
      *
      * @param metric
      * @return GetOrgCountResponse
      */
-    GetOrgCountResponse getOrgCountPerDate(String metric, String date, String org)
+    GetOrgCountResponse getOrgCount(String metric, String date, String org)
 }

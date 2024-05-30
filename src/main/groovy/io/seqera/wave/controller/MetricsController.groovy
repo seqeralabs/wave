@@ -65,25 +65,25 @@ class MetricsController {
     @Get(uri = "/v1alpha2/metrics/builds", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getBuildsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
         if(!date && !org)
-            return HttpResponse.ok(metricsService.getOrgCount(MetricConstants.PREFIX_BUILDS))
+            return HttpResponse.ok(metricsService.getAllOrgCount(MetricConstants.PREFIX_BUILDS))
         validateQueryParams(date)
-        return HttpResponse.ok(metricsService.getOrgCountPerDate(MetricConstants.PREFIX_BUILDS, date, org))
+        return HttpResponse.ok(metricsService.getOrgCount(MetricConstants.PREFIX_BUILDS, date, org))
     }
 
     @Get(uri = "/v1alpha2/metrics/pulls", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
         if(!date && !org)
-            return HttpResponse.ok(metricsService.getOrgCount(MetricConstants.PREFIX_PULLS))
+            return HttpResponse.ok(metricsService.getAllOrgCount(MetricConstants.PREFIX_PULLS))
         validateQueryParams(date)
-        return HttpResponse.ok(metricsService.getOrgCountPerDate(MetricConstants.PREFIX_PULLS, date, org))
+        return HttpResponse.ok(metricsService.getOrgCount(MetricConstants.PREFIX_PULLS, date, org))
     }
 
     @Get(uri = "/v1alpha2/metrics/fusion/pulls", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getFusionPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
         if(!date && !org)
-            return HttpResponse.ok(metricsService.getOrgCount(MetricConstants.PREFIX_FUSION))
+            return HttpResponse.ok(metricsService.getAllOrgCount(MetricConstants.PREFIX_FUSION))
         validateQueryParams(date)
-        return HttpResponse.ok(metricsService.getOrgCountPerDate(MetricConstants.PREFIX_FUSION, date, org))
+        return HttpResponse.ok(metricsService.getOrgCount(MetricConstants.PREFIX_FUSION, date, org))
 
     }
 

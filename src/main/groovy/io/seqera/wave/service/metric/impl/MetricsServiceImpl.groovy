@@ -50,22 +50,7 @@ class MetricsServiceImpl implements MetricsService {
     static Pattern orgDateKeyPattern = Pattern.compile('(builds|pulls|fusion)/o/([^/]+)/d/\\d{4}-\\d{2}-\\d{2}')
 
     @Override
-    Long getBuildsMetrics(String date, String org) {
-        return metricsCounterStore.get(getKey(MetricConstants.PREFIX_BUILDS, date, org)) ?: 0
-    }
-
-    @Override
-    Long getPullsMetrics(String date, String org) {
-        return metricsCounterStore.get(getKey(MetricConstants.PREFIX_PULLS, date, org)) ?: 0
-    }
-
-    @Override
-    Long getFusionPullsMetrics(String date, String org) {
-        return metricsCounterStore.get(getKey(MetricConstants.PREFIX_FUSION, date, org)) ?: 0
-    }
-
-    @Override
-    GetOrgCountResponse getOrgCount(String metric){
+    GetOrgCountResponse getAllOrgCount(String metric){
         final response = new GetOrgCountResponse(metric, 0, [:])
         final orgCounts = metricsCounterStore.getAllMatchingEntries("$metric/$MetricConstants.PREFIX_ORG/*")
         for(def entry : orgCounts) {
@@ -80,7 +65,7 @@ class MetricsServiceImpl implements MetricsService {
     }
 
     @Override
-    GetOrgCountResponse getOrgCountPerDate(String metric, String date, String org) {
+    GetOrgCountResponse getOrgCount(String metric, String date, String org) {
         final response = new GetOrgCountResponse(metric, 0, [:])
 
         // count is stored per date and per org, so it can be extracted from get method

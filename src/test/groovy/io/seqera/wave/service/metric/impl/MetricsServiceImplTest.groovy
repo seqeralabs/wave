@@ -59,9 +59,21 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         metricsService.incrementBuildsCounter(null)
 
         then:
-        metricsService.getBuildsMetrics(date, null) == 3
-        metricsService.getBuildsMetrics(null, 'org1.com') == 1
-        metricsService.getBuildsMetrics(date, 'org2.com') == 1
+        def res1 = metricsService.getOrgCount(MetricConstants.PREFIX_BUILDS, date, null)
+        res1.count == 3
+        res1.orgs == ['org1.com': 1, 'org2.com': 1]
+        and:
+        def res2 = metricsService.getOrgCount(MetricConstants.PREFIX_BUILDS, null, 'org1.com')
+        res2.count == 1
+        res2.orgs == ['org1.com': 1]
+        and:
+        def res3 = metricsService.getOrgCount(MetricConstants.PREFIX_BUILDS, date, 'org2.com')
+        res3.count == 1
+        res3.orgs == ['org2.com': 1]
+        and:
+        def res4 = metricsService.getOrgCount(MetricConstants.PREFIX_BUILDS, date, null)
+        res4.count == 3
+        res4.orgs == ['org1.com': 1, 'org2.com': 1]
     }
 
     def 'should increment pull count and return the correct count' () {
@@ -81,9 +93,17 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         metricsService.incrementPullsCounter(null)
 
         then:
-        metricsService.getPullsMetrics(null, 'org1.com') == 1
-        metricsService.getPullsMetrics(date, 'org2.com') == 1
-        metricsService.getPullsMetrics(date, null) == 3
+        def res1 = metricsService.getOrgCount(MetricConstants.PREFIX_PULLS, null, 'org1.com')
+        res1.count == 1
+        res1.orgs == ['org1.com': 1]
+        and:
+        def res2 = metricsService.getOrgCount(MetricConstants.PREFIX_PULLS,date, 'org2.com')
+        res2.count == 1
+        res2.orgs == ['org2.com': 1]
+        and:
+        def res3 = metricsService.getOrgCount(MetricConstants.PREFIX_PULLS,date, null)
+        res3.count == 3
+        res3.orgs == ['org1.com': 1, 'org2.com': 1]
     }
 
     def 'should increment fusion pull count and return the correct count' () {
@@ -103,9 +123,17 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         metricsService.incrementFusionPullsCounter(null)
 
         then:
-        metricsService.getFusionPullsMetrics(null, 'org1.com') == 1
-        metricsService.getFusionPullsMetrics(date, 'org2.com') == 1
-        metricsService.getFusionPullsMetrics(date, null) == 3
+        def res1 = metricsService.getOrgCount(MetricConstants.PREFIX_FUSION,null, 'org1.com')
+        res1.count == 1
+        res1.orgs == ['org1.com': 1]
+        and:
+        def res2 = metricsService.getOrgCount(MetricConstants.PREFIX_FUSION, date, 'org2.com')
+        res2.count == 1
+        res2.orgs == ['org2.com': 1]
+        and:
+        def res3 = metricsService.getOrgCount(MetricConstants.PREFIX_FUSION, date, null)
+        res3.count == 3
+        res3.orgs == ['org1.com': 1, 'org2.com': 1]
     }
 
     @Unroll
@@ -164,10 +192,10 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         metricsService.incrementFusionPullsCounter(platformId2)
         metricsService.incrementFusionPullsCounter(null)
         and:
-        def buildOrgCounts = metricsService.getOrgCount(MetricConstants.PREFIX_BUILDS)
-        def pullOrgCounts = metricsService.getOrgCount(MetricConstants.PREFIX_PULLS)
-        def fusionOrgCounts = metricsService.getOrgCount(MetricConstants.PREFIX_FUSION)
-        def emptyOrgCounts = metricsService.getOrgCount(null)
+        def buildOrgCounts = metricsService.getAllOrgCount(MetricConstants.PREFIX_BUILDS)
+        def pullOrgCounts = metricsService.getAllOrgCount(MetricConstants.PREFIX_PULLS)
+        def fusionOrgCounts = metricsService.getAllOrgCount(MetricConstants.PREFIX_FUSION)
+        def emptyOrgCounts = metricsService.getAllOrgCount(null)
 
         then:
         buildOrgCounts.metric == MetricConstants.PREFIX_BUILDS
@@ -209,10 +237,10 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         metricsService.incrementFusionPullsCounter(platformId2)
         metricsService.incrementFusionPullsCounter(null)
         and:
-        def buildOrgCounts = metricsService.getOrgCountPerDate(MetricConstants.PREFIX_BUILDS, date, null)
-        def pullOrgCounts = metricsService.getOrgCountPerDate(MetricConstants.PREFIX_PULLS, date, null)
-        def fusionOrgCounts = metricsService.getOrgCountPerDate(MetricConstants.PREFIX_FUSION, date, null)
-        def emptyOrgCounts = metricsService.getOrgCountPerDate(null, date, null)
+        def buildOrgCounts = metricsService.getOrgCount(MetricConstants.PREFIX_BUILDS, date, null)
+        def pullOrgCounts = metricsService.getOrgCount(MetricConstants.PREFIX_PULLS, date, null)
+        def fusionOrgCounts = metricsService.getOrgCount(MetricConstants.PREFIX_FUSION, date, null)
+        def emptyOrgCounts = metricsService.getOrgCount(null, date, null)
 
         then:
         buildOrgCounts.metric == MetricConstants.PREFIX_BUILDS
@@ -232,6 +260,7 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         emptyOrgCounts.orgs == [:]
     }
 
+    @Unroll
     def 'extract correct org name from key'(){
         expect:
         MetricsServiceImpl.extractOrgFromKey(KEY) == ORG
