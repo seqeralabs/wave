@@ -25,15 +25,20 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 import io.seqera.wave.service.counter.impl.LocalCounterProvider
+import io.seqera.wave.service.counter.impl.RedisCounterProvider
 import io.seqera.wave.service.metric.MetricConstants
 import io.seqera.wave.service.metric.MetricsCounterStore
+import io.seqera.wave.test.RedisTestContainer
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
+import org.testcontainers.shaded.org.bouncycastle.cms.OriginatorInfoGenerator
+import software.amazon.awssdk.regions.servicemetadata.OrganizationsServiceMetadata
+
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-class MetricsServiceImplTest extends Specification {
+class MetricsServiceImplTest extends Specification implements RedisTestContainer{
 
     DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
@@ -180,5 +185,61 @@ class MetricsServiceImplTest extends Specification {
         emptyOrgCounts.metric == null
         emptyOrgCounts.count == 0
         emptyOrgCounts.orgs == [:]
+    }
+
+    def 'should get correct org count per date'(){
+        given:
+        def date = LocalDate.now().format(dateFormatter)
+        def localCounterProvider = new LocalCounterProvider()
+        def metricsCounterStore = new MetricsCounterStore(localCounterProvider)
+        def metricsService = new MetricsServiceImpl(metricsCounterStore: metricsCounterStore)
+        def user1 = new User(id: 1, userName: 'foo', email: 'user1@org1.com')
+        def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
+        def platformId1 = new PlatformId(user1, 101)
+        def platformId2 = new PlatformId(user2, 102)
+
+        when:
+        metricsService.incrementBuildsCounter(platformId1)
+        metricsService.incrementBuildsCounter(platformId2)
+        metricsService.incrementBuildsCounter(null)
+        metricsService.incrementPullsCounter(platformId1)
+        metricsService.incrementPullsCounter(platformId2)
+        metricsService.incrementPullsCounter(null)
+        metricsService.incrementFusionPullsCounter(platformId1)
+        metricsService.incrementFusionPullsCounter(platformId2)
+        metricsService.incrementFusionPullsCounter(null)
+        and:
+        def buildOrgCounts = metricsService.getOrgCountPerDate(MetricConstants.PREFIX_BUILDS, date, null)
+        def pullOrgCounts = metricsService.getOrgCountPerDate(MetricConstants.PREFIX_PULLS, date, null)
+        def fusionOrgCounts = metricsService.getOrgCountPerDate(MetricConstants.PREFIX_FUSION, date, null)
+        def emptyOrgCounts = metricsService.getOrgCountPerDate(null, date, null)
+
+        then:
+        buildOrgCounts.metric == MetricConstants.PREFIX_BUILDS
+        buildOrgCounts.count == 3
+        buildOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        and:
+        pullOrgCounts.metric == MetricConstants.PREFIX_PULLS
+        pullOrgCounts.count == 3
+        pullOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        and:
+        fusionOrgCounts.metric == MetricConstants.PREFIX_FUSION
+        fusionOrgCounts.count == 3
+        fusionOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        and:
+        emptyOrgCounts.metric == null
+        emptyOrgCounts.count == 0
+        emptyOrgCounts.orgs == [:]
+    }
+
+    def 'extract correct org name from key'(){
+        expect:
+        MetricsServiceImpl.extractOrgFromKey(KEY) == ORG
+        where:
+        KEY                                 | ORG
+        'builds/o/org1.com/d/2024-05-30'    | 'org1.com'
+        'pulls/o/org2.com/d/2024-05-29'     | 'org2.com'
+        'fusion/o/org3.com/d/2024-04-30'    | 'org3.com'
+        'fusion/d/2024-04-30'               | 'unknown'
     }
 }

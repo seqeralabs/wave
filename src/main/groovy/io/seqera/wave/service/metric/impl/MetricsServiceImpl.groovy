@@ -20,6 +20,8 @@ package io.seqera.wave.service.metric.impl
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -43,7 +45,9 @@ class MetricsServiceImpl implements MetricsService {
     @Inject
     private MetricsCounterStore metricsCounterStore
 
-    DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+    static DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+
+    static Pattern orgDateKeyPattern = Pattern.compile('(builds|pulls|fusion)/o/([^/]+)/d/\\d{4}-\\d{2}-\\d{2}')
 
     @Override
     Long getBuildsMetrics(String date, String org) {
@@ -73,6 +77,28 @@ class MetricsServiceImpl implements MetricsService {
             }
         }
         return response
+    }
+
+    @Override
+    GetOrgCountResponse getOrgCountPerDate(String metric, String date, String org) {
+        final response = new GetOrgCountResponse(metric, 0, [:])
+
+        // count is stored per date and per org, so it can be extracted from get method
+        response.count = metricsCounterStore.get(getKey(metric, date, org)) ?: 0L
+
+        //when org and date is provided, return the org count for given date
+        if (org) {
+            response.orgs.put(org, response.count)
+        }else{
+            // when only date is provide, scan the store and return the  count for all orgs on given date
+            final orgCounts = metricsCounterStore.getAllMatchingEntries("$metric/$MetricConstants.PREFIX_ORG/*/$MetricConstants.PREFIX_DAY/$date")
+            for(def entry : orgCounts) {
+                response.orgs.put(extractOrgFromKey(entry.key), entry.value)
+            }
+        }
+
+        return response
+
     }
 
     @Override
@@ -127,4 +153,13 @@ class MetricsServiceImpl implements MetricsService {
         return null
     }
 
+    protected static String extractOrgFromKey(String key) {
+        Matcher matcher = orgDateKeyPattern.matcher(key)
+        if (matcher.matches()) {
+            return matcher.group(2)
+        } else {
+            return "unknown"
+        }
+
+    }
 }
