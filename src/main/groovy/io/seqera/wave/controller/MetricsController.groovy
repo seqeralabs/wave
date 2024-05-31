@@ -65,28 +65,25 @@ class MetricsController {
     @Get(uri = "/v1alpha2/metrics/builds", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getBuildsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
         if(!date && !org)
-            return HttpResponse.ok(metricsService.getOrgCount(MetricConstants.PREFIX_BUILDS))
+            return HttpResponse.ok(metricsService.getAllOrgCount(MetricConstants.PREFIX_BUILDS))
         validateQueryParams(date)
-        final count = metricsService.getBuildsMetrics(date, org)
-        return HttpResponse.ok(new GetBuildsCountResponse(count))
+        return HttpResponse.ok(metricsService.getOrgCount(MetricConstants.PREFIX_BUILDS, date, org))
     }
 
     @Get(uri = "/v1alpha2/metrics/pulls", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
         if(!date && !org)
-            return HttpResponse.ok(metricsService.getOrgCount(MetricConstants.PREFIX_PULLS))
+            return HttpResponse.ok(metricsService.getAllOrgCount(MetricConstants.PREFIX_PULLS))
         validateQueryParams(date)
-        final count = metricsService.getPullsMetrics(date, org)
-        return HttpResponse.ok(new GetPullsCountResponse(count))
+        return HttpResponse.ok(metricsService.getOrgCount(MetricConstants.PREFIX_PULLS, date, org))
     }
 
     @Get(uri = "/v1alpha2/metrics/fusion/pulls", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getFusionPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
         if(!date && !org)
-            return HttpResponse.ok(metricsService.getOrgCount(MetricConstants.PREFIX_FUSION))
+            return HttpResponse.ok(metricsService.getAllOrgCount(MetricConstants.PREFIX_FUSION))
         validateQueryParams(date)
-        final count = metricsService.getFusionPullsMetrics(date, org)
-        return HttpResponse.ok(new GetFusionPullsCountResponse(count))
+        return HttpResponse.ok(metricsService.getOrgCount(MetricConstants.PREFIX_FUSION, date, org))
 
     }
 
