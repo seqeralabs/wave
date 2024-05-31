@@ -144,8 +144,8 @@ class K8sServiceImpl implements K8sService {
 
         V1Job body = new V1JobBuilder()
                 .withNewMetadata()
-                .withNamespace(namespace)
-                .withName(name)
+                    .withNamespace(namespace)
+                    .withName(name)
                 .endMetadata()
                 .withNewSpec()
                     .withBackoffLimit(0)
