@@ -317,8 +317,9 @@ class RegistryProxyController {
     }
 
     MutableHttpResponse<?> fromDownloadResponse(final DelegateResponse resp, RoutePath route, Map<String, List<String>> headers) {
-        final blobCache = blobCacheService .retrieveBlobCache(route, headers)
-        log.debug "Blob cache $blobCache"
+        log.debug "== Blob cache upstream $resp"
+        final blobCache = blobCacheService .retrieveBlobCache(route, headers, resp.headers)
+        log.debug "== Blob cache response [succeeded=${blobCache.succeeded()}] $blobCache"
         if( !blobCache.succeeded() ) {
             final String msg = blobCache.logs ?: "Unable to cache blob ${blobCache.locationUri}"
             return badRequest(msg)
