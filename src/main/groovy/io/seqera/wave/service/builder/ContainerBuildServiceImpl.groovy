@@ -241,7 +241,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         //increment metrics
         CompletableFuture.supplyAsync(() -> metricsService.incrementBuildsCounter(request.identity), executor)
 
-        // save the container request in the underlying storage
+        // save the container request in the underlying storage (redis)
         createBuildRecord(request)
 
         // launch the build async
