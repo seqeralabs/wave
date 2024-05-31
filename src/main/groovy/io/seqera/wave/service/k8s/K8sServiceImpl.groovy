@@ -304,7 +304,7 @@ class K8sServiceImpl implements K8sService {
     }
 
     /**
-     * Create a container for container image building via Kaniko
+     * Create a container for container image building via buildkit
      *
      * @param name
      *      The name of pod
@@ -395,9 +395,12 @@ class K8sServiceImpl implements K8sService {
                     .withCommand(args)
                     .withNewSecurityContext().withPrivileged(true).endSecurityContext()
         } else {
-            container.withEnv(toEnvList(buildConfig.environment))
-            // buildCommand is to set entrypoint for buildkit
-            container.withCommand(buildConfig.buildCommand).withArgs(args)
+            container
+                    //required by buildkit rootless container
+                    .withEnv(toEnvList(buildConfig.environment))
+                    // buildCommand is to set entrypoint for buildkit
+                    .withCommand(buildConfig.buildCommand)
+                    .withArgs(args)
         }
 
         // spec section
