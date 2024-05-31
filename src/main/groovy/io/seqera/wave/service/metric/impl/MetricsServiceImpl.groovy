@@ -42,12 +42,12 @@ import jakarta.inject.Singleton
 @CompileStatic
 class MetricsServiceImpl implements MetricsService {
 
+    static final private DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+
+    static final private Pattern ORF_DATE_KEY_PATTERN = Pattern.compile('(builds|pulls|fusion)/o/([^/]+)/d/\\d{4}-\\d{2}-\\d{2}')
+
     @Inject
     private MetricsCounterStore metricsCounterStore
-
-    static DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-
-    static Pattern orgDateKeyPattern = Pattern.compile('(builds|pulls|fusion)/o/([^/]+)/d/\\d{4}-\\d{2}-\\d{2}')
 
     @Override
     GetOrgCountResponse getAllOrgCount(String metric){
@@ -103,14 +103,14 @@ class MetricsServiceImpl implements MetricsService {
 
     protected void incrementCounter(String prefix, String email) {
         def org = getOrg(email)
-        def key = getKey(prefix, LocalDate.now().format(dateFormatter), null)
+        def key = getKey(prefix, LocalDate.now().format(DATE_FORMATTER), null)
         metricsCounterStore.inc(key)
         log.trace("increment metrics count of: $key")
         if ( org ) {
             key = getKey(prefix, null, org)
             metricsCounterStore.inc(key)
             log.trace("increment metrics count of: $key")
-            key = getKey(prefix, LocalDate.now().format(dateFormatter), org)
+            key = getKey(prefix, LocalDate.now().format(DATE_FORMATTER), org)
             metricsCounterStore.inc(key)
             log.trace("increment metrics count of: $key")
         }
@@ -139,7 +139,7 @@ class MetricsServiceImpl implements MetricsService {
     }
 
     protected static String extractOrgFromKey(String key) {
-        Matcher matcher = orgDateKeyPattern.matcher(key)
+        Matcher matcher = ORF_DATE_KEY_PATTERN.matcher(key)
         return matcher.matches() ? matcher.group(2) : "unknown"
     }
 }
