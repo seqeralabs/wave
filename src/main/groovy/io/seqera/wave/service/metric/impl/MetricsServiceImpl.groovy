@@ -44,7 +44,7 @@ class MetricsServiceImpl implements MetricsService {
 
     static final private DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-    static final private Pattern ORF_DATE_KEY_PATTERN = Pattern.compile('(builds|pulls|fusion)/o/([^/]+)/d/\\d{4}-\\d{2}-\\d{2}')
+    static final private Pattern ORG_DATE_KEY_PATTERN = Pattern.compile('(builds|pulls|fusion)/o/([^/]+)/d/\\d{4}-\\d{2}-\\d{2}')
 
     @Inject
     private MetricsCounterStore metricsCounterStore
@@ -139,7 +139,7 @@ class MetricsServiceImpl implements MetricsService {
     }
 
     protected static String extractOrgFromKey(String key) {
-        Matcher matcher = ORF_DATE_KEY_PATTERN.matcher(key)
+        Matcher matcher = ORG_DATE_KEY_PATTERN.matcher(key)
         return matcher.matches() ? matcher.group(2) : "unknown"
     }
 }
