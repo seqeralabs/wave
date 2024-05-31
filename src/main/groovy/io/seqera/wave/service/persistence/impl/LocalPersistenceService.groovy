@@ -40,12 +40,7 @@ class LocalPersistenceService implements PersistenceService {
     private Map<String,WaveScanRecord> scanStore = new HashMap<>()
 
     @Override
-    void createBuild(WaveBuildRecord record) {
-        buildStore[record.buildId] = record
-    }
-
-    @Override
-    void updateBuild(WaveBuildRecord record) {
+    void saveBuild(WaveBuildRecord record) {
         buildStore[record.buildId] = record
     }
 
