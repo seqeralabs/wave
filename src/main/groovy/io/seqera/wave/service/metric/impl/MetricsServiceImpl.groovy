@@ -140,11 +140,6 @@ class MetricsServiceImpl implements MetricsService {
 
     protected static String extractOrgFromKey(String key) {
         Matcher matcher = orgDateKeyPattern.matcher(key)
-        if (matcher.matches()) {
-            return matcher.group(2)
-        } else {
-            return "unknown"
-        }
-
+        return matcher.matches() ? matcher.group(2) : "unknown"
     }
 }
