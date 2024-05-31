@@ -71,7 +71,9 @@ interface ContainerBuildService {
     }
 
 
-    // --- build record
+    // **************************************************************
+    // **               build record operations
+    // **************************************************************
 
     @EventListener
     default void onBuildEvent(BuildEvent event) {
