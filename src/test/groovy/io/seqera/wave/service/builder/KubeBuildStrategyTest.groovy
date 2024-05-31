@@ -21,21 +21,11 @@ package io.seqera.wave.service.builder
 import spock.lang.Specification
 
 import java.nio.file.Files
-import java.nio.file.Paths
-import java.time.OffsetDateTime
 
-import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
-import io.kubernetes.client.openapi.models.V1Job
-import io.kubernetes.client.openapi.models.V1ObjectMeta
-import io.kubernetes.client.openapi.models.V1Pod
-import io.kubernetes.client.openapi.models.V1PodList
-import io.kubernetes.client.openapi.models.V1PodStatus
 import io.micronaut.context.annotation.Property
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.exception.BuildTimeoutException
 import io.seqera.wave.service.k8s.K8sService
 import io.seqera.wave.service.k8s.K8sServiceImpl
 import io.seqera.wave.tower.PlatformId
@@ -76,16 +66,6 @@ class KubeBuildStrategyTest extends Specification {
         def cache = 'docker.io/cache'
         def dockerfile = 'from foo'
 
-        def pod = new V1Pod(metadata: [name: 'podName', creationTimestamp: OffsetDateTime.now()])
-        pod.status = new V1PodStatus(phase: "Succeeded")
-        def podList = new V1PodList(items: [pod])
-
-        k8sService.buildJob(_, _, _, _, _, _, [service:'wave-build']) >> new V1Job(metadata: [name: 'jobName'])
-        k8sService.waitJob(_, _) >> podList
-        k8sService.getPod(_) >> pod
-        k8sService.waitPod(_, _, _) >> new V1ContainerStateTerminated().exitCode(0)
-        k8sService.logsPod(_, _) >> 'stdout'
-
         when:
         def containerId = ContainerHelper.makeContainerId(dockerfile, null, null, ContainerPlatform.of('amd64'), repo, null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, repo, containerId, null, null, null)
@@ -93,9 +73,10 @@ class KubeBuildStrategyTest extends Specification {
         Files.createDirectories(req.workDir)
 
         def resp = strategy.build(req)
-
         then:
         resp
+        and:
+        1 * k8sService.buildContainer(_, _, _, _, _, _, [service:'wave-build']) >> null
 
         when:
         def req2 = new BuildRequest(containerId, dockerfile, null, null, PATH, targetImage, USER, ContainerPlatform.of('arm64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.DOCKER).withBuildId('1')
@@ -105,7 +86,7 @@ class KubeBuildStrategyTest extends Specification {
         then:
         resp2
         and:
-        1 * k8sService.buildJob(_, _, _, _, _, _, [service:'wave-build-arm64']) >> null
+        1 * k8sService.buildContainer(_, _, _, _, _, _, [service:'wave-build-arm64']) >> null
 
     }
 
@@ -150,56 +131,10 @@ class KubeBuildStrategyTest extends Specification {
         def req = new BuildRequest(containerId, dockerfile, null, null, PATH, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER).withBuildId('1')
 
         when:
-        def jobName = strategy.getName(req)
+        def podName = strategy.podName(req)
 
         then:
         req.buildId == '143ee73bcdac45b1_1'
-        jobName == 'build-143ee73bcdac45b1-1'
-    }
-
-    def "should launch k8s build container when building singularity image"() {
-        given:
-        def name = "pod-name"
-        def buildImage = "singularity-builder"
-        def buildCmd = ["cmd1", "cmd2"]
-        def req = Mock(BuildRequest) {
-            formatSingularity() >> true
-            getWorkDir() >> Paths.get("/work/dir")
-            getBuildId() >> "build-123"
-        }
-        def configFile = Paths.get("/config/file")
-        def spackConfig = Mock(SpackConfig)
-        def nodeSelector = ["key": "value"]
-
-        when:
-        strategy.launchContainerBuild(name, buildImage, buildCmd, req, configFile, spackConfig, nodeSelector)
-
-        then:
-        1 * k8sService.buildContainer(name, buildImage, buildCmd, req.getWorkDir(), configFile, spackConfig, nodeSelector)
-    }
-
-    def "should throw BuildTimeoutException when no pods are returned"() {
-        given:
-        def name = "job-name"
-        def buildImage = "docker-builder"
-        def buildCmd = ["cmd1", "cmd2"]
-        def req = Mock(BuildRequest) {
-            formatDocker() >> true
-            getWorkDir() >> Paths.get("/work/dir")
-            getBuildId() >> "build-123"
-        }
-        def configFile = Paths.get("/config/file")
-        def spackConfig = Mock(SpackConfig)
-        def nodeSelector = ["key": "value"]
-
-        when:
-        strategy.launchContainerBuild(name, buildImage, buildCmd, req, configFile, spackConfig, nodeSelector)
-
-        then:
-        1 * k8sService.buildJob(name, buildImage, buildCmd, req.getWorkDir(), configFile, spackConfig, nodeSelector) >> Mock(V1Job)
-        1 * k8sService.waitJob(_, _) >> Mock(V1PodList) {
-            getItems() >> []
-        }
-        thrown(BuildTimeoutException)
+        podName == 'build-143ee73bcdac45b1-1'
     }
 }

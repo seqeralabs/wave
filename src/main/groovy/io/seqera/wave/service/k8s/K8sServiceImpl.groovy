@@ -35,11 +35,9 @@ import io.kubernetes.client.openapi.models.V1JobBuilder
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodBuilder
-import io.kubernetes.client.openapi.models.V1PodList
 import io.kubernetes.client.openapi.models.V1ResourceRequirements
 import io.kubernetes.client.openapi.models.V1Volume
 import io.kubernetes.client.openapi.models.V1VolumeMount
-import io.kubernetes.client.util.Yaml
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
@@ -146,19 +144,19 @@ class K8sServiceImpl implements K8sService {
 
         V1Job body = new V1JobBuilder()
                 .withNewMetadata()
-                    .withNamespace(namespace)
-                    .withName(name)
+                .withNamespace(namespace)
+                .withName(name)
                 .endMetadata()
                 .withNewSpec()
-                    .withBackoffLimit(0)
-                    .withNewTemplate()
-                    .editOrNewSpec()
-                    .addNewContainer()
-                        .withName(name)
-                        .withImage(containerImage)
-                        .withArgs(args)
-                    .endContainer()
-                    .withRestartPolicy("Never")
+                .withBackoffLimit(0)
+                .withNewTemplate()
+                .editOrNewSpec()
+                .addNewContainer()
+                .withName(name)
+                .withImage(containerImage)
+                .withArgs(args)
+                .endContainer()
+                .withRestartPolicy("Never")
                 .endSpec()
                 .endTemplate()
                 .endSpec()
@@ -342,9 +340,14 @@ class K8sServiceImpl implements K8sService {
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
         if( credsFile ){
+            if( !singularity ) {
+                mounts.add(0, mountHostPath(credsFile, storageMountPath, '/home/user/.docker/config.json'))
+            }
+            else {
                 final remoteFile = credsFile.resolveSibling('singularity-remote.yaml')
                 mounts.add(0, mountHostPath(credsFile, storageMountPath, '/root/.singularity/docker-config.json'))
                 mounts.add(1, mountHostPath(remoteFile, storageMountPath, '/root/.singularity/remote.yaml'))
+            }
         }
 
         if( spackConfig ) {
@@ -354,11 +357,14 @@ class K8sServiceImpl implements K8sService {
         V1PodBuilder builder = new V1PodBuilder()
 
         //metadata section
-        builder.withNewMetadata()
+        def metadata = builder.withNewMetadata()
                 .withNamespace(namespace)
                 .withName(name)
                 .addToLabels(labels)
-                .endMetadata()
+        if( !singularity ) {
+            metadata.addToAnnotations(buildConfig.getAnnotations(name))
+        }
+        metadata.endMetadata()
 
         //spec section
         def spec = builder
@@ -388,10 +394,10 @@ class K8sServiceImpl implements K8sService {
             // use 'command' to override the entrypoint of the container
                     .withCommand(args)
                     .withNewSecurityContext().withPrivileged(true).endSecurityContext()
-        }
-        else {
-            // use 'arg' to avoid overriding the entrypoint of the container set by kaniko
-            container.withArgs(args)
+        } else {
+            container.withEnv(toEnvList(buildConfig.environment))
+            // buildCommand is to set entrypoint for buildkit
+            container.withCommand(buildConfig.buildCommand).withArgs(args)
         }
 
         // spec section
@@ -413,29 +419,13 @@ class K8sServiceImpl implements K8sService {
      */
     @Override
     V1ContainerStateTerminated waitPod(V1Pod pod, long timeout) {
-        return waitPod(pod, pod.metadata.name, timeout)
-    }
-
-    /**
-     * Wait for a pod a completion
-     *
-     * @param pod
-     *      The pod name
-     * @param timeout
-     *      Max wait time in milliseconds
-     * @return
-     *      An instance of {@link V1ContainerStateTerminated} representing the termination state
-     *      or {@code null} if the state cannot be determined or timeout was reached,
-     */
-    @Override
-    V1ContainerStateTerminated waitPod(V1Pod pod, String containerName, long timeout) {
         final name = pod.metadata.name
         final start = System.currentTimeMillis()
         // wait for termination
         while( true ) {
             final phase = pod.status?.phase
             if(  phase && phase != 'Pending' ) {
-                final status = pod.status.containerStatuses.find( it -> it.name==containerName )
+                final status = pod.status.containerStatuses.find( it -> it.name==name )
                 if( !status )
                     return null
                 if( !status.state )
@@ -463,23 +453,12 @@ class K8sServiceImpl implements K8sService {
      */
     @Override
     String logsPod(String name) {
-        logsPod(name, name)
-    }
-
-    /**
-     * Fetch the logs of a pod
-     *
-     * @param name The pod name
-     * @return The logs as a string or when logs are not available or cannot be accessed
-     */
-    @Override
-    String logsPod(String podName, String containerName) {
         try {
             final logs = k8sClient.podLogs()
-            logs.streamNamespacedPodLog(namespace, podName, containerName).getText()
+            logs.streamNamespacedPodLog(namespace, name, name).getText()
         }
         catch (Exception e) {
-            log.error "Unable to fetch logs for pod: $podName and container: $containerName", e
+            log.error "Unable to fetch logs for pod: $name", e
             return null
         }
     }
@@ -600,121 +579,10 @@ class K8sServiceImpl implements K8sService {
         builder.build()
     }
 
-    @Override
-    V1Job buildJob(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String, String> nodeSelector) {
-        def spec = buildJobSpec(name, containerImage,args, workDir, creds, spackConfig, nodeSelector)
-        return k8sClient
-                .batchV1Api()
-                .createNamespacedJob(namespace, spec, null, null, null,null)
-    }
-
-    V1Job buildJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, SpackConfig spackConfig, Map<String,String> nodeSelector) {
-
-        // required volumes
-        final mounts = new ArrayList<V1VolumeMount>(5)
-        mounts.add(mountBuildStorage(workDir, storageMountPath, true))
-
-        final volumes = new ArrayList<V1Volume>(5)
-        volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
-
-        if( credsFile ){
-                mounts.add(0, mountHostPath(credsFile, storageMountPath, '/home/user/.docker/config.json'))
-        }
-
-        if( spackConfig ) {
-            mounts.add(mountSpackSecretFile(spackConfig.secretKeyFile, storageMountPath, spackConfig.secretMountPath))
-        }
-
-        V1JobBuilder builder = new V1JobBuilder()
-
-        //metadata section
-        builder.withNewMetadata()
-                .withNamespace(namespace)
-                .withName(name)
-                .addToLabels(labels)
-                .endMetadata()
-
-        //spec section
-        def spec = builder
-                .withNewSpec()
-                .withNewTemplate()
-                .withNewMetadata()
-                    .addToAnnotations(buildConfig.getAnnotations(name))
-                .endMetadata()
-                .editOrNewSpec()
-                    .withNodeSelector(nodeSelector)
-                    .withServiceAccount(serviceAccount)
-                    .withActiveDeadlineSeconds( buildConfig.buildTimeout.toSeconds() )
-                    .withRestartPolicy("Never")
-                    .addAllToVolumes(volumes)
-
-
-        final requests = new V1ResourceRequirements()
-        if( requestsCpu )
-            requests.putRequestsItem('cpu', new Quantity(requestsCpu))
-        if( requestsMemory )
-            requests.putRequestsItem('memory', new Quantity(requestsMemory))
-
-        // container section
-        final container = new V1ContainerBuilder()
-                .withName(name)
-                .withImage(containerImage)
-                .withVolumeMounts(mounts)
-                .withResources(requests)
-                .withEnv(toEnvList(buildConfig.environment))
-                // buildCommand is to set entrypoint for buildkit
-                .withCommand(buildConfig.buildCommand).withArgs(args)
-
-        // spec section
-        spec.withContainers(container.build()).endSpec().endTemplate().endSpec()
-
-        return builder.build()
-    }
-
     protected List<V1EnvVar> toEnvList(Map<String,String> env) {
         final result = new ArrayList<V1EnvVar>(env.size())
         for( Map.Entry<String,String> it : env )
             result.add( new V1EnvVar().name(it.key).value(it.value) )
         return result
     }
-
-
-    /**
-     * Wait for a job to complete
-     *
-     * @param k8s job
-     * @param timeout
-     *      Max wait time in milliseconds
-     * @return list of pods created by the job
-     */
-    @Override
-    V1PodList waitJob(V1Job job, Long timeout) {
-        sleep 5_000
-        final startTime = System.currentTimeMillis()
-        // wait for termination
-        while (System.currentTimeMillis() - startTime < timeout) {
-            final name = job.metadata.name
-            final status = getJobStatus(name)
-            if (status != JobStatus.Pending) {
-                return k8sClient.
-                        coreV1Api().
-                        listNamespacedPod(namespace, null, null, null, null, "job-name=$name", null, null, null, null, null, null)
-            }
-            job = getJob(name)
-        }
-        return null
-    }
-
-    /**
-     * Delete a job
-     *
-     * @param name, name of the job to be deleted
-     */
-    @Override
-    void deleteJob(String name) {
-        k8sClient
-                .batchV1Api()
-                .deleteNamespacedJob(name, namespace, null, null, null, null,"Background", null)
-    }
-
 }
