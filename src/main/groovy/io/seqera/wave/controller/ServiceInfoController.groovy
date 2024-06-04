@@ -25,6 +25,7 @@ import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
+import io.micronaut.http.annotation.QueryValue
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.api.ServiceInfo
@@ -60,6 +61,12 @@ class ServiceInfoController {
         return landingUrl
                 ? HttpResponse.redirect(new URI(landingUrl))
                 : HttpResponse.badRequest()
+    }
+
+    @Get("/test")
+    HttpResponse test(@QueryValue  String endpoint) {
+        log.warn "Endpoint '$endpoint' is exceeding the timeout counter limit"
+        return HttpResponse.ok("OK")
     }
 
 }
