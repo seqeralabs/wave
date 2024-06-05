@@ -24,6 +24,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpResponse
+import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Post
 import io.micronaut.scheduling.TaskExecutors
@@ -68,7 +69,7 @@ class InspectController {
     private String serverUrl
 
     @Post("/v1alpha1/inspect")
-    CompletableFuture<HttpResponse<ContainerInspectResponse>> inspect(ContainerInspectRequest req) {
+    CompletableFuture<HttpResponse<ContainerInspectResponse>> inspect(@Body ContainerInspectRequest req) {
 
         if( !req.containerImage )
             throw new BadRequestException("Missing 'containerImage' attribute")

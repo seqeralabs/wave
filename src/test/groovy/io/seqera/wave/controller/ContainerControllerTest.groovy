@@ -126,9 +126,7 @@ class ContainerControllerTest extends Specification {
         def controller = Spy(new ContainerController(freezeService: freeze, inclusionService: Mock(ContainerInclusionService)))
         and:
         def target = 'docker.io/repo/ubuntu:latest'
-        def BUILD = Mock(BuildRequest) {
-            getTargetImage() >> target
-        }
+        def BUILD = new BuildRequest (targetImage: target)
         and:
         def req = new SubmitContainerTokenRequest(containerImage: 'ubuntu:latest', freeze: true, buildRepository: 'docker.io/foo/bar')
 
