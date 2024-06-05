@@ -155,7 +155,6 @@ class ContainerController {
 
     @Deprecated
     @Post('/container-token')
-
     @ExecuteOn(TaskExecutors.IO)
     CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getToken(HttpRequest httpRequest, @Body SubmitContainerTokenRequest req) {
         return getContainerImpl(httpRequest, req, false)
@@ -163,7 +162,7 @@ class ContainerController {
 
     @Post('/v1alpha2/container')
     @ExecuteOn(TaskExecutors.IO)
-    CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getTokenV2(HttpRequest httpRequest, SubmitContainerTokenRequest req) {
+    CompletableFuture<HttpResponse<SubmitContainerTokenResponse>> getTokenV2(HttpRequest httpRequest, @Body SubmitContainerTokenRequest req) {
         return getContainerImpl(httpRequest, req, true)
     }
 
