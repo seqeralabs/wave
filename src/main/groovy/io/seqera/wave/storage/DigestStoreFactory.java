@@ -26,7 +26,7 @@ import io.seqera.wave.model.ContentType;
 import static io.seqera.wave.util.StringUtils.trunc;
 
 /**
- * Implement a factory class for {@link DigestStore} objets
+ * Implement a factory class for {@link DigestStore} objects
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

@@ -20,6 +20,8 @@ package io.seqera.wave.service.metric.impl
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -40,28 +42,15 @@ import jakarta.inject.Singleton
 @CompileStatic
 class MetricsServiceImpl implements MetricsService {
 
+    static final private DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+
+    static final private Pattern ORG_DATE_KEY_PATTERN = Pattern.compile('(builds|pulls|fusion)/o/([^/]+)/d/\\d{4}-\\d{2}-\\d{2}')
+
     @Inject
     private MetricsCounterStore metricsCounterStore
 
-    DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-
     @Override
-    Long getBuildsMetrics(String date, String org) {
-        return metricsCounterStore.get(getKey(MetricConstants.PREFIX_BUILDS, date, org)) ?: 0L
-    }
-
-    @Override
-    Long getPullsMetrics(String date, String org) {
-        return metricsCounterStore.get(getKey(MetricConstants.PREFIX_PULLS, date, org)) ?: 0L
-    }
-
-    @Override
-    Long getFusionPullsMetrics(String date, String org) {
-        return metricsCounterStore.get(getKey(MetricConstants.PREFIX_FUSION, date, org)) ?: 0L
-    }
-
-    @Override
-    GetOrgCountResponse getOrgCount(String metric){
+    GetOrgCountResponse getAllOrgCount(String metric){
         final response = new GetOrgCountResponse(metric, 0, [:])
         final orgCounts = metricsCounterStore.getAllMatchingEntries("$metric/$MetricConstants.PREFIX_ORG/*")
         for(def entry : orgCounts) {
@@ -73,6 +62,28 @@ class MetricsServiceImpl implements MetricsService {
             }
         }
         return response
+    }
+
+    @Override
+    GetOrgCountResponse getOrgCount(String metric, String date, String org) {
+        final response = new GetOrgCountResponse(metric, 0, [:])
+
+        // count is stored per date and per org, so it can be extracted from get method
+        response.count = metricsCounterStore.get(getKey(metric, date, org)) ?: 0L
+
+        //when org and date is provided, return the org count for given date
+        if (org) {
+            response.orgs.put(org, response.count)
+        }else{
+            // when only date is provide, scan the store and return the  count for all orgs on given date
+            final orgCounts = metricsCounterStore.getAllMatchingEntries("$metric/$MetricConstants.PREFIX_ORG/*/$MetricConstants.PREFIX_DAY/$date")
+            for(def entry : orgCounts) {
+                response.orgs.put(extractOrgFromKey(entry.key), entry.value)
+            }
+        }
+
+        return response
+
     }
 
     @Override
@@ -92,14 +103,14 @@ class MetricsServiceImpl implements MetricsService {
 
     protected void incrementCounter(String prefix, String email) {
         def org = getOrg(email)
-        def key = getKey(prefix, LocalDate.now().format(dateFormatter), null)
+        def key = getKey(prefix, LocalDate.now().format(DATE_FORMATTER), null)
         metricsCounterStore.inc(key)
         log.trace("increment metrics count of: $key")
         if ( org ) {
             key = getKey(prefix, null, org)
             metricsCounterStore.inc(key)
             log.trace("increment metrics count of: $key")
-            key = getKey(prefix, LocalDate.now().format(dateFormatter), org)
+            key = getKey(prefix, LocalDate.now().format(DATE_FORMATTER), org)
             metricsCounterStore.inc(key)
             log.trace("increment metrics count of: $key")
         }
@@ -127,4 +138,8 @@ class MetricsServiceImpl implements MetricsService {
         return null
     }
 
+    protected static String extractOrgFromKey(String key) {
+        Matcher matcher = ORG_DATE_KEY_PATTERN.matcher(key)
+        return matcher.matches() ? matcher.group(2) : "unknown"
+    }
 }

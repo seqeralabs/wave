@@ -101,7 +101,7 @@ class BuildControllerTest extends Specification {
         final event = new BuildEvent(build, result)
         final entry = WaveBuildRecord.fromEvent(event)
         and:
-        persistenceService.createBuild(entry)
+        persistenceService.saveBuild(entry)
         when:
         def req = HttpRequest.GET("/v1alpha1/builds/${build.buildId}")
         def res = client.toBlocking().exchange(req, WaveBuildRecord)
@@ -141,7 +141,7 @@ class BuildControllerTest extends Specification {
                 requestIp: '127.0.0.1',
                 startTime: Instant.now().minus(1, ChronoUnit.DAYS) )
         and:
-        persistenceService.createBuild(build1)
+        persistenceService.saveBuild(build1)
         sleep(500)
 
         when:
