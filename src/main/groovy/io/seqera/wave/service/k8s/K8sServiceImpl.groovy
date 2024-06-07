@@ -104,6 +104,14 @@ class K8sServiceImpl implements K8sService {
     @Inject
     private BuildConfig buildConfig
 
+    // check this link to know more about these options https://github.com/moby/buildkit/tree/master/examples/kubernetes#kubernetes-manifests-for-buildkit
+    private final Map BUILDKIT_ENVIRONMENT = ['BUILDKITD_FLAGS': '--oci-worker-no-process-sandbox']
+
+    private Map<String, String> getBuildkitAnnotations(String containerName) {
+        final key = "container.apparmor.security.beta.kubernetes.io/$containerName".toString()
+        return Map.of(key, "unconfined")
+    }
+
     /**
      * Validate config setting
      */
@@ -320,14 +328,14 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Pod} description the submitted pod
      */
     @Override
-    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector) {
-        final spec = buildSpec(name, containerImage, args, workDir, creds, spackConfig, nodeSelector)
+    V1Pod buildContainer(String name, String containerImage, String buildCommand, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector) {
+        final spec = buildSpec(name, containerImage, buildCommand, args, workDir, creds, spackConfig, nodeSelector)
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
-    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, SpackConfig spackConfig, Map<String,String> nodeSelector) {
+    V1Pod buildSpec(String name, String containerImage, String buildCommand, List<String> args, Path workDir, Path credsFile, SpackConfig spackConfig, Map<String,String> nodeSelector) {
 
         // dirty dependency to avoid introducing another parameter
         final singularity = containerImage.contains('singularity')
@@ -362,7 +370,7 @@ class K8sServiceImpl implements K8sService {
                 .withName(name)
                 .addToLabels(labels)
         if( !singularity ) {
-            metadata.addToAnnotations(buildConfig.getAnnotations(name))
+            metadata.addToAnnotations(getBuildkitAnnotations(name))
         }
         metadata.endMetadata()
 
@@ -397,9 +405,9 @@ class K8sServiceImpl implements K8sService {
         } else {
             container
                     //required by buildkit rootless container
-                    .withEnv(toEnvList(buildConfig.environment))
+                    .withEnv(toEnvList(BUILDKIT_ENVIRONMENT))
                     // buildCommand is to set entrypoint for buildkit
-                    .withCommand(buildConfig.buildCommand)
+                    .withCommand(buildCommand)
                     .withArgs(args)
         }
 
@@ -588,4 +596,5 @@ class K8sServiceImpl implements K8sService {
             result.add( new V1EnvVar().name(it.key).value(it.value) )
         return result
     }
+
 }

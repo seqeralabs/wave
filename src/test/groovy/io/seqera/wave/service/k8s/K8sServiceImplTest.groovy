@@ -204,7 +204,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this', 'that'], Path.of('/build/work/xyz'), Path.of('/build/work/xyz/config.json'), null, [:])
+        def result = k8sService.buildSpec('foo', 'my-image:latest', 'entrypoint', ['this', 'that'], Path.of('/build/work/xyz'), Path.of('/build/work/xyz/config.json'), null, [:])
         then:
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
@@ -217,7 +217,7 @@ class K8sServiceImplTest extends Specification {
             args == ['this', 'that']
             env.name == ['BUILDKITD_FLAGS']
             env.value == ['--oci-worker-no-process-sandbox']
-            command == ['buildctl-daemonless.sh']
+            command == ['entrypoint']
             volumeMounts.size() == 2
             volumeMounts.get(0).name == 'build-data'
             volumeMounts.get(0).mountPath == '/home/user/.docker/config.json'
@@ -248,7 +248,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
         def workDir = Path.of('/build/work/xyz')
         when:
-        def result = k8sService.buildSpec('foo', 'singularity:latest', ['this','that'], workDir, workDir.resolve('config.json'), null, [:])
+        def result = k8sService.buildSpec('foo', 'singularity:latest', 'entrypoint', ['this','that'], workDir, workDir.resolve('config.json'), null, [:])
         then:
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
@@ -299,7 +299,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
         def spackConfig = ctx.getBean(SpackConfig)
         when:
-        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null, spackConfig, [:])
+        def result = k8sService.buildSpec('foo', 'my-image:latest', 'entrypoint', ['this','that'], Path.of('/build/work/xyz'), null, spackConfig, [:])
         then:
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
@@ -343,7 +343,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null, null,[:])
+        def result = k8sService.buildSpec('foo', 'my-image:latest','entrypoint',  ['this','that'], Path.of('/build/work/xyz'), null, null,[:])
         then:
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
@@ -387,7 +387,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null, null,[:])
+        def result = k8sService.buildSpec('foo', 'my-image:latest', 'entrypoint', ['this','that'], Path.of('/build/work/xyz'), null, null,[:])
         then:
         result.metadata.name == 'foo'
         result.metadata.labels.toString() == PROPS['wave.build.k8s.labels'].toString()
@@ -415,7 +415,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null, null, PROPS['wave.build.k8s.node-selector'] as Map<String,String>)
+        def result = k8sService.buildSpec('foo', 'my-image:latest', 'entrypoint', ['this','that'], Path.of('/build/work/xyz'), null, null, PROPS['wave.build.k8s.node-selector'] as Map<String,String>)
         then:
         result.spec.nodeSelector.toString() == PROPS['wave.build.k8s.node-selector'].toString()
         and:
@@ -440,7 +440,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null, null,[:])
+        def result = k8sService.buildSpec('foo', 'my-image:latest', 'entrypoint', ['this','that'], Path.of('/build/work/xyz'), null, null,[:])
         then:
         result.spec.serviceAccount == PROPS['wave.build.k8s.service-account']
         and:

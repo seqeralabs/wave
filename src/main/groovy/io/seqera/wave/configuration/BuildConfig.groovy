@@ -112,18 +112,4 @@ class BuildConfig {
         return singularityImageArm64 ?: singularityImage + "-arm64"
     }
 
-    // check this link to know more about these options https://github.com/moby/buildkit/tree/master/examples/kubernetes#kubernetes-manifests-for-buildkit
-
-    Map<String,String> getEnvironment() {
-        return  ['BUILDKITD_FLAGS': '--oci-worker-no-process-sandbox']
-    }
-
-    String getBuildCommand(){
-        return 'buildctl-daemonless.sh'
-    }
-
-    Map<String, String> getAnnotations(String containerName) {
-        final key = "container.apparmor.security.beta.kubernetes.io/$containerName".toString()
-        return Map.of(key, "unconfined")
-    }
 }

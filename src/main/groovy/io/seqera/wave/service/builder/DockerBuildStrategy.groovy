@@ -124,7 +124,7 @@ class DockerBuildStrategy extends BuildStrategy {
                          '--privileged',
                          '-v', "$workDir:$workDir".toString(),
                          '--entrypoint',
-                         buildConfig.buildCommand]
+                         BUILDKIT_ENTRYPOINT]
 
         if( credsFile ) {
             wrapper.add('-v')

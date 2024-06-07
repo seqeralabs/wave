@@ -37,6 +37,8 @@ abstract class BuildStrategy {
 
     abstract BuildResult build(BuildRequest req)
 
+    protected final String BUILDKIT_ENTRYPOINT = 'buildctl-daemonless.sh'
+
     void cleanup(BuildRequest req) {
         req.workDir?.deleteDir()
     }
@@ -104,4 +106,5 @@ abstract class BuildStrategy {
             << "singularity build image.sif ${req.workDir}/Containerfile && singularity push image.sif ${req.targetImage}".toString()
         return result
     }
+
 }
