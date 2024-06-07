@@ -49,7 +49,7 @@ class TowerClientUrlCompositionTest extends Specification{
         endpoint     || _
         null         || _
         ""           || _
-        "gar bage"   || _
+        "foo bar"   || _
         "tower.io"   || _
         "ftp://xyz"  || _
 
@@ -75,20 +75,19 @@ class TowerClientUrlCompositionTest extends Specification{
 
     def 'fail compose list credentials with invalid towerEndpoint'() {
         when:
-        TowerClient.listCredentialsEndpoint(endpoint, workspaceId).toString()
+        TowerClient.listCredentialsEndpoint(ENDPOINT, WORKSPACE_ID).toString()
 
         then:
         thrown(IllegalArgumentException)
 
         where:
-
-        endpoint    | workspaceId
+        ENDPOINT    | WORKSPACE_ID
         null        | null
         null        | 1
         ""          | null
         ""          | 1
-        "gar bage"  | null
-        "gar bage"  | 1
+        "foo bar"   | null
+        "foo bar"   | 1
         "tower.io"  | null
         "tower.io"  | 1
         "ftp://xyz" | null
