@@ -169,5 +169,4 @@ class BuildStrategyTest extends Specification {
         build.buildId == 'af15cb0a413a2d48_100'
         build.workDir == Path.of('.').toRealPath().resolve('some/path/af15cb0a413a2d48_100')
     }
-
 }
