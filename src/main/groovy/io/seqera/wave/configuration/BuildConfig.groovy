@@ -81,6 +81,9 @@ class BuildConfig {
     @Value('${wave.build.reserved-words:[]}')
     Set<String> reservedWords
 
+    @Value('${wave.build.record.duration:5d}')
+    Duration recordDuration
+
     @PostConstruct
     private void init() {
         log.debug("Builder config: " +
@@ -95,6 +98,7 @@ class BuildConfig {
                 "status-delay=${statusDelay}; " +
                 "status-duration=${statusDuration}; " +
                 "compress-caching=$compressCaching; " +
+                "record-duration=${recordDuration}; " +
                 "cleanup=${cleanup}; ")
     }
 

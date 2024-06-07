@@ -69,9 +69,16 @@ class MetricsCounterStoreRedisTest  extends Specification implements RedisTestCo
         metricsCounterStore.inc('builds/o/foo.com')
         metricsCounterStore.inc('builds/o/bar.org')
         metricsCounterStore.inc('pulls/o/bar.in')
+        metricsCounterStore.inc('pulls/o/foo.com/d/2024-05-29')
+        metricsCounterStore.inc('builds/o/bar.org/d/2024-05-30')
+        metricsCounterStore.inc('fusion/o/bar.in/d/2024-05-30')
+        metricsCounterStore.inc('pulls/o/bar.in/d/2024-05-31')
 
         then:
-        metricsCounterStore.getAllMatchingEntries('builds/o*') == ['builds/o/foo.com':1, 'builds/o/bar.org':1]
-        metricsCounterStore.getAllMatchingEntries('pulls/o*') == ['pulls/o/bar.in':1]
+        metricsCounterStore.getAllMatchingEntries('builds/o/*') == ['builds/o/foo.com':1, 'builds/o/bar.org':1, 'builds/o/bar.org/d/2024-05-30':1]
+        metricsCounterStore.getAllMatchingEntries('pulls/o/*') == ['pulls/o/bar.in':1, 'pulls/o/foo.com/d/2024-05-29':1, 'pulls/o/bar.in/d/2024-05-31':1]
+        metricsCounterStore.getAllMatchingEntries('fusion/o/*') == ['fusion/o/bar.in/d/2024-05-30':1]
+        metricsCounterStore.getAllMatchingEntries('builds/o/*/d/2024-05-30') == ['builds/o/bar.org/d/2024-05-30':1]
+        metricsCounterStore.getAllMatchingEntries('pulls/o/bar.in/d/2024-05-31') == ['pulls/o/bar.in/d/2024-05-31':1]
     }
 }

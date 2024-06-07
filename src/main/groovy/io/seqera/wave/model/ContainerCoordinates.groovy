@@ -56,7 +56,7 @@ class ContainerCoordinates implements ContainerPath {
 
         final scheme = StringUtils.getUrlProtocol(path)
         if( scheme ) {
-            if( scheme!='oras') throw new IllegalArgumentException("Invalid container scheme: '$scheme' - offending iamge: '$path'")
+            if( scheme!='oras') throw new IllegalArgumentException("Invalid container scheme: '$scheme' - offending image: '$path'")
             path = path.substring(7)
         }
 

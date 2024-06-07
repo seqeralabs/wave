@@ -105,7 +105,7 @@ class StreamServiceImpl implements StreamService {
         // otherwise cache the blob and stream the resulting uri
         if( blobCacheService ) {
             log.debug "Streaming blob cache for route: $route"
-            final blobCache = blobCacheService .retrieveBlobCache(route, empty)
+            final blobCache = blobCacheService .retrieveBlobCache(route, empty, resp.headers)
             if( blobCache.succeeded() ) {
                 return httpStream0(blobCache.locationUri)
             }

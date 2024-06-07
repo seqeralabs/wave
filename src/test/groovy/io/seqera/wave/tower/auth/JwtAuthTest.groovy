@@ -46,6 +46,18 @@ class JwtAuthTest extends Specification {
                 now )
 
         when:
+        def auth0 = auth.withEndpoint('http://bar.com')
+        then:
+        auth0 != auth
+        and:
+        auth0.key == auth.key
+        auth0.endpoint == 'http://bar.com'
+        auth0.bearer == auth.bearer
+        auth0.refresh == auth.refresh
+        auth0.createdAt == auth.createdAt
+        auth0.updatedAt == auth.updatedAt
+
+        when:
         def auth1 = auth.withKey('key-098765')
         then:
         auth1 != auth
