@@ -50,6 +50,7 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.scan.Trivy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+import static io.seqera.wave.service.builder.BuildStrategy.BUILDKIT_ENTRYPOINT
 /**
  * implements the support for Kubernetes cluster
  *
@@ -328,14 +329,14 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Pod} description the submitted pod
      */
     @Override
-    V1Pod buildContainer(String name, String containerImage, String buildCommand, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector) {
-        final spec = buildSpec(name, containerImage, buildCommand, args, workDir, creds, spackConfig, nodeSelector)
+    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector) {
+        final spec = buildSpec(name, containerImage, args, workDir, creds, spackConfig, nodeSelector)
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
-    V1Pod buildSpec(String name, String containerImage, String buildCommand, List<String> args, Path workDir, Path credsFile, SpackConfig spackConfig, Map<String,String> nodeSelector) {
+    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, SpackConfig spackConfig, Map<String,String> nodeSelector) {
 
         // dirty dependency to avoid introducing another parameter
         final singularity = containerImage.contains('singularity')
@@ -407,7 +408,7 @@ class K8sServiceImpl implements K8sService {
                     //required by buildkit rootless container
                     .withEnv(toEnvList(BUILDKIT_ENVIRONMENT))
                     // buildCommand is to set entrypoint for buildkit
-                    .withCommand(buildCommand)
+                    .withCommand(BUILDKIT_ENTRYPOINT)
                     .withArgs(args)
         }
 

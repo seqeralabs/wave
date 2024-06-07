@@ -37,7 +37,7 @@ abstract class BuildStrategy {
 
     abstract BuildResult build(BuildRequest req)
 
-    protected final String BUILDKIT_ENTRYPOINT = 'buildctl-daemonless.sh'
+    static final String BUILDKIT_ENTRYPOINT = 'buildctl-daemonless.sh'
 
     void cleanup(BuildRequest req) {
         req.workDir?.deleteDir()
