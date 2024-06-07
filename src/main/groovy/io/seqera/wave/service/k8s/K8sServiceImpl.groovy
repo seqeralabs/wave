@@ -106,10 +106,10 @@ class K8sServiceImpl implements K8sService {
     private BuildConfig buildConfig
 
     // check this link to know more about these options https://github.com/moby/buildkit/tree/master/examples/kubernetes#kubernetes-manifests-for-buildkit
-    private final Map BUILDKIT_ENVIRONMENT = ['BUILDKITD_FLAGS': '--oci-worker-no-process-sandbox']
+    private final static Map<String,String> BUILDKIT_FLAGS = ['BUILDKITD_FLAGS': '--oci-worker-no-process-sandbox']
 
     private Map<String, String> getBuildkitAnnotations(String containerName) {
-        final key = "container.apparmor.security.beta.kubernetes.io/$containerName".toString()
+        final key = "container.apparmor.security.beta.kubernetes.io/${containerName}".toString()
         return Map.of(key, "unconfined")
     }
 
@@ -406,7 +406,7 @@ class K8sServiceImpl implements K8sService {
         } else {
             container
                     //required by buildkit rootless container
-                    .withEnv(toEnvList(BUILDKIT_ENVIRONMENT))
+                    .withEnv(toEnvList(BUILDKIT_FLAGS))
                     // buildCommand is to set entrypoint for buildkit
                     .withCommand(BUILDKIT_ENTRYPOINT)
                     .withArgs(args)
