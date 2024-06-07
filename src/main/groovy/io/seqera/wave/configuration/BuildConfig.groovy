@@ -106,9 +106,9 @@ class BuildConfig {
                 "status-duration=${statusDuration}; " +
                 "record-duration=${recordDuration}; " +
                 "cleanup=${cleanup}; "+
-                "oci-mediatypes=$ociMediatypes; " +
-                "compression=$compression; " +
-                "compression=$forceCompression; ")
+                "oci-mediatypes=${ociMediatypes}; " +
+                "compression=${compression}; " +
+                "force-compression=${forceCompression}; ")
     }
 
     String singularityImage(ContainerPlatform containerPlatform){
