@@ -84,6 +84,7 @@ class BuildConfig {
     @Value('${wave.build.oci-mediatypes:true}')
     Boolean ociMediatypes
 
+    //check here for other options https://github.com/moby/buildkit?tab=readme-ov-file#registry-push-image-and-cache-separately
     @Value('${wave.build.compression:gzip}')
     String compression
 

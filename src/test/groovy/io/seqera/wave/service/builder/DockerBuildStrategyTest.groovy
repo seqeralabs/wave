@@ -128,46 +128,9 @@ class DockerBuildStrategyTest extends Specification {
                 '--opt',
                 'platform=linux/amd64',
                 '--export-cache',
-                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:89fb83ce6ec8627b,mode=max,ignore-error=true,force-compression=true',
+                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:89fb83ce6ec8627b,mode=max,ignore-error=true,oci-mediatypes=true,compression=gzip,force-compression=false',
                 '--import-cache',
                 'type=registry,ref=reg.io/wave/build/cache:89fb83ce6ec8627b' ]
-
-        cleanup:
-        ctx.close()
-    }
-
-    def 'should disable compress-caching' () {
-        given:
-        def ctx = ApplicationContext.run(['wave.build.compress-caching': false])
-        def service = ctx.getBean(DockerBuildStrategy)
-        and:
-        def req = new BuildRequest(
-                id: '89fb83ce6ec8627b',
-                workDir: Path.of('/work/foo/89fb83ce6ec8627b'),
-                platform: ContainerPlatform.of('linux/amd64'),
-                targetImage: 'repo:89fb83ce6ec8627b',
-                cacheRepository: 'reg.io/wave/build/cache' )
-        when:
-        def cmd = service.launchCmd(req)
-        then:
-        cmd == [
-                'build',
-                '--frontend',
-                'dockerfile.v0',
-                '--local',
-                'dockerfile=/work/foo/89fb83ce6ec8627b',
-                '--opt',
-                'filename=Containerfile',
-                '--local',
-                'context=/work/foo/89fb83ce6ec8627b/context',
-                '--output',
-                'type=image,name=repo:89fb83ce6ec8627b,push=true',
-                '--opt',
-                'platform=linux/amd64',
-                '--export-cache',
-                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:89fb83ce6ec8627b,mode=max,ignore-error=true',
-                '--import-cache',
-                'type=registry,ref=reg.io/wave/build/cache:89fb83ce6ec8627b']
 
         cleanup:
         ctx.close()
