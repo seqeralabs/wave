@@ -75,14 +75,20 @@ class BuildConfig {
     @Nullable
     String cleanup
 
-    @Value('${wave.build.compress-caching:true}')
-    Boolean compressCaching = true
-
     @Value('${wave.build.reserved-words:[]}')
     Set<String> reservedWords
 
     @Value('${wave.build.record.duration:5d}')
     Duration recordDuration
+
+    @Value('${wave.build.oci-mediatypes:true}')
+    Boolean ociMediatypes
+
+    @Value('${wave.build.compression:gzip}')
+    String compression
+
+    @Value('${wave.build.force-compression:false}')
+    Boolean forceCompression
 
     @PostConstruct
     private void init() {
@@ -97,9 +103,11 @@ class BuildConfig {
                 "build-timeout=${buildTimeout}; " +
                 "status-delay=${statusDelay}; " +
                 "status-duration=${statusDuration}; " +
-                "compress-caching=$compressCaching; " +
                 "record-duration=${recordDuration}; " +
-                "cleanup=${cleanup}; ")
+                "cleanup=${cleanup}; "+
+                "oci-mediatypes=$ociMediatypes; " +
+                "compression=$compression; " +
+                "compression=$forceCompression; ")
     }
 
     String singularityImage(ContainerPlatform containerPlatform){

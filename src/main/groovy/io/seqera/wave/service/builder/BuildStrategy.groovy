@@ -73,11 +73,17 @@ abstract class BuildStrategy {
 
         if( req.cacheRepository ) {
             result << "--export-cache"
-            def cache = "type=registry,image-manifest=true,ref=$req.cacheRepository:$req.containerId,mode=max,ignore-error=true".toString()
-            if( buildConfig.compressCaching ){
-                cache += ',force-compression=true'
-            }
-            result << cache
+            def exportCache = new StringBuilder()
+            exportCache << "type=registry,"
+            exportCache << "image-manifest=true,"
+            exportCache << "ref=${req.cacheRepository}:${req.containerId},"
+            exportCache << "mode=max,"
+            exportCache << "ignore-error=true,"
+            exportCache << "oci-mediatypes=${buildConfig.ociMediatypes},"
+            exportCache << "compression=${buildConfig.compression},"
+            exportCache << "force-compression=${buildConfig.forceCompression}"
+            result << exportCache.toString()
+
             result << "--import-cache"
             result << "type=registry,ref=$req.cacheRepository:$req.containerId".toString()
         }

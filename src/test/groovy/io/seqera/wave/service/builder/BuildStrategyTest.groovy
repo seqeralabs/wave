@@ -22,22 +22,25 @@ import spock.lang.Specification
 
 import java.nio.file.Path
 
+import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.ContainerHelper
+import jakarta.inject.Inject
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@MicronautTest
 class BuildStrategyTest extends Specification {
+
+    @Inject
+    BuildStrategy strategy
 
     def 'should get buildkit command' () {
         given:
-        def cache = 'reg.io/wave/build/cache'
-        def service = Spy(BuildStrategy)
-        service.@buildConfig = new BuildConfig()
-        and:
         def req = new BuildRequest(
                 id: 'c168dba125e28777',
                 workDir: Path.of('/work/foo/c168dba125e28777'),
@@ -46,7 +49,7 @@ class BuildStrategyTest extends Specification {
                 cacheRepository: 'reg.io/wave/build/cache' )
 
         when:
-        def cmd = service.launchCmd(req)
+        def cmd = strategy.launchCmd(req)
         then:
         cmd == [
                 'build',
@@ -63,7 +66,7 @@ class BuildStrategyTest extends Specification {
                 '--opt',
                 'platform=linux/amd64',
                 '--export-cache',
-                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,force-compression=true',
+                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=gzip,force-compression=false',
                 '--import-cache',
                 'type=registry,ref=reg.io/wave/build/cache:c168dba125e28777'
         ]
@@ -71,10 +74,6 @@ class BuildStrategyTest extends Specification {
 
     def 'should get buildkit command with build context' () {
         given:
-        def cache = 'reg.io/wave/build/cache'
-        def service = Spy(BuildStrategy)
-        service.@buildConfig = new BuildConfig()
-        and:
         def req = new BuildRequest(
                 id: 'c168dba125e28777',
                 workDir: Path.of('/work/foo/3980470531b4a52a'),
@@ -83,7 +82,7 @@ class BuildStrategyTest extends Specification {
                 cacheRepository: 'reg.io/wave/build/cache' )
         
         when:
-        def cmd = service.launchCmd(req)
+        def cmd = strategy.launchCmd(req)
         then:
         cmd == [
                 'build',
@@ -100,7 +99,7 @@ class BuildStrategyTest extends Specification {
                 '--opt',
                 'platform=linux/amd64',
                 '--export-cache',
-                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,force-compression=true',
+                'type=registry,image-manifest=true,ref=reg.io/wave/build/cache:c168dba125e28777,mode=max,ignore-error=true,oci-mediatypes=true,compression=gzip,force-compression=false',
                 '--import-cache',
                 'type=registry,ref=reg.io/wave/build/cache:c168dba125e28777'
         ]
@@ -108,9 +107,6 @@ class BuildStrategyTest extends Specification {
 
     def 'should get singularity command' () {
         given:
-        def cache = 'reg.io/wave/build/cache'
-        def service = Spy(BuildStrategy)
-        and:
         def req = new BuildRequest(
                 workDir: Path.of('/work/foo/c168dba125e28777'),
                 platform: ContainerPlatform.of('linux/amd64'),
@@ -118,7 +114,7 @@ class BuildStrategyTest extends Specification {
                 format: BuildFormat.SINGULARITY,
                 cacheRepository: 'reg.io/wave/build/cache' )
         when:
-        def cmd = service.launchCmd(req)
+        def cmd = strategy.launchCmd(req)
         then:
         cmd == [
                 "sh",
