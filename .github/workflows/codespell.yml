@@ -22,4 +22,5 @@ jobs:
         uses: codespell-project/actions-codespell@v2
         with:
           only_warn: 1
+          ignore_words_file: .codespellignore
           exclude_file: src/main/resources/application-reserved-words.yml
