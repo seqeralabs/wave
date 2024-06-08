@@ -126,8 +126,8 @@ class TowerClientUrlCompositionTest extends Specification{
         null         |  "10"    | "10"  |  null
         ""           |  "10"    | "10"  |  null
         ""           |  "10"    | "10"  |  null
-        "gar bage"   |  "10"    | "10"  |  1
-        "gar bage"   |  "10"    | "10"  |  null
+        "foo bar"    |  "10"    | "10"  |  1
+        "foo bar"    |  "10"    | "10"  |  null
         "tower.io"   |  "10"    | "10"  |  1
         "tower.io"   |  "10"    | "10"  |  null
         "ftp://xyz"  |  "10"    | "10"  |  1
