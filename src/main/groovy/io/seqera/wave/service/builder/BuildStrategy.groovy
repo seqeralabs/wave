@@ -67,7 +67,7 @@ abstract class BuildStrategy {
                 << "--local"
                 << "context=$req.workDir/context".toString()
                 << "--output"
-                << "type=image,name=$req.targetImage,push=true".toString()
+                << "type=image,name=$req.targetImage,push=true,oci-mediatypes=true".toString()
                 << "--opt"
                 << "platform=$req.platform".toString()
 

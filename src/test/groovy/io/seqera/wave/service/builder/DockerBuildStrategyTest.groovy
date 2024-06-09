@@ -124,7 +124,7 @@ class DockerBuildStrategyTest extends Specification {
                 '--local',
                 'context=/work/foo/89fb83ce6ec8627b/context',
                 '--output',
-                'type=image,name=repo:89fb83ce6ec8627b,push=true',
+                'type=image,name=repo:89fb83ce6ec8627b,push=true,oci-mediatypes=true',
                 '--opt',
                 'platform=linux/amd64',
                 '--export-cache',
