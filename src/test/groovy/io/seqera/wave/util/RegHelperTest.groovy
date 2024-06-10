@@ -204,5 +204,4 @@ class RegHelperTest extends Specification {
                 .hash()
                 .toString()
     }
-
 }
