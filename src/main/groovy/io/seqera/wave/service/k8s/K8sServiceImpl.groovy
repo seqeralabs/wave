@@ -108,7 +108,9 @@ class K8sServiceImpl implements K8sService {
     // check this link to know more about these options https://github.com/moby/buildkit/tree/master/examples/kubernetes#kubernetes-manifests-for-buildkit
     private final static Map<String,String> BUILDKIT_FLAGS = ['BUILDKITD_FLAGS': '--oci-worker-no-process-sandbox']
 
-    private Map<String, String> getBuildkitAnnotations(String containerName) {
+    private Map<String, String> getBuildkitAnnotations(String containerName, boolean singularity) {
+        if( !singularity )
+            return null
         final key = "container.apparmor.security.beta.kubernetes.io/${containerName}".toString()
         return Map.of(key, "unconfined")
     }
@@ -366,14 +368,12 @@ class K8sServiceImpl implements K8sService {
         V1PodBuilder builder = new V1PodBuilder()
 
         //metadata section
-        def metadata = builder.withNewMetadata()
+        builder.withNewMetadata()
                 .withNamespace(namespace)
                 .withName(name)
                 .addToLabels(labels)
-        if( !singularity ) {
-            metadata.addToAnnotations(getBuildkitAnnotations(name))
-        }
-        metadata.endMetadata()
+                .addToAnnotations(getBuildkitAnnotations(name,singularity))
+                .endMetadata()
 
         //spec section
         def spec = builder
