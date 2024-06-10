@@ -283,12 +283,12 @@ class ContainerControllerTest extends Specification {
         submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), spackFile: encode('some::spack-recipe'), containerPlatform: 'arm64')
         build = controller.makeBuildRequest(submit, PlatformId.NULL, "")
         then:
-        build.containerId =~ /b7d730d274d1e057/
+        build.containerId =~ /4641bf82ba19959b/
         build.containerFile.endsWith('\nFROM foo')
         build.containerFile.startsWith('# Builder image\n')
         build.condaFile == null
         build.spackFile == 'some::spack-recipe'
-        build.targetImage == 'wave/build:b7d730d274d1e057'
+        build.targetImage == 'wave/build:4641bf82ba19959b'
         build.platform == ContainerPlatform.of('arm64')
     }
 
