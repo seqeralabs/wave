@@ -60,6 +60,9 @@ class ProxyClient {
     private ContainerPath route
     private HttpClientConfig httpConfig
 
+    //required for mocking in groovy tests
+    ProxyClient(){}
+
     ProxyClient(HttpClient httpClient, HttpClientConfig httpConfig) {
         if( httpClient.followRedirects()!= HttpClient.Redirect.NEVER )
             throw new IllegalStateException("HttpClient instance should not follow redirected because they are directly managed by the proxy")

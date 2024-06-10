@@ -125,8 +125,9 @@ class BuildControllerTest extends Specification {
         1 * buildLogService.fetchLogStream(buildId) >> response
         and:
         res.code() == 200
-        res.body() == LOGS
+        new String(res.unpooledContent.array) == LOGS
     }
+
 
     def 'should get container status' () {
         given:
