@@ -155,10 +155,10 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def mount = k8sService.mountHostPath(Path.of('/foo/work/x1/config.json'), '/foo','/kaniko/.docker/config.json')
+        def mount = k8sService.mountHostPath(Path.of('/foo/work/x1/config.json'), '/foo','/home/user/.docker/config.json')
         then:
         mount.name == 'build-data'
-        mount.mountPath == '/kaniko/.docker/config.json'
+        mount.mountPath == '/home/user/.docker/config.json'
         mount.readOnly
         mount.subPath == 'work/x1/config.json'
 

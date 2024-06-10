@@ -109,7 +109,7 @@ class K8sServiceImpl implements K8sService {
     private final static Map<String,String> BUILDKIT_FLAGS = ['BUILDKITD_FLAGS': '--oci-worker-no-process-sandbox']
 
     private Map<String, String> getBuildkitAnnotations(String containerName, boolean singularity) {
-        if( !singularity )
+        if( singularity )
             return null
         final key = "container.apparmor.security.beta.kubernetes.io/${containerName}".toString()
         return Map.of(key, "unconfined")
