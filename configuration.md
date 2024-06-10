@@ -81,7 +81,7 @@ Below are the standard format for known registries, but you can change registry 
 
 - **`wave.build.timeout`**: the timeout for the build process. Its default value is `5m` (5 minutes), providing a reasonable time frame for the build operation. *Optional*.
 
-- **`wave.build.workspace`**: defines the path to the directory used by Wave to store artifacts such as Dockerfiles, Trivy cache for scan, buildkit context, authentication configuration files, etc. For example, `/efs/wave/build`. *Mandatory*.
+- **`wave.build.workspace`**: defines the path to the directory used by Wave to store artifacts such as Dockerfiles, Trivy cache for scan, Buildkit context, authentication configuration files, etc. For example, `/efs/wave/build`. *Mandatory*.
 
 - **`wave.build.cleanup`**: determines the cleanup strategy after the build process. Options include `OnSuccess`, meaning cleanup occurs only if the build is successful. *Optional*.
 
