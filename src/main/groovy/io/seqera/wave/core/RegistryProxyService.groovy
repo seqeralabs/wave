@@ -216,9 +216,13 @@ class RegistryProxyService {
         final route = RoutePath.v2manifestPath(coords)
         final proxyClient = client(route)
         final resp = proxyClient.head(route.path, WaveDefault.ACCEPT_HEADERS)
-        return resp.statusCode() == 200
+        final result = resp.statusCode() == 200
                 ? resp.headers().firstValue('docker-content-digest').orElse(null)
                 : null
+        if( !result ) {
+            log.warn "Unable to retrieve digest for image '$image' -- response status=${resp.statusCode()}; headers:\n${RegHelper.dumpHeaders(resp.headers())}"
+        }
+        return result
     }
 
     @ToString(includeNames = true, includePackage = false)
