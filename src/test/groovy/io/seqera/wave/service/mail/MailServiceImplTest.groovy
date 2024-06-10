@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -40,7 +40,7 @@ class MailServiceImplTest extends Specification {
     def 'should create build mail' () {
         given:
         def recipient = 'foo@gmail.com'
-        def result = BuildResult.completed('12345', 0, 'pull foo:latest', Instant.now())
+        def result = BuildResult.completed('12345', 0, 'pull foo:latest', Instant.now(), 'abc')
         def request= Mock(BuildRequest)
 
         when:

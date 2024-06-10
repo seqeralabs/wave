@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -63,6 +63,9 @@ interface SurrealClient {
 
     @Post('/key/wave_build')
     Flux<Map<String, Object>> insertBuildAsync(@Header String authorization, @Body WaveBuildRecord body)
+
+    @Get('/key/wave_build')
+    String loadBuild(@Header String authorization, String buildId)
 
     @Post('/key/wave_build')
     Map<String, Object> insertBuild(@Header String authorization, @Body WaveBuildRecord body)

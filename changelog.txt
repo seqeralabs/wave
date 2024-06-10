@@ -1,4 +1,129 @@
 # Wave changelog
+1.7.9 - 29 May 2024
+- Improve JWT refresh handling  (#512) [751edb03]
+- Mark release as draft when ending with -Ax -Bx -RCx [ci skip] [66ba7ea7]
+- Removed unused imports (#510) [182e3f0d]
+- Fix Use atomic strategy for Cacheable ops [923ae67c]
+- Fix failing build [8adb52ab]
+
+1.7.8 - 15 May 2024
+- Prevent container freeze without custom repo (#499) [ec5932df]
+- Improve pairing record check (#500) [7ce86dc9]
+- Improve thread pool handling (#494) [e2c8c21b]
+
+1.7.7 - 11 May 2024 
+- Fix legacy tower endpoint validation (#495) [3257ad42]
+
+1.7.6 - 8 May 2024
+- Fix the handling of pip packages with Conda (#493) [35d9c1fd]
+- Fix Community repo name composition when namingStrategy is not specified [385c53cc]
+- Fix aggregate metrics issue (#487) [e4279602]
+
+1.7.5 - 2 May 2024
+- Fix community repo naming normalisation [a9b12d76]
+
+1.7.4 - 30 Apr 2024
+- Prevent use community registry w/o packages (2) [9eb11031]
+
+1.7.3 - 30 Apr 2024 
+- Prevent use community registry w/o packages [24a409de]
+
+1.7.2 - 29 Apr 2024 
+- Improve default container name handling [5325f2b1]
+- Improve error reporting [d6058919]
+- Prevent accessing to docker config [1c3d08d1]
+- Update metric service to get aggregated metrics  =(#472) [8ee9309f]
+- Update timeout max-rate to 20/2m [af0e4607]
+- Use IO executor consistently (#471) [ed57ce28]
+- Remove deprecated metrics v1alpha1 (#467) [3da8302d]
+
+1.7.1 - 23 Apr 2024
+- Tune thread pools [93e119ee] [0a5d08e7]
+- Added null check for container image name (#465) [30a6bdb6]
+- Move Redis tests config to setupSpec (#462) [d9fb2942]
+- Improve tests [9ab2cf42]
+
+1.7.0 - 22 Apr 2024
+- Improve build container naming strategy (#460) [31d459ed]
+- Helper methods refactor [54d2301b] [052acb32]
+- Refactor BuildRequest class (#456) [030ca310]
+- Improve request validation [6a3c4c79]
+- Bump trivy 0.50.1 [06ee665e]
+- Bump kaniko 1.22.0 [38a24afd]
+- Bump surrealdb 1.4.2 [5daf4ca7]
+
+1.6.1 - 11 Apr 2024
+- Undeprecate containerImage attribute in response object [23411028]
+
+1.6.0 - 10 Apr 2024 
+- Add metrics service based on Redis counters (#429) [ac84eadb]
+- Add v1alpha2 request endpoint (#423) [82d1cc49]
+- Refactor build id & status endpoint (#421) [354358c6]
+- Fix platform migration (#444) [2db9e422]
+- Document build status endpoint (#447) [c38db704]
+- Fix inspect for oras-oci images [8b4e18e9]
+- Minor refactor [15cb3970]
+- Refactor controllers name [d68617ba]
+- Remove deprecated fields [5ca41532]
+- Patched tower endpoints to new ones (#440) [f78647e2]
+- Fix Containerfile encoding (#441) [d742aa67]
+- Improve error reporting for AWS ECR auth failure [06141219]
+- Remove unused exception [bc5570b3]
+- Fix syntax error reported by Intellij [343887a4]
+- Fix Build pod name (#438) [4e54ce1a]
+- Fix RedisTestContainer flaky test (#436) [a90b44e5]
+- Update platform api endpoint to api.cloud.seqera.io (#434) [1e43e8b1]
+- Use shorted ttl when creating build result object [7525c0f7]
+- Minor change in container view [bd783221]
+
+1.5.2 - 25 Mar 2024
+- Fix No such property: ioExecutor [f603868b]
+
+1.5.1 - 25 Mar 2024
+- Fix Thread pool selection on container controller [d882bd4d]
+- Fix trace slow endpoint duration [fb1eea96]
+
+1.5.0 - 25 Mar 2024 
+- Add fixed executor to future store [9f61abe9]
+- Add timeout retry limiter [0a98aa96]
+- Fix failing tests [eeb9ddfe]
+- Add thread pool monitor cron [a1cdcc13]
+- Bump corretto-17.0.10-al2023-jemalloc as base image [7238a86d]
+- Evict status redesigned (#419) [9cf07b56]
+- Add API and UI to evict a wave request from token cache  (#410) [5833c18d]
+- Add all values to entrypoint (#416) [7fef9a59]
+- Add documentation for Metrics API (#414) [6e16fc41]
+- Update aws sdk to version v2 (#415) [1cd5d496]
+- bumped actions/upload-artifact to v4 and fix tests (#417) [7f0d7866]
+
+1.4.0 - 27 Feb 2024
+- Add services to query Wave usage metadata  (#393) [6325b25c]
+- Add filter to trace slow endpoints [be49262f]
+- Add default to WaveContainerRecord when timestamp is null (#407) [f6eea93e]
+- Changed fusionVersion type to String (#411) [73d1cded]
+
+1.3.3 - 18 Feb 2024
+- Bump actions v4 [30a10876]
+- Add aws-java-sdk-sts and bump version 1.12.471 [c2ff7a8b]
+- Allow no default registries config [9523974e]
+- Improve request validation [b66b3de9]
+- Add error message when spack file is malformed (#361) [6439404b]
+- Add Wave configurations documentation  (#360) [3d167d99]
+- Add enterprise build container [fc6342a9]
+
+1.3.2 - 12 Feb 2024
+- Patch missing user condition on ContainerRequestData [9a8f2a5c]
+
+1.3.1 - 12 Feb 2024 
+- Fix compatibility for existing ContainerRequestData records [e665629f]
+- Improve license check [95a2755e]
+- Improve token request logging [930a7887]
+
+1.3.0 - 9 Feb 2024
+- Add support for container includes and inspect (#397) [57b62b69]
+- Remove support for Tower HTTP connector (#384) [180efe3c]
+- Update copyright info [197fd8ef]
+
 1.2.1 - 28 Jan 2024
 - Add support for SurrealDB v1.x (stable)  (#388) [e8ba40c7]
 - Remove TimedInputStream class [f59b02b3]
@@ -18,7 +143,7 @@ v1.1.7 - 19 Dec 2023
 - Implements streaming client for large binary downloads (#358) [592ce522]
 - Update failing tests [31edb5e7]
 - Fix typo in comment [c10cc472]
-- Remove unsused consts [24315f03]
+- Remove unused consts [24315f03]
 - Refactor build settings via BuildConfig class (#324) [f6924f4a]
 - Bump trivy 0.47.0 [3ff4a89f]
 
@@ -338,7 +463,7 @@ v0.29.0 - 5 Apr 2023
 
 v0.28.6 - 5 Apr 2023 
 - Add consumers list [7d561f6d]
-- Use singleton websocket instace [c0390502]
+- Use singleton websocket instance [c0390502]
 - Add custom MN worker pool [be3cbe78]
 - Remove redis session [b23c7225]
 - Improve logs [0f29cef7]
@@ -357,7 +482,7 @@ v0.28.2 - 4 Apr 2023
 - Improve future poll + refactor [53c6a335]
 
 v0.28.1 - 4 Apr 2023 
-- Fix missing timeout exeception on redis future [a9d640a0]
+- Fix missing timeout exception on redis future [a9d640a0]
 - Minor logging changes [c81e78bf] [4943ba6f] [6768b7eb]
 - Update application dev [db4ae108]
 
@@ -425,7 +550,7 @@ v0.25.8 - 22 Feb 2023
 
 v0.25.7 - 21 Feb 2023
 - Improve docker auth error reporting [eceffe85]
-- Fix log typo [ci skip] [030dbc67]
+- Fix log typo [030dbc67]
 
 v0.25.6 - 15 Feb 2023
 - Add landing redirection [ede9a242]
@@ -546,7 +671,7 @@ v0.22.0 - 23 Oct 2022
 - Improve the time format in the completion email (#169) [84357efe]
 - Make Tower user auth async (#166) [55f06451] <Jorge Aguilera>
 - Check if target image exist before building a new one (#173) [78a5fa2e]
-- Add basic k8s deployment [ci skip] [6c81171a]
+- Add basic k8s deployment [6c81171a]
 - Update ngrok launcher script [e72979ce]
 - Bump Micronaut 3.7.2 (#174) [28172705] 
 - Bump kaniko 1.9.1 (#175) [8bb72c47]
@@ -559,7 +684,7 @@ v0.21.6 - 17 Oct 2022 [BROKEN BASE IMAGE]
 - Improve registry auth lookup error [0f696146] 
 
 v0.21.5 - 4 Oct 2022
-- Rollback timestamp and fingerpint fields [466b3a46] <Paolo Di Tommaso>
+- Rollback timestamp and fingerprint fields [466b3a46] <Paolo Di Tommaso>
 
 v0.21.4 - 3 Oct 2022
 - Count all manifest digest requests [02435bff] <Paolo Di Tommaso>
@@ -670,7 +795,7 @@ v0.14.2 - 7 Sep 2022
 
 v0.14.1 - 5 Sep 2022
 - Fix registry auth invalid cache key [15bd1a57]
-- Fix retry policy for temportary IO exeception [15e2723f]
+- Fix retry policy for temporary IO exception [15e2723f]
 - Add support for Azure CR [cac5b661]
 - Improve logging [7af3109f]
 

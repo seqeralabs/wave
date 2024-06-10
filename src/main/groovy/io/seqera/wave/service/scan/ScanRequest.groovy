@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -42,6 +42,6 @@ class ScanRequest {
     static ScanRequest fromBuild(BuildRequest request) {
         final id = request.scanId
         final workDir = request.workDir.resolveSibling("scan-${id}")
-        return new ScanRequest(id, request.id, request.configJson, request.targetImage, request.platform, workDir)
+        return new ScanRequest(id, request.buildId, request.configJson, request.targetImage, request.platform, workDir)
     }
 }

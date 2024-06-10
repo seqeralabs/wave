@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -51,10 +51,12 @@ class ContainerCoordinates implements ContainerPath {
     }
 
     static ContainerCoordinates parse(String path) {
+        if( !path )
+            throw new IllegalArgumentException("Container image name is not provided")
 
         final scheme = StringUtils.getUrlProtocol(path)
         if( scheme ) {
-            if( scheme!='oras') throw new IllegalArgumentException("Invalid container scheme: '$scheme' - offending iamge: '$path'")
+            if( scheme!='oras') throw new IllegalArgumentException("Invalid container scheme: '$scheme' - offending image: '$path'")
             path = path.substring(7)
         }
 

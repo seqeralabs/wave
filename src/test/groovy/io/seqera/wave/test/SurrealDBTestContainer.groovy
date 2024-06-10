@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -34,7 +34,7 @@ trait SurrealDBTestContainer {
     private static final def LOGGER = LoggerFactory.getLogger(SurrealDBTestContainer.class);
 
     @Shared
-    static GenericContainer surrealContainer = new GenericContainer(DockerImageName.parse("surrealdb/surrealdb:v1.1.0"))
+    static GenericContainer surrealContainer = new GenericContainer(DockerImageName.parse("surrealdb/surrealdb:v1.4.2"))
             .withExposedPorts(8000)
             .withCommand("start","--user", "root", "--pass", "root", '--log', 'debug')
             .waitingFor(

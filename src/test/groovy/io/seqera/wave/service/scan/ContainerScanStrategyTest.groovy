@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -33,7 +33,7 @@ class ContainerScanStrategyTest extends Specification {
 
     def "should return trivy command"() {
         given:
-        def targetImage = "respository/scantool"
+        def targetImage = "repository/scantool"
         def containerScanStrategy = Spy(ScanStrategy)
         def outFile = Path.of('/some/out.json')
         def config = Mock(ScanConfig) { getTimeout() >> Duration.ofMinutes(100) }
@@ -54,7 +54,7 @@ class ContainerScanStrategyTest extends Specification {
 
     def "should return trivy command with severity"() {
         given:
-        def targetImage = "respository/scantool"
+        def targetImage = "repository/scantool"
         def containerScanStrategy = Spy(ScanStrategy)
         def outFile = Path.of('/some/out.json')
         def config = Mock(ScanConfig) {

@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -22,10 +22,13 @@ import javax.validation.Valid
 
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Post
+import io.micronaut.scheduling.TaskExecutors
+import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.auth.RegistryAuthService
 import jakarta.inject.Inject
 import reactor.core.publisher.Mono
 
+@ExecuteOn(TaskExecutors.IO)
 @Controller("/validate-creds")
 class ValidateController {
 

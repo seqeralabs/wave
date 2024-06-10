@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -27,7 +27,6 @@ interface WaveDefault {
     final static public String DOCKER_IO = 'docker.io'
     final static public String DOCKER_REGISTRY_1 = 'https://registry-1.docker.io'
     final static public String DOCKER_INDEX_V1 = 'https://index.docker.io/v1/'
-    final static public String TOWER = 'tower'
 
     final static public Map<String,List<String>> ACCEPT_HEADERS = Map.of(
             'Accept', List.of(

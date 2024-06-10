@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -22,11 +22,14 @@ import spock.lang.Specification
 
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.ExecutorService
 
+import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.service.cache.impl.LocalCacheProvider
 import jakarta.inject.Inject
+import jakarta.inject.Named
 
 /**
  *
@@ -38,15 +41,19 @@ class BuildCacheStoreLocalTest extends Specification {
     @Inject
     private BuildConfig buildConfig
 
+    @Inject
+    @Named(TaskExecutors.IO)
+    ExecutorService ioExecutor
+
     BuildResult zero = BuildResult.create('0')
-    BuildResult one = BuildResult.completed('1', 0, 'done', Instant.now())
-    BuildResult two = BuildResult.completed('2', 0, 'done', Instant.now())
-    BuildResult three = BuildResult.completed('3', 0, 'done', Instant.now())
+    BuildResult one = BuildResult.completed('1', 0, 'done', Instant.now(), 'abc')
+    BuildResult two = BuildResult.completed('2', 0, 'done', Instant.now(), 'abc')
+    BuildResult three = BuildResult.completed('3', 0, 'done', Instant.now(), 'abc')
 
     def 'should get and put key values' () {
         given:
         def provider = new LocalCacheProvider()
-        def cache = new BuildCacheStore(provider, buildConfig)
+        def cache = new BuildCacheStore(provider, buildConfig, ioExecutor)
 
         expect:
         cache.getBuild('foo') == null
@@ -61,7 +68,7 @@ class BuildCacheStoreLocalTest extends Specification {
         given:
         def DURATION = Duration.ofSeconds(2)
         def provider = new LocalCacheProvider()
-        def cache = Spy(new BuildCacheStore(provider, buildConfig)) { getDuration() >> DURATION }
+        def cache = Spy(new BuildCacheStore(provider, buildConfig, ioExecutor)) { getDuration() >> DURATION }
 
         expect:
         cache.getBuild('foo') == null
@@ -90,7 +97,7 @@ class BuildCacheStoreLocalTest extends Specification {
     def 'should store if absent' () {
         given:
         def provider = new LocalCacheProvider()
-        def cache = new BuildCacheStore(provider, buildConfig)
+        def cache = new BuildCacheStore(provider, buildConfig, ioExecutor)
 
         expect:
         cache.storeIfAbsent('foo', zero)
@@ -108,7 +115,7 @@ class BuildCacheStoreLocalTest extends Specification {
     def 'should remove a build entry' () {
         given:
         def provider = new LocalCacheProvider()
-        def cache = new BuildCacheStore(provider, buildConfig)
+        def cache = new BuildCacheStore(provider, buildConfig, ioExecutor)
 
         when:
         cache.storeBuild('foo', zero)
@@ -125,7 +132,7 @@ class BuildCacheStoreLocalTest extends Specification {
     def 'should await for a value' () {
         given:
         def provider = new LocalCacheProvider()
-        def cache = new BuildCacheStore(provider, buildConfig)
+        def cache = new BuildCacheStore(provider, buildConfig, ioExecutor)
 
         expect:
         cache.awaitBuild('foo') == null

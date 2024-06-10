@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -30,4 +30,6 @@ interface RateLimiterService {
     void acquireBuild(AcquireRequest request) throws SlowDownException
 
     void acquirePull(AcquireRequest request) throws SlowDownException
+
+    boolean acquireTimeoutCounter(String endpoint)
 }

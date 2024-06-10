@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -29,11 +29,11 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
+import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
-import io.seqera.wave.service.persistence.legacy.SurrealLegacyService
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
@@ -64,10 +64,6 @@ class SurrealPersistenceService implements PersistenceService {
     @Value('${surreal.default.init-db}')
     private Boolean initDb
 
-    @Inject
-    @Nullable
-    private SurrealLegacyService legacy
-
     @EventListener
     void onApplicationStartup(ApplicationStartupEvent event) {
         if (initDb)
@@ -90,8 +86,7 @@ class SurrealPersistenceService implements PersistenceService {
         // create wave_scan table
         final ret4 = surrealDb.sqlAsMap(authorization, "define table wave_scan_vuln SCHEMALESS")
         if( ret4.status != "OK")
-            throw new IllegalStateException("Unable to define SurrealDB table wave_scan_vuln - cause: $ret3")
-
+            throw new IllegalStateException("Unable to define SurrealDB table wave_scan_vuln - cause: $ret4")
     }
 
     private String getAuthorization() {
@@ -100,31 +95,54 @@ class SurrealPersistenceService implements PersistenceService {
 
     @Override
     void saveBuild(WaveBuildRecord build) {
-        surrealDb.insertBuildAsync(authorization, build).subscribe({ result->
-            log.trace "Build record saved ${result}"
+        surrealDb.insertBuildAsync(getAuthorization(), build).subscribe({ result->
+            log.trace "Build request with id '$build.buildId' saved record: ${result}"
         }, {error->
             def msg = error.message
             if( error instanceof HttpClientResponseException ){
                 msg += ":\n $error.response.body"
             }
-            log.error "Error saving build record ${msg}\n${build}", error
+            log.error("Error saving Build request record ${msg}\n${build}", error)
         })
     }
 
-    void saveBuildBlocking(WaveBuildRecord record) {
-        surrealDb.insertBuild(getAuthorization(), record)
-    }
-
+    @Override
     WaveBuildRecord loadBuild(String buildId) {
         if( !buildId )
             throw new IllegalArgumentException("Missing 'buildId' argument")
+        def result = loadBuild0(buildId)
+        if( result )
+            return result
+        // try to lookup legacy record
+        final legacyId = BuildRequest.legacyBuildId(buildId)
+        return legacyId ? loadBuild1(legacyId) : null
+    }
+
+    private WaveBuildRecord loadBuild0(String buildId) {
         final query = "select * from wave_build where buildId = '$buildId'"
         final json = surrealDb.sqlAsString(getAuthorization(), query)
         final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null
-        if( !result && legacy )
-            return legacy.loadBuild(buildId)
+        return result
+    }
+
+    private WaveBuildRecord loadBuild1(String buildId) {
+        final query = "select * from wave_build where buildId = '$buildId'"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result[0] : null
+        return result
+    }
+
+    @Override
+    WaveBuildRecord loadBuild(String targetImage, String digest) {
+        final query = "select * from wave_build where targetImage = '$targetImage' and digest = '$digest'"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result[0] : null
         return result
     }
 
@@ -170,8 +188,6 @@ class SurrealPersistenceService implements PersistenceService {
         final type = new TypeReference<ArrayList<SurrealResult<WaveContainerRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null
-        if( !result && legacy )
-            return legacy.loadContainerRequest(token)
         return result
     }
 
@@ -215,8 +231,6 @@ class SurrealPersistenceService implements PersistenceService {
         final type = new TypeReference<ArrayList<SurrealResult<WaveScanRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
         final result = data && data[0].result ? data[0].result[0] : null
-        if( !result && legacy )
-            return legacy.loadScanRecord(scanId)
         return result
     }
 

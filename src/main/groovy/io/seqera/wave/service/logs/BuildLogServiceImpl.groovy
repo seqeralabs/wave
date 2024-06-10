@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -19,6 +19,8 @@
 package io.seqera.wave.service.logs
 
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
+
 import io.micronaut.core.annotation.Nullable
 
 import groovy.transform.CompileStatic
@@ -30,7 +32,9 @@ import io.micronaut.objectstorage.ObjectStorageEntry
 import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.request.UploadRequest
 import io.micronaut.runtime.event.annotation.EventListener
+import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.persistence.PersistenceService
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
@@ -65,6 +69,10 @@ class BuildLogServiceImpl implements BuildLogService {
     @Value('${wave.build.logs.maxLength:100000}')
     private long maxLength
 
+    @Inject
+    @Named(TaskExecutors.IO)
+    private volatile ExecutorService ioExecutor
+
     @PostConstruct
     private void init() {
         log.info "Creating Build log service bucket=$bucket; prefix=$prefix; maxLength: ${maxLength}"
@@ -82,7 +90,7 @@ class BuildLogServiceImpl implements BuildLogService {
     @EventListener
     void onBuildEvent(BuildEvent event) {
         if(event.result.logs) {
-            CompletableFuture.supplyAsync(() -> storeLog(event.result.id, event.result.logs))
+            CompletableFuture.supplyAsync(() -> storeLog(event.result.id, event.result.logs), ioExecutor)
         }
     }
 
@@ -100,6 +108,11 @@ class BuildLogServiceImpl implements BuildLogService {
 
     @Override
     StreamedFile fetchLogStream(String buildId) {
+        fetchLogStream0(buildId) ?: fetchLogStream0(BuildRequest.legacyBuildId(buildId))
+    }
+
+    private StreamedFile fetchLogStream0(String buildId) {
+        if( !buildId ) return null
         final Optional<ObjectStorageEntry<?>> result = objectStorageOperations.retrieve(logKey(buildId))
         return result.isPresent() ? result.get().toStreamedFile() : null
     }

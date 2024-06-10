@@ -3,10 +3,23 @@ wave:
   scan:
     enabled: true
   build:
-    public: 'quay.io/seqera/wave/containers'
     workspace: 'build-workspace'
     spack:
       cacheDirectory: 'spack-cache'
+  metrics:
+    enabled: true
+  accounts:
+    ### password checksum 'bar'
+    foo: "fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9"
+  jwt:
+    refresh:
+      interval: '10s'
+    monitor:
+      interval: '5s'
+---
+endpoints:
+  metrics:
+    enabled: true
 ---
 # uses TOWER_xxx variable because the dev environment is expected to be
 # the same as of tower
@@ -27,4 +40,5 @@ logger:
     io.seqera.wave.service.data: 'TRACE'
     io.seqera.wave.service.pairing: 'TRACE'
     io.seqera.wave.tower.client.connector: 'TRACE'
+#    io.seqera.wave.tower.auth: 'TRACE'
 ...

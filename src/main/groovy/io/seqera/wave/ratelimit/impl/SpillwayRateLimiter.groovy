@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -18,7 +18,6 @@
 
 package io.seqera.wave.ratelimit.impl
 
-
 import javax.validation.constraints.NotNull
 
 import com.coveo.spillway.Spillway
@@ -34,9 +33,7 @@ import io.seqera.wave.configuration.RateLimiterConfig
 import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
-
 import jakarta.inject.Singleton
-
 /**
  * This class manage how many requests can be requested from an user during a configurable period
  *
@@ -57,6 +54,8 @@ class SpillwayRateLimiter implements RateLimiterService {
 
     Spillway<String> authsPulls
 
+    Spillway<String> timeoutErrors
+
     SpillwayRateLimiter(@NotNull LimitUsageStorage storage, @NotNull RateLimiterConfig config) {
         init(storage, config)
     }
@@ -65,6 +64,7 @@ class SpillwayRateLimiter implements RateLimiterService {
         SpillwayFactory spillwayFactory = new SpillwayFactory(storage)
         initBuilds(spillwayFactory, config)
         initPulls(spillwayFactory, config)
+        initTimeoutErrors(spillwayFactory, config)
     }
 
     @Override
@@ -87,6 +87,19 @@ class SpillwayRateLimiter implements RateLimiterService {
         }
     }
 
+    @Override
+    boolean acquireTimeoutCounter(String endpoint) {
+        try {
+            final key = URI.create(endpoint).host
+            return timeoutErrors.tryCall(key)
+        }
+        catch (Exception e) {
+            log.debug "Unable to acquire timeout error limiter", e
+            return false
+        }
+    }
+
+
     private void initBuilds(SpillwayFactory spillwayFactory, RateLimiterConfig config) {
         log.info "Builds anonymous rate limit: max=$config.build.anonymous.max; duration:$config.build.anonymous.duration"
         anonymousBuilds = createLimit("anonymousBuilds", spillwayFactory, config.build.anonymous)
@@ -101,6 +114,11 @@ class SpillwayRateLimiter implements RateLimiterService {
 
         log.info "Pulls auth rate limit: max=$config.pull.authenticated.max; duration:$config.pull.authenticated.duration"
         authsPulls = createLimit("authenticatedPulls", spillwayFactory, config.pull.authenticated)
+    }
+
+    private void initTimeoutErrors(SpillwayFactory spillwayFactory, RateLimiterConfig config) {
+        log.info "Timeout errors rate limit: max=$config.timeoutErrors.maxRate.max; duration:${config.timeoutErrors.maxRate.duration}"
+        timeoutErrors = createLimit("timeoutErrors", spillwayFactory, config.timeoutErrors.getMaxRate())
     }
 
     private static Spillway<String> createLimit(String name, SpillwayFactory spillwayFactory, LimitConfig config) {

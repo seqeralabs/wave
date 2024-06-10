@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -21,17 +21,25 @@ package io.seqera.wave.tower.client.connector
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.function.Function
 
+import com.google.common.cache.Cache
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
+import com.google.common.cache.LoadingCache
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpMethod
 import io.micronaut.http.HttpStatus
+import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.exception.HttpResponseException
+import io.seqera.wave.ratelimit.impl.SpillwayRateLimiter
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
 import io.seqera.wave.tower.auth.JwtAuth
@@ -41,6 +49,7 @@ import io.seqera.wave.util.ExponentialAttempt
 import io.seqera.wave.util.JacksonHelper
 import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import static io.seqera.wave.util.LongRndKey.rndHex
 /**
  * Implements an abstract client that allows to connect Tower service either
@@ -68,6 +77,31 @@ abstract class TowerConnector {
     @Value('${wave.pairing.channel.retryMaxDelay:30s}')
     private Duration retryMaxDelay
 
+    @Inject
+    @Nullable
+    private SpillwayRateLimiter limiter
+
+    @Inject
+    @Named(TaskExecutors.IO)
+    private volatile ExecutorService ioExecutor
+
+    private CacheLoader<JwtRefreshParams, CompletableFuture<JwtAuth>> loader = new CacheLoader<JwtRefreshParams, CompletableFuture<JwtAuth>>() {
+        @Override
+        CompletableFuture<JwtAuth> load(JwtRefreshParams params) throws Exception {
+            return refreshJwtToken0(params.endpoint, params.auth)
+        }
+    }
+
+    private LoadingCache<JwtRefreshParams, CompletableFuture<JwtAuth>> refreshCache = CacheBuilder<JwtRefreshParams, CompletableFuture<JwtAuth>>
+            .newBuilder()
+            .expireAfterWrite(1, TimeUnit.MINUTES)
+            .build(loader)
+
+    /** Only for testing - do not use */
+    Cache<JwtRefreshParams, CompletableFuture<JwtAuth>> refreshCache0() {
+        return refreshCache
+    }
+
     /**
      * Generic async get with authorization
      * that converts to the provided json model T
@@ -82,7 +116,7 @@ abstract class TowerConnector {
      *      the type of the model to convert into
      * @return a future of T
      */
-    public <T> CompletableFuture<T> sendAsync(String endpoint, URI uri, String auth, Class<T> type) {
+    public <T> CompletableFuture<T> sendAsync(String endpoint, URI uri, JwtAuth auth, Class<T> type) {
         return sendAsync0(endpoint, uri, auth, type, 1)
     }
 
@@ -98,10 +132,12 @@ abstract class TowerConnector {
     }
 
     @CompileDynamic
-    protected <T> CompletableFuture<T> sendAsync0(String endpoint, URI uri, String authorization, Class<T> type, int attempt0) {
+    protected <T> CompletableFuture<T> sendAsync0(String endpoint, URI uri, JwtAuth auth, Class<T> type, int attempt0) {
         final msgId = rndHex()
         final attempt = newAttempt(attempt0)
-        return sendAsync1(endpoint, uri, authorization, msgId, true)
+        // note: use a local variable for the executor, otherwise it will fail to reference the `ioExecutor` in the closure
+        final exec0 = this.ioExecutor
+        return sendAsync1(endpoint, uri, auth, msgId, true)
                 .thenCompose { resp ->
                     log.trace "Tower response for request GET '${uri}' => ${resp.status}"
                     switch (resp.status) {
@@ -115,9 +151,7 @@ abstract class TowerConnector {
                         default:
                             def body = resp.body
                             def msg = "Unexpected status code ${resp.status} while accessing Tower resource: $uri"
-                            if (body)
-                                msg += " - response: ${body}"
-                            throw new HttpResponseException(resp.status, msg)
+                            throw new HttpResponseException(resp.status, msg, body)
                     }
                 }
                 .exceptionallyCompose((Throwable err)-> {
@@ -125,11 +159,11 @@ abstract class TowerConnector {
                         err = err.cause
                     // check for retryable condition
                     final retryable = err instanceof IOException || err instanceof TimeoutException
-                    if( retryable && attempt.canAttempt() ) {
+                    if( retryable && attempt.canAttempt() && checkLimit(endpoint) ) {
                         final delay = attempt.delay()
-                        final exec = CompletableFuture.delayedExecutor(delay.toMillis(), TimeUnit.MILLISECONDS)
+                        final exec = CompletableFuture.delayedExecutor(delay.toMillis(), TimeUnit.MILLISECONDS, exec0)
                         log.debug "Unable to connect '$endpoint' - cause: ${err.message ?: err}; attempt: ${attempt.current()}; await: ${delay}; msgId: ${msgId}"
-                        return CompletableFuture.supplyAsync(()->sendAsync0(endpoint, uri, authorization, type, attempt.current()+1), exec)
+                        return CompletableFuture.supplyAsync(()->sendAsync0(endpoint, uri, auth, type, attempt.current()+1), exec)
                                 .thenCompose(Function.identity());
                     }
                     // report IO error
@@ -143,6 +177,15 @@ abstract class TowerConnector {
                     }
                     throw err
                 })
+    }
+
+    protected boolean checkLimit(String endpoint) {
+        if( !limiter )
+            return true
+        final result = limiter.acquireTimeoutCounter(endpoint)
+        if( !result )
+            log.warn "Endpoint '$endpoint' is exceeding the timeout counter limit"
+        return result
     }
 
     /**
@@ -161,9 +204,9 @@ abstract class TowerConnector {
      * @return
      *      A future of the unparsed response
      */
-    private CompletableFuture<ProxyHttpResponse> sendAsync1(String endpoint, final URI uri, final String accessToken, String msgId, final boolean canRefresh) {
-        // check the most updated JWT tokens
-        final JwtAuth tokens = accessToken ? jwtAuthStore.getJwtAuth(endpoint, accessToken) : null
+    private CompletableFuture<ProxyHttpResponse> sendAsync1(String endpoint, final URI uri, final JwtAuth auth, String msgId, final boolean canRefresh) {
+        // check the most updated JWT token
+        final JwtAuth tokens = jwtAuthStore.refresh(auth) ?: auth
         log.trace "Tower GET '$uri' - can refresh=$canRefresh; msgId=$msgId; tokens=$tokens"
         // submit the request
         final request = new ProxyHttpRequest(
@@ -174,8 +217,8 @@ abstract class TowerConnector {
         )
 
         final response = sendAsync(endpoint, request)
-        // when accessing unauthorised resources, refresh token is not needed
-        if( !accessToken )
+        // when accessing unauthorised resources, token refresh is not needed
+        if( !auth )
             return response
 
         return response
@@ -183,8 +226,8 @@ abstract class TowerConnector {
                     log.trace "Tower GET '$uri' response => msgId:$msgId; status: ${resp.status}; content: ${resp.body}"
                     if (resp.status == 401 && tokens.refresh && canRefresh) {
                         final refreshId = rndHex()
-                        return refreshJwtToken(endpoint, accessToken, tokens.refresh)
-                                .thenCompose((JwtAuth it) -> sendAsync1(endpoint, uri, accessToken, refreshId, false))
+                        return refreshJwtToken(endpoint, tokens)
+                                .thenCompose((JwtAuth it) -> sendAsync1(endpoint, uri, tokens, refreshId, false))
                     } else {
                         return CompletableFuture.completedFuture(resp)
                     }
@@ -192,17 +235,20 @@ abstract class TowerConnector {
     }
 
     /**
-     * POST request to refresh the authToken
+     * POST request to refresh the client JWT refresh token
      *
-     * @param endpoint
-     * @param originalAuthToken used as a key for the token service
-     * @param refreshToken
-     * @return
+     * @param endpoint The target endpoint
+     * @param auth A {@link JwtAuth} object holding the JWT access and refresh token
+     * @return The refreshed {@link JwtAuth} object
      */
-    protected CompletableFuture<JwtAuth> refreshJwtToken(String endpoint, String originalAuthToken, String refreshToken) {
-        final body = "grant_type=refresh_token&refresh_token=${URLEncoder.encode(refreshToken, 'UTF-8')}"
+    protected CompletableFuture<JwtAuth> refreshJwtToken(String endpoint, JwtAuth auth) {
+        return refreshCache.get(new JwtRefreshParams(endpoint,auth))
+    }
+
+    protected CompletableFuture<JwtAuth> refreshJwtToken0(String endpoint, JwtAuth auth) {
+        final body = "grant_type=refresh_token&refresh_token=${URLEncoder.encode(auth.refresh, 'UTF-8')}"
         final uri = refreshTokenEndpoint(endpoint)
-        log.trace "Tower Refresh '$uri'"
+        log.trace "Tower Refresh '$uri' request; auth=$auth"
 
         final msgId = rndHex()
         final request = new ProxyHttpRequest(
@@ -215,20 +261,25 @@ abstract class TowerConnector {
 
         return sendAsync(endpoint, request)
                 .thenApply { resp ->
-                    log.trace "Tower Refresh '$uri' response; msgId=${msgId}\n- status : ${resp.status}\n- headers: ${RegHelper.dumpHeaders(resp.headers)}\n- content: ${resp.body}"
-                    if ( !resp || resp.status >= 400 ) {
-                        def msg = "Unexpected Tower response refreshing JWT token"
-                        if( resp ) msg += " [${resp.status}]"
+                    if( resp==null )
+                        throw new HttpResponseException(500, "Missing Tower response refreshing JWT token: ${request.uri}")
+                    if ( resp.status >= 400 ) {
+                        log.debug "Tower Refresh '$uri' response; msgId=${msgId}\n- status : ${resp.status}\n- headers: ${RegHelper.dumpHeaders(resp.headers)}\n- content: ${resp.body}"
+                        final msg = "Unexpected Tower response refreshing JWT token: ${request.uri}"
                         throw new HttpResponseException(resp.status, msg, resp.body)
                     }
-                    final cookies = resp.headers?['set-cookie'] ?: []
-                    final jwtAuth = parseTokens(cookies, refreshToken)
-                    return jwtAuthStore.putJwtAuth(endpoint, originalAuthToken, jwtAuth)
+                    else if( log.isTraceEnabled() ) {
+                        log.trace "Tower Refresh '$uri' response; msgId=${msgId}\n- status : ${resp.status}\n- headers: ${RegHelper.dumpHeaders(resp.headers)}\n- content: ${resp.body}"
+                    }
+                    final cookies = resp.headers?['set-cookie'] ?: List.<String>of()
+                    final newAuth = parseTokens(cookies, auth)
+                    jwtAuthStore.store(newAuth)
+                    return newAuth
                 }
 
     }
 
-    protected static JwtAuth parseTokens(List<String> cookies, String refreshToken) {
+    protected static JwtAuth parseTokens(List<String> cookies, JwtAuth auth) {
         HttpCookie jwtToken = null
         HttpCookie jwtRefresh = null
         for (String cookie : cookies) {
@@ -239,7 +290,7 @@ abstract class TowerConnector {
             jwtRefresh ?= cookieList.find { HttpCookie it -> it.name == 'JWT_REFRESH_TOKEN' }
             // if we have both short-circuit
             if (jwtToken && jwtRefresh) {
-                return new JwtAuth(jwtToken.value, jwtRefresh.value)
+                return auth.withBearer(jwtToken.value).withRefresh(jwtRefresh.value)
             }
         }
         if (!jwtToken) {
@@ -247,7 +298,7 @@ abstract class TowerConnector {
         }
         // this is the case where the server returned only the jwt
         // we go with the original refresh token
-        return new JwtAuth(jwtToken.value, jwtRefresh ? jwtRefresh.value : refreshToken)
+        return auth.withBearer(jwtToken.value)
     }
 
     protected static URI refreshTokenEndpoint(String towerEndpoint) {

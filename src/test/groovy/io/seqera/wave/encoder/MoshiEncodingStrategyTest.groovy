@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -20,22 +20,31 @@ package io.seqera.wave.encoder
 
 import spock.lang.Specification
 
+import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
+import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingResponse
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
+import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.storage.DigestStore
+import io.seqera.wave.storage.DockerDigestStore
 import io.seqera.wave.storage.LazyDigestStore
+import io.seqera.wave.storage.HttpDigestStore
 import io.seqera.wave.storage.ZippedDigestStore
 import io.seqera.wave.storage.reader.DataContentReader
 import io.seqera.wave.storage.reader.GzipContentReader
+import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.tower.User
 
 /**
  *
@@ -48,7 +57,7 @@ class MoshiEncodingStrategyTest extends Specification {
         given:
         def encoder = new MoshiEncodeStrategy<BuildResult>() { }
         and:
-        def build = BuildResult.completed('1', 2, 'Oops', Instant.now())
+        def build = BuildResult.completed('1', 2, 'Oops', Instant.now(), null)
 
         when:
         def json = encoder.encode(build)
@@ -80,8 +89,8 @@ class MoshiEncodingStrategyTest extends Specification {
         given:
         def encoder = new MoshiEncodeStrategy<ContainerRequestData>() { }
         and:
-        def data = new ContainerRequestData(1,
-                2,
+        def data = new ContainerRequestData(
+                new PlatformId(new User(id:1),2),
                 'ubuntu',
                 'from foo',
                 new ContainerConfig(entrypoint: ['some', 'entry'], cmd:['the', 'cmd']),
@@ -96,6 +105,53 @@ class MoshiEncodingStrategyTest extends Specification {
         copy.getClass() == data.getClass()
         and:
         copy == data
+    }
+
+    def 'should deserialize container request data' () {
+        given:
+        def REQUEST = '''
+            {
+               "buildId":"build-123",
+               "buildNew":true,
+               "condaFile":"some/conda/file",
+               "containerConfig":{
+                  "cmd":[ "the","cmd" ],
+                  "entrypoint":["some","entry" ]
+               },
+               "containerFile":"from foo",
+               "containerImage":"ubuntu",
+               "freeze":true,
+               "identity":{
+                  "user":{
+                     "id":1,
+                     "email": "foo@gmail.com",
+                     "userName": "foo"
+                  },
+                  "workspaceId":2,
+                  "accessToken": "12345",
+                  "towerEndpoint": "https://foo.com"
+               },
+               "platform":{
+                  "arch":"amd64",
+                  "os":"linux"
+               }
+            }
+            '''
+        and:
+        def encoder = new MoshiEncodeStrategy<ContainerRequestData>() { }
+
+        when:
+        def result = encoder.decode(REQUEST)
+        then:
+        result.identity == new PlatformId(new User(id:1, email: "foo@gmail.com", userName: 'foo'), 2, '12345', 'https://foo.com')
+        result.containerImage == 'ubuntu'
+        result.containerFile == 'from foo'
+        result.containerConfig == new ContainerConfig(entrypoint: ['some', 'entry'], cmd:['the', 'cmd'])
+        result.condaFile == 'some/conda/file'
+        result.platform == ContainerPlatform.of('amd64')
+        result.buildId == 'build-123'
+        result.buildNew
+        result.freeze
     }
 
     def 'should encode and decode lazy digest store' () {
@@ -149,7 +205,7 @@ class MoshiEncodingStrategyTest extends Specification {
         def DATA = 'Hello wold!'
         def encoder = new MoshiEncodeStrategy<DigestStore>() { }
         and:
-        def data = new ZippedDigestStore(DATA.bytes, 'my/media', '12345', 2000)
+        def data = ZippedDigestStore.fromUncompressed(DATA.bytes, 'my/media', '12345', 2000)
 
         when:
         def json = encoder.encode(data)
@@ -262,5 +318,91 @@ class MoshiEncodingStrategyTest extends Specification {
         copy.pairingId == data.pairingId
     }
 
+    def 'should encode and decode http digest store' () {
+        given:
+        def encoder = new MoshiEncodeStrategy<DigestStore>() { }
+        and:
+        def data = new HttpDigestStore(
+                'http://foo.com/this/that',
+                'text/json',
+                '12345',
+                2000 )
 
+        when:
+        def json = encoder.encode(data)
+
+        and:
+        def copy = (HttpDigestStore) encoder.decode(json)
+        then:
+        copy.getClass() == data.getClass()
+        and:
+        copy.location == data.location
+        copy.digest == data.digest
+        copy.mediaType == data.mediaType
+        copy.size == data.size
+    }
+
+    def 'should encode and decode http digest store' () {
+        given:
+        def encoder = new MoshiEncodeStrategy<DigestStore>() { }
+        and:
+        def data = new DockerDigestStore(
+                'docker://foo.com/this/that',
+                'text/json',
+                '12345',
+                2000 )
+
+        when:
+        def json = encoder.encode(data)
+
+        and:
+        def copy = (DockerDigestStore) encoder.decode(json)
+        then:
+        copy.getClass() == data.getClass()
+        and:
+        copy.location == data.location
+        copy.digest == data.digest
+        copy.mediaType == data.mediaType
+        copy.size == data.size
+    }
+
+    def 'should encode and decode wave build record' () {
+        given:
+        def encoder = new MoshiEncodeStrategy<WaveBuildRecord>() { }
+        and:
+        def context = new BuildContext('http://foo.com', '12345', 100, '67890')
+        and:
+        def build = new BuildRequest(
+                '12345',
+                'from foo',
+                'conda spec',
+                'spack spec',
+                Path.of("/some/path"),
+                'docker.io/some:image:12345',
+                PlatformId.NULL,
+                ContainerPlatform.of('linux/amd64'),
+                'cacherepo',
+                "1.2.3.4",
+                '{"config":"json"}',
+                null,
+                null,
+                'scan12345',
+                context,
+                null)
+                .withBuildId('1')
+        def result = new BuildResult(build.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
+        def event = new BuildEvent(build, result)
+
+        and:
+        def record1 = WaveBuildRecord.fromEvent(event)
+
+        when:
+        def json = encoder.encode(record1)
+        and:
+        def copy = encoder.decode(json)
+        then:
+        copy.getClass() == record1.getClass()
+        and:
+        copy == record1
+    }
 }

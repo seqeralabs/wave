@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -46,10 +46,10 @@ class BuildCacheStoreRedisTest extends Specification implements RedisTestContain
                 REDIS_PORT: redisPort
         ], 'test', 'redis')
         jedis = new Jedis(redisHostName, redisPort as int)
-        jedis.flushAll()
     }
 
     def cleanup(){
+        jedis.flushAll()
         jedis.close()
     }
 
@@ -152,7 +152,7 @@ class BuildCacheStoreRedisTest extends Specification implements RedisTestContain
 
         // update a value in a separate thread
         Thread.start {
-            req1 = BuildResult.completed('1', 0, '', Instant.now())
+            req1 = BuildResult.completed('1', 0, '', Instant.now(), null)
             cacheStore.storeBuild('foo',req1)
         }
 

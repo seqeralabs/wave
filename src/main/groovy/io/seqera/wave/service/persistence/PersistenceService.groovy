@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -19,11 +19,9 @@
 package io.seqera.wave.service.persistence
 
 import groovy.transform.CompileStatic
-import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.service.scan.ScanResult
-import io.seqera.wave.service.builder.BuildEvent
 /**
  * A storage for statistic data
  *
@@ -32,11 +30,6 @@ import io.seqera.wave.service.builder.BuildEvent
  */
 @CompileStatic
 interface PersistenceService {
-
-    @EventListener
-    default void onBuildEvent(BuildEvent event) {
-        saveBuild(WaveBuildRecord.fromEvent(event))
-    }
 
     /**
      * Store a {@link WaveBuildRecord} object in the underlying persistence layer.
@@ -55,6 +48,15 @@ interface PersistenceService {
      * @return The corresponding {@link WaveBuildRecord} object object
      */
     WaveBuildRecord loadBuild(String buildId)
+
+    /**
+     * Retrieve a {@link WaveBuildRecord} object for the given target image and container digest
+     *
+     * @param targetImage The container target image name e.g. docker.io/user/image:tag
+     * @param digest The container image sha256 checksum
+     * @return The corresponding {@link WaveBuildRecord} object or {@code null} if no record is found
+     */
+    WaveBuildRecord loadBuild(String targetImage, String digest)
 
     /**
      * Store a {@link WaveContainerRecord} object in the Surreal wave_request table.

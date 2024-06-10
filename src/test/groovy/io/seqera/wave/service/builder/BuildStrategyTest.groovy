@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -22,10 +22,10 @@ import spock.lang.Specification
 
 import java.nio.file.Path
 
-import io.seqera.wave.api.BuildContext
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.tower.User
+import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.util.ContainerHelper
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -38,11 +38,14 @@ class BuildStrategyTest extends Specification {
         def service = Spy(BuildStrategy)
         service.@buildConfig = new BuildConfig()
         and:
-        def work = Path.of('/work/foo')
-        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, null, BuildFormat.DOCKER, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
+        def req = new BuildRequest(
+                workDir: Path.of('/work/foo/c168dba125e28777'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'quay.io/wave:c168dba125e28777',
+                cacheRepository: 'reg.io/wave/build/cache' )
 
         when:
-        def cmd = service.launchCmd(REQ)
+        def cmd = service.launchCmd(req)
         then:
         cmd == [
                 '--dockerfile',
@@ -64,13 +67,15 @@ class BuildStrategyTest extends Specification {
         def cache = 'reg.io/wave/build/cache'
         def service = Spy(BuildStrategy)
         service.@buildConfig = new BuildConfig()
-        def build = Mock(BuildContext) {tarDigest >> '123'}
         and:
-        def work = Path.of('/work/foo')
-        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, null, BuildFormat.DOCKER, Mock(User), null, build, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
-
+        def req = new BuildRequest(
+                workDir: Path.of('/work/foo/3980470531b4a52a'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'quay.io/wave:3980470531b4a52a',
+                cacheRepository: 'reg.io/wave/build/cache' )
+        
         when:
-        def cmd = service.launchCmd(REQ)
+        def cmd = service.launchCmd(req)
         then:
         cmd == [
                 '--dockerfile',
@@ -92,17 +97,63 @@ class BuildStrategyTest extends Specification {
         def cache = 'reg.io/wave/build/cache'
         def service = Spy(BuildStrategy)
         and:
-        def work = Path.of('/work/foo')
-        def REQ = new BuildRequest('from foo', work, 'quay.io/wave', null, null, BuildFormat.SINGULARITY, Mock(User), null, null, ContainerPlatform.of('amd64'),'{auth}', cache, null, "", null)
-
+        def req = new BuildRequest(
+                workDir: Path.of('/work/foo/c168dba125e28777'),
+                platform: ContainerPlatform.of('linux/amd64'),
+                targetImage: 'oras://quay.io/wave:c168dba125e28777',
+                format: BuildFormat.SINGULARITY,
+                cacheRepository: 'reg.io/wave/build/cache' )
         when:
-        def cmd = service.launchCmd(REQ)
+        def cmd = service.launchCmd(req)
         then:
         cmd == [
                 "sh",
                 "-c",
                 "singularity build image.sif /work/foo/c168dba125e28777/Containerfile && singularity push image.sif oras://quay.io/wave:c168dba125e28777"
             ]
+    }
+
+    def 'should create request' () {
+        when:
+        def content = 'FROM foo:latest'
+        def workspace = Path.of("some/path")
+        def buildrepo = 'foo.com/repo'
+        def containerId = ContainerHelper.makeContainerId(content, null, null, ContainerPlatform.of('amd64'), buildrepo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildrepo, containerId, null, null, null)
+        def build = new BuildRequest(
+                containerId,
+                content,
+                null,
+                null,
+                workspace,
+                targetImage,
+                PlatformId.NULL,
+                ContainerPlatform.of('amd64'),
+                'caherepo',
+                "1.2.3.4",
+                '{"config":"json"}',
+                null,
+                null,
+                'scan12345',
+                null,
+                BuildFormat.DOCKER
+        )
+
+        then:
+        build.containerId == 'af15cb0a413a2d48'
+        build.workspace == Path.of("some/path")
+        and:
+        !build.buildId
+        !build.workDir
+
+        when:
+        build.withBuildId('100')
+        then:
+        build.containerId == 'af15cb0a413a2d48'
+        build.workspace == Path.of("some/path")
+        and:
+        build.buildId == 'af15cb0a413a2d48_100'
+        build.workDir == Path.of('.').toRealPath().resolve('some/path/af15cb0a413a2d48_100')
     }
 
 }

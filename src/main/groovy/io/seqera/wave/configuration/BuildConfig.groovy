@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -78,6 +78,12 @@ class BuildConfig {
     @Value('${wave.build.compress-caching:true}')
     Boolean compressCaching = true
 
+    @Value('${wave.build.reserved-words:[]}')
+    Set<String> reservedWords
+
+    @Value('${wave.build.record.duration:5d}')
+    Duration recordDuration
+
     @PostConstruct
     private void init() {
         log.debug("Builder config: " +
@@ -92,6 +98,7 @@ class BuildConfig {
                 "status-delay=${statusDelay}; " +
                 "status-duration=${statusDuration}; " +
                 "compress-caching=$compressCaching; " +
+                "record-duration=${recordDuration}; " +
                 "cleanup=${cleanup}; ")
     }
 

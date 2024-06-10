@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -23,26 +23,28 @@ import java.time.Instant
 
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
-import groovy.transform.CompileDynamic
+import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.http.HttpStatus
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ContainerLayer
+import io.seqera.wave.core.spec.ConfigSpec
+import io.seqera.wave.core.spec.ContainerSpec
 import io.seqera.wave.core.spec.ManifestSpec
 import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.storage.Storage
-import io.seqera.wave.storage.reader.ContentReaderFactory
+import io.seqera.wave.util.JacksonHelper
 import io.seqera.wave.util.RegHelper
 import static io.seqera.wave.model.ContentType.DOCKER_IMAGE_CONFIG_V1
 import static io.seqera.wave.model.ContentType.DOCKER_IMAGE_INDEX_V2
 import static io.seqera.wave.model.ContentType.DOCKER_MANIFEST_V1_JWS_TYPE
+import static io.seqera.wave.model.ContentType.DOCKER_MANIFEST_V1_TYPE
 import static io.seqera.wave.model.ContentType.DOCKER_MANIFEST_V2_TYPE
 import static io.seqera.wave.model.ContentType.OCI_IMAGE_CONFIG_V1
 import static io.seqera.wave.model.ContentType.OCI_IMAGE_INDEX_V1
 import static io.seqera.wave.model.ContentType.OCI_IMAGE_MANIFEST_V1
-
 /**
  * Implement the logic of container manifest manipulation and
  * layers injections
@@ -53,6 +55,15 @@ import static io.seqera.wave.model.ContentType.OCI_IMAGE_MANIFEST_V1
 @CompileStatic
 class ContainerAugmenter {
 
+    @Canonical
+    static class ManifestInfo {
+        final String imageManifest
+        final String configDigest
+        final String targetDigest
+        final Boolean oci
+        final ManifestSpec manifestSpec
+    }
+    
     private ProxyClient client
     private ContainerConfig containerConfig
     private ContainerPlatform platform = ContainerPlatform.DEFAULT
@@ -92,7 +103,7 @@ class ContainerAugmenter {
         if( route.request?.platform )
             this.platform = route.request.platform
         // note: do not propagate container config when "freeze" mode is enabled, because it has been already
-        // during the container build phase, and therefore it should be ignored by the augmenter
+        // applied during the container build phase, and therefore it should be ignored by the augmenter
         if( route.request?.containerConfig && !route.request.freeze )
             this.containerConfig = route.request.containerConfig
         return resolve(route.image, route.reference, headers)
@@ -129,7 +140,7 @@ class ContainerAugmenter {
         // resolve image tag to digest
         final resp1 = client.head("/v2/$imageName/manifests/$tag", headers)
         final digest = resp1.headers().firstValue('docker-content-digest').orElse(null)
-        log.trace "Resolve (1): image $imageName:$tag => digest=$digest; reponse code=${resp1.statusCode()}"
+        log.trace "Resolve (1): image $imageName:$tag => digest=$digest; response code=${resp1.statusCode()}"
         checkResponseCode(resp1, client.route, false)
 
         // get manifest list for digest
@@ -166,52 +177,57 @@ class ContainerAugmenter {
         }
 
         final manifestResult = findImageManifestAndDigest(manifestsList, imageName, tag, headers)
-        final imageManifest = manifestResult.v1
-        final configDigest = manifestResult.v2
-        final targetDigest = manifestResult.v3
-        final oci = manifestResult.v4
 
         // fetch the image config
-        final resp5 = client.getString("/v2/$imageName/blobs/$configDigest", headers)
+        final resp5 = client.getString("/v2/$imageName/blobs/$manifestResult.configDigest", headers)
         checkResponseCode(resp5, client.route, true)
         final imageConfig = resp5.body()
         log.trace "Resolve (5): image $imageName:$tag => image config=\n${JsonOutput.prettyPrint(imageConfig)}"
 
         // update the image config adding the new layer
-        final newConfigResult = updateImageConfig(imageName, imageConfig, oci)
+        final newConfigResult = updateImageConfig(imageName, imageConfig, manifestResult.oci)
         final newConfigDigest = newConfigResult[0]
         final newConfigJson = newConfigResult[1]
         log.trace "Resolve (6) ==> new config digest: $newConfigDigest => new config=\n${JsonOutput.prettyPrint(newConfigJson)} "
 
         // update the image manifest adding a new layer
         // returns the updated image manifest digest
-        final newManifestResult = updateImageManifest(imageName, imageManifest, newConfigDigest, newConfigJson.size(), oci)
+        final newManifestResult = updateImageManifest(imageName, manifestResult.imageManifest, newConfigDigest, newConfigJson.size(), manifestResult.oci)
         final newManifestDigest = newManifestResult.v1
         final newManifestSize = newManifestResult.v2
         log.trace "Resolve (7) ==> new image digest: $newManifestDigest"
 
-        if( !targetDigest ) {
+        if( !manifestResult.targetDigest ) {
             return new ContainerDigestPair(digest, newManifestDigest)
         }
         else {
             // update the manifests list with the new digest
             // returns the manifests list digest
-            final newListDigest = updateImageIndex(imageName, manifestsList, targetDigest, newManifestDigest, newManifestSize, oci)
+            final newListDigest = updateImageIndex(imageName, manifestsList, manifestResult.targetDigest, newManifestDigest, newManifestSize, manifestResult.oci)
             log.trace "Resolve (8) ==> new list digest: $newListDigest"
             return new ContainerDigestPair(digest, newListDigest)
         }
 
     }
 
-    protected Tuple4<String,String,String,Boolean> findImageManifestAndDigest(String manifest, String imageName, String tag, Map<String,List<String>> headers) {
+    protected ManifestInfo parseManifest(String media, String manifest, String targetDigest) {
+        if( media==DOCKER_MANIFEST_V2_TYPE || media==OCI_IMAGE_MANIFEST_V1 ) {
+            final json = new JsonSlurper().parseText(manifest) as Map
+            final ref = ManifestSpec.of(json)
+            return new ManifestInfo(manifest, ref.config.digest, targetDigest, media==OCI_IMAGE_MANIFEST_V1, ref)
+        }
+        return null
+    }
+
+    protected ManifestInfo findImageManifestAndDigest(String manifest, String imageName, String tag, Map<String,List<String>> headers) {
 
         def json = new JsonSlurper().parseText(manifest) as Map
         // check the response mime, can be either
         // 1. application/vnd.docker.distribution.manifest.list.v2+json ==> image list
         // 2. application/vnd.docker.distribution.manifest.v2+json  ==> image manifest
 
-        def targetDigest = null
-        def media = json.mediaType
+        String targetDigest = null
+        String media = json.mediaType
         if( media==DOCKER_IMAGE_INDEX_V2 || media==OCI_IMAGE_INDEX_V1 ) {
             // get target manifest
             final oci = media == OCI_IMAGE_INDEX_V1
@@ -226,8 +242,8 @@ class ContainerAugmenter {
 
         if( media==DOCKER_MANIFEST_V2_TYPE || media==OCI_IMAGE_MANIFEST_V1 ) {
             // find the image config digest
-            final configDigest = findImageConfigDigest(manifest)
-            return new Tuple4(manifest, configDigest, targetDigest, media==OCI_IMAGE_MANIFEST_V1)
+            final ref = ManifestSpec.of(json)
+            return new ManifestInfo(manifest, ref.config.digest, targetDigest, media==OCI_IMAGE_MANIFEST_V1, ref)
         }
         else {
             throw new IllegalArgumentException("Unexpected media type for request '$imageName:$tag' - offending value: $media")
@@ -261,48 +277,16 @@ class ContainerAugmenter {
     synchronized protected Map layerBlob(String image, ContainerLayer layer) {
         log.debug "Adding layer: $layer to image: $client.registry.name/$image"
         // store the layer blob in the cache
-        final type = "application/vnd.docker.image.rootfs.diff.tar.gzip"
-        final location = layer.location
-        final digest = layer.gzipDigest
-        final size = layer.gzipSize
-        final String path = "$client.registry.name/v2/$image/blobs/$digest"
-        final content = ContentReaderFactory.of(location)
-        storage.saveBlob(path, content, type, digest, size)
+        final String path = "$client.registry.name/v2/$image/blobs/$layer.gzipDigest"
+        final store = storage.saveBlob(path, layer)
 
         final result = new LinkedHashMap(10)
-        result."mediaType" = type
-        result."size" = size
-        result."digest" = digest
+        result."mediaType" = store.mediaType
+        result."size" = store.size
+        result."digest" = store.digest
         return result
     }
 
-    /**
-     * @param imageManifest hold the image config json. It has the following structure
-     * <pre>
-     *     {
-     *      "schemaVersion": 2,
-     *      "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
-     *      "config": {
-     *              "mediaType": "application/vnd.docker.container.image.v1+json",
-     *              "size": 1469,
-     *              "digest": "sha256:feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412"
-     *          },
-     *      "layers": [
-     *          {
-     *              "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
-     *              "size": 2479,
-     *              "digest": "sha256:2db29710123e3e53a794f2694094b9b4338aa9ee5c40b930cb8063a1be392c54"
-     *          }
-     *      ]
-     *    }
-     * </pre>
-     * @return
-     */
-    @CompileDynamic
-    protected String findImageConfigDigest(String imageManifest) {
-        final json = (Map) new JsonSlurper().parseText(imageManifest)
-        return json.config.digest
-    }
 
     protected Tuple2<String,Integer> updateImageManifest(String imageName, String imageManifest, String newImageConfigDigest, newImageConfigSize, boolean oci) {
 
@@ -336,12 +320,13 @@ class ContainerAugmenter {
         return new Tuple2<String, Integer>(digest, size)
     }
 
-    protected String getFirst(value) {
+    protected static String processEntryPoint(value) {
         if( !value )
             return null
         if( value instanceof List ) {
-            if( value.size()>1 ) log.warn "Invalid Entrypoint value: $value -- Only the first array element will be taken"
-            return value.get(0)
+            if( value.size() == 1 )
+                return value.get(0)
+            return JacksonHelper.toJson(value)
         }
         if( value instanceof String )
             return value
@@ -358,7 +343,7 @@ class ContainerAugmenter {
     }
 
     protected Map enrichConfig(Map config){
-        final entryChain = getFirst(config.Entrypoint)
+        final entryChain = processEntryPoint(config.Entrypoint)
         if( containerConfig.entrypoint ) {
             config.Entrypoint = containerConfig.entrypoint
         }
@@ -507,7 +492,7 @@ class ContainerAugmenter {
         return newManifestDigest
     }
 
-    ManifestSpec getImageConfig(String imageName, String tag, Map<String,List<String>> headers) {
+    ContainerSpec getContainerSpec(String imageName, String tag, Map<String,List<String>> headers) {
         assert client, "Missing client"
         assert platform, "Missing 'platform' parameter"
 
@@ -524,19 +509,39 @@ class ContainerAugmenter {
         final manifestsList = resp2.body()
         log.trace "Config (2): image $imageName:$tag => type=$type; manifests list:\n${JsonOutput.prettyPrint(manifestsList)}"
 
-        if( type == DOCKER_MANIFEST_V1_JWS_TYPE ) {
-            return ManifestSpec.parseV1(manifestsList)
+        if( type==DOCKER_MANIFEST_V1_JWS_TYPE || type==DOCKER_MANIFEST_V1_TYPE ) {
+            final json = new JsonSlurper().parseText(manifestsList) as Map
+            final config = ConfigSpec.parseV1(json)
+            final manifest = ManifestSpec.parseV1(json)
+            return new ContainerSpec(
+                    client.registry.name,
+                    client.registry.host.toString(),
+                    imageName,
+                    tag,
+                    digest,
+                    config,
+                    manifest )
         }
 
-        final manifestResult = findImageManifestAndDigest(manifestsList, imageName, tag, headers)
-        final configDigest = manifestResult.second
+        final manifestResult
+                = parseManifest(type, manifestsList,digest)
+                ?: findImageManifestAndDigest(manifestsList, imageName, tag, headers)
 
         // fetch the image config
-        final resp5 = client.getString("/v2/$imageName/blobs/$configDigest", headers)
+        final resp5 = client.getString("/v2/$imageName/blobs/$manifestResult.configDigest", headers)
         checkResponseCode(resp5, client.route, true)
         final imageConfig = resp5.body()
         log.trace "Config (4): image $imageName:$tag => image config=\n${JsonOutput.prettyPrint(imageConfig)}"
 
-        return ManifestSpec.parse(imageConfig)
+        final config = ConfigSpec.parse(imageConfig)
+        final manifest = manifestResult.manifestSpec
+        return new ContainerSpec(
+                client.registry.name,
+                client.registry.host.toString(),
+                imageName,
+                tag,
+                digest,
+                config,
+                manifest )
     }
 }

@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -95,10 +95,6 @@ abstract class AbstractMessageQueue<M> implements Runnable {
         return clientKey.substring(0,p)
     }
 
-    protected String markerKey(String target, String clientId) {
-        clientKey(target,clientId).replaceAll('/queue$','/marker')
-    }
-
     /**
      * Add a message to the send queue
      *
@@ -122,14 +118,13 @@ abstract class AbstractMessageQueue<M> implements Runnable {
      *
      * @param target
      *      Identify the websocket target i.e. the remote endpoint. For the same target
-     *      it's possible to have one ore more clients
+     *      it's possible to have more than one client
      * @param clientId
      *      A unique id for the Websocket client instance
      * @param sender
      *      A {@link MessageSender} that will send to message to the client 
      */
     void registerClient(String target, String clientId, MessageSender<M> sender) {
-        broker.mark(markerKey(target,clientId))
         clients.put(clientKey(target,clientId), new MessageSender<String>() {
             @Override
             void send(String message) {
@@ -144,25 +139,12 @@ abstract class AbstractMessageQueue<M> implements Runnable {
      *
      * @param target
      *      Identify the websocket target i.e. the remote endpoint. For the same target
-     *      it's possible to have one ore more clients
+     *      it's possible to have one more than one client
      * @param clientId
      *      A unique id for the Websocket client instance
      */
     void unregisterClient(String target, String clientId) {
         clients.remove(clientKey(target,clientId))
-        broker.unmark(markerKey(target,clientId))
-    }
-
-    /**
-     * Check if the specified target is available
-     *
-     * @param target
-     *      The name of the queue for which check the existence
-     * @return
-     *      {@code true} if a queue with the specified name exists, {@code false} otherwise
-     */
-    boolean hasTarget(String target) {
-        broker.hasMark(targetKey(target))
     }
 
     @Override

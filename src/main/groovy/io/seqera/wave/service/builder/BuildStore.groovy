@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -22,7 +22,6 @@ import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
 import groovy.transform.CompileStatic
-import io.seqera.wave.exception.BuildTimeoutException
 /**
  * Define build request store operations
  *
@@ -86,40 +85,6 @@ interface BuildStore {
      *      specified image name or {@code null} if no build is associated for the
      *      given image name
      */
-    default CompletableFuture<BuildResult> awaitBuild(String imageName) {
-        final result = getBuild(imageName)
-        if( !result )
-            return null
-        return CompletableFuture<BuildResult>.supplyAsync(() -> Waiter.awaitCompletion(this,imageName,result))
-    }
+    CompletableFuture<BuildResult> awaitBuild(String imageName)
 
-    /**
-     * Implement waiter common logic
-     */
-    private static class Waiter {
-
-        static BuildResult awaitCompletion(BuildStore store, String imageName, BuildResult current) {
-            final beg = System.currentTimeMillis()
-            // add 10% delay gap to prevent race condition with timeout expiration
-            final max = (store.timeout.toMillis() * 1.10) as long
-            while( true ) {
-                if( current==null ) {
-                    return BuildResult.unknown()
-                }
-
-                // check is completed
-                if( current.done() ) {
-                    return current
-                }
-                // check if it's timed out
-                final delta = System.currentTimeMillis()-beg
-                if( delta > max )
-                    throw new BuildTimeoutException("Build of container '$imageName' timed out")
-                // sleep a bit
-                Thread.sleep(store.delay.toMillis())
-                // fetch the build status again
-                current = store.getBuild(imageName)
-            }
-        }
-    }
 }

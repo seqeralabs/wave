@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -72,6 +72,24 @@ class SpillwayMemoryRateLimiterTest extends Specification {
 
         then:
         thrown(SlowDownException)
+    }
+
+    void "can acquire 1 error retry"() {
+        expect:
+        rateLimiter.acquireTimeoutCounter('http://foo.com')
+        rateLimiter.acquireTimeoutCounter('http://bar.com')
+    }
+
+    void "should fail on multiple requests "() {
+        given:
+        def result = new ArrayList<Boolean>()
+
+        when:
+        result << rateLimiter.acquireTimeoutCounter('http://foo.com')
+        result << rateLimiter.acquireTimeoutCounter('http://foo.com')
+        result << rateLimiter.acquireTimeoutCounter('http://foo.com')
+        then:
+        result.count{it==false }>0
     }
 
 }

@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -18,15 +18,12 @@
 
 package io.seqera.wave.configuration
 
-import java.time.Duration
 
 import groovy.transform.CompileStatic
-import io.micronaut.context.annotation.ConfigurationInject
 import io.micronaut.context.annotation.ConfigurationProperties
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.bind.annotation.Bindable
-
 /**
  * Model Rate limiter configuration
  * 
@@ -61,6 +58,17 @@ interface RateLimiterConfig {
 
         @Bindable("100 / 1m")
         LimitConfig getAuthenticated()
+    }
+
+
+    TimeoutLimit getTimeoutErrors()
+
+    @ConfigurationProperties('timeout-errors')
+    static interface TimeoutLimit {
+
+        @Bindable("10 / 1m")
+        LimitConfig getMaxRate()
+        
     }
 
 }

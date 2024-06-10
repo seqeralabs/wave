@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -34,15 +34,6 @@ trait RedisTestContainer {
 
     static GenericContainer redisContainer
 
-    static {
-        log.debug "Starting Redis test container"
-        redisContainer = new GenericContainer(DockerImageName.parse("redis:7.0.4-alpine"))
-                .withExposedPorts(6379)
-                .waitingFor(Wait.forLogMessage(".*Ready to accept connections.*\\n", 1))
-        redisContainer.start()
-        log.debug "Started Redis test container"
-    }
-
 
     String getRedisHostName(){
         redisContainer.getHost()
@@ -50,6 +41,15 @@ trait RedisTestContainer {
 
     String getRedisPort(){
         redisContainer.getMappedPort(6379)
+    }
+
+    def setupSpec() {
+        log.debug "Starting Redis test container"
+        redisContainer = new GenericContainer(DockerImageName.parse("redis:7.0.4-alpine"))
+                .withExposedPorts(6379)
+                .waitingFor(Wait.forLogMessage(".*Ready to accept connections.*\\n", 1))
+        redisContainer.start()
+        log.debug "Started Redis test container"
     }
 
     def cleanupSpec(){

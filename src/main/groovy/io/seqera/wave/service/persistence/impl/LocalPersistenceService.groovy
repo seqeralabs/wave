@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -47,6 +47,11 @@ class LocalPersistenceService implements PersistenceService {
     @Override
     WaveBuildRecord loadBuild(String buildId) {
         return buildStore.get(buildId)
+    }
+
+    @Override
+    WaveBuildRecord loadBuild(String targetImage, String digest) {
+        buildStore.values().find( (build) ->  build.targetImage==targetImage && build.digest==digest )
     }
 
     @Override
