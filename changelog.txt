@@ -1,7 +1,19 @@
 # Wave changelog
+1.8.0 - 10 Jun 2024
+- Add breakdown per org on stats metrics when a date is specified (#517) [b24894a4]
+- Replace Kaniko with Buildkit (#503) [a26f5dfe]
+- Implement cache store for build records (#505) [dd195deb]
+- Fix do not show null in build view [763ffe03]
+- Fix type in Const [b1bdb948]
+- Fix handling blob response headers (#504) [de97575e]
+- Fix missing endpoint on patched JWT token [46bbcd77]
+- Improve digest retrivial logs [5976967a]
+- Excludes JWT records with no endpoint [c98db8fb]
+- Bump Gradle 8.8 [2e4568da]
+
 1.7.9 - 29 May 2024
 - Improve JWT refresh handling  (#512) [751edb03]
-- Mark release as draft when ending with -Ax -Bx -RCx [ci skip] [66ba7ea7]
+- Mark release as draft when ending with -Ax -Bx -RCx [66ba7ea7]
 - Removed unused imports (#510) [182e3f0d]
 - Fix Use atomic strategy for Cacheable ops [923ae67c]
 - Fix failing build [8adb52ab]
