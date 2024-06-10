@@ -49,10 +49,8 @@ class CredentialsServiceTest extends Specification {
 
     @Inject CredentialsService credentialsService
 
-
     @MockBean(TowerClient)
     TowerClient towerClient = Mock(TowerClient)
-
 
     @MockBean(PairingService)
     PairingService securityService = Mock(PairingService)

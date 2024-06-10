@@ -24,7 +24,6 @@ import spock.lang.Specification
 import java.nio.file.Files
 
 import io.micronaut.context.ApplicationContext
-import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.RateLimiterConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.SlowDownException
@@ -33,13 +32,10 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.ContainerBuildServiceImpl
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.ContainerHelper
-import jakarta.inject.Inject
-
 /**
  * @author : jorge <jorge.aguilera@seqera.io>
  *
  */
-@MicronautTest(environments = ["test", "rate-limit"])
 class BuildServiceRateLimitTest extends Specification {
 
     @Shared
@@ -48,11 +44,20 @@ class BuildServiceRateLimitTest extends Specification {
     @Shared
     String cacheRepo = 'quay.io/cache/name'
 
-    @Inject
+    @Shared
+    ApplicationContext applicationContext
+
+    @Shared
     ContainerBuildServiceImpl containerBuildService
 
-    @Inject
+    @Shared
     RateLimiterConfig configuration
+
+    def setupSpec() {
+        applicationContext = ApplicationContext.run('test', 'rate-limit')
+        containerBuildService = applicationContext.getBean(ContainerBuildServiceImpl)
+        configuration = applicationContext.getBean(RateLimiterConfig)
+    }
 
 
     def 'should not allow more auth builds than rate limit' () {

@@ -97,6 +97,8 @@ dependencies {
     implementation "io.micronaut:micronaut-management"
     //views
     implementation("io.micronaut.views:micronaut-views-handlebars")
+
+    testImplementation('org.objenesis:objenesis:3.4')
 }
 
 application {

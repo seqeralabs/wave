@@ -67,7 +67,7 @@ class BuildController {
             throw new IllegalStateException("Build Logs service not configured")
         final logs = logService.fetchLogStream(buildId)
         return logs
-                ? HttpResponse.ok(logs).contentType(MediaType.TEXT_PLAIN_TYPE)
+                ? HttpResponse.ok(logs)
                 : HttpResponse.<StreamedFile>notFound()
     }
 
