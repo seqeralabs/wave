@@ -36,8 +36,8 @@ import jakarta.inject.Singleton
 @Slf4j
 class BuildConfig {
 
-    @Value('${wave.build.kaniko-image}')
-    String kanikoImage
+    @Value('${wave.build.buildkit-image}')
+    String buildkitImage
 
     @Value('${wave.build.singularity-image}')
     String singularityImage
@@ -75,19 +75,26 @@ class BuildConfig {
     @Nullable
     String cleanup
 
-    @Value('${wave.build.compress-caching:true}')
-    Boolean compressCaching = true
-
     @Value('${wave.build.reserved-words:[]}')
     Set<String> reservedWords
 
     @Value('${wave.build.record.duration:5d}')
     Duration recordDuration
 
+    @Value('${wave.build.oci-mediatypes:true}')
+    Boolean ociMediatypes
+
+    //check here for other options https://github.com/moby/buildkit?tab=readme-ov-file#registry-push-image-and-cache-separately
+    @Value('${wave.build.compression:gzip}')
+    String compression
+
+    @Value('${wave.build.force-compression:false}')
+    Boolean forceCompression
+
     @PostConstruct
     private void init() {
         log.debug("Builder config: " +
-                "kaniko-image=${kanikoImage}; " +
+                "buildkit-image=${buildkitImage}; " +
                 "singularity-image=${singularityImage}; " +
                 "singularity-image-amr64=${singularityImageArm64}; " +
                 "default-build-repository=${defaultBuildRepository}; " +
@@ -97,9 +104,11 @@ class BuildConfig {
                 "build-timeout=${buildTimeout}; " +
                 "status-delay=${statusDelay}; " +
                 "status-duration=${statusDuration}; " +
-                "compress-caching=$compressCaching; " +
                 "record-duration=${recordDuration}; " +
-                "cleanup=${cleanup}; ")
+                "cleanup=${cleanup}; "+
+                "oci-mediatypes=${ociMediatypes}; " +
+                "compression=${compression}; " +
+                "force-compression=${forceCompression}; ")
     }
 
     String singularityImage(ContainerPlatform containerPlatform){
@@ -111,4 +120,5 @@ class BuildConfig {
     String getSingularityImageArm64(){
         return singularityImageArm64 ?: singularityImage + "-arm64"
     }
+
 }
