@@ -18,7 +18,6 @@
 
 package io.seqera.wave.tower.client
 
-
 import spock.lang.Specification
 
 import java.util.concurrent.ExecutionException
@@ -42,6 +41,7 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.exception.HttpResponseException
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.tower.User
+import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.tower.client.connector.TowerConnector
 import jakarta.inject.Inject
@@ -70,7 +70,8 @@ class TowerClientHttpTest extends Specification{
         @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
         HttpResponse<Void> oauthRefresh(String grant_type, String refresh_token) {
             if (grant_type == 'refresh_token' && refresh_token == 'refresh'){
-                return HttpResponse.ok().cookie(Cookie.of("JWT","refreshed"))
+                return HttpResponse.ok()
+                        .cookie(Cookie.of("JWT","refreshed"))
                         .cookie(Cookie.of("JWT_REFRESH_TOKEN",'refresh'))
             } else {
                 return HttpResponse.badRequest()
@@ -125,8 +126,14 @@ class TowerClientHttpTest extends Specification{
     @Inject
     CacheManager cacheManager
 
+    @Inject
+    TowerConnector towerConnector
+
     def setup() {
+        jwtAuthStore.clear()
+        cacheManager.getCache("cache-1min").invalidateAll()
         cacheManager.getCache("cache-20sec").invalidateAll()
+        towerConnector.refreshCache0().invalidateAll()
     }
 
     private String getHostName() {
@@ -134,50 +141,59 @@ class TowerClientHttpTest extends Specification{
     }
 
     def 'handle connection failure'() {
-        when: 'contacting tower'
+        given:
         def endpoint = "https://10.255.255.1" // this is  a non routable address to simulate connection errors
-        towerClient.userInfo(endpoint,'token').get()
-
+        def auth = JwtAuth.of(endpoint, 'token')
+        when: 'contacting tower'
+        towerClient.userInfo(endpoint,auth).get()
         then:
         def e = thrown(ExecutionException)
         (e.cause  as HttpResponseException).statusCode() == HttpStatus.SERVICE_UNAVAILABLE
     }
 
     def "test user-info"() {
+        given:
+        def auth = JwtAuth.of(hostName, 'token')
         when: 'requesting user info with a valid token'
-        def resp = towerClient.userInfo(hostName,"token").get()
+        def resp = towerClient.userInfo(hostName,auth).get()
         then:
         resp.user.id == 1
     }
 
     def 'test user-info with refreshable token'() {
+        given:
+        def auth = JwtAuth.of(hostName, 'refresh', 'refresh')
         when:
-        jwtAuthStore.putJwtAuth(hostName,'refresh','refresh')
-        def resp = towerClient.userInfo(hostName, 'refresh').get()
+        def resp = towerClient.userInfo(hostName, auth).get()
         then:
         resp.user.id == 1
     }
 
     def 'test user-info with invalid token'() {
+        given:
+        def auth = JwtAuth.of(hostName, 'foo')
         when:
-        towerClient.userInfo(hostName,'foo').get()
+        towerClient.userInfo(hostName,auth).get()
         then:
         def e = thrown(ExecutionException)
         (e.cause as HttpResponseException).statusCode() == HttpStatus.UNAUTHORIZED
     }
 
     def 'test user-info with token that cannot be refreshed'() {
+        given:
+        def auth = JwtAuth.of(hostName, 'refresh',  'unrefreshable')
         when:
-        jwtAuthStore.putJwtAuth(hostName, 'unrefreshable', 'refresh')
-        towerClient.userInfo(hostName,'refresh').get()
+        towerClient.userInfo(hostName,auth).get()
         then:
         def e = thrown(ExecutionException)
         (e.cause as HttpResponseException).statusCode() == HttpStatus.BAD_REQUEST
     }
 
     def 'test list-credentials'() {
+        given:
+        def auth = JwtAuth.of(hostName, 'token')
         when: 'requesting credentials'
-        def resp = towerClient.listCredentials(hostName, 'token',null).get()
+        def resp = towerClient.listCredentials(hostName, auth,null).get()
         then:
         resp.credentials.size() == 2
         resp.credentials[0].id == 'id1'
@@ -188,7 +204,7 @@ class TowerClientHttpTest extends Specification{
         resp.credentials[1].registry == null
 
         when: 'requesting credentials in a workspace that exists'
-        resp = towerClient.listCredentials(hostName, 'token', 1).get()
+        resp = towerClient.listCredentials(hostName, auth, 1).get()
         then:
         resp.credentials.size() == 1
         resp.credentials[0].id == 'id0'
@@ -197,9 +213,10 @@ class TowerClientHttpTest extends Specification{
     }
 
     def 'test list-credentials with refreshable token'() {
+        given:
+        def auth = JwtAuth.of(hostName, 'refresh', 'refresh')
         when:
-        jwtAuthStore.putJwtAuth(hostName,'refresh','refresh')
-        def resp = towerClient.listCredentials(hostName, 'refresh',null).get()
+        def resp = towerClient.listCredentials(hostName, auth,null).get()
         then:
         resp.credentials.size() == 2
         resp.credentials[0].id == 'id1'
@@ -211,84 +228,97 @@ class TowerClientHttpTest extends Specification{
     }
 
     def 'test list-credentials with invalid token'() {
+        given:
+        def auth = JwtAuth.of(hostName, 'foo')
         when:
-        towerClient.listCredentials(hostName,'foo', null).get()
+        towerClient.listCredentials(hostName,auth, null).get()
         then:
         def e = thrown(ExecutionException)
         (e.cause as HttpResponseException).statusCode() == HttpStatus.UNAUTHORIZED
     }
 
     def 'test list-credentials with token that cannot be refreshed'() {
+        given:
+        def auth = JwtAuth.of(hostName, 'refresh', 'unrefreshable')
         when:
-        jwtAuthStore.putJwtAuth(hostName, 'unrefreshable', 'refresh')
-        towerClient.listCredentials(hostName,'refresh', null).get()
+        towerClient.listCredentials(hostName, auth, null).get()
         then:
         def e = thrown(ExecutionException)
         (e.cause as HttpResponseException).statusCode() == HttpStatus.BAD_REQUEST
     }
 
     def 'test fetch-credentials'() {
+        given:
+        def auth = JwtAuth.of(hostName, 'token')
         when:
-        def resp = towerClient.fetchEncryptedCredentials(hostName, 'token','1','1',null).get()
+        def resp = towerClient.fetchEncryptedCredentials(hostName, auth,'1','1',null).get()
         then:
         resp.keys == 'keys'
     }
 
     def 'test fetch-credentials with refreshable token'() {
+        given:
+        def auth = JwtAuth.of(hostName, 'refresh', 'refresh')
         when:
-        jwtAuthStore.putJwtAuth(hostName,'refresh','refresh')
-        def resp = towerClient.fetchEncryptedCredentials(hostName, 'refresh', '1', '1', null).get()
+        def resp = towerClient.fetchEncryptedCredentials(hostName, auth, '1', '1', null).get()
         then:
         resp.keys == 'keys'
     }
 
     def 'test fetch-credentials with invalid token'() {
+        given:
+        def auth = JwtAuth.of(hostName, 'foo')
         when:
-        towerClient.fetchEncryptedCredentials(hostName,'foo', '1', '1',null).get()
+        towerClient.fetchEncryptedCredentials(hostName, auth, '1', '1',null).get()
         then:
         def e = thrown(ExecutionException)
         (e.cause as HttpResponseException).statusCode() == HttpStatus.UNAUTHORIZED
     }
 
     def 'test fetch-credentials with token that cannot be refreshed'() {
+        given:
+        def auth = JwtAuth.of(hostName, 'refresh', 'unrefreshable')
         when:
-        jwtAuthStore.putJwtAuth(hostName, 'unrefreshable', 'refresh')
-        towerClient.fetchEncryptedCredentials(hostName,'refresh', '1', '1', null).get()
+        towerClient.fetchEncryptedCredentials(hostName, auth, '1', '1', null).get()
         then:
         def e = thrown(ExecutionException)
         (e.cause as HttpResponseException).statusCode() == HttpStatus.BAD_REQUEST
     }
 
     def 'parse tokens'() {
+        given:
+        def auth = JwtAuth.of('http://foo.com', '12345', 'current-refresh')
         when:
-        def tokens = TowerConnector.parseTokens(cookies,'current-refresh')
+        def tokens = TowerConnector.parseTokens(COOKIES,auth)
 
         then:
-        tokens.refresh == expectedRefresh
-        tokens.bearer == expectedAuth
+        tokens.refresh == EXPECTED_REFRESH
+        tokens.bearer == EXPECTED_AUTH
 
         where:
-        cookies                                                                                           || expectedAuth | expectedRefresh
-        List.of(cookie('JWT','jwt'))                                                                      || 'jwt'         | 'current-refresh'
-        List.of(cookie('JWT','jwt1'), cookie('JWT_REFRESH_TOKEN','jwt-refresh1'))                         || 'jwt1'        | 'jwt-refresh1'
-        List.of(cookie('JWT_REFRESH_TOKEN','jwt-refresh2'),cookie('JWT','jwt2'))                          || 'jwt2'        | 'jwt-refresh2'
-        List.of(cookie('OTHER','other'),cookie('JWT','jwt3'))                                             || 'jwt3'        | 'current-refresh'
-        List.of(cookie('JWT','jwt'),cookie('JWT_REFRESH_TOKEN','jwt-refresh'),cookie('OTHER','other'))    || 'jwt'        | 'jwt-refresh'
+        COOKIES                                                                                     || EXPECTED_AUTH | EXPECTED_REFRESH
+        [ cookie('JWT','jwt') ]                                                                     || 'jwt'         | 'current-refresh'
+        [ cookie('JWT','jwt1'), cookie('JWT_REFRESH_TOKEN','jwt-refresh1') ]                        || 'jwt1'        | 'jwt-refresh1'
+        [ cookie('JWT_REFRESH_TOKEN','jwt-refresh2'),cookie('JWT','jwt2') ]                         || 'jwt2'        | 'jwt-refresh2'
+        [ cookie('OTHER','other'),cookie('JWT','jwt3') ]                                            || 'jwt3'        | 'current-refresh'
+        [ cookie('JWT','jwt'),cookie('JWT_REFRESH_TOKEN','jwt-refresh'),cookie('OTHER','other') ]   || 'jwt'         | 'jwt-refresh'
 
     }
 
     def 'parse tokens when there is no jwt'() {
+        given:
+        def auth = JwtAuth.of('http://foo.com', '12345', 'current-refresh')
         when:
-        TowerConnector.parseTokens(cookies,'current-refresh')
+        TowerConnector.parseTokens(COOKIES, auth)
         then:
         def e = thrown(HttpResponseException)
         e.statusCode() == HttpStatus.PRECONDITION_FAILED
 
         where:
-        cookies                                             || _
-        List.of()                                           || _
-        List.of(cookie('JWT_REFRESH_TOKEN','jwt-refresh'))  || _
-        List.of(cookie('OTHER','other'))                    || _
+        COOKIES || _
+        []                                              || _
+        [cookie('JWT_REFRESH_TOKEN','jwt-refresh')]     || _
+        [cookie('OTHER','other')]                       || _
     }
 
     private static String cookie(String name, String value) {

@@ -125,82 +125,12 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         when:
         storage.initializeDb()
         and:
-        storage.createBuild(build)
+        storage.saveBuild(build)
         then:
+        sleep 100
         def stored = storage.loadBuild(request.buildId)
         stored.buildId == request.buildId
         stored.requestIp == '127.0.0.1'
-    }
-
-    void "an event insert a build"() {
-        given:
-        def storage = applicationContext.getBean(SurrealPersistenceService)
-        storage.initializeDb()
-        and:
-        def service = applicationContext.getBean(SurrealPersistenceService)
-        final request = new BuildRequest(
-                'container1234',
-                'test',
-                'test',
-                'test',
-                Path.of("."),
-                'docker.io/my/repo:container1234',
-                PlatformId.NULL,
-                ContainerPlatform.of('amd64'),
-                'docker.io/my/cache',
-                '127.0.0.1',
-                '{"config":"json"}',
-                null,
-                null,
-                'scan12345',
-                null,
-                BuildFormat.DOCKER
-        ).withBuildId('123')
-        storage.createBuild( WaveBuildRecord.fromEvent(new BuildEvent(request)))
-
-        and:
-        def result = new BuildResult(request.buildId, 0, "content", Instant.now(), Duration.ofSeconds(1), 'abc123')
-        def event = new BuildEvent(request, result)
-
-        when:
-        service.onBuildEvent(event)
-        sleep 100 //as we are using async, let database a while to store the item
-        then:
-        def stored = storage.loadBuild(request.buildId)
-        stored.buildId == request.buildId
-        stored.digest == 'abc123'
-    }
-
-    void "an event is not inserted if no database"() {
-        given:
-        surrealContainer.stop()
-        def service = applicationContext.getBean(SurrealPersistenceService)
-        final request = new BuildRequest(
-                'container1234',
-                'test',
-                'test',
-                'test',
-                Path.of("."),
-                'docker.io/my/repo:container1234',
-                PlatformId.NULL,
-                ContainerPlatform.of('amd64'),
-                'docker.io/my/cache',
-                '127.0.0.1',
-                '{"config":"json"}',
-                null,
-                null,
-                'scan12345',
-                null,
-                BuildFormat.DOCKER
-        ).withBuildId('123')
-        def result = new BuildResult(request.buildId, 0, "content", Instant.now(), Duration.ofSeconds(1), null)
-        def event = new BuildEvent(request, result)
-
-        when:
-        service.onBuildEvent(event)
-        sleep 100 //as we are using async, let database a while to store the item
-        then:
-        true
     }
 
     def 'should load a build record' () {
@@ -229,10 +159,12 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def record = WaveBuildRecord.fromEvent(event)
 
         and:
-        persistence.createBuild(record)
+        persistence.saveBuild(record)
 
         when:
+        sleep 100
         def loaded = persistence.loadBuild(record.buildId)
+
         then:
         loaded == record
     }
@@ -259,29 +191,17 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 BuildFormat.DOCKER
         ).withBuildId('123')
         and:
-        def build1 = WaveBuildRecord.fromEvent(new BuildEvent(request, null))
+        def result = BuildResult.completed(request.buildId, 1, 'Hello', Instant.now().minusSeconds(60), 'xyz')
+
+        and:
+        def build1 = WaveBuildRecord.fromEvent(new BuildEvent(request, result))
 
         when:
-        persistence.createBuild(build1)
+        persistence.saveBuild(build1)
+        sleep 100
         then:
         persistence.loadBuild(request.buildId) == build1
 
-        when:
-        def result = BuildResult.completed(request.buildId, 1, 'Hello', Instant.now().minusSeconds(60), 'xyz')
-        and:
-        final build2 = WaveBuildRecord.fromEvent(new BuildEvent(request, result))
-        persistence.updateBuild(build2)
-        // short sleep because the update is async
-        sleep 200
-        then:
-        def result2 = persistence.loadBuild(request.buildId)
-        and:
-        result2.buildId == build2.buildId
-        result2.dockerFile == build2.dockerFile
-        and:
-        result2.startTime == build2.startTime
-        result2.duration == build2.duration
-        result2.digest == build2.digest
     }
 
     def 'should load a request record' () {

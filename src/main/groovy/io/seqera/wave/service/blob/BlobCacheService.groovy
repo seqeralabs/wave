@@ -31,7 +31,7 @@ interface BlobCacheService {
 
     /**
      * Store a container blob into the cache storage that allows fast retrieval
-     * via HTTP content delivery network, and retuns a {@link BlobCacheInfo} object
+     * via HTTP content delivery network, and returns a {@link BlobCacheInfo} object
      * holding the HTTP download URI.
      *
      * Note this method is thread safe is expected to be thread safe across multiple replicas.
@@ -42,9 +42,10 @@ interface BlobCacheService {
      * information.
      *
      * @param route The HTTP request of a container layer blob
-     * @param headers The HTTP headers of a container layer blob
+     * @param requestHeaders The HTTP headers of the upstream request
+     * @param responseHeaders The HTTP headers of the response providing the blob to be cached
      * @return
      */
-    BlobCacheInfo retrieveBlobCache(RoutePath route, Map<String,List<String>> headers)
+    BlobCacheInfo retrieveBlobCache(RoutePath route, Map<String,List<String>> requestHeaders, Map<String,List<String>> responseHeaders)
 
 }

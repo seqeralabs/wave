@@ -19,6 +19,7 @@
 package io.seqera.wave.core
 
 import groovy.transform.CompileStatic
+import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.context.annotation.Context
@@ -208,18 +209,23 @@ class RegistryProxyService {
         }
     }
 
-    @Cacheable('cache-1min')
+    @Cacheable(value = 'cache-1min', atomic = true)
     @Retryable(includes=[IOException, HttpException])
     protected String getImageDigest0(String image) {
         final coords = ContainerCoordinates.parse(image)
         final route = RoutePath.v2manifestPath(coords)
         final proxyClient = client(route)
         final resp = proxyClient.head(route.path, WaveDefault.ACCEPT_HEADERS)
-        return resp.statusCode() == 200
+        final result = resp.statusCode() == 200
                 ? resp.headers().firstValue('docker-content-digest').orElse(null)
                 : null
+        if( !result ) {
+            log.warn "Unable to retrieve digest for image '$image' -- response status=${resp.statusCode()}; headers:\n${RegHelper.dumpHeaders(resp.headers())}"
+        }
+        return result
     }
 
+    @ToString(includeNames = true, includePackage = false)
     static class DelegateResponse {
         int statusCode
         Map<String,List<String>> headers

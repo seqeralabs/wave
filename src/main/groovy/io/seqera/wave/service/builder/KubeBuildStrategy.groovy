@@ -117,7 +117,7 @@ class KubeBuildStrategy extends BuildStrategy {
 
     protected String getBuildImage(BuildRequest buildRequest){
         if( buildRequest.formatDocker() ) {
-            return buildConfig.kanikoImage
+            return buildConfig.buildkitImage
         }
 
         if( buildRequest.formatSingularity() ) {

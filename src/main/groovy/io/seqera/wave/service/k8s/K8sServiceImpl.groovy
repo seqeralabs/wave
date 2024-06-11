@@ -51,6 +51,7 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.scan.Trivy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+import static io.seqera.wave.service.builder.BuildStrategy.BUILDKIT_ENTRYPOINT
 /**
  * implements the support for Kubernetes cluster
  *
@@ -104,6 +105,16 @@ class K8sServiceImpl implements K8sService {
 
     @Inject
     private BuildConfig buildConfig
+
+    // check this link to know more about these options https://github.com/moby/buildkit/tree/master/examples/kubernetes#kubernetes-manifests-for-buildkit
+    private final static Map<String,String> BUILDKIT_FLAGS = ['BUILDKITD_FLAGS': '--oci-worker-no-process-sandbox']
+
+    private Map<String, String> getBuildkitAnnotations(String containerName, boolean singularity) {
+        if( singularity )
+            return null
+        final key = "container.apparmor.security.beta.kubernetes.io/${containerName}".toString()
+        return Map.of(key, "unconfined")
+    }
 
     /**
      * Validate config setting
@@ -305,7 +316,7 @@ class K8sServiceImpl implements K8sService {
     }
 
     /**
-     * Create a container for container image building via Kaniko
+     * Create a container for container image building via buildkit
      *
      * @param name
      *      The name of pod
@@ -342,7 +353,7 @@ class K8sServiceImpl implements K8sService {
 
         if( credsFile ){
             if( !singularity ) {
-                mounts.add(0, mountHostPath(credsFile, storageMountPath, '/kaniko/.docker/config.json'))
+                mounts.add(0, mountHostPath(credsFile, storageMountPath, '/home/user/.docker/config.json'))
             }
             else {
                 final remoteFile = credsFile.resolveSibling('singularity-remote.yaml')
@@ -362,6 +373,7 @@ class K8sServiceImpl implements K8sService {
                 .withNamespace(namespace)
                 .withName(name)
                 .addToLabels(labels)
+                .addToAnnotations(getBuildkitAnnotations(name,singularity))
                 .endMetadata()
 
         //spec section
@@ -392,10 +404,13 @@ class K8sServiceImpl implements K8sService {
             // use 'command' to override the entrypoint of the container
                     .withCommand(args)
                     .withNewSecurityContext().withPrivileged(true).endSecurityContext()
-        }
-        else {
-            // use 'arg' to avoid overriding the entrypoint of the container set by kaniko
-            container.withArgs(args)
+        } else {
+            container
+                    //required by buildkit rootless container
+                    .withEnv(toEnvList(BUILDKIT_FLAGS))
+                    // buildCommand is to set entrypoint for buildkit
+                    .withCommand(BUILDKIT_ENTRYPOINT)
+                    .withArgs(args)
         }
 
         // spec section
@@ -708,4 +723,5 @@ class K8sServiceImpl implements K8sService {
                 .batchV1Api()
                 .deleteNamespacedJob(name, namespace, null, null, null, null,"Background", null)
     }
+
 }

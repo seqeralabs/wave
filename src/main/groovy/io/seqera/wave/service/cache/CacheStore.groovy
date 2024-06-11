@@ -55,7 +55,6 @@ interface CacheStore<K,V> {
      */
     boolean putIfAbsent(K key, V value, Duration ttl)
 
-
     /**
      * Store a value in the cache only if does not exist yet
      * and returns the value that is in the cache after the

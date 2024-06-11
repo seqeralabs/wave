@@ -45,7 +45,7 @@ class RegHelper {
     final private static char PADDING = '_' as char
     final private static BaseEncoding BASE32 = BaseEncoding.base32() .withPadChar(PADDING)
 
-    // this clas is not to be extended
+    // this class is not to be extended
     private RegHelper(){
         throw new AssertionError()
     }
