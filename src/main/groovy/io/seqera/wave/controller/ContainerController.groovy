@@ -323,7 +323,7 @@ class ContainerController {
         final nameStrategy = req.nameStrategy==null
                 && buildRepository
                 && buildConfig.defaultPublicRepository
-                && buildRepository.startsWith(buildConfig.defaultPublicRepository) ? ImageNameStrategy.imageSuffix : null
+                && buildRepository.startsWith(buildConfig.defaultPublicRepository) ? ImageNameStrategy.imageSuffix : req.nameStrategy
 
         checkContainerSpec(containerSpec)
 
