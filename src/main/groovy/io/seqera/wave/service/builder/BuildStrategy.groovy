@@ -36,8 +36,10 @@ abstract class BuildStrategy {
     private BuildConfig buildConfig
 
     abstract BuildResult build(BuildRequest req)
-
+  
     abstract  InputStream getLogs(String buildId)
+  
+    static final public String BUILDKIT_ENTRYPOINT = 'buildctl-daemonless.sh'
 
     void cleanup(BuildRequest req) {
         req.workDir?.deleteDir()
@@ -57,35 +59,48 @@ abstract class BuildStrategy {
     protected List<String> dockerLaunchCmd(BuildRequest req) {
         final result = new ArrayList(10)
         result
-                << "--dockerfile"
-                << "$req.workDir/Containerfile".toString()
-                << "--context"
-                << "$req.workDir/context".toString()
-                << "--destination"
-                << req.targetImage
-                << "--cache=true"
-                << "--custom-platform"
-                << req.platform.toString()
+                << "build"
+                << "--frontend"
+                << "dockerfile.v0"
+                << "--local"
+                << "dockerfile=$req.workDir".toString()
+                << "--opt"
+                << "filename=Containerfile"
+                << "--local"
+                << "context=$req.workDir/context".toString()
+                << "--output"
+                << "type=image,name=$req.targetImage,push=true,oci-mediatypes=${buildConfig.ociMediatypes}".toString()
+                << "--opt"
+                << "platform=$req.platform".toString()
 
         if( req.cacheRepository ) {
-            result << "--cache-repo" << req.cacheRepository
-        }
+            result << "--export-cache"
+            def exportCache = new StringBuilder()
+            exportCache << "type=registry,"
+            exportCache << "image-manifest=true,"
+            exportCache << "ref=${req.cacheRepository}:${req.containerId},"
+            exportCache << "mode=max,"
+            exportCache << "ignore-error=true,"
+            exportCache << "oci-mediatypes=${buildConfig.ociMediatypes},"
+            exportCache << "compression=${buildConfig.compression},"
+            exportCache << "force-compression=${buildConfig.forceCompression}"
+            result << exportCache.toString()
 
-        if( !buildConfig.compressCaching ){
-            result << "--compressed-caching=false"
+            result << "--import-cache"
+            result << "type=registry,ref=$req.cacheRepository:$req.containerId".toString()
         }
 
         if(req.spackFile){
-            result << '--build-arg'
-            result << 'AWS_STS_REGIONAL_ENDPOINTS=$(AWS_STS_REGIONAL_ENDPOINTS)'
-            result << '--build-arg'
-            result << 'AWS_REGION=$(AWS_REGION)'
-            result << '--build-arg'
-            result << 'AWS_DEFAULT_REGION=$(AWS_DEFAULT_REGION)'
-            result << '--build-arg'
-            result << 'AWS_ROLE_ARN=$(AWS_ROLE_ARN)'
-            result << '--build-arg'
-            result << 'AWS_WEB_IDENTITY_TOKEN_FILE=$(AWS_WEB_IDENTITY_TOKEN_FILE)'
+            result << '--opt'
+            result << 'build-arg:AWS_STS_REGIONAL_ENDPOINTS=$(AWS_STS_REGIONAL_ENDPOINTS)'
+            result << '--opt'
+            result << 'build-arg:AWS_REGION=$(AWS_REGION)'
+            result << '--opt'
+            result << 'build-arg:AWS_DEFAULT_REGION=$(AWS_DEFAULT_REGION)'
+            result << '--opt'
+            result << 'build-arg:AWS_ROLE_ARN=$(AWS_ROLE_ARN)'
+            result << '--opt'
+            result << 'build-arg:AWS_WEB_IDENTITY_TOKEN_FILE=$(AWS_WEB_IDENTITY_TOKEN_FILE)'
         }
 
         return result
@@ -99,4 +114,5 @@ abstract class BuildStrategy {
             << "singularity build image.sif ${req.workDir}/Containerfile && singularity push image.sif ${req.targetImage}".toString()
         return result
     }
+
 }

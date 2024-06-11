@@ -40,6 +40,7 @@ import io.seqera.wave.service.pairing.PairingRecord
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.PairingServiceImpl
 import io.seqera.wave.tower.User
+import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.client.TowerClient
 import io.seqera.wave.tower.client.UserInfoResponse
 import jakarta.inject.Inject
@@ -89,16 +90,18 @@ class ContainerControllerHttpTest extends Specification {
         given:
         def endpoint = 'http://tower.nf'
         def token = '12345'
+        def refresh = '2'
+        def auth = JwtAuth.of(endpoint, token, refresh)
         and:
         pairingService.getPairingRecord(TOWER_SERVICE, endpoint) >> { new PairingRecord('tower', endpoint) }
-        towerClient.userInfo(endpoint,token) >> CompletableFuture.completedFuture(new UserInfoResponse(user:new User(id:1)))
+        towerClient.userInfo(endpoint,auth) >> CompletableFuture.completedFuture(new UserInfoResponse(user:new User(id:1)))
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
         SubmitContainerTokenRequest request =
                 new SubmitContainerTokenRequest(
                         towerAccessToken: token,
-                        towerRefreshToken: "2",
+                        towerRefreshToken: refresh,
                         towerEndpoint: endpoint,
                         towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64',)
         def resp = httpClient.toBlocking().exchange(HttpRequest.POST("/container-token", request), SubmitContainerTokenResponse)
@@ -109,16 +112,19 @@ class ContainerControllerHttpTest extends Specification {
     def 'should fails build request for user foo' () {
         given:
         def endpoint = 'http://tower.nf'
+        def token = 'foo'
+        def refresh = 'foo2'
+        def auth = JwtAuth.of(endpoint, token, refresh)
         and:
         pairingService.getPairingRecord(TOWER_SERVICE, endpoint) >> { new PairingRecord('tower', endpoint) }
-        towerClient.userInfo(endpoint,'foo') >> completeExceptionally(new HttpResponseException(401, "Auth error"))
+        towerClient.userInfo(endpoint, auth) >> completeExceptionally(new HttpResponseException(401, "Auth error"))
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
         SubmitContainerTokenRequest request =
                 new SubmitContainerTokenRequest(
-                        towerAccessToken: 'foo',
-                        towerRefreshToken: 'foo2',
+                        towerAccessToken: token,
+                        towerRefreshToken: refresh,
                         towerEndpoint: endpoint,
                         towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64',)
         and:
@@ -268,16 +274,19 @@ class ContainerControllerHttpTest extends Specification {
         given:
         def endpoint = 'http://tower.nf'
         def token = '12345'
+        def refresh = "2"
+        and:
+        def auth = JwtAuth.of(endpoint, token, refresh)
         and:
         pairingService.getPairingRecord(TOWER_SERVICE, endpoint) >> { new PairingRecord('tower', endpoint) }
-        towerClient.userInfo(endpoint,token) >> CompletableFuture.completedFuture(new UserInfoResponse(user:new User(id:1)))
+        towerClient.userInfo(endpoint, auth) >> CompletableFuture.completedFuture(new UserInfoResponse(user:new User(id:1)))
 
         and:
         def cfg = new ContainerConfig(workingDir: '/foo')
         SubmitContainerTokenRequest request =
                 new SubmitContainerTokenRequest(
                         towerAccessToken: token,
-                        towerRefreshToken: "2",
+                        towerRefreshToken: refresh,
                         towerEndpoint: endpoint,
                         towerWorkspaceId: 10,
                         containerImage: 'ubuntu:latest',

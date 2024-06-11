@@ -41,6 +41,7 @@ interface TokenConfig {
         @Nullable
         Duration getDuration()
 
+        @Deprecated
         @Bindable(defaultValue = "10000")
         @Nullable
         int getMaxSize()

@@ -16,35 +16,45 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave
+package io.seqera.wave.tower.auth
 
-import javax.annotation.PostConstruct
+import java.time.Instant
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Context
-import io.seqera.wave.auth.RegistryCredentialsProvider
-import io.seqera.wave.util.StringUtils
+import io.seqera.wave.memstore.range.AbstractRangeStore
+import io.seqera.wave.memstore.range.impl.RangeProvider
 import jakarta.inject.Inject
-
+import jakarta.inject.Singleton
 /**
- * Basic bean to log some info at boostrap
- * 
+ * Implements linear store for JWT record keys to track
+ * tokens that needs to be refreshed periodically
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
-@Context
+@Singleton
 @CompileStatic
-class Boostrap {
+class JwtTimeStore extends AbstractRangeStore {
 
-    @Inject RegistryCredentialsProvider provider
+    @Inject
+    private JwtConfig jwtConfig
 
-    @PostConstruct
-    void init() {
-        def dockCreds = provider.getDefaultCredentials('docker.io')
-        def quayCreds = provider.getDefaultCredentials('quay.io')
-        log.info "Docker.io registry credentials: username=${dockCreds?.username ?: '-'}; password=${StringUtils.redact(dockCreds?.password)}"
-        log.info "Quay.io   registry credentials: username=${quayCreds?.username ?: '-'}; password=${StringUtils.redact(quayCreds?.password)}"
+    JwtTimeStore(RangeProvider provider) {
+        super(provider)
+    }
+
+    @Override
+    final protected String getKey() {
+        return 'tower-jwt-timestore/v1'
+    }
+
+    void setRefreshTimer(String key) {
+        this.add(key, expireSecs0())
+    }
+
+    private long expireSecs0() {
+        Instant.now().epochSecond + jwtConfig.refreshInterval.toSeconds()
     }
 
 }

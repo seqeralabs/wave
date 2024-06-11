@@ -46,6 +46,8 @@ if [[ $RELEASE ]]; then
   ./gradlew jib
   # build and push enterprise
   ./gradlew -PjibRepo=195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/wave:$TAG jib
+  # check for "draft" release
+  grep -Ei '.*-(A[0-9]+|B[0-9]+|RC[0-9]+)$' VERSION  &>/dev/null && DRAFT='--draft' || DRAFT=''
   # publish release notes
-  gh release create $TAG --generate-notes
+  gh release create $TAG --generate-notes $DRAFT
 fi

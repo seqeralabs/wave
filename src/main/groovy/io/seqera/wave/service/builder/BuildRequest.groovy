@@ -24,22 +24,13 @@ import java.time.OffsetDateTime
 
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
-import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
-import io.seqera.wave.api.ImageNameStrategy
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.tower.PlatformId
-import io.seqera.wave.util.NameVersionPair
-import io.seqera.wave.util.RegHelper
-import io.seqera.wave.util.StringUtils
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
 import static io.seqera.wave.util.StringUtils.trunc
-import static io.seqera.wave.util.ContainerHelper.guessCondaRecipeName
-import static io.seqera.wave.util.ContainerHelper.guessSpackRecipeName
-
 /**
  * Model a container builder result
  *

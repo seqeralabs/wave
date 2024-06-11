@@ -73,13 +73,13 @@ jobs:
           GOOGLECR_KEYS: ${{ secrets.GOOGLECR_KEYS }}
 
       - name: Cleanup build workspace
+        if: always()
         run: |
           sudo rm -rf /home/runner/work/wave/wave/build-workspace
 
       - name: Release
         if: "contains(github.event.head_commit.message, '[release]')"
         run: |
-          sudo rm -rf /home/runner/work/wave/wave/build-workspace
           bash tag-and-push.sh
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'

@@ -25,15 +25,20 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 import io.seqera.wave.service.counter.impl.LocalCounterProvider
+import io.seqera.wave.service.counter.impl.RedisCounterProvider
 import io.seqera.wave.service.metric.MetricConstants
 import io.seqera.wave.service.metric.MetricsCounterStore
+import io.seqera.wave.test.RedisTestContainer
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
+import org.testcontainers.shaded.org.bouncycastle.cms.OriginatorInfoGenerator
+import software.amazon.awssdk.regions.servicemetadata.OrganizationsServiceMetadata
+
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-class MetricsServiceImplTest extends Specification {
+class MetricsServiceImplTest extends Specification implements RedisTestContainer{
 
     DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
@@ -54,9 +59,21 @@ class MetricsServiceImplTest extends Specification {
         metricsService.incrementBuildsCounter(null)
 
         then:
-        metricsService.getBuildsMetrics(date, null) == 3
-        metricsService.getBuildsMetrics(null, 'org1.com') == 1
-        metricsService.getBuildsMetrics(date, 'org2.com') == 1
+        def res1 = metricsService.getOrgCount(MetricConstants.PREFIX_BUILDS, date, null)
+        res1.count == 3
+        res1.orgs == ['org1.com': 1, 'org2.com': 1]
+        and:
+        def res2 = metricsService.getOrgCount(MetricConstants.PREFIX_BUILDS, null, 'org1.com')
+        res2.count == 1
+        res2.orgs == ['org1.com': 1]
+        and:
+        def res3 = metricsService.getOrgCount(MetricConstants.PREFIX_BUILDS, date, 'org2.com')
+        res3.count == 1
+        res3.orgs == ['org2.com': 1]
+        and:
+        def res4 = metricsService.getOrgCount(MetricConstants.PREFIX_BUILDS, date, null)
+        res4.count == 3
+        res4.orgs == ['org1.com': 1, 'org2.com': 1]
     }
 
     def 'should increment pull count and return the correct count' () {
@@ -76,9 +93,17 @@ class MetricsServiceImplTest extends Specification {
         metricsService.incrementPullsCounter(null)
 
         then:
-        metricsService.getPullsMetrics(null, 'org1.com') == 1
-        metricsService.getPullsMetrics(date, 'org2.com') == 1
-        metricsService.getPullsMetrics(date, null) == 3
+        def res1 = metricsService.getOrgCount(MetricConstants.PREFIX_PULLS, null, 'org1.com')
+        res1.count == 1
+        res1.orgs == ['org1.com': 1]
+        and:
+        def res2 = metricsService.getOrgCount(MetricConstants.PREFIX_PULLS,date, 'org2.com')
+        res2.count == 1
+        res2.orgs == ['org2.com': 1]
+        and:
+        def res3 = metricsService.getOrgCount(MetricConstants.PREFIX_PULLS,date, null)
+        res3.count == 3
+        res3.orgs == ['org1.com': 1, 'org2.com': 1]
     }
 
     def 'should increment fusion pull count and return the correct count' () {
@@ -98,9 +123,17 @@ class MetricsServiceImplTest extends Specification {
         metricsService.incrementFusionPullsCounter(null)
 
         then:
-        metricsService.getFusionPullsMetrics(null, 'org1.com') == 1
-        metricsService.getFusionPullsMetrics(date, 'org2.com') == 1
-        metricsService.getFusionPullsMetrics(date, null) == 3
+        def res1 = metricsService.getOrgCount(MetricConstants.PREFIX_FUSION,null, 'org1.com')
+        res1.count == 1
+        res1.orgs == ['org1.com': 1]
+        and:
+        def res2 = metricsService.getOrgCount(MetricConstants.PREFIX_FUSION, date, 'org2.com')
+        res2.count == 1
+        res2.orgs == ['org2.com': 1]
+        and:
+        def res3 = metricsService.getOrgCount(MetricConstants.PREFIX_FUSION, date, null)
+        res3.count == 3
+        res3.orgs == ['org1.com': 1, 'org2.com': 1]
     }
 
     @Unroll
@@ -159,10 +192,10 @@ class MetricsServiceImplTest extends Specification {
         metricsService.incrementFusionPullsCounter(platformId2)
         metricsService.incrementFusionPullsCounter(null)
         and:
-        def buildOrgCounts = metricsService.getOrgCount(MetricConstants.PREFIX_BUILDS)
-        def pullOrgCounts = metricsService.getOrgCount(MetricConstants.PREFIX_PULLS)
-        def fusionOrgCounts = metricsService.getOrgCount(MetricConstants.PREFIX_FUSION)
-        def emptyOrgCounts = metricsService.getOrgCount(null)
+        def buildOrgCounts = metricsService.getAllOrgCount(MetricConstants.PREFIX_BUILDS)
+        def pullOrgCounts = metricsService.getAllOrgCount(MetricConstants.PREFIX_PULLS)
+        def fusionOrgCounts = metricsService.getAllOrgCount(MetricConstants.PREFIX_FUSION)
+        def emptyOrgCounts = metricsService.getAllOrgCount(null)
 
         then:
         buildOrgCounts.metric == MetricConstants.PREFIX_BUILDS
@@ -180,5 +213,62 @@ class MetricsServiceImplTest extends Specification {
         emptyOrgCounts.metric == null
         emptyOrgCounts.count == 0
         emptyOrgCounts.orgs == [:]
+    }
+
+    def 'should get correct org count per date'(){
+        given:
+        def date = LocalDate.now().format(dateFormatter)
+        def localCounterProvider = new LocalCounterProvider()
+        def metricsCounterStore = new MetricsCounterStore(localCounterProvider)
+        def metricsService = new MetricsServiceImpl(metricsCounterStore: metricsCounterStore)
+        def user1 = new User(id: 1, userName: 'foo', email: 'user1@org1.com')
+        def user2 = new User(id: 2, userName: 'bar', email: 'user2@org2.com')
+        def platformId1 = new PlatformId(user1, 101)
+        def platformId2 = new PlatformId(user2, 102)
+
+        when:
+        metricsService.incrementBuildsCounter(platformId1)
+        metricsService.incrementBuildsCounter(platformId2)
+        metricsService.incrementBuildsCounter(null)
+        metricsService.incrementPullsCounter(platformId1)
+        metricsService.incrementPullsCounter(platformId2)
+        metricsService.incrementPullsCounter(null)
+        metricsService.incrementFusionPullsCounter(platformId1)
+        metricsService.incrementFusionPullsCounter(platformId2)
+        metricsService.incrementFusionPullsCounter(null)
+        and:
+        def buildOrgCounts = metricsService.getOrgCount(MetricConstants.PREFIX_BUILDS, date, null)
+        def pullOrgCounts = metricsService.getOrgCount(MetricConstants.PREFIX_PULLS, date, null)
+        def fusionOrgCounts = metricsService.getOrgCount(MetricConstants.PREFIX_FUSION, date, null)
+        def emptyOrgCounts = metricsService.getOrgCount(null, date, null)
+
+        then:
+        buildOrgCounts.metric == MetricConstants.PREFIX_BUILDS
+        buildOrgCounts.count == 3
+        buildOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        and:
+        pullOrgCounts.metric == MetricConstants.PREFIX_PULLS
+        pullOrgCounts.count == 3
+        pullOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        and:
+        fusionOrgCounts.metric == MetricConstants.PREFIX_FUSION
+        fusionOrgCounts.count == 3
+        fusionOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
+        and:
+        emptyOrgCounts.metric == null
+        emptyOrgCounts.count == 0
+        emptyOrgCounts.orgs == [:]
+    }
+
+    @Unroll
+    def 'extract correct org name from key'(){
+        expect:
+        MetricsServiceImpl.extractOrgFromKey(KEY) == ORG
+        where:
+        KEY                                 | ORG
+        'builds/o/org1.com/d/2024-05-30'    | 'org1.com'
+        'pulls/o/org2.com/d/2024-05-29'     | 'org2.com'
+        'fusion/o/org3.com/d/2024-04-30'    | 'org3.com'
+        'fusion/d/2024-04-30'               | 'unknown'
     }
 }

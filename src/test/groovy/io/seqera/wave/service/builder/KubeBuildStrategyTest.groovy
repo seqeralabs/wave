@@ -103,8 +103,8 @@ class KubeBuildStrategyTest extends Specification {
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, repo, containerId, null, null, null)
         def req = new BuildRequest(containerId, dockerfile, null, null, PATH, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER).withBuildId('1')
 
-        then: 'should return kaniko image'
-        strategy.getBuildImage(req) == 'gcr.io/kaniko-project/executor:v1.22.0'
+        then: 'should return buildkit image'
+        strategy.getBuildImage(req) == 'moby/buildkit:v0.13.2-rootless'
 
         when:'getting singularity with amd64 arch in build request'
         req = new BuildRequest(containerId, dockerfile, null, null, PATH, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.SINGULARITY).withBuildId('1')
