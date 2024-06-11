@@ -54,9 +54,9 @@ class DockerBuildStrategyTest extends Specification {
                 '--rm',
                 '--privileged',
                 '-v', '/work/foo:/work/foo',
-                '--name', 'build-1234',
                 '--entrypoint',
                 'buildctl-daemonless.sh',
+                '--name', 'build-1234',
                 'moby/buildkit:v0.13.2-rootless']
 
         when:
@@ -121,32 +121,7 @@ class DockerBuildStrategyTest extends Specification {
                 '--platform', 'linux/amd64',
                 '--name', 'build-1234',
                 'moby/buildkit:v0.13.2-rootless',
-                '--dockerfile', '/work/foo/89fb83ce6ec8627b/Containerfile',
-                '--context', '/work/foo/89fb83ce6ec8627b/context',
-                '--destination', 'repo:89fb83ce6ec8627b',
-                '--cache=true',
-                '--custom-platform', 'linux/amd64',
-                '--cache-repo', 'reg.io/wave/build/cache' ]
-
-        cleanup:
-        ctx.close()
-    }
-
-    def 'should disable compress-caching' () {
-        given:
-        def ctx = ApplicationContext.run(['wave.build.compress-caching': false])
-        def service = ctx.getBean(DockerBuildStrategy)
-        and:
-        def req = new BuildRequest(
-                buildId: '1234',
-                workDir: Path.of('/work/foo/89fb83ce6ec8627b'),
-                platform: ContainerPlatform.of('linux/amd64'),
-                targetImage: 'repo:89fb83ce6ec8627b',
-                cacheRepository: 'reg.io/wave/build/cache' )
-        when:
-        def cmd = service.launchCmd(req)
-        then:
-        cmd == ['build',
+                'build',
                 '--frontend',
                 'dockerfile.v0',
                 '--local',
