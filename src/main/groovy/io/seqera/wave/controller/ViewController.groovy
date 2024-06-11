@@ -29,6 +29,7 @@ import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.views.View
 import io.seqera.wave.exception.NotFoundException
+import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
@@ -54,13 +55,16 @@ class ViewController {
     private PersistenceService persistenceService
 
     @Inject
+    private ContainerBuildService buildService
+
+    @Inject
     @Nullable
     private BuildLogService buildLogService
 
     @View("build-view")
     @Get('/builds/{buildId}')
     HttpResponse<Map<String,String>> viewBuild(String buildId) {
-        final record = persistenceService.loadBuild(buildId)
+        final record = buildService.getBuildRecord(buildId)
         if( !record )
             throw new NotFoundException("Unknown build id '$buildId'")
         return HttpResponse.ok(renderBuildView(record))
@@ -81,7 +85,7 @@ class ViewController {
         binding.build_containerfile = result.dockerFile ?: '-'
         binding.build_condafile = result.condaFile
         binding.build_spackfile = result.spackFile
-        binding.build_digest = result.digest
+        binding.build_digest = result.digest ?: '-'
         binding.put('server_url', serverUrl)
         binding.scan_url = result.scanId && result.succeeded() ? "$serverUrl/view/scans/${result.scanId}" : null
         binding.scan_id = result.scanId
