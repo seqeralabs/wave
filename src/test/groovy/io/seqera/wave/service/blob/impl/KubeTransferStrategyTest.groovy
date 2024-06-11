@@ -62,7 +62,7 @@ class KubeTransferStrategyTest extends Specification {
 
         def cleanUpStrategy = Mock(CleanupStrategy)
         KubeTransferStrategy strategy = new KubeTransferStrategy(blobConfig: config, k8sService: k8sService, cleanup: cleanUpStrategy)
-        BlobCacheInfo info = BlobCacheInfo.create("https://test.com/blobs", null)
+        BlobCacheInfo info = BlobCacheInfo.create("https://test.com/blobs", null, null)
 
         when:
         BlobCacheInfo result = strategy.transfer(info, command)
@@ -98,7 +98,7 @@ class KubeTransferStrategyTest extends Specification {
 
         def cleanUpStrategy = Mock(CleanupStrategy)
         KubeTransferStrategy strategy = new KubeTransferStrategy(blobConfig: config, k8sService: k8sService, cleanup: cleanUpStrategy)
-        BlobCacheInfo info = BlobCacheInfo.create("https://test.com/blobs", null)
+        BlobCacheInfo info = BlobCacheInfo.create("https://test.com/blobs", null, null)
 
         when:
         BlobCacheInfo result = strategy.transfer(info, command)
