@@ -56,7 +56,7 @@ class K8sClientTest extends Specification {
         def pod = k8sService.buildContainer(
                 'my-pod',
                 'busybox',
-                ['cat','/kaniko/.docker/config.json'],
+                ['cat','/home/user/.docker/config.json'],
                 Path.of('/work/dir'),
                 Path.of('/creds'),
                 Path.of('/spack/dir'),

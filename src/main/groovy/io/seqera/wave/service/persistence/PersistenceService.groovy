@@ -19,12 +19,9 @@
 package io.seqera.wave.service.persistence
 
 import groovy.transform.CompileStatic
-import io.micronaut.runtime.event.annotation.EventListener
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.service.scan.ScanResult
-import io.seqera.wave.service.builder.BuildEvent
-
 /**
  * A storage for statistic data
  *
@@ -34,11 +31,6 @@ import io.seqera.wave.service.builder.BuildEvent
 @CompileStatic
 interface PersistenceService {
 
-    @EventListener
-    default void onBuildEvent(BuildEvent event) {
-        updateBuild(WaveBuildRecord.fromEvent(event))
-    }
-
     /**
      * Store a {@link WaveBuildRecord} object in the underlying persistence layer.
      *
@@ -47,17 +39,7 @@ interface PersistenceService {
      *
      * @param build A {@link WaveBuildRecord} object
      */
-    void createBuild(WaveBuildRecord build)
-
-    /**
-     * Update the build record. This function is expect to update only the following fields
-     * - digest
-     * - duration
-     * - exitStatus
-     *
-     * @param build The build record to be updated
-     */
-    void updateBuild(WaveBuildRecord build)
+    void saveBuild(WaveBuildRecord build)
 
     /**
      * Retrieve a {@link WaveBuildRecord} object for the given build id
