@@ -25,9 +25,7 @@ import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.context.annotation.Context
 import io.micronaut.core.io.buffer.ByteBuffer
 import io.micronaut.http.client.annotation.Client
-import io.micronaut.http.exceptions.HttpException
 import io.micronaut.reactor.http.client.ReactorStreamingHttpClient
-import io.micronaut.retry.annotation.Retryable
 import io.seqera.wave.WaveDefault
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
@@ -46,6 +44,8 @@ import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import reactor.core.publisher.Flux
 import static io.seqera.wave.WaveDefault.HTTP_REDIRECT_CODES
+import static io.seqera.wave.WaveDefault.HTTP_RETRYABLE_ERRORS
+
 /**
  * Proxy service that forwards incoming container request
  * to the target repository, resolving credentials and augmentation
@@ -191,7 +191,7 @@ class RegistryProxyService {
     @Deprecated
     boolean isManifestPresent(String image){
         try {
-            return getImageDigest0(image) != null
+            return getImageDigest0(image,false) != null
         }
         catch(Exception e) {
             log.warn "Unable to check status for container image '$image' -- cause: ${e.message}"
@@ -199,9 +199,9 @@ class RegistryProxyService {
         }
     }
 
-    String getImageDigest(String image) {
+    String getImageDigest(String image, boolean retryOnNotFound=false) {
         try {
-            return getImageDigest0(image)
+            return getImageDigest0(image, retryOnNotFound)
         }
         catch(Exception e) {
             log.warn "Unable to retrieve digest for image '$image' -- cause: ${e.message}"
@@ -209,17 +209,17 @@ class RegistryProxyService {
         }
     }
 
-    @Cacheable(value = 'cache-1min', atomic = true)
-    @Retryable(includes=[IOException, HttpException])
-    protected String getImageDigest0(String image) {
+    static private List<Integer> RETRY_ON_NOT_FOUND = HTTP_RETRYABLE_ERRORS + 404
+
+    @Cacheable(value = 'cache-20sec', atomic = true)
+    protected String getImageDigest0(String image, boolean retryOnNotFound) {
         final coords = ContainerCoordinates.parse(image)
         final route = RoutePath.v2manifestPath(coords)
         final proxyClient = client(route)
+                .withRetryableHttpErrors(retryOnNotFound ? RETRY_ON_NOT_FOUND : HTTP_RETRYABLE_ERRORS)
         final resp = proxyClient.head(route.path, WaveDefault.ACCEPT_HEADERS)
-        final result = resp.statusCode() == 200
-                ? resp.headers().firstValue('docker-content-digest').orElse(null)
-                : null
-        if( !result ) {
+        final result = resp.headers().firstValue('docker-content-digest').orElse(null)
+        if( !result && (resp.statusCode()!=404 || retryOnNotFound) ) {
             log.warn "Unable to retrieve digest for image '$image' -- response status=${resp.statusCode()}; headers:\n${RegHelper.dumpHeaders(resp.headers())}"
         }
         return result
