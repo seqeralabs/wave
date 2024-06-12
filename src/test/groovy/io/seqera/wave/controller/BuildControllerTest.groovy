@@ -119,13 +119,13 @@ class BuildControllerTest extends Specification {
 
         when:
         def req = HttpRequest.GET("/v1alpha1/builds/${buildId}/logs")
-        def res = client.toBlocking().exchange(req, StreamedFile)
+        def res = client.toBlocking().exchange(req, String)
 
         then:
         1 * buildLogService.fetchLogStream(buildId) >> response
         and:
         res.code() == 200
-        new String(res.unpooledContent.array) == LOGS
+        res.body() == LOGS
     }
 
 
