@@ -117,7 +117,6 @@ class CredentialsServiceTest extends Specification {
         noExceptionThrown()
     }
 
-
     def 'should fail if keys where not registered for the tower endpoint'() {
         given:
         def identity = new PlatformId(new User(id:10), 10,"token",'endpoint')
@@ -165,7 +164,7 @@ class CredentialsServiceTest extends Specification {
                 registry: 'docker.io'
         )
         and:
-        def identity = new PlatformId(new User(id:10), 10,"token",'tower.io')
+        def identity = new PlatformId(new User(id:11), 11,"token",'tower.io')
         def auth = JwtAuth.of(identity)
 
         when:
@@ -181,7 +180,7 @@ class CredentialsServiceTest extends Specification {
         )
 
         and: 'non matching credentials are listed'
-        1 * towerClient.listCredentials('tower.io',auth,10) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
+        1 * towerClient.listCredentials('tower.io',auth,11) >> CompletableFuture.completedFuture(new ListCredentialsResponse(
                 credentials: [nonContainerRegistryCredentials,otherRegistryCredentials]
         ))
 
