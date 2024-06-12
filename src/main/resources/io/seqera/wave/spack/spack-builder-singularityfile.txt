@@ -51,7 +51,7 @@ EOF
     fingerprint="$(spack gpg trust {{spack_key_file}} 2>&1 | tee /dev/stderr | sed -nr "s/^gpg: key ([0-9A-F]{16}): secret key imported$/\1/p")"
     spack -e . mirror add seqera_spack {{spack_cache_bucket}}
     spack -e . mirror add binary_mirror  https://binaries.spack.io/releases/develop
-    spack buildcache keys --install --trust
+    spack -e . buildcache keys --install --trust
     spack -e . concretize -f
     spack -e . install
     spack -e . buildcache push --allow-root --key "$fingerprint" {{spack_cache_bucket}}
