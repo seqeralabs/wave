@@ -59,7 +59,7 @@ class SpillwayRateLimiter implements RateLimiterService {
         init(storage, config)
     }
 
-    protected void init(@NotNull LimitUsageStorage storage, @NotNull RateLimiterConfig config){
+    protected void init(LimitUsageStorage storage, RateLimiterConfig config){
         SpillwayFactory spillwayFactory = new SpillwayFactory(storage)
         initBuilds(spillwayFactory, config)
         initPulls(spillwayFactory, config)
