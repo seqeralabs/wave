@@ -28,14 +28,14 @@ import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
 
 /**
- * Basic bean to log some info at boostrap
+ * Basic bean to log some info at bootstrap
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @Context
 @CompileStatic
-class Boostrap {
+class Bootstrap {
 
     @Inject RegistryCredentialsProvider provider
 
