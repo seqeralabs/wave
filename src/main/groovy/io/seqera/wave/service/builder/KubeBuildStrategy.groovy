@@ -103,7 +103,7 @@ class KubeBuildStrategy extends BuildStrategy {
             final terminated = k8sService.waitPod(pod, buildConfig.buildTimeout.toMillis())
             final stdout = k8sService.logsPod(name)
             if( terminated ) {
-                final digest = terminated.exitCode==0 ? proxyService.getImageDigest(req.targetImage,true) : null
+                final digest = terminated.exitCode==0 ? proxyService.getImageDigest(req,true) : null
                 return BuildResult.completed(req.buildId, terminated.exitCode, stdout, req.startTime, digest)
             }
             else {

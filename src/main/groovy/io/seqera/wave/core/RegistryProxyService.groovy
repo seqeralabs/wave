@@ -36,6 +36,7 @@ import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.proxy.ProxyClient
 import io.seqera.wave.service.CredentialsService
+import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
@@ -45,7 +46,6 @@ import jakarta.inject.Singleton
 import reactor.core.publisher.Flux
 import static io.seqera.wave.WaveDefault.HTTP_REDIRECT_CODES
 import static io.seqera.wave.WaveDefault.HTTP_RETRYABLE_ERRORS
-
 /**
  * Proxy service that forwards incoming container request
  * to the target repository, resolving credentials and augmentation
@@ -188,23 +188,12 @@ class RegistryProxyService {
         }
     }
 
-    @Deprecated
-    boolean isManifestPresent(String image){
+    String getImageDigest(BuildRequest request, boolean retryOnNotFound=false) {
         try {
-            return getImageDigest0(image,false) != null
+            return getImageDigest0(request, retryOnNotFound)
         }
         catch(Exception e) {
-            log.warn "Unable to check status for container image '$image' -- cause: ${e.message}"
-            return false
-        }
-    }
-
-    String getImageDigest(String image, boolean retryOnNotFound=false) {
-        try {
-            return getImageDigest0(image, retryOnNotFound)
-        }
-        catch(Exception e) {
-            log.warn "Unable to retrieve digest for image '$image' -- cause: ${e.message}"
+            log.warn "Unable to retrieve digest for image '${request.getTargetImage()}' -- cause: ${e.message}"
             return null
         }
     }
@@ -212,9 +201,10 @@ class RegistryProxyService {
     static private List<Integer> RETRY_ON_NOT_FOUND = HTTP_RETRYABLE_ERRORS + 404
 
     @Cacheable(value = 'cache-20sec', atomic = true)
-    protected String getImageDigest0(String image, boolean retryOnNotFound) {
+    protected String getImageDigest0(BuildRequest request, boolean retryOnNotFound) {
+        final image = request.targetImage
         final coords = ContainerCoordinates.parse(image)
-        final route = RoutePath.v2manifestPath(coords)
+        final route = RoutePath.v2manifestPath(coords, request.identity)
         final proxyClient = client(route)
                 .withRetryableHttpErrors(retryOnNotFound ? RETRY_ON_NOT_FOUND : HTTP_RETRYABLE_ERRORS)
         final resp = proxyClient.head(route.path, WaveDefault.ACCEPT_HEADERS)
