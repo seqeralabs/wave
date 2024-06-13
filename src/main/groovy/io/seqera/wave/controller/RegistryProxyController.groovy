@@ -119,6 +119,11 @@ class RegistryProxyController {
 
     @Get(uri="/{url:(.+)}", produces = "*/*")
     CompletableFuture<MutableHttpResponse<?>> handleGet(String url, HttpRequest httpRequest) {
+        log.info("HTTP Request: Method = {}, URI = {}, Headers = {}, Body = {}",
+                httpRequest.getMethod(),
+                httpRequest.getUri(),
+                httpRequest.getHeaders().asMap(),
+                httpRequest.getBody().orElse(null));
         log.info "> Request [$httpRequest.method] $httpRequest.path"
         final route = routeHelper.parse("/v2/" + url)
 
@@ -131,8 +136,14 @@ class RegistryProxyController {
         final future = handleFutureBuild0(route, httpRequest)
         if( future )
             return future
-        else
-            return CompletableFuture.completedFuture(handleGet0(route, httpRequest))
+        else {
+            def response = handleGet0(route, httpRequest)
+            log.info("HTTP Response: Status = {}, Headers = {}, Body = {}",
+                    response.getStatus(),
+                    response.getHeaders().asMap(),
+                    response.getBody().orElse(null));
+            return CompletableFuture.completedFuture(response)
+        }
     }
 
     protected CompletableFuture<MutableHttpResponse<?>> handleFutureBuild0(RoutePath route, HttpRequest httpRequest){
@@ -148,6 +159,7 @@ class RegistryProxyController {
     }
 
     protected MutableHttpResponse<?> handleGet0(RoutePath route, HttpRequest httpRequest) {
+        log.info("Handling GET request: $route")
         if( httpRequest.method == HttpMethod.HEAD )
             return handleHead(route, httpRequest)
 
