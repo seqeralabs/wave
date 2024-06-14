@@ -33,7 +33,7 @@ import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.http.HttpClientFactory
-import io.seqera.wave.service.blob.BlobCacheClient
+
 import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.BlobCacheService
 import io.seqera.wave.service.blob.BlobSigningService
@@ -47,6 +47,9 @@ import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest
 import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
 /**
  * Implements cache for container image layer blobs
@@ -85,7 +88,8 @@ class BlobCacheServiceImpl implements BlobCacheService {
     private HttpClientConfig httpConfig
 
     @Inject
-    private BlobCacheClient blobCacheClient
+    @Named('BlobS3Client')
+    private S3Client s3Client
 
     private HttpClient httpClient
 
@@ -200,10 +204,10 @@ class BlobCacheServiceImpl implements BlobCacheService {
                     : blobConfig.statusDelay.multipliedBy(10)
 
             //check if the blob size is correct
-            Long size = blobCacheClient.getBlobSize(route.targetPath)
+            Long size = getBlobSize(route.targetPath)
             if(size == info.contentLength){
                 log.warn("Blob size mismatch for object '${info.locationUri}'")
-                CompletableFuture.supplyAsync(() -> blobCacheClient.deleteBlob(route.targetPath), executor)
+                CompletableFuture.supplyAsync(() -> deleteBlob(route.targetPath), executor)
             }
 
             blobStore.storeBlob(route.targetPath, result, ttl)
@@ -303,6 +307,39 @@ class BlobCacheServiceImpl implements BlobCacheService {
                 // fetch the build status again
                 current = store.getBlob(key)
             }
+        }
+    }
+
+    @Override
+    Long getBlobSize(String key) {
+        try {
+            def headObjectRequest =
+                    HeadObjectRequest.builder()
+                            .bucket(blobConfig.storageBucket.replaceFirst("s3://",""))
+                            .key(key)
+                            .build()
+            def headObjectResponse = s3Client.headObject(headObjectRequest)
+
+            Long contentLength = headObjectResponse.contentLength()
+            return contentLength ?: 0L
+        }catch (Exception e){
+            log.error("Error getting content length of object $key from bucket ${blobConfig.storageBucket}", e)
+            return 0L
+        }
+    }
+
+    @Override
+    void deleteBlob(String key) {
+        try {
+            def deleteObjectRequest =
+                    DeleteObjectRequest.builder()
+                            .bucket(blobConfig.storageBucket.replaceFirst("s3://",""))
+                            .key(key)
+                            .build()
+            s3Client.deleteObject(deleteObjectRequest)
+            log.debug("Deleted object $key from bucket ${blobConfig.storageBucket}")
+        }catch (Exception e){
+            log.error("Error deleting object $key from bucket ${blobConfig.storageBucket}", e)
         }
     }
 }

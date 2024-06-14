@@ -48,4 +48,17 @@ interface BlobCacheService {
      */
     BlobCacheInfo retrieveBlobCache(RoutePath route, Map<String,List<String>> requestHeaders, Map<String,List<String>> responseHeaders)
 
+    /**
+     * get the size of the blob stored in the cache
+     *
+     * @return {@link Long} the size of the blob stored in the cache
+     */
+    Long getBlobSize(String key)
+
+    /**
+     * delete the blob stored in the cache
+     *
+     */
+    void deleteBlob(String key)
+
 }
