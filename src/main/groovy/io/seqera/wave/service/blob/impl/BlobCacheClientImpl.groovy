@@ -52,7 +52,7 @@ class BlobCacheClientImpl implements BlobCacheClient{
         try {
             def headObjectRequest =
                     HeadObjectRequest.builder()
-                            .bucket(blobConfig.storageBucket)
+                            .bucket(blobConfig.storageBucket.replaceFirst("s3://",""))
                             .key(key)
                             .build()
             def headObjectResponse = s3Client.headObject(headObjectRequest)
@@ -70,7 +70,7 @@ class BlobCacheClientImpl implements BlobCacheClient{
         try {
             def deleteObjectRequest =
                     DeleteObjectRequest.builder()
-                            .bucket(blobConfig.storageBucket)
+                            .bucket(blobConfig.storageBucket.replaceFirst("s3://",""))
                             .key(key)
                             .build()
             s3Client.deleteObject(deleteObjectRequest)
