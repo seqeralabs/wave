@@ -10,7 +10,7 @@ If your container build fails, you can check the build details by checking the l
 If there is nothing conclusive in logs, you can check the exit status, e.g. if it is 137 that means out of memory error.
 Wave run build process in kubernetes pod, you can check this [link](https://komodor.com/learn/exit-codes-in-containers-and-kubernetes-the-complete-guide/) for more details on exit codes.
 
-2. How to solve buildkit  error, while running wave build on docker desktop?
+2. How to solve buildkit  error, while running wave build on docker desktop in mac os?
 
 #### error:
 ```
@@ -21,8 +21,6 @@ sh: can't kill pid 14: No such process
 ```
 
 #### Solution:
-- Open Docker Desktop.
-- Go to Preferences > Docker Engine.
-- Add "features": { "buildkit": true } to the JSON configuration.
-- Click "Apply & Restart" to save the changes and restart Docker.
+- In case of wave cli use `--platform linux/arm64` flag with wave build command.
+- In case of API call use `containerPlatform: linux/arm64` in the request body.
 
