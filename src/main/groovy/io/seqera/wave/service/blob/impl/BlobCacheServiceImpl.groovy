@@ -204,8 +204,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
                     : blobConfig.statusDelay.multipliedBy(10)
 
             //check if the blob size is correct
-            Long size = getBlobSize(route.targetPath)
-            if(size == info.contentLength){
+            if(info.contentLength != getBlobSize(route.targetPath)){
                 log.warn("Blob size mismatch for object '${info.locationUri}'")
                 CompletableFuture.supplyAsync(() -> deleteBlob(route.targetPath), executor)
             }
@@ -262,7 +261,6 @@ class BlobCacheServiceImpl implements BlobCacheService {
         else
             return presignedUrl
     }
-
 
     /**
      * Await for the container layer blob download
