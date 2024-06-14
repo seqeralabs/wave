@@ -52,7 +52,7 @@ class BlobCacheClientImpl implements BlobCacheClient{
         try {
             def headObjectRequest =
                     HeadObjectRequest.builder()
-                            .bucket(blobConfig.storageBucket.replaceFirst('s3://', ''))
+                            .bucket(blobConfig.storageBucket)
                             .key(key)
                             .build()
             def headObjectResponse = s3Client.headObject(headObjectRequest)
