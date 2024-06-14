@@ -38,6 +38,9 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.enabled:false}')
     boolean enabled
 
+    @Value('${wave.blobCache.type:cloudflare}')
+    String type
+
     @Value('${wave.blobCache.status.delay:5s}')
     Duration statusDelay
 

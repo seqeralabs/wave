@@ -20,6 +20,7 @@ package io.seqera.wave.service.blob.impl
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
@@ -32,6 +33,7 @@ import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.http.HttpClientFactory
+import io.seqera.wave.service.blob.BlobCacheClient
 import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.BlobCacheService
 import io.seqera.wave.service.blob.BlobSigningService
@@ -81,6 +83,9 @@ class BlobCacheServiceImpl implements BlobCacheService {
 
     @Inject
     private HttpClientConfig httpConfig
+
+    @Inject
+    private BlobCacheClient blobCacheClient
 
     private HttpClient httpClient
 
@@ -193,6 +198,13 @@ class BlobCacheServiceImpl implements BlobCacheService {
             final ttl = result.succeeded()
                     ? blobConfig.statusDuration
                     : blobConfig.statusDelay.multipliedBy(10)
+
+            //check if the blob size is correct
+            Long size = blobCacheClient.getBlobSize(route.targetPath)
+            if(size == info.contentLength){
+                log.warn("Blob size mismatch for object '${info.locationUri}'")
+                CompletableFuture.supplyAsync(() -> blobCacheClient.deleteBlob(route.targetPath), executor)
+            }
 
             blobStore.storeBlob(route.targetPath, result, ttl)
             return result
