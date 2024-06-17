@@ -87,11 +87,11 @@ class BlobCacheServiceImplTest extends Specification implements AwsS3TestContain
 
     def 'should return blob size when blob exists'() {
         given:
-        def s3Mock = Mock(S3Client)
+        def s3Client = Mock(S3Client)
         def key = 'existing-key'
         def expectedSize = 1234L
-        s3Mock.headObject(_) >> HeadObjectResponse.builder().contentLength(expectedSize).build()
-        def blobCacheService = new BlobCacheServiceImpl(s3Client: s3Mock, blobConfig: new BlobCacheConfig(storageBucket: 's3://store/blobs/'))
+        s3Client.headObject(_) >> HeadObjectResponse.builder().contentLength(expectedSize).build()
+        def blobCacheService = new BlobCacheServiceImpl(s3Client: s3Client, blobConfig: new BlobCacheConfig(storageBucket: 's3://store/blobs/'))
 
         when:
         def size = blobCacheService.getBlobSize(key)
@@ -102,9 +102,9 @@ class BlobCacheServiceImplTest extends Specification implements AwsS3TestContain
 
     def 'should return zero when blob does not exist'() {
         given:
-        def s3Mock = Mock(S3Client)
-        s3Mock.headObject(_) >> { throw S3Exception.builder().message('Not Found').build() }
-        def blobCacheService = new BlobCacheServiceImpl(s3Client: s3Mock, blobConfig: new BlobCacheConfig())
+        def s3Client = Mock(S3Client)
+        s3Client.headObject(_) >> { throw S3Exception.builder().message('Not Found').build() }
+        def blobCacheService = new BlobCacheServiceImpl(s3Client: s3Client, blobConfig: new BlobCacheConfig())
         def key = 'non-existing-key'
 
         when:
@@ -118,9 +118,9 @@ class BlobCacheServiceImplTest extends Specification implements AwsS3TestContain
 
     def 'should delete blob when blob exists'() {
         given:
-        def s3Mock = Mock(S3Client)
-        s3Mock.deleteObject(_) >> { }
-        def blobCacheService = new BlobCacheServiceImpl(s3Client: s3Mock, blobConfig: new BlobCacheConfig())
+        def s3Client = Mock(S3Client)
+        s3Client.deleteObject(_) >> { }
+        def blobCacheService = new BlobCacheServiceImpl(s3Client: s3Client, blobConfig: new BlobCacheConfig())
         def key = 'existing-key'
 
         when:
