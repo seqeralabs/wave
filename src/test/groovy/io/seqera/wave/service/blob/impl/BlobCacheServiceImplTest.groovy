@@ -25,6 +25,9 @@ import io.seqera.wave.core.RoutePath
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.test.AwsS3TestContainer
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse
+import software.amazon.awssdk.services.s3.model.S3Exception
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -80,6 +83,51 @@ class BlobCacheServiceImplTest extends Specification implements AwsS3TestContain
                 '-c',
                 "curl -X GET 'http://foo' | s5cmd --json pipe --content-type something 's3://store/blobs/docker.io/v2/library/ubuntu/manifests/sha256:aabbcc'"
         ]
+    }
+
+    def 'should return blob size when blob exists'() {
+        given:
+        def s3Mock = Mock(S3Client)
+        def key = 'existing-key'
+        def expectedSize = 1234L
+        s3Mock.headObject(_) >> HeadObjectResponse.builder().contentLength(expectedSize).build()
+        def blobCacheService = new BlobCacheServiceImpl(s3Client: s3Mock, blobConfig: new BlobCacheConfig(storageBucket: 's3://store/blobs/'))
+
+        when:
+        def size = blobCacheService.getBlobSize(key)
+
+        then:
+        size == expectedSize
+    }
+
+    def 'should return zero when blob does not exist'() {
+        given:
+        def s3Mock = Mock(S3Client)
+        s3Mock.headObject(_) >> { throw S3Exception.builder().message('Not Found').build() }
+        def blobCacheService = new BlobCacheServiceImpl(s3Client: s3Mock, blobConfig: new BlobCacheConfig())
+        def key = 'non-existing-key'
+
+        when:
+        def size = blobCacheService.getBlobSize(key)
+
+        then:
+        noExceptionThrown()
+        and:
+        size == 0L
+    }
+
+    def 'should delete blob when blob exists'() {
+        given:
+        def s3Mock = Mock(S3Client)
+        s3Mock.deleteObject(_) >> { }
+        def blobCacheService = new BlobCacheServiceImpl(s3Client: s3Mock, blobConfig: new BlobCacheConfig())
+        def key = 'existing-key'
+
+        when:
+        blobCacheService.deleteBlob(key)
+
+        then:
+        noExceptionThrown()
     }
 
 }
