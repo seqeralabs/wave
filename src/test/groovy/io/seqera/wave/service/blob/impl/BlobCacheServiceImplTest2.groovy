@@ -22,9 +22,16 @@ import spock.lang.Specification
 import spock.lang.Unroll
 
 import io.micronaut.context.ApplicationContext
+import io.micronaut.inject.qualifiers.Qualifiers
+import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.test.AwsS3TestContainer
+import software.amazon.awssdk.core.sync.RequestBody
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse
+import software.amazon.awssdk.services.s3.model.PutObjectRequest
+import software.amazon.awssdk.services.s3.model.PutObjectResponse
 
 /**
  *
@@ -43,7 +50,9 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
                 'wave.blobCache.storage.bucket': BUCKET,
                 'wave.blobCache.baseUrl': BASE_URL,
                 'wave.blobCache.storage.region': 'eu-west-1',
-                'wave.blobCache.storage.endpoint': testEndpoint
+                'wave.blobCache.storage.endpoint': testEndpoint,
+                'wave.blobCache.storage.accessKey': 'accessKey',
+                'wave.blobCache.storage.secretKey': 'secretKey'
         ]
         def ctx = ApplicationContext.run(PROPS)
         def service = ctx.getBean(BlobCacheServiceImpl)
@@ -88,7 +97,9 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
                 'wave.blobCache.storage.bucket': BUCKET,
                 'wave.blobCache.baseUrl': BASE_URL,
                 'wave.blobCache.storage.region': 'eu-west-1',
-                'wave.blobCache.storage.endpoint': testEndpoint
+                'wave.blobCache.storage.endpoint': testEndpoint,
+                'wave.blobCache.storage.accessKey': 'accessKey',
+                'wave.blobCache.storage.secretKey': 'secretKey'
         ]
         def ctx = ApplicationContext.run(PROPS)
         def service = ctx.getBean(BlobCacheServiceImpl)
