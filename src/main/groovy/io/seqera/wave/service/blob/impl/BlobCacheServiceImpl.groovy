@@ -33,7 +33,6 @@ import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.http.HttpClientFactory
-
 import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.BlobCacheService
 import io.seqera.wave.service.blob.BlobSigningService
@@ -203,7 +202,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
                     ? blobConfig.statusDuration
                     : blobConfig.statusDelay.multipliedBy(10)
 
-            //check if the blob size is correct
+            //check if the cached blob size is correct
             if(info.contentLength != getBlobSize(route.targetPath)){
                 log.warn("Blob size mismatch for object '${info.locationUri}'")
                 CompletableFuture.supplyAsync(() -> deleteBlob(route.targetPath), executor)
