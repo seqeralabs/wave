@@ -124,8 +124,9 @@ class RoutePath implements ContainerPath {
         new RoutePath(type, registry ?: DOCKER_IO, image, ref, "/v2/$image/$type/$ref", request, token)
     }
 
-    static RoutePath v2manifestPath(ContainerCoordinates container) {
-        new RoutePath('manifests', container.registry, container.image, container.reference, "/v2/${container.image}/manifests/${container.reference}")
+    static RoutePath v2manifestPath(ContainerCoordinates container, PlatformId identity=null) {
+        ContainerRequestData data = identity!=null ? new ContainerRequestData(identity) : null
+        return new RoutePath('manifests', container.registry, container.image, container.reference, "/v2/${container.image}/manifests/${container.reference}", data)
     }
 
     static RoutePath empty() {

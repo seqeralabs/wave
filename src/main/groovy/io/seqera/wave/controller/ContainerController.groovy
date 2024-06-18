@@ -322,7 +322,7 @@ class ContainerController {
         final nameStrategy = req.nameStrategy==null
                 && buildRepository
                 && buildConfig.defaultPublicRepository
-                && buildRepository.startsWith(buildConfig.defaultPublicRepository) ? ImageNameStrategy.imageSuffix : null
+                && buildRepository.startsWith(buildConfig.defaultPublicRepository) ? ImageNameStrategy.imageSuffix : req.nameStrategy
 
         checkContainerSpec(containerSpec)
 
@@ -351,7 +351,7 @@ class ContainerController {
     }
 
     protected BuildTrack checkBuild(BuildRequest build, boolean dryRun) {
-        final digest = registryProxyService.getImageDigest(build.targetImage)
+        final digest = registryProxyService.getImageDigest(build)
         // check for dry-run execution
         if( dryRun ) {
             log.debug "== Dry-run build request: $build"

@@ -1,4 +1,11 @@
 # Wave changelog
+1.8.2 - 14 Jun 2024
+- Fix get image auth digest (#530) [df8ec041]
+
+1.8.1 - 13 Jun 2024
+- Fix digest warning (#526) [6e34ff0a]
+- Fix image name strategy (#513) [3bd8ffb5]
+
 1.8.0 - 10 Jun 2024
 - Add breakdown per org on stats metrics when a date is specified (#517) [b24894a4]
 - Replace Kaniko with Buildkit (#503) [a26f5dfe]

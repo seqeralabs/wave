@@ -18,6 +18,7 @@
 
 package io.seqera.wave.controller
 
+import groovy.transform.CompileStatic
 import io.micronaut.core.annotation.Nullable
 
 import groovy.util.logging.Slf4j
@@ -37,6 +38,7 @@ import io.seqera.wave.util.BuildInfo
  */
 @Slf4j
 @Controller("/")
+@CompileStatic
 @ExecuteOn(TaskExecutors.IO)
 class ServiceInfoController {
 
@@ -48,11 +50,6 @@ class ServiceInfoController {
     HttpResponse<ServiceInfoResponse> info() {
         final info = new ServiceInfo(BuildInfo.getVersion(), BuildInfo.getCommitId())
         HttpResponse.ok(new ServiceInfoResponse(info))
-    }
-
-    @Get('/ping')
-    HttpResponse<ServiceInfoResponse> ping() {
-        HttpResponse.ok()
     }
 
     @Get("/")
