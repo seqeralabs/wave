@@ -85,7 +85,7 @@ class KubeTransferStrategy implements TransferStrategy {
                 : info.failed(stdout)
 
         // delete job
-        if( cleanup.shouldCleanup(terminated.exitCode) ) {
+        if( cleanup.shouldCleanup(terminated.exitCode) && job.metadata?.name ) {
             CompletableFuture.supplyAsync (() -> k8sService.deleteJob(job.metadata.name), executor)
         }
 
