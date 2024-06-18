@@ -47,10 +47,9 @@ dependencies {
     testImplementation 'org.apache.groovy:groovy:4.0.15'
     testImplementation 'org.apache.groovy:groovy-nio:4.0.15'
     testImplementation 'org.apache.groovy:groovy-test:4.0.15'
-    testImplementation 'cglib:cglib-nodep:3.3.0'
     testImplementation 'org.objenesis:objenesis:3.4'
-    testImplementation ('org.spockframework:spock-core:2.3-groovy-4.0') { exclude group: 'org.codehaus.groovy'; exclude group: 'net.bytebuddy' }
-    testImplementation ('org.spockframework:spock-junit4:2.3-groovy-4.0') { exclude group: 'org.codehaus.groovy'; exclude group: 'net.bytebuddy' }
+    testImplementation ('org.spockframework:spock-core:2.3-groovy-4.0')
+    testImplementation ('org.spockframework:spock-junit4:2.3-groovy-4.0')
 }
 
 tasks.withType(Test).configureEach {
