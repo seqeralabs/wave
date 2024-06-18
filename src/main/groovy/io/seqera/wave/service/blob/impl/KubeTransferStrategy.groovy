@@ -33,6 +33,7 @@ import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.blob.TransferTimeoutException
 import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.k8s.K8sService
+import io.seqera.wave.util.K8sHelper
 import jakarta.inject.Inject
 import jakarta.inject.Named
 
@@ -72,12 +73,7 @@ class KubeTransferStrategy implements TransferStrategy {
             throw new TransferTimeoutException("Transfer job timed out")
 
         // Find the latest created pod among the pods associated with the job
-        def latestPod = podList.getItems().get(0)
-        for (def pod : podList.items) {
-            if (pod.metadata.creationTimestamp.isAfter(latestPod.metadata.creationTimestamp)) {
-                latestPod = pod
-            }
-        }
+        final latestPod = K8sHelper.findLatestPod(podList)
 
         final podName = latestPod.metadata.name
         final pod = k8sService.getPod(podName)
@@ -97,7 +93,7 @@ class KubeTransferStrategy implements TransferStrategy {
     }
 
     protected static String getName(BlobCacheInfo info) {
-        return "transfer-" + Hashing
+        return 'transfer-' + Hashing
                 .sipHash24()
                 .newHasher()
                 .putUnencodedChars(info.locationUri)
