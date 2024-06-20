@@ -12,7 +12,7 @@ namespace wave {
   interface  ContainerService {
 
     @post op createV1Alpha2Container(@body requestBody: ContainerRequest): {
-    @body respone: ContainerResponse;
+    @body response: ContainerResponse;
     @statusCode statusCode: 200;
     };
 
@@ -22,7 +22,7 @@ namespace wave {
   interface BuildService {
 
     @get op getBuildRecord(@path buildId: string): {
-      @body respone: WaveBuildRecord;
+      @body response: WaveBuildRecord;
       @statusCode statusCode: 200;
     }|{ 
       @statusCode statusCode: 404;
@@ -30,7 +30,7 @@ namespace wave {
 
     @route("/status")
     @get op getBuildStatus(@path buildId: string): {
-      @body respone: BuildStatusResponse;
+      @body response: BuildStatusResponse;
       @statusCode statusCode: 200;
     }|{ 
       @statusCode statusCode: 404;
@@ -38,7 +38,7 @@ namespace wave {
     
     @route("/logs")
     @get op getBuildLogs(@path buildId: string): {
-      @body respone: string;
+      @body response: string;
       @statusCode statusCode: 200;
     }|{ 
       @statusCode statusCode: 404;
@@ -50,7 +50,7 @@ namespace wave {
   interface scanService{
 
     @get op scanImage(@path scanId: string) : { 
-      @body respone: WaveScanRecord;
+      @body response: WaveScanRecord;
       @statusCode statusCode: 200;
      }|{ 
       @statusCode statusCode: 404;
@@ -62,7 +62,7 @@ namespace wave {
   interface InspectService {
 
     @post op inspectContainer(@body requestBody: InspectRequest): {
-      @body respone: InspectResponse;
+      @body response: InspectResponse;
       @statusCode statusCode: 200;
      }|{ 
       @statusCode statusCode: 404;
@@ -75,19 +75,19 @@ namespace wave {
 
     @route("/builds")
     @get op getBuildMetrics(@query date?: string, @query org?: string): {
-      @body respone: MetricResponse;
+      @body response: MetricResponse;
       @statusCode statusCode: 200;
     };
 
     @route("/pulls")
     @get op getPullMetrics(@query date?: string, @query org?: string):  {
-      @body respone: MetricResponse;
+      @body response: MetricResponse;
       @statusCode statusCode: 200;
     };
 
     @route("/fusion/pulls")
     @get op getFusionPullMetrics(@query date?: string, @query org?: string):  {
-      @body respone: MetricResponse;
+      @body response: MetricResponse;
       @statusCode statusCode: 200;
     };
   }
