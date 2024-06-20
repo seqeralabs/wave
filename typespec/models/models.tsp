@@ -1,0 +1,9 @@
+import "./ContainerRequest.tsp";
+import "./ContainerResponse.tsp";
+import "./BuildStatusResponse.tsp";
+import "./InspectRequest.tsp";
+import "./InspectResponse.tsp";
+import "./MetricResponse.tsp";
+import "./WaveScanRecord.tsp";
+import "./WaveBuildRecord.tsp";
+import "./ValidateRegistryCredsRequest.tsp";
