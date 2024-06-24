@@ -61,7 +61,7 @@ namespace wave {
   @route("/v1alpha1/inspect")
   interface InspectService {
 
-    @post op inspectContainer(@body requestBody: InspectRequest): {
+    @post op inspectContainer(@body requestBody: ContainerInspectRequest): {
       @body response: ContainerInspectResponse;
       @statusCode statusCode: 200;
      }|{ 

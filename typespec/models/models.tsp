@@ -1,7 +1,7 @@
 import "./ContainerRequest.tsp";
 import "./ContainerResponse.tsp";
 import "./BuildStatusResponse.tsp";
-import "./InspectRequest.tsp";
+import "./ContainerInspectRequest.tsp";
 import "./ContainerInspectResponse.tsp";
 import "./MetricResponse.tsp";
 import "./WaveScanRecord.tsp";
