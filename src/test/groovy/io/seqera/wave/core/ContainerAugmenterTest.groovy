@@ -21,10 +21,13 @@ package io.seqera.wave.core
 import spock.lang.Shared
 import spock.lang.Specification
 
+import java.net.http.HttpHeaders
+import java.net.http.HttpResponse
 import java.nio.file.Files
 
 import groovy.json.JsonSlurper
 import io.micronaut.context.annotation.Value
+import io.micronaut.http.MediaType
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.WaveDefault
 import io.seqera.wave.api.ContainerConfig
@@ -817,20 +820,38 @@ class ContainerAugmenterTest extends Specification {
 
     def 'should fetch container manifest for legacy image' () {
         given:
-        def REGISTRY = 'quay.io'
-        def IMAGE = 'biocontainers/fastqc'
-        def TAG = '0.11.9--0'
-        def registry = lookupService.lookup(REGISTRY)
-        def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
-        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
+        def REGISTRY = 'mockreg.io'
+        def IMAGE = 'repo/image'
+        def TAG = '1.0.0'
         and:
 
-        def client = new ProxyClient(httpClient, httpConfig)
-                .withRoute(Mock(RoutePath))
-                .withImage(IMAGE)
-                .withRegistry(registry)
-                .withCredentials(creds)
-                .withLoginService(loginService)
+        def client = Mock(ProxyClient)
+
+        and:
+        def response1 = Mock(HttpResponse)
+        response1.headers() >> HttpHeaders.of(Map.of('content-type', List.of('application/vnd.docker.distribution.manifest.v1+prettyjws'),
+                'docker-content-digest' ,  List.of('sha256:samplesha')), (a, b)->true)
+
+        String manifest = """
+                {
+                    "schemaVersion": 1,
+                    "name": "mockImage",
+                    "tag": "latest",
+                    "architecture": "amd64",
+                    "fsLayers": [
+                        {"blobSum": "sha256:mockBlobSum1"},
+                        {"blobSum": "sha256:mockBlobSum2"}
+                    ],
+                    "history": [
+                        {
+                            "v1Compatibility": "{\\"id\\":\\"mockId1\\",\\"architecture\\": \\"amd64\\",\\"config\\": {\\"Cmd\\": [\\"/bin/sh\\"],\\"Env\\": [\\"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\\"],\\"Entrypoint\\": null,\\"WorkingDir\\": \\"\\"},\\"created\\": \\"2021-09-23T23:47:57.442225064Z\\",\\"docker_version\\": \\"20.10.7\\",\\"os\\": \\"linux\\",\\"parent\\": \\"mockParent1\\"}"
+                        }
+                    ]
+                }
+                """
+        def response2 = Mock(HttpResponse)
+        response2.headers() >> HttpHeaders.of(Map.of('content-type', List.of('application/vnd.docker.distribution.manifest.v1+prettyjws')), (a, b)->true)
+        response2.body() >> manifest
         and:
         def scanner = new ContainerAugmenter()
                 .withClient(client)
@@ -838,11 +859,17 @@ class ContainerAugmenterTest extends Specification {
 
         when:
         def spec = scanner.getContainerSpec(IMAGE, TAG, WaveDefault.ACCEPT_HEADERS)
+
         then:
-        spec.registry == 'quay.io'
-        spec.imageName == 'biocontainers/fastqc'
-        spec.reference == '0.11.9--0'
-        spec.digest == 'sha256:319b8d4eca0fc0367d192941f221f7fcd29a6b96996c63cbf8931dbb66e53348'
+        1 * client.head("/v2/$IMAGE/manifests/$TAG", _) >> response1
+        1 * client.getString(_, _ ) >> response2
+        2 * client.route >> new RoutePath('docker', REGISTRY, IMAGE)
+        2 * client.getRegistry() >> new RegistryInfo(REGISTRY, new URI(REGISTRY), Mock(RegistryAuth))
+        and:
+        spec.registry == 'mockreg.io'
+        spec.imageName == 'repo/image'
+        spec.reference == '1.0.0'
+        spec.digest == 'sha256:samplesha'
         and:
         spec.isV1()
         !spec.isV2()
@@ -870,4 +897,5 @@ class ContainerAugmenterTest extends Specification {
         ["foo", "bar foo"]                  | '["foo","bar foo"]'
         ["foo", "'bar foo'"]                | '["foo","\'bar foo\'"]'
     }
+
 }
