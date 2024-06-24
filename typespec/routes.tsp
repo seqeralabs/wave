@@ -62,7 +62,7 @@ namespace wave {
   interface InspectService {
 
     @post op inspectContainer(@body requestBody: InspectRequest): {
-      @body response: InspectResponse;
+      @body response: ContainerInspectResponse;
       @statusCode statusCode: 200;
      }|{ 
       @statusCode statusCode: 404;

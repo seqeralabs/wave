@@ -4,13 +4,13 @@ import "./RootFS.tsp";
 model Config {
   architecture: string;
   config: {
+    attachStderr: boolean;
     attachStdin: boolean;
     attachStdout: boolean;
-    attachStderr: boolean;
-    tty: boolean;
-    env: string[];
     cmd: string[];
+    env: string[];
     image: string;
+    tty: boolean;
   };
   container: string;
   created: string;

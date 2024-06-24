@@ -2,9 +2,9 @@ import "./ContainerLayer.tsp";
 
 @doc("Configuration details for a container.")
 model ContainerConfig {
-  entrypoint: string[];
   cmd: string[];
+  entrypoint: string[];
   env: string[];
+  layers: ContainerLayer[];
   workingDir: string;
-  layers: Layer[];
 }

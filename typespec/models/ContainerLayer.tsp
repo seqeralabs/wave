@@ -1,7 +1,8 @@
 @doc("Represents a layer in a container image.")
-model Layer {
-  location: string;
+model ContainerLayer {
   gzipDigest: string;
   gzipSize: string;
+  location: string;
+  skipHashing: boolean;
   tarDigest: string;
 }

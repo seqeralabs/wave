@@ -1,7 +1,7 @@
 @doc("Response payload for metrics.")
 model MetricResponse {
-  metric: "builds" | "pulls" | "fusion";
   count: int64;
+  metric: "builds" | "fusion" | "pulls";
   orgs: Orgs;
 }
 

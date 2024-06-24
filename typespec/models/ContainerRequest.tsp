@@ -3,21 +3,24 @@ import "./Packages.tsp";
 
 @doc("Request payload for creating a container token.")
 model ContainerRequest {
-  containerImage: string;
-  containerFile?: string;
-  containerConfig: ContainerConfig;
-  condaFile?: string;
-  spackFile?: string;
-  containerPlatform: string;
+  buildContext: ContainerLayer;
   buildRepository?: string;
   cacheRepository?: string;
-  timestamp: string;
+  containerConfig: ContainerConfig;
+  containerFile?: string;
+  containerImage: string;
+  containerIncludes: string[];
+  containerPlatform: string;
+  dryRun: boolean;
   fingerprint?: string;
+  format: "sif" | "docker";
   freeze?: boolean;
-  towerAccessToken?: string;
-  towerRefreshToken?: string;
-  towerEndpoint?: string;
-  towerWorkspaceId?: int32;
+  nameStrategy?: "none" | "tagPrefix" | "imageSuffix";
   packages?: Packages;
-  nameStrategy?: string;
+  timestamp: string;
+  towerAccessToken?: string;
+  towerEndpoint?: string;
+  towerRefreshToken?: string;
+  towerWorkspaceId?: int32;
+  workflowId: string;
 }

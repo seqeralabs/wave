@@ -3,10 +3,10 @@ import "./SpackOpts.tsp";
 
 @doc("Package configurations for container builds.")
 model Packages {
-  type: string;
-  environment: string;
-  entries: string[];
   channels: string[];
   condaOpts?: CondaOpts;
+  entries: string[];
+  environment: string;
   spackOpts?: SpackOpts;
+  type: "CONDA" | "SPACK";
 }
