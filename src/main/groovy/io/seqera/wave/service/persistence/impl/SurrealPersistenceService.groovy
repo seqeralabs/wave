@@ -234,4 +234,13 @@ class SurrealPersistenceService implements PersistenceService {
         return result
     }
 
+    @Override
+    List<WaveBuildRecord> loadBuilds(String imageName, String user) {
+        final query = "select * from wave_build where targetImage = '$imageName' or userEmail = '$user' or userName = '$user'"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result.toList() : null
+        return result
+    }
 }

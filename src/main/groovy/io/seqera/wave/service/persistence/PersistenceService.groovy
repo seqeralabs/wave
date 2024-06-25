@@ -125,4 +125,12 @@ interface PersistenceService {
                 scanRecord.vulnerabilities )
     }
 
+    /**
+     * Retrieve a {@link List<WaveBuildRecord>} List of objects matching the specified image name and user
+     *
+     * @param imageName The container image name
+     * @param user The user name or email
+     * @return The corresponding {@link WaveBuildRecord} object object
+     */
+    List<WaveBuildRecord> loadBuilds(String imageName, String user)
 }

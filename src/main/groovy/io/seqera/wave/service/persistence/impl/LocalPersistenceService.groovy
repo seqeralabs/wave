@@ -87,4 +87,9 @@ class LocalPersistenceService implements PersistenceService {
         scanStore.get(scanId)
     }
 
+    @Override
+    List<WaveBuildRecord> loadBuilds(String imageName, String user) {
+        return buildStore.findAll { k, v -> v.targetImage == imageName
+                || (user==null || v.userName == user || v.userEmail == user)}.values().toList()
+    }
 }

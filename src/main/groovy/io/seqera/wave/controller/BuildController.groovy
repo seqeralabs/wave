@@ -26,6 +26,7 @@ import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.Produces
+import io.micronaut.http.annotation.QueryValue
 import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
@@ -79,4 +80,12 @@ class BuildController {
             : HttpResponse.<BuildStatusResponse>notFound()
     }
 
+    @Get("/v1alpha1/builds")
+    HttpResponse<List<WaveBuildRecord>> getBuildRecords(@Nullable @QueryValue  String imageName,
+                                                        @Nullable @QueryValue  String user){
+        final record = buildService.getBuildRecords(imageName, user)
+        return record != null
+                ? HttpResponse.ok(record)
+                : HttpResponse.<List<WaveBuildRecord>>notFound()
+    }
 }
