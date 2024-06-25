@@ -2,7 +2,9 @@
 model ContainerResponse {
   buildId: string;
   cached: boolean;
+  containerImage: string;
   containerToken: string;
   expiration: string;
+  freeze?: boolean;
   targetImage: string;
 }

@@ -3,5 +3,5 @@ model ContainerInspectRequest {
   containerImage: string;
   towerAccessToken: string;
   towerEndpoint: string;
-  towerWorkspaceId: string;
+  towerWorkspaceId: int64;
 }
