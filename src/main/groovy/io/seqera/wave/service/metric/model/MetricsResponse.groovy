@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023-2024, Seqera Labs
+ *  Copyright (c) 2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -15,20 +15,21 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package io.seqera.wave.service.metric.model
 
-import groovy.transform.CompileStatic
 /**
- * Model a Wave pulls count response
+ * Model organisations counts response
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-@CompileStatic
-class GetPullsCountResponse {
+class MetricsResponse {
+    String metric
     Long count
+    Map<String, Long> orgs
 
-    GetPullsCountResponse(Long count) {
+    MetricsResponse(String metric, Long count, Map<String, Long> orgs) {
+        this.metric = metric
         this.count = count
+        this.orgs = orgs
     }
 }
