@@ -1,5 +1,5 @@
 @doc("Response payload for metrics.")
-model MetricResponse {
+model MetricsResponse {
   count: int64;
   metric: "builds" | "fusion" | "pulls";
   orgs: Orgs;

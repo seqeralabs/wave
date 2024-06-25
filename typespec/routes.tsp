@@ -75,19 +75,19 @@ namespace wave {
 
     @route("/builds")
     @get op getBuildMetrics(@query date?: string, @query org?: string): {
-      @body response: MetricResponse;
+      @body response: MetricsResponse;
       @statusCode statusCode: 200;
     };
 
     @route("/pulls")
     @get op getPullMetrics(@query date?: string, @query org?: string):  {
-      @body response: MetricResponse;
+      @body response: MetricsResponse;
       @statusCode statusCode: 200;
     };
 
     @route("/fusion/pulls")
     @get op getFusionPullMetrics(@query date?: string, @query org?: string):  {
-      @body response: MetricResponse;
+      @body response: MetricsResponse;
       @statusCode statusCode: 200;
     };
   }
