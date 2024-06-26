@@ -8,8 +8,10 @@ micronaut:
     # with a frequency shorter than the declared cache period.
     cache-20sec:
       expire-after-write: 20s
+      record-stats: true
     cache-1min:
       expire-after-write: 1m
+      record-stats: true
     # Discovery client by default uses a cache for results. This is a transitive behaviour
     # introduced by prometheus and management dependencies and below line disables as
     # it is unused at the moment by the wave project. See https://micronaut-projects.github.io/micronaut-discovery-client/latest/guide/#introduction
