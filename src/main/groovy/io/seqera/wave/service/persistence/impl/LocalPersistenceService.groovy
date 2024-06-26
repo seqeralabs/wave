@@ -90,6 +90,6 @@ class LocalPersistenceService implements PersistenceService {
     @Override
     List<WaveBuildRecord> loadBuilds(String imageName, String user) {
         return buildStore.findAll { k, v -> v.targetImage == imageName
-                || (user!=null && (v.userName == user || v.userEmail == user))}.values().toList()
+                || (user!=null && (v.userName == user || v.userEmail == user))}.values().toList().sort((a, b)-> a.buildId <=> b.buildId)
     }
 }

@@ -163,19 +163,16 @@ class BuildControllerTest extends Specification {
 
     def 'should get container build records' () {
         given:
-        final repo1 = "foo.com/repo"
         final containerFile1 = 'FROM foo:latest'
         final format1 = BuildFormat.DOCKER
         final platform1 = ContainerPlatform.of('amd64')
-        final containerId1 = ContainerHelper.makeContainerId(containerFile1, null, null, platform1, repo1, null)
-        final targetImage1 = ContainerHelper.makeTargetImage(format1, repo1, containerId1, null, null, null)
         final build1 = new BuildRequest(
-                containerId1,
+                'containerId1',
                 containerFile1,
                 null,
                 null,
                 Path.of("/some/path"),
-                targetImage1,
+                'docker.io/my/repo:container1',
                 new PlatformId(new User(id: 1, userName: 'foo', email: 'foo@seqera.io'), 100),
                 platform1,
                 'cacherepo',
@@ -191,19 +188,16 @@ class BuildControllerTest extends Specification {
         final event1 = new BuildEvent(build1, result1)
         final entry1 = WaveBuildRecord.fromEvent(event1)
 
-        final repo2 = "foo.com/repo"
         final containerFile2 = 'FROM bar:latest'
         final format2 = BuildFormat.DOCKER
         final platform2 = ContainerPlatform.of('amd64')
-        final containerId2 = ContainerHelper.makeContainerId(containerFile2, null, null, platform2, repo2, null)
-        final targetImage2 = ContainerHelper.makeTargetImage(format2, repo2, containerId2, null, null, null)
         final build2 = new BuildRequest(
-                containerId2,
+                'containerId2',
                 containerFile2,
                 null,
                 null,
                 Path.of("/some/path"),
-                targetImage2,
+                'docker.io/my/repo:container2',
                 new PlatformId(new User(id: 1, userName: 'foo', email: 'foo@seqera.io'), 100),
                 platform2,
                 'cacherepo',
@@ -214,7 +208,7 @@ class BuildControllerTest extends Specification {
                 'scan12345',
                 null,
                 format2)
-                .withBuildId('1')
+                .withBuildId('2')
         final result2 = new BuildResult(build2.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         final event2 = new BuildEvent(build2, result2)
         final entry2 = WaveBuildRecord.fromEvent(event2)
@@ -223,26 +217,26 @@ class BuildControllerTest extends Specification {
         persistenceService.saveBuild(entry2)
 
         when:
-        def req = HttpRequest.GET("/v1alpha1/builds?imageName=${targetImage1}")
+        def req = HttpRequest.GET("/v1alpha1/builds?imageName=docker.io/my/repo:container2&user=foo")
         def res = client.toBlocking().exchange(req, BuildsResponse)
 
         then:
         res.body().builds[0].buildId == entry1.buildId
+        res.body().builds[1].buildId == entry2.buildId
 
         when:
-        req = HttpRequest.GET("/v1alpha1/builds?imageName=${targetImage2}")
-        res = client.toBlocking().exchange(req, BuildsResponse)
-
-        then:
-        res.body().builds[0].buildId == entry2.buildId
-
-        when:
-        req = HttpRequest.GET("/v1alpha1/builds?imageName=${targetImage2}&user=foo")
+        req = HttpRequest.GET("/v1alpha1/builds?imageName=docker.io/my/repo:container1")
         res = client.toBlocking().exchange(req, BuildsResponse)
 
         then:
         res.body().builds[0].buildId == entry1.buildId
-        res.body().builds[1].buildId == entry2.buildId
+
+        when:
+        req = HttpRequest.GET("/v1alpha1/builds?imageName=docker.io/my/repo:container2")
+        res = client.toBlocking().exchange(req, BuildsResponse)
+
+        then:
+        res.body().builds[0].buildId == entry2.buildId
 
         when:
         req = HttpRequest.GET("/v1alpha1/builds?user=foo")
