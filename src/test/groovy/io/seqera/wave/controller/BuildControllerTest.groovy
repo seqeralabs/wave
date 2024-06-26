@@ -39,11 +39,13 @@ import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.service.builder.model.BuildsResponse
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.logs.BuildLogServiceImpl
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.tower.User
 import jakarta.inject.Inject
 import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.util.ContainerHelper
@@ -159,4 +161,104 @@ class BuildControllerTest extends Specification {
         e.status == HttpStatus.NOT_FOUND
     }
 
+    def 'should get container build records' () {
+        given:
+        final repo1 = "foo.com/repo"
+        final containerFile1 = 'FROM foo:latest'
+        final format1 = BuildFormat.DOCKER
+        final platform1 = ContainerPlatform.of('amd64')
+        final containerId1 = ContainerHelper.makeContainerId(containerFile1, null, null, platform1, repo1, null)
+        final targetImage1 = ContainerHelper.makeTargetImage(format1, repo1, containerId1, null, null, null)
+        final build1 = new BuildRequest(
+                containerId1,
+                containerFile1,
+                null,
+                null,
+                Path.of("/some/path"),
+                targetImage1,
+                new PlatformId(new User(id: 1, userName: 'foo', email: 'foo@seqera.io'), 100),
+                platform1,
+                'cacherepo',
+                "1.2.3.4",
+                '{"config":"json"}',
+                null,
+                null,
+                'scan12345',
+                null,
+                format1)
+                .withBuildId('1')
+        final result1 = new BuildResult(build1.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
+        final event1 = new BuildEvent(build1, result1)
+        final entry1 = WaveBuildRecord.fromEvent(event1)
+
+        final repo2 = "foo.com/repo"
+        final containerFile2 = 'FROM bar:latest'
+        final format2 = BuildFormat.DOCKER
+        final platform2 = ContainerPlatform.of('amd64')
+        final containerId2 = ContainerHelper.makeContainerId(containerFile2, null, null, platform2, repo2, null)
+        final targetImage2 = ContainerHelper.makeTargetImage(format2, repo2, containerId2, null, null, null)
+        final build2 = new BuildRequest(
+                containerId2,
+                containerFile2,
+                null,
+                null,
+                Path.of("/some/path"),
+                targetImage2,
+                new PlatformId(new User(id: 1, userName: 'foo', email: 'foo@seqera.io'), 100),
+                platform2,
+                'cacherepo',
+                "1.2.3.4",
+                '{"config":"json"}',
+                null,
+                null,
+                'scan12345',
+                null,
+                format2)
+                .withBuildId('1')
+        final result2 = new BuildResult(build2.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
+        final event2 = new BuildEvent(build2, result2)
+        final entry2 = WaveBuildRecord.fromEvent(event2)
+        and:
+        persistenceService.saveBuild(entry1)
+        persistenceService.saveBuild(entry2)
+
+        when:
+        def req = HttpRequest.GET("/v1alpha1/builds?imageName=${targetImage1}")
+        def res = client.toBlocking().exchange(req, BuildsResponse)
+
+        then:
+        res.body().builds[0].buildId == entry1.buildId
+
+        when:
+        req = HttpRequest.GET("/v1alpha1/builds?imageName=${targetImage2}")
+        res = client.toBlocking().exchange(req, BuildsResponse)
+
+        then:
+        res.body().builds[0].buildId == entry2.buildId
+
+        when:
+        req = HttpRequest.GET("/v1alpha1/builds?imageName=${targetImage2}&user=foo")
+        res = client.toBlocking().exchange(req, BuildsResponse)
+
+        then:
+        res.body().builds[0].buildId == entry1.buildId
+        res.body().builds[1].buildId == entry2.buildId
+
+        when:
+        req = HttpRequest.GET("/v1alpha1/builds?user=foo")
+        res = client.toBlocking().exchange(req, BuildsResponse)
+
+        then:
+        res.body().builds[0].buildId == entry1.buildId
+        res.body().builds[1].buildId == entry2.buildId
+
+        when:
+        req = HttpRequest.GET("/v1alpha1/builds?user=foo@seqera.io")
+        res = client.toBlocking().exchange(req, BuildsResponse)
+
+        then:
+        res.body().builds[0].buildId == entry1.buildId
+        res.body().builds[1].buildId == entry2.buildId
+
+    }
 }

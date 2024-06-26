@@ -33,6 +33,7 @@ import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.builder.ContainerBuildService
+import io.seqera.wave.service.builder.model.BuildsResponse
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import jakarta.inject.Inject
@@ -82,14 +83,14 @@ class BuildController {
     }
 
     @Get("/v1alpha1/builds")
-    HttpResponse<List<WaveBuildRecord>> getBuildRecords(@Nullable @QueryValue  String imageName,
-                                                        @Nullable @QueryValue  String user){
+    HttpResponse<BuildsResponse> getBuildRecords(@Nullable @QueryValue  String imageName,
+                                                 @Nullable @QueryValue  String user){
         if( !imageName && !user )
             throw new BadRequestException('Either imageName or user must be specified')
 
         final record = buildService.getBuildRecords(imageName, user)
         return record != null
-                ? HttpResponse.ok(record)
-                : HttpResponse.<List<WaveBuildRecord>>notFound()
+                ? HttpResponse.ok(new BuildsResponse(record))
+                : HttpResponse.<BuildsResponse>notFound()
     }
 }
