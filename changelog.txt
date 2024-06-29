@@ -1,4 +1,9 @@
 # Wave changelog
+1.8.3 - 29 Jun 2024
+- Fix client cache deadlock (#547) [cc6012ff]
+- Fix failing test [263b44d3]
+- Add cache record-stats (#534) [229926e2]
+
 1.8.2 - 14 Jun 2024
 - Fix get image auth digest (#530) [df8ec041]
 
