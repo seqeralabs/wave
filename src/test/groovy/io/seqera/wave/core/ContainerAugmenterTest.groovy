@@ -818,8 +818,8 @@ class ContainerAugmenterTest extends Specification {
     def 'should fetch container manifest for legacy image' () {
         given:
         def REGISTRY = 'quay.io'
-        def IMAGE = 'biocontainers/fastqc'
-        def TAG = '0.11.9--0'
+        def IMAGE = 'biocontainers/smina'
+        def TAG = '2017.11.9--0'
         def registry = lookupService.lookup(REGISTRY)
         def creds = credentialsProvider.getDefaultCredentials(REGISTRY)
         def httpClient = HttpClientFactory.neverRedirectsHttpClient()
@@ -840,9 +840,9 @@ class ContainerAugmenterTest extends Specification {
         def spec = scanner.getContainerSpec(IMAGE, TAG, WaveDefault.ACCEPT_HEADERS)
         then:
         spec.registry == 'quay.io'
-        spec.imageName == 'biocontainers/fastqc'
-        spec.reference == '0.11.9--0'
-        spec.digest == 'sha256:319b8d4eca0fc0367d192941f221f7fcd29a6b96996c63cbf8931dbb66e53348'
+        spec.imageName == 'biocontainers/smina'
+        spec.reference == '2017.11.9--0'
+        spec.digest == 'sha256:502e7be073c9ec35b996656a48e9560e05746ad6d98649c56f98af9a724875b4'
         and:
         spec.isV1()
         !spec.isV2()
