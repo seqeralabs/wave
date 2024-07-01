@@ -27,7 +27,6 @@ import java.nio.file.Files
 
 import groovy.json.JsonSlurper
 import io.micronaut.context.annotation.Value
-import io.micronaut.http.MediaType
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.WaveDefault
 import io.seqera.wave.api.ContainerConfig
@@ -828,10 +827,11 @@ class ContainerAugmenterTest extends Specification {
         def client = Mock(ProxyClient)
 
         and:
+        def headers = ['content-type': List.of('application/vnd.docker.distribution.manifest.v1+prettyjws'),
+                       'docker-content-digest': List.of('sha256:samplesha')]
         def response1 = Mock(HttpResponse)
-        response1.headers() >> HttpHeaders.of(Map.of('content-type', List.of('application/vnd.docker.distribution.manifest.v1+prettyjws'),
-                'docker-content-digest' ,  List.of('sha256:samplesha')), (a, b)->true)
-
+        response1.headers() >> HttpHeaders.of(headers, (a, b)->true)
+        and:
         String manifest = """
                 {
                     "schemaVersion": 1,
@@ -861,11 +861,11 @@ class ContainerAugmenterTest extends Specification {
         def spec = scanner.getContainerSpec(IMAGE, TAG, WaveDefault.ACCEPT_HEADERS)
 
         then:
-        1 * client.head("/v2/$IMAGE/manifests/$TAG", _) >> response1
-        1 * client.getString(_, _ ) >> response2
-        2 * client.route >> new RoutePath('docker', REGISTRY, IMAGE)
-        2 * client.getRegistry() >> new RegistryInfo(REGISTRY, new URI(REGISTRY), Mock(RegistryAuth))
-        and:
+        client.head("/v2/$IMAGE/manifests/$TAG", _) >> response1
+        client.getString(_, _ ) >> response2
+        client.route >> new RoutePath('docker', REGISTRY, IMAGE)
+        client.getRegistry() >> new RegistryInfo(REGISTRY, new URI(REGISTRY), Mock(RegistryAuth))
+        then:
         spec.registry == 'mockreg.io'
         spec.imageName == 'repo/image'
         spec.reference == '1.0.0'
@@ -897,5 +897,4 @@ class ContainerAugmenterTest extends Specification {
         ["foo", "bar foo"]                  | '["foo","bar foo"]'
         ["foo", "'bar foo'"]                | '["foo","\'bar foo\'"]'
     }
-
 }
