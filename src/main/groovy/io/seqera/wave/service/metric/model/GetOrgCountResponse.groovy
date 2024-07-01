@@ -22,12 +22,12 @@ package io.seqera.wave.service.metric.model
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-class MetricsResponse {
+class GetOrgCountResponse {
     String metric
     Long count
     Map<String, Long> orgs
 
-    MetricsResponse(String metric, Long count, Map<String, Long> orgs) {
+    GetOrgCountResponse(String metric, Long count, Map<String, Long> orgs) {
         this.metric = metric
         this.count = count
         this.orgs = orgs

@@ -28,7 +28,7 @@ import groovy.util.logging.Slf4j
 import io.seqera.wave.service.metric.MetricsConstants
 import io.seqera.wave.service.metric.MetricsCounterStore
 import io.seqera.wave.service.metric.MetricsService
-import io.seqera.wave.service.metric.model.MetricsResponse
+import io.seqera.wave.service.metric.model.GetOrgCountResponse
 import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -50,8 +50,8 @@ class MetricsServiceImpl implements MetricsService {
     private MetricsCounterStore metricsCounterStore
 
     @Override
-    MetricsResponse getAllOrgCount(String metric){
-        final response = new MetricsResponse(metric, 0, [:])
+    GetOrgCountResponse getAllOrgCount(String metric){
+        final response = new GetOrgCountResponse(metric, 0, [:])
         final orgCounts = metricsCounterStore.getAllMatchingEntries("$metric/$MetricsConstants.PREFIX_ORG/*")
         for(def entry : orgCounts) {
             // orgCounts also contains the records with org and date, so here it filter out the records with date
@@ -65,8 +65,8 @@ class MetricsServiceImpl implements MetricsService {
     }
 
     @Override
-    MetricsResponse getOrgCount(String metric, String date, String org) {
-        final response = new MetricsResponse(metric, 0, [:])
+    GetOrgCountResponse getOrgCount(String metric, String date, String org) {
+        final response = new GetOrgCountResponse(metric, 0, [:])
 
         // count is stored per date and per org, so it can be extracted from get method
         response.count = metricsCounterStore.get(getKey(metric, date, org)) ?: 0L
