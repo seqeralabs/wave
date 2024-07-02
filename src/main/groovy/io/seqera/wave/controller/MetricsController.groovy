@@ -36,11 +36,9 @@ import io.micronaut.security.annotation.Secured
 import io.micronaut.security.authentication.AuthorizationException
 import io.micronaut.security.rules.SecurityRule
 import io.seqera.wave.exception.BadRequestException
-import io.seqera.wave.service.metric.MetricConstants
+import io.seqera.wave.service.metric.MetricsConstants
 import io.seqera.wave.service.metric.MetricsService
-import io.seqera.wave.service.metric.model.GetBuildsCountResponse
-import io.seqera.wave.service.metric.model.GetFusionPullsCountResponse
-import io.seqera.wave.service.metric.model.GetPullsCountResponse
+
 import jakarta.inject.Inject
 
 import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
@@ -65,25 +63,25 @@ class MetricsController {
     @Get(uri = "/v1alpha2/metrics/builds", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getBuildsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
         if(!date && !org)
-            return HttpResponse.ok(metricsService.getAllOrgCount(MetricConstants.PREFIX_BUILDS))
+            return HttpResponse.ok(metricsService.getAllOrgCount(MetricsConstants.PREFIX_BUILDS))
         validateQueryParams(date)
-        return HttpResponse.ok(metricsService.getOrgCount(MetricConstants.PREFIX_BUILDS, date, org))
+        return HttpResponse.ok(metricsService.getOrgCount(MetricsConstants.PREFIX_BUILDS, date, org))
     }
 
     @Get(uri = "/v1alpha2/metrics/pulls", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
         if(!date && !org)
-            return HttpResponse.ok(metricsService.getAllOrgCount(MetricConstants.PREFIX_PULLS))
+            return HttpResponse.ok(metricsService.getAllOrgCount(MetricsConstants.PREFIX_PULLS))
         validateQueryParams(date)
-        return HttpResponse.ok(metricsService.getOrgCount(MetricConstants.PREFIX_PULLS, date, org))
+        return HttpResponse.ok(metricsService.getOrgCount(MetricsConstants.PREFIX_PULLS, date, org))
     }
 
     @Get(uri = "/v1alpha2/metrics/fusion/pulls", produces = MediaType.APPLICATION_JSON)
     HttpResponse<?> getFusionPullsMetrics(@Nullable @QueryValue String date, @Nullable @QueryValue String org) {
         if(!date && !org)
-            return HttpResponse.ok(metricsService.getAllOrgCount(MetricConstants.PREFIX_FUSION))
+            return HttpResponse.ok(metricsService.getAllOrgCount(MetricsConstants.PREFIX_FUSION))
         validateQueryParams(date)
-        return HttpResponse.ok(metricsService.getOrgCount(MetricConstants.PREFIX_FUSION, date, org))
+        return HttpResponse.ok(metricsService.getOrgCount(MetricsConstants.PREFIX_FUSION, date, org))
 
     }
 
