@@ -30,6 +30,7 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.core.RouteHandler
@@ -40,6 +41,8 @@ import io.seqera.wave.service.pairing.PairingRecord
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.PairingServiceImpl
 import io.seqera.wave.tower.User
+import io.seqera.wave.tower.auth.JwtAuth
+import io.seqera.wave.tower.client.ListCredentialsResponse
 import io.seqera.wave.tower.client.TowerClient
 import io.seqera.wave.tower.client.UserInfoResponse
 import jakarta.inject.Inject
@@ -89,16 +92,18 @@ class ContainerControllerHttpTest extends Specification {
         given:
         def endpoint = 'http://tower.nf'
         def token = '12345'
+        def refresh = '2'
+        def auth = JwtAuth.of(endpoint, token, refresh)
         and:
         pairingService.getPairingRecord(TOWER_SERVICE, endpoint) >> { new PairingRecord('tower', endpoint) }
-        towerClient.userInfo(endpoint,token) >> CompletableFuture.completedFuture(new UserInfoResponse(user:new User(id:1)))
+        towerClient.userInfo(endpoint,auth) >> CompletableFuture.completedFuture(new UserInfoResponse(user:new User(id:1)))
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
         SubmitContainerTokenRequest request =
                 new SubmitContainerTokenRequest(
                         towerAccessToken: token,
-                        towerRefreshToken: "2",
+                        towerRefreshToken: refresh,
                         towerEndpoint: endpoint,
                         towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64',)
         def resp = httpClient.toBlocking().exchange(HttpRequest.POST("/container-token", request), SubmitContainerTokenResponse)
@@ -109,16 +114,19 @@ class ContainerControllerHttpTest extends Specification {
     def 'should fails build request for user foo' () {
         given:
         def endpoint = 'http://tower.nf'
+        def token = 'foo'
+        def refresh = 'foo2'
+        def auth = JwtAuth.of(endpoint, token, refresh)
         and:
         pairingService.getPairingRecord(TOWER_SERVICE, endpoint) >> { new PairingRecord('tower', endpoint) }
-        towerClient.userInfo(endpoint,'foo') >> completeExceptionally(new HttpResponseException(401, "Auth error"))
+        towerClient.userInfo(endpoint, auth) >> completeExceptionally(new HttpResponseException(401, "Auth error"))
 
         when:
         def cfg = new ContainerConfig(workingDir: '/foo')
         SubmitContainerTokenRequest request =
                 new SubmitContainerTokenRequest(
-                        towerAccessToken: 'foo',
-                        towerRefreshToken: 'foo2',
+                        towerAccessToken: token,
+                        towerRefreshToken: refresh,
                         towerEndpoint: endpoint,
                         towerWorkspaceId: 10, containerImage: 'ubuntu:latest', containerConfig: cfg, containerPlatform: 'arm64',)
         and:
@@ -268,16 +276,19 @@ class ContainerControllerHttpTest extends Specification {
         given:
         def endpoint = 'http://tower.nf'
         def token = '12345'
+        def refresh = "2"
+        and:
+        def auth = JwtAuth.of(endpoint, token, refresh)
         and:
         pairingService.getPairingRecord(TOWER_SERVICE, endpoint) >> { new PairingRecord('tower', endpoint) }
-        towerClient.userInfo(endpoint,token) >> CompletableFuture.completedFuture(new UserInfoResponse(user:new User(id:1)))
+        towerClient.userInfo(endpoint, auth) >> CompletableFuture.completedFuture(new UserInfoResponse(user:new User(id:1)))
 
         and:
         def cfg = new ContainerConfig(workingDir: '/foo')
         SubmitContainerTokenRequest request =
                 new SubmitContainerTokenRequest(
                         towerAccessToken: token,
-                        towerRefreshToken: "2",
+                        towerRefreshToken: refresh,
                         towerEndpoint: endpoint,
                         towerWorkspaceId: 10,
                         containerImage: 'ubuntu:latest',
@@ -295,4 +306,104 @@ class ContainerControllerHttpTest extends Specification {
         deleteResp.status.code == 200
     }
 
+    def 'should get the correct image name with imageSuffix name strategy'(){
+        given:
+        def endpoint = 'http://cloud.seqera.io'
+        def token = 'foo'
+        def refresh = 'foo2'
+        def auth = JwtAuth.of(endpoint, token, refresh)
+        and:
+        pairingService.getPairingRecord(TOWER_SERVICE, endpoint) >> { new PairingRecord('tower', endpoint) }
+        towerClient.userInfo(endpoint, auth) >> CompletableFuture.completedFuture(new UserInfoResponse(user:new User(id:1)))
+        towerClient.listCredentials(_,_,_) >> CompletableFuture.completedFuture(new ListCredentialsResponse(credentials:[]))
+
+        when:
+        def cfg = new ContainerConfig(workingDir: '/foo')
+        def packages = new PackagesSpec(channels: ['conda-forge', 'bioconda'], entries: ['salmon'], type: 'CONDA')
+        SubmitContainerTokenRequest request =
+                new SubmitContainerTokenRequest(
+                        towerAccessToken: token,
+                        towerRefreshToken: refresh,
+                        towerEndpoint: endpoint,
+                        towerWorkspaceId: 10,
+                        nameStrategy: "imageSuffix",
+                        packages: packages,
+                        freeze: true,
+                        buildRepository: "registry/repository")
+        and:
+        def response = httpClient
+                .toBlocking()
+                .exchange(HttpRequest.POST("/v1alpha2/container", request), SubmitContainerTokenResponse)
+                .body()
+
+        then:
+        response.targetImage.startsWith("registry/repository/salmon")
+    }
+
+    def 'should get the correct image name with tagPrefix name strategy'(){
+        given:
+        def endpoint = 'http://cloud.seqera.io'
+        def token = 'foo'
+        def refresh = 'foo2'
+        def auth = JwtAuth.of(endpoint, token, refresh)
+        and:
+        pairingService.getPairingRecord(TOWER_SERVICE, endpoint) >> { new PairingRecord('tower', endpoint) }
+        towerClient.userInfo(endpoint, auth) >> CompletableFuture.completedFuture(new UserInfoResponse(user:new User(id:1)))
+        towerClient.listCredentials(_,_,_) >> CompletableFuture.completedFuture(new ListCredentialsResponse(credentials:[]))
+
+        when:
+        def cfg = new ContainerConfig(workingDir: '/foo')
+        def packages = new PackagesSpec(channels: ['conda-forge', 'bioconda'], entries: ['salmon'], type: 'CONDA')
+        SubmitContainerTokenRequest request =
+                new SubmitContainerTokenRequest(
+                        towerAccessToken: token,
+                        towerRefreshToken: refresh,
+                        towerEndpoint: endpoint,
+                        towerWorkspaceId: 10,
+                        nameStrategy: "tagPrefix",
+                        packages: packages,
+                        freeze: true,
+                        buildRepository: "registry/repository")
+        and:
+        def response = httpClient
+                .toBlocking()
+                .exchange(HttpRequest.POST("/v1alpha2/container", request), SubmitContainerTokenResponse)
+                .body()
+
+        then:
+        response.targetImage.startsWith("registry/repository:salmon")
+    }
+
+    def 'should get the correct image name with default name strategy'(){
+        given:
+        def endpoint = 'http://cloud.seqera.io'
+        def token = 'foo'
+        def refresh = 'foo2'
+        def auth = JwtAuth.of(endpoint, token, refresh)
+        and:
+        pairingService.getPairingRecord(TOWER_SERVICE, endpoint) >> { new PairingRecord('tower', endpoint) }
+        towerClient.userInfo(endpoint, auth) >> CompletableFuture.completedFuture(new UserInfoResponse(user:new User(id:1)))
+        towerClient.listCredentials(_,_,_) >> CompletableFuture.completedFuture(new ListCredentialsResponse(credentials:[]))
+
+        when:
+        def cfg = new ContainerConfig(workingDir: '/foo')
+        def packages = new PackagesSpec(channels: ['conda-forge', 'bioconda'], entries: ['salmon'], type: 'CONDA')
+        SubmitContainerTokenRequest request =
+                new SubmitContainerTokenRequest(
+                        towerAccessToken: token,
+                        towerRefreshToken: refresh,
+                        towerEndpoint: endpoint,
+                        towerWorkspaceId: 10,
+                        packages: packages,
+                        freeze: true,
+                        buildRepository: "registry/repository")
+        and:
+        def response = httpClient
+                .toBlocking()
+                .exchange(HttpRequest.POST("/v1alpha2/container", request), SubmitContainerTokenResponse)
+                .body()
+
+        then:
+        response.targetImage.startsWith("registry/repository:salmon")
+    }
 }

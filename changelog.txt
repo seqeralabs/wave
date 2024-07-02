@@ -1,4 +1,40 @@
 # Wave changelog
+1.8.3 - 29 Jun 2024
+- Fix client cache deadlock (#547) [cc6012ff]
+- Fix failing test [263b44d3]
+- Add cache record-stats (#534) [229926e2]
+
+1.8.2 - 14 Jun 2024
+- Fix get image auth digest (#530) [df8ec041]
+
+1.8.1 - 13 Jun 2024
+- Fix digest warning (#526) [6e34ff0a]
+- Fix image name strategy (#513) [3bd8ffb5]
+
+1.8.0 - 10 Jun 2024
+- Add breakdown per org on stats metrics when a date is specified (#517) [b24894a4]
+- Replace Kaniko with Buildkit (#503) [a26f5dfe]
+- Implement cache store for build records (#505) [dd195deb]
+- Fix do not show null in build view [763ffe03]
+- Fix type in Const [b1bdb948]
+- Fix handling blob response headers (#504) [de97575e]
+- Fix missing endpoint on patched JWT token [46bbcd77]
+- Improve digest retrivial logs [5976967a]
+- Excludes JWT records with no endpoint [c98db8fb]
+- Bump Gradle 8.8 [2e4568da]
+
+1.7.9 - 29 May 2024
+- Improve JWT refresh handling  (#512) [751edb03]
+- Mark release as draft when ending with -Ax -Bx -RCx [66ba7ea7]
+- Removed unused imports (#510) [182e3f0d]
+- Fix Use atomic strategy for Cacheable ops [923ae67c]
+- Fix failing build [8adb52ab]
+
+1.7.8 - 15 May 2024
+- Prevent container freeze without custom repo (#499) [ec5932df]
+- Improve pairing record check (#500) [7ce86dc9]
+- Improve thread pool handling (#494) [e2c8c21b]
+
 1.7.7 - 11 May 2024 
 - Fix legacy tower endpoint validation (#495) [3257ad42]
 
@@ -57,7 +93,7 @@
 - Fix Containerfile encoding (#441) [d742aa67]
 - Improve error reporting for AWS ECR auth failure [06141219]
 - Remove unused exception [bc5570b3]
-- Fix syntax error repored by Intellij [343887a4]
+- Fix syntax error reported by Intellij [343887a4]
 - Fix Build pod name (#438) [4e54ce1a]
 - Fix RedisTestContainer flaky test (#436) [a90b44e5]
 - Update platform api endpoint to api.cloud.seqera.io (#434) [1e43e8b1]
@@ -75,7 +111,7 @@
 - Add fixed executor to future store [9f61abe9]
 - Add timeout retry limiter [0a98aa96]
 - Fix failing tests [eeb9ddfe]
-- Add thred pool monitor cron [a1cdcc13]
+- Add thread pool monitor cron [a1cdcc13]
 - Bump corretto-17.0.10-al2023-jemalloc as base image [7238a86d]
 - Evict status redesigned (#419) [9cf07b56]
 - Add API and UI to evict a wave request from token cache  (#410) [5833c18d]
@@ -131,7 +167,7 @@ v1.1.7 - 19 Dec 2023
 - Implements streaming client for large binary downloads (#358) [592ce522]
 - Update failing tests [31edb5e7]
 - Fix typo in comment [c10cc472]
-- Remove unsused consts [24315f03]
+- Remove unused consts [24315f03]
 - Refactor build settings via BuildConfig class (#324) [f6924f4a]
 - Bump trivy 0.47.0 [3ff4a89f]
 
@@ -451,7 +487,7 @@ v0.29.0 - 5 Apr 2023
 
 v0.28.6 - 5 Apr 2023 
 - Add consumers list [7d561f6d]
-- Use singleton websocket instace [c0390502]
+- Use singleton websocket instance [c0390502]
 - Add custom MN worker pool [be3cbe78]
 - Remove redis session [b23c7225]
 - Improve logs [0f29cef7]
@@ -470,7 +506,7 @@ v0.28.2 - 4 Apr 2023
 - Improve future poll + refactor [53c6a335]
 
 v0.28.1 - 4 Apr 2023 
-- Fix missing timeout exeception on redis future [a9d640a0]
+- Fix missing timeout exception on redis future [a9d640a0]
 - Minor logging changes [c81e78bf] [4943ba6f] [6768b7eb]
 - Update application dev [db4ae108]
 
@@ -672,7 +708,7 @@ v0.21.6 - 17 Oct 2022 [BROKEN BASE IMAGE]
 - Improve registry auth lookup error [0f696146] 
 
 v0.21.5 - 4 Oct 2022
-- Rollback timestamp and fingerpint fields [466b3a46] <Paolo Di Tommaso>
+- Rollback timestamp and fingerprint fields [466b3a46] <Paolo Di Tommaso>
 
 v0.21.4 - 3 Oct 2022
 - Count all manifest digest requests [02435bff] <Paolo Di Tommaso>
@@ -783,7 +819,7 @@ v0.14.2 - 7 Sep 2022
 
 v0.14.1 - 5 Sep 2022
 - Fix registry auth invalid cache key [15bd1a57]
-- Fix retry policy for temportary IO exeception [15e2723f]
+- Fix retry policy for temporary IO exception [15e2723f]
 - Add support for Azure CR [cac5b661]
 - Improve logging [7af3109f]
 

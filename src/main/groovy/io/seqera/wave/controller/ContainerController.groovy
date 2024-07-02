@@ -20,7 +20,6 @@ package io.seqera.wave.controller
 
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutorService
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
@@ -66,15 +65,15 @@ import io.seqera.wave.service.token.TokenData
 import io.seqera.wave.service.validation.ValidationService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
+import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.auth.JwtAuthStore
 import io.seqera.wave.util.DataTimeUtils
 import io.seqera.wave.util.LongRndKey
 import jakarta.inject.Inject
-import jakarta.inject.Named
 import static io.micronaut.http.HttpHeaders.WWW_AUTHENTICATE
-import static io.seqera.wave.WaveDefault.TOWER
 import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
+import static io.seqera.wave.service.pairing.PairingService.TOWER_SERVICE
 import static io.seqera.wave.util.ContainerHelper.checkContainerSpec
 import static io.seqera.wave.util.ContainerHelper.condaFileFromRequest
 import static io.seqera.wave.util.ContainerHelper.containerFileFromPackages
@@ -148,10 +147,6 @@ class ContainerController {
     @Inject
     ContainerInclusionService inclusionService
 
-    @Inject
-    @Named(TaskExecutors.IO)
-    ExecutorService ioExecutor
-
     @PostConstruct
     private void init() {
         log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl; default-build-repo: $buildConfig.defaultBuildRepository; default-cache-repo: $buildConfig.defaultCacheRepository; default-public-repo: $buildConfig.defaultPublicRepository"
@@ -187,17 +182,21 @@ class ContainerController {
             return completedFuture(handleRequest(httpRequest, req, PlatformId.NULL, v2))
         }
 
-        // We first check if the service is registered
-        final registration = pairingService.getPairingRecord(PairingService.TOWER_SERVICE, req.towerEndpoint)
+        // first check if the service is registered
+        final registration = pairingService.getPairingRecord(TOWER_SERVICE, req.towerEndpoint)
         if( !registration )
-            throw new BadRequestException("Tower instance '${req.towerEndpoint}' has not enabled to connect Wave service '$serverUrl'")
+            throw new BadRequestException("Missing pairing record for Tower endpoint '$req.towerEndpoint'")
 
-        // store the tower JWT tokens
-        jwtAuthStore.putJwtAuth(req.towerEndpoint, req.towerRefreshToken, req.towerAccessToken)
+        // store the jwt record only the very first time it has been
+        // to avoid overridden a newer refresh token that may have 
+        final auth = JwtAuth.of(req)
+        if( auth.refresh )
+            jwtAuthStore.storeIfAbsent(auth)
+
         // find out the user associated with the specified tower access token
         return userService
-                .getUserByAccessTokenAsync(registration.endpoint, req.towerAccessToken)
-                .thenApplyAsync({ User user -> handleRequest(httpRequest, req, PlatformId.of(user,req), v2) }, ioExecutor)
+                .getUserByAccessTokenAsync(registration.endpoint, auth)
+                .thenApply((User user) -> handleRequest(httpRequest, req, PlatformId.of(user,req), v2))
     }
 
     protected HttpResponse<SubmitContainerTokenResponse> handleRequest(HttpRequest httpRequest, SubmitContainerTokenRequest req, PlatformId identity, boolean v2) {
@@ -214,15 +213,22 @@ class ContainerController {
         if( !v2 && req.nameStrategy )
             throw new BadRequestException("Attribute `nameStrategy` is not allowed by legacy container endpoint")
 
+        // prevent the use of container file and freeze without a custom build repository
+        if( req.containerFile && req.freeze && !isCustomRepo0(req.buildRepository) && (!v2 || (v2 && !req.packages)))
+            throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode [1]")
+
+        // prevent the use of container image and freeze without a custom build repository
+        if( req.containerImage && req.freeze && !isCustomRepo0(req.buildRepository) )
+            throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode [2]")
+
+        if( v2 && req.packages && req.freeze && !isCustomRepo0(req.buildRepository) && !buildConfig.defaultPublicRepository )
+            throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode [3]")
+
         if( v2 && req.packages ) {
             // generate the container file required to assemble the container
             final generated = containerFileFromPackages(req.packages, req.formatSingularity())
             req = req.copyWith(containerFile: generated.bytes.encodeBase64().toString())
         }
-
-        // prevent the use of dockerfile file without providing
-        if( req.containerFile && req.freeze && !isCustomRepo0(req.buildRepository) && (!v2 || (v2 && !req.packages)))
-            throw new BadRequestException("Attribute `buildRepository` must be specified when using freeze mode")
 
         final ip = addressResolver.resolve(httpRequest)
         final data = makeRequestData(req, identity, ip)
@@ -282,8 +288,12 @@ class ContainerController {
         if( parts.size()>1 ) {
             return repo
         }
-        else
-            return repo + (strategy==ImageNameStrategy.imageSuffix ? '/library' : '/library/build')
+
+        else {
+            // consider strategy==null the same as 'imageSuffix' considering this is only going to be applied
+            // to community registry which only allows build with Packages spec
+            return repo + (strategy==null || strategy==ImageNameStrategy.imageSuffix ? '/library' : '/library/build')
+        }
     }
 
     BuildRequest makeBuildRequest(SubmitContainerTokenRequest req, PlatformId identity, String ip) {
@@ -312,7 +322,7 @@ class ContainerController {
         final nameStrategy = req.nameStrategy==null
                 && buildRepository
                 && buildConfig.defaultPublicRepository
-                && buildRepository.startsWith(buildConfig.defaultPublicRepository) ? ImageNameStrategy.imageSuffix : null
+                && buildRepository.startsWith(buildConfig.defaultPublicRepository) ? ImageNameStrategy.imageSuffix : req.nameStrategy
 
         checkContainerSpec(containerSpec)
 
@@ -341,7 +351,7 @@ class ContainerController {
     }
 
     protected BuildTrack checkBuild(BuildRequest build, boolean dryRun) {
-        final digest = registryProxyService.getImageDigest(build.targetImage)
+        final digest = registryProxyService.getImageDigest(build)
         // check for dry-run execution
         if( dryRun ) {
             log.debug "== Dry-run build request: $build"
@@ -441,12 +451,6 @@ class ContainerController {
     }
 
     void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException{
-        if( req.towerEndpoint && req.towerAccessToken ) {
-            // check the endpoint has been registered via the pairing process
-            if( !pairingService.getPairingRecord(TOWER, req.towerEndpoint) )
-                throw new BadRequestException("Missing pairing record for Tower endpoint '$req.towerEndpoint'")
-        }
-
         String msg
         // check valid image name
         msg = validationService.checkContainerName(req.containerImage)

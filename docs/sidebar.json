@@ -21,6 +21,8 @@
     },
     "guide",
     "api",
-    "faq"
+    "metrics",
+    "faq",
+    "troubleshoot"
   ]
 }

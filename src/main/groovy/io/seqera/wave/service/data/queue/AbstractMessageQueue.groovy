@@ -118,7 +118,7 @@ abstract class AbstractMessageQueue<M> implements Runnable {
      *
      * @param target
      *      Identify the websocket target i.e. the remote endpoint. For the same target
-     *      it's possible to have one ore more clients
+     *      it's possible to have more than one client
      * @param clientId
      *      A unique id for the Websocket client instance
      * @param sender
@@ -139,7 +139,7 @@ abstract class AbstractMessageQueue<M> implements Runnable {
      *
      * @param target
      *      Identify the websocket target i.e. the remote endpoint. For the same target
-     *      it's possible to have one ore more clients
+     *      it's possible to have one more than one client
      * @param clientId
      *      A unique id for the Websocket client instance
      */

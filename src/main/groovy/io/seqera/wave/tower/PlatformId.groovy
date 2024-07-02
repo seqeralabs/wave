@@ -53,7 +53,7 @@ class PlatformId {
                 user,
                 request.towerWorkspaceId,
                 request.towerAccessToken,
-                request.towerEndpoint)
+                request.towerEndpoint )
     }
 
     static PlatformId of(User user, ContainerInspectRequest request) {
@@ -69,7 +69,7 @@ class PlatformId {
         return "PlatformId(" +
                 "user=" + user +
                 ", workspaceId=" + workspaceId +
-                ", accessToken=" + StringUtils.trunc(accessToken,10) +
+                ", accessToken=" + StringUtils.trunc(accessToken,25) +
                 ", towerEndpoint=" + towerEndpoint +
                 ')';
     }

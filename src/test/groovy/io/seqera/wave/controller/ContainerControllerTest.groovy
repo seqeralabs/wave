@@ -50,7 +50,6 @@ import io.seqera.wave.service.builder.FreezeService
 import io.seqera.wave.service.builder.FreezeServiceImpl
 import io.seqera.wave.service.inclusion.ContainerInclusionService
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
-import io.seqera.wave.service.pairing.PairingRecord
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
@@ -59,6 +58,7 @@ import io.seqera.wave.service.token.TokenData
 import io.seqera.wave.service.validation.ValidationServiceImpl
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
+import io.seqera.wave.tower.auth.JwtAuthStore
 import jakarta.inject.Inject
 /**
  *
@@ -76,6 +76,13 @@ class ContainerControllerTest extends Specification {
 
     @Inject
     BuildConfig buildConfig
+
+    @Inject
+    JwtAuthStore jwtAuthStore
+
+    def setup() {
+        jwtAuthStore.clear()
+    }
 
     def 'should create request data' () {
         given:
@@ -391,35 +398,6 @@ class ContainerControllerTest extends Specification {
         noExceptionThrown()
 
         when:
-        controller.validateContainerRequest(new SubmitContainerTokenRequest(towerEndpoint: 'http://foo.com', towerAccessToken: '123'))
-        then:
-        1 * pairing.getPairingRecord('tower','http://foo.com') >> Mock(PairingRecord)
-        and:
-        noExceptionThrown()
-
-        when:
-        controller.validateContainerRequest(new SubmitContainerTokenRequest(towerEndpoint: 'https://foo.com', towerAccessToken: '123'))
-        then:
-        1 * pairing.getPairingRecord('tower','https://foo.com') >> Mock(PairingRecord)
-        and:
-        noExceptionThrown()
-
-        when:
-        controller.validateContainerRequest(new SubmitContainerTokenRequest(towerEndpoint: 'https://tower.something.com/api', towerAccessToken: '123'))
-        then:
-        1 * pairing.getPairingRecord('tower','https://tower.something.com/api') >> Mock(PairingRecord)
-        and:
-        noExceptionThrown()
-
-        when:
-        controller.validateContainerRequest(new SubmitContainerTokenRequest(towerEndpoint: 'https://tower.something.com/api', towerAccessToken: '123'))
-        then:
-        1 * pairing.getPairingRecord('tower','https://tower.something.com/api') >> null
-        and:
-        msg = thrown(BadRequestException)
-        msg.message == "Missing pairing record for Tower endpoint 'https://tower.something.com/api'"
-
-        when:
         controller.validateContainerRequest(new SubmitContainerTokenRequest(containerImage: 'foo:latest', towerAccessToken: '123'))
         then:
         noExceptionThrown()
@@ -440,23 +418,6 @@ class ContainerControllerTest extends Specification {
         then:
         msg = thrown(BadRequestException)
         msg.message == 'Invalid container image name — offending value: http:docker.io/foo:latest'
-
-    }
-
-    def 'should allow any registered endpoint' () {
-        given:
-        def registeredUri = 'http://foo.com'
-        def validation = new ValidationServiceImpl()
-        def pairing = Mock(PairingService)
-        def channel = Mock(PairingChannel)
-        def controller = new ContainerController(validationService: validation, pairingService: pairing, pairingChannel: channel)
-
-        when:
-        controller.validateContainerRequest(new SubmitContainerTokenRequest(towerEndpoint: registeredUri, towerAccessToken: '123'))
-        then:
-        1 * pairing.getPairingRecord('tower',registeredUri) >> Mock(PairingRecord)
-        and:
-        noExceptionThrown()
 
     }
 
@@ -557,6 +518,34 @@ class ContainerControllerTest extends Specification {
         then:
         e = thrown(BadRequestException)
         e.message == "Attribute `packages` is not allowed"
+
+        when:
+        req = new SubmitContainerTokenRequest(containerFile: 'from foo', freeze: true)
+        controller.handleRequest(null, req, new PlatformId(new User(id: 100)), false)
+        then:
+        e = thrown(BadRequestException)
+        e.message == "Attribute `buildRepository` must be specified when using freeze mode [1]"
+
+        when:
+        req = new SubmitContainerTokenRequest(containerFile: 'from foo', freeze: true)
+        controller.handleRequest(null, req, new PlatformId(new User(id: 100)), true)
+        then:
+        e = thrown(BadRequestException)
+        e.message == "Attribute `buildRepository` must be specified when using freeze mode [1]"
+
+        when:
+        req = new SubmitContainerTokenRequest(containerImage: 'alpine', freeze: true)
+        controller.handleRequest(null, req, new PlatformId(new User(id: 100)), false)
+        then:
+        e = thrown(BadRequestException)
+        e.message == "Attribute `buildRepository` must be specified when using freeze mode [2]"
+
+        when:
+        req = new SubmitContainerTokenRequest(containerImage: 'alpine', freeze: true)
+        controller.handleRequest(null, req, new PlatformId(new User(id: 100)), true)
+        then:
+        e = thrown(BadRequestException)
+        e.message == "Attribute `buildRepository` must be specified when using freeze mode [2]"
     }
 
     @Unroll
@@ -577,7 +566,7 @@ class ContainerControllerTest extends Specification {
         'foo.com/alpha/beta'| ImageNameStrategy.imageSuffix | 'foo.com'     | 'foo.com/alpha/beta'
         'foo.com/alpha/beta'| ImageNameStrategy.tagPrefix   | 'foo.com'     | 'foo.com/alpha/beta'
         and:
-        'foo.com'           | null                          | 'foo.com'     | 'foo.com/library/build'
+        'foo.com'           | null                          | 'foo.com'     | 'foo.com/library'
         'foo.com'           | ImageNameStrategy.imageSuffix | 'foo.com'     | 'foo.com/library'
         'foo.com'           | ImageNameStrategy.tagPrefix   | 'foo.com'     | 'foo.com/library/build'
         and:

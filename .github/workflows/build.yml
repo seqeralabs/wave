@@ -73,6 +73,7 @@ jobs:
           GOOGLECR_KEYS: ${{ secrets.GOOGLECR_KEYS }}
 
       - name: Cleanup build workspace
+        if: always()
         run: |
           sudo rm -rf /home/runner/work/wave/wave/build-workspace
 

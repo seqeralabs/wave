@@ -91,11 +91,11 @@ class BlobCacheServiceImpl implements BlobCacheService {
     }
 
     @Override
-    BlobCacheInfo retrieveBlobCache(RoutePath route, Map<String,List<String>> headers) {
+    BlobCacheInfo retrieveBlobCache(RoutePath route, Map<String,List<String>> requestHeaders, Map<String,List<String>> responseHeaders) {
         final uri = blobDownloadUri(route)
         log.trace "Container blob download uri: $uri"
 
-        final info = BlobCacheInfo.create(uri, headers)
+        final info = BlobCacheInfo.create(uri, requestHeaders, responseHeaders)
         final target = route.targetPath
         if( blobStore.storeIfAbsent(target, info) ) {
             // start download and caching job
