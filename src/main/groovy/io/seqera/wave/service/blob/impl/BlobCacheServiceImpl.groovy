@@ -217,11 +217,12 @@ class BlobCacheServiceImpl implements BlobCacheService {
     protected BlobCacheInfo checkUploadedBlobSize(BlobCacheInfo info, RoutePath route) {
         if( !info.succeeded() )
             return info
-        if( info.contentLength == getBlobSize(route.targetPath) )
+        final blobSize = getBlobSize(route.targetPath)
+        if( blobSize == info.contentLength )
             return info
-        log.warn("== Blob cache mismatch size for uploaded object '${info.locationUri}'")
+        log.warn("== Blob cache mismatch size for uploaded object '${info.locationUri}'; upload blob size: ${blobSize}; expect size: ${info.contentLength}")
         CompletableFuture.supplyAsync(() -> deleteBlob(route.targetPath), executor)
-        return info.failed("Blob uploaded does not match the expected size")
+        return info.failed("Mismatch cache size for object ${info.locationUri}")
     }
 
     protected BlobCacheInfo store(RoutePath route, BlobCacheInfo info) {
