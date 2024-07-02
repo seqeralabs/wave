@@ -19,6 +19,8 @@
 package io.seqera.wave.util
 
 import groovy.transform.CompileStatic
+import io.kubernetes.client.openapi.models.V1Pod
+import io.kubernetes.client.openapi.models.V1PodList
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
 
@@ -73,4 +75,14 @@ class K8sHelper {
         return Map.of(parts[0], parts[1])
     }
 
+    static V1Pod findLatestPod(V1PodList allPods) {
+        // Find the latest created pod among the pods associated with the job
+        def latest = allPods.getItems().get(0)
+        for (def pod : allPods.items) {
+            if (pod.metadata?.creationTimestamp?.isAfter(latest.metadata.creationTimestamp)) {
+                latest = pod
+            }
+        }
+        return latest
+    }
 }

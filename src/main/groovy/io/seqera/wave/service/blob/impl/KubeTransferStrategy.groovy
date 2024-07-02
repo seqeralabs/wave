@@ -18,16 +18,25 @@
 
 package io.seqera.wave.service.blob.impl
 
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
+
 import com.google.common.hash.Hashing
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Replaces
 import io.micronaut.context.annotation.Requires
+import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.TransferStrategy
+import io.seqera.wave.service.blob.TransferTimeoutException
+import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.k8s.K8sService
+import io.seqera.wave.util.K8sHelper
 import jakarta.inject.Inject
+import jakarta.inject.Named
+
 /**
  * Implements {@link TransferStrategy} that runs s5cmd using a
  * Kubernetes job
@@ -46,18 +55,44 @@ class KubeTransferStrategy implements TransferStrategy {
     @Inject
     private K8sService k8sService
 
+    @Inject
+    private CleanupStrategy cleanup
+
+    @Inject
+    @Named(TaskExecutors.IO)
+    private ExecutorService executor
+
     @Override
     BlobCacheInfo transfer(BlobCacheInfo info, List<String> command) {
-        final podName = podName(info)
-        final pod = k8sService.transferContainer(podName, blobConfig.s5Image, command, blobConfig)
-        final terminated = k8sService.waitPod(pod, blobConfig.transferTimeout.toMillis())
-        final stdout = k8sService.logsPod(podName)
-        return terminated
+        final name = getName(info)
+        final job = k8sService.transferJob(name, blobConfig.s5Image, command, blobConfig)
+        final podList = k8sService.waitJob(job, blobConfig.transferTimeout.toMillis())
+        final size = podList?.items?.size() ?: 0
+
+        if( size < 1 )
+            throw new TransferTimeoutException("Transfer job timed out")
+
+        // Find the latest created pod among the pods associated with the job
+        final latestPod = K8sHelper.findLatestPod(podList)
+
+        final podName = latestPod.metadata.name
+        final pod = k8sService.getPod(podName)
+        final terminated = k8sService.waitPod(pod, name, blobConfig.transferTimeout.toMillis())
+        final stdout = k8sService.logsPod(podName, name)
+
+        final result = terminated
                 ? info.completed(terminated.exitCode, stdout)
                 : info.failed(stdout)
+
+        // delete job
+        if( cleanup.shouldCleanup(terminated.exitCode) && job.metadata?.name ) {
+            CompletableFuture.supplyAsync (() -> k8sService.deleteJob(job.metadata.name), executor)
+        }
+
+        return result
     }
 
-    protected String podName(BlobCacheInfo info) {
+    protected static String getName(BlobCacheInfo info) {
         return 'transfer-' + Hashing
                 .sipHash24()
                 .newHasher()

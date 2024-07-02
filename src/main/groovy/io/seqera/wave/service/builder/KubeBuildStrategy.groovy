@@ -44,7 +44,7 @@ import static java.nio.file.StandardOpenOption.WRITE
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
 /**
- * Build a container image using running a K8s job
+ * Build a container image using running a K8s pod
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
