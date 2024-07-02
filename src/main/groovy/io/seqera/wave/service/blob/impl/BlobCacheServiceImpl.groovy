@@ -20,6 +20,7 @@ package io.seqera.wave.service.blob.impl
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
@@ -45,6 +46,9 @@ import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest
 import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
 /**
  * Implements cache for container image layer blobs
@@ -81,6 +85,10 @@ class BlobCacheServiceImpl implements BlobCacheService {
 
     @Inject
     private HttpClientConfig httpConfig
+
+    @Inject
+    @Named('BlobS3Client')
+    private S3Client s3Client
 
     private HttpClient httpClient
 
@@ -194,9 +202,26 @@ class BlobCacheServiceImpl implements BlobCacheService {
                     ? blobConfig.statusDuration
                     : blobConfig.statusDelay.multipliedBy(10)
 
+            //check if the cached blob size is correct
+            result = checkUploadedBlobSize(result, route)
+
             blobStore.storeBlob(route.targetPath, result, ttl)
             return result
         }
+    }
+
+    /**
+     * Check the size of the blob stored in the cache
+     *
+     * @return {@link BlobCacheInfo} the blob cache info
+     */
+    protected BlobCacheInfo checkUploadedBlobSize(BlobCacheInfo info, RoutePath route) {
+        if(info.succeeded() && info.contentLength != getBlobSize(route.targetPath)){
+            log.warn("Blob size mismatch for object '${info.locationUri}'")
+            CompletableFuture.supplyAsync(() -> deleteBlob(route.targetPath), executor)
+            return info.failed("Blob uploaded does not match the expected size")
+        }
+        return info
     }
 
     protected BlobCacheInfo store(RoutePath route, BlobCacheInfo info) {
@@ -247,7 +272,6 @@ class BlobCacheServiceImpl implements BlobCacheService {
             return presignedUrl
     }
 
-
     /**
      * Await for the container layer blob download
      *
@@ -293,4 +317,44 @@ class BlobCacheServiceImpl implements BlobCacheService {
             }
         }
     }
+
+   /**
+    * get the size of the blob stored in the cache
+    *
+    * @return {@link Long} the size of the blob stored in the cache
+    */
+   protected Long getBlobSize(String key) {
+        try {
+            def headObjectRequest =
+                    HeadObjectRequest.builder()
+                            .bucket(blobConfig.storageBucket.replaceFirst("s3://",""))
+                            .key(key)
+                            .build()
+            def headObjectResponse = s3Client.headObject(headObjectRequest as HeadObjectRequest)
+
+            Long contentLength = headObjectResponse.contentLength()
+            return contentLength ?: 0L
+        }catch (Exception e){
+            log.error("Error getting content length of object $key from bucket ${blobConfig.storageBucket}", e)
+            return 0L
+        }
+    }
+
+   /**
+    * delete the blob stored in the cache
+    *
+    */
+   protected void deleteBlob(String key) {
+        try {
+            def deleteObjectRequest =
+                    DeleteObjectRequest.builder()
+                            .bucket(blobConfig.storageBucket.replaceFirst("s3://",""))
+                            .key(key)
+                            .build()
+            s3Client.deleteObject(deleteObjectRequest as DeleteObjectRequest)
+            log.debug("Deleted object $key from bucket ${blobConfig.storageBucket}")
+        }catch (Exception e){
+            log.error("Error deleting object $key from bucket ${blobConfig.storageBucket}", e)
+        }
+   }
 }
