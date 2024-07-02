@@ -132,4 +132,13 @@ interface ContainerBuildService {
      * @return The {@link WaveBuildRecord} associated with the corresponding Id, or {@code null} if it cannot be found
      */
     WaveBuildRecord getBuildRecord(String buildId)
+
+    /**
+     * Retrieve the build records for the specified parameters.
+     *
+     * @param imageName, The name of the image to be retrieved
+     * @param user, The user name or email  or id
+     * @return The {@link WaveBuildRecord} associated with the corresponding Id, or {@code null} if it cannot be found
+     */
+    List<WaveBuildRecord> getBuildRecords(String imageName, String user)
 }
