@@ -346,7 +346,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
     */
    protected void deleteBlob(String key) {
         try {
-            def deleteObjectRequest =
+            final deleteObjectRequest =
                     DeleteObjectRequest.builder()
                             .bucket(blobConfig.storageBucket.replaceFirst("s3://",""))
                             .key(key)
