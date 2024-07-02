@@ -72,6 +72,21 @@ jobs:
           AZURECR_PAT: ${{ secrets.AZURECR_PAT }}
           GOOGLECR_KEYS: ${{ secrets.GOOGLECR_KEYS }}
 
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.9.0'
+
+      - name: Install tsp
+        run: npm install -g @typespec/compiler
+
+      - name: Validate tsp files
+        run: |
+          cd typespec
+          tsp install
+          tsp compile .
+          cd ..
+
       - name: Cleanup build workspace
         if: always()
         run: |
