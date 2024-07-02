@@ -307,15 +307,19 @@ class BlobCacheServiceImpl implements BlobCacheService {
         }
     }
 
-    @Override
-    Long getBlobSize(String key) {
+   /**
+    * get the size of the blob stored in the cache
+    *
+    * @return {@link Long} the size of the blob stored in the cache
+    */
+   protected Long getBlobSize(String key) {
         try {
             def headObjectRequest =
                     HeadObjectRequest.builder()
                             .bucket(blobConfig.storageBucket.replaceFirst("s3://",""))
                             .key(key)
                             .build()
-            def headObjectResponse = s3Client.headObject(headObjectRequest)
+            def headObjectResponse = s3Client.headObject(headObjectRequest as HeadObjectRequest)
 
             Long contentLength = headObjectResponse.contentLength()
             return contentLength ?: 0L
@@ -325,18 +329,21 @@ class BlobCacheServiceImpl implements BlobCacheService {
         }
     }
 
-    @Override
-    void deleteBlob(String key) {
+   /**
+    * delete the blob stored in the cache
+    *
+    */
+   protected void deleteBlob(String key) {
         try {
             def deleteObjectRequest =
                     DeleteObjectRequest.builder()
                             .bucket(blobConfig.storageBucket.replaceFirst("s3://",""))
                             .key(key)
                             .build()
-            s3Client.deleteObject(deleteObjectRequest)
+            s3Client.deleteObject(deleteObjectRequest as DeleteObjectRequest)
             log.debug("Deleted object $key from bucket ${blobConfig.storageBucket}")
         }catch (Exception e){
             log.error("Error deleting object $key from bucket ${blobConfig.storageBucket}", e)
         }
-    }
+   }
 }
