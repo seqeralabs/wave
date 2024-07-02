@@ -337,7 +337,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
         }
         catch (Exception e){
             log.error("== Blob cache Error getting content length of object $key from bucket ${blobConfig.storageBucket}", e)
-            return 0L
+            return -1L
         }
     }
 

@@ -116,7 +116,7 @@ class BlobCacheServiceImplTest extends Specification implements AwsS3TestContain
         then:
         noExceptionThrown()
         and:
-        size == 0L
+        size == -1L
     }
 
     def 'should delete blob when blob exists'() {
