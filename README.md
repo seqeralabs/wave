@@ -110,13 +110,15 @@ container registry where the image is stored, while the instrumented layers are 
 
 ## TypeSpec API Specifications
 
-You can find the API specifications using (typespec)[https://github.com/microsoft/typespec] in typespec directory. Use following command to generate the API specifications.
+- You can find the API specifications using (typespec)[https://github.com/microsoft/typespec] in typespec directory. Use following command to generate the API specifications.
 
-```bash
-tsp compile typespec
-```
+    ```bash
+    'cd typespec'
+    'tsp install'
+    'tsp compile .'
+    ```
 
-Check `tsp-output` directory for the generated API specifications.
+Check `typespec/tsp-output` directory for the generated API specifications.
 
 ## Related links
 * [Wave command line tool](https://github.com/seqeralabs/wave-cli)
