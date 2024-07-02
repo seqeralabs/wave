@@ -25,13 +25,14 @@ import java.util.regex.Pattern
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.seqera.wave.service.metric.MetricsConstants
 import io.seqera.wave.service.metric.MetricsCounterStore
 import io.seqera.wave.service.metric.MetricsService
 import io.seqera.wave.service.metric.model.GetOrgCountResponse
 import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
+
+import static io.seqera.wave.service.metric.MetricsConstants.*
 /**
  * Implements service to store and retrieve wave metrics from the counter store
  *
@@ -52,13 +53,13 @@ class MetricsServiceImpl implements MetricsService {
     @Override
     GetOrgCountResponse getAllOrgCount(String metric){
         final response = new GetOrgCountResponse(metric, 0, [:])
-        final orgCounts = metricsCounterStore.getAllMatchingEntries("$metric/$MetricsConstants.PREFIX_ORG/*")
+        final orgCounts = metricsCounterStore.getAllMatchingEntries("$metric/$PREFIX_ORG/*")
         for(def entry : orgCounts) {
             // orgCounts also contains the records with org and date, so here it filter out the records with date
-            if(!entry.key.contains("/$MetricsConstants.PREFIX_DAY/")) {
+            if(!entry.key.contains("/$PREFIX_DAY/")) {
                 response.count += entry.value
                 //split is used to extract the org name from the key like "metrics/o/seqera.io" => seqera.io
-                response.orgs.put(entry.key.split("/$MetricsConstants.PREFIX_ORG/").last(), entry.value)
+                response.orgs.put(entry.key.split("/$PREFIX_ORG/").last(), entry.value)
             }
         }
         return response
@@ -76,7 +77,7 @@ class MetricsServiceImpl implements MetricsService {
             response.orgs.put(org, response.count)
         }else{
             // when only date is provide, scan the store and return the  count for all orgs on given date
-            final orgCounts = metricsCounterStore.getAllMatchingEntries("$metric/$MetricsConstants.PREFIX_ORG/*/$MetricsConstants.PREFIX_DAY/$date")
+            final orgCounts = metricsCounterStore.getAllMatchingEntries("$metric/$PREFIX_ORG/*/$PREFIX_DAY/$date")
             for(def entry : orgCounts) {
                 response.orgs.put(extractOrgFromKey(entry.key), entry.value)
             }
@@ -88,17 +89,17 @@ class MetricsServiceImpl implements MetricsService {
 
     @Override
     void incrementFusionPullsCounter(PlatformId platformId){
-        incrementCounter(MetricsConstants.PREFIX_FUSION, platformId?.user?.email)
+        incrementCounter(PREFIX_FUSION, platformId?.user?.email)
     }
 
     @Override
     void incrementBuildsCounter(PlatformId platformId){
-        incrementCounter(MetricsConstants.PREFIX_BUILDS, platformId?.user?.email)
+        incrementCounter(PREFIX_BUILDS, platformId?.user?.email)
     }
 
     @Override
     void incrementPullsCounter(PlatformId platformId) {
-        incrementCounter(MetricsConstants.PREFIX_PULLS, platformId?.user?.email)
+        incrementCounter(PREFIX_PULLS, platformId?.user?.email)
     }
 
     protected void incrementCounter(String prefix, String email) {
@@ -127,13 +128,13 @@ class MetricsServiceImpl implements MetricsService {
 
     protected static String getKey(String prefix, String day, String org){
         if( day && org )
-            return "$prefix/$MetricsConstants.PREFIX_ORG/$org/$MetricsConstants.PREFIX_DAY/$day"
+            return "$prefix/$PREFIX_ORG/$org/$PREFIX_DAY/$day"
 
         if( org )
-            return "$prefix/$MetricsConstants.PREFIX_ORG/$org"
+            return "$prefix/$PREFIX_ORG/$org"
 
         if( day )
-            return "$prefix/$MetricsConstants.PREFIX_DAY/$day"
+            return "$prefix/$PREFIX_DAY/$day"
 
         return null
     }

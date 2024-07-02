@@ -25,12 +25,12 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 import io.seqera.wave.service.counter.impl.LocalCounterProvider
-import io.seqera.wave.service.metric.MetricsConstants
 import io.seqera.wave.service.metric.MetricsCounterStore
 import io.seqera.wave.test.RedisTestContainer
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 
+import static io.seqera.wave.service.metric.MetricsConstants.*
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
@@ -56,19 +56,19 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         metricsService.incrementBuildsCounter(null)
 
         then:
-        def res1 = metricsService.getOrgCount(MetricsConstants.PREFIX_BUILDS, date, null)
+        def res1 = metricsService.getOrgCount(PREFIX_BUILDS, date, null)
         res1.count == 3
         res1.orgs == ['org1.com': 1, 'org2.com': 1]
         and:
-        def res2 = metricsService.getOrgCount(MetricsConstants.PREFIX_BUILDS, null, 'org1.com')
+        def res2 = metricsService.getOrgCount(PREFIX_BUILDS, null, 'org1.com')
         res2.count == 1
         res2.orgs == ['org1.com': 1]
         and:
-        def res3 = metricsService.getOrgCount(MetricsConstants.PREFIX_BUILDS, date, 'org2.com')
+        def res3 = metricsService.getOrgCount(PREFIX_BUILDS, date, 'org2.com')
         res3.count == 1
         res3.orgs == ['org2.com': 1]
         and:
-        def res4 = metricsService.getOrgCount(MetricsConstants.PREFIX_BUILDS, date, null)
+        def res4 = metricsService.getOrgCount(PREFIX_BUILDS, date, null)
         res4.count == 3
         res4.orgs == ['org1.com': 1, 'org2.com': 1]
     }
@@ -90,15 +90,15 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         metricsService.incrementPullsCounter(null)
 
         then:
-        def res1 = metricsService.getOrgCount(MetricsConstants.PREFIX_PULLS, null, 'org1.com')
+        def res1 = metricsService.getOrgCount(PREFIX_PULLS, null, 'org1.com')
         res1.count == 1
         res1.orgs == ['org1.com': 1]
         and:
-        def res2 = metricsService.getOrgCount(MetricsConstants.PREFIX_PULLS,date, 'org2.com')
+        def res2 = metricsService.getOrgCount(PREFIX_PULLS,date, 'org2.com')
         res2.count == 1
         res2.orgs == ['org2.com': 1]
         and:
-        def res3 = metricsService.getOrgCount(MetricsConstants.PREFIX_PULLS,date, null)
+        def res3 = metricsService.getOrgCount(PREFIX_PULLS,date, null)
         res3.count == 3
         res3.orgs == ['org1.com': 1, 'org2.com': 1]
     }
@@ -120,15 +120,15 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         metricsService.incrementFusionPullsCounter(null)
 
         then:
-        def res1 = metricsService.getOrgCount(MetricsConstants.PREFIX_FUSION,null, 'org1.com')
+        def res1 = metricsService.getOrgCount(PREFIX_FUSION,null, 'org1.com')
         res1.count == 1
         res1.orgs == ['org1.com': 1]
         and:
-        def res2 = metricsService.getOrgCount(MetricsConstants.PREFIX_FUSION, date, 'org2.com')
+        def res2 = metricsService.getOrgCount(PREFIX_FUSION, date, 'org2.com')
         res2.count == 1
         res2.orgs == ['org2.com': 1]
         and:
-        def res3 = metricsService.getOrgCount(MetricsConstants.PREFIX_FUSION, date, null)
+        def res3 = metricsService.getOrgCount(PREFIX_FUSION, date, null)
         res3.count == 3
         res3.orgs == ['org1.com': 1, 'org2.com': 1]
     }
@@ -140,18 +140,18 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
 
         where:
         PREFIX                          | DAY           | ORG       | KEY
-        MetricsConstants.PREFIX_BUILDS | null         | null   | null
-        MetricsConstants.PREFIX_BUILDS | null         | 'wave' | 'builds/o/wave'
-        MetricsConstants.PREFIX_BUILDS | '2024-03-25' | 'wave' | 'builds/o/wave/d/2024-03-25'
-        MetricsConstants.PREFIX_BUILDS | '2024-03-25' | null   | 'builds/d/2024-03-25'
-        MetricsConstants.PREFIX_PULLS  | null         | null   | null
-        MetricsConstants.PREFIX_PULLS  | null         | 'wave' | 'pulls/o/wave'
-        MetricsConstants.PREFIX_PULLS  | '2024-03-25' | 'wave' | 'pulls/o/wave/d/2024-03-25'
-        MetricsConstants.PREFIX_PULLS  | '2024-03-25' | null   | 'pulls/d/2024-03-25'
-        MetricsConstants.PREFIX_FUSION | null         | null   | null
-        MetricsConstants.PREFIX_FUSION | null         | 'wave' | 'fusion/o/wave'
-        MetricsConstants.PREFIX_FUSION | '2024-03-25' | 'wave' | 'fusion/o/wave/d/2024-03-25'
-        MetricsConstants.PREFIX_FUSION | '2024-03-25' | null   | 'fusion/d/2024-03-25'
+        PREFIX_BUILDS | null         | null   | null
+        PREFIX_BUILDS | null         | 'wave' | 'builds/o/wave'
+        PREFIX_BUILDS | '2024-03-25' | 'wave' | 'builds/o/wave/d/2024-03-25'
+        PREFIX_BUILDS | '2024-03-25' | null   | 'builds/d/2024-03-25'
+        PREFIX_PULLS  | null         | null   | null
+        PREFIX_PULLS  | null         | 'wave' | 'pulls/o/wave'
+        PREFIX_PULLS  | '2024-03-25' | 'wave' | 'pulls/o/wave/d/2024-03-25'
+        PREFIX_PULLS  | '2024-03-25' | null   | 'pulls/d/2024-03-25'
+        PREFIX_FUSION | null         | null   | null
+        PREFIX_FUSION | null         | 'wave' | 'fusion/o/wave'
+        PREFIX_FUSION | '2024-03-25' | 'wave' | 'fusion/o/wave/d/2024-03-25'
+        PREFIX_FUSION | '2024-03-25' | null   | 'fusion/d/2024-03-25'
     }
 
     @Unroll
@@ -189,21 +189,21 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         metricsService.incrementFusionPullsCounter(platformId2)
         metricsService.incrementFusionPullsCounter(null)
         and:
-        def buildOrgCounts = metricsService.getAllOrgCount(MetricsConstants.PREFIX_BUILDS)
-        def pullOrgCounts = metricsService.getAllOrgCount(MetricsConstants.PREFIX_PULLS)
-        def fusionOrgCounts = metricsService.getAllOrgCount(MetricsConstants.PREFIX_FUSION)
+        def buildOrgCounts = metricsService.getAllOrgCount(PREFIX_BUILDS)
+        def pullOrgCounts = metricsService.getAllOrgCount(PREFIX_PULLS)
+        def fusionOrgCounts = metricsService.getAllOrgCount(PREFIX_FUSION)
         def emptyOrgCounts = metricsService.getAllOrgCount(null)
 
         then:
-        buildOrgCounts.metric == MetricsConstants.PREFIX_BUILDS
+        buildOrgCounts.metric == PREFIX_BUILDS
         buildOrgCounts.count == 2
         buildOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
         and:
-        pullOrgCounts.metric == MetricsConstants.PREFIX_PULLS
+        pullOrgCounts.metric == PREFIX_PULLS
         pullOrgCounts.count == 2
         pullOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
         and:
-        fusionOrgCounts.metric == MetricsConstants.PREFIX_FUSION
+        fusionOrgCounts.metric == PREFIX_FUSION
         fusionOrgCounts.count == 2
         fusionOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
         and:
@@ -234,21 +234,21 @@ class MetricsServiceImplTest extends Specification implements RedisTestContainer
         metricsService.incrementFusionPullsCounter(platformId2)
         metricsService.incrementFusionPullsCounter(null)
         and:
-        def buildOrgCounts = metricsService.getOrgCount(MetricsConstants.PREFIX_BUILDS, date, null)
-        def pullOrgCounts = metricsService.getOrgCount(MetricsConstants.PREFIX_PULLS, date, null)
-        def fusionOrgCounts = metricsService.getOrgCount(MetricsConstants.PREFIX_FUSION, date, null)
+        def buildOrgCounts = metricsService.getOrgCount(PREFIX_BUILDS, date, null)
+        def pullOrgCounts = metricsService.getOrgCount(PREFIX_PULLS, date, null)
+        def fusionOrgCounts = metricsService.getOrgCount(PREFIX_FUSION, date, null)
         def emptyOrgCounts = metricsService.getOrgCount(null, date, null)
 
         then:
-        buildOrgCounts.metric == MetricsConstants.PREFIX_BUILDS
+        buildOrgCounts.metric == PREFIX_BUILDS
         buildOrgCounts.count == 3
         buildOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
         and:
-        pullOrgCounts.metric == MetricsConstants.PREFIX_PULLS
+        pullOrgCounts.metric == PREFIX_PULLS
         pullOrgCounts.count == 3
         pullOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
         and:
-        fusionOrgCounts.metric == MetricsConstants.PREFIX_FUSION
+        fusionOrgCounts.metric == PREFIX_FUSION
         fusionOrgCounts.count == 3
         fusionOrgCounts.orgs == ['org1.com': 1, 'org2.com': 1]
         and:
