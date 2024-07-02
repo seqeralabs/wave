@@ -47,13 +47,13 @@ class S3ClientFactory {
     @Singleton
     @Named('BlobS3Client')
     S3Client cloudflareS3Client() {
-        def builder = S3Client.builder()
+        final creds = AwsBasicCredentials.create(blobConfig.storageAccessKey, blobConfig.storageSecretKey)
+        final builder = S3Client.builder()
                     .region(Region.of(blobConfig.storageRegion))
-                    .credentialsProvider(StaticCredentialsProvider.create(
-                    AwsBasicCredentials.create(blobConfig.storageAccessKey, blobConfig.storageSecretKey)))
+                    .credentialsProvider(StaticCredentialsProvider.create(creds))
 
         if (blobConfig.storageEndpoint) {
-                builder.endpointOverride(URI.create(blobConfig.storageEndpoint))
+            builder.endpointOverride(URI.create(blobConfig.storageEndpoint))
         }
 
         log.info("Creating S3 client with configuration: $builder")
