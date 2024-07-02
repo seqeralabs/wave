@@ -216,12 +216,13 @@ class BlobCacheServiceImpl implements BlobCacheService {
      * @return {@link BlobCacheInfo} the blob cache info
      */
     protected BlobCacheInfo checkUploadedBlobSize(BlobCacheInfo info, RoutePath route) {
-        if(info.succeeded() && info.contentLength != getBlobSize(route.targetPath)){
-            log.warn("Blob size mismatch for object '${info.locationUri}'")
-            CompletableFuture.supplyAsync(() -> deleteBlob(route.targetPath), executor)
-            return info.failed("Blob uploaded does not match the expected size")
-        }
-        return info
+        if( !info.succeeded() )
+            return info
+        if( info.contentLength == getBlobSize(route.targetPath) )
+            return info
+        log.warn("== Blob cache mismatch size for uploaded object '${info.locationUri}'")
+        CompletableFuture.supplyAsync(() -> deleteBlob(route.targetPath), executor)
+        return info.failed("Blob uploaded does not match the expected size")
     }
 
     protected BlobCacheInfo store(RoutePath route, BlobCacheInfo info) {
@@ -352,8 +353,9 @@ class BlobCacheServiceImpl implements BlobCacheService {
                             .key(key)
                             .build()
             s3Client.deleteObject(deleteObjectRequest as DeleteObjectRequest)
-            log.debug("Deleted object $key from bucket ${blobConfig.storageBucket}")
-        }catch (Exception e){
+            log.debug("== Blob cache deleted object $key from bucket ${blobConfig.storageBucket}")
+        }
+        catch (Exception e){
             log.error("Error deleting object $key from bucket ${blobConfig.storageBucket}", e)
         }
    }
