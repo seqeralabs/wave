@@ -32,3 +32,8 @@ scan-workspace/
 .cache
 site/
 deployment-url.txt
+
+#typespec
+tsp-output/
+node_modules/
+package-lock.json
