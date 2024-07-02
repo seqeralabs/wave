@@ -149,7 +149,7 @@ class BlobCacheServiceImplTest extends Specification implements AwsS3TestContain
 
         then:
         !result.succeeded()
-        result.logs == "Blob uploaded does not match the expected size"
+        result.logs == "Mismatch cache size for object http://foo"
     }
 
     def 'should return succeeded BlobCacheInfo when blob size matches'() {
