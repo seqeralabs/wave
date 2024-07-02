@@ -192,6 +192,8 @@ class BlobCacheServiceImpl implements BlobCacheService {
             else {
                 log.debug "== Blob cache begin for object '${info.locationUri}'"
                 result = store(route, info)
+                //check if the cached blob size is correct
+                result = checkUploadedBlobSize(result, route)
             }
         }
         finally {
@@ -201,9 +203,6 @@ class BlobCacheServiceImpl implements BlobCacheService {
             final ttl = result.succeeded()
                     ? blobConfig.statusDuration
                     : blobConfig.statusDelay.multipliedBy(10)
-
-            //check if the cached blob size is correct
-            result = checkUploadedBlobSize(result, route)
 
             blobStore.storeBlob(route.targetPath, result, ttl)
             return result
@@ -326,17 +325,17 @@ class BlobCacheServiceImpl implements BlobCacheService {
     */
    protected Long getBlobSize(String key) {
         try {
-            def headObjectRequest =
+            final headObjectRequest =
                     HeadObjectRequest.builder()
                             .bucket(blobConfig.storageBucket.replaceFirst("s3://",""))
                             .key(key)
                             .build()
-            def headObjectResponse = s3Client.headObject(headObjectRequest as HeadObjectRequest)
-
-            Long contentLength = headObjectResponse.contentLength()
+            final headObjectResponse = s3Client.headObject(headObjectRequest as HeadObjectRequest)
+            final contentLength = headObjectResponse.contentLength()
             return contentLength ?: 0L
-        }catch (Exception e){
-            log.error("Error getting content length of object $key from bucket ${blobConfig.storageBucket}", e)
+        }
+        catch (Exception e){
+            log.error("== Blob cache Error getting content length of object $key from bucket ${blobConfig.storageBucket}", e)
             return 0L
         }
     }
@@ -353,10 +352,10 @@ class BlobCacheServiceImpl implements BlobCacheService {
                             .key(key)
                             .build()
             s3Client.deleteObject(deleteObjectRequest as DeleteObjectRequest)
-            log.debug("== Blob cache deleted object $key from bucket ${blobConfig.storageBucket}")
+            log.debug("== Blob cache Deleted object $key from bucket ${blobConfig.storageBucket}")
         }
         catch (Exception e){
-            log.error("Error deleting object $key from bucket ${blobConfig.storageBucket}", e)
+            log.error("== Blob cache Error deleting object $key from bucket ${blobConfig.storageBucket}", e)
         }
    }
 }
