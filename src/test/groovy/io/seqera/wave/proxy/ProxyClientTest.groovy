@@ -164,6 +164,27 @@ class ProxyClientTest extends Specification {
     }
 
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
+    def 'should call head manifest on amazon' () {
+        given:
+        def IMAGE = 'wave/kaniko'
+        def REG = '195996028523.dkr.ecr.eu-west-1.amazonaws.com'
+        def registry = lookupService.lookup(REG)
+        def creds = credentialsProvider.getDefaultCredentials(REG)
+        def httpClient = HttpClientFactory.neverRedirectsHttpClient()
+        and:
+        def proxy = new ProxyClient(httpClient, httpConfig)
+                .withImage(IMAGE)
+                .withRegistry(registry)
+                .withLoginService(loginService)
+                .withCredentials(creds)
+
+        when:
+        def resp = proxy.head("/v2/$IMAGE/manifests/0.1.0")
+        then:
+        resp.statusCode() == 200
+    }
+
+    @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
     def 'should call target manifest on ecr public' () {
         given:
         def IMAGE = 'seqera-labs/nextflow'

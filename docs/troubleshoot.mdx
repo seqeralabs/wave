@@ -1,0 +1,26 @@
+## Troubleshoot guide
+
+1. How to troubleshoot container build failure?
+
+If your container build fails, you can check the build details by checking the logs in build details email as shown in below screenshot.
+
+#### email screenshot:
+![](_images/wave_container_build_failure_details.png)
+
+If there is nothing conclusive in logs, you can check the exit status, e.g. if it is 137 that means out of memory error.
+Wave run build process in kubernetes pod, you can check this [link](https://komodor.com/learn/exit-codes-in-containers-and-kubernetes-the-complete-guide/) for more details on exit codes.
+
+2. How to solve buildkit  error, while running wave build on docker desktop in mac os?
+
+#### error:
+```
+could not connect to unix:///run/user/1000/buildkit/buildkitd.sock after 10 trials
+========== log ==========
+[rootlesskit:parent] error: failed to start the child: fork/exec /proc/self/exe: invalid argument
+sh: can't kill pid 14: No such process
+```
+
+#### Solution:
+- In case of wave cli use `--platform linux/arm64` flag with wave build command.
+- In case of API call use `containerPlatform: linux/arm64` in the request body.
+
