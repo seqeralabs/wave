@@ -215,7 +215,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
      *
      * @return {@link BlobCacheInfo} the blob cache info
      */
-    protected BlobCacheInfo checkUploadedBlobSize( BlobCacheInfo info, RoutePath route) {
+    protected BlobCacheInfo checkUploadedBlobSize(BlobCacheInfo info, RoutePath route) {
         if(info.succeeded() && info.contentLength != getBlobSize(route.targetPath)){
             log.warn("Blob size mismatch for object '${info.locationUri}'")
             CompletableFuture.supplyAsync(() -> deleteBlob(route.targetPath), executor)
@@ -333,7 +333,6 @@ class BlobCacheServiceImpl implements BlobCacheService {
             def headObjectResponse = s3Client.headObject(headObjectRequest as HeadObjectRequest)
 
             Long contentLength = headObjectResponse.contentLength()
-            println("Content length: $contentLength")
             return contentLength ?: 0L
         }catch (Exception e){
             log.error("Error getting content length of object $key from bucket ${blobConfig.storageBucket}", e)
