@@ -1,0 +1,43 @@
+---
+title: Use Wave with Singularity and Nextflow
+# https://seqera.io/blog/singularity-reloaded-article/
+---
+
+:::note
+Available as of Nextflow version 23.09.0-edge.
+:::
+
+Nextflow can build Singularity native images on-demand either using `Singularityfile`,
+Conda packages or Spack packages. The Singularity images are automatically uploaded in a container registry OCI compliant
+of your choice and stored as a [ORAS artefact](https://oras.land/).
+
+:::note
+This feature requires of Singularity (or Apptainer) version supporting the pull of images using the `oras:` pseudo-protocol.
+:::
+
+For example to enable the provisioning of Singularity images in your pipeline use the following configuration snippet:
+
+```groovy
+singularity.enabled = true
+wave.enabled = true
+wave.freeze = true
+wave.strategy = ['conda']
+wave.build.repository = 'docker.io/user/repo'
+```
+
+In the above configuration replace `docker.io/user/repo` with a repository of your choice where Singularity image files
+should be uploaded.
+
+:::note
+When using a private repository, the repository access keys must be provided via the Seqera Platform credentials manager. For more information, see [Authenticate private repositories][private].
+
+Moreover the access to the repository must be granted in the compute nodes by using the command `singularity remote login <registry>`.
+Please see Singularity documentation for further details.
+:::
+
+:::{note}
+In order to build Singularity native images, both `singularity.ociAutoPull` and `singularity.ociMode` need to be disabled in the configuration. For more information, see the Nextflow [configuration][[config]] documentation.
+:::
+
+[private]: /platform_versioned_docs/version-23.4.0/credentials/overview
+[config]: https://www.nextflow.io/docs/latest/config.html#config-singularity

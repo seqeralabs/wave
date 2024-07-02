@@ -19,6 +19,18 @@
         "cli/build-freeze"
       ]
     },
+    {
+      "type": "category",
+      "label": "Nextflow pipelines",
+      "collapsed": false,
+      "items": [
+        "guides/conda-containers",
+        "fusion-file-system",
+        "private-repo",
+        "singularity-containers",
+        "module-containers"
+      ]
+    },
     "guide",
     "api",
     "metrics",

@@ -1,0 +1,19 @@
+---
+title: Use Wave to access private container repositories with Nextflow
+---
+
+Wave allows the use of private repositories in your Nextflow pipelines. The repository access keys must be provided in the form of [Seqera Platform credentials][credentials].
+
+After creating the credentials, specify your [personal access token][pat] in your pipeline configuration file. If the credentials were created in a Seqera Platform organization workspace, specify the workspace ID as well in the config file as shown below:
+
+```groovy
+tower {
+  accessToken = '<your access token>'
+  workspaceId = '<your workspace id>'
+}
+```
+
+That's it. When launching the pipeline execution, Wave will allow Nextflow to access the private container repositories defined in your pipeline configuration, using the credentials stored in the Seqera Platform credentials manager.
+
+[credentials]: /platform_versioned_docs/version-23.4.0/credentials/overview
+[pat]: /platform_versioned_docs/version-23.4.0/api/overview#authentication
