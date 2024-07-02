@@ -508,7 +508,7 @@ curl --location 'http://localhost:9090/v1alpha1/inspect' \
 These APIs provide usage (builds and pulls) metrics of Wave for a specific date and/or a specific organization.
 These APIs require basic authentication, so you must provide a username and password while calling these APIs.
 
-All Metrics API endpoints use these query parameters (at least one is required):
+All Metrics API endpoints use these query parameters:
 
 | Name | Description                                                           | sample Value |
 |------|-----------------------------------------------------------------------|--------------|
@@ -521,17 +521,35 @@ These APIs are used to retrieve metrics about container builds performed by Wave
 
 ### GET `/v1alpha2/metrics/builds`
 
-This endpoint is used to retrieve the total number of builds performed by Wave.
+This endpoint is used to retrieve the builds performed by Wave.
 
 ### Response
 
 ```json
 {
-    count: integer
+    metric: "builds|pulls|fusion",
+    count: integer,
+    orgs: {
+        String: integer,
+        String: integer,
+        ...
+    }
 }
 ```
 
 #### Examples
+
+```shell
+curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/builds"
+{
+    "metric": "builds",
+    "count": 18,
+    "orgs": {
+        "seqera.io": 13,
+        "gmail.com": 5
+    }
+}
+```
 
 ```shell
 curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/builds?date=2024-04-08&org=seqera.io"
@@ -540,12 +558,25 @@ curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/builds?date=2024-04-08&o
 
 ```shell
 curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/builds?date=2024-04-08"
-{"count":6}
+{
+    "metric": "builds",
+    "count": 8,
+    "orgs": {
+        "gmail.com": 4,
+        "seqera.io": 4
+    }
+}
 ```
 
 ```shell
 curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/builds?org=seqera.io"
-{"count":4}
+{
+    "metric": "builds",
+    "count": 13,
+    "orgs": {
+        "seqera.io": 13
+    }
+}
 ```
 ### Pull Metrics API
 
@@ -553,7 +584,7 @@ These APIs are used to get the metrics about the container pulls through Wave.
 
 ### GET `/v1alpha2/metrics/pulls`
 
-This endpoint is used to get the total numbers of pulls performed through Wave.
+This endpoint is used to get the pulls performed through Wave.
 
 ### Response
 
@@ -564,6 +595,18 @@ This endpoint is used to get the total numbers of pulls performed through Wave.
 ```
 
 #### Examples
+
+```shell
+curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/pulls"
+{
+    "metric": "pulls",
+    "count": 11,
+    "orgs": {
+        "seqera.io": 7,
+        "gmail.com": 4
+    }
+}
+```
 
 ```shell
 curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/pulls?date=2024-04-08&org=seqera.io"
@@ -572,12 +615,25 @@ curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/pulls?date=2024-04-08&or
 
 ```shell
 curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/pulls?date=2024-04-08"
-{"count":7}
+{
+    "metric": "pulls",
+    "count": 4,
+    "orgs": {
+        "seqera.io": 1,
+        "gmail.com": 3
+    }
+}
 ```
 
 ```shell
 curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/pulls?org=seqera.io"
-{"count":5}
+{
+    "metric": "pulls",
+    "count": 7,
+    "orgs": {
+        "seqera.io": 7
+    }
+}
 ```
 
 ### Fusion Pull Metrics API
@@ -586,7 +642,7 @@ These APIs are used to get the metrics about the Fusion-based container pulls th
 
 ### GET `/v1alpha2/metrics/fusion/pulls`
 
-This endpoint is used to get the total numbers of pulls of Fusion-based containers performed through Wave.
+This endpoint is used to get the pulls of Fusion-based containers performed through Wave.
 
 ### Response
 
@@ -599,16 +655,40 @@ This endpoint is used to get the total numbers of pulls of Fusion-based containe
 #### Examples
 
 ```shell
+curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/fusion/pulls"
+{
+    "metric": "fusion",
+    "count": 2,
+    "orgs": {
+        "seqera.io": 1,
+        "gmail.com": 1
+    }
+}
+```
+
+```shell
 curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/fusion/pulls?date=2024-04-08&org=seqera.io"
 {"count":2}
 ```
 
 ```shell
 curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/fusion/pulls?date=2024-04-08"
-{"count":2}%
+{
+    "metric": "fusion",
+    "count": 1,
+    "orgs": {
+        "gmail.com": 1
+    }
+}
 ```
 
 ```shell
 curl -u foo:bar "http://localhost:9090/v1alpha2/metrics/fusion/pulls?org=seqera.io"
-{"count":2}
+{
+    "metric": "fusion",
+    "count": 1,
+    "orgs": {
+        "seqera.io": 1
+    }
+}
 ```

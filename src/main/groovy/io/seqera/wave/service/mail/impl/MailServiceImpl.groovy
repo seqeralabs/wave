@@ -87,7 +87,7 @@ class MailServiceImpl implements MailService {
         final binding = new HashMap(20)
         final status = result.succeeded() ? 'DONE': 'FAILED'
         binding.build_id = result.id
-        binding.build_user =  "${req.identity?.user ? req.identity.user.userName : 'n/a'} (${req.ip})"
+        binding.build_user =  "${req.identity?.user ? req.identity.user.userName : '-'} (${req.ip})"
         binding.build_success = result.exitStatus==0
         binding.build_exit_status = result.exitStatus
         binding.build_time = formatTimestamp(result.startTime, req.offsetId) ?: '-'

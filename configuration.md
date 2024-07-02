@@ -81,11 +81,11 @@ Below are the standard format for known registries, but you can change registry 
 
 - **`wave.build.timeout`**: the timeout for the build process. Its default value is `5m` (5 minutes), providing a reasonable time frame for the build operation. *Optional*.
 
-- **`wave.build.workspace`**: defines the path to the directory used by Wave to store artifacts such as Dockerfiles, Trivy cache for scan, Kaniko context, authentication configuration files, etc. For example, `/efs/wave/build`. *Mandatory*.
+- **`wave.build.workspace`**: defines the path to the directory used by Wave to store artifacts such as Dockerfiles, Trivy cache for scan, Buildkit context, authentication configuration files, etc. For example, `/efs/wave/build`. *Mandatory*.
 
 - **`wave.build.cleanup`**: determines the cleanup strategy after the build process. Options include `OnSuccess`, meaning cleanup occurs only if the build is successful. *Optional*.
 
-- **`wave.build.kaniko-image`**: specifies the [Kaniko](https://github.com/GoogleContainerTools/kaniko) Docker image used in the Wave build process. The default is `gcr.io/kaniko-project/executor:v1.19.2`. *Optional*.
+- **`wave.build.buildkit-image`**: specifies the [Buildkit](https://github.com/moby/buildkit) Docker image used in the Wave build process. The default is `moby/buildkit:v0.13.2-rootless`. *Optional*.
 
 - **`wave.build.singularity-image`**: sets the [Singularity](https://quay.io/repository/singularity/singularity?tab=tags) image used in the build process. The default is `quay.io/singularity/singularity:v3.11.4-slim`. *Optional*.
 
@@ -101,8 +101,11 @@ Below are the standard format for known registries, but you can change registry 
 
 - **`wave.build.public`**: indicates whether the Docker container repository is public. If set to true, Wave freeze will prefer this public repository over `wave.build.repo`. *Optional*.
 
-- **`wave.build.compress-caching`**: determines whether to compress cache layers produced by the build process. The default is `true`, enabling compression for more efficient storage. *Optional*.
+- **`wave.build.oci-mediatypes`**: defines whether to use OCI mediatypes in exported manifests. its default value is `true`. *Optional*.
 
+- **`wave.build.compression`**: defines which type of compression will be applied to cache layers. its default value is `gzip` and other options are `uncompressed|estargz|zstd`. *Optional*.
+
+- **`wave.build.force-compression`**: determines whether to force the compression for each cache layers produced by the build process. The default is `false`, enabling compression for more efficient storage. *Optional*.
 
 ### Spack configuration for wave build process
 
