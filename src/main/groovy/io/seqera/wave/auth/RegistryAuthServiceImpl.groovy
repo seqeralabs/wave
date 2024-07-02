@@ -34,6 +34,7 @@ import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.http.HttpClientFactory
+import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
@@ -85,7 +86,8 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     /**
      * Implements container registry login
      *
-     * @param registryName The registry name e.g. docker.io or quay.io
+     * @param registryName
+     *      The registry name e.g. docker.io or quay.io or a repository name
      * @param username The registry username
      * @param password The registry password
      * @return {@code true} if the login was successful or {@code false} otherwise
@@ -96,18 +98,20 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         if( !registryName )
             registryName = DOCKER_IO
 
+        final target = TargetInfo.parse(registryName)
+
         // 1. look up the registry authorisation info for the given registry name
-        final registry = lookupService.lookup(registryName)
-        log.debug "Registry '$registryName' => auth: $registry"
+        final registry = lookupService.lookup(target.registry)
+        log.debug "Registry '$target.registry' => auth: $registry"
 
         // 2. get the registry credentials
         //    this is needed because some services e.g. AWS ECR requires the use of temporary tokens
-        final creds = credentialsFactory.create(registryName, username, password)
+        final creds = credentialsFactory.create(target.registry, username, password)
 
         // 3. make a request against the authorization "realm" service using basic
         //    credentials to get the login token
         final basic =  "${creds.username}:${creds.password}".bytes.encodeBase64()
-        final endpoint = registry.auth.endpoint
+        final endpoint = registry.auth.getEndpoint()
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(endpoint)
                 .GET()
@@ -255,5 +259,22 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         cacheTokens.invalidate(key)
     }
 
+
+    @Canonical
+    static class TargetInfo {
+        String registry
+        String repository
+
+        static TargetInfo parse(String registryOrRepository) {
+            assert registryOrRepository, "Missing 'registryOrRepository' argument"
+            if( registryOrRepository.contains('/') ) {
+                final coords = ContainerCoordinates.parse(registryOrRepository)
+                return new TargetInfo(coords.getRegistry(), coords.getImage())
+            }
+            else {
+                return new TargetInfo(registryOrRepository)
+            }
+        }
+    }
 
 }
