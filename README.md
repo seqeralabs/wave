@@ -118,7 +118,7 @@ container registry where the image is stored, while the instrumented layers are 
     'tsp compile .'
     ```
 
-Check `typespec/tsp-output` directory for the generated API specifications.
+- Check `typespec/tsp-output` directory for the generated API specifications.
 
 ## Related links
 * [Wave command line tool](https://github.com/seqeralabs/wave-cli)
