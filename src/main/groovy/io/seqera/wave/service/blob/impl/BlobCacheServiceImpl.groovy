@@ -203,15 +203,25 @@ class BlobCacheServiceImpl implements BlobCacheService {
                     : blobConfig.statusDelay.multipliedBy(10)
 
             //check if the cached blob size is correct
-            if(result.succeeded() && info.contentLength != getBlobSize(route.targetPath)){
-                log.warn("Blob size mismatch for object '${info.locationUri}'")
-                CompletableFuture.supplyAsync(() -> deleteBlob(route.targetPath), executor)
-                result = result.failed("Blob uploaded does not match the expected size")
-            }
+            result = checkUploadedBlobSize(result, route)
 
             blobStore.storeBlob(route.targetPath, result, ttl)
             return result
         }
+    }
+
+    /**
+     * Check the size of the blob stored in the cache
+     *
+     * @return {@link BlobCacheInfo} the blob cache info
+     */
+    protected BlobCacheInfo checkUploadedBlobSize( BlobCacheInfo info, RoutePath route) {
+        if(info.succeeded() && info.contentLength != getBlobSize(route.targetPath)){
+            log.warn("Blob size mismatch for object '${info.locationUri}'")
+            CompletableFuture.supplyAsync(() -> deleteBlob(route.targetPath), executor)
+            return info.failed("Blob uploaded does not match the expected size")
+        }
+        return info
     }
 
     protected BlobCacheInfo store(RoutePath route, BlobCacheInfo info) {
@@ -323,6 +333,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
             def headObjectResponse = s3Client.headObject(headObjectRequest as HeadObjectRequest)
 
             Long contentLength = headObjectResponse.contentLength()
+            println("Content length: $contentLength")
             return contentLength ?: 0L
         }catch (Exception e){
             log.error("Error getting content length of object $key from bucket ${blobConfig.storageBucket}", e)

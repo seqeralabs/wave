@@ -19,11 +19,14 @@ package io.seqera.wave.service.blob.impl
 
 import spock.lang.Specification
 
+import java.util.concurrent.ExecutorService
+
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.blob.BlobCacheInfo
+import io.seqera.wave.service.blob.BlobStore
 import io.seqera.wave.test.AwsS3TestContainer
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse
@@ -128,6 +131,44 @@ class BlobCacheServiceImplTest extends Specification implements AwsS3TestContain
 
         then:
         noExceptionThrown()
+    }
+
+    def 'should return failed BlobCacheInfo when blob size mismatch'() {
+        given:
+        def executor = Mock(ExecutorService)
+        def s3Client = Mock(S3Client)
+        s3Client.headObject(_) >> HeadObjectResponse.builder().contentLength(1234L).build()
+        def blobStore = Mock(BlobStore)
+        def blobCacheService = new BlobCacheServiceImpl(s3Client: s3Client, blobConfig: new BlobCacheConfig(storageBucket: 's3://store/blobs/'), blobStore: blobStore, executor: executor, )
+        def route = RoutePath.v2manifestPath(ContainerCoordinates.parse('ubuntu@sha256:aabbcc'))
+        def info = BlobCacheInfo.create('http://foo', [:], ['Content-Type':['foo'], 'Cache-Control': ['bar'], 'Content-Length': ['4321']])
+        info = info.completed(0, 'Blob uploaded')
+
+        when:
+        def result = blobCacheService.checkUploadedBlobSize(info, route)
+
+        then:
+        !result.succeeded()
+        result.logs == "Blob uploaded does not match the expected size"
+    }
+
+    def 'should return succeeded BlobCacheInfo when blob size matches'() {
+        given:
+        def executor = Mock(ExecutorService)
+        def s3Client = Mock(S3Client)
+        s3Client.headObject(_) >> HeadObjectResponse.builder().contentLength(4321L).build()
+        def blobStore = Mock(BlobStore)
+        def blobCacheService = new BlobCacheServiceImpl(s3Client: s3Client, blobConfig: new BlobCacheConfig(storageBucket: 's3://store/blobs/'), blobStore: blobStore, executor: executor)
+        def route = RoutePath.v2manifestPath(ContainerCoordinates.parse('ubuntu@sha256:aabbcc'))
+        def info = BlobCacheInfo.create('http://foo', [:], ['Content-Type':['foo'], 'Cache-Control': ['bar'], 'Content-Length': ['4321']])
+        info = info.completed(0, 'Blob uploaded')
+
+        when:
+        def result = blobCacheService.checkUploadedBlobSize(info, route)
+
+        then:
+        result.succeeded()
+        result.logs == "Blob uploaded"
     }
 
 }
