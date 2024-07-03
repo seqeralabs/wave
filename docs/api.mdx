@@ -285,13 +285,11 @@ Provides status of build against buildId passed as path variable
 
 ```json
 {
-    serviceInfo: {
-        id: string,
-        status: string,
-        startTime: string,
-        duration: string,
-        succeeded: boolean
-    }
+    id: string,
+    status: string,
+    startTime: string,
+    duration: string,
+    succeeded: boolean
 }
 ```
 
@@ -527,7 +525,7 @@ This endpoint is used to retrieve the builds performed by Wave.
 
 ```json
 {
-    metric: "builds|pulls|fusion",
+    metric: "builds",
     count: integer,
     orgs: {
         String: integer,
@@ -590,7 +588,13 @@ This endpoint is used to get the pulls performed through Wave.
 
 ```json
 {
-    count: integer
+    metric: "pulls",
+    count: integer,
+    orgs: {
+        String: integer,
+        String: integer,
+        ...
+    }
 }
 ```
 
@@ -648,7 +652,13 @@ This endpoint is used to get the pulls of Fusion-based containers performed thro
 
 ```json
 {
-    count: integer
+    metric: "fusion",
+    count: integer,
+    orgs: {
+        String: integer,
+        String: integer,
+        ...
+    }
 }
 ```
 
