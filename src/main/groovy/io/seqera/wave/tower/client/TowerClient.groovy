@@ -114,10 +114,12 @@ class TowerClient {
         StringUtils.removeEnd(endpoint, "/")
     }
 
+    @Cacheable(value = 'cache-tower-client', atomic = true)
     CompletableFuture<DescribeWorkflowLaunchResponse> fetchWorkflowLaunchInfo(String towerEndpoint, JwtAuth authorization, String workflowId){
-        def uri = workflowLaunchInfoEndpoint(towerEndpoint,workflowId)
+        final uri = workflowLaunchInfoEndpoint(towerEndpoint,workflowId)
         return getAsync(uri, towerEndpoint, authorization, DescribeWorkflowLaunchResponse.class)
     }
+
     protected static URI workflowLaunchInfoEndpoint(String towerEndpoint, String workflowId) {
         return URI.create("${checkEndpoint(towerEndpoint)}/workflow/${workflowId}/launch")
     }

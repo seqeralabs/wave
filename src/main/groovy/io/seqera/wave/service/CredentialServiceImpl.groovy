@@ -24,14 +24,12 @@ import io.seqera.tower.crypto.AsymmetricCipher
 import io.seqera.tower.crypto.EncryptedPacket
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.tower.PlatformId
-import io.seqera.wave.tower.client.CredentialsDescription
 import io.seqera.wave.tower.auth.JwtAuth
+import io.seqera.wave.tower.client.CredentialsDescription
 import io.seqera.wave.tower.client.TowerClient
-import io.seqera.wave.tower.compute.ComputeEnv
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
-
 /**
  * Define operations to access container registry credentials from Tower
  *
@@ -82,14 +80,14 @@ class CredentialServiceImpl implements CredentialsService {
         def creds = all.find {
             it.provider == 'container-reg'  && (it.registry ?: DOCKER_IO) == matchingRegistryName
         }
-        if (!creds) {
+        if (!creds && identity.workflowId) {
             log.debug "No credentials matching criteria registryName=$registryName; userId=${identity.user.id}; workspaceId=${identity.workspaceId}; endpoint=${identity.towerEndpoint}"
             //when there are no registry credential, try fetching them from compute credentials
             creds = findComputeCreds(identity)
-            if (!creds) {
-                log.debug "No compute credentials found for workflowId=${identity.workflowId}; userId=${identity.userId}; workspaceId=${identity.workspaceId}; endpoint=${identity.towerEndpoint}"
-                return null
-            }
+        }
+        if (!creds) {
+            log.debug "No compute credentials found for workflowId=${identity.workflowId}; userId=${identity.userId}; workspaceId=${identity.workspaceId}; endpoint=${identity.towerEndpoint}"
+            return null
         }
 
         // log for debugging purposes
@@ -101,17 +99,18 @@ class CredentialServiceImpl implements CredentialsService {
         return parsePayload(credentials)
     }
 
+    static final private List<String> SUPPORTED_PLATFORMS = List.of('aws-batch','google-batch')
+
     CredentialsDescription findComputeCreds(PlatformId identity) {
-        final describeWorkflowLaunchResponse = towerClient.fetchWorkflowLaunchInfo(identity.towerEndpoint, JwtAuth.of(identity), identity.workflowId)
-        if(describeWorkflowLaunchResponse) {
-            ComputeEnv computeEnv = describeWorkflowLaunchResponse.get()?.launch?.computeEnv
-            if (computeEnv && (computeEnv.platform == 'aws-batch' || computeEnv.platform == 'google-batch')) {
-                return new CredentialsDescription(
-                        id: computeEnv.credentialsId
-                )
-            }
-        }
-        return null
+        final response = towerClient.fetchWorkflowLaunchInfo(identity.towerEndpoint, JwtAuth.of(identity), identity.workflowId)
+        if( !response )
+            return null
+        final computeEnv = response.get()?.launch?.computeEnv
+        if( !computeEnv )
+            return null
+        if( computeEnv.platform !in SUPPORTED_PLATFORMS )
+            return null
+        return new CredentialsDescription(id: computeEnv.credentialsId )
     }
 
     protected String decryptCredentials(byte[] encodedKey, String payload) {
