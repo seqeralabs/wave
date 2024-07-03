@@ -1,0 +1,37 @@
+---
+name: Typespec_Validation
+
+on:
+  push:
+    branches:
+      - '**'
+    paths :
+      - 'typespec/**'
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - 'typespec/**'
+
+permissions:
+  contents: read
+
+jobs:
+  codespell:
+    name: validate typespec files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name : Setup Node.js environment
+        uses : actions/setup-node@v4
+        with :
+          node-version : '20.9.0'
+
+      - name : Install tsp
+        run : npm install -g @typespec/compiler
+
+      - name : Validate tsp files
+        run : |
+          cd typespec
+          tsp install
+          tsp compile .
+
