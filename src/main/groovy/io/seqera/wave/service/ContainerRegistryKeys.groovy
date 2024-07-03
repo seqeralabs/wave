@@ -35,7 +35,16 @@ class ContainerRegistryKeys {
 
     static ContainerRegistryKeys fromJson(String json) {
         final root = (Map) new JsonSlurper().parseText(json)
-        return new ContainerRegistryKeys(userName: root.userName, password: root.password, registry: root.registry)
+        // Not 100% the 'discriminator' field is deserialized - to verified
+        if( !root.discriminator || root.discriminator == 'container-reg' )
+            return new ContainerRegistryKeys(userName: root.userName, password: root.password, registry: root.registry)
+        // Map AWS keys to registry username and password   
+        if( root.discriminator == 'aws' ) {
+            // AWS keys can have also the `assumeRoleArn`, not clear yet how to handle it
+            // https://github.com/seqeralabs/nf-tower-cloud/blob/64d12c6f3f399f26422a746c0d97cea6d8ddebbb/tower-enterprise/src/main/groovy/io/seqera/tower/domain/aws/AwsSecurityKeys.groovy#L39-L39
+            return new ContainerRegistryKeys(userName: root.accessKey, password: root.accessKey)
+        }
+        throw new IllegalArgumentException("Unsupported credentials key discriminator type: ${root.discriminator}")
     }
 
     @Override

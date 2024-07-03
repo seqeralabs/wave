@@ -99,8 +99,6 @@ class CredentialServiceImpl implements CredentialsService {
         return parsePayload(credentials)
     }
 
-    static final private List<String> SUPPORTED_PLATFORMS = List.of('aws-batch','google-batch')
-
     CredentialsDescription findComputeCreds(PlatformId identity) {
         final response = towerClient.fetchWorkflowLaunchInfo(identity.towerEndpoint, JwtAuth.of(identity), identity.workflowId)
         if( !response )
@@ -108,9 +106,9 @@ class CredentialServiceImpl implements CredentialsService {
         final computeEnv = response.get()?.launch?.computeEnv
         if( !computeEnv )
             return null
-        if( computeEnv.platform !in SUPPORTED_PLATFORMS )
+        if( computeEnv.platform != 'aws-batch' )
             return null
-        return new CredentialsDescription(id: computeEnv.credentialsId )
+        return new CredentialsDescription(id: computeEnv.credentialsId)
     }
 
     protected String decryptCredentials(byte[] encodedKey, String payload) {
