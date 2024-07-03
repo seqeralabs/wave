@@ -108,6 +108,17 @@ container registry where the image is stored, while the instrumented layers are 
     '-Djdk.httpclient.HttpClient.log=requests,headers'
     ```
 
+## TypeSpec API Specifications
+
+- You can find the API specifications using (typespec)[https://github.com/microsoft/typespec] in typespec directory. Use following command to generate the API specifications.
+
+    ```bash
+    'cd typespec'
+    'tsp install'
+    'tsp compile .'
+    ```
+
+- Check `typespec/tsp-output` directory for the generated API specifications.
 
 ## Related links
 * [Wave command line tool](https://github.com/seqeralabs/wave-cli)
