@@ -109,6 +109,8 @@ Below are the standard format for known registries, but you can change registry 
 
 ### Spack configuration for wave build process
 
+**Note**: Spack support will be removed in future releases.
+
 Spack configuration consists of the path of its secret file, the mount path for the secret file in the spack container, and the optional S3 bucket name for the spack binary cache.
 
 **Note**: these configuration are mandatory to support Spack in a wave installation.
