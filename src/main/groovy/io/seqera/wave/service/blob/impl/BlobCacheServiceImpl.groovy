@@ -202,7 +202,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
             // temporary error conditions e.g. expired credentials
             final ttl = result.succeeded()
                     ? blobConfig.statusDuration
-                    : blobConfig.statusDelay.multipliedBy(10)
+                    : blobConfig.failureTTL
 
             blobStore.storeBlob(route.targetPath, result, ttl)
             return result
@@ -218,8 +218,6 @@ class BlobCacheServiceImpl implements BlobCacheService {
         if( !info.succeeded() )
             return info
         final blobSize = getBlobSize(route.targetPath)
-        if( blobSize == info.contentLength )
-            return info
         log.warn("== Blob cache mismatch size for uploaded object '${info.locationUri}'; upload blob size: ${blobSize}; expect size: ${info.contentLength}")
         CompletableFuture.supplyAsync(() -> deleteBlob(route.targetPath), executor)
         return info.failed("Mismatch cache size for object ${info.locationUri}")
