@@ -16,11 +16,14 @@ permissions:
   contents: read
 
 jobs:
-  codespell:
+  typespec_validation:
     name: validate typespec files
     runs-on: ubuntu-latest
 
     steps:
+      - name : Checkout
+        uses : actions/checkout@v4
+
       - name : Setup Node.js environment
         uses : actions/setup-node@v4
         with :
