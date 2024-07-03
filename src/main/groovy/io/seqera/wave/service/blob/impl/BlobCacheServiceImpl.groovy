@@ -333,7 +333,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
                             .build()
             final headObjectResponse = s3Client.headObject(headObjectRequest as HeadObjectRequest)
             final contentLength = headObjectResponse.contentLength()
-            return contentLength ?: 0L
+            return contentLength!=null ? contentLength : -1L
         }
         catch (Exception e){
             log.error("== Blob cache Error getting content length of object $key from bucket ${blobConfig.storageBucket}", e)
