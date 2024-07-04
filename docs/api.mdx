@@ -67,7 +67,7 @@ This API endpoint is deprecated in current versions of Wave.
 | `containerConfig.layers.gzipSize`   | The size in bytes of the the provided layer tar gzip file.                                                                                         |
 | `containerFile`                     | Dockerfile used for building a new container encoded in base64 (optional). When provided, the attribute `containerImage` must be omitted.        |
 | `condaFile`                         | Conda environment file encoded as base64 string.                                                                                                   |
-| `spackFile`                         | `Deprected` Spack recipe file encoded as base64 string. Spack support will be removed in future releases.                                                                                                        |
+| `spackFile`                         | `Deprecated` Spack recipe file encoded as base64 string. Spack support will be removed in future releases.                                                                                                        |
 | `containerPlatform`                 | Target container architecture of the built container, e.g., `linux/amd64` (optional). Currently only supporting amd64 and arm64.                     |
 | `buildRepository`                   | Container repository where container builds should be pushed, e.g., `docker.io/user/my-image` (optional).                                            |
 | `cacheRepository`                   | Container repository used to cache build layers `docker.io/user/my-cache` (optional).                                                              |
@@ -168,7 +168,7 @@ The endpoint returns the name of the container request made available by Wave.
 | `containerConfig.layers.gzipSize`   | The size in bytes of the the provided layer tar gzip file.                                                                                         |
 | `containerFile`                     | Dockerfile used for building a new container encoded in base64 (optional). When provided, the attribute `containerImage` must be omitted.        |
 | `condaFile`                         | Conda environment file encoded as base64 string.                                                                                                   |
-| `spackFile`                         | `Deprected` Spack recipe file encoded as base64 string. Spack support will be removed in future releases.                                                                                                           |
+| `spackFile`                         | `Deprecated` Spack recipe file encoded as base64 string. Spack support will be removed in future releases.                                                                                                           |
 | `containerPlatform`                 | Target container architecture of the built container, e.g., `linux/amd64` (optional). Currently only supporting amd64 and arm64.                     |
 | `buildRepository`                   | Container repository where container builds should be pushed, e.g., `docker.io/user/my-image` (optional).                                            |
 | `cacheRepository`                   | Container repository used to cache build layers `docker.io/user/my-cache` (optional).                                                              |
