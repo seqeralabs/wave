@@ -41,8 +41,8 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.status.delay:5s}')
     Duration statusDelay
 
-    @Value('${wave.blobCache.failure.ttl:4s}')
-    Duration failureTTL
+    @Value('${wave.blobCache.failure.duration:4s}')
+    Duration failureDuration
 
     @Value('${wave.blobCache.timeout:5m}')
     Duration transferTimeout

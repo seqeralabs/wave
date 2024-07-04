@@ -198,11 +198,10 @@ class BlobCacheServiceImpl implements BlobCacheService {
         }
         finally {
             // use a short time-to-live for failed downloads
-            // this is needed to allow re-try downloads failed for
-            // temporary error conditions e.g. expired credentials
+            // this is needed to allow re-try caching of failure transfers
             final ttl = result.succeeded()
                     ? blobConfig.statusDuration
-                    : blobConfig.failureTTL
+                    : blobConfig.failureDuration
 
             blobStore.storeBlob(route.targetPath, result, ttl)
             return result
