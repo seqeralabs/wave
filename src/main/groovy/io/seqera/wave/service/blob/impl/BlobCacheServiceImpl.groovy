@@ -20,6 +20,7 @@ package io.seqera.wave.service.blob.impl
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
@@ -38,6 +39,7 @@ import io.seqera.wave.service.blob.BlobSigningService
 import io.seqera.wave.service.blob.BlobStore
 import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.blob.TransferTimeoutException
+import io.seqera.wave.util.BucketTokenizer
 import io.seqera.wave.util.Escape
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.StringUtils
@@ -45,6 +47,9 @@ import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest
 import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
 /**
  * Implements cache for container image layer blobs
@@ -81,6 +86,10 @@ class BlobCacheServiceImpl implements BlobCacheService {
 
     @Inject
     private HttpClientConfig httpConfig
+
+    @Inject
+    @Named('BlobS3Client')
+    private S3Client s3Client
 
     private HttpClient httpClient
 
@@ -184,19 +193,36 @@ class BlobCacheServiceImpl implements BlobCacheService {
             else {
                 log.debug "== Blob cache begin for object '${info.locationUri}'"
                 result = store(route, info)
+                //check if the cached blob size is correct
+                result = checkUploadedBlobSize(result, route)
             }
         }
         finally {
             // use a short time-to-live for failed downloads
-            // this is needed to allow re-try downloads failed for
-            // temporary error conditions e.g. expired credentials
+            // this is needed to allow re-try caching of failure transfers
             final ttl = result.succeeded()
                     ? blobConfig.statusDuration
-                    : blobConfig.statusDelay.multipliedBy(10)
+                    : blobConfig.failureDuration
 
             blobStore.storeBlob(route.targetPath, result, ttl)
             return result
         }
+    }
+
+    /**
+     * Check the size of the blob stored in the cache
+     *
+     * @return {@link BlobCacheInfo} the blob cache info
+     */
+    protected BlobCacheInfo checkUploadedBlobSize(BlobCacheInfo info, RoutePath route) {
+        if( !info.succeeded() )
+            return info
+        final blobSize = getBlobSize(route)
+        if( blobSize == info.contentLength )
+            return info
+        log.warn("== Blob cache mismatch size for uploaded object '${info.locationUri}'; upload blob size: ${blobSize}; expect size: ${info.contentLength}")
+        CompletableFuture.supplyAsync(() -> deleteBlob(route), executor)
+        return info.failed("Mismatch cache size for object ${info.locationUri}")
     }
 
     protected BlobCacheInfo store(RoutePath route, BlobCacheInfo info) {
@@ -226,7 +252,6 @@ class BlobCacheServiceImpl implements BlobCacheService {
         StringUtils.pathConcat(blobConfig.storageBucket, route.targetPath)
     }
 
-
     /**
      * The HTTP URI from there the cached layer blob is going to be downloaded
      *
@@ -234,7 +259,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
      * @return The HTTP URI from the cached layer blob is going to be downloaded
      */
     protected String blobDownloadUri(RoutePath route) {
-        final bucketPath = StringUtils.pathConcat(blobConfig.storageBucket, route.targetPath)
+        final bucketPath = blobStorePath(route)
         final presignedUrl = signingService.createSignedUri(bucketPath)
 
         if( blobConfig.baseUrl ) {
@@ -246,7 +271,6 @@ class BlobCacheServiceImpl implements BlobCacheService {
         else
             return presignedUrl
     }
-
 
     /**
      * Await for the container layer blob download
@@ -293,4 +317,50 @@ class BlobCacheServiceImpl implements BlobCacheService {
             }
         }
     }
+
+   /**
+    * get the size of the blob stored in the cache
+    *
+    * @return {@link Long} the size of the blob stored in the cache
+    */
+   protected Long getBlobSize(RoutePath route) {
+       final objectUri = blobStorePath(route)
+       final object = BucketTokenizer.from(objectUri)
+       try {
+            final request =
+                    HeadObjectRequest.builder()
+                            .bucket(object.bucket)
+                            .key(object.key)
+                            .build()
+            final headObjectResponse = s3Client.headObject(request as HeadObjectRequest)
+            final contentLength = headObjectResponse.contentLength()
+            return contentLength!=null ? contentLength : -1L
+       }
+       catch (Exception e){
+           log.error("== Blob cache Error getting content length of object $objectUri from bucket ${blobConfig.storageBucket}", e)
+            return -1L
+       }
+    }
+
+   /**
+    * delete the blob stored in the cache
+    *
+    */
+   protected void deleteBlob(RoutePath route) {
+       final objectUri = blobStorePath(route)
+       log.debug "== Blob cache Deleting object $objectUri"
+       final object = BucketTokenizer.from(objectUri)
+       try {
+            final request =
+                    DeleteObjectRequest.builder()
+                            .bucket(object.bucket)
+                            .key(object.key)
+                            .build()
+            s3Client.deleteObject(request as DeleteObjectRequest)
+            log.debug("== Blob cache Deleted object $objectUri from bucket ${blobConfig.storageBucket}")
+        }
+        catch (Exception e){
+            log.error("== Blob cache Error deleting object $objectUri from bucket ${blobConfig.storageBucket}", e)
+        }
+   }
 }
