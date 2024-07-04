@@ -348,7 +348,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
     */
    protected void deleteBlob(RoutePath route) {
        final objectUri = blobStorePath(route)
-       log.debug "== Blob cache deleting object $objectUri"
+       log.debug "== Blob cache Deleting object $objectUri"
        final object = BucketTokenizer.from(objectUri)
        try {
             final request =
