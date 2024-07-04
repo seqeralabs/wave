@@ -29,8 +29,11 @@ import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.BlobStore
 import io.seqera.wave.test.AwsS3TestContainer
 import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse
 import software.amazon.awssdk.services.s3.model.S3Exception
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -90,47 +93,74 @@ class BlobCacheServiceImplTest extends Specification implements AwsS3TestContain
 
     def 'should return blob size when blob exists'() {
         given:
+        def bucket = 's3://my-cache-bucket'
+        def expectedSize = 1024
         def s3Client = Mock(S3Client)
-        def key = 'existing-key'
-        def expectedSize = 1234L
-        s3Client.headObject(_) >> HeadObjectResponse.builder().contentLength(expectedSize).build()
-        def blobCacheService = new BlobCacheServiceImpl(s3Client: s3Client, blobConfig: new BlobCacheConfig(storageBucket: 's3://store/blobs/'))
+        def blobCacheService = new BlobCacheServiceImpl(s3Client: s3Client, blobConfig: new BlobCacheConfig(storageBucket: bucket))
+        and:
+        def route = Mock(RoutePath) {
+            getTargetPath() >> 'docker.io/repo/container/latest'
+        }
+        and:
+        final request =
+                HeadObjectRequest.builder()
+                        .bucket('my-cache-bucket')
+                        .key('docker.io/repo/container/latest')
+                        .build()
 
         when:
-        def size = blobCacheService.getBlobSize(key)
+        def size = blobCacheService.getBlobSize(route)
 
         then:
+        1 * s3Client.headObject(_) >> HeadObjectResponse.builder().contentLength(expectedSize).build()
+        and:
         size == expectedSize
     }
 
     def 'should return zero when blob does not exist'() {
         given:
+        def bucket = 's3://my-cache-bucket'
         def s3Client = Mock(S3Client)
-        s3Client.headObject(_) >> { throw S3Exception.builder().message('Not Found').build() }
-        def blobCacheService = new BlobCacheServiceImpl(s3Client: s3Client, blobConfig: new BlobCacheConfig())
-        def key = 'non-existing-key'
+        def blobCacheService = new BlobCacheServiceImpl(s3Client: s3Client, blobConfig: new BlobCacheConfig(storageBucket: bucket))
+        and:
+        def route = Mock(RoutePath) {
+            getTargetPath() >> 'docker.io/repo/container/latest'
+        }
+        and:
+        final request =
+                HeadObjectRequest.builder()
+                        .bucket('my-cache-bucket')
+                        .key('docker.io/repo/container/latest')
+                        .build()
 
         when:
-        def size = blobCacheService.getBlobSize(key)
+        def size = blobCacheService.getBlobSize(route)
 
         then:
-        noExceptionThrown()
+        1 * s3Client.headObject(request) >> { throw S3Exception.builder().message('Not Found').build() }
         and:
         size == -1L
     }
 
     def 'should delete blob when blob exists'() {
         given:
+        def bucket = 's3://my-cache-bucket/base/dir'
         def s3Client = Mock(S3Client)
-        s3Client.deleteObject(_) >> { }
-        def blobCacheService = new BlobCacheServiceImpl(s3Client: s3Client, blobConfig: new BlobCacheConfig())
-        def key = 'existing-key'
+        def blobCacheService = new BlobCacheServiceImpl(s3Client: s3Client, blobConfig: new BlobCacheConfig(storageBucket: bucket))
+        and:
+        def route = Mock(RoutePath) {
+            getTargetPath() >> 'docker.io/repo/container/latest'
+        }
+        and:
+        def request = DeleteObjectRequest.builder()
+                .bucket('my-cache-bucket')
+                .key('base/dir/docker.io/repo/container/latest')
+                .build()
 
         when:
-        blobCacheService.deleteBlob(key)
-
+        blobCacheService.deleteBlob(route)
         then:
-        noExceptionThrown()
+        1 * s3Client.deleteObject(request) >> { }
     }
 
     def 'should return failed BlobCacheInfo when blob size mismatch'() {

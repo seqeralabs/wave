@@ -39,6 +39,7 @@ import io.seqera.wave.service.blob.BlobSigningService
 import io.seqera.wave.service.blob.BlobStore
 import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.blob.TransferTimeoutException
+import io.seqera.wave.util.BucketTokenizer
 import io.seqera.wave.util.Escape
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.StringUtils
@@ -216,11 +217,11 @@ class BlobCacheServiceImpl implements BlobCacheService {
     protected BlobCacheInfo checkUploadedBlobSize(BlobCacheInfo info, RoutePath route) {
         if( !info.succeeded() )
             return info
-        final blobSize = getBlobSize(route.targetPath)
+        final blobSize = getBlobSize(route)
         if( blobSize == info.contentLength )
             return info
         log.warn("== Blob cache mismatch size for uploaded object '${info.locationUri}'; upload blob size: ${blobSize}; expect size: ${info.contentLength}")
-        CompletableFuture.supplyAsync(() -> deleteBlob(route.targetPath), executor)
+        CompletableFuture.supplyAsync(() -> deleteBlob(route), executor)
         return info.failed("Mismatch cache size for object ${info.locationUri}")
     }
 
@@ -251,7 +252,6 @@ class BlobCacheServiceImpl implements BlobCacheService {
         StringUtils.pathConcat(blobConfig.storageBucket, route.targetPath)
     }
 
-
     /**
      * The HTTP URI from there the cached layer blob is going to be downloaded
      *
@@ -259,7 +259,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
      * @return The HTTP URI from the cached layer blob is going to be downloaded
      */
     protected String blobDownloadUri(RoutePath route) {
-        final bucketPath = StringUtils.pathConcat(blobConfig.storageBucket, route.targetPath)
+        final bucketPath = blobStorePath(route)
         final presignedUrl = signingService.createSignedUri(bucketPath)
 
         if( blobConfig.baseUrl ) {
@@ -323,39 +323,44 @@ class BlobCacheServiceImpl implements BlobCacheService {
     *
     * @return {@link Long} the size of the blob stored in the cache
     */
-   protected Long getBlobSize(String key) {
-        try {
-            final headObjectRequest =
+   protected Long getBlobSize(RoutePath route) {
+       final objectUri = blobStorePath(route)
+       final object = BucketTokenizer.from(objectUri)
+       try {
+            final request =
                     HeadObjectRequest.builder()
-                            .bucket(blobConfig.storageBucket.replaceFirst("s3://",""))
-                            .key(key)
+                            .bucket(object.bucket)
+                            .key(object.key)
                             .build()
-            final headObjectResponse = s3Client.headObject(headObjectRequest as HeadObjectRequest)
+            final headObjectResponse = s3Client.headObject(request as HeadObjectRequest)
             final contentLength = headObjectResponse.contentLength()
             return contentLength!=null ? contentLength : -1L
-        }
-        catch (Exception e){
-            log.error("== Blob cache Error getting content length of object $key from bucket ${blobConfig.storageBucket}", e)
+       }
+       catch (Exception e){
+           log.error("== Blob cache Error getting content length of object $objectUri from bucket ${blobConfig.storageBucket}", e)
             return -1L
-        }
+       }
     }
 
    /**
     * delete the blob stored in the cache
     *
     */
-   protected void deleteBlob(String key) {
-        try {
-            final deleteObjectRequest =
+   protected void deleteBlob(RoutePath route) {
+       final objectUri = blobStorePath(route)
+       log.debug "== Blob cache deleting object $objectUri"
+       final object = BucketTokenizer.from(objectUri)
+       try {
+            final request =
                     DeleteObjectRequest.builder()
-                            .bucket(blobConfig.storageBucket.replaceFirst("s3://",""))
-                            .key(key)
+                            .bucket(object.bucket)
+                            .key(object.key)
                             .build()
-            s3Client.deleteObject(deleteObjectRequest as DeleteObjectRequest)
-            log.debug("== Blob cache Deleted object $key from bucket ${blobConfig.storageBucket}")
+            s3Client.deleteObject(request as DeleteObjectRequest)
+            log.debug("== Blob cache Deleted object $objectUri from bucket ${blobConfig.storageBucket}")
         }
         catch (Exception e){
-            log.error("== Blob cache Error deleting object $key from bucket ${blobConfig.storageBucket}", e)
+            log.error("== Blob cache Error deleting object $objectUri from bucket ${blobConfig.storageBucket}", e)
         }
    }
 }
