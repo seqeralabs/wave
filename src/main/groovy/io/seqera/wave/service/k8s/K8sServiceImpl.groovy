@@ -188,7 +188,8 @@ class K8sServiceImpl implements K8sService {
     V1Job getJob(String name) {
         k8sClient
                 .batchV1Api()
-                .readNamespacedJob(name, namespace, null)
+                .readNamespacedJob(name, namespace)
+                .execute()
     }
 
     /**
@@ -201,7 +202,8 @@ class K8sServiceImpl implements K8sService {
     JobStatus getJobStatus(String name) {
         def job = k8sClient
                 .batchV1Api()
-                .readNamespacedJob(name, namespace, null)
+                .readNamespacedJob(name, namespace)
+                .execute()
         if( !job )
             return null
         if( job.status.succeeded==1 )
@@ -221,7 +223,8 @@ class K8sServiceImpl implements K8sService {
     V1Pod getPod(String name) {
         return k8sClient
                 .coreV1Api()
-                .readNamespacedPod(name, namespace, null)
+                .readNamespacedPod(name, namespace)
+                .execute()
     }
 
     /**
@@ -335,7 +338,8 @@ class K8sServiceImpl implements K8sService {
         final spec = buildSpec(name, containerImage, args, workDir, creds, spackConfig, nodeSelector)
         return k8sClient
                 .coreV1Api()
-                .createNamespacedPod(namespace, spec, null, null, null,null)
+                .createNamespacedPod(namespace, spec)
+                .execute()
     }
 
     V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, SpackConfig spackConfig, Map<String,String> nodeSelector) {
@@ -484,7 +488,7 @@ class K8sServiceImpl implements K8sService {
     void deletePod(String name) {
         k8sClient
                 .coreV1Api()
-                .deleteNamespacedPod(name, namespace, (String)null, (String)null, (Integer)null, (Boolean)null, (String)null, (V1DeleteOptions)null)
+                .deleteNamespacedPod(name, namespace)
     }
 
     @Override
@@ -492,7 +496,8 @@ class K8sServiceImpl implements K8sService {
         final spec = scanSpec(name, containerImage, args, workDir, creds, scanConfig, nodeSelector)
         return k8sClient
                 .coreV1Api()
-                .createNamespacedPod(namespace, spec, null, null, null,null)
+                .createNamespacedPod(namespace, spec)
+                .execute()
     }
 
     V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig, Map<String,String> nodeSelector) {
@@ -551,7 +556,8 @@ class K8sServiceImpl implements K8sService {
         final spec = transferSpec(name, containerImage, args, blobConfig)
         return k8sClient
                 .coreV1Api()
-                .createNamespacedPod(namespace, spec, null, null, null,null)
+                .createNamespacedPod(namespace, spec)
+                .execute()
     }
 
     V1Pod transferSpec(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
