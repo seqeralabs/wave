@@ -20,6 +20,7 @@ package io.seqera.wave.service
 
 import groovy.json.JsonSlurper
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.seqera.wave.util.StringUtils
 
 /**
@@ -27,28 +28,40 @@ import io.seqera.wave.util.StringUtils
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @CompileStatic
 class ContainerRegistryKeys {
+    /**
+     * The registry user name
+     */
     String userName
+
+    /**
+     * The registry secret
+     */
     String password
+
+    /**
+     * The registry target host - NOTE: this can be null when the keys where obtained by AWS credentials record
+     */
     String registry
 
     static ContainerRegistryKeys fromJson(String json) {
         final root = (Map) new JsonSlurper().parseText(json)
-        // Not 100% the 'discriminator' field is deserialized - to verified
-        if( !root.discriminator || root.discriminator == 'container-reg' )
+        // parse container registry credentials
+        if( root.discriminator == 'container-reg' )
             return new ContainerRegistryKeys(userName: root.userName, password: root.password, registry: root.registry)
         // Map AWS keys to registry username and password   
         if( root.discriminator == 'aws' ) {
             // AWS keys can have also the `assumeRoleArn`, not clear yet how to handle it
             // https://github.com/seqeralabs/nf-tower-cloud/blob/64d12c6f3f399f26422a746c0d97cea6d8ddebbb/tower-enterprise/src/main/groovy/io/seqera/tower/domain/aws/AwsSecurityKeys.groovy#L39-L39
-            return new ContainerRegistryKeys(userName: root.accessKey, password: root.accessKey)
+            return new ContainerRegistryKeys(userName: root.accessKey, password: root.secretKey)
         }
         throw new IllegalArgumentException("Unsupported credentials key discriminator type: ${root.discriminator}")
     }
 
     @Override
     String toString() {
-        return "ContainerRegistryKeys[registry=$registry; userName=$userName; password=${StringUtils.redact(password)})]"
+        return "ContainerRegistryKeys[registry=${registry}; userName=${userName}; password=${StringUtils.redact(password)})]"
     }
 }

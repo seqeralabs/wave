@@ -22,6 +22,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.tower.crypto.AsymmetricCipher
 import io.seqera.tower.crypto.EncryptedPacket
+import io.seqera.wave.service.aws.AwsEcrService
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.auth.JwtAuth
@@ -80,13 +81,11 @@ class CredentialServiceImpl implements CredentialsService {
         def creds = all.find {
             it.provider == 'container-reg'  && (it.registry ?: DOCKER_IO) == matchingRegistryName
         }
-        if (!creds && identity.workflowId) {
-            log.debug "No credentials matching criteria registryName=$registryName; userId=${identity.user.id}; workspaceId=${identity.workspaceId}; endpoint=${identity.towerEndpoint}"
-            //when there are no registry credential, try fetching them from compute credentials
+        if (!creds && identity.workflowId && AwsEcrService.isEcrHost(registryName) ) {
             creds = findComputeCreds(identity)
         }
         if (!creds) {
-            log.debug "No compute credentials found for workflowId=${identity.workflowId}; userId=${identity.userId}; workspaceId=${identity.workspaceId}; endpoint=${identity.towerEndpoint}"
+            log.debug "No credentials matching criteria registryName=$registryName; userId=$identity.userId; workspaceId=$identity.workspaceId; workflowId=${identity.workflowId}; endpoint=$identity.towerEndpoint"
             return null
         }
 
@@ -121,7 +120,7 @@ class CredentialServiceImpl implements CredentialsService {
 
     protected ContainerRegistryKeys parsePayload(String json) {
         try {
-            return ContainerRegistryKeys.fromJson(json)
+            ContainerRegistryKeys.fromJson(json)
         }
         catch (Exception e) {
             log.debug "Unable to parse container keys: $json", e

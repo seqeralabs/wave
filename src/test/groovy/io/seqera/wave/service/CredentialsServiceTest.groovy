@@ -81,7 +81,7 @@ class CredentialsServiceTest extends Specification {
 
         and: 'registry credentials to access a registry stored in tower'
         def credentialsId = 'credentialsId'
-        def registryCredentials = '{"userName":"me", "password": "you", "registry": "quay.io"}'
+        def registryCredentials = '{"userName":"me", "password": "you", "registry": "quay.io", "discriminator":"container-reg"}'
         def credentialsDescription = new CredentialsDescription(
                 id: credentialsId,
                 provider: 'container-reg',
@@ -190,7 +190,7 @@ class CredentialsServiceTest extends Specification {
         ))
 
         and:'no compute credentials'
-        1 * towerClient.fetchWorkflowLaunchInfo('tower.io',auth,'101') >> CompletableFuture.completedFuture(null)
+        0 * towerClient.fetchWorkflowLaunchInfo('tower.io',auth,'101') >> null
 
         then:
         credentials == null
@@ -201,11 +201,23 @@ class CredentialsServiceTest extends Specification {
         def svc = new CredentialServiceImpl()
 
         when:
-        def keys = svc.parsePayload('{"registry":"foo.io", "userName":"me", "password": "you"}')
+        def keys = svc.parsePayload('{"registry":"foo.io", "userName":"me", "password": "you", "discriminator":"container-reg"}')
         then:
         keys.registry == 'foo.io'
         keys.userName == 'me'
         keys.password == 'you'
+    }
+
+    def 'should parse aws keys payload' () {
+        given:
+        def svc = new CredentialServiceImpl()
+
+        when:
+        def keys = svc.parsePayload('{"accessKey":"12345", "secretKey": "67890","discriminator":"aws"}')
+        then:
+        keys.userName == '12345'
+        keys.password == '67890'
+        keys.registry == null
     }
 
     def 'should get registry creds from compute creds when not found in tower credentials'() {
@@ -215,6 +227,7 @@ class CredentialsServiceTest extends Specification {
         def token = "valid-token"
         def towerEndpoint = "http://tower.io:9090"
         def workflowId = "id123"
+        def registryName = '1000000.dkr.ecr.eu-west-1.amazonaws.com'
 
         and: 'a previously registered key'
         def keypair = TEST_CIPHER.generateKeyPair()
@@ -247,13 +260,13 @@ class CredentialsServiceTest extends Specification {
                 launch: launch
          )
         and: 'compute credentials'
-        def computeCredentials = '{"userName":"me", "password": "you"}'
+        def computeCredentials = '{"accessKey":"me", "secretKey": "you", "discriminator":"aws"}'
         and:
         def identity = new PlatformId(new User(id:userId), workspaceId,token,towerEndpoint,workflowId)
         def auth = JwtAuth.of(identity)
 
         when: 'look those registry credentials from tower'
-        def containerCredentials = credentialsService.findRegistryCreds("ecr",identity)
+        def containerCredentials = credentialsService.findRegistryCreds(registryName,identity)
 
         then: 'the registered key is fetched correctly from the security service'
         1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE, towerEndpoint) >> keyRecord
