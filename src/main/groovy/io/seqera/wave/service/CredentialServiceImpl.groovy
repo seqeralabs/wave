@@ -99,7 +99,7 @@ class CredentialServiceImpl implements CredentialsService {
     }
 
     CredentialsDescription findComputeCreds(PlatformId identity) {
-        final response = towerClient.fetchWorkflowLaunchInfo(identity.towerEndpoint, JwtAuth.of(identity), identity.workflowId)
+        final response = towerClient.describeWorkflowLaunch(identity.towerEndpoint, JwtAuth.of(identity), identity.workflowId)
         if( !response )
             return null
         final computeEnv = response.get()?.launch?.computeEnv
@@ -107,7 +107,7 @@ class CredentialServiceImpl implements CredentialsService {
             return null
         if( computeEnv.platform != 'aws-batch' )
             return null
-        return new CredentialsDescription(id: computeEnv.credentialsId)
+        return new CredentialsDescription(id: computeEnv.credentialsId, provider: 'aws')
     }
 
     protected String decryptCredentials(byte[] encodedKey, String payload) {

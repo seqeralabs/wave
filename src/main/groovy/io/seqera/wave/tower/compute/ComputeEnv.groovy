@@ -18,12 +18,14 @@
 
 package io.seqera.wave.tower.compute
 
+import groovy.transform.CompileStatic
 
 /**
  * Model the response of compute environment from seqera platform
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
+@CompileStatic
 class ComputeEnv {
     String id
     String platform

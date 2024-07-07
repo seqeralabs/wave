@@ -42,7 +42,7 @@ class PlatformId {
     final String workflowId
 
     boolean asBoolean() {
-        user!=null || workspaceId!=null || accessToken || towerEndpoint || workflowId !=null
+        user!=null || workspaceId!=null || accessToken || towerEndpoint || workflowId
     }
 
     Long getUserId() {

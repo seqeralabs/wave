@@ -18,11 +18,14 @@
 
 package io.seqera.wave.tower.compute
 
+import groovy.transform.CompileStatic
+
 /**
  * Model the response of workflow launch response from seqera platform
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
+@CompileStatic
 class WorkflowLaunchResponse {
     ComputeEnv computeEnv
 }
