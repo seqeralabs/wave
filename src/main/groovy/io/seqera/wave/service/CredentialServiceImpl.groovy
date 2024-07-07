@@ -120,7 +120,7 @@ class CredentialServiceImpl implements CredentialsService {
 
     protected ContainerRegistryKeys parsePayload(String json) {
         try {
-            ContainerRegistryKeys.fromJson(json)
+            return ContainerRegistryKeys.fromJson(json)
         }
         catch (Exception e) {
             log.debug "Unable to parse container keys: $json", e
