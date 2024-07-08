@@ -16,17 +16,19 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.blob.impl
+package io.seqera.wave.service.aws
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Requires
+import io.micronaut.context.annotation.Value
 import io.seqera.wave.configuration.BlobCacheConfig
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
@@ -38,13 +40,16 @@ import software.amazon.awssdk.services.s3.S3Client
 @Factory
 @CompileStatic
 @Slf4j
-@Requires(property = 'wave.blobCache.enabled', value = 'true')
 class S3ClientFactory {
 
     @Inject
     private BlobCacheConfig blobConfig
 
+    @Value('${aws.region}')
+    private String awsRegion;
+
     @Singleton
+    @Requires(property = 'wave.blobCache.enabled', value = 'true')
     @Named('BlobS3Client')
     S3Client cloudflareS3Client() {
         final creds = AwsBasicCredentials.create(blobConfig.storageAccessKey, blobConfig.storageSecretKey)
@@ -58,5 +63,14 @@ class S3ClientFactory {
 
         log.info("Creating S3 client with configuration: $builder")
         return builder.build()
+    }
+
+    @Singleton
+    @Named('awsS3Client')
+    S3Client defaultS3Client() {
+        return S3Client.builder()
+                .region(Region.of(awsRegion))
+                .credentialsProvider(DefaultCredentialsProvider.create())
+                .build()
     }
 }
