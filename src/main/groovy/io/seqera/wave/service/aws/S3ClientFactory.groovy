@@ -66,7 +66,7 @@ class S3ClientFactory {
     }
 
     @Singleton
-    @Named('awsS3Client')
+    @Named('DefaultS3Client')
     S3Client defaultS3Client() {
         return S3Client.builder()
                 .region(Region.of(awsRegion))
