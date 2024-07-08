@@ -34,7 +34,7 @@ import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
 import static io.seqera.wave.WaveDefault.DOCKER_REGISTRY_1
-import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
+import static io.seqera.wave.WaveDefault.HTTP_RETRYABLE_ERRORS
 /**
  * Lookup service for container registry. The role of this component
  * is to registry the retrieve the registry authentication realm
@@ -73,7 +73,7 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
         // retry strategy
         final retryable = Retryable
                 .<HttpResponse<String>>of(httpConfig)
-                .retryIf((response) -> response.statusCode() in HTTP_SERVER_ERRORS)
+                .retryIf((response) -> response.statusCode() in HTTP_RETRYABLE_ERRORS )
                 .onRetry((event) -> log.warn("Unable to connect '$endpoint' - event: $event"))
         // submit the request
         final response = retryable.apply(()-> httpClient.send(request, HttpResponse.BodyHandlers.ofString()))
