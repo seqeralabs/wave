@@ -10,6 +10,10 @@ It allows for the on-demand assembly, augmentation, and deployment of containeri
 
 The Wave container service itself is not a container registry. All containers builds are stored in a Seqera-hosted image registry for a limited time or frozen to a user-specified container registry.
 
+:::note
+Wave is licensed by Seqera.
+:::
+
 ## Features
 
 ### Private container registries
@@ -26,7 +30,7 @@ Wave offers a flexible approach to container image management. It allows you to 
 
 #### An example of Wave augmentation
 
-Imagine you have a base Ubuntu image in a container registry. Wave acts as a proxy between your docker client and the registry. When you request an augmented image, Wave intercepts the process.
+Imagine you have a base Ubuntu image in a container registry. Wave acts as a proxy between your Docker client and the registry. When you request an augmented image, Wave intercepts the process.
 
 1. Base image layers download: The Docker client downloads the standard Ubuntu layers from the registry.
 2. Custom layer injection: Wave injects your custom layer, denoted by "ω", which could represent application code, libraries, configurations etc.
@@ -39,7 +43,7 @@ Imagine you have a base Ubuntu image in a container registry. Wave acts as a pro
 1. Streamlined workflows: Wave simplifies your workflow by eliminating the need to manually build and manage custom images.
 2. Flexibility: You can easily modify the custom layer for different use cases, allowing for greater adaptability.
 
-### Conda based containers
+### Conda-based containers
 
 Package management systems such as Conda and Bioconda simplify the installation of scientific software. However, there’s considerable friction when it comes to using those tools to deploy pipelines in cloud environments.
 Wave enables dynamic provisioning of container images from any Conda or Bioconda recipe. Just declare the Conda packages in your Nextflow pipeline and Wave will assemble the required container.
