@@ -45,7 +45,7 @@ class ObjectStorageOperationsFactory {
     @Singleton
     @Named("build-logs")
     ObjectStorageOperations<?, ?, ?> awsStorageOperations(@Named("DefaultS3Client") S3Client s3Client, InputStreamMapper inputStreamMapper) {
-        AwsS3Configuration configuration = new AwsS3Configuration('wave')
+        AwsS3Configuration configuration = new AwsS3Configuration('build-logs')
         configuration.setBucket(storageBucket)
         return new AwsS3Operations(configuration, s3Client, inputStreamMapper)
     }
