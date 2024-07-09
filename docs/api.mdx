@@ -67,7 +67,7 @@ This API endpoint is deprecated in current versions of Wave.
 | `containerConfig.layers.gzipSize`   | The size in bytes of the the provided layer tar gzip file.                                                                                         |
 | `containerFile`                     | Dockerfile used for building a new container encoded in base64 (optional). When provided, the attribute `containerImage` must be omitted.        |
 | `condaFile`                         | Conda environment file encoded as base64 string.                                                                                                   |
-| `spackFile`                         | Spack recipe file encoded as base64 string.                                                                                                        |
+| `spackFile`                         | `Deprecated` Spack recipe file encoded as base64 string. Spack support will be removed in future releases.                                                                                                        |
 | `containerPlatform`                 | Target container architecture of the built container, e.g., `linux/amd64` (optional). Currently only supporting amd64 and arm64.                     |
 | `buildRepository`                   | Container repository where container builds should be pushed, e.g., `docker.io/user/my-image` (optional).                                            |
 | `cacheRepository`                   | Container repository used to cache build layers `docker.io/user/my-cache` (optional).                                                              |
@@ -168,7 +168,7 @@ The endpoint returns the name of the container request made available by Wave.
 | `containerConfig.layers.gzipSize`   | The size in bytes of the the provided layer tar gzip file.                                                                                         |
 | `containerFile`                     | Dockerfile used for building a new container encoded in base64 (optional). When provided, the attribute `containerImage` must be omitted.        |
 | `condaFile`                         | Conda environment file encoded as base64 string.                                                                                                   |
-| `spackFile`                         | Spack recipe file encoded as base64 string.                                                                                                        |
+| `spackFile`                         | `Deprecated` Spack recipe file encoded as base64 string. Spack support will be removed in future releases.                                                                                                           |
 | `containerPlatform`                 | Target container architecture of the built container, e.g., `linux/amd64` (optional). Currently only supporting amd64 and arm64.                     |
 | `buildRepository`                   | Container repository where container builds should be pushed, e.g., `docker.io/user/my-image` (optional).                                            |
 | `cacheRepository`                   | Container repository used to cache build layers `docker.io/user/my-cache` (optional).                                                              |
@@ -178,9 +178,9 @@ The endpoint returns the name of the container request made available by Wave.
 | `towerEndpoint`                     | Seqera Platform service endpoint from where container registry credentials are retrieved (optional). Default `https://api.cloud.seqera.io`.                       |
 | `towerAccessToken`                  | Access token of the user account granting access to the Seqera Platform service specified via `towerEndpoint` (optional).                      |
 | `towerWorkspaceId`                  | ID of the Seqera Platform workspace from where the container registry credentials are retrieved (optional). When omitted the personal workspace is used. |
-| `packages`                          | This object specifies Conda or Spack packages environment information.                                                                                         |
+| `packages`                          | This object specifies Conda packages environment information.                                                                                         |
 | `environment`                       | The package environment file encoded as a base64 string.                                                                                                       |
-| `type`                              | This represents the type of package builder. Use `SPACK` or `CONDA`.                                                                                   |
+| `type`                              | This represents the type of package builder. Use `CONDA`.                                                                                   |
 | `entries`                           | List of the packages names.                                                                                                                                    |
 | `channels`                          | List of Conda channels, which will be used to download packages.                                                                                               |
 | `mambaImage`                        | Name of the docker image used to build Conda containers.                                                                                              |
@@ -285,13 +285,11 @@ Provides status of build against buildId passed as path variable
 
 ```json
 {
-    serviceInfo: {
-        id: string,
-        status: string,
-        startTime: string,
-        duration: string,
-        succeeded: boolean
-    }
+    id: string,
+    status: string,
+    startTime: string,
+    duration: string,
+    succeeded: boolean
 }
 ```
 
@@ -527,7 +525,7 @@ This endpoint is used to retrieve the builds performed by Wave.
 
 ```json
 {
-    metric: "builds|pulls|fusion",
+    metric: "builds",
     count: integer,
     orgs: {
         String: integer,
@@ -590,7 +588,13 @@ This endpoint is used to get the pulls performed through Wave.
 
 ```json
 {
-    count: integer
+    metric: "pulls",
+    count: integer,
+    orgs: {
+        String: integer,
+        String: integer,
+        ...
+    }
 }
 ```
 
@@ -648,7 +652,13 @@ This endpoint is used to get the pulls of Fusion-based containers performed thro
 
 ```json
 {
-    count: integer
+    metric: "fusion",
+    count: integer,
+    orgs: {
+        String: integer,
+        String: integer,
+        ...
+    }
 }
 ```
 
