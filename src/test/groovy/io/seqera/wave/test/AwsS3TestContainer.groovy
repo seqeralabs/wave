@@ -40,8 +40,7 @@ trait AwsS3TestContainer {
         awsS3Container.start()
         log.debug "Started AWS S3 test container"
     }
-
-
+    
     String getAwsS3HostName(){
         awsS3Container.getHost()
     }

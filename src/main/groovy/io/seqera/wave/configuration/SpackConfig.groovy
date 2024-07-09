@@ -35,6 +35,7 @@ import jakarta.inject.Singleton
 @EqualsAndHashCode
 @Singleton
 @CompileStatic
+@Deprecated
 class SpackConfig {
 
     /**

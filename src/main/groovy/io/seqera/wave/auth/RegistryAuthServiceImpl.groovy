@@ -40,7 +40,7 @@ import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
-import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
+import static io.seqera.wave.WaveDefault.HTTP_RETRYABLE_ERRORS
 /**
  * Implement Docker authentication & login service
  *
@@ -120,7 +120,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         // retry strategy
         final retryable = Retryable
                 .<HttpResponse<String>>of(httpConfig)
-                .retryIf( (response) -> response.statusCode() in HTTP_SERVER_ERRORS)
+                .retryIf( (response) -> response.statusCode() in HTTP_RETRYABLE_ERRORS)
                 .onRetry((event) -> log.warn("Unable to connect '$endpoint' - event: $event}"))
         // make the request
         final response = retryable.apply(()-> httpClient.send(request, HttpResponse.BodyHandlers.ofString()))
@@ -207,7 +207,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         // retry strategy
         final retryable = Retryable
                 .<HttpResponse<String>>of(httpConfig)
-                .retryIf( (response) -> ((HttpResponse)response).statusCode() in HTTP_SERVER_ERRORS )
+                .retryIf( (response) -> ((HttpResponse)response).statusCode() in HTTP_RETRYABLE_ERRORS )
                 .onRetry((event) -> log.warn("Unable to connect '$login' - event: $event"))
         // submit http request
         final response = retryable.apply(()-> httpClient.send(req, HttpResponse.BodyHandlers.ofString()))
