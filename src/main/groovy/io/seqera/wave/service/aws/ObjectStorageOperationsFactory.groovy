@@ -21,6 +21,7 @@ package io.seqera.wave.service.aws
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Factory
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.objectstorage.InputStreamMapper
 import io.micronaut.objectstorage.ObjectStorageOperations
@@ -37,6 +38,7 @@ import software.amazon.awssdk.services.s3.S3Client
 @Factory
 @CompileStatic
 @Slf4j
+@Requires(property = 'wave.build.logs.bucket')
 class ObjectStorageOperationsFactory {
 
     @Value('${wave.build.logs.bucket}')
