@@ -1,7 +1,0 @@
----
-wave:
-  build:
-    logs:
-      bucket: "seqera-development-wave-store"
-      prefix: 'build-logs'
-...
