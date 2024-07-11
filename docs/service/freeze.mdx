@@ -1,0 +1,28 @@
+---
+title: Container freeze
+---
+
+The container freeze mode allows the provisioning of non-ephemeral containers that can be stored permanently in a container registry of your choice. When using the freeze mode, the Wave service transparently carries out a regular build.
+
+Freeze Mode Description:
+
+1. The client, either Nextflow or Wave client, submits a container request specifying: i) the (Platform) user identity; ii) the container image to augment; iii) the container extension configuration, which can be either a custom payload, one or more extension layers or container images; iv) the target repository where the built container should be uploaded.
+1. The Wave service validates the request and authorizes the user via a request to the Platform service.
+1. The Wave service checks if the container image already exists in the target registry
+1. If the image does not exist, Wave launches a container build job and pushes the resulting image to the target registry
+1. The Wave service responds with the container image name e.g. your.registry.com/some/image/build:1234567
+
+*Key points*
+
+- Container images provisioned via the freeze mode are regular container builds.
+- Each container image is associated with a unique ID that is obtained by hashing i) the Container file, ii) any package dependencies, iii) the target platform i.e. amd64 or arm64, iv) the target repository name.
+- When a request for the same container is made, the same ID is assigned to it and therefore, the build is skipped.
+- The resulting images are hosted in the customer repository and not cached locally (provided that a cache repository is specified)
+- The container images are stored permanently as long as the repository owner does not delete it
+
+*Use cases*
+
+- Create container images on-demand via Conda packages 
+- Deliver multi-architecture (amd64, arm64) and multi-format (Docker, Singularity) container collections.
+- Deliver container images in the same region where compute is performed 
+

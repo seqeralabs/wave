@@ -40,20 +40,6 @@ tower {
 The use of the Seqera access token is not mandatory, however, it's required to enable access to private repositories and it allows higher service rate limits compared to anonymous users.
 :::
 
-## API limits
-
-The Wave service implements API rate limits for API calls. Authenticated users have higher rate limits than anonymous users.
-
-If an access token is provided, the following rate limits apply:
-
-- 100 container builds per hour
-- 1,000 container pulls per minute
-
-If an access token isn't provided, the following rate limits apply:
-
-- 25 container builds per day
-- 250 container pulls per hour
-
 ## Known limitation
 
 ### Use of sha256 digest in the image name
@@ -72,38 +58,6 @@ wave.freeze = true
 wave.strategy = ['dockerfile']
 wave.build.repository = 'docker.io/<user>/<repository>'
 ```
-
-## Tutorials
-
-### Store container images into a private repository
-
-Containers built by Wave are uploaded to the Wave default repository hosted on AWS ECR with name `195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build`. The images in this repository are automatically deleted 1 week from the date of their push.
-
-If you want to store Wave containers in your own container repository use the following settings in the Nextflow configuration file:
-
-```groovy
-wave.build.repository = 'example.com/your/build-repo'
-wave.build.cacheRepository = 'example.com/your/cache-repo'
-```
-
-The first repository is used to store the built container images. The second one is used to store the individual image layers for caching purposes.
-
-The repository access keys need to be specified using the Seqera Platform credentials manager as specified in the [Authenticate private repositories](#Authenticate private repositories) section.
-
-## Advanced settings
-
-The following configuration options are available:
-
-| Method                       | Description                                                                                                                                                              |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `wave.enabled`               | Enable/disable the execution of Wave containers                                                                                                                          |
-| `wave.endpoint`              | The Wave service endpoint (default: `https://wave.seqera.io`)                                                                                                            |
-| `wave.build.repository`      | The container repository where image built by Wave needs to be uploaded (note: the corresponding credentials need to be provided in your Seqera Platform account).       |
-| `wave.build.cacheRepository` | The container repository used to cache image layers build by the Wave service (note: the corresponding credentials need to be provided in your Seqera Platform account). |
-| `wave.conda.mambaImage`      | The Mamba container image is used to build Conda based container. This is expected to be [micromamba-docker](https://github.com/mamba-org/micromamba-docker) image.      |
-| `wave.conda.commands`        | One or more commands to be added to the Dockerfile used by build a Conda based image.                                                                                    |
-| `wave.strategy`              | The strategy to be used when resolving ambiguous Wave container requirement (default: `'container,dockerfile,conda'`)                                                    |
-| `wave.freeze`                | When `freeze` mode is enabled containers provisioned by Wave are stored permanently in the repository specified via the setting `wave.build.repository`.                 |
 
 ## More examples
 

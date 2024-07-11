@@ -1,0 +1,27 @@
+---
+title: Container augmentation
+---
+
+The container augmentation provisioning mode allows "extending" the content of a container image without rebuilding it. Instead, this mechanism allows modifying a container image during the pull phase made by a Docker client.
+
+Container augmentation works as follows:
+
+1. The client, either Nextflow or Wave client, submits a container request specifying: i) the (Platform) user identity; ii) the container image to be augmented; iii) the container extension configuration, which can be either a custom payload, one or more extension layers or container images. 
+1. The Wave service validates the request and authorizes the user submitting a request to the Platform service
+1. Finally, the Wave service responds with an ephemeral container image name e.g. wave.seqera.io/wt/<ID TOKEN>/library/alpine:latest 
+    The ID TOKEN is uniquely assigned and it's used to identify and authorize the following container request.
+1. The Docker client uses the return image name to pull the container binary content of the upstream image directly from the target registry, finally, the content added by Wave as one or more layer extensions is shipped by the Wave service
+
+*Key points*
+
+- Wave acts as a proxy between the Docker client and the target registry that hosts the container image.
+- During this process, Wave modifies, if needed, the container manifest to add the new content as specified by the request, but it does not (and cannot) alter the container layer blob files that have a unique checksum that is preserved.
+- The image blobs are downloaded directly from the target registry (not from Wave) **[there's an exception to be discussed]**
+- The extended content added by Wave is served via Cloudflare CDN.
+- This process does not carry out any "build" operation behind the scenes.
+- Augmented containers are ephemeral: they are not stored in a container repository, and they can only be accessed for a short period of time. 
+
+*Use cases*
+
+- Authenticate access to the private repositories via Platform credentials 
+- Extending existing containers by adding infrastructure and pipeline dependencies on the fly without rebuilding and maintaining additional container images
