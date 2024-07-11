@@ -293,4 +293,68 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         result2 == scanRecord2
     }
 
+    def 'should load a build records' () {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        final request1 = new BuildRequest(
+                'container1',
+                'FROM foo:latest',
+                'conda::recipe',
+                null,
+                Path.of("."),
+                'docker.io/my/repo:container1',
+                new PlatformId(new User(id: 1, userName: 'foo', email: 'foo@seqera.io'), 100),
+                ContainerPlatform.of('amd64'),
+                'docker.io/my/cache',
+                '127.0.0.1',
+                '{"config":"json"}',
+                null,
+                null,
+                'scan12345',
+                null,
+                BuildFormat.DOCKER
+        ).withBuildId('1')
+        def result1 = new BuildResult(request1.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
+        def event1 = new BuildEvent(request1, result1)
+        def record1 = WaveBuildRecord.fromEvent(event1)
+        final request2 = new BuildRequest(
+                'container2',
+                'FROM foo:latest',
+                'conda::recipe',
+                null,
+                Path.of("."),
+                'docker.io/my/repo:container2',
+                new PlatformId(new User(id: 1, userName: 'foo', email: 'foo@seqera.io'), 100),
+                ContainerPlatform.of('amd64'),
+                'docker.io/my/cache',
+                '127.0.0.1',
+                '{"config":"json"}',
+                null,
+                null,
+                'scan12345',
+                null,
+                BuildFormat.DOCKER
+        ).withBuildId('2')
+        def result2 = new BuildResult(request2.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
+        def event2 = new BuildEvent(request2, result2)
+        def record2 = WaveBuildRecord.fromEvent(event2)
+
+        and:
+        persistence.saveBuild(record1)
+        persistence.saveBuild(record2)
+
+        when:
+        sleep 100
+        def builds1 = persistence.loadBuilds('docker.io/my/repo:container1', null)
+        def builds2 = persistence.loadBuilds('docker.io/my/repo:container2', 'foo')
+        def builds3 = persistence.loadBuilds(null, 'foo')
+        def builds4 = persistence.loadBuilds(null, 'foo@seqera.io')
+
+        then:
+        builds1[0] == record1
+        builds2 == [record1, record2]
+        builds3 == [record1, record2]
+        builds4 == [record1, record2]
+    }
+
 }

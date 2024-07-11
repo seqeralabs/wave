@@ -49,6 +49,7 @@ import io.seqera.wave.storage.reader.ContentReaderFactory
 import io.seqera.wave.test.RedisTestContainer
 import io.seqera.wave.test.SurrealDBTestContainer
 import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.tower.User
 import io.seqera.wave.util.Packer
 import io.seqera.wave.util.SpackHelper
 import io.seqera.wave.util.TemplateRenderer
@@ -60,7 +61,6 @@ import io.seqera.wave.util.ContainerHelper
  */
 @Slf4j
 @MicronautTest
-
 class ContainerBuildServiceTest extends Specification implements RedisTestContainer, SurrealDBTestContainer{
 
     @Inject ContainerBuildServiceImpl service
@@ -588,5 +588,87 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         def record2 = buildRecordStore.getBuildRecord(request.buildId)
         record2.buildId == request.buildId
         record2.digest == 'abc123'
+    }
+
+    void "should load builds from database"() {
+        given:
+        final request1 = new BuildRequest(
+                'container1',
+                'test',
+                'test',
+                'test',
+                Path.of("."),
+                'docker.io/my/repo:container1',
+                new PlatformId(new User(id: 1, userName: 'foo', email: 'foo@seqera.io'), 100),
+                ContainerPlatform.of('amd64'),
+                'docker.io/my/cache',
+                '127.0.0.1',
+                '{"config":"json"}',
+                null,
+                null,
+                'scan12345',
+                null,
+                BuildFormat.DOCKER
+        ).withBuildId('1')
+
+        final request2 = new BuildRequest(
+                'container2',
+                'test',
+                'test',
+                'test',
+                Path.of("."),
+                'docker.io/my/repo:container2',
+                new PlatformId(new User(id: 1, userName: 'foo', email: 'foo@seqera.io'), 100),
+                ContainerPlatform.of('amd64'),
+                'docker.io/my/cache',
+                '127.0.0.1',
+                '{"config":"json"}',
+                null,
+                null,
+                'scan12345',
+                null,
+                BuildFormat.DOCKER
+        ).withBuildId('2')
+
+        and:
+        def result1 = new BuildResult(request1.buildId, 0, "content", Instant.now(), Duration.ofSeconds(1), 'abc123')
+        def event1 = new BuildEvent(request1, result1)
+        def result2 = new BuildResult(request2.buildId, 0, "content", Instant.now(), Duration.ofSeconds(1), 'abc1234')
+        def event2 = new BuildEvent(request2, result2)
+        and:
+        service.saveBuildRecord(event1)
+        service.saveBuildRecord(event2)
+
+        when:
+        def record = service.getBuildRecords('docker.io/my/repo:container1', null)
+
+        then:
+        record[0].buildId == request1.buildId
+        record[0].digest == 'abc123'
+
+        when:
+        record = service.getBuildRecords('docker.io/my/repo:container2', null)
+
+        then:
+        record[0].buildId == request2.buildId
+        record[0].digest == 'abc1234'
+
+        when:
+        record = service.getBuildRecords('docker.io/my/repo:container1', 'foo')
+
+        then:
+        record[0].buildId == request1.buildId
+        record[0].digest == 'abc123'
+        record[1].buildId == request2.buildId
+        record[1].digest == 'abc1234'
+
+        when:
+        record = service.getBuildRecords(null, 'foo@seqera.io')
+
+        then:
+        record[0].buildId == request1.buildId
+        record[0].digest == 'abc123'
+        record[1].buildId == request2.buildId
+        record[1].digest == 'abc1234'
     }
 }
