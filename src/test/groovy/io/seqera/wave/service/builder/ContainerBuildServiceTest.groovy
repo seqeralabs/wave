@@ -93,8 +93,6 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
 
         when:
         def result = service.launch(req)
-        and:
-        println result.logs
         then:
         result.id
         result.startTime
@@ -588,5 +586,14 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         def record2 = buildRecordStore.getBuildRecord(request.buildId)
         record2.buildId == request.buildId
         record2.digest == 'abc123'
+    }
+
+    def 'should return only the host name' () {
+        expect:
+        ContainerInspectServiceImpl.host0(CONTAINER) == EXPECTED
+        where:
+        CONTAINER       | EXPECTED
+        'docker.io'     | 'docker.io'
+        'docker.io/foo/'| 'docker.io'
     }
 }
