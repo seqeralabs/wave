@@ -167,7 +167,7 @@ class CredentialsServiceTest extends Specification {
         )
         and:
 
-        def identity = new PlatformId(new User(id:10), 10,"token",'tower.io', '101')
+        def identity = new PlatformId(new User(id:10), 11,"token",'tower.io', '101')
         def auth = JwtAuth.of(identity)
 
         when:
@@ -220,8 +220,8 @@ class CredentialsServiceTest extends Specification {
 
     def 'should get registry creds from compute creds when not found in tower credentials'() {
         given: 'a tower user in a workspace on a specific instance with a valid token'
-        def userId = 10
-        def workspaceId = 10
+        def userId = 12
+        def workspaceId = 12
         def token = "valid-token"
         def towerEndpoint = "http://tower.io:9090"
         def workflowId = "id123"
