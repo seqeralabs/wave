@@ -2,9 +2,10 @@
 title: Features
 ---
 
-||||||||
-|--- |--- |--- |--- |--- |--- |--- |
+Wave provides the following container builds
+
 ||Provisioning mode|Source|Freeze|Build repo|Accessibility|Format|
+|--- |--- |--- |--- |--- |--- |--- |
 |Ephemeral|Augmentation|Container image|No|n/a|Temporary token|Docker|
 |Ephemeral|Build|Container file|No|Default|Temporary token|Docker|
 |Ephemeral|Build|Conda package|No|Default|Temporary token|Docker|
@@ -36,7 +37,7 @@ Imagine you have a base Ubuntu image in a container registry. Wave acts as a pro
 2. Custom layer injection: Wave injects your custom layer, denoted by "ω", which could represent application code, libraries, configurations etc.
 3. New image creation: Wave combines the downloaded Ubuntu layers with your custom layer, effectively creating a new image on the fly.
 
-![](_images/wave_container_augmentation.png)
+![](../_images/wave_container_augmentation.png)
 
 ### Benefits of Wave augmentation
 

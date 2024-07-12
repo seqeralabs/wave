@@ -2,7 +2,7 @@
   "sidebar": [
     {
       "type": "category",
-      "label": "Wave service",
+      "label": "Wave",
       "collapsed": false,
       "link": {
         "type": "doc",
@@ -12,10 +12,10 @@
         "service/features",
         "service/architecture",
         "service/limits",
-        "service/singularity-containers",
         "service/community-registry",
         "service/augmentation",
-        "service/freeze"
+        "service/freeze",
+        "service/singularity-containers"
       ]
     },
     {
@@ -41,11 +41,12 @@
       "label": "Nextflow pipelines",
       "collapsed": false,
       "items": [
-        "guides/conda-containers",
-        "guides/fusion-file-system",
-        "guides/private-repo",
-        "guides/singularity-containers",
-        "guides/module-containers"
+        "nextflow/configuration",
+        "guides/nextflow/conda-containers",
+        "guides/nextflow/private-repo",
+        "guides/nextflow/singularity-containers",
+        "guides/nextflow/module-containers",
+        "guides/fusion-file-system"
       ]
     },
     "guide",
