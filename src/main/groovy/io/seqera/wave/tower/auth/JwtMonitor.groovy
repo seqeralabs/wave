@@ -102,6 +102,10 @@ class JwtMonitor implements Runnable {
             log.warn "JWT record has no receivedAt timestamp - entry=$entry"
             return
         }
+        if( !entry.endpoint ) {
+            log.warn "JWT record has no endpoint field - entry=$entry"
+            return
+        }
         // check if the JWT record is expired
         final deadline = entry.createdAt + tokenConfig.cache.duration
         if( now > deadline ) {

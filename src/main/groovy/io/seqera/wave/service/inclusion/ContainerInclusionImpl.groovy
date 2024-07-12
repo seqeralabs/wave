@@ -51,7 +51,7 @@ class ContainerInclusionImpl implements ContainerInclusionService {
 
         final result = new ArrayList<ContainerLayer>()
         for( String it : containerNames ) {
-            // submit a container inspect request to find out the layers making up the contaner
+            // submit a container inspect request to find out the layers making up the container
             final spec = inspectService.containerSpec(it, identity)
             final List<ObjectRef> layerRef = spec.getManifest().getLayers();
             // add each entry as a new container layer in the request container config

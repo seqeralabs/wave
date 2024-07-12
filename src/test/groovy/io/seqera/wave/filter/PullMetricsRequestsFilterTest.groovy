@@ -69,7 +69,7 @@ class PullMetricsRequestsFilterTest extends Specification {
         def res = httpClient.toBlocking().exchange(req, Map)
 
         then:
-        res.body() == [count: 1]
+        res.body() == [metric:'pulls', count: 1]
         res.status.code == 200
     }
 }

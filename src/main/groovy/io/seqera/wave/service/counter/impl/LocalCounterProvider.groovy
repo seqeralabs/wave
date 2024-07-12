@@ -20,6 +20,7 @@ package io.seqera.wave.service.counter.impl
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
+import java.util.regex.Pattern
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
@@ -49,10 +50,11 @@ class LocalCounterProvider implements CounterProvider {
 
     @Override
     Map<String, Long> getAllMatchingEntries(String key, String pattern) {
-        def keyStore = store.get(key)
+        Pattern compiledPattern = Pattern.compile(pattern.replace('*', '.*'))
+        Map keyStore = store.get(key)
         Map<String, Long> result = [:]
         if (keyStore){
-            def matchingPairs = keyStore.findAll { k, v -> k =~ pattern }
+            def matchingPairs = keyStore.findAll {entry -> compiledPattern.matcher(entry.key).matches()}
             matchingPairs.each { k, v ->
             result.put(k, v as Long)
             }

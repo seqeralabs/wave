@@ -19,12 +19,12 @@
 package io.seqera.wave.core
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -72,6 +72,7 @@ class RoutePathTest extends Specification {
 
     }
 
+    @Unroll
     def 'should get manifest path'() {
         expect:
         RoutePath.v2manifestPath(ContainerCoordinates.parse(CONTAINER)).path == PATH
@@ -80,6 +81,20 @@ class RoutePathTest extends Specification {
         CONTAINER              | PATH
         'ubuntu'               | '/v2/library/ubuntu/manifests/latest'
         'quay.io/foo/bar:v1.0' | '/v2/foo/bar/manifests/v1.0'
+    }
+
+    def 'should get manifest path with identity'() {
+        given:
+        def CONTAINER = ContainerCoordinates.parse('quay.io/foo/bar:v1.0')
+        def PATH = '/v2/foo/bar/manifests/v1.0'
+        def IDENTITY = new PlatformId(new User(id: 1, email: 'paolo@seqera.io'), 2, 'xyz')
+
+        expect:
+        RoutePath.v2manifestPath(CONTAINER).path == PATH
+        RoutePath.v2manifestPath(CONTAINER).identity == PlatformId.NULL
+        and:
+        RoutePath.v2manifestPath(CONTAINER, IDENTITY).path == PATH
+        RoutePath.v2manifestPath(CONTAINER, IDENTITY).identity == IDENTITY
     }
 
     def 'should parse location' () {

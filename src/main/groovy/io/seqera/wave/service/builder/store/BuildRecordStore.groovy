@@ -16,19 +16,19 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.metric.model
+package io.seqera.wave.service.builder.store
 
-import groovy.transform.CompileStatic
+import io.seqera.wave.service.persistence.WaveBuildRecord
+
 /**
- * Model a Wave fusion pulls count response
+ * Define the contract to cache {@link WaveBuildRecord} object
  *
- * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@CompileStatic
-class GetFusionPullsCountResponse {
-    Long count
+interface BuildRecordStore {
 
-    GetFusionPullsCountResponse(Long count) {
-        this.count = count
-    }
+    WaveBuildRecord getBuildRecord(String buildId)
+
+    void putBuildRecord(String buildId, WaveBuildRecord value)
+
 }

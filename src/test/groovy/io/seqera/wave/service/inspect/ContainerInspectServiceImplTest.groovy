@@ -90,11 +90,11 @@ class ContainerInspectServiceImplTest extends Specification {
 
         and:
         ContainerInspectServiceImpl.findRepositories('''
-                FROM gcr.io/kaniko-project/executor:latest AS knk
+                FROM moby/buildkit:v0.14.1-rootless AS bkt
                 RUN this and that
                 FROM amazoncorretto:17.0.4
-                COPY --from=knk /kaniko/executor /kaniko/executor
-                ''') == ['gcr.io/kaniko-project/executor:latest', 'amazoncorretto:17.0.4']
+                COPY --from=bkt /usr/bin/buildctl /usr/bin/buildctl
+                ''') == ['moby/buildkit:v0.14.1-rootless', 'amazoncorretto:17.0.4']
 
     }
 
@@ -127,7 +127,7 @@ class ContainerInspectServiceImplTest extends Specification {
         and:
         def result = ContainerInspectServiceImpl.inspectItems(DOCKERFILE)
         then:
-        // capture both the repository name and the explicity entrypoint
+        // capture both the repository name and the explicit entrypoint
         // the entrypoint is returned first because it has higher priority
         result == [
                 new ContainerInspectServiceImpl.InspectEntrypoint(["this","--that"]),

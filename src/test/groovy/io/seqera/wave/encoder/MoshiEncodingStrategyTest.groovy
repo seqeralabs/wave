@@ -20,17 +20,22 @@ package io.seqera.wave.encoder
 
 import spock.lang.Specification
 
+import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
+import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingResponse
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
+import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.DockerDigestStore
 import io.seqera.wave.storage.LazyDigestStore
@@ -361,4 +366,43 @@ class MoshiEncodingStrategyTest extends Specification {
         copy.size == data.size
     }
 
+    def 'should encode and decode wave build record' () {
+        given:
+        def encoder = new MoshiEncodeStrategy<WaveBuildRecord>() { }
+        and:
+        def context = new BuildContext('http://foo.com', '12345', 100, '67890')
+        and:
+        def build = new BuildRequest(
+                '12345',
+                'from foo',
+                'conda spec',
+                'spack spec',
+                Path.of("/some/path"),
+                'docker.io/some:image:12345',
+                PlatformId.NULL,
+                ContainerPlatform.of('linux/amd64'),
+                'cacherepo',
+                "1.2.3.4",
+                '{"config":"json"}',
+                null,
+                null,
+                'scan12345',
+                context,
+                null)
+                .withBuildId('1')
+        def result = new BuildResult(build.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
+        def event = new BuildEvent(build, result)
+
+        and:
+        def record1 = WaveBuildRecord.fromEvent(event)
+
+        when:
+        def json = encoder.encode(record1)
+        and:
+        def copy = encoder.decode(json)
+        then:
+        copy.getClass() == record1.getClass()
+        and:
+        copy == record1
+    }
 }

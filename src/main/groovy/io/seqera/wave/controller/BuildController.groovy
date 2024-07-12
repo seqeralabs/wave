@@ -29,11 +29,11 @@ import io.micronaut.http.annotation.Produces
 import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
+import io.seqera.wave.api.BuildStatusResponse
+import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.logs.BuildLogService
-import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import jakarta.inject.Inject
-import io.seqera.wave.api.BuildStatusResponse
 /**
  * Implements a controller for container builds
  *
@@ -46,7 +46,7 @@ import io.seqera.wave.api.BuildStatusResponse
 class BuildController {
 
     @Inject
-    private PersistenceService persistenceService
+    private ContainerBuildService buildService
 
     @Inject
     @Nullable
@@ -54,7 +54,7 @@ class BuildController {
 
     @Get("/v1alpha1/builds/{buildId}")
     HttpResponse<WaveBuildRecord> getBuildRecord(String buildId){
-        final record = persistenceService.loadBuild(buildId)
+        final record = buildService.getBuildRecord(buildId)
         return record
                 ? HttpResponse.ok(record)
                 : HttpResponse.<WaveBuildRecord>notFound()
@@ -73,7 +73,7 @@ class BuildController {
 
     @Get("/v1alpha1/builds/{buildId}/status")
     HttpResponse<BuildStatusResponse> getBuildStatus(String buildId){
-        final build = persistenceService.loadBuild(buildId)
+        final build = buildService.getBuildRecord(buildId)
         build != null
             ? HttpResponse.ok(build.toStatusResponse())
             : HttpResponse.<BuildStatusResponse>notFound()

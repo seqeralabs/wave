@@ -34,7 +34,7 @@ import redis.clients.jedis.params.SetParams
 /**
  * Implements a future queue using Redis hash. The hash was chosen over
  * a Redis list, because values that fail to be collected within the
- * expected timout, are evicted by Redis by simply specifying the hash expiration.
+ * expected timeout, are evicted by Redis by simply specifying the hash expiration.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

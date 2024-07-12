@@ -23,7 +23,7 @@ package io.seqera.wave.service.metric
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
 */
-interface MetricConstants {
+interface MetricsConstants {
 
     static final public String PREFIX_FUSION =  'fusion'
 

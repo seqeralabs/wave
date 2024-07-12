@@ -98,7 +98,7 @@ class DockerBuildStrategy extends BuildStrategy {
         final completed = proc.waitFor(buildConfig.buildTimeout.toSeconds(), TimeUnit.SECONDS)
         final stdout = proc.inputStream.text
         if( completed ) {
-            final digest = proxyService.getImageDigest(req.targetImage)
+            final digest = proc.exitValue()==0 ? proxyService.getImageDigest(req, true) : null
             return BuildResult.completed(req.buildId, proc.exitValue(), stdout, req.startTime, digest)
         }
         else {
@@ -110,21 +110,25 @@ class DockerBuildStrategy extends BuildStrategy {
         final spack = req.isSpackBuild ? spackConfig : null
 
         final dockerCmd = req.formatDocker()
-                ? cmdForKaniko( req.workDir, credsFile, spack, req.platform)
+                ? cmdForBuildkit( req.workDir, credsFile, spack, req.platform)
                 : cmdForSingularity( req.workDir, credsFile, spack, req.platform)
 
         return dockerCmd + launchCmd(req)
     }
 
-    protected List<String> cmdForKaniko(Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform ) {
+    protected List<String> cmdForBuildkit(Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform ) {
+        //checkout the documentation here to know more about these options https://github.com/moby/buildkit/blob/master/docs/rootless.md#docker
         final wrapper = ['docker',
                          'run',
                          '--rm',
-                         '-v', "$workDir:$workDir".toString()]
+                         '--privileged',
+                         '-v', "$workDir:$workDir".toString(),
+                         '--entrypoint',
+                         BUILDKIT_ENTRYPOINT]
 
         if( credsFile ) {
             wrapper.add('-v')
-            wrapper.add("$credsFile:/kaniko/.docker/config.json:ro".toString())
+            wrapper.add("$credsFile:/home/user/.docker/config.json:ro".toString())
         }
 
         if( spackConfig ) {
@@ -137,8 +141,9 @@ class DockerBuildStrategy extends BuildStrategy {
             wrapper.add('--platform')
             wrapper.add(platform.toString())
         }
-        // the container image to be used t
-        wrapper.add( buildConfig.kanikoImage )
+
+        // the container image to be used to build
+        wrapper.add( buildConfig.buildkitImage )
         // return it
         return wrapper
     }

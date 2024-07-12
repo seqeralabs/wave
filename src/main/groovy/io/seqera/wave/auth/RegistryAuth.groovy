@@ -35,7 +35,7 @@ import groovy.transform.ToString
 class RegistryAuth {
 
     private static final Pattern AUTH = ~/(?i)(?<type>.+) realm="(?<realm>[^"]+)",service="(?<service>[^"]+)"/
-    // some registries doesnt send the service
+    // some registries doesn't send the service
     private static final Pattern AUTH2 = ~/(?i)(?<type>.+) realm="(?<realm>[^"]+)"/
 
     enum Type { Basic, Bearer }

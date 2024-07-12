@@ -79,7 +79,7 @@ class JwtAuthStore extends AbstractCacheStore<JwtAuth> {
         }
         if( result && !result.key ) {
             final now = Instant.now()
-            final patched = result.withKey(auth.key).withCreatedAt(now).withUpdatedAt(now)
+            final patched = result.withKey(auth.key).withEndpoint(auth.endpoint).withCreatedAt(now).withUpdatedAt(now)
             log.warn "JWT patched legacy record - $patched"
             return patched
         }

@@ -155,10 +155,10 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def mount = k8sService.mountHostPath(Path.of('/foo/work/x1/config.json'), '/foo','/kaniko/.docker/config.json')
+        def mount = k8sService.mountHostPath(Path.of('/foo/work/x1/config.json'), '/foo','/home/user/.docker/config.json')
         then:
         mount.name == 'build-data'
-        mount.mountPath == '/kaniko/.docker/config.json'
+        mount.mountPath == '/home/user/.docker/config.json'
         mount.readOnly
         mount.subPath == 'work/x1/config.json'
 
@@ -190,42 +190,42 @@ class K8sServiceImplTest extends Specification {
         ctx.close()
     }
 
-    def 'should create build pod for kaniko' () {
+    def 'should create build pod for buildkit' () {
         given:
         def PROPS = [
-                'wave.build.workspace': '/build/work',
-                'wave.build.timeout': '10s',
-                'wave.build.k8s.namespace': 'my-ns',
-                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.workspace'            : '/build/work',
+                'wave.build.timeout'              : '10s',
+                'wave.build.k8s.namespace'        : 'my-ns',
+                'wave.build.k8s.configPath'       : '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'build-claim',
-                'wave.build.k8s.storage.mountPath': '/build' ]
+                'wave.build.k8s.storage.mountPath': '/build']
         and:
         def ctx = ApplicationContext.run(PROPS)
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), Path.of('/build/work/xyz/config.json'), null, [:])
+        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this', 'that'], Path.of('/build/work/xyz'), Path.of('/build/work/xyz/config.json'), null, [:])
         then:
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
         and:
         result.spec.activeDeadlineSeconds == 10
         and:
-        result.spec.containers.get(0).name == 'foo'
-        result.spec.containers.get(0).image == 'my-image:latest'
-        result.spec.containers.get(0).args ==  ['this','that']
-        result.spec.containers.get(0).command == null
-        and:
-        result.spec.containers.get(0).volumeMounts.size() == 2
-        and:
-        result.spec.containers.get(0).volumeMounts.get(0).name == 'build-data'
-        result.spec.containers.get(0).volumeMounts.get(0).mountPath == '/kaniko/.docker/config.json'
-        result.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz/config.json'
-        and:
-        result.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
-        result.spec.containers.get(0).volumeMounts.get(1).mountPath == '/build/work/xyz'
-        result.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz'
-
+        verifyAll(result.spec.containers.get(0)) {
+            name == 'foo'
+            image == 'my-image:latest'
+            args == ['this', 'that']
+            env.name == ['BUILDKITD_FLAGS']
+            env.value == ['--oci-worker-no-process-sandbox']
+            command == ['buildctl-daemonless.sh']
+            volumeMounts.size() == 2
+            volumeMounts.get(0).name == 'build-data'
+            volumeMounts.get(0).mountPath == '/home/user/.docker/config.json'
+            volumeMounts.get(0).subPath == 'work/xyz/config.json'
+            volumeMounts.get(1).name == 'build-data'
+            volumeMounts.get(1).mountPath == '/build/work/xyz'
+            volumeMounts.get(1).subPath == 'work/xyz'
+        }
         and:
         result.spec.volumes.get(0).name == 'build-data'
         result.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
@@ -255,28 +255,25 @@ class K8sServiceImplTest extends Specification {
         and:
         result.spec.activeDeadlineSeconds == 10
         and:
-        result.spec.containers.get(0).name == 'foo'
-        result.spec.containers.get(0).image == 'singularity:latest'
-        result.spec.containers.get(0).command ==  ['this','that']
-        result.spec.containers.get(0).args == null
-        and:
-        result.spec.containers.get(0).volumeMounts.size() == 3
-        and:
-        result.spec.containers.get(0).volumeMounts.get(0).name == 'build-data'
-        result.spec.containers.get(0).volumeMounts.get(0).mountPath == '/root/.singularity/docker-config.json'
-        result.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz/config.json'
-        and:
-        result.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
-        result.spec.containers.get(0).volumeMounts.get(1).mountPath == '/root/.singularity/remote.yaml'
-        result.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz/singularity-remote.yaml'
-        and:
-        result.spec.containers.get(0).volumeMounts.get(2).name == 'build-data'
-        result.spec.containers.get(0).volumeMounts.get(2).mountPath == '/build/work/xyz'
-        result.spec.containers.get(0).volumeMounts.get(2).subPath == 'work/xyz'
-        and:
-        result.spec.containers.get(0).getWorkingDir() == null
-        result.spec.containers.get(0).getSecurityContext().privileged
 
+        verifyAll(result.spec.containers.get(0)) {
+            name == 'foo'
+            image == 'singularity:latest'
+            command == ['this', 'that']
+            args == null
+            volumeMounts.size() == 3
+            volumeMounts.get(0).name == 'build-data'
+            volumeMounts.get(0).mountPath == '/root/.singularity/docker-config.json'
+            volumeMounts.get(0).subPath == 'work/xyz/config.json'
+            volumeMounts.get(1).name == 'build-data'
+            volumeMounts.get(1).mountPath == '/root/.singularity/remote.yaml'
+            volumeMounts.get(1).subPath == 'work/xyz/singularity-remote.yaml'
+            volumeMounts.get(2).name == 'build-data'
+            volumeMounts.get(2).mountPath == '/build/work/xyz'
+            volumeMounts.get(2).subPath == 'work/xyz'
+            getWorkingDir() == null
+            getSecurityContext().privileged
+        }
         and:
         result.spec.volumes.get(0).name == 'build-data'
         result.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
@@ -309,21 +306,21 @@ class K8sServiceImplTest extends Specification {
         and:
         result.spec.activeDeadlineSeconds == 10
         and:
-        result.spec.containers.get(0).name == 'foo'
-        result.spec.containers.get(0).image == 'my-image:latest'
-        result.spec.containers.get(0).args ==  ['this','that']
-        and:
-        result.spec.containers.get(0).volumeMounts.size() == 2
-        and:
-        result.spec.containers.get(0).volumeMounts.get(0).name == 'build-data'
-        result.spec.containers.get(0).volumeMounts.get(0).mountPath == '/build/work/xyz'
-        result.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz'
-        and:
-        result.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
-        result.spec.containers.get(0).volumeMounts.get(1).mountPath == '/opt/container/spack/key'
-        result.spec.containers.get(0).volumeMounts.get(1).subPath == 'host/spack/key'
-        result.spec.containers.get(0).volumeMounts.get(1).readOnly
-
+        verifyAll(result.spec.containers.get(0)) {
+            name == 'foo'
+            image == 'my-image:latest'
+            args == ['this', 'that']
+            env.name == ['BUILDKITD_FLAGS']
+            env.value == ['--oci-worker-no-process-sandbox']
+            volumeMounts.size() == 2
+            volumeMounts.get(0).name == 'build-data'
+            volumeMounts.get(0).mountPath == '/build/work/xyz'
+            volumeMounts.get(0).subPath == 'work/xyz'
+            volumeMounts.get(1).name == 'build-data'
+            volumeMounts.get(1).mountPath == '/opt/container/spack/key'
+            volumeMounts.get(1).subPath == 'host/spack/key'
+            volumeMounts.get(1).readOnly
+        }
         and:
         result.spec.volumes.get(0).name == 'build-data'
         result.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
@@ -355,16 +352,17 @@ class K8sServiceImplTest extends Specification {
         and:
         !result.spec.initContainers
         and:
-        result.spec.containers.get(0).name == 'foo'
-        result.spec.containers.get(0).image == 'my-image:latest'
-        result.spec.containers.get(0).args ==  ['this','that']
-        and:
-        result.spec.containers.get(0).volumeMounts.size() == 1
-        and:
-        result.spec.containers.get(0).volumeMounts.get(0).name == 'build-data'
-        result.spec.containers.get(0).volumeMounts.get(0).mountPath == '/build/work/xyz'
-        result.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz'
-
+        verifyAll(result.spec.containers.get(0)) {
+            name == 'foo'
+            image == 'my-image:latest'
+            args == ['this', 'that']
+            env.name == ['BUILDKITD_FLAGS']
+            env.value == ['--oci-worker-no-process-sandbox']
+            volumeMounts.size() == 1
+            volumeMounts.get(0).name == 'build-data'
+            volumeMounts.get(0).mountPath == '/build/work/xyz'
+            volumeMounts.get(0).subPath == 'work/xyz'
+        }
         and:
         result.spec.volumes.get(0).name == 'build-data'
         result.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
@@ -473,24 +471,21 @@ class K8sServiceImplTest extends Specification {
         and:
         result.spec.activeDeadlineSeconds == 10
         and:
-        result.spec.containers.get(0).name == 'foo'
-        result.spec.containers.get(0).image == 'my-image:latest'
-        result.spec.containers.get(0).args ==  ['this','that']
-        and:
-        result.spec.containers.get(0).volumeMounts.size() == 3
-        and:
-        result.spec.containers.get(0).volumeMounts.get(0).name == 'build-data'
-        result.spec.containers.get(0).volumeMounts.get(0).mountPath == '/root/.docker/config.json'
-        result.spec.containers.get(0).volumeMounts.get(0).subPath == 'work/xyz/config.json'
-        and:
-        result.spec.containers.get(0).volumeMounts.get(1).name == 'build-data'
-        result.spec.containers.get(0).volumeMounts.get(1).mountPath == '/build/work/xyz'
-        result.spec.containers.get(0).volumeMounts.get(1).subPath == 'work/xyz'
-        and:
-        result.spec.containers.get(0).volumeMounts.get(2).name == 'build-data'
-        result.spec.containers.get(0).volumeMounts.get(2).mountPath == '/root/.cache/'
-        result.spec.containers.get(0).volumeMounts.get(2).subPath == 'work/.trivy'
-
+        verifyAll(result.spec.containers.get(0)) {
+            name == 'foo'
+            image == 'my-image:latest'
+            args == ['this', 'that']
+            volumeMounts.size() == 3
+            volumeMounts.get(0).name == 'build-data'
+            volumeMounts.get(0).mountPath == '/root/.docker/config.json'
+            volumeMounts.get(0).subPath == 'work/xyz/config.json'
+            volumeMounts.get(1).name == 'build-data'
+            volumeMounts.get(1).mountPath == '/build/work/xyz'
+            volumeMounts.get(1).subPath == 'work/xyz'
+            volumeMounts.get(2).name == 'build-data'
+            volumeMounts.get(2).mountPath == '/root/.cache/'
+            volumeMounts.get(2).subPath == 'work/.trivy'
+        }
         and:
         result.spec.volumes.get(0).name == 'build-data'
         result.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
@@ -560,14 +555,15 @@ class K8sServiceImplTest extends Specification {
         result.spec.activeDeadlineSeconds == 20
         result.spec.serviceAccount == 'foo-sa'
         and:
-        result.spec.containers.get(0).name == 'foo'
-        result.spec.containers.get(0).image == 'my-image:latest'
-        result.spec.containers.get(0).args ==  ['this','that']
-        result.spec.containers.get(0).getEnv().get(0) == new V1EnvVar().name('FOO').value('one')
-        result.spec.containers.get(0).getEnv().get(1) == new V1EnvVar().name('BAR').value('two')
-        and:
-        result.spec.containers.get(0).getResources().requests.get('cpu') == new Quantity('2')
-        result.spec.containers.get(0).getResources().requests.get('memory') == new Quantity('8Gi')
+        verifyAll(result.spec.containers.get(0)) {
+            name == 'foo'
+            image == 'my-image:latest'
+            args == ['this', 'that']
+            getEnv().get(0) == new V1EnvVar().name('FOO').value('one')
+            getEnv().get(1) == new V1EnvVar().name('BAR').value('two')
+            getResources().requests.get('cpu') == new Quantity('2')
+            getResources().requests.get('memory') == new Quantity('8Gi')
+        }
         and:
         !result.spec.containers.get(0).getResources().limits
 

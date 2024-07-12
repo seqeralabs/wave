@@ -24,6 +24,7 @@ import spock.lang.Specification
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
+import java.time.Instant
 
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
@@ -39,9 +40,14 @@ import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.service.builder.store.BuildRecordStore
 import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
+import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.storage.reader.ContentReaderFactory
+import io.seqera.wave.test.RedisTestContainer
+import io.seqera.wave.test.SurrealDBTestContainer
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.Packer
 import io.seqera.wave.util.SpackHelper
@@ -54,7 +60,8 @@ import io.seqera.wave.util.ContainerHelper
  */
 @Slf4j
 @MicronautTest
-class ContainerBuildServiceTest extends Specification {
+
+class ContainerBuildServiceTest extends Specification implements RedisTestContainer, SurrealDBTestContainer{
 
     @Inject ContainerBuildServiceImpl service
     @Inject RegistryLookupService lookupService
@@ -62,6 +69,8 @@ class ContainerBuildServiceTest extends Specification {
     @Inject ContainerInspectServiceImpl dockerAuthService
     @Inject HttpClientConfig httpClientConfig
     @Inject BuildConfig buildConfig
+    @Inject BuildRecordStore buildRecordStore
+    @Inject PersistenceService persistenceService
 
 
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
@@ -472,4 +481,112 @@ class ContainerBuildServiceTest extends Specification {
         server?.stop(0)
     }
 
+    void "an event insert a build"() {
+        given:
+        final request = new BuildRequest(
+                'container1234',
+                'test',
+                'test',
+                'test',
+                Path.of("."),
+                'docker.io/my/repo:container1234',
+                PlatformId.NULL,
+                ContainerPlatform.of('amd64'),
+                'docker.io/my/cache',
+                '127.0.0.1',
+                '{"config":"json"}',
+                null,
+                null,
+                'scan12345',
+                null,
+                BuildFormat.DOCKER
+        ).withBuildId('123')
+
+        and:
+        def result = new BuildResult(request.buildId, 0, "content", Instant.now(), Duration.ofSeconds(1), 'abc123')
+        def event = new BuildEvent(request, result)
+
+        when:
+        service.onBuildEvent(event)
+
+        then:
+        def record = service.getBuildRecord(request.buildId)
+        record.buildId == request.buildId
+        record.digest == 'abc123'
+    }
+
+    void "should create build record in redis"() {
+        given:
+        final request = new BuildRequest(
+                'container1234',
+                'test',
+                'test',
+                'test',
+                Path.of("."),
+                'docker.io/my/repo:container1234',
+                PlatformId.NULL,
+                ContainerPlatform.of('amd64'),
+                'docker.io/my/cache',
+                '127.0.0.1',
+                '{"config":"json"}',
+                null,
+                null,
+                'scan12345',
+                null,
+                BuildFormat.DOCKER
+        ).withBuildId('123')
+
+        and:
+        def result = BuildResult.completed(request.buildId, 1, 'Hello', Instant.now().minusSeconds(60), 'xyz')
+
+        and:
+        def build = WaveBuildRecord.fromEvent(new BuildEvent(request, result))
+
+        when:
+        service.createBuildRecord(build.buildId, build)
+
+        then:
+        def record = buildRecordStore.getBuildRecord(request.buildId)
+        record.buildId == request.buildId
+        record.digest == 'xyz'
+    }
+
+    void "should save build record in redis and surrealdb"() {
+        given:
+        final request = new BuildRequest(
+                'container1234',
+                'test',
+                'test',
+                'test',
+                Path.of("."),
+                'docker.io/my/repo:container1234',
+                PlatformId.NULL,
+                ContainerPlatform.of('amd64'),
+                'docker.io/my/cache',
+                '127.0.0.1',
+                '{"config":"json"}',
+                null,
+                null,
+                'scan12345',
+                null,
+                BuildFormat.DOCKER
+        ).withBuildId('123')
+
+        and:
+        def result = new BuildResult(request.buildId, 0, "content", Instant.now(), Duration.ofSeconds(1), 'abc123')
+        def event = new BuildEvent(request, result)
+
+        when:
+        service.saveBuildRecord(event)
+
+        then:
+        def record = persistenceService.loadBuild(request.buildId)
+        record.buildId == request.buildId
+        record.digest == 'abc123'
+
+        and:
+        def record2 = buildRecordStore.getBuildRecord(request.buildId)
+        record2.buildId == request.buildId
+        record2.digest == 'abc123'
+    }
 }

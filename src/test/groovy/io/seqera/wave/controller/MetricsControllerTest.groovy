@@ -75,7 +75,7 @@ class MetricsControllerTest extends Specification {
         def res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
-        res.body() == [count: 3]
+        res.body() == [metric:'builds', count:3, orgs:['org1.com': 1, 'org2.com': 1]]
         res.status.code == 200
 
         when: 'date and org is provided'
@@ -83,7 +83,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
-        res.body() == [count: 1]
+        res.body() == [metric:'builds', count:1, orgs:['org1.com': 1]]
         res.status.code == 200
 
         when: 'only org is provided'
@@ -91,7 +91,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
-        res.body() == [count: 1]
+        res.body() == [metric:'builds', count:1, orgs:['org1.com': 1]]
         res.status.code == 200
 
         when: 'no param is provided'
@@ -119,15 +119,15 @@ class MetricsControllerTest extends Specification {
         def res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
-        res.body() == [count: 3]
+        res.body() == [metric:'pulls', count:3, orgs:['org1.com': 1, 'org2.com': 1]]
         res.status.code == 200
 
         when: 'date and org is provided'
-        req = HttpRequest.GET("/v1alpha2/metrics/pulls?date=$date&org=org2.com").basicAuth("username", "password")
+        req = HttpRequest.GET("/v1alpha2/metrics/pulls?date=$date&org=org1.com").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
-        res.body() == [count: 1]
+        res.body() == [metric:'pulls', count:1, orgs:['org1.com': 1]]
         res.status.code == 200
 
         when: 'only org is provided'
@@ -135,7 +135,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
-        res.body() == [count: 1]
+        res.body() == [metric:'pulls', count:1, orgs:['org2.com': 1]]
         res.status.code == 200
 
         when: 'no param is provided'
@@ -163,15 +163,15 @@ class MetricsControllerTest extends Specification {
         def res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
-        res.body() == [count: 3]
+        res.body() == [metric:'fusion', count:3, orgs:['org1.com': 1, 'org2.com': 1]]
         res.status.code == 200
 
         when: 'date and org is provided'
-        req = HttpRequest.GET("/v1alpha2/metrics/fusion/pulls?date=$date&org=org2.com").basicAuth("username", "password")
+        req = HttpRequest.GET("/v1alpha2/metrics/fusion/pulls?date=$date&org=org1.com").basicAuth("username", "password")
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
-        res.body() == [count: 1]
+        res.body() == [metric:'fusion', count:1, orgs:['org1.com': 1]]
         res.status.code == 200
 
         when: 'only org is provided'
@@ -179,7 +179,7 @@ class MetricsControllerTest extends Specification {
         res = client.toBlocking().exchange(req, Map)
 
         then: 'should get the correct count'
-        res.body() == [count: 1]
+        res.body() == [metric:'fusion', count:1, orgs:['org2.com': 1]]
         res.status.code == 200
 
         when: 'no param is provided'

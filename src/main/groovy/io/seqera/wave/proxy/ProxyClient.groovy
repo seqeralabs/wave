@@ -59,6 +59,7 @@ class ProxyClient {
     private RegistryAuthService loginService
     private ContainerPath route
     private HttpClientConfig httpConfig
+    private List<Integer> retryableHttpErrors = HTTP_RETRYABLE_ERRORS
 
     ProxyClient(HttpClient httpClient, HttpClientConfig httpConfig) {
         if( httpClient.followRedirects()!= HttpClient.Redirect.NEVER )
@@ -93,6 +94,12 @@ class ProxyClient {
 
     ProxyClient withCredentials(RegistryCredentials credentials) {
         this.credentials = credentials
+        return this
+    }
+
+    ProxyClient withRetryableHttpErrors(List<Integer> errors) {
+        if( errors!=null )
+            retryableHttpErrors = errors
         return this
     }
 
@@ -157,7 +164,7 @@ class ProxyClient {
     def <T> HttpResponse<T> get(URI origin, Map<String,List<String>> headers, BodyHandler<T> handler, boolean followRedirect) {
         final retryable = Retryable
                 .<HttpResponse<T>>of(httpConfig)
-                .retryIf((resp) -> resp.statusCode() in HTTP_RETRYABLE_ERRORS)
+                .retryIf((resp) -> resp.statusCode() in retryableHttpErrors)
                 .onRetry((event) -> "Failure on GET request: $origin - event: $event")
         // carry out the request
         return retryable.apply(()-> get0(origin, headers, handler, followRedirect))
@@ -246,10 +253,10 @@ class ProxyClient {
     }
 
 
-    HttpResponse<Void> head(URI uri, Map<String,List<String>> headers) {
+    HttpResponse<Void> head(URI uri, Map<String, List<String>> headers) {
         final retryable = Retryable
                 .<HttpResponse<Void>>of(httpConfig)
-                .retryIf((resp) -> resp.statusCode() in HTTP_RETRYABLE_ERRORS)
+                .retryIf((resp) -> resp.statusCode() in retryableHttpErrors)
                 .onRetry((event) -> "Failure on HEAD request: $uri - event: $event")
         // carry out the request
         return retryable.apply(()-> head0(uri,headers))

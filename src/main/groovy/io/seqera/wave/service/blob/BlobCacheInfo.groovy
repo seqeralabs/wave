@@ -23,11 +23,14 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.Memoized
 import groovy.transform.ToString
+import groovy.util.logging.Slf4j
+
 /**
  * Model a blob cache metadata entry
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @ToString(includePackage = false, includeNames = true)
 @Canonical
 @CompileStatic
@@ -42,6 +45,21 @@ class BlobCacheInfo {
      * The request http headers
      */
     final Map<String,String> headers
+
+    /**
+     * The blob length
+     */
+    final Long contentLength
+
+    /**
+     * The content type of this blob
+     */
+    final String contentType
+
+    /**
+     * The blob cache control directive
+     */
+    final String cacheControl
 
     /**
      * The instant when the cache request was created
@@ -73,29 +91,37 @@ class BlobCacheInfo {
         locationUri && completionTime!=null
     }
 
-    String getContentType() {
-        headers?.find(it-> it.key.toLowerCase()=='content-type')?.value
-    }
-
-    String getCacheControl() {
-        headers?.find(it-> it.key.toLowerCase()=='cache-control')?.value
-    }
-
-    static BlobCacheInfo create(String locationUrl, Map<String,List<String>> headers) {
+    static BlobCacheInfo create(String locationUrl, Map<String,List<String>> request, Map<String,List<String>> response) {
         final headers0 = new LinkedHashMap<String,String>()
-        for( Map.Entry<String,List<String>> it : headers )
+        for( Map.Entry<String,List<String>> it : request )
             headers0.put( it.key, it.value.join(',') )
-        new BlobCacheInfo(locationUrl, headers0, Instant.now())
+        final length = headerLong0(response, 'Content-Length')
+        final type = headerString0(response, 'Content-Type')
+        final cache = headerString0(response, 'Cache-Control')
+        new BlobCacheInfo(locationUrl, headers0, length, type, cache, Instant.now(), null, null, null)
     }
 
-    static BlobCacheInfo create1(String locationUrl, Map<String,String> headers) {
-        new BlobCacheInfo(locationUrl, headers, Instant.now())
+    static String headerString0(Map<String,List<String>> headers, String name) {
+        headers?.find(it-> it.key.toLowerCase()==name.toLowerCase())?.value?.first()
+    }
+
+    static Long headerLong0(Map<String,List<String>> headers, String name) {
+        try {
+            return headerString0(headers,name) as Long
+        }
+        catch (NumberFormatException e) {
+            log.warn "Unexpected content length value - cause: $e"
+            return null
+        }
     }
 
     BlobCacheInfo cached() {
         new BlobCacheInfo(
                 locationUri,
                 headers,
+                contentLength,
+                contentType,
+                cacheControl,
                 creationTime,
                 creationTime,
                 0)
@@ -105,6 +131,9 @@ class BlobCacheInfo {
         new BlobCacheInfo(
                 locationUri,
                 headers,
+                contentLength,
+                contentType,
+                cacheControl,
                 creationTime,
                 Instant.now(),
                 status,
@@ -115,25 +144,33 @@ class BlobCacheInfo {
         new BlobCacheInfo(
                 locationUri,
                 headers,
+                contentLength,
+                contentType,
+                cacheControl,
                 creationTime,
                 Instant.now(),
                 null,
-                logs)
+                logs
+        )
     }
 
     BlobCacheInfo withLocation(String uri) {
         new BlobCacheInfo(
                 uri,
                 headers,
+                contentLength,
+                contentType,
+                cacheControl,
                 creationTime,
                 completionTime,
                 exitStatus,
-                logs)
+                logs
+        )
     }
 
     @Memoized
     static BlobCacheInfo unknown() {
-        new BlobCacheInfo(null, null, Instant.ofEpochMilli(0), Instant.ofEpochMilli(0), null) {
+        new BlobCacheInfo(null, null, null, null, null, Instant.ofEpochMilli(0), Instant.ofEpochMilli(0), null) {
             @Override
             BlobCacheInfo withLocation(String uri) {
                 // prevent the change of location for unknown status
