@@ -34,4 +34,10 @@ interface CounterStore {
      * @return all the entries whose field matches 'pattern'
      */
     Map<String, Long> getAllMatchingEntries(String pattern)
+
+    /**
+     * @param pattern
+     * @return void
+     */
+    void deleteAllMatchingEntries(String pattern)
 }

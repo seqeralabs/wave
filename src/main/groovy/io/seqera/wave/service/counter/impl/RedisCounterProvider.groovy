@@ -70,4 +70,17 @@ class RedisCounterProvider implements CounterProvider {
             return result
         }
     }
+
+    @Override
+    void deleteAllMatchingEntries(String key, String pattern) {
+        try(Jedis conn=pool.getResource() ) {
+            final scanResult = conn.hscan(key, "0", new ScanParams().match(pattern).count(hscanCount))
+            if( !scanResult )
+                return
+            for(String entry : scanResult.result) {
+                final parts = entry.tokenize('=')
+                conn.hdel(key, parts[0])
+            }
+        }
+    }
 }

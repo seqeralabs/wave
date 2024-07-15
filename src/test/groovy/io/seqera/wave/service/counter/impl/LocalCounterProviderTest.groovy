@@ -73,4 +73,26 @@ class LocalCounterProviderTest extends Specification {
                 ['pulls/o/abc.com.au/d/2024-05-30':1]
     }
 
+    def 'should delete records with given pattern' () {
+        when:
+        localCounterProvider.inc('metrics/v1', 'builds/o/foo.com', 1)
+        localCounterProvider.inc('metrics/v1', 'builds/o/bar.io', 1)
+        localCounterProvider.inc('metrics/v1', 'builds/o/abc.org', 2)
+        localCounterProvider.inc('metrics/v1', 'pulls/o/foo.it', 1)
+        localCounterProvider.inc('metrics/v1', 'pulls/o/bar.es', 2)
+        localCounterProvider.inc('metrics/v1', 'pulls/o/abc.in', 3)
+        localCounterProvider.inc('metrics/v1', 'pulls/o/abc.com.au/d/2024-07-15', 1)
+        localCounterProvider.inc('metrics/v1', 'pulls/o/abc.com.au/d/2024-07-14', 1)
+        localCounterProvider.inc('metrics/v1', 'builds/o/abc.com.au/d/2024-07-14', 1)
+        localCounterProvider.inc('metrics/v1', 'builds/o/abc.com.au/d/2024-07-14', 1)
+
+        then:'delete all pull counter keys'
+        localCounterProvider.deleteAllMatchingEntries('metrics/v1', 'pulls/o/*')
+        localCounterProvider.getAllMatchingEntries('metrics/v1', 'pulls/o/*') == [:]
+        localCounterProvider.getAllMatchingEntries('metrics/v1', 'pulls/o/*/d/2024-05-30') == [:]
+        and:'delete only build per specific date counter keys'
+        localCounterProvider.deleteAllMatchingEntries('metrics/v1', 'builds/o/abc.com.au/d/2024-07-14')
+        localCounterProvider.getAllMatchingEntries('metrics/v1', 'builds/o/*') == ['builds/o/foo.com':1, 'builds/o/bar.io':1, 'builds/o/abc.org':2]
+    }
+
 }
