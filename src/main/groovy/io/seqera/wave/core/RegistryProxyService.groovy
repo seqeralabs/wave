@@ -107,9 +107,7 @@ class RegistryProxyService {
     }
 
     protected RegistryCredentials getCredentials(RoutePath route) {
-        final result = !route.identity
-                ? credentialsProvider.getDefaultCredentials(route)
-                : credentialsProvider.getUserCredentials(route, route.identity)
+        final result = credentialsProvider.getCredentials(route, route.identity)
         log.debug "Credentials for route path=${route.targetContainer}; identity=${route.identity} => ${result}"
         return result
     }
