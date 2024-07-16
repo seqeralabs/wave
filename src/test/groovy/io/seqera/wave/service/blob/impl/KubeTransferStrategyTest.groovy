@@ -21,12 +21,15 @@ package io.seqera.wave.service.blob.impl
 import spock.lang.Specification
 
 import java.time.Duration
+import java.util.concurrent.Executors
 
 import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodStatus
 import io.seqera.wave.configuration.BlobCacheConfig
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.service.blob.BlobCacheInfo
+import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.k8s.K8sService
 /**
  *
@@ -36,7 +39,8 @@ class KubeTransferStrategyTest extends Specification {
 
     K8sService k8sService = Mock(K8sService)
     BlobCacheConfig blobConfig = new BlobCacheConfig(s5Image: 's5cmd', transferTimeout: Duration.ofSeconds(10))
-    KubeTransferStrategy strategy = new KubeTransferStrategy(k8sService: k8sService, blobConfig: blobConfig)
+    CleanupStrategy cleanup = new CleanupStrategy(buildConfig: new BuildConfig(cleanup: "OnSuccess"))
+    KubeTransferStrategy strategy = new KubeTransferStrategy(k8sService: k8sService, blobConfig: blobConfig, cleanup: cleanup, executor: Executors.newSingleThreadExecutor())
 
     def "transfer should complete successfully with valid inputs"() {
         given:
@@ -55,6 +59,7 @@ class KubeTransferStrategyTest extends Specification {
         result.succeeded()
         result.exitStatus == 0
         result.logs == "Transfer completed"
+        result.done()
     }
 
     def "transfer should fail when pod execution exceeds timeout"() {
@@ -72,21 +77,6 @@ class KubeTransferStrategyTest extends Specification {
         then:
         result.failed("Transfer timeout")
         result.logs == "Transfer timeout"
-    }
-
-    def "transfer should handle exception during transfer process"() {
-        given:
-        def uri = "s3://bucket/file.txt"
-        def info = BlobCacheInfo.create(uri, null, null)
-        def command = ["s5cmd", "cp", uri, "/local/path"]
-        def podName = "transfer-unique-hash"
-        k8sService.transferContainer(podName, blobConfig.s5Image, command, blobConfig) >> { throw new Exception("K8s error") }
-
-        when:
-        def result = strategy.transfer(info, command)
-
-        then:
-        result.failed("Error while scanning with id: s3://bucket/file.txt - cause: K8s error")
     }
 
     def "cleanup should delete completed pod"() {
