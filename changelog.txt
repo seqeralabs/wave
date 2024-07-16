@@ -1,4 +1,7 @@
 # Wave changelog
+1.9.1 - 11 Jul 2024
+- Prevent hard error when launch credentials cannot be accessed [a318a855]
+
 1.9.0 - 11 Jul 2024
 - Add Typespec API definitions (#537) [32f7dd16]
 - Add cache record-stats (#534) [229926e2]
