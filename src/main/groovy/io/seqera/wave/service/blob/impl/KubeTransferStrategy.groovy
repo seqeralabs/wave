@@ -27,6 +27,7 @@ import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.k8s.K8sService
+import io.seqera.wave.service.scan.ScanResult
 import jakarta.inject.Inject
 /**
  * Implements {@link TransferStrategy} that runs s5cmd using a
@@ -49,12 +50,20 @@ class KubeTransferStrategy implements TransferStrategy {
     @Override
     BlobCacheInfo transfer(BlobCacheInfo info, List<String> command) {
         final podName = podName(info)
-        final pod = k8sService.transferContainer(podName, blobConfig.s5Image, command, blobConfig)
-        final terminated = k8sService.waitPod(pod, blobConfig.transferTimeout.toMillis())
-        final stdout = k8sService.logsPod(podName)
-        return terminated
-                ? info.completed(terminated.exitCode, stdout)
-                : info.failed(stdout)
+        try {
+            final pod = k8sService.transferContainer(podName, blobConfig.s5Image, command, blobConfig)
+            final terminated = k8sService.waitPod(pod, blobConfig.transferTimeout.toMillis())
+            final stdout = k8sService.logsPod(podName)
+            return terminated
+                    ? info.completed(terminated.exitCode, stdout)
+                    : info.failed(stdout)
+        }catch (Exception e){
+            log.error("Error while scanning with id: ${info.locationUri} - cause: ${e.message}", e)
+            return info.failed(e.message)
+        }
+        finally {
+            cleanup(podName)
+        }
     }
 
     protected String podName(BlobCacheInfo info) {
@@ -64,5 +73,19 @@ class KubeTransferStrategy implements TransferStrategy {
                 .putUnencodedChars(info.locationUri)
                 .putUnencodedChars(info.creationTime.toString())
                 .hash()
+    }
+
+    void cleanup(String podName) {
+        try {
+            if(k8sService.getPod(podName).status.phase == 'Succeeded') {
+                k8sService.deletePod(podName)
+            }else if(k8sService.getPod(podName).status.phase == 'Running'){
+                sleep(5000) // sometimes pods is not completed when finally runs so wait for 5 seconds
+                k8sService.deletePod(podName)
+            }
+        }
+        catch (Exception e) {
+            log.warn ("Unable to delete pod=$podName - cause: ${e.message ?: e}", e)
+        }
     }
 }
