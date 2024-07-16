@@ -27,7 +27,6 @@ import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.k8s.K8sService
-import io.seqera.wave.service.scan.ScanResult
 import jakarta.inject.Inject
 /**
  * Implements {@link TransferStrategy} that runs s5cmd using a
