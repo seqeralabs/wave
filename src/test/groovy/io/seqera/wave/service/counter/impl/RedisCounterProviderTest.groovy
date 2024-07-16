@@ -96,9 +96,9 @@ class RedisCounterProviderTest extends Specification implements RedisTestContain
         when:
         redisCounterProvider.inc('build-x', 'foo', 1)
         sleep(500)
-        redisCounterProvider.inc('build-x', 'foo', 1)
+        redisCounterProvider.inc('build-x', 'bar', 1)
         sleep(500)
-        then:
+        then:'this value should be one, because foo should be expired'
         redisCounterProvider.get('build-x', 'foo') == 1
     }
 }
