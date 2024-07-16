@@ -18,6 +18,8 @@
 
 package io.seqera.wave.service.counter.impl
 
+import java.time.Duration
+
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
@@ -42,10 +44,15 @@ class RedisCounterProvider implements CounterProvider {
     @Value('${redis.hscan.count:10000}')
     private Integer hscanCount
 
+    @Value('${redis.key.expiry:1s}')
+    private Duration keyExpiry
+
     @Override
     long inc(String key, String field, long value) {
         try(Jedis conn=pool.getResource() ) {
-            return conn.hincrBy(key, field, value)
+            long count =  conn.hincrBy(key, field, value)
+            conn.expire(key, keyExpiry.toSeconds())
+            return count
         }
     }
 
