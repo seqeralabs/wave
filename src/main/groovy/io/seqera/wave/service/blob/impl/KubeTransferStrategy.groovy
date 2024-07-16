@@ -58,7 +58,7 @@ class KubeTransferStrategy implements TransferStrategy {
                     ? info.completed(terminated.exitCode, stdout)
                     : info.failed(stdout)
         }catch (Exception e){
-            log.error("Error while scanning with id: ${info.locationUri} - cause: ${e.message}", e)
+            log.error("Error while transfer blob with location: ${info.locationUri} - cause: ${e.message}", e)
             return info.failed(e.message)
         }
         finally {
