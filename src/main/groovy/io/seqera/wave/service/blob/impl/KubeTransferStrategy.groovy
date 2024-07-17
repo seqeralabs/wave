@@ -69,14 +69,7 @@ class KubeTransferStrategy implements TransferStrategy {
         final result = terminated
                 ? info.completed(terminated.exitCode, stdout)
                 : info.failed(stdout)
-        if( cleanup.shouldCleanup(terminated.exitCode) ) {
-            CompletableFuture.supplyAsync (() ->
-                    k8sService.deletePodWhenReachStatus(
-                            podName,
-                            'Succeeded',
-                            blobConfig.podDeleteTimeout.toMillis()),
-                    executor)
-        }
+        cleanup(terminated.exitCode, podName)
         return result
     }
 
@@ -87,6 +80,17 @@ class KubeTransferStrategy implements TransferStrategy {
                 .putUnencodedChars(info.locationUri)
                 .putUnencodedChars(info.creationTime.toString())
                 .hash()
+    }
+
+    private void cleanup(int exitCode, String podName) {
+        if( cleanup.shouldCleanup(exitCode) ) {
+            CompletableFuture.supplyAsync (() ->
+                    k8sService.deletePodWhenReachStatus(
+                            podName,
+                            'Succeeded',
+                            blobConfig.podDeleteTimeout.toMillis()),
+                    executor)
+        }
     }
 
 }
