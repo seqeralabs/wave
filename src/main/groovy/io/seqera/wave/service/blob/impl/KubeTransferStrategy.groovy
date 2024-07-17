@@ -62,16 +62,16 @@ class KubeTransferStrategy implements TransferStrategy {
 
     @Override
     BlobCacheInfo transfer(BlobCacheInfo info, List<String> command) {
-            final podName = podName(info)
-            final pod = k8sService.transferContainer(podName, blobConfig.s5Image, command, blobConfig)
-            final terminated = k8sService.waitPod(pod, blobConfig.transferTimeout.toMillis())
-            final stdout = k8sService.logsPod(podName)
-            final result =  terminated
-                    ? info.completed(terminated.exitCode, stdout)
-                    : info.failed(stdout)
-            if( cleanup.shouldCleanup(terminated.exitCode) ) {
-                CompletableFuture.supplyAsync (() -> cleanup(podName), executor)
-            }
+        final podName = podName(info)
+        final pod = k8sService.transferContainer(podName, blobConfig.s5Image, command, blobConfig)
+        final terminated = k8sService.waitPod(pod, blobConfig.transferTimeout.toMillis())
+        final stdout = k8sService.logsPod(podName)
+        final result =  terminated
+                ? info.completed(terminated.exitCode, stdout)
+                : info.failed(stdout)
+        if( cleanup.shouldCleanup(terminated.exitCode) ) {
+            CompletableFuture.supplyAsync (() -> cleanup(podName), executor)
+        }
         return result
     }
 
