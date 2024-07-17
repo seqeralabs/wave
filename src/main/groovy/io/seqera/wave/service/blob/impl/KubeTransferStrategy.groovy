@@ -70,7 +70,12 @@ class KubeTransferStrategy implements TransferStrategy {
                 ? info.completed(terminated.exitCode, stdout)
                 : info.failed(stdout)
         if( cleanup.shouldCleanup(terminated.exitCode) ) {
-            CompletableFuture.supplyAsync (() -> cleanup(podName), executor)
+            CompletableFuture.supplyAsync (() ->
+                    k8sService.deletePodWhenReachStatus(
+                            podName,
+                            'Succeeded',
+                            blobConfig.podDeleteTimeout.toMillis()),
+                    executor)
         }
         return result
     }
@@ -84,17 +89,4 @@ class KubeTransferStrategy implements TransferStrategy {
                 .hash()
     }
 
-    void cleanup(String podName) {
-        try {
-            def pod = k8sService.getPod(podName)
-            if(pod.status.phase == 'Succeeded') {
-                k8sService.deletePod(podName)
-            }else if(pod.status.phase == 'Running'){
-                k8sService.deletePodWhenReachStatus(podName, 'Succeeded', blobConfig.podDeleteTimeout.toMillis())
-            }
-        }
-        catch (Exception e) {
-            log.warn ("Unable to delete pod=$podName - cause: ${e.message ?: e}", e)
-        }
-    }
 }

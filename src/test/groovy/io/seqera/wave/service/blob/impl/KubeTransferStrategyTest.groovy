@@ -79,27 +79,4 @@ class KubeTransferStrategyTest extends Specification {
         result.logs == "Transfer timeout"
     }
 
-    def "cleanup should delete completed pod"() {
-        given:
-        def podName = "transfer-unique-hash"
-        k8sService.getPod(podName) >> new V1Pod(status: new V1PodStatus(phase: 'Succeeded'))
-
-        when:
-        strategy.cleanup(podName)
-
-        then:
-        1 * k8sService.deletePod(podName)
-    }
-
-    def "cleanup should not delete Failed pod"() {
-        given:
-        def podName = "transfer-unique-hash"
-        k8sService.getPod(podName) >> new V1Pod(status: new V1PodStatus(phase: 'Failed'))
-
-        when:
-        strategy.cleanup(podName)
-
-        then:
-        0 * k8sService.deletePod(podName)
-    }
 }
