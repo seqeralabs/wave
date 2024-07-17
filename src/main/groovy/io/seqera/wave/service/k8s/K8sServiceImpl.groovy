@@ -499,7 +499,7 @@ class K8sServiceImpl implements K8sService {
         final pod = getPod(podName)
         final start = System.currentTimeMillis()
         while( (System.currentTimeMillis() - start) < timeout ) {
-            if( pod && pod.status?.phase == statusName ) {
+            if( pod?.status?.phase == statusName ) {
                 deletePod(podName)
                 return
             }
