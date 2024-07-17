@@ -86,11 +86,11 @@ class KubeTransferStrategy implements TransferStrategy {
 
     void cleanup(String podName) {
         try {
-            if(k8sService.getPod(podName).status.phase == 'Succeeded') {
+            def pod = k8sService.getPod(podName)
+            if(pod.status.phase == 'Succeeded') {
                 k8sService.deletePod(podName)
-            }else if(k8sService.getPod(podName).status.phase == 'Running'){
-                sleep(5000) // sometimes pods is not completed when finally runs so wait for 5 seconds
-                k8sService.deletePod(podName)
+            }else if(pod.status.phase == 'Running'){
+                k8sService.deletePodWhenReachStatus(podName, 'Succeeded', blobConfig.podDeleteTimeout.toMillis())
             }
         }
         catch (Exception e) {

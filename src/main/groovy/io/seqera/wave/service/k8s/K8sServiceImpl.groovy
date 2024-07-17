@@ -487,6 +487,26 @@ class K8sServiceImpl implements K8sService {
                 .deleteNamespacedPod(name, namespace, (String)null, (String)null, (Integer)null, (Boolean)null, (String)null, (V1DeleteOptions)null)
     }
 
+    /**
+     * Delete a pod where the status is reached
+     *
+     * @param name The name of the pod to be deleted
+     * @param statusName The status to be reached
+     * @param timeout The max wait time in milliseconds
+     */
+    @Override
+    void deletePodWhenReachStatus(String podName, String statusName, long timeout){
+        final pod = getPod(podName)
+        final start = System.currentTimeMillis()
+        while( (System.currentTimeMillis() - start) < timeout ) {
+            if( pod && pod.status?.phase == statusName ) {
+                deletePod(podName)
+                return
+            }
+            sleep 5_000
+        }
+    }
+
     @Override
     V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
         final spec = scanSpec(name, containerImage, args, workDir, creds, scanConfig, nodeSelector)
