@@ -105,8 +105,6 @@ class RedisCounterProviderTest extends Specification implements RedisTestContain
         sleep(1000)
         then:'this value should be one, because foo should be expired'
         redisCounterProvider.get('metrics/v1', 'pulls/o/abc.com.au/d/2024-07-14') == null
-        sleep(500)
-        and:
         redisCounterProvider.get('metrics/v1', 'pulls/o/abc.com.au/d/2024-07-15') == null
     }
 }
