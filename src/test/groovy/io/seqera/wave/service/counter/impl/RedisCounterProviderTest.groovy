@@ -84,7 +84,20 @@ class RedisCounterProviderTest extends Specification implements RedisTestContain
                 ['pulls/o/abc.com.au/d/2024-05-30': 1]
     }
 
-    def 'should expire the hash'(){
+    def 'failing: should expire the hash'(){
+        when:
+        redisCounterProvider.inc('metrics/v1', 'pulls/o/abc.com.au/d/2024-07-14', 1)
+        sleep(500)
+        redisCounterProvider.inc('metrics/v1', 'pulls/o/abc.com.au/d/2024-07-15', 1)
+        sleep(500)
+        then:'this value should be one, because foo should be expired'
+        redisCounterProvider.get('metrics/v1', 'pulls/o/abc.com.au/d/2024-07-14') == null
+        sleep(500)
+        and:
+        redisCounterProvider.get('metrics/v1', 'pulls/o/abc.com.au/d/2024-07-15') == null
+    }
+
+    def 'successful: should expire the hash'(){
         when:
         redisCounterProvider.inc('metrics/v1', 'pulls/o/abc.com.au/d/2024-07-14', 1)
         sleep(500)
