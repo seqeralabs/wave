@@ -387,6 +387,7 @@ class K8sServiceImpl implements K8sService {
                 .withActiveDeadlineSeconds( buildConfig.buildTimeout.toSeconds() )
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
+                .withOverhead(null)
 
 
         final requests = new V1ResourceRequirements()
@@ -531,6 +532,7 @@ class K8sServiceImpl implements K8sService {
                 .withActiveDeadlineSeconds( scanConfig.timeout.toSeconds() )
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
+                .withOverhead(null)
 
 
         final requests = new V1ResourceRequirements()
@@ -578,6 +580,7 @@ class K8sServiceImpl implements K8sService {
                 .withServiceAccount(serviceAccount)
                 .withActiveDeadlineSeconds( blobConfig.transferTimeout.toSeconds() )
                 .withRestartPolicy("Never")
+                .withOverhead(null)
 
         final requests = new V1ResourceRequirements()
         if( blobConfig.requestsCpu )
