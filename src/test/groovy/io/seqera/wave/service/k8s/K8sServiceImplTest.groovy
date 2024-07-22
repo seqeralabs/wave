@@ -581,7 +581,9 @@ class K8sServiceImplTest extends Specification {
         def statusName = "Succeeded"
         def timeout = 5000
         def api = Mock(CoreV1Api)
-        api.readNamespacedPod(_,_,_) >> new V1Pod(status: new V1PodStatus(phase: statusName))
+        def namespacedPodRequest = Mock(CoreV1Api.APIreadNamespacedPodRequest)
+        api.readNamespacedPod(_,_) >> namespacedPodRequest
+        namespacedPodRequest.execute() >> new V1Pod(status: new V1PodStatus(phase: statusName))
         def k8sClient = new K8sClient() {
             @Override
             ApiClient apiClient() {
@@ -593,12 +595,13 @@ class K8sServiceImplTest extends Specification {
         }
 
         def k8sService = new K8sServiceImpl(k8sClient: k8sClient)
-
+        def  deleteNamespacedPodRequest = Mock(CoreV1Api. APIdeleteNamespacedPodRequest)
         when:
         k8sService.deletePodWhenReachStatus(podName, statusName, timeout)
 
         then:
-        1 * api.deleteNamespacedPod('test-pod', null, null, null, null, null, null, null)
+        1 * api.deleteNamespacedPod('test-pod', null) >> deleteNamespacedPodRequest
+        1 * deleteNamespacedPodRequest.execute()
     }
 
     def "deletePodWhenReachStatus should not delete pod if status is not reached within timeout"() {
@@ -607,7 +610,10 @@ class K8sServiceImplTest extends Specification {
         def statusName = "Succeeded"
         def timeout = 5000
         def api = Mock(CoreV1Api)
-        api.readNamespacedPod(_,_,_) >> new V1Pod(status: new V1PodStatus(phase: "Running"))
+        def namespacedPodRequest = Mock(CoreV1Api.APIreadNamespacedPodRequest)
+        api.readNamespacedPod(_,_) >> namespacedPodRequest
+        namespacedPodRequest.execute() >> new V1Pod(status: new V1PodStatus(phase: "Running"))
+
         def k8sClient = new K8sClient() {
             @Override
             ApiClient apiClient() {
@@ -624,7 +630,7 @@ class K8sServiceImplTest extends Specification {
         k8sService.deletePodWhenReachStatus(podName, statusName, timeout)
 
         then:
-        0 * api.deleteNamespacedPod('test-pod', null, null, null, null, null, null, null)
+        0 * api.deleteNamespacedPod('test-pod', null)
     }
 
 }
