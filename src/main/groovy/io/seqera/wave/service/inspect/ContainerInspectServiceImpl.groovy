@@ -33,6 +33,7 @@ import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.spec.ConfigSpec
 import io.seqera.wave.core.spec.ContainerSpec
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.proxy.ProxyClient
@@ -91,7 +92,16 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
             repos.add(buildRepo)
         if( cacheRepo )
             repos.add(cacheRepo)
-        return credsJson(repos, identity)
+        final result = credsJson(repos, identity)
+        if( buildRepo && !result.contains(host0(buildRepo)) )
+            throw new BadRequestException("Missing credentials for target build repository: $buildRepo")
+        if( cacheRepo && !result.contains(host0(cacheRepo)) )
+            throw new BadRequestException("Missing credentials for target cache repository: $buildRepo")
+        return result
+    }
+
+    static protected String host0(String repo) {
+        repo.tokenize('/')[0]
     }
 
     protected String credsJson(Set<String> repositories, PlatformId identity) {
