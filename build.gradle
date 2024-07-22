@@ -95,7 +95,8 @@ dependencies {
     //views
     implementation("io.micronaut.views:micronaut-views-handlebars")
     //mongodb
-    implementation("io.micronaut.mongodb:micronaut-mongo-reactive")
+    implementation "io.micronaut.data:micronaut-data-mongodb"
+    implementation "io.micronaut.data:micronaut-data-runtime"
 }
 
 application {
