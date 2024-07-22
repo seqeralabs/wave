@@ -54,8 +54,6 @@ interface K8sService {
 
     V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map <String,String> nodeSelector)
 
-    V1Pod transferContainer(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig)
-
     V1ContainerStateTerminated waitPod(V1Pod pod, long timeout)
 
     void deleteJob(String name)

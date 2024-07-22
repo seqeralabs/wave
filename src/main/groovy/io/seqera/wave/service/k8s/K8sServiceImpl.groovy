@@ -594,51 +594,6 @@ class K8sServiceImpl implements K8sService {
         builder.build()
     }
 
-    @Override
-    V1Pod transferContainer(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
-        final spec = transferSpec(name, containerImage, args, blobConfig)
-        return k8sClient
-                .coreV1Api()
-                .createNamespacedPod(namespace, spec, null, null, null,null)
-    }
-
-    V1Pod transferSpec(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
-
-        V1PodBuilder builder = new V1PodBuilder()
-
-        //metadata section
-        builder.withNewMetadata()
-                .withNamespace(namespace)
-                .withName(name)
-                .addToLabels(labels)
-                .endMetadata()
-
-        //spec section
-        def spec = builder
-                .withNewSpec()
-                .withServiceAccount(serviceAccount)
-                .withActiveDeadlineSeconds( blobConfig.transferTimeout.toSeconds() )
-                .withRestartPolicy("Never")
-
-        final requests = new V1ResourceRequirements()
-        if( blobConfig.requestsCpu )
-            requests.putRequestsItem('cpu', new Quantity(blobConfig.requestsCpu))
-        if( blobConfig.requestsMemory )
-            requests.putRequestsItem('memory', new Quantity(blobConfig.requestsMemory))
-
-        //container section
-        spec.addNewContainer()
-                .withName(name)
-                .withImage(containerImage)
-                .withEnv(toEnvList(blobConfig.getEnvironment()))
-                .withArgs(args)
-                .withResources(requests)
-                .endContainer()
-                .endSpec()
-
-        builder.build()
-    }
-
     protected List<V1EnvVar> toEnvList(Map<String,String> env) {
         final result = new ArrayList<V1EnvVar>(env.size())
         for( Map.Entry<String,String> it : env )
