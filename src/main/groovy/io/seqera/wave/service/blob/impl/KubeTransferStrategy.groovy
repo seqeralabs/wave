@@ -36,7 +36,6 @@ import io.seqera.wave.service.k8s.K8sService
 import io.seqera.wave.util.K8sHelper
 import jakarta.inject.Inject
 import jakarta.inject.Named
-
 /**
  * Implements {@link TransferStrategy} that runs s5cmd using a
  * Kubernetes job
@@ -88,7 +87,6 @@ class KubeTransferStrategy implements TransferStrategy {
         if( cleanup.shouldCleanup(terminated.exitCode) && job.metadata?.name ) {
             CompletableFuture.supplyAsync (() -> k8sService.deleteJob(job.metadata.name), executor)
         }
-
         return result
     }
 
@@ -100,4 +98,18 @@ class KubeTransferStrategy implements TransferStrategy {
                 .putUnencodedChars(info.creationTime.toString())
                 .hash()
     }
+
+    private void cleanupPod(String podName, int exitCode) {
+        if( !cleanup.shouldCleanup(exitCode) ) {
+            return
+        }
+        
+        CompletableFuture.supplyAsync (() ->
+                k8sService.deletePodWhenReachStatus(
+                        podName,
+                        'Succeeded',
+                        blobConfig.podDeleteTimeout.toMillis()),
+                executor)
+    }
+
 }

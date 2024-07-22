@@ -66,4 +66,6 @@ interface K8sService {
 
     V1PodList waitJob(V1Job job, Long timeout)
 
+    void deletePodWhenReachStatus(String podName, String statusName, long timeout)
+
 }

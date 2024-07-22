@@ -90,6 +90,9 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.backoffLimit:3}')
     Integer backoffLimit
 
+    @Value('${wave.blobCache.k8s.pod.delete.timeout:20s}')
+    Duration podDeleteTimeout
+
     Map<String,String> getEnvironment() {
         final result = new HashMap<String,String>(10)
         if( storageRegion ) {
