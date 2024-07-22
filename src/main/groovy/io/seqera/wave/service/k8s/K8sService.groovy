@@ -56,4 +56,7 @@ interface K8sService {
     V1ContainerStateTerminated waitPod(V1Pod pod, long timeout)
 
     InputStream getCurrentLogsPod(String name)
+
+    void deletePodWhenReachStatus(String podName, String statusName, long timeout)
+
 }

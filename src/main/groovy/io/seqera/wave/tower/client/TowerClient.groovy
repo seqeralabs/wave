@@ -25,9 +25,11 @@ import io.micronaut.cache.annotation.Cacheable
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.tower.auth.JwtAuth
 import io.seqera.wave.tower.client.connector.TowerConnector
+import io.seqera.wave.tower.compute.DescribeWorkflowLaunchResponse
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import org.apache.commons.lang3.StringUtils
+
 /**
  * Implement a client to interact with Tower services
  *
@@ -47,25 +49,25 @@ class TowerClient {
         return connector.sendAsync(endpoint, uri, authorization, type)
     }
 
-    @Cacheable(value = 'cache-20sec', atomic = true)
+    @Cacheable(value = 'cache-tower-client', atomic = true)
     CompletableFuture<ServiceInfoResponse> serviceInfo(String towerEndpoint) {
         final uri = serviceInfoEndpoint(towerEndpoint)
         return getAsync(uri, towerEndpoint, null, ServiceInfoResponse)
     }
 
-    @Cacheable(value = 'cache-20sec', atomic = true)
+    @Cacheable(value = 'cache-tower-client', atomic = true)
     CompletableFuture<UserInfoResponse> userInfo(String towerEndpoint, JwtAuth authorization) {
         final uri = userInfoEndpoint(towerEndpoint)
         return getAsync(uri, towerEndpoint, authorization, UserInfoResponse)
     }
 
-    @Cacheable(value = 'cache-20sec', atomic = true)
+    @Cacheable(value = 'cache-tower-client', atomic = true)
     CompletableFuture<ListCredentialsResponse> listCredentials(String towerEndpoint, JwtAuth authorization, Long workspaceId) {
         final uri = listCredentialsEndpoint(towerEndpoint, workspaceId)
         return getAsync(uri, towerEndpoint, authorization, ListCredentialsResponse)
     }
 
-    @Cacheable(value = 'cache-20sec', atomic = true)
+    @Cacheable(value = 'cache-tower-client', atomic = true)
     CompletableFuture<GetCredentialsKeysResponse> fetchEncryptedCredentials(String towerEndpoint, JwtAuth authorization, String credentialsId, String pairingId, Long workspaceId) {
         final uri = fetchCredentialsEndpoint(towerEndpoint, credentialsId, pairingId, workspaceId)
         return getAsync(uri, towerEndpoint, authorization, GetCredentialsKeysResponse)
@@ -110,6 +112,16 @@ class TowerClient {
             throw new IllegalArgumentException("Endpoint should start with HTTP or HTTPS protocol — offending value: '$endpoint'")
 
         StringUtils.removeEnd(endpoint, "/")
+    }
+
+    @Cacheable(value = 'cache-tower-client', atomic = true)
+    CompletableFuture<DescribeWorkflowLaunchResponse> describeWorkflowLaunch(String towerEndpoint, JwtAuth authorization, String workflowId) {
+        final uri = workflowLaunchEndpoint(towerEndpoint,workflowId)
+        return getAsync(uri, towerEndpoint, authorization, DescribeWorkflowLaunchResponse.class)
+    }
+
+    protected static URI workflowLaunchEndpoint(String towerEndpoint, String workflowId) {
+        return URI.create("${checkEndpoint(towerEndpoint)}/workflow/${workflowId}/launch")
     }
 
 }

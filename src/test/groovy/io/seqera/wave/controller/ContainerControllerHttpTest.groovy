@@ -30,6 +30,7 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.core.RouteHandler
@@ -304,4 +305,59 @@ class ContainerControllerHttpTest extends Specification {
         deleteResp.status.code == 200
     }
 
+    def 'should get the correct image name with imageSuffix name strategy'(){
+        when:
+        def packages = new PackagesSpec(channels: ['conda-forge', 'bioconda'], entries: ['salmon'], type: 'CONDA')
+        SubmitContainerTokenRequest request =
+                new SubmitContainerTokenRequest(
+                        nameStrategy: "imageSuffix",
+                        packages: packages,
+                        freeze: true,
+                        buildRepository: "docker.io/foo/test")
+        and:
+        def response = httpClient
+                .toBlocking()
+                .exchange(HttpRequest.POST("/v1alpha2/container", request), SubmitContainerTokenResponse)
+                .body()
+
+        then:
+        response.targetImage.startsWith("docker.io/foo/test/salmon")
+    }
+
+    def 'should get the correct image name with tagPrefix name strategy'(){
+        when:
+        def packages = new PackagesSpec(channels: ['conda-forge', 'bioconda'], entries: ['salmon'], type: 'CONDA')
+        SubmitContainerTokenRequest request =
+                new SubmitContainerTokenRequest(
+                        nameStrategy: "tagPrefix",
+                        packages: packages,
+                        freeze: true,
+                        buildRepository: "docker.io/foo/test")
+        and:
+        def response = httpClient
+                .toBlocking()
+                .exchange(HttpRequest.POST("/v1alpha2/container", request), SubmitContainerTokenResponse)
+                .body()
+
+        then:
+        response.targetImage.startsWith("docker.io/foo/test:salmon")
+    }
+
+    def 'should get the correct image name with default name strategy'(){
+        when:
+        def packages = new PackagesSpec(channels: ['conda-forge', 'bioconda'], entries: ['salmon'], type: 'CONDA')
+        SubmitContainerTokenRequest request =
+                new SubmitContainerTokenRequest(
+                        packages: packages,
+                        freeze: true,
+                        buildRepository: "docker.io/foo/test")
+        and:
+        def response = httpClient
+                .toBlocking()
+                .exchange(HttpRequest.POST("/v1alpha2/container", request), SubmitContainerTokenResponse)
+                .body()
+
+        then:
+        response.targetImage.startsWith("docker.io/foo/test:salmon")
+    }
 }

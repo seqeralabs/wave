@@ -18,16 +18,22 @@
 
 package io.seqera.wave.service.blob.impl
 
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
+
 import com.google.common.hash.Hashing
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Replaces
 import io.micronaut.context.annotation.Requires
+import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.TransferStrategy
+import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Inject
+import jakarta.inject.Named
 /**
  * Implements {@link TransferStrategy} that runs s5cmd using a
  * Kubernetes job
@@ -46,15 +52,24 @@ class KubeTransferStrategy implements TransferStrategy {
     @Inject
     private K8sService k8sService
 
+    @Inject
+    private CleanupStrategy cleanup
+
+    @Inject
+    @Named(TaskExecutors.IO)
+    private ExecutorService executor
+
     @Override
     BlobCacheInfo transfer(BlobCacheInfo info, List<String> command) {
         final podName = podName(info)
         final pod = k8sService.transferContainer(podName, blobConfig.s5Image, command, blobConfig)
         final terminated = k8sService.waitPod(pod, blobConfig.transferTimeout.toMillis())
         final stdout = k8sService.logsPod(podName)
-        return terminated
+        final result = terminated
                 ? info.completed(terminated.exitCode, stdout)
                 : info.failed(stdout)
+        cleanupPod(podName, terminated.exitCode)
+        return result
     }
 
     protected String podName(BlobCacheInfo info) {
@@ -65,4 +80,18 @@ class KubeTransferStrategy implements TransferStrategy {
                 .putUnencodedChars(info.creationTime.toString())
                 .hash()
     }
+
+    private void cleanupPod(String podName, int exitCode) {
+        if( !cleanup.shouldCleanup(exitCode) ) {
+            return
+        }
+        
+        CompletableFuture.supplyAsync (() ->
+                k8sService.deletePodWhenReachStatus(
+                        podName,
+                        'Succeeded',
+                        blobConfig.podDeleteTimeout.toMillis()),
+                executor)
+    }
+
 }

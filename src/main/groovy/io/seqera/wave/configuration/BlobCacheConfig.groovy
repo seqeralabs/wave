@@ -41,6 +41,9 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.status.delay:5s}')
     Duration statusDelay
 
+    @Value('${wave.blobCache.failure.duration:4s}')
+    Duration failureDuration
+
     @Value('${wave.blobCache.timeout:5m}')
     Duration transferTimeout
 
@@ -83,6 +86,9 @@ class BlobCacheConfig {
     @Nullable
     @Value('${wave.blobCache.url-signature-duration:30m}')
     Duration urlSignatureDuration
+
+    @Value('${wave.blobCache.k8s.pod.delete.timeout:20s}')
+    Duration podDeleteTimeout
 
     Map<String,String> getEnvironment() {
         final result = new HashMap<String,String>(10)

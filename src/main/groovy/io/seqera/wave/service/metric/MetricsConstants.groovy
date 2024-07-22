@@ -16,19 +16,23 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.metric.model
+package io.seqera.wave.service.metric
 
-import groovy.transform.CompileStatic
 /**
- * Model a Wave pulls count response
+ * Metric constants
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
- */
-@CompileStatic
-class GetPullsCountResponse {
-    Long count
+*/
+interface MetricsConstants {
 
-    GetPullsCountResponse(Long count) {
-        this.count = count
-    }
+    static final public String PREFIX_FUSION =  'fusion'
+
+    static final public String PREFIX_BUILDS =  'builds'
+
+    static final public String PREFIX_PULLS =  'pulls'
+
+    static final public String PREFIX_ORG =  'o'
+
+    static final public String PREFIX_DAY =  'd'
+
 }

@@ -29,6 +29,7 @@ import io.seqera.wave.service.builder.BuildFormat
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
+@Deprecated
 class SpackHelper {
 
     static String builderDockerTemplate() {

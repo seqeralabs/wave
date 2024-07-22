@@ -33,6 +33,7 @@ import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.core.spec.ConfigSpec
 import io.seqera.wave.core.spec.ContainerSpec
+import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.proxy.ProxyClient
@@ -91,7 +92,16 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
             repos.add(buildRepo)
         if( cacheRepo )
             repos.add(cacheRepo)
-        return credsJson(repos, identity)
+        final result = credsJson(repos, identity)
+        if( buildRepo && !result.contains(host0(buildRepo)) )
+            throw new BadRequestException("Missing credentials for target build repository: $buildRepo")
+        if( cacheRepo && !result.contains(host0(cacheRepo)) )
+            throw new BadRequestException("Missing credentials for target cache repository: $buildRepo")
+        return result
+    }
+
+    static protected String host0(String repo) {
+        repo.tokenize('/')[0]
     }
 
     protected String credsJson(Set<String> repositories, PlatformId identity) {
@@ -105,9 +115,7 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
                 // skip this index host because it has already be added to the list
                 continue
             }
-            final creds = !identity
-                    ? credentialsProvider.getDefaultCredentials(path)
-                    : credentialsProvider.getUserCredentials(path, identity)
+            final creds = credentialsProvider.getCredentials(path, identity)
             log.debug "Build credentials for repository: $repo => $creds"
             if( !creds ) {
                 // skip this host because there are no credentials
@@ -177,9 +185,7 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
             else if( item instanceof InspectRepository ) {
                 final path = ContainerCoordinates.parse(item.getImage())
 
-                final creds = !identity
-                        ? credentialsProvider.getDefaultCredentials(path)
-                        : credentialsProvider.getUserCredentials(path, identity)
+                final creds = credentialsProvider.getCredentials(path, identity)
                 log.debug "Config credentials for repository: ${item.getImage()} => $creds"
 
                 final entry = fetchConfig0(path, creds).config?.entrypoint
@@ -219,9 +225,7 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
     ContainerSpec containerSpec(String containerImage, PlatformId identity) {
         final path = ContainerCoordinates.parse(containerImage)
 
-        final creds = !identity
-                ? credentialsProvider.getDefaultCredentials(path)
-                : credentialsProvider.getUserCredentials(path, identity)
+        final creds = credentialsProvider.getCredentials(path, identity)
         log.debug "Inspect credentials for repository: ${containerImage} => $creds"
 
         final client = client0(path, creds)

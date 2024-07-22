@@ -16,19 +16,19 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.metric.model
+package io.seqera.wave.tower.compute
 
 import groovy.transform.CompileStatic
+
 /**
- * Model a Wave builds count response
+ * Model the response of compute environment from seqera platform
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @CompileStatic
-class GetBuildsCountResponse {
-    Long count
-
-    GetBuildsCountResponse(Long count) {
-        this.count = count
-    }
+class ComputeEnv {
+    String id
+    String platform
+    String credentialsId
 }
+

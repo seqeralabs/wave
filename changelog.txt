@@ -1,4 +1,38 @@
 # Wave changelog
+1.9.1 - 11 Jul 2024
+- Prevent hard error when launch credentials cannot be accessed [a318a855]
+
+1.9.0 - 11 Jul 2024
+- Add Typespec API definitions (#537) [32f7dd16]
+- Add cache record-stats (#534) [229926e2]
+- Add http 429 error to auth service retry condition [8282a492]
+- Check and delete corrupted blobs cache uploads (#533) [b0c775a3]
+- Deprecate the support for Spack and remove the support for it in the codebase (#550) [85a05196]
+- Enable ECR authentication via AWS compute env credentials (#303) [ec895222]
+- Fix Blob cache config for local dev [0d5413bf]
+- Fix client cache deadlock (#547) [cc6012ff]
+- Fix multiple s3clients in wave (#554) [45689500]
+- Minor change in mail notification [0aba6997]
+- Refactored metrics service (#549) [5e0d32ac]
+- Remove buildlogs aws config to not initialize AwsS3Operations (#558) [d50e5b7a]
+- Update metrics response (#536) [b6b36a97]
+- Bump buildkit 0.14.0 (#528) [c54172d1]
+- Bump buildkit 0.14.1 (#548) [37afb782]
+- Bump trivy 0.53.0 [f27ff527]
+- Bump version 1.8.3 [55b473e1]
+
+1.8.3 - 29 Jun 2024
+- Fix client cache deadlock (#547) [cc6012ff]
+- Fix failing test [263b44d3]
+- Add cache record-stats (#534) [229926e2]
+
+1.8.2 - 14 Jun 2024
+- Fix get image auth digest (#530) [df8ec041]
+
+1.8.1 - 13 Jun 2024
+- Fix digest warning (#526) [6e34ff0a]
+- Fix image name strategy (#513) [3bd8ffb5]
+
 1.8.0 - 10 Jun 2024
 - Add breakdown per org on stats metrics when a date is specified (#517) [b24894a4]
 - Replace Kaniko with Buildkit (#503) [a26f5dfe]
