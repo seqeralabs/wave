@@ -25,10 +25,13 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
+import io.micronaut.data.annotation.MappedEntity
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.token.TokenData
 import io.seqera.wave.tower.User
+import jakarta.persistence.Id
 import static io.seqera.wave.util.DataTimeUtils.parseOffsetDateTime
 /**
  * Model a Wave container request record 
@@ -39,7 +42,11 @@ import static io.seqera.wave.util.DataTimeUtils.parseOffsetDateTime
 @ToString(includeNames = true, includePackage = false)
 @Canonical
 @CompileStatic
+@MappedEntity
 class WaveContainerRecord {
+
+    @Id
+    final String token;
 
     /**
      * The Tower user associated with the request
@@ -157,7 +164,8 @@ class WaveContainerRecord {
      */
     final String fusionVersion
 
-    WaveContainerRecord(SubmitContainerTokenRequest request, ContainerRequestData data, String waveImage, String addr, Instant expiration) {
+    WaveContainerRecord(SubmitContainerTokenRequest request, TokenData token, ContainerRequestData data, String waveImage, String addr) {
+        this.token = token.value
         this.user = data.identity.user
         this.workspaceId = request.towerWorkspaceId
         this.containerImage = request.containerImage
@@ -171,7 +179,7 @@ class WaveContainerRecord {
         this.containerFile = data.containerFile
         this.sourceImage = data.containerImage
         this.waveImage = waveImage
-        this.expiration = expiration
+        this.expiration = token.expiration
         this.ipAddress = addr
         final ts = parseOffsetDateTime(request.timestamp) ?: OffsetDateTime.now()
         this.timestamp = ts?.toInstant()
@@ -183,6 +191,7 @@ class WaveContainerRecord {
     }
 
     WaveContainerRecord(WaveContainerRecord that, String sourceDigest, String waveDigest) {
+        this.token = that.token
         this.user = that.user
         this.workspaceId = that.workspaceId
         this.containerImage = that.containerImage
