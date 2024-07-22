@@ -105,9 +105,7 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
                 // skip this index host because it has already be added to the list
                 continue
             }
-            final creds = !identity
-                    ? credentialsProvider.getDefaultCredentials(path)
-                    : credentialsProvider.getUserCredentials(path, identity)
+            final creds = credentialsProvider.getCredentials(path, identity)
             log.debug "Build credentials for repository: $repo => $creds"
             if( !creds ) {
                 // skip this host because there are no credentials
@@ -177,9 +175,7 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
             else if( item instanceof InspectRepository ) {
                 final path = ContainerCoordinates.parse(item.getImage())
 
-                final creds = !identity
-                        ? credentialsProvider.getDefaultCredentials(path)
-                        : credentialsProvider.getUserCredentials(path, identity)
+                final creds = credentialsProvider.getCredentials(path, identity)
                 log.debug "Config credentials for repository: ${item.getImage()} => $creds"
 
                 final entry = fetchConfig0(path, creds).config?.entrypoint
@@ -219,9 +215,7 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
     ContainerSpec containerSpec(String containerImage, PlatformId identity) {
         final path = ContainerCoordinates.parse(containerImage)
 
-        final creds = !identity
-                ? credentialsProvider.getDefaultCredentials(path)
-                : credentialsProvider.getUserCredentials(path, identity)
+        final creds = credentialsProvider.getCredentials(path, identity)
         log.debug "Inspect credentials for repository: ${containerImage} => $creds"
 
         final client = client0(path, creds)

@@ -99,6 +99,16 @@ class CredentialServiceImpl implements CredentialsService {
     }
 
     CredentialsDescription findComputeCreds(PlatformId identity) {
+        try {
+            return findComputeCreds0(identity)
+        }
+        catch (Exception e) {
+            log.error("Unable to retrieve Platform launch credentials for $identity - cause ${e.message}")
+            return null
+        }
+    }
+
+    protected CredentialsDescription findComputeCreds0(PlatformId identity) {
         final response = towerClient.describeWorkflowLaunch(identity.towerEndpoint, JwtAuth.of(identity), identity.workflowId)
         if( !response )
             return null
