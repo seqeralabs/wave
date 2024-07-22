@@ -87,6 +87,9 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.url-signature-duration:30m}')
     Duration urlSignatureDuration
 
+    @Value('${wave.blobCache.k8s.pod.delete.timeout:20s}')
+    Duration podDeleteTimeout
+
     Map<String,String> getEnvironment() {
         final result = new HashMap<String,String>(10)
         if( storageRegion ) {
