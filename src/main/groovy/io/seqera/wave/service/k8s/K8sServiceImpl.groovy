@@ -594,13 +594,6 @@ class K8sServiceImpl implements K8sService {
         builder.build()
     }
 
-    protected List<V1EnvVar> toEnvList(Map<String,String> env) {
-        final result = new ArrayList<V1EnvVar>(env.size())
-        for( Map.Entry<String,String> it : env )
-            result.add( new V1EnvVar().name(it.key).value(it.value) )
-        return result
-    }
-
     /**
      * Create a Job for blob transfer
      *
@@ -628,6 +621,7 @@ class K8sServiceImpl implements K8sService {
 
         V1JobBuilder builder = new V1JobBuilder()
 
+        //metadata section
         builder.withNewMetadata()
                 .withNamespace(namespace)
                 .withName(name)
@@ -640,6 +634,7 @@ class K8sServiceImpl implements K8sService {
         if( blobConfig.requestsMemory )
             requests.putRequestsItem('memory', new Quantity(blobConfig.requestsMemory))
 
+        //spec section
         def spec = builder.withNewSpec()
                 .withBackoffLimit(blobConfig.backoffLimit)
                 .withNewTemplate()
@@ -647,6 +642,7 @@ class K8sServiceImpl implements K8sService {
                     .withServiceAccount(serviceAccount)
                     .withActiveDeadlineSeconds(blobConfig.transferTimeout.toSeconds())
                     .withRestartPolicy("Never")
+        //container section
                     .addNewContainer()
                         .withName(name)
                         .withImage(containerImage)
@@ -659,6 +655,13 @@ class K8sServiceImpl implements K8sService {
                 .endSpec()
 
         return spec.build()
+    }
+
+    protected List<V1EnvVar> toEnvList(Map<String,String> env) {
+        final result = new ArrayList<V1EnvVar>(env.size())
+        for( Map.Entry<String,String> it : env )
+            result.add( new V1EnvVar().name(it.key).value(it.value) )
+        return result
     }
 
     /**
