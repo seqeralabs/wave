@@ -91,8 +91,8 @@ class KubeScanStrategy extends ScanStrategy {
             final trivyCommand = scanCommand(req.targetImage, reportFile, scanConfig)
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
             final pod = k8sService.scanContainer(podName, scanConfig.scanImage, trivyCommand, req.workDir, configFile, scanConfig, selector)
-            final terminated = k8sService.waitPodCompletion(pod, scanConfig.timeout.toMillis())
-            if( terminated ) {
+            final exitCode = k8sService.waitPodCompletion(pod, scanConfig.timeout.toMillis())
+            if( exitCode==0 ) {
                 log.info("Container scan completed for id: ${req.id}")
                 return ScanResult.success(req, startTime, TrivyResultProcessor.process(reportFile.text))
             }
