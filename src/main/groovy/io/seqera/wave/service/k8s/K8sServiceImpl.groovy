@@ -448,7 +448,6 @@ class K8sServiceImpl implements K8sService {
      */
     @Override
     V1ContainerStateTerminated waitPod(V1Pod pod, String containerName, long timeout) {
-        final name = pod.metadata.name
         final start = System.currentTimeMillis()
         // wait for termination
         while( true ) {
@@ -470,7 +469,7 @@ class K8sServiceImpl implements K8sService {
             if( delta > timeout )
                 return null
             sleep 5_000
-            pod = getPod(name)
+            pod = getPod(pod.metadata.name)
         }
     }
 
