@@ -681,9 +681,9 @@ class K8sServiceImpl implements K8sService {
             final name = job.metadata.name
             final status = getJobStatus(name)
             if (status != JobStatus.Pending) {
-                return k8sClient.
-                        coreV1Api().
-                        listNamespacedPod(namespace, null, null, null, null, "job-name=$name", null, null, null, null, null, null)
+                return k8sClient
+                        .coreV1Api()
+                        .listNamespacedPod(namespace, null, null, null, null, "job-name=$name", null, null, null, null, null, null)
             }
             job = getJob(name)
         }
