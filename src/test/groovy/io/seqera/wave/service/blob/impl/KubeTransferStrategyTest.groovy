@@ -23,12 +23,9 @@ import spock.lang.Specification
 import java.time.Duration
 import java.time.OffsetDateTime
 
-import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1Job
-import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
-import io.kubernetes.client.openapi.models.V1PodStatus
-import io.seqera.wave.configuration.BlobCacheConfig
+
 import java.util.concurrent.Executors
 import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1Pod
@@ -45,7 +42,7 @@ import io.seqera.wave.service.k8s.K8sService
 class KubeTransferStrategyTest extends Specification {
 
     K8sService k8sService = Mock(K8sService)
-    BlobCacheConfig blobConfig = new BlobCacheConfig(s5Image: 's5cmd', transferTimeout: Duration.ofSeconds(10), backoffLimit: 3)
+    BlobCacheConfig blobConfig = new BlobCacheConfig(s5Image: 's5cmd', transferTimeout: Duration.ofSeconds(10), retryAttempts: 3)
     CleanupStrategy cleanup = new CleanupStrategy(buildConfig: new BuildConfig(cleanup: "OnSuccess"))
     KubeTransferStrategy strategy = new KubeTransferStrategy(k8sService: k8sService, blobConfig: blobConfig, cleanup: cleanup, executor: Executors.newSingleThreadExecutor())
 

@@ -636,7 +636,7 @@ class K8sServiceImpl implements K8sService {
 
         //spec section
         def spec = builder.withNewSpec()
-                .withBackoffLimit(blobConfig.backoffLimit)
+                .withBackoffLimit(blobConfig.retryAttempts)
                 .withNewTemplate()
                     .editOrNewSpec()
                     .withServiceAccount(serviceAccount)

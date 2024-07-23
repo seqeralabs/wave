@@ -510,7 +510,7 @@ class K8sServiceImplTest extends Specification {
         def config = Mock(BlobCacheConfig) {
             getTransferTimeout() >> Duration.ofSeconds(20)
             getEnvironment() >> [:]
-            getBackoffLimit() >> 3
+            getRetryAttempts() >> 5
         }
 
         when:
@@ -520,7 +520,7 @@ class K8sServiceImplTest extends Specification {
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
         and:
-        result.spec.backoffLimit == 3
+        result.spec.backoffLimit == 5
         and:
         verifyAll(result.spec.template.spec) {
             activeDeadlineSeconds == 20
@@ -550,7 +550,7 @@ class K8sServiceImplTest extends Specification {
             getEnvironment() >> ['FOO':'one', 'BAR':'two']
             getRequestsCpu() >> '2'
             getRequestsMemory() >> '8Gi'
-            getBackoffLimit() >> 3
+            getRetryAttempts() >> 3
         }
 
         when:
