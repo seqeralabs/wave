@@ -63,7 +63,7 @@ class KubeTransferStrategy implements TransferStrategy {
 
     @Override
     BlobCacheInfo transfer(BlobCacheInfo info, List<String> command) {
-        final name = getName(info)
+        final name = getJobName(info)
         final job = k8sService.transferJob(name, blobConfig.s5Image, command, blobConfig)
         final podList = k8sService.waitJob(job, blobConfig.transferTimeout.toMillis())
         final size = podList?.items?.size() ?: 0
@@ -90,7 +90,7 @@ class KubeTransferStrategy implements TransferStrategy {
         return result
     }
 
-    protected static String getName(BlobCacheInfo info) {
+    protected static String getJobName(BlobCacheInfo info) {
         return 'transfer-' + Hashing
                 .sipHash24()
                 .newHasher()
