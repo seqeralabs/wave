@@ -22,13 +22,11 @@ import spock.lang.Specification
 
 import java.time.Duration
 import java.time.OffsetDateTime
+import java.util.concurrent.Executors
 
 import io.kubernetes.client.openapi.models.V1Job
-import io.kubernetes.client.openapi.models.V1PodList
-
-import java.util.concurrent.Executors
-import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1Pod
+import io.kubernetes.client.openapi.models.V1PodList
 import io.kubernetes.client.openapi.models.V1PodStatus
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.BuildConfig
@@ -58,8 +56,8 @@ class KubeTransferStrategyTest extends Specification {
         k8sService.transferJob(_, _, _, _) >> new V1Job(metadata: [name: jobName])
         k8sService.waitJob(_, _) >> podList
         k8sService.getPod(_) >> pod
-        k8sService.waitPod(_, _, _) >> new V1ContainerStateTerminated().exitCode(0)
-        k8sService.logsPod(_, _) >> "transfer successful"
+        k8sService.waitPodCompletion(_, _) >> 0
+        k8sService.logsPod(_) >> "transfer successful"
 
         when:
         def result = strategy.transfer(info, command)
@@ -83,8 +81,8 @@ class KubeTransferStrategyTest extends Specification {
         k8sService.transferJob(_, _, _, _) >> new V1Job(metadata: [name: jobName])
         k8sService.waitJob(_, _) >> podList
         k8sService.getPod(_) >> pod
-        k8sService.waitPod(_, _, _) >> new V1ContainerStateTerminated().exitCode(1)
-        k8sService.logsPod(_, _) >> "transfer failed"
+        k8sService.waitPodCompletion(pod, _) >> 1
+        k8sService.logsPod(pod) >> "transfer failed"
 
         when:
         def result = strategy.transfer(info, command)

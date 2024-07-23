@@ -63,7 +63,7 @@ class KubeTransferStrategy implements TransferStrategy {
 
     @Override
     BlobCacheInfo transfer(BlobCacheInfo info, List<String> command) {
-        final name = getName(info)
+        final name = getJobName(info)
         final job = k8sService.transferJob(name, blobConfig.s5Image, command, blobConfig)
         final podList = k8sService.waitJob(job, blobConfig.transferTimeout.toMillis())
         final size = podList?.items?.size() ?: 0
@@ -74,23 +74,22 @@ class KubeTransferStrategy implements TransferStrategy {
         // Find the latest created pod among the pods associated with the job
         final latestPod = K8sHelper.findLatestPod(podList)
 
-        final podName = latestPod.metadata.name
-        final pod = k8sService.getPod(podName)
-        final terminated = k8sService.waitPod(pod, name, blobConfig.transferTimeout.toMillis())
-        final stdout = k8sService.logsPod(podName, name)
+        final pod = k8sService.getPod(latestPod.metadata.name)
+        final exitCode = k8sService.waitPodCompletion(pod, blobConfig.transferTimeout.toMillis())
+        final stdout = k8sService.logsPod(pod)
 
-        final result = terminated
-                ? info.completed(terminated.exitCode, stdout)
+        final result = exitCode!=null
+                ? info.completed(exitCode, stdout)
                 : info.failed(stdout)
 
         // delete job
-        if( cleanup.shouldCleanup(terminated.exitCode) && job.metadata?.name ) {
+        if( cleanup.shouldCleanup(exitCode) && job.metadata?.name ) {
             CompletableFuture.supplyAsync (() -> k8sService.deleteJob(job.metadata.name), executor)
         }
         return result
     }
 
-    protected static String getName(BlobCacheInfo info) {
+    protected static String getJobName(BlobCacheInfo info) {
         return 'transfer-' + Hashing
                 .sipHash24()
                 .newHasher()

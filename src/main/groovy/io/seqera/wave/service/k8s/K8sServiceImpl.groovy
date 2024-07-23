@@ -26,7 +26,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.openapi.models.V1ContainerBuilder
-import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1DeleteOptions
 import io.kubernetes.client.openapi.models.V1EnvVar
 import io.kubernetes.client.openapi.models.V1HostPathVolumeSource
@@ -420,46 +419,32 @@ class K8sServiceImpl implements K8sService {
     }
 
     /**
-     * Wait for a pod a completion
+     * Wait for a pod a completion.
+     *
+     * NOTE: this method assumes the pod is running exactly *one* container.
      *
      * @param pod
      *      The pod name
      * @param timeout
      *      Max wait time in milliseconds
      * @return
-     *      An instance of {@link V1ContainerStateTerminated} representing the termination state
-     *      or {@code null} if the state cannot be determined or timeout was reached,
+     *      An Integer value representing the container exit code or {@code null} if the state cannot be determined
+     *      or timeout was reached.
      */
     @Override
-    V1ContainerStateTerminated waitPod(V1Pod pod, long timeout) {
-        return waitPod(pod, pod.metadata.name, timeout)
-    }
-
-    /**
-     * Wait for a pod a completion
-     *
-     * @param pod
-     *      The pod name
-     * @param timeout
-     *      Max wait time in milliseconds
-     * @return
-     *      An instance of {@link V1ContainerStateTerminated} representing the termination state
-     *      or {@code null} if the state cannot be determined or timeout was reached,
-     */
-    @Override
-    V1ContainerStateTerminated waitPod(V1Pod pod, String containerName, long timeout) {
+    Integer waitPodCompletion(V1Pod pod, long timeout) {
         final start = System.currentTimeMillis()
         // wait for termination
         while( true ) {
             final phase = pod.status?.phase
             if(  phase && phase != 'Pending' ) {
-                final status = pod.status.containerStatuses.find( it -> it.name==containerName )
+                final status = pod.status.containerStatuses.first()
                 if( !status )
                     return null
                 if( !status.state )
                     return null
                 if( status.state.terminated ) {
-                    return status.state.terminated
+                    return status.state.terminated.exitCode
                 }
             }
 
@@ -474,30 +459,21 @@ class K8sServiceImpl implements K8sService {
     }
 
     /**
-     * Fetch the logs of a pod
+     * Fetch the logs of a pod.
      *
-     * @param name The pod name
+     * NOTE: this method assume the pod runs exactly *one* container.
+     *
+     * @param name The {@link V1Pod} object representing the pod from where retrieve the logs
      * @return The logs as a string or when logs are not available or cannot be accessed
      */
     @Override
-    String logsPod(String name) {
-        logsPod(name, name)
-    }
-
-    /**
-     * Fetch the logs of a pod
-     *
-     * @param name The pod name
-     * @return The logs as a string or when logs are not available or cannot be accessed
-     */
-    @Override
-    String logsPod(String podName, String containerName) {
+    String logsPod(V1Pod pod) {
         try {
             final logs = k8sClient.podLogs()
-            logs.streamNamespacedPodLog(namespace, podName, containerName).getText()
+            logs.streamNamespacedPodLog(namespace, pod.metadata.name, pod.spec.containers.first().name).getText()
         }
         catch (Exception e) {
-            log.error "Unable to fetch logs for pod: $podName and container: $containerName", e
+            log.error "Unable to fetch logs for pod: ${pod.metadata.name}", e
             return null
         }
     }
