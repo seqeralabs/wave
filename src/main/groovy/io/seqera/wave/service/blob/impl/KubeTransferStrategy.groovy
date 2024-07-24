@@ -30,7 +30,6 @@ import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.TransferStrategy
-import io.seqera.wave.service.blob.TransferTimeoutException
 import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.k8s.K8sService
 import io.seqera.wave.util.K8sHelper
@@ -63,30 +62,40 @@ class KubeTransferStrategy implements TransferStrategy {
 
     @Override
     BlobCacheInfo transfer(BlobCacheInfo info, List<String> command) {
-        final name = getJobName(info)
-        final job = k8sService.transferJob(name, blobConfig.s5Image, command, blobConfig)
-        final podList = k8sService.waitJob(job, blobConfig.transferTimeout.toMillis())
+        final jobName = getJobName(info)
+        // run the transfer job
+        final result = transfer0(info, command, jobName)
+        // delete job
+        cleanupJob(jobName, result.exitStatus)
+        return result
+    }
+
+    protected BlobCacheInfo transfer0(BlobCacheInfo info, List<String> command, String jobName) {
+        final job = k8sService.transferJob(jobName, blobConfig.s5Image, command, blobConfig)
+        final timeout = Math.round(blobConfig.transferTimeout.toMillis() *1.1f)
+        final podList = k8sService.waitJob(job, timeout)
         final size = podList?.items?.size() ?: 0
-
-        if( size < 1 )
-            throw new TransferTimeoutException("Transfer job timed out")
-
+        // verify the upload pod has been created
+        if( size < 1 ) {
+            log.error "== Blob cache transfer failed - unable to schedule upload job: $info"
+            return info.failed("Unable to scheduler transfer job")
+        }
         // Find the latest created pod among the pods associated with the job
         final latestPod = K8sHelper.findLatestPod(podList)
 
         final pod = k8sService.getPod(latestPod.metadata.name)
-        final exitCode = k8sService.waitPodCompletion(pod, blobConfig.transferTimeout.toMillis())
+        final exitCode = k8sService.waitPodCompletion(pod, timeout)
         final stdout = k8sService.logsPod(pod)
 
-        final result = exitCode!=null
+        return exitCode!=null
                 ? info.completed(exitCode, stdout)
                 : info.failed(stdout)
+    }
 
-        // delete job
-        if( cleanup.shouldCleanup(exitCode) && job.metadata?.name ) {
-            CompletableFuture.supplyAsync (() -> k8sService.deleteJob(job.metadata.name), executor)
+    protected void cleanupJob(String jobName, Integer exitCode) {
+        if( cleanup.shouldCleanup(exitCode) ) {
+            CompletableFuture.supplyAsync (() -> k8sService.deleteJob(jobName), executor)
         }
-        return result
     }
 
     protected static String getJobName(BlobCacheInfo info) {
