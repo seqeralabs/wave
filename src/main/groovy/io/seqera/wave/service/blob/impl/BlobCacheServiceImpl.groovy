@@ -295,7 +295,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
 
         static BlobCacheInfo awaitCompletion(BlobStore store, String key, BlobCacheInfo current) {
             final beg = System.currentTimeMillis()
-            // set the await timeout nealy double as the blob transfer timeout, this because the
+            // set the await timeout nearly double as the blob transfer timeout, this because the
             // transfer pod can spend `timeout` time in pending status awaiting to be scheduled
             // and the same `timeout` time amount carrying out the transfer (upload) operation
             final max = (store.timeout.toMillis() * 2.10) as long
