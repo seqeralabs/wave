@@ -21,10 +21,12 @@ package io.seqera.wave.service.blob.impl
 import spock.lang.Specification
 
 import java.time.Duration
+import java.time.OffsetDateTime
 import java.util.concurrent.Executors
 
-import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
+import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1Pod
+import io.kubernetes.client.openapi.models.V1PodList
 import io.kubernetes.client.openapi.models.V1PodStatus
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.BuildConfig
@@ -38,45 +40,57 @@ import io.seqera.wave.service.k8s.K8sService
 class KubeTransferStrategyTest extends Specification {
 
     K8sService k8sService = Mock(K8sService)
-    BlobCacheConfig blobConfig = new BlobCacheConfig(s5Image: 's5cmd', transferTimeout: Duration.ofSeconds(10))
+    BlobCacheConfig blobConfig = new BlobCacheConfig(s5Image: 's5cmd', transferTimeout: Duration.ofSeconds(10), retryAttempts: 3)
     CleanupStrategy cleanup = new CleanupStrategy(buildConfig: new BuildConfig(cleanup: "OnSuccess"))
     KubeTransferStrategy strategy = new KubeTransferStrategy(k8sService: k8sService, blobConfig: blobConfig, cleanup: cleanup, executor: Executors.newSingleThreadExecutor())
 
-    def "transfer should complete successfully with valid inputs"() {
+   def "transfer should return completed info when job is successful"() {
         given:
-        def uri = "s3://bucket/file.txt"
-        def info = BlobCacheInfo.create(uri, null, null)
-        def command = ["s5cmd", "cp", uri, "/local/path"]
-        k8sService.transferContainer(_, blobConfig.s5Image, command, blobConfig) >> new V1Pod(status: new V1PodStatus(phase: 'Succeeded'))
-        k8sService.getPod(_) >> new V1Pod(status: new V1PodStatus(phase: 'Succeeded'))
-        k8sService.waitPod(_, _) >> new V1ContainerStateTerminated(exitCode: 0)
-        k8sService.logsPod(_) >> "Transfer completed"
+        def info = BlobCacheInfo.create("https://test.com/blobs", null, null)
+        def command = ["transfer", "blob"]
+        final jobName = "job-123"
+        def podName = "$jobName-abc"
+        def pod = new V1Pod(metadata: [name: podName, creationTimestamp: OffsetDateTime.now()])
+        pod.status = new V1PodStatus(phase: "Succeeded")
+        def podList = new V1PodList(items: [pod])
+        k8sService.transferJob(_, _, _, _) >> new V1Job(metadata: [name: jobName])
+        k8sService.waitJob(_, _) >> podList
+        k8sService.getPod(_) >> pod
+        k8sService.waitPodCompletion(_, _) >> 0
+        k8sService.logsPod(_) >> "transfer successful"
 
         when:
         def result = strategy.transfer(info, command)
 
         then:
-        result.succeeded()
         result.exitStatus == 0
-        result.logs == "Transfer completed"
+        result.logs == "transfer successful"
         result.done()
+        result.succeeded()
     }
 
-    def "transfer should fail when pod execution exceeds timeout"() {
+    def "transfer should return failed info when job is failed"() {
         given:
-        def uri = "s3://bucket/file.txt"
-        def info = BlobCacheInfo.create(uri, null, null)
-        def command = ["s5cmd", "cp", uri, "/local/path"]
-        k8sService.transferContainer(_, blobConfig.s5Image, command, blobConfig) >> new V1Pod(status: new V1PodStatus(phase: 'Running'))
-        k8sService.waitPod(_, blobConfig.transferTimeout.toMillis()) >> new V1ContainerStateTerminated(exitCode: 1)
-        k8sService.logsPod(_) >> "Transfer timeout"
+        def info = BlobCacheInfo.create("https://test.com/blobs", null, null)
+        def command = ["transfer", "blob"]
+        final jobName = "job-123"
+        def podName = "$jobName-abc"
+        def pod = new V1Pod(metadata: [name: podName, creationTimestamp: OffsetDateTime.now()])
+        pod.status = new V1PodStatus(phase: "Succeeded")
+        def podList = new V1PodList(items: [pod])
+        k8sService.transferJob(_, _, _, _) >> new V1Job(metadata: [name: jobName])
+        k8sService.waitJob(_, _) >> podList
+        k8sService.getPod(_) >> pod
+        k8sService.waitPodCompletion(pod, _) >> 1
+        k8sService.logsPod(pod) >> "transfer failed"
 
         when:
         def result = strategy.transfer(info, command)
 
         then:
-        result.failed("Transfer timeout")
-        result.logs == "Transfer timeout"
+        result.exitStatus == 1
+        result.logs == "transfer failed"
+        result.done()
+        !result.succeeded()
     }
-
 }
