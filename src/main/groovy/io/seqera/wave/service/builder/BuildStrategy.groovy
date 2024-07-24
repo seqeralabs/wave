@@ -32,6 +32,8 @@ import jakarta.inject.Inject
 @CompileStatic
 abstract class BuildStrategy {
 
+    protected static final String FUSION_PREFIX = "/fusion/s3"
+
     @Inject
     private BuildConfig buildConfig
 
@@ -57,15 +59,16 @@ abstract class BuildStrategy {
     protected List<String> dockerLaunchCmd(BuildRequest req) {
         final result = new ArrayList(10)
         result
+                << BUILDKIT_ENTRYPOINT
                 << "build"
                 << "--frontend"
                 << "dockerfile.v0"
                 << "--local"
-                << "dockerfile=$req.workDir".toString()
+                << "dockerfile=$FUSION_PREFIX/$buildConfig.workspaceBucket/$req.s3Key".toString()
                 << "--opt"
                 << "filename=Containerfile"
                 << "--local"
-                << "context=$req.workDir/context".toString()
+                << "context=$FUSION_PREFIX/$buildConfig.workspaceBucket/$req.s3Key/context".toString()
                 << "--output"
                 << "type=image,name=$req.targetImage,push=true,oci-mediatypes=${buildConfig.ociMediatypes}".toString()
                 << "--opt"

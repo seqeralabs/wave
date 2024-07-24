@@ -18,10 +18,6 @@
 
 package io.seqera.wave.service.builder
 
-import java.nio.file.FileAlreadyExistsException
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.StandardCopyOption
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
@@ -29,6 +25,8 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.core.annotation.Nullable
+import io.micronaut.objectstorage.ObjectStorageOperations
+import io.micronaut.objectstorage.request.UploadRequest
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.auth.RegistryCredentialsProvider
@@ -48,17 +46,17 @@ import io.seqera.wave.service.stream.StreamService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.SpackHelper
-import io.seqera.wave.util.TarUtils
+import io.seqera.wave.util.TarS3Utils
 import io.seqera.wave.util.TemplateRenderer
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
-import static io.seqera.wave.util.RegHelper.layerDir
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
+import org.apache.commons.io.IOUtils
 import static io.seqera.wave.util.RegHelper.layerName
 import static io.seqera.wave.util.StringUtils.indent
-import static java.nio.file.StandardOpenOption.CREATE
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
-import static java.nio.file.StandardOpenOption.WRITE
 /**
  * Implements container build service
  *
@@ -118,6 +116,10 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
     @Inject
     BuildRecordStore buildRecordStore
+
+    @Inject
+    @Named('build-workspace')
+    private ObjectStorageOperations<?, ?, ?> objectStorageOperations
     
     /**
      * Build a container image for the given {@link BuildRequest}
@@ -148,10 +150,10 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 .awaitBuild(targetImage)
     }
 
-    protected String containerFile0(BuildRequest req, Path context, SpackConfig config) {
+    protected String containerFile0(BuildRequest req, String context, SpackConfig config) {
         // add the context dir for singularity builds
         final containerFile = req.formatSingularity()
-                ? req.containerFile.replace('{{wave_context_dir}}', context.toString())
+                ? req.containerFile.replace('{{wave_context_dir}}', context)
                 : req.containerFile
 
         // render the Spack template if needed
@@ -170,35 +172,28 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     }
 
     protected BuildResult launch(BuildRequest req) {
+        //create context dir
+        objectStorageOperations.upload(UploadRequest.fromBytes(new byte[0] , "$req.s3Key/context/".toString()))
         // launch an external process to build the container
         BuildResult resp=null
         try {
-            // create the workdir path
-            Files.createDirectories(req.workDir)
-            // create context dir
-            final context = req.workDir.resolve('context')
-            try { Files.createDirectory(context) }
-            catch (FileAlreadyExistsException e) { /* ignore it */ }
             // save the dockerfile
-            final containerFile = req.workDir.resolve('Containerfile')
-            Files.write(containerFile, containerFile0(req, context, spackConfig).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            objectStorageOperations.upload(UploadRequest.fromBytes(containerFile0(req, "$req.s3Key/Containerfile", spackConfig).bytes, "$req.s3Key/Containerfile".toString()))
             // save build context
             if( req.buildContext ) {
-                saveBuildContext(req.buildContext, context, req.identity)
+                saveBuildContext(req.buildContext, "$req.s3Key/context", req.identity)
             }
             // save the conda file
             if( req.condaFile ) {
-                final condaFile = context.resolve('conda.yml')
-                Files.write(condaFile, req.condaFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+                objectStorageOperations.upload(UploadRequest.fromBytes(req.condaFile.bytes, "$req.s3Key/conda.yml"))
             }
             // save the spack file
             if( req.spackFile ) {
-                final spackFile = context.resolve('spack.yaml')
-                Files.write(spackFile, req.spackFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+                objectStorageOperations.upload(UploadRequest.fromBytes(req.condaFile.bytes, "$req.s3Key/spack.yaml"))
             }
             // save layers provided via the container config
             if( req.containerConfig ) {
-                saveLayersToContext(req, context)
+                saveLayersToContext(req, "$req.s3Key/context")
             }
             resp = buildStrategy.build(req)
             def msg = "== Build request ${req.buildId} completed with status=$resp.exitStatus"
@@ -281,59 +276,57 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         throw new IllegalStateException("Unable to determine build status for '$request.targetImage'")
     }
 
-    protected void saveLayersToContext(BuildRequest req, Path contextDir) {
+    protected void saveLayersToContext(BuildRequest req, String s3Key) {
         if(req.formatDocker()) {
-            saveLayersToDockerContext0(req, contextDir)
+            saveLayersToDockerContext0(req, s3Key)
         }
         else if(req.formatSingularity()) {
-            saveLayersToSingularityContext0(req, contextDir)
+            saveLayersToSingularityContext0(req, s3Key)
         }
         else
             throw new IllegalArgumentException("Unknown container format: $req.format")
     }
 
-    protected void saveLayersToDockerContext0(BuildRequest request, Path contextDir) {
+    protected void saveLayersToDockerContext0(BuildRequest request, String s3Key) {
         final layers = request.containerConfig.layers
         for(int i=0; i<layers.size(); i++) {
             final it = layers[i]
-            final target = contextDir.resolve(layerName(it))
-            final retryable = retry0("Unable to copy '${it.location}' to docker context '${contextDir}'")
+            final target = "$s3Key/${layerName(it)}".toString()
+            final retryable = retry0("Unable to copy '${it.location}' to docker context '$s3Key'")
             // copy the layer to the build context
             retryable.apply(()-> {
                 try (InputStream stream = streamService.stream(it.location, request.identity)) {
-                    Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING)
+                    objectStorageOperations.upload(UploadRequest.fromBytes(IOUtils.toByteArray(stream), target))
                 }
                 return
             })
         }
     }
 
-    protected void saveLayersToSingularityContext0(BuildRequest request, Path contextDir) {
+    protected void saveLayersToSingularityContext0(BuildRequest request, String s3Key) {
         final layers = request.containerConfig.layers
         for(int i=0; i<layers.size(); i++) {
             final it = layers[i]
-            final target = contextDir.resolve(layerDir(it))
-            try { Files.createDirectory(target) }
-            catch (FileAlreadyExistsException e) { /* ignore */ }
+            final target = "$s3Key/${layerName(it)}".toString()
             // retry strategy
-            final retryable = retry0("Unable to copy '${it.location} to singularity context '${contextDir}'")
+            final retryable = retry0("Unable to copy '${it.location} to singularity context '$s3Key'")
             // copy the layer to the build context
             retryable.apply(()-> {
                 try (InputStream stream = streamService.stream(it.location, request.identity)) {
-                    TarUtils.untarGzip(stream, target)
+                    TarS3Utils.untarGzipToS3(stream, s3Key)
                 }
                 return
             })
         }
     }
 
-    protected void saveBuildContext(BuildContext buildContext, Path contextDir, PlatformId identity) {
+    protected void saveBuildContext(BuildContext buildContext, String s3Key, PlatformId identity) {
         // retry strategy
-        final retryable = retry0("Unable to copy '${buildContext.location} to build context '${contextDir}'")
+        final retryable = retry0("Unable to copy '${buildContext.location} to build context '${s3Key}'")
         // copy the layer to the build context
         retryable.apply(()-> {
             try (InputStream stream = streamService.stream(buildContext.location, identity)) {
-                TarUtils.untarGzip(stream, contextDir)
+                TarS3Utils.untarGzipToS3(stream, s3Key)
             }
             return
         })

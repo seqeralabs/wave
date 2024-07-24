@@ -18,26 +18,22 @@
 
 package io.seqera.wave.service.builder
 
-import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
-import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.micronaut.objectstorage.ObjectStorageOperations
+import io.micronaut.objectstorage.request.UploadRequest
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
-import static java.nio.file.StandardOpenOption.CREATE
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
-import static java.nio.file.StandardOpenOption.WRITE
-import static java.nio.file.attribute.PosixFilePermission.OWNER_READ
-import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
 /**
  *  Build a container image using a Docker CLI tool
  *
@@ -60,23 +56,23 @@ class DockerBuildStrategy extends BuildStrategy {
     @Inject
     RegistryProxyService proxyService
 
+    @Inject
+    @Named('build-workspace')
+    private ObjectStorageOperations<?, ?, ?> objectStorageOperations
+
     @Override
     BuildResult build(BuildRequest req) {
 
-        Path configFile = null
+        boolean configFile = false;
         // save docker config for creds
         if( req.configJson ) {
-            configFile = req.workDir.resolve('config.json')
-            Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            objectStorageOperations.upload(UploadRequest.fromBytes(req.configJson.bytes, "$req.s3Key/config.json".toString()))
+            configFile = true
         }
         // save remote files for singularity
         if( req.configJson && req.formatSingularity()) {
-            final remoteFile = req.workDir.resolve('singularity-remote.yaml')
-            final content = RegHelper.singularityRemoteFile(req.targetImage)
-            Files.write(remoteFile, content.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
-            // set permissions 600 as required by Singularity
-            Files.setPosixFilePermissions(configFile, Set.of(OWNER_READ, OWNER_WRITE))
-            Files.setPosixFilePermissions(remoteFile, Set.of(OWNER_READ, OWNER_WRITE))
+            objectStorageOperations.upload(UploadRequest.fromBytes(RegHelper.singularityRemoteFile(req.targetImage).bytes, "$req.s3Key/singularity-remote.yaml".toString()))
+            configFile = true
         }
 
         // command the docker build command
@@ -84,16 +80,14 @@ class DockerBuildStrategy extends BuildStrategy {
         log.debug "Build run command: ${buildCmd.join(' ')}"
         // save docker cli for debugging purpose
         if( debug ) {
-            Files.write(req.workDir.resolve('docker.sh'),
-                    buildCmd.join(' ').bytes,
-                    CREATE, WRITE, TRUNCATE_EXISTING)
+            objectStorageOperations.upload(UploadRequest.fromBytes(buildCmd.join(' ').bytes, "$req.s3Key/docker.sh".toString()))
         }
         
-        final proc = new ProcessBuilder()
+        final builder = new ProcessBuilder()
                 .command(buildCmd)
-                .directory(req.workDir.toFile())
                 .redirectErrorStream(true)
-                .start()
+
+        def proc = builder.start()
 
         final completed = proc.waitFor(buildConfig.buildTimeout.toSeconds(), TimeUnit.SECONDS)
         final stdout = proc.inputStream.text
@@ -106,35 +100,29 @@ class DockerBuildStrategy extends BuildStrategy {
         }
     }
 
-    protected List<String> buildCmd(BuildRequest req, Path credsFile) {
+    protected List<String> buildCmd(BuildRequest req, boolean credsFile) {
         final spack = req.isSpackBuild ? spackConfig : null
 
         final dockerCmd = req.formatDocker()
-                ? cmdForBuildkit( req.workDir, credsFile, spack, req.platform)
+                ? cmdForBuildkit( req, req.platform)
                 : cmdForSingularity( req.workDir, credsFile, spack, req.platform)
 
         return dockerCmd + launchCmd(req)
     }
 
-    protected List<String> cmdForBuildkit(Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform ) {
+    protected List<String> cmdForBuildkit(BuildRequest req, ContainerPlatform platform ) {
         //checkout the documentation here to know more about these options https://github.com/moby/buildkit/blob/master/docs/rootless.md#docker
         final wrapper = ['docker',
                          'run',
-                         '--rm',
                          '--privileged',
-                         '-v', "$workDir:$workDir".toString(),
-                         '--entrypoint',
-                         BUILDKIT_ENTRYPOINT]
+                         '-e',
+                         "AWS_ACCESS_KEY_ID=${System.getenv('AWS_ACCESS_KEY_ID')}".toString(),
+                         '-e',
+                         "AWS_SECRET_ACCESS_KEY=${System.getenv('AWS_SECRET_ACCESS_KEY')}".toString()]
 
-        if( credsFile ) {
-            wrapper.add('-v')
-            wrapper.add("$credsFile:/home/user/.docker/config.json:ro".toString())
-        }
-
-        if( spackConfig ) {
-            // secret file
-            wrapper.add('-v')
-            wrapper.add("${spackConfig.secretKeyFile}:${spackConfig.secretMountPath}:ro".toString())
+        if( req.configJson ) {
+            wrapper.add('-e')
+            wrapper.add("DOCKER_CONFIG=$FUSION_PREFIX/$buildConfig.workspaceBucket/$req.s3Key".toString())
         }
 
         if( platform ) {
@@ -148,7 +136,7 @@ class DockerBuildStrategy extends BuildStrategy {
         return wrapper
     }
 
-    protected List<String> cmdForSingularity(Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform) {
+    protected List<String> cmdForSingularity(Path workDir, boolean credsFile, SpackConfig spackConfig, ContainerPlatform platform) {
         final wrapper = ['docker',
                          'run',
                          '--rm',
@@ -157,17 +145,12 @@ class DockerBuildStrategy extends BuildStrategy {
                          '-v', "$workDir:$workDir".toString()]
 
         if( credsFile ) {
+            //todo for singularity remote file
             wrapper.add('-v')
             wrapper.add("$credsFile:/root/.singularity/docker-config.json:ro".toString())
-            //
-            wrapper.add('-v')
-            wrapper.add("${credsFile.resolveSibling('singularity-remote.yaml')}:/root/.singularity/remote.yaml:ro".toString())
-        }
 
-        if( spackConfig ) {
-            // secret file
-            wrapper.add('-v')
-            wrapper.add("${spackConfig.secretKeyFile}:${spackConfig.secretMountPath}:ro".toString())
+            //wrapper.add('-v')
+            //wrapper.add("${credsFile.resolveSibling('singularity-remote.yaml')}:/root/.singularity/remote.yaml:ro".toString())
         }
 
         if( platform ) {
