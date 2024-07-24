@@ -1,0 +1,35 @@
+---
+title: Container freeze
+---
+
+The container _freeze mode_ allows the provisioning of non-ephemeral containers that are stored permanently in a container registry of your choice. When using the freeze mode, the Wave service transparently carries out a regular container build.
+
+This approach supports use cases such as the following:
+
+- Create container images on-demand from Conda packages
+- Deliver multi-architecture (AMD64 and ARM64) and multi-format (Docker and Singularity) container collections
+- Deliver container images in the same region where compute is performed
+
+Wave freeze mode works as follows:
+
+1. The client, either Nextflow or Wave client, submits a container request specifying:
+   1. The (Seqera Platform) user identity
+   1. The container image to augment
+   1. The container extension configuration, which can be either a custom payload, one or more extension layers or container images
+   1. The target repository where the built container should be uploaded
+1. The Wave service validates the request and authorizes the user via a request to the Platform service.
+1. The Wave service checks if the container image already exists in the target registry.
+1. If the image does not exist, Wave launches a container build job and pushes the resulting image to the target registry.
+1. The Wave service responds with the container image name e.g. `example.com/some/image/build:1234567`.
+
+Notable parts of this workflow include:
+
+- Container images provisioned with freeze mode are regular container builds.
+- Each container image is associated with a unique ID that is obtained by hashing the following elements:
+  - The Container file
+  - Any package dependencies
+  - The target platform, which is either AMD64 or ARM64
+  - The target repository name
+- When a request for the same container is made, the same ID is assigned to it and therefore, the build is skipped.
+- The resulting images are hosted in your selected repository and not cached locally, unless a cache repository is specified.
+- The container images are stored permanently unless the repository owner deletes them.
