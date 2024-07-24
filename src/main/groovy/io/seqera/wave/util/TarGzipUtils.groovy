@@ -18,21 +18,19 @@
 
 package io.seqera.wave.util
 
-import io.micronaut.objectstorage.request.UploadRequest
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 /**
- * Tar and Gzip utilities for S3
+ * Tar and Gzip utilities
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-class TarS3Utils {
+class TarGzipUtils {
 
-    static byte[] untarGzipToS3(final InputStream is, String s3Key) throws IOException {
+    static byte[] untarGzip(final InputStream is) throws IOException {
         try (GzipCompressorInputStream gzipStream = new GzipCompressorInputStream(is)) {
             byte[] tarContent = untarToByteArray(gzipStream)
-            UploadRequest request = UploadRequest.fromBytes(tarContent, s3Key, "application/x-tar")
             return tarContent;
         }
     }

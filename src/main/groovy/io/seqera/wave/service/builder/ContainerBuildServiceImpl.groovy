@@ -46,14 +46,11 @@ import io.seqera.wave.service.stream.StreamService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.SpackHelper
-import io.seqera.wave.util.TarS3Utils
+import io.seqera.wave.util.TarGzipUtils
 import io.seqera.wave.util.TemplateRenderer
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 import org.apache.commons.io.IOUtils
 import static io.seqera.wave.util.RegHelper.layerName
 import static io.seqera.wave.util.StringUtils.indent
@@ -181,7 +178,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             objectStorageOperations.upload(UploadRequest.fromBytes(containerFile0(req, "$req.s3Key/Containerfile", spackConfig).bytes, "$req.s3Key/Containerfile".toString()))
             // save build context
             if( req.buildContext ) {
-                saveBuildContext(req.buildContext, "$req.s3Key/context", req.identity)
+                saveBuildContext(req.buildContext, "$req.s3Key/context/", req.identity)
             }
             // save the conda file
             if( req.condaFile ) {
@@ -193,7 +190,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             }
             // save layers provided via the container config
             if( req.containerConfig ) {
-                saveLayersToContext(req, "$req.s3Key/context")
+                saveLayersToContext(req, "$req.s3Key/context/")
             }
             resp = buildStrategy.build(req)
             def msg = "== Build request ${req.buildId} completed with status=$resp.exitStatus"
@@ -309,11 +306,11 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             final it = layers[i]
             final target = "$s3Key/${layerName(it)}".toString()
             // retry strategy
-            final retryable = retry0("Unable to copy '${it.location} to singularity context '$s3Key'")
+            final retryable = retry0("Unable to copy '${it.location} to singularity context '$target'")
             // copy the layer to the build context
             retryable.apply(()-> {
                 try (InputStream stream = streamService.stream(it.location, request.identity)) {
-                    TarS3Utils.untarGzipToS3(stream, s3Key)
+                    objectStorageOperations.upload(UploadRequest.fromBytes(TarGzipUtils.untarGzip(stream), target, "application/x-tar"))
                 }
                 return
             })
@@ -326,7 +323,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         // copy the layer to the build context
         retryable.apply(()-> {
             try (InputStream stream = streamService.stream(buildContext.location, identity)) {
-                TarS3Utils.untarGzipToS3(stream, s3Key)
+                objectStorageOperations.upload(UploadRequest.fromBytes(TarGzipUtils.untarGzip(stream), s3Key, "application/x-tar"))
             }
             return
         })
