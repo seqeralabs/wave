@@ -93,9 +93,9 @@ class ContainerInspectServiceImpl implements ContainerInspectService {
         if( cacheRepo )
             repos.add(cacheRepo)
         final result = credsJson(repos, identity)
-        if( buildRepo && !result.contains(host0(buildRepo)) )
+        if( buildRepo && !result.contains(host0(buildRepo)) || !result.contains('docker.io') )
             throw new BadRequestException("Missing credentials for target build repository: $buildRepo")
-        if( cacheRepo && !result.contains(host0(cacheRepo)) )
+        if( cacheRepo && (!result.contains(host0(cacheRepo)) || !result.contains('docker.io')) )
             throw new BadRequestException("Missing credentials for target cache repository: $cacheRepo")
         return result
     }
