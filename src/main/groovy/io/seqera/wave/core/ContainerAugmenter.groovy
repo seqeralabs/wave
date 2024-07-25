@@ -399,10 +399,10 @@ class ContainerAugmenter {
     protected String findTargetDigest(Map json, boolean oci) {
         final record = (Map)json.manifests.find(oci ? this.&matchesOciManifest : this.&matchesDockerManifest)
         if( !record )
-            throw new BadRequestException("Cannot find platform '${platform}' in the manifest:\n${JsonOutput.prettyPrint(JsonOutput.toJson(json))}")
+            throw new BadRequestException("Cannot find platform '${platform}' in the manifest: ${JsonOutput.toJson(json)}")
         final result = record.get('digest')
         if( !result )
-            throw new BadRequestException("Cannot find digest entry for platform '${platform}' in the manifest:\n${JsonOutput.prettyPrint(JsonOutput.toJson(json))}")
+            throw new BadRequestException("Cannot find digest entry for platform '${platform}' in the manifest: ${JsonOutput.toJson(json)}")
         log.trace "Find target digest platform: $platform ==> digest: $result"
         return result
     }
