@@ -1,4 +1,15 @@
 # Wave changelog
+1.10.0 - 25 Jul 2024
+- Add delete after finish to blob cache jobs (#576) [2ef034c0]
+- Use k8s job for blob cache transfer  (#479) [44819b48]
+- Updated Wave license note (#570) [273f4b21]
+- Throw an error on missing credentials for custom build repo (#564) [760f2173]
+- Enable Cleanup for blob transfer pods (#568) [5f045e14]
+- Prevent hard error when launch credentials cannot be accessed [600fce7a]
+- Simplify credentials lookup [b2790ee8]
+- Extend build timeout (#574) [7cf0b756]
+- Bump wave-utils@0.13.1 [c118f0de]
+
 1.9.1 - 11 Jul 2024
 - Prevent hard error when launch credentials cannot be accessed [a318a855]
 
