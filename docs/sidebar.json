@@ -31,7 +31,6 @@
         "cli/build-directory",
         "cli/build-docker",
         "cli/build-conda",
-        "cli/build-spack",
         "cli/build-singularity",
         "cli/build-freeze"
       ]
