@@ -28,11 +28,7 @@
       },
       "items": [
         "cli/install",
-        "cli/build-directory",
-        "cli/build-docker",
-        "cli/build-conda",
-        "cli/build-singularity",
-        "cli/build-freeze"
+        "cli/build"
       ]
     },
     {
