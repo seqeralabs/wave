@@ -11,7 +11,6 @@
       "items": [
         "service/features",
         "service/architecture",
-        "service/limits",
         "service/community-registry",
         "service/augmentation",
         "service/freeze",
@@ -44,7 +43,6 @@
         "guides/fusion-file-system"
       ]
     },
-    "guide",
     "api",
     "metrics",
     "faq"
