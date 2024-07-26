@@ -9,7 +9,7 @@ With the Wave CLI you can build Docker and Singularity containers from a variety
 The Wave CLI supports container augmentation with a specified directory. You can use container augmentation to dynamically add a layer to your container, so you can inject scripts or configuration files as a new layer.
 
 <details>
-<summary>Augment a container with a directory</summary>
+<summary>**Augment a container with a directory**</summary>
 
 The following limitations apply:
 
@@ -46,7 +46,7 @@ docker run $(wave -i alpine --layer new-layer) sh -c hello.sh
 The Wave CLI supports building a container from a list of [Conda] packages.
 
 <details>
-<summary>Build a container from Conda packages</summary>
+<summary>**Build a container from Conda packages**</summary>
 
 **Related CLI arguments**
 
@@ -81,7 +81,7 @@ Building a Dockerfile that requires `--build-arg` for build time variables isn't
 :::
 
 <details>
-<summary>Build a container from a Dockerfile</summary>
+<summary>**Build a container from a Dockerfile**</summary>
 
 **Related CLI arguments**
 
@@ -140,7 +140,7 @@ docker run $(wave -f Dockerfile --context build-context) sh -c hello.sh
 The Wave CLI supports building a [Singularity]. A target build repository, specified with the `--build-repo` argument, is required to build a Singularity container. You can build a Singularity container from several sources.
 
 <details>
-<summary>Build a Singularity container</summary>
+<summary>**Build a Singularity container**</summary>
 
 - A [SingularityCE] def file
 - A Docker container image with an optional local context directory
@@ -189,7 +189,7 @@ wave --conda-package bamtools=2.5.2 --conda-package samtools=1.17 --freeze --sin
 The Wave CLI supports building a container and persisting the container to a container registry, such as DockerHub. You can refer to this frozen container image in a Dockerfile or [Nextflow] pipeline in the same way as any other container.
 
 <details>
-<summary>Build a container and freeze to a container registry</summary>
+<summary>**Build a container and freeze to a container registry**</summary>
 
 To freeze a container, you must ensure the following conditions are met:
 
