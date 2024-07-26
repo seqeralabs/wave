@@ -39,10 +39,10 @@ class DockerTransferStrategyTest extends Specification {
                 s5Image: 'cr.seqera.io/public/s5cmd:latest'
         )
         def strategy = new DockerTransferStrategy(blobConfig: config)
-        and:
 
         when:
         def result = strategy.createProcess(['s5cmd', 'run', '--this'])
+
         then:
         result.command() == [
                 'docker', 
