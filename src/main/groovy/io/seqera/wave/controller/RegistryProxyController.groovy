@@ -304,9 +304,6 @@ class RegistryProxyController {
         HttpResponse
                 .status(HttpStatus.TEMPORARY_REDIRECT)
                 .headers(toMutableHeaders(Map.of(), override))
-                // temporary workaround due to MN4 bug
-                // https://github.com/micronaut-projects/micronaut-core/issues/10917
-                .body('')
     }
 
     MutableHttpResponse<?> fromRedirectResponse(final DelegateResponse resp) {
@@ -317,9 +314,6 @@ class RegistryProxyController {
         return HttpResponse
                 .status(HttpStatus.valueOf(resp.statusCode))
                 .headers(toMutableHeaders(resp.headers, override))
-                // temporary workaround due to MN4 bug
-                // https://github.com/micronaut-projects/micronaut-core/issues/10917
-                .body('')
     }
 
     MutableHttpResponse<?> fromDownloadResponse(final DelegateResponse resp, RoutePath route, Map<String, List<String>> headers) {
@@ -339,9 +333,6 @@ class RegistryProxyController {
         HttpResponse
                 .status(HttpStatus.TEMPORARY_REDIRECT)
                 .headers(toMutableHeaders(resp.headers, override))
-                // temporary workaround due to MN4 bug
-                // https://github.com/micronaut-projects/micronaut-core/issues/10917
-                .body('')
     }
 
     MutableHttpResponse<?> fromStreamResponse(final DelegateResponse response, RoutePath route, Map<String,List<String>> headers){
