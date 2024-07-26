@@ -26,6 +26,8 @@ import io.micronaut.context.annotation.Value
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.cache.AbstractCacheStore
 import io.seqera.wave.service.cache.impl.CacheProvider
+import jakarta.inject.Singleton
+
 /**
  * Implement a cache store for {@link RegistryAuth} object that
  * can be distributed across wave replicas
@@ -33,6 +35,7 @@ import io.seqera.wave.service.cache.impl.CacheProvider
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
+@Singleton
 @CompileStatic
 class RegistryAuthCacheStore extends AbstractCacheStore<RegistryAuth> {
 
