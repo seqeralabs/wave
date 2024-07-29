@@ -449,7 +449,7 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
 
         and:
         HttpHandler handler = { HttpExchange exchange ->
-            def body = ContentReaderFactory.of(cl.location).readAllBytes()
+            def body = cl.location.bytes
             exchange.getResponseHeaders().add("Content-Type", "application/tar+gzip")
             exchange.sendResponseHeaders(200, body.size())
             exchange.getResponseBody() << body
