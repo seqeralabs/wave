@@ -40,7 +40,7 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.DockerDigestStore
 import io.seqera.wave.storage.HttpDigestStore
-import io.seqera.wave.storage.LazyDigestStore
+
 import io.seqera.wave.storage.ZippedDigestStore
 import io.seqera.wave.storage.reader.DataContentReader
 import io.seqera.wave.storage.reader.GzipContentReader
