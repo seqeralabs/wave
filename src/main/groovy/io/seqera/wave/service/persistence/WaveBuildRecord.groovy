@@ -21,12 +21,15 @@ package io.seqera.wave.service.persistence
 import java.time.Duration
 import java.time.Instant
 
+import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
+import io.micronaut.data.annotation.MappedEntity
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.api.BuildStatusResponse
+import jakarta.persistence.Id
 
 /**
  * A collection of request and response properties to be stored
@@ -37,8 +40,11 @@ import io.seqera.wave.api.BuildStatusResponse
 @ToString
 @CompileStatic
 @EqualsAndHashCode
+@MappedEntity
+@Canonical
 class WaveBuildRecord {
 
+    @Id
     String buildId
     String dockerFile
     String condaFile

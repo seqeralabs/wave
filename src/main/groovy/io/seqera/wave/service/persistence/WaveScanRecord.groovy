@@ -21,13 +21,17 @@ package io.seqera.wave.service.persistence
 import java.time.Duration
 import java.time.Instant
 
+import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
+import io.micronaut.data.annotation.MappedEntity
 import io.seqera.wave.service.scan.ScanResult
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.StringUtils
+import jakarta.persistence.Id
+
 /**
  * Model a Wave container scan result
  *
@@ -37,7 +41,10 @@ import io.seqera.wave.util.StringUtils
 @ToString(includeNames = true, includePackage = false)
 @EqualsAndHashCode
 @CompileStatic
+@MappedEntity
+@Canonical
 class WaveScanRecord {
+    @Id
     String id
     String buildId
     Instant startTime

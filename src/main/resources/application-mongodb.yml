@@ -1,0 +1,4 @@
+mongodb:
+  uri: mongodb://${MONGODB_USERNAME:''}:${MONGODB_PASSWORD:''}@${MONGODB_HOST:localhost}:${MONGODB_PORT:27017}/${MONGODB_NAME:wave}
+  database:
+    name: ${MONGODB_NAME:wave}
