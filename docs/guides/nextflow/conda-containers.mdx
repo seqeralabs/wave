@@ -14,6 +14,8 @@ wave.strategy = ['conda']
 
 The above setting instructs Wave to use the `conda` directive to provision the pipeline containers and ignore the `container` directive and any Dockerfile(s).
 
+For versions of Nextflow 23.10.x or newer, when a container is provisioned, the `conda-forge::procps-ng` package is included automatically. This package includes the `ps` command.
+
 :::tip
 Some configuration options in the `conda` scope are used when Wave is used to build Conda-based containers.
 For example, the Conda channels and their priority can be set with `conda.channels`:
