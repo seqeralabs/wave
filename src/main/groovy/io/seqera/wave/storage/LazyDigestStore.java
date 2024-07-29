@@ -19,10 +19,6 @@
 package io.seqera.wave.storage;
 
 import java.io.IOException;
-
-import io.seqera.wave.storage.reader.ContentReader;
-import io.seqera.wave.storage.reader.HttpContentReader;
-
 /**
  * Implements a digest store that loads the binary content on-demand
  *
@@ -33,11 +29,9 @@ public class LazyDigestStore implements DigestStore {
 
     final private String mediaType;
     final private String digest;
-    final private ContentReader contentReader;
     final private Integer size;
 
-    public LazyDigestStore(ContentReader content, String mediaType, String digest, int size) {
-        this.contentReader = content;
+    public LazyDigestStore(String mediaType, String digest, int size) {
         this.mediaType = mediaType;
         this.digest = digest;
         this.size = size;
