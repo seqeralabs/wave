@@ -32,7 +32,6 @@ import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.DockerDigestStore
 import io.seqera.wave.storage.HttpDigestStore
-
 import io.seqera.wave.storage.ZippedDigestStore
 import io.seqera.wave.util.TypeHelper
 /**

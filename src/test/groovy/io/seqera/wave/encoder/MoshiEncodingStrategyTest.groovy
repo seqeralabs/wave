@@ -40,7 +40,6 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.DockerDigestStore
 import io.seqera.wave.storage.HttpDigestStore
-
 import io.seqera.wave.storage.ZippedDigestStore
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
