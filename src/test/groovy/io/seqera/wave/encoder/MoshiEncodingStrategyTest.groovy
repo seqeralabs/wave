@@ -42,8 +42,6 @@ import io.seqera.wave.storage.DockerDigestStore
 import io.seqera.wave.storage.HttpDigestStore
 
 import io.seqera.wave.storage.ZippedDigestStore
-import io.seqera.wave.storage.reader.DataContentReader
-import io.seqera.wave.storage.reader.GzipContentReader
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 /**
@@ -154,33 +152,12 @@ class MoshiEncodingStrategyTest extends Specification {
         result.freeze
     }
 
-    def 'should encode and decode lazy digest store' () {
-        given:
-        def encoder = new MoshiEncodeStrategy<DigestStore>() { }
-        and:
-        def data = new LazyDigestStore(new DataContentReader('FOO'.bytes.encodeBase64().toString()), 'media', '12345', 1000)
-
-        when:
-        def json = encoder.encode(data)
-        println json
-
-        and:
-        def copy = encoder.decode(json)
-        then:
-        copy.getClass() == data.getClass()
-        and:
-        copy.bytes == data.bytes
-        copy.digest == data.digest
-        copy.mediaType == data.mediaType
-        copy.size == 1000
-    }
-
     def 'should encode and decode gzip content reader' () {
         given:
         def encoder = new MoshiEncodeStrategy<DigestStore>() { }
         and:
-        def data = new LazyDigestStore(
-                GzipContentReader.fromPlainString('Hello world'),
+        def data = new ZippedDigestStore(
+                'Hello world'.bytes,
                 'text/json',
                 '12345',
                 2000 )
