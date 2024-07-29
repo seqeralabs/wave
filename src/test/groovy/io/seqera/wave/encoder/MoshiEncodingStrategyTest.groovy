@@ -152,31 +152,6 @@ class MoshiEncodingStrategyTest extends Specification {
         result.freeze
     }
 
-    def 'should encode and decode gzip content reader' () {
-        given:
-        def encoder = new MoshiEncodeStrategy<DigestStore>() { }
-        and:
-        def data = new ZippedDigestStore(
-                'Hello world'.bytes,
-                'text/json',
-                '12345',
-                2000 )
-
-        when:
-        def json = encoder.encode(data)
-        println json
-
-        and:
-        def copy = encoder.decode(json)
-        then:
-        copy.getClass() == data.getClass()
-        and:
-        copy.bytes == data.bytes
-        copy.digest == data.digest
-        copy.mediaType == data.mediaType
-        copy.size == data.size
-    }
-
     def 'should encode and decode zipped digest store' () {
         given:
         def DATA = 'Hello wold!'
