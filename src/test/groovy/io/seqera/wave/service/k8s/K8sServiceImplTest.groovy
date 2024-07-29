@@ -511,6 +511,7 @@ class K8sServiceImplTest extends Specification {
             getTransferTimeout() >> Duration.ofSeconds(20)
             getEnvironment() >> [:]
             getRetryAttempts() >> 5
+            getDeleteAfterFinished() >> Duration.ofDays(10)
         }
 
         when:
@@ -521,6 +522,7 @@ class K8sServiceImplTest extends Specification {
         result.metadata.namespace == 'my-ns'
         and:
         result.spec.backoffLimit == 5
+        result.spec.ttlSecondsAfterFinished == Duration.ofDays(10).seconds as Integer
         and:
         verifyAll(result.spec.template.spec) {
             activeDeadlineSeconds == 20
@@ -551,6 +553,7 @@ class K8sServiceImplTest extends Specification {
             getRequestsCpu() >> '2'
             getRequestsMemory() >> '8Gi'
             getRetryAttempts() >> 3
+            getDeleteAfterFinished() >> Duration.ofDays(1)
         }
 
         when:
@@ -560,6 +563,7 @@ class K8sServiceImplTest extends Specification {
         result.metadata.namespace == 'my-ns'
         and:
         result.spec.backoffLimit == 3
+        result.spec.ttlSecondsAfterFinished == Duration.ofDays(1).seconds as Integer
         and:
         verifyAll(result.spec.template.spec) {
             activeDeadlineSeconds == 20
