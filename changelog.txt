@@ -1,4 +1,8 @@
 # Wave changelog
+1.10.1 - 26 Jul 2024
+- Add second level cache for Registry auth record (#582) [702528df]
+- Improve error report when platform cannot be found (#579) [5a9120b8]
+
 1.10.0 - 25 Jul 2024
 - Add delete after finish to blob cache jobs (#576) [2ef034c0]
 - Use k8s job for blob cache transfer  (#479) [44819b48]

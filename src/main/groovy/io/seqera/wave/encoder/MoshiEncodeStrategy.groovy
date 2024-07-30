@@ -69,6 +69,7 @@ abstract class MoshiEncodeStrategy<V> implements EncodingStrategy<V> {
                 .add(new ByteArrayAdapter())
                 .add(new DateTimeAdapter())
                 .add(new PathAdapter())
+                .add(new UriAdapter())
                 .add(PolymorphicJsonAdapterFactory.of(DigestStore.class, "@type")
                         .withSubtype(LazyDigestStore, LazyDigestStore.simpleName)
                         .withSubtype(ZippedDigestStore, ZippedDigestStore.simpleName)
