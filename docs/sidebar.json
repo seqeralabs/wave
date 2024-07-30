@@ -13,8 +13,7 @@
         "service/architecture",
         "service/community-registry",
         "service/augmentation",
-        "service/freeze",
-        "service/singularity-containers"
+        "service/freeze"
       ]
     },
     {
