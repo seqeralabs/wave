@@ -10,7 +10,6 @@
       },
       "items": [
         "service/features",
-        "service/architecture",
         "service/community-registry",
         "service/augmentation",
         "service/freeze"
