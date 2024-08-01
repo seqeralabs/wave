@@ -60,7 +60,7 @@ class WaveContainerRecord {
     /**
      * The container file (aka Dockerfile) content associated with the request
      */
-    final String containerFile
+    String containerFile
 
     /**
      * The container config associated with the request

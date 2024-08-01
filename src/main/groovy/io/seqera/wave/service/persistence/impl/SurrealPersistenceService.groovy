@@ -28,6 +28,7 @@ import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.event.ApplicationStartupEvent
 import io.micronaut.runtime.event.annotation.EventListener
+import io.seqera.wave.configuration.SurrealConfig
 import io.seqera.wave.core.ContainerDigestPair
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.persistence.PersistenceService
@@ -64,6 +65,9 @@ class SurrealPersistenceService implements PersistenceService {
     @Value('${surreal.default.init-db}')
     private Boolean initDb
 
+    @Inject
+    private SurrealConfig surrealConfig
+
     @EventListener
     void onApplicationStartup(ApplicationStartupEvent event) {
         if (initDb)
@@ -95,7 +99,8 @@ class SurrealPersistenceService implements PersistenceService {
 
     @Override
     void saveBuild(WaveBuildRecord build) {
-        build.condaFile = truncateLargeCondaFile(build.condaFile)
+        build.condaFile = truncateLargeFile(build.condaFile)
+        build.dockerFile = truncateLargeFile(build.dockerFile)
         surrealDb.insertBuildAsync(getAuthorization(), build).subscribe({ result->
             log.trace "Build request with id '$build.buildId' saved record: ${result}"
         }, {error->
@@ -149,7 +154,8 @@ class SurrealPersistenceService implements PersistenceService {
 
     @Override
     void saveContainerRequest(String token, WaveContainerRecord data) {
-        data.condaFile = truncateLargeCondaFile(data.condaFile)
+        data.condaFile = truncateLargeFile(data.condaFile)
+        data.containerFile = truncateLargeFile(data.containerFile)
         surrealDb.insertContainerRequestAsync(authorization, token, data).subscribe({ result->
             log.trace "Container request with token '$token' saved record: ${result}"
         }, {error->
@@ -241,12 +247,11 @@ class SurrealPersistenceService implements PersistenceService {
      * This method will truncate the payload if it exceeds 14 KB
      * Truncate the payload if it exceeds the maximum size
      */
-    protected static truncateLargeCondaFile(String condafile) {
-        int maxSize = 14 * 1024 //14 KB for the file and 2 KB for the rest of the fields
-        if( condafile && condafile.length() > maxSize )
-            return condafile.substring(0, maxSize) + "\n[content truncated]"
+    protected truncateLargeFile(String file) {
+        if( file && file.length() > surrealConfig.maxHttpRequestSize )
+            return file.substring(0, surrealConfig.maxHttpRequestSize) + "\n[content truncated]"
         else
-            return condafile
+            return file
 
     }
 }

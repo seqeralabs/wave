@@ -30,6 +30,7 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.configuration.SurrealConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.core.ContainerDigestPair
@@ -295,16 +296,19 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
     }
 
     @Unroll
-    void "truncateLargeCondaFile should return correct size conda file"() {
+    void "truncateLargeCondaFile should return correct size file"() {
+        given:
+        def config = new SurrealConfig(maxHttpRequestSize: 14 * 1024)
+
         expect:
-        SurrealPersistenceService.truncateLargeCondaFile(CONDA_FILE) == RESULT
+        new SurrealPersistenceService(surrealConfig: config).truncateLargeFile(FILE) == RESULT
 
         where:
-        CONDA_FILE             | RESULT
+        FILE                | RESULT
         null                | null
         ""                  | ""
         "a" * (14 * 1024)   | "a" * (14 * 1024)
-        "a" * (15 * 1024)   | "a" * (14 * 1024)
+        "a" * (15 * 1024)   | "a" * (14 * 1024)+"\n[content truncated]"
     }
 
 }
