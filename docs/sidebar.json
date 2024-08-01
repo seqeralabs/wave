@@ -8,8 +8,6 @@
         "index",
         "features",
         "community-registry",
-        "augmentation",
-        "freeze",
         "api",
         "metrics",
         "faq"
