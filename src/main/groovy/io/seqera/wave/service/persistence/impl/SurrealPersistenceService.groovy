@@ -244,9 +244,9 @@ class SurrealPersistenceService implements PersistenceService {
     protected static truncateLargeCondaFile(String condafile) {
         int maxSize = 14 * 1024 //14 KB for the file and 2 KB for the rest of the fields
         if( condafile && condafile.length() > maxSize )
-            condafile.substring(0, maxSize)
+            return condafile.substring(0, maxSize) + "\n[content truncated]"
         else
-            condafile
+            return condafile
 
     }
 }
