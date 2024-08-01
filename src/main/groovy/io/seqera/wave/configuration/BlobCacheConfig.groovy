@@ -87,6 +87,12 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.url-signature-duration:30m}')
     Duration urlSignatureDuration
 
+    @Value('${wave.blobCache.retryAttempts:3}')
+    Integer retryAttempts
+
+    @Value('${wave.blobCache.deleteAfterFinished:7d}')
+    Duration deleteAfterFinished
+
     @Value('${wave.blobCache.k8s.pod.delete.timeout:20s}')
     Duration podDeleteTimeout
 
