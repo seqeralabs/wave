@@ -70,7 +70,7 @@ class WaveContainerRecord {
     /**
      * The conda file associated with the request
      */
-    final String condaFile
+    String condaFile
 
     /**
      * The container arch platform

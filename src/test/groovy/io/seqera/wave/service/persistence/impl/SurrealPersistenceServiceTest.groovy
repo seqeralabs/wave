@@ -19,6 +19,7 @@
 package io.seqera.wave.service.persistence.impl
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.nio.file.Path
 import java.time.Duration
@@ -291,6 +292,19 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def result2 = persistence.loadScanRecord(SCAN_ID2)
         and:
         result2 == scanRecord2
+    }
+
+    @Unroll
+    void "truncateLargePayload should return correct size payload"() {
+        expect:
+        SurrealPersistenceService.truncateLargePayload(PAYLOAD) == RESULT
+
+        where:
+        PAYLOAD             | RESULT
+        null                | null
+        ""                  | ""
+        "a" * (14 * 1024)   | "a" * (14 * 1024)
+        "a" * (15 * 1024)   | "a" * (14 * 1024)
     }
 
 }
