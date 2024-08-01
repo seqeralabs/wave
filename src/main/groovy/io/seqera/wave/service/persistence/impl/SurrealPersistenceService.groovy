@@ -95,7 +95,7 @@ class SurrealPersistenceService implements PersistenceService {
 
     @Override
     void saveBuild(WaveBuildRecord build) {
-        build.condaFile = truncateLargePayLoad(build.condaFile)
+        build.condaFile = truncateLargeCondaFile(build.condaFile)
         surrealDb.insertBuildAsync(getAuthorization(), build).subscribe({ result->
             log.trace "Build request with id '$build.buildId' saved record: ${result}"
         }, {error->
@@ -149,7 +149,7 @@ class SurrealPersistenceService implements PersistenceService {
 
     @Override
     void saveContainerRequest(String token, WaveContainerRecord data) {
-        data.condaFile = truncateLargePayLoad(data.condaFile)
+        data.condaFile = truncateLargeCondaFile(data.condaFile)
         surrealDb.insertContainerRequestAsync(authorization, token, data).subscribe({ result->
             log.trace "Container request with token '$token' saved record: ${result}"
         }, {error->
@@ -241,12 +241,12 @@ class SurrealPersistenceService implements PersistenceService {
      * This method will truncate the payload if it exceeds 14 KB
      * Truncate the payload if it exceeds the maximum size
      */
-    protected static truncateLargePayload(String payload) {
+    protected static truncateLargeCondaFile(String condafile) {
         int maxSize = 14 * 1024 //14 KB for the file and 2 KB for the rest of the fields
-        if( payload && payload.length() > maxSize )
-            payload.substring(0, maxSize)
+        if( condafile && condafile.length() > maxSize )
+            condafile.substring(0, maxSize)
         else
-            payload
+            condafile
 
     }
 }

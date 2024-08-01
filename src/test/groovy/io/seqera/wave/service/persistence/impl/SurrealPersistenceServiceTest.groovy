@@ -295,12 +295,12 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
     }
 
     @Unroll
-    void "truncateLargePayload should return correct size payload"() {
+    void "truncateLargeCondaFile should return correct size conda file"() {
         expect:
-        SurrealPersistenceService.truncateLargePayload(PAYLOAD) == RESULT
+        SurrealPersistenceService.truncateLargeCondaFile(CONDA_FILE) == RESULT
 
         where:
-        PAYLOAD             | RESULT
+        CONDA_FILE             | RESULT
         null                | null
         ""                  | ""
         "a" * (14 * 1024)   | "a" * (14 * 1024)
