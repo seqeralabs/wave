@@ -7,6 +7,7 @@
       "items": [
         "index",
         "features",
+        "get_started/wave-cli",
         "community-registry",
         "api",
         "metrics",
