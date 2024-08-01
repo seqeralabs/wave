@@ -1,10 +1,10 @@
 ---
-title: Nextflow configuration for Wave
+title: Configuration options
 ---
 
 This feature requires Nextflow `22.10.0` or later.
 
-Wave can be used in any Nextflow pipeline by adding the following snippet to your `nextflow.config` file:
+You can use Wave can in any Nextflow pipeline by adding the following snippet to your `nextflow.config` file:
 
 ```groovy
 wave {
@@ -17,7 +17,7 @@ tower {
 ```
 
 :::tip
-The use of the Seqera access token is not mandatory, however, it's required to enable access to private repositories and it allows higher service rate limits compared to anonymous users.
+The use of the Seqera access token is not mandatory. However, it's required to enable access to private repositories and it allows higher service rate limits compared to anonymous users.
 :::
 
 ## Limitations
@@ -39,7 +39,7 @@ wave.strategy = ['dockerfile']
 wave.build.repository = 'docker.io/<user>/<repository>'
 ```
 
-## Nextflow configuration
+## Configuration options
 
 The following configuration options are available:
 
@@ -53,4 +53,3 @@ The following configuration options are available:
 | `wave.conda.commands`        | One or more commands to be added to the Dockerfile used by build a Conda based image.                                                                                    |
 | `wave.strategy`              | The strategy to be used when resolving ambiguous Wave container requirement (default: `'container,dockerfile,conda'`)                                                    |
 | `wave.freeze`                | When `freeze` mode is enabled containers provisioned by Wave are stored permanently in the repository specified via the setting `wave.build.repository`.                 |
-

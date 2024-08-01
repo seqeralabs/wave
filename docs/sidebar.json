@@ -4,26 +4,23 @@
       "type": "category",
       "label": "Wave",
       "collapsed": false,
-      "link": {
-        "type": "doc",
-        "id": "index"
-      },
       "items": [
-        "service/features",
-        "service/community-registry",
-        "service/augmentation",
-        "service/freeze"
+        "index",
+        "features",
+        "community-registry",
+        "augmentation",
+        "freeze",
+        "api",
+        "metrics",
+        "faq"
       ]
     },
     {
       "type": "category",
       "label": "Wave CLI",
       "collapsed": false,
-      "link": {
-        "type": "doc",
-        "id": "cli/index"
-      },
       "items": [
+        "cli/index",
         "cli/install",
         "cli/build"
       ]
@@ -34,15 +31,12 @@
       "collapsed": false,
       "items": [
         "nextflow/configuration",
-        "guides/nextflow/conda-containers",
-        "guides/nextflow/private-repo",
-        "guides/nextflow/singularity-containers",
-        "guides/nextflow/module-containers",
+        "guides/conda-containers",
+        "guides/private-repo",
+        "guides/singularity-containers",
+        "guides/module-containers",
         "guides/fusion-file-system"
       ]
-    },
-    "api",
-    "metrics",
-    "faq"
+    }
   ]
 }
