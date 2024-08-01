@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023-2024, Seqera Labs
+ *  Copyright (c) 2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -24,7 +24,7 @@ import io.micronaut.context.annotation.Value
 import jakarta.inject.Singleton
 
 /**
- * Container Scan service settings
+ * Surreal DB service settings
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */

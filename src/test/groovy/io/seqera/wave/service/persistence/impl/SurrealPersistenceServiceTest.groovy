@@ -296,7 +296,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
     }
 
     @Unroll
-    void "truncateLargeCondaFile should return correct size file"() {
+    void "truncateLargeFile should return correct size file"() {
         given:
         def config = new SurrealConfig(maxHttpRequestSize: 14 * 1024)
 
