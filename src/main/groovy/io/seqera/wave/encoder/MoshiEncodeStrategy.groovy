@@ -32,12 +32,7 @@ import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.DockerDigestStore
 import io.seqera.wave.storage.HttpDigestStore
-import io.seqera.wave.storage.LazyDigestStore
 import io.seqera.wave.storage.ZippedDigestStore
-import io.seqera.wave.storage.reader.ContentReader
-import io.seqera.wave.storage.reader.DataContentReader
-import io.seqera.wave.storage.reader.GzipContentReader
-import io.seqera.wave.storage.reader.HttpContentReader
 import io.seqera.wave.util.TypeHelper
 /**
  * Implements a JSON {@link EncodingStrategy} based on Mosh JSON serializer
@@ -71,14 +66,9 @@ abstract class MoshiEncodeStrategy<V> implements EncodingStrategy<V> {
                 .add(new PathAdapter())
                 .add(new UriAdapter())
                 .add(PolymorphicJsonAdapterFactory.of(DigestStore.class, "@type")
-                        .withSubtype(LazyDigestStore, LazyDigestStore.simpleName)
                         .withSubtype(ZippedDigestStore, ZippedDigestStore.simpleName)
                         .withSubtype(HttpDigestStore, HttpDigestStore.simpleName)
                         .withSubtype(DockerDigestStore, DockerDigestStore.simpleName) )
-                .add(PolymorphicJsonAdapterFactory.of(ContentReader.class, "@type")
-                        .withSubtype(DataContentReader.class, DataContentReader.simpleName)
-                        .withSubtype(GzipContentReader.class, GzipContentReader.simpleName)
-                        .withSubtype(HttpContentReader.class, HttpContentReader.simpleName))
                 .add(PolymorphicJsonAdapterFactory.of(PairingMessage.class, "@type")
                         .withSubtype(ProxyHttpRequest.class, ProxyHttpRequest.simpleName)
                         .withSubtype(ProxyHttpResponse.class, ProxyHttpResponse.simpleName)
