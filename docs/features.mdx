@@ -7,6 +7,17 @@ title: Features
 Container registry authentication is the new norm. Yet when it comes to authenticating against cloud-specific container registries, the process is hardly hassle free.
 Wave integrates with Seqera Platform credentials management enabling seamless access and publishing to private registries.
 
+## Community container registry
+
+The Wave community registry adds to the Wave containerization lifecycle a regular container registry to host image builds permanently and is accessible publicly by anyone.
+
+The community registry is built using [Docker Distribution][docker] and hosted on AWS infrastructure. Images are cached and served via Cloudflare CDN.
+
+With [Seqera containers], you can explore the Wave community registry and create new containers on-the-fly for use in your bioinformatics pipelines.
+
+[docker]: https://github.com/distribution/distribution
+[Seqera containers]: https://seqera.io/containers/
+
 ## Augment existing containers
 
 Regulatory and security requirements sometimes dictate specific container images, but additional context is often needed.

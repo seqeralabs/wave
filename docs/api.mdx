@@ -4,6 +4,20 @@ title: API reference
 
 This page summarizes the API provided by the Wave container service.
 
+**API limits**
+
+The Wave service implements API rate limits for API calls. Authenticated users have higher rate limits than anonymous users.
+
+If an access token is provided, the following rate limits apply:
+
+- 100 container builds per hour
+- 1,000 container pulls per minute
+
+If an access token isn't provided, the following rate limits apply:
+
+- 25 container builds per day
+- 250 container pulls per hour
+
 ## POST `/container-token`
 
 Deprecated endpoint allows you to submit a request to access a private container registry via Wave, or build a container image on-the-fly with a Dockerfile or Conda recipe file.

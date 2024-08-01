@@ -8,8 +8,6 @@
         "index",
         "features",
         "get_started/wave-cli",
-        "community-registry",
-        "api",
         "metrics",
         "faq"
       ]
@@ -36,6 +34,7 @@
         "guides/module-containers",
         "guides/fusion-file-system"
       ]
-    }
+    },
+    "api"
   ]
 }
