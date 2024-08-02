@@ -2,12 +2,13 @@
 title: Features
 ---
 
-## Private container registries
+## Container registries
 
-Container registry authentication is the new norm. Yet when it comes to authenticating against cloud-specific container registries, the process is hardly hassle free.
+### Private container registries
+
 Wave integrates with Seqera Platform credentials management enabling seamless access and publishing to private registries.
 
-## Community container registry
+### Community container registry
 
 The Wave community registry adds to the Wave containerization lifecycle a regular container registry to host image builds permanently and is accessible publicly by anyone.
 
@@ -20,25 +21,8 @@ With [Seqera containers], you can explore the Wave community registry and create
 
 ## Augment existing containers
 
-Regulatory and security requirements sometimes dictate specific container images, but additional context is often needed.
-Wave enables any existing container to be extended without rebuilding it. Developers can add user-provided content such as custom scripts and logging agents, providing greater flexibility in the container’s configuration.
-
 Wave offers a flexible approach to container image management. It allows you to dynamically add custom layers to existing docker images, creating new images tailored to your specific needs.
-
-### An example of Wave augmentation
-
-Imagine you have a base Ubuntu image in a container registry. Wave acts as a proxy between your docker client and the registry. When you request an augmented image, Wave intercepts the process.
-
-1. Base image layers download: The Docker client downloads the standard Ubuntu layers from the registry.
-2. Custom layer injection: Wave injects your custom layer, denoted by "ω", which could represent application code, libraries, configurations etc.
-3. New image creation: Wave combines the downloaded Ubuntu layers with your custom layer, effectively creating a new image on the fly.
-
-![](./_images/wave_container_augmentation.png)
-
-### Benefits of Wave augmentation
-
-1. Streamlined workflows: Wave simplifies your workflow by eliminating the need to manually build and manage custom images.
-2. Flexibility: You can easily modify the custom layer for different use cases, allowing for greater adaptability.
+Any existing container can be extended without rebuilding it. You can add user-provided content such as custom scripts and logging agents, providing greater flexibility in the container’s configuration.
 
 ## Conda based containers
 
@@ -67,7 +51,7 @@ Builds for OCI-compliant container images are automatically scanned for known se
 
 ## Optimize workloads for specific architectures
 
-Modern data pipelines can be deployed across different data centers having different hardware architectures. e.g., amd64, arm64, and others. This requires curating different collections of containers for each architecture.
+Modern data pipelines can be deployed across different data centers having different hardware architectures such as amd64, arm64, and others. This requires curating different collections of containers for each architecture.
 Wave allows for the on-demand provisioning of containers, depending on the target execution platform (in development).
 
 ## Near caching
