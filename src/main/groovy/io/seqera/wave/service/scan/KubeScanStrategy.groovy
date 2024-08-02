@@ -28,7 +28,6 @@ import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.openapi.ApiException
-import io.kubernetes.client.openapi.models.V1Job
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
@@ -89,17 +88,16 @@ class KubeScanStrategy extends ScanStrategy {
 
             final reportFile = req.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
 
-            V1Job job
             final trivyCommand = scanCommand(req.targetImage, reportFile, scanConfig)
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
             final pod = k8sService.scanContainer(podName, scanConfig.scanImage, trivyCommand, req.workDir, configFile, scanConfig, selector)
-            final terminated = k8sService.waitPod(pod, scanConfig.timeout.toMillis())
-            if( terminated ) {
+            final exitCode = k8sService.waitPodCompletion(pod, scanConfig.timeout.toMillis())
+            if( exitCode==0 ) {
                 log.info("Container scan completed for id: ${req.id}")
                 return ScanResult.success(req, startTime, TrivyResultProcessor.process(reportFile.text))
             }
             else{
-                final stdout = k8sService.logsPod(podName)
+                final stdout = k8sService.logsPod(pod)
                 log.info("Container scan failed for scan id: ${req.id} - stdout: $stdout")
                 return ScanResult.failure(req, startTime)
             }

@@ -53,7 +53,6 @@ import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.DockerDigestStore
 import io.seqera.wave.storage.HttpDigestStore
-import io.seqera.wave.storage.LazyDigestStore
 import io.seqera.wave.storage.Storage
 import io.seqera.wave.util.Retryable
 import jakarta.inject.Inject
@@ -173,15 +172,16 @@ class RegistryProxyController {
             final entry = storage.getBlob(route.getTargetPath()).orElse(null)
             String location
             if( location=dockerRedirection(entry) ) {
-                log.debug "Blob found in the cache: $route.path ==> mapping to: ${location}"
+                log.debug "Blob found in the cache [docker]: ${route.path} ==> mapping to: ${location}"
                 final target = RoutePath.parse(location, route.identity)
                 return handleDelegate0(target, httpRequest)
             }
             else if ( location=httpRedirect(entry) ) {
-                log.debug "Blob found in the cache: $route.path  ==> mapping to: $location"
+                log.debug "Blob found in the cache [http]: ${route.path} ==> mapping to: ${location}"
                 return fromCacheRedirect(location)
             }
             else if( entry ) {
+                log.trace "Blob found in the cache [digest]: ${route.path} ==> entry: ${entry}"
                 return fromCacheDigest(entry)
             }
         }
@@ -197,8 +197,6 @@ class RegistryProxyController {
     private String httpRedirect(DigestStore entry) {
         if( entry instanceof HttpDigestStore )
             return (entry as HttpDigestStore).location
-        if( entry instanceof LazyDigestStore )
-            return (entry as LazyDigestStore).location
         return null
     }
 

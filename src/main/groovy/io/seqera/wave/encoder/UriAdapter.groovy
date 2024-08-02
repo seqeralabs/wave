@@ -16,34 +16,26 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.storage.reader
+package io.seqera.wave.encoder
 
-import spock.lang.Specification
+
+import com.squareup.moshi.FromJson
+import com.squareup.moshi.ToJson
 /**
- *
+ * Mosh adapter for {@link URI} class
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class DataContentReaderTest extends Specification {
+class UriAdapter {
 
-    def 'should decode data' () {
-        given:
-        def encoded = 'Hello world'.bytes.encodeBase64().toString()
-        def reader = new DataContentReader(encoded)
-
-        when:
-        def decoded = reader.readAllBytes()
-        then:
-        new String(decoded) == 'Hello world'
+    @ToJson
+    String serialize(URI uri) {
+        return uri != null ? uri.toString() : null
     }
 
-    def 'should decode data string' () {
-        given:
-        def encoded = 'Hello world'.bytes.encodeBase64().toString()
-        def reader = ContentReaderFactory.of("data:$encoded")
-
-        when:
-        def decoded = reader.readAllBytes()
-        then:
-        new String(decoded) == 'Hello world'
+    @FromJson
+    URI deserialize(String data) {
+        return data != null ? URI.create(data) : null
     }
+
 }
