@@ -105,8 +105,10 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
 
     @PostConstruct
     void init() {
-        cacheTokens = CacheBuilder.newBuilder()
-                .expireAfterWrite(authConfig.cacheDuration.toMillis(), TimeUnit.MILLISECONDS)
+        cacheTokens = CacheBuilder
+                .newBuilder()
+                .maximumSize(authConfig.cacheMaxSize)
+                .expireAfterAccess(authConfig.cacheDuration.toMillis(), TimeUnit.MILLISECONDS)
                 .build(loader)
     }
 
