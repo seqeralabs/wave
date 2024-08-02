@@ -167,7 +167,7 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
         'localhost' | 'test' | null      | "localhost?scope=repository:test:pull"
     }
 
-    void "load should return token from store cache if present"() {
+    void "getToken should return token from store cache if present"() {
         given:
         RegistryAuthServiceImpl impl = loginService as RegistryAuthServiceImpl
         def key = Mock(RegistryAuthServiceImpl.CacheKey)
