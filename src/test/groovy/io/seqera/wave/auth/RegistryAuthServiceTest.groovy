@@ -26,6 +26,7 @@ import spock.lang.Specification
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Value
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.auth.cache.RegistryTokenCacheStore
 import io.seqera.wave.test.SecureDockerRegistryContainer
 import jakarta.inject.Inject
 
@@ -37,7 +38,7 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
     ApplicationContext applicationContext
 
     @Inject
-    private RegistryAuthTokenStore tokenStore
+    private RegistryTokenCacheStore tokenStore
 
     @Shared
     @Value('${wave.registries.docker.io.username}')

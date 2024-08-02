@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.auth
+package io.seqera.wave.auth.cache
 
 import java.time.Duration
 
@@ -29,7 +29,7 @@ import io.seqera.wave.service.cache.impl.CacheProvider
 import jakarta.inject.Singleton
 
 /**
- * Implement a cache store for {@link RegistryAuthServiceImpl.CacheKey} object and token that
+ * Implement a cache store for {@link io.seqera.wave.auth.RegistryAuthServiceImpl.CacheKey} object and token that
  * can be distributed across wave replicas
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
@@ -37,11 +37,11 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-class RegistryAuthTokenStore extends AbstractCacheStore<String> {
+class RegistryTokenCacheStore extends AbstractCacheStore<String> {
 
     private Duration duration
 
-    RegistryAuthTokenStore(
+    RegistryTokenCacheStore(
             CacheProvider<String, String> provider,
             @Value('${wave.registry-auth.cache.duration:`3h`}') Duration duration)
     {

@@ -32,6 +32,7 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
+import io.seqera.wave.auth.cache.RegistryTokenCacheStore
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.util.Retryable
@@ -56,11 +57,11 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     private HttpClientConfig httpConfig
 
     @Inject
-    private RegistryAuthTokenStore tokenStore
+    private RegistryTokenCacheStore tokenStore
 
     @Canonical
     @ToString(includePackage = false, includeNames = true)
-    static private class CacheKey {
+    static class CacheKey {
         final String image
         final RegistryAuth auth
         final RegistryCredentials creds

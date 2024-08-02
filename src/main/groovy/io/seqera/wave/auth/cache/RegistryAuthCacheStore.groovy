@@ -16,13 +16,14 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.auth
+package io.seqera.wave.auth.cache
 
 import java.time.Duration
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.auth.RegistryAuth
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.cache.AbstractCacheStore
 import io.seqera.wave.service.cache.impl.CacheProvider
