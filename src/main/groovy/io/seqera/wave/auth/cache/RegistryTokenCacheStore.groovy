@@ -43,7 +43,7 @@ class RegistryTokenCacheStore extends AbstractCacheStore<String> {
 
     RegistryTokenCacheStore(
             CacheProvider<String, String> provider,
-            @Value('${wave.registry-auth.cache.duration:`3h`}') Duration duration)
+            @Value('${wave.registry-token.cache.duration:`1h`}') Duration duration)
     {
         super(provider, new MoshiEncodeStrategy<String>() {})
         this.duration = duration
