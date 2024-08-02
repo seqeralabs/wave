@@ -7,8 +7,8 @@
       "items": [
         "index",
         "features",
+        "provisioning",
         "get_started/wave-cli",
-        "metrics",
         "faq"
       ]
     },
@@ -22,19 +22,7 @@
         "cli/build"
       ]
     },
-    {
-      "type": "category",
-      "label": "Nextflow pipelines",
-      "collapsed": false,
-      "items": [
-        "nextflow/configuration",
-        "guides/conda-containers",
-        "guides/private-repo",
-        "guides/singularity-containers",
-        "guides/module-containers",
-        "guides/fusion-file-system"
-      ]
-    },
+    "nextflow",
     "api"
   ]
 }
