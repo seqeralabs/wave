@@ -85,12 +85,12 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         final stableKey = "key-" + key.stableKey()
         def result = tokenStore.get(stableKey)
         if( result ) {
-            log.debug "Authority token lookup for cachekey: '$key' => $result [from store]"
+            log.debug "Registry auth token for cachekey: '$key' [$stableKey] => $result [from store]"
             return result
         }
         // look-up using the corresponding API endpoint
         result = getToken0(key)
-        log.debug "Authority token lookup for cachekey: '$key' => $result"
+        log.debug "Registry auth token for cachekey: '$key' [$stableKey] => $result"
         // save it in the store cache (redis)
         tokenStore.put(stableKey, result)
         return result
