@@ -57,7 +57,7 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
     private RegistryAuthCacheStore store
 
     @Inject
-    private RegistryAuthConfig registryAuthConfig
+    private RegistryAuthConfig authConfig
 
     private CacheLoader<URI, RegistryAuth> loader = new CacheLoader<URI, RegistryAuth>() {
         @Override
@@ -81,8 +81,10 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
 
     @PostConstruct
     void init() {
-        cache = CacheBuilder.newBuilder()
-                .expireAfterWrite(registryAuthConfig.cacheDuration.toMillis(), TimeUnit.MILLISECONDS)
+        cache = CacheBuilder
+                .newBuilder()
+                .maximumSize(authConfig.cacheMaxSize)
+                .expireAfterAccess(authConfig.cacheDuration.toMillis(), TimeUnit.MILLISECONDS)
                 .build(loader)
     }
 

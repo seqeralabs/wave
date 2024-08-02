@@ -38,8 +38,11 @@ class RegistryAuthConfig {
     @Value('${wave.registry-auth.cache.duration:1h}')
     Duration cacheDuration
 
+    @Value('${wave.registry-auth.cache.max-size:10000}')
+    int cacheMaxSize
+
     @PostConstruct
     private void init() {
-        log.debug("Registry Auth config: registry auth cache duration: $cacheDuration")
+        log.debug("Registry Auth config: registry auth cache duration: $cacheDuration; max-size: $cacheMaxSize")
     }
 }
