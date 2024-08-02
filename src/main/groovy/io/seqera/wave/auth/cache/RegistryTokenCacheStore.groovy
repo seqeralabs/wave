@@ -41,9 +41,9 @@ class RegistryTokenCacheStore extends AbstractCacheStore<String> {
 
     private Duration duration
 
-    RegistryTokenCacheStore(CacheProvider<String, String> provider, RegistryAuthConfig registryAuthConfig) {
+    RegistryTokenCacheStore(CacheProvider<String, String> provider, RegistryAuthConfig authConfig) {
         super(provider, new MoshiEncodeStrategy<String>() {})
-        this.duration = registryAuthConfig.registryAuthCacheDuration
+        this.duration = authConfig.cacheDuration
         log.info "Creating Registry Auth token cache store ― duration=$duration"
     }
 

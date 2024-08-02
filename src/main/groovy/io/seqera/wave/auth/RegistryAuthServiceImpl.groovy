@@ -63,7 +63,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     private RegistryTokenCacheStore tokenStore
 
     @Inject
-    private RegistryAuthConfig registryAuthConfig
+    private RegistryAuthConfig authConfig
 
     @Canonical
     @ToString(includePackage = false, includeNames = true)
@@ -106,7 +106,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     @PostConstruct
     void init() {
         cacheTokens = CacheBuilder.newBuilder()
-                .expireAfterWrite(registryAuthConfig.registryAuthCacheDuration.toMillis(), TimeUnit.MILLISECONDS)
+                .expireAfterWrite(authConfig.cacheDuration.toMillis(), TimeUnit.MILLISECONDS)
                 .build(loader)
     }
 

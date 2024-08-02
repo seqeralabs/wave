@@ -36,10 +36,10 @@ import jakarta.inject.Singleton
 class RegistryAuthConfig {
 
     @Value('${wave.registry-auth.cache.duration:1h}')
-    Duration registryAuthCacheDuration
+    Duration cacheDuration
 
     @PostConstruct
     private void init() {
-        log.debug("Registry Auth config: registry auth cache duration: $registryAuthCacheDuration")
+        log.debug("Registry Auth config: registry auth cache duration: $cacheDuration")
     }
 }

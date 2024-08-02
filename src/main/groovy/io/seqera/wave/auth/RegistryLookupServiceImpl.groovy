@@ -82,7 +82,7 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
     @PostConstruct
     void init() {
         cache = CacheBuilder.newBuilder()
-                .expireAfterWrite(registryAuthConfig.registryAuthCacheDuration.toMillis(), TimeUnit.MILLISECONDS)
+                .expireAfterWrite(registryAuthConfig.cacheDuration.toMillis(), TimeUnit.MILLISECONDS)
                 .build(loader)
     }
 
