@@ -60,7 +60,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
 
     @Canonical
     @ToString(includePackage = false, includeNames = true)
-    static class CacheKey {
+    static private class CacheKey {
         final String image
         final RegistryAuth auth
         final RegistryCredentials creds
