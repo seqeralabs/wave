@@ -22,8 +22,8 @@ import java.time.Duration
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Value
 import io.seqera.wave.auth.RegistryAuth
+import io.seqera.wave.configuration.RegistryAuthConfig
 import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.service.cache.AbstractCacheStore
 import io.seqera.wave.service.cache.impl.CacheProvider
@@ -42,12 +42,9 @@ class RegistryAuthCacheStore extends AbstractCacheStore<RegistryAuth> {
 
     private Duration duration
 
-    RegistryAuthCacheStore(
-            CacheProvider<String, String> provider,
-            @Value('${wave.registry-auth.cache.duration:`3h`}') Duration duration)
-    {
+    RegistryAuthCacheStore(CacheProvider<String, String> provider, RegistryAuthConfig registryAuthConfig) {
         super(provider, new MoshiEncodeStrategy<RegistryAuth>() {})
-        this.duration = duration
+        this.duration = registryAuthConfig.registryAuthCacheDuration
         log.info "Creating Registry Auth cache store ― duration=$duration"
     }
 

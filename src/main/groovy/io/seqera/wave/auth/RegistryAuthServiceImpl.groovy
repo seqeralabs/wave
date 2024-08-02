@@ -34,10 +34,12 @@ import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.wave.auth.cache.RegistryTokenCacheStore
 import io.seqera.wave.configuration.HttpClientConfig
+import io.seqera.wave.configuration.RegistryAuthConfig
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.util.RegHelper
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.StringUtils
+import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
@@ -59,6 +61,9 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
 
     @Inject
     private RegistryTokenCacheStore tokenStore
+
+    @Inject
+    private RegistryAuthConfig registryAuthConfig
 
     @Canonical
     @ToString(includePackage = false, includeNames = true)
@@ -96,11 +101,14 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         return result
     }
 
-    private LoadingCache<CacheKey, String> cacheTokens = CacheBuilder<CacheKey, String>
-                    .newBuilder()
-                    .maximumSize(10_000)
-                    .expireAfterAccess(1, TimeUnit.HOURS)
-                    .build(loader)
+    private LoadingCache<CacheKey, String> cacheTokens
+
+    @PostConstruct
+    void init() {
+        cacheTokens = CacheBuilder.newBuilder()
+                .expireAfterWrite(registryAuthConfig.registryAuthCacheDuration.toMillis(), TimeUnit.MILLISECONDS)
+                .build(loader)
+    }
 
     @Inject
     private RegistryLookupService lookupService

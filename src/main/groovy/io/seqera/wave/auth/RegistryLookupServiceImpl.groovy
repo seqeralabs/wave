@@ -29,8 +29,10 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.auth.cache.RegistryAuthCacheStore
 import io.seqera.wave.configuration.HttpClientConfig
+import io.seqera.wave.configuration.RegistryAuthConfig
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.util.Retryable
+import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.DOCKER_IO
@@ -54,6 +56,9 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
     @Inject
     private RegistryAuthCacheStore store
 
+    @Inject
+    private RegistryAuthConfig registryAuthConfig
+
     private CacheLoader<URI, RegistryAuth> loader = new CacheLoader<URI, RegistryAuth>() {
         @Override
         RegistryAuth load(URI endpoint) throws Exception {
@@ -72,11 +77,14 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
         }
     }
 
-    private LoadingCache<URI, RegistryAuth> cache = CacheBuilder<URI, RegistryAuth>
-                .newBuilder()
-                .maximumSize(10_000)
-                .expireAfterAccess(1, TimeUnit.HOURS)
+    private LoadingCache<URI, RegistryAuth> cache
+
+    @PostConstruct
+    void init() {
+        cache = CacheBuilder.newBuilder()
+                .expireAfterWrite(registryAuthConfig.registryAuthCacheDuration.toMillis(), TimeUnit.MILLISECONDS)
                 .build(loader)
+    }
 
     protected RegistryAuth lookup0(URI endpoint) {
         final httpClient = HttpClientFactory.followRedirectsHttpClient()
