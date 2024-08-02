@@ -69,19 +69,23 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     private CacheLoader<CacheKey, String> loader = new CacheLoader<CacheKey, String>() {
         @Override
         String load(CacheKey key) throws Exception {
-            // check if there's a record in the store cache (redis)
-            def result = tokenStore.get(key.toString())
-            if( result ) {
-                log.debug "Authority token lookup for cachekey: '$key' => $result [from store]"
-                return result
-            }
-            // look-up using the corresponding API endpoint
-            result = getToken0(key)
-            log.debug "Authority token lookup for cachekey: '$key' => $result"
-            // save it in the store cache (redis)
-            tokenStore.put(key.toString(), result)
+            return getToken(key)
+        }
+    }
+
+    protected String getToken(CacheKey key){
+        // check if there's a record in the store cache (redis)
+        def result = tokenStore.get(key.toString())
+        if( result ) {
+            log.debug "Authority token lookup for cachekey: '$key' => $result [from store]"
             return result
         }
+        // look-up using the corresponding API endpoint
+        result = getToken0(key)
+        log.debug "Authority token lookup for cachekey: '$key' => $result"
+        // save it in the store cache (redis)
+        tokenStore.put(key.toString(), result)
+        return result
     }
 
     private LoadingCache<CacheKey, String> cacheTokens = CacheBuilder<CacheKey, String>

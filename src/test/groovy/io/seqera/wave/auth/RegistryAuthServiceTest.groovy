@@ -36,6 +36,9 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
     @Shared
     ApplicationContext applicationContext
 
+    @Inject
+    private RegistryAuthTokenStore tokenStore
+
     @Shared
     @Value('${wave.registries.docker.io.username}')
     String dockerUsername
@@ -162,6 +165,21 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
         REALM       | IMAGE  | SERVICE   | EXPECTED
         'localhost' | 'test' | 'service' | "localhost?scope=repository:test:pull&service=service"
         'localhost' | 'test' | null      | "localhost?scope=repository:test:pull"
+    }
+
+    void "load should return token from store cache if present"() {
+        given:
+        RegistryAuthServiceImpl impl = loginService as RegistryAuthServiceImpl
+        def key = Mock(RegistryAuthServiceImpl.CacheKey)
+        def expectedToken = "cachedToken"
+        and:
+        tokenStore.put(key.toString(), expectedToken)
+
+        when:
+        def result = impl.getToken(key)
+
+        then:
+        result == expectedToken
     }
 
 }
