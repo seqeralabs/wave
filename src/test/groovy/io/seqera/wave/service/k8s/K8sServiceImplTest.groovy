@@ -498,7 +498,7 @@ class K8sServiceImplTest extends Specification {
         ctx.close()
     }
 
-    def 'should create transfer spec with defaults' () {
+    def 'should create transfer job spec with defaults' () {
         given:
         def PROPS = [
                 'wave.build.workspace': '/build/work',
@@ -510,30 +510,34 @@ class K8sServiceImplTest extends Specification {
         def config = Mock(BlobCacheConfig) {
             getTransferTimeout() >> Duration.ofSeconds(20)
             getEnvironment() >> [:]
+            getRetryAttempts() >> 5
+            getDeleteAfterFinished() >> Duration.ofDays(10)
         }
 
         when:
-        def result = k8sService.transferSpec('foo', 'my-image:latest', ['this','that'], config)
+        def result = k8sService.createTransferJobSpec('foo', 'my-image:latest', ['this','that'], config)
+        result
         then:
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
         and:
-        result.spec.activeDeadlineSeconds == 20
-        result.spec.serviceAccount == null
+        result.spec.backoffLimit == 5
+        result.spec.ttlSecondsAfterFinished == Duration.ofDays(10).seconds as Integer
         and:
-        result.spec.containers.get(0).name == 'foo'
-        result.spec.containers.get(0).image == 'my-image:latest'
-        result.spec.containers.get(0).args ==  ['this','that']
-        and:
-        !result.spec.containers.get(0).getEnv()
-        !result.spec.containers.get(0).getResources().limits
-        !result.spec.containers.get(0).getResources().requests
-
-        cleanup:
+        verifyAll(result.spec.template.spec) {
+            activeDeadlineSeconds == 20
+            serviceAccount == null
+            containers.get(0).name == 'foo'
+            containers.get(0).image == 'my-image:latest'
+            containers.get(0).args ==  ['this','that']
+            !containers.get(0).getEnv()
+            !containers.get(0).getResources().limits
+            !containers.get(0).getResources().requests
+        }
         ctx.close()
     }
 
-    def 'should create transfer spec with custom settings' () {
+    def 'should create transfer job spec with custom settings' () {
         given:
         def PROPS = [
                 'wave.build.workspace': '/build/work',
@@ -548,28 +552,31 @@ class K8sServiceImplTest extends Specification {
             getEnvironment() >> ['FOO':'one', 'BAR':'two']
             getRequestsCpu() >> '2'
             getRequestsMemory() >> '8Gi'
+            getRetryAttempts() >> 3
+            getDeleteAfterFinished() >> Duration.ofDays(1)
         }
 
         when:
-        def result = k8sService.transferSpec('foo', 'my-image:latest', ['this','that'], config)
+        def result = k8sService.createTransferJobSpec('foo', 'my-image:latest', ['this','that'], config)
         then:
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
         and:
-        result.spec.activeDeadlineSeconds == 20
-        result.spec.serviceAccount == 'foo-sa'
+        result.spec.backoffLimit == 3
+        result.spec.ttlSecondsAfterFinished == Duration.ofDays(1).seconds as Integer
         and:
-        verifyAll(result.spec.containers.get(0)) {
-            name == 'foo'
-            image == 'my-image:latest'
-            args == ['this', 'that']
-            getEnv().get(0) == new V1EnvVar().name('FOO').value('one')
-            getEnv().get(1) == new V1EnvVar().name('BAR').value('two')
-            getResources().requests.get('cpu') == new Quantity('2')
-            getResources().requests.get('memory') == new Quantity('8Gi')
+        verifyAll(result.spec.template.spec) {
+            activeDeadlineSeconds == 20
+            serviceAccount == 'foo-sa'
+            containers.get(0).name == 'foo'
+            containers.get(0).image == 'my-image:latest'
+            containers.get(0).args ==  ['this','that']
+            containers.get(0).getEnv().get(0) == new V1EnvVar().name('FOO').value('one')
+            containers.get(0).getEnv().get(1) == new V1EnvVar().name('BAR').value('two')
+            containers.get(0).getResources().requests.get('cpu') == new Quantity('2')
+            containers.get(0).getResources().requests.get('memory') == new Quantity('8Gi')
+            !containers.get(0).getResources().limits
         }
-        and:
-        !result.spec.containers.get(0).getResources().limits
 
         cleanup:
         ctx.close()
