@@ -65,6 +65,23 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     @Inject
     private RegistryAuthConfig authConfig
 
+    @Inject
+    private RegistryLookupService lookupService
+
+    @Inject
+    private RegistryCredentialsFactory credentialsFactory
+
+    private LoadingCache<CacheKey, String> cacheTokens
+
+    @PostConstruct
+    private init() {
+        cacheTokens = CacheBuilder
+                .newBuilder()
+                .maximumSize(authConfig.cacheMaxSize)
+                .expireAfterAccess(authConfig.cacheDuration.toMillis(), TimeUnit.MILLISECONDS)
+                .build(loader)
+    }
+
     @Canonical
     @ToString(includePackage = false, includeNames = true)
     static private class CacheKey {
@@ -100,23 +117,6 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         tokenStore.put(stableKey, result)
         return result
     }
-
-    private LoadingCache<CacheKey, String> cacheTokens
-
-    @PostConstruct
-    void init() {
-        cacheTokens = CacheBuilder
-                .newBuilder()
-                .maximumSize(authConfig.cacheMaxSize)
-                .expireAfterAccess(authConfig.cacheDuration.toMillis(), TimeUnit.MILLISECONDS)
-                .build(loader)
-    }
-
-    @Inject
-    private RegistryLookupService lookupService
-
-    @Inject RegistryCredentialsFactory credentialsFactory
-
 
     /**
      * Implements container registry login
