@@ -183,4 +183,29 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
         result == expectedToken
     }
 
+    def 'check stablekey identity' () {
+        given:
+        def a1 = RegistryAuth.parse('Bearer realm="https://quay.io/v2/auth",service="quay.io"')
+        def a2 = RegistryAuth.parse('Bearer realm="https://quay.io/v2/auth",service="quay.io"')
+        def k1 = [username: 'foo', passord: 'bar'] as RegistryCredentials
+        def k2 = [username: 'foo', passord: 'bar'] as RegistryCredentials
+        def k3 = [username: 'foo', passord: 'xyz'] as RegistryCredentials
+        def i1 = "ubuntu:latest"
+        def i2 = "ubuntu:24.04"
+        and:
+        def c1 = new RegistryAuthServiceImpl.CacheKey(i1, a1, k1)
+        def c2 = new RegistryAuthServiceImpl.CacheKey(i1, a1, k2)
+        def c3 = new RegistryAuthServiceImpl.CacheKey(i1, a2, k1)
+        def c4 = new RegistryAuthServiceImpl.CacheKey(i2, a1, k1)
+        def c5 = new RegistryAuthServiceImpl.CacheKey(i1, a1, k3)
+
+        expect:
+        c1.stableKey() == 'c28a941304004c86'
+        c1.stableKey() == c2.stableKey()
+        c1.stableKey() == c3.stableKey()
+        and:
+        c1.stableKey() != c4.stableKey()
+        c1.stableKey() != c5.stableKey()
+    }
+
 }

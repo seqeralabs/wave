@@ -35,6 +35,7 @@ import groovy.util.logging.Slf4j
 import io.seqera.wave.auth.cache.RegistryTokenCacheStore
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.http.HttpClientFactory
+import io.seqera.wave.util.RegHelper
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
@@ -65,6 +66,10 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         final String image
         final RegistryAuth auth
         final RegistryCredentials creds
+
+        String stableKey() {
+            return RegHelper.sipHash(['content': toString()])
+        }
     }
 
     private CacheLoader<CacheKey, String> loader = new CacheLoader<CacheKey, String>() {
@@ -76,7 +81,9 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
 
     protected String getToken(CacheKey key){
         // check if there's a record in the store cache (redis)
-        def result = tokenStore.get(key.toString())
+        // since the key is shared across replicas, it should be stable (java hashCode is not good)
+        final stableKey = "key-" + key.stableKey()
+        def result = tokenStore.get(stableKey)
         if( result ) {
             log.debug "Authority token lookup for cachekey: '$key' => $result [from store]"
             return result
@@ -85,7 +92,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         result = getToken0(key)
         log.debug "Authority token lookup for cachekey: '$key' => $result"
         // save it in the store cache (redis)
-        tokenStore.put(key.toString(), result)
+        tokenStore.put(stableKey, result)
         return result
     }
 
