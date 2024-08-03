@@ -20,6 +20,7 @@ package io.seqera.wave.auth
 
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.time.Duration
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 
@@ -30,10 +31,12 @@ import com.google.common.util.concurrent.UncheckedExecutionException
 import groovy.json.JsonSlurper
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import groovy.transform.PackageScope
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.http.HttpClientFactory
+import io.seqera.wave.util.RegHelper
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.StringUtils
 import jakarta.inject.Inject
@@ -52,8 +55,13 @@ import static io.seqera.wave.WaveDefault.HTTP_RETRYABLE_ERRORS
 @CompileStatic
 class RegistryAuthServiceImpl implements RegistryAuthService {
 
+    @PackageScope static final Duration _1_HOUR = Duration.ofHours(1)
+
     @Inject
     private HttpClientConfig httpConfig
+
+    @Inject
+    private RegistryTokenCacheStore tokenStore
 
     @Canonical
     @ToString(includePackage = false, includeNames = true)
@@ -61,19 +69,40 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
         final String image
         final RegistryAuth auth
         final RegistryCredentials creds
+
+        String stableKey() {
+            return RegHelper.sipHash(['content': toString()])
+        }
     }
 
     private CacheLoader<CacheKey, String> loader = new CacheLoader<CacheKey, String>() {
         @Override
         String load(CacheKey key) throws Exception {
-            return getToken0(key)
+            return getToken(key)
         }
+    }
+
+    protected String getToken(CacheKey key){
+        // check if there's a record in the store cache (redis)
+        // since the key is shared across replicas, it should be stable (java hashCode is not good)
+        final stableKey = "key-" + key.stableKey()
+        def result = tokenStore.get(stableKey)
+        if( result ) {
+            log.debug "Registry auth token for cachekey: '$key' [$stableKey] => $result [from store]"
+            return result
+        }
+        // look-up using the corresponding API endpoint
+        result = getToken0(key)
+        log.debug "Registry auth token for cachekey: '$key' [$stableKey] => $result"
+        // save it in the store cache (redis)
+        tokenStore.put(stableKey, result)
+        return result
     }
 
     private LoadingCache<CacheKey, String> cacheTokens = CacheBuilder<CacheKey, String>
                     .newBuilder()
                     .maximumSize(10_000)
-                    .expireAfterAccess(1, TimeUnit.HOURS)
+                    .expireAfterAccess(_1_HOUR.toMillis(), TimeUnit.MILLISECONDS)
                     .build(loader)
 
     @Inject
