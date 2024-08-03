@@ -20,6 +20,7 @@ package io.seqera.wave.auth
 
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.time.Duration
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 
@@ -30,9 +31,9 @@ import com.google.common.util.concurrent.UncheckedExecutionException
 import groovy.json.JsonSlurper
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import groovy.transform.PackageScope
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
-import io.seqera.wave.auth.cache.RegistryTokenCacheStore
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.http.HttpClientFactory
 import io.seqera.wave.util.RegHelper
@@ -53,6 +54,8 @@ import static io.seqera.wave.WaveDefault.HTTP_RETRYABLE_ERRORS
 @Singleton
 @CompileStatic
 class RegistryAuthServiceImpl implements RegistryAuthService {
+
+    @PackageScope static final Duration _1_HOUR = Duration.ofHours(1)
 
     @Inject
     private HttpClientConfig httpConfig
@@ -99,7 +102,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     private LoadingCache<CacheKey, String> cacheTokens = CacheBuilder<CacheKey, String>
                     .newBuilder()
                     .maximumSize(10_000)
-                    .expireAfterAccess(1, TimeUnit.HOURS)
+                    .expireAfterAccess(_1_HOUR.toMillis(), TimeUnit.MILLISECONDS)
                     .build(loader)
 
     @Inject

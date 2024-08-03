@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.auth.cache
+package io.seqera.wave.auth
 
 import java.time.Duration
 
@@ -29,30 +29,30 @@ import io.seqera.wave.service.cache.impl.CacheProvider
 import jakarta.inject.Singleton
 
 /**
- * Implement a cache store for {@link io.seqera.wave.auth.RegistryAuthServiceImpl.CacheKey} object and token that
+ * Implement a cache store for {@link RegistryAuth} object that
  * can be distributed across wave replicas
  *
- * @author Munish Chouhan <munish.chouhan@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @Singleton
 @CompileStatic
-class RegistryTokenCacheStore extends AbstractCacheStore<String> {
+class RegistryAuthCacheStore extends AbstractCacheStore<RegistryAuth> {
 
     private Duration duration
 
-    RegistryTokenCacheStore(
+    RegistryAuthCacheStore(
             CacheProvider<String, String> provider,
-            @Value('${wave.registry-token.cache.duration:`1h`}') Duration duration)
+            @Value('${wave.registry-auth.cache.duration:`3h`}') Duration duration)
     {
-        super(provider, new MoshiEncodeStrategy<String>() {})
+        super(provider, new MoshiEncodeStrategy<RegistryAuth>() {})
         this.duration = duration
-        log.info "Creating Registry Auth token cache store ― duration=$duration"
+        log.info "Creating Registry Auth cache store ― duration=$duration"
     }
 
     @Override
     protected String getPrefix() {
-        return 'registry-token/v1:'
+        return 'registry-auth/v1:'
     }
 
     @Override
