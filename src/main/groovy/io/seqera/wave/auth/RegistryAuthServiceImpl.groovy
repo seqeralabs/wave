@@ -282,7 +282,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     void invalidateAuthorization(String image, RegistryAuth auth, RegistryCredentials creds) {
         final key = new CacheKey(image, auth, creds)
         cacheTokens.invalidate(key)
+        tokenStore.remove("key-" + key.stableKey())
     }
-
 
 }
