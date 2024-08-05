@@ -19,6 +19,7 @@
 package io.seqera.wave.service.persistence.impl
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.nio.file.Path
 import java.time.Duration
@@ -29,6 +30,7 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.client.HttpClient
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.configuration.SurrealConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.api.ContainerLayer
 import io.seqera.wave.core.ContainerDigestPair
@@ -291,6 +293,22 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         def result2 = persistence.loadScanRecord(SCAN_ID2)
         and:
         result2 == scanRecord2
+    }
+
+    @Unroll
+    void "truncateLargeFile should return correct size file"() {
+        given:
+        def config = new SurrealConfig(maxHttpRequestSize: 14 * 1024)
+
+        expect:
+        new SurrealPersistenceService(surrealConfig: config).truncateLargeFile(FILE) == RESULT
+
+        where:
+        FILE                | RESULT
+        null                | null
+        ""                  | ""
+        "a" * (14 * 1024)   | "a" * (14 * 1024)
+        "a" * (15 * 1024)   | "a" * (14 * 1024)+"\n[content truncated]"
     }
 
 }
