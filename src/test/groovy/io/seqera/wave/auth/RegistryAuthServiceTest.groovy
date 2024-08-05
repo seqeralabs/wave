@@ -207,4 +207,18 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
         c1.stableKey() != c5.stableKey()
     }
 
+    void 'invalidateAuthorization should remove token from cache'() {
+        given:
+        RegistryAuthServiceImpl impl = loginService as RegistryAuthServiceImpl
+        def key = new RegistryAuthServiceImpl.CacheKey("image", Mock(RegistryAuth), Mock(RegistryCredentials))
+        def stableKey = "key-" + key.stableKey()
+        tokenStore.put(stableKey, "token")
+
+        when:
+        impl.invalidateAuthorization("image", key.auth, key.creds)
+
+        then:
+        !tokenStore.get(stableKey)
+    }
+
 }
