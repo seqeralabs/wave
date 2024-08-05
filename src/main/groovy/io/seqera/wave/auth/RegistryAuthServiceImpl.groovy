@@ -85,7 +85,7 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     protected String getToken(CacheKey key){
         // check if there's a record in the store cache (redis)
         // since the key is shared across replicas, it should be stable (java hashCode is not good)
-        final stableKey = "key-" + key.stableKey()
+        final stableKey = getStableKey(key)
         def result = tokenStore.get(stableKey)
         if( result ) {
             log.debug "Registry auth token for cachekey: '$key' [$stableKey] => $result [from store]"
@@ -282,7 +282,13 @@ class RegistryAuthServiceImpl implements RegistryAuthService {
     void invalidateAuthorization(String image, RegistryAuth auth, RegistryCredentials creds) {
         final key = new CacheKey(image, auth, creds)
         cacheTokens.invalidate(key)
+        tokenStore.remove(getStableKey(key))
     }
 
-
+    /**
+     * Invalidate all cached authorization tokens
+     */
+    private static String getStableKey(CacheKey key) {
+        return "key-" + key.stableKey()
+    }
 }
