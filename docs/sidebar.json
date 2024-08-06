@@ -6,23 +6,29 @@
       "collapsed": false,
       "items": [
         "index",
-        "features",
-        "provisioning",
-        "get_started/wave-cli",
-        "faq"
+        "get-started",
+        "provisioning"
       ]
     },
     {
       "type": "category",
-      "label": "Wave CLI",
+      "label": "Developer tools",
       "collapsed": false,
       "items": [
-        "cli/index",
-        "cli/install",
-        "cli/build"
+        {
+          "type": "category",
+          "label": "Wave CLI",
+          "collapsed": true,
+          "items": [
+            "cli/index",
+            "cli/install",
+            "cli/build"
+          ]
+        },
+        "api"
       ]
     },
     "nextflow",
-    "api"
+    "faq"
   ]
 }
