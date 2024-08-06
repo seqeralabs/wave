@@ -1,4 +1,12 @@
 # Wave changelog
+1.10.4 - 6 Aug 2024
+- Fix Prevent NPE when creds are empty [14f0476d]
+- Remove ContentReader and ContentReaderFactory classes (#584) [f05623a2]
+- Bump Surrealdb 1.5.4 for testing [51703862]
+- Minor change dumpThreads method [96fadbf5]
+- Minor logging improvement [fc436f7c]
+- Bump Java 21 as base image [23f2f6fc]
+
 1.10.3 - 5 Aug 2024
 - Fix from invalidateAuthorization from redis cache store (#591) [8f293d7c]
 
