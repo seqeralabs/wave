@@ -96,16 +96,16 @@ class ThreadMonitorCron {
     }
 
     private String dumpThreads() {
-        def buffer = new StringBuffer()
+        final result = new StringBuilder()
         Map<Thread, StackTraceElement[]> m = Thread.getAllStackTraces();
         for(Map.Entry<Thread,  StackTraceElement[]> e : m.entrySet()) {
-            buffer.append('\n').append(e.getKey().toString()).append('\n')
+            result.append('\n').append(e.getKey().toString()).append('\n')
             for (StackTraceElement s : e.getValue()) {
-                buffer.append("  " + s).append('\n')
+                result.append("  " + s).append('\n')
             }
         }
 
-        return buffer.toString()
+        return result.toString()
     }
 
     static protected String getDumpFile(String file) {

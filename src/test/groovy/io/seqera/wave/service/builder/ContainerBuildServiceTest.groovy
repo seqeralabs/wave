@@ -45,7 +45,6 @@ import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
-import io.seqera.wave.storage.reader.ContentReaderFactory
 import io.seqera.wave.test.RedisTestContainer
 import io.seqera.wave.test.SurrealDBTestContainer
 import io.seqera.wave.tower.PlatformId
@@ -450,7 +449,7 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
 
         and:
         HttpHandler handler = { HttpExchange exchange ->
-            def body = ContentReaderFactory.of(cl.location).readAllBytes()
+            def body = cl.location.bytes
             exchange.getResponseHeaders().add("Content-Type", "application/tar+gzip")
             exchange.sendResponseHeaders(200, body.size())
             exchange.getResponseBody() << body
