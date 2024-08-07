@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.builder
 
-import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
 import groovy.transform.CompileStatic
@@ -30,10 +29,10 @@ import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
-import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
+import static io.seqera.wave.service.builder.BuildConstants.FUSION_PREFIX
 /**
  *  Build a container image using a Docker CLI tool
  *
@@ -63,20 +62,8 @@ class DockerBuildStrategy extends BuildStrategy {
     @Override
     BuildResult build(BuildRequest req) {
 
-        boolean configFile = false;
-        // save docker config for creds
-        if( req.configJson ) {
-            objectStorageOperations.upload(UploadRequest.fromBytes(req.configJson.bytes, "$req.s3Key/config.json".toString()))
-            configFile = true
-        }
-        // save remote files for singularity
-        if( req.configJson && req.formatSingularity()) {
-            objectStorageOperations.upload(UploadRequest.fromBytes(RegHelper.singularityRemoteFile(req.targetImage).bytes, "$req.s3Key/singularity-remote.yaml".toString()))
-            configFile = true
-        }
-
         // command the docker build command
-        final buildCmd= buildCmd(req, configFile)
+        final buildCmd= buildCmd(req)
         log.debug "Build run command: ${buildCmd.join(' ')}"
         // save docker cli for debugging purpose
         if( debug ) {
@@ -100,12 +87,10 @@ class DockerBuildStrategy extends BuildStrategy {
         }
     }
 
-    protected List<String> buildCmd(BuildRequest req, boolean credsFile) {
-        final spack = req.isSpackBuild ? spackConfig : null
-
+    protected List<String> buildCmd(BuildRequest req) {
         final dockerCmd = req.formatDocker()
                 ? cmdForBuildkit( req, req.platform)
-                : cmdForSingularity( req.workDir, credsFile, spack, req.platform)
+                : cmdForSingularity(req.platform)
 
         return dockerCmd + launchCmd(req)
     }
@@ -121,8 +106,14 @@ class DockerBuildStrategy extends BuildStrategy {
                          "AWS_SECRET_ACCESS_KEY=${System.getenv('AWS_SECRET_ACCESS_KEY')}".toString()]
 
         if( req.configJson ) {
-            wrapper.add('-e')
-            wrapper.add("DOCKER_CONFIG=$FUSION_PREFIX/$buildConfig.workspaceBucket/$req.s3Key".toString())
+            if( req.formatDocker() ) {
+                wrapper.add('-e')
+                wrapper.add("DOCKER_CONFIG=$FUSION_PREFIX/$buildConfig.workspaceBucket/$req.s3Key".toString())
+            }
+            else {
+                wrapper.add('-e')
+                wrapper.add("SINGULARITY_CACHEDIR=$FUSION_PREFIX/$buildConfig.workspaceBucket/$req.s3Key/.singularity".toString())
+            }
         }
 
         if( platform ) {
@@ -136,22 +127,16 @@ class DockerBuildStrategy extends BuildStrategy {
         return wrapper
     }
 
-    protected List<String> cmdForSingularity(Path workDir, boolean credsFile, SpackConfig spackConfig, ContainerPlatform platform) {
+    protected List<String> cmdForSingularity(ContainerPlatform platform) {
         final wrapper = ['docker',
                          'run',
                          '--rm',
                          '--privileged',
-                         "--entrypoint", '',
-                         '-v', "$workDir:$workDir".toString()]
-
-        if( credsFile ) {
-            //todo for singularity remote file
-            wrapper.add('-v')
-            wrapper.add("$credsFile:/root/.singularity/docker-config.json:ro".toString())
-
-            //wrapper.add('-v')
-            //wrapper.add("${credsFile.resolveSibling('singularity-remote.yaml')}:/root/.singularity/remote.yaml:ro".toString())
-        }
+                         '-e',
+                         "AWS_ACCESS_KEY_ID=${System.getenv('AWS_ACCESS_KEY_ID')}".toString(),
+                         '-e',
+                         "AWS_SECRET_ACCESS_KEY=${System.getenv('AWS_SECRET_ACCESS_KEY')}".toString(),
+                         "--entrypoint", '']
 
         if( platform ) {
             wrapper.add('--platform')

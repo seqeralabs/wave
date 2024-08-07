@@ -45,15 +45,14 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.stream.StreamService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.Retryable
-import io.seqera.wave.util.SpackHelper
 import io.seqera.wave.util.TarGzipUtils
-import io.seqera.wave.util.TemplateRenderer
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 import org.apache.commons.io.IOUtils
 import static io.seqera.wave.util.RegHelper.layerName
 import static io.seqera.wave.util.StringUtils.indent
+import static io.seqera.wave.service.builder.BuildConstants.FUSION_PREFIX
 /**
  * Implements container build service
  *
@@ -147,25 +146,11 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 .awaitBuild(targetImage)
     }
 
-    protected String containerFile0(BuildRequest req, String context, SpackConfig config) {
+    protected String containerFile0(BuildRequest req, String context) {
         // add the context dir for singularity builds
-        final containerFile = req.formatSingularity()
-                ? req.containerFile.replace('{{wave_context_dir}}', context)
+        return req.formatSingularity()
+                ? req.containerFile.replace('{{wave_context_dir}}', "$FUSION_PREFIX/$buildConfig.workspaceBucket/$req.s3Key/context".toString())
                 : req.containerFile
-
-        // render the Spack template if needed
-        if( req.isSpackBuild ) {
-            final binding = new HashMap(2)
-            binding.spack_builder_image = config.builderImage
-            binding.spack_runner_image = config.runnerImage
-            binding.spack_arch = SpackHelper.toSpackArch(req.getPlatform())
-            binding.spack_cache_bucket = config.cacheBucket
-            binding.spack_key_file = config.secretMountPath
-            return new TemplateRenderer().render(containerFile, binding)
-        }
-        else {
-            return containerFile
-        }
     }
 
     protected BuildResult launch(BuildRequest req) {
@@ -175,7 +160,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         BuildResult resp=null
         try {
             // save the dockerfile
-            objectStorageOperations.upload(UploadRequest.fromBytes(containerFile0(req, "$req.s3Key/Containerfile", spackConfig).bytes, "$req.s3Key/Containerfile".toString()))
+            objectStorageOperations.upload(UploadRequest.fromBytes(containerFile0(req, "$req.s3Key/Containerfile").bytes, "$req.s3Key/Containerfile".toString()))
             // save build context
             if( req.buildContext ) {
                 saveBuildContext(req.buildContext, "$req.s3Key/context/", req.identity)
@@ -191,6 +176,16 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             // save layers provided via the container config
             if( req.containerConfig ) {
                 saveLayersToContext(req, "$req.s3Key/context/")
+            }
+            // save docker config for creds
+            if( req.configJson ) {
+                if (req.formatDocker()) {
+                    objectStorageOperations.upload(UploadRequest.fromBytes(req.configJson.bytes, "$req.s3Key/config.json".toString()))
+                }
+                else {
+                    objectStorageOperations.upload(UploadRequest.fromBytes(req.configJson.bytes, "$req.s3Key/.singularity/docker-config.json".toString()))
+                    objectStorageOperations.upload(UploadRequest.fromBytes(req.configJson.bytes, "$req.s3Key/.singularity/remote.yaml".toString()))
+                }
             }
             resp = buildStrategy.build(req)
             def msg = "== Build request ${req.buildId} completed with status=$resp.exitStatus"

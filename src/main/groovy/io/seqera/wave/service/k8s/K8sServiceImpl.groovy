@@ -50,7 +50,7 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.scan.Trivy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import static io.seqera.wave.service.builder.BuildStrategy.BUILDKIT_ENTRYPOINT
+import static io.seqera.wave.service.builder.BuildConstants.BUILDKIT_ENTRYPOINT
 /**
  * implements the support for Kubernetes cluster
  *

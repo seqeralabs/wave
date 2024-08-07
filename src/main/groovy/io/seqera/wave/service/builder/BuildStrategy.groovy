@@ -21,6 +21,8 @@ package io.seqera.wave.service.builder
 import groovy.transform.CompileStatic
 import io.seqera.wave.configuration.BuildConfig
 import jakarta.inject.Inject
+import static io.seqera.wave.service.builder.BuildConstants.FUSION_PREFIX
+import static io.seqera.wave.service.builder.BuildConstants.BUILDKIT_ENTRYPOINT
 /**
  * Defines an abstract container build strategy.
  *
@@ -32,14 +34,10 @@ import jakarta.inject.Inject
 @CompileStatic
 abstract class BuildStrategy {
 
-    protected static final String FUSION_PREFIX = "/fusion/s3"
-
     @Inject
     private BuildConfig buildConfig
 
     abstract BuildResult build(BuildRequest req)
-
-    static final public String BUILDKIT_ENTRYPOINT = 'buildctl-daemonless.sh'
 
     void cleanup(BuildRequest req) {
         req.workDir?.deleteDir()
@@ -112,7 +110,7 @@ abstract class BuildStrategy {
         result
             << 'sh'
             << '-c'
-            << "singularity build image.sif ${req.workDir}/Containerfile && singularity push image.sif ${req.targetImage}".toString()
+            << "singularity build image.sif $FUSION_PREFIX/$buildConfig.workspaceBucket/$req.s3Key/Containerfile && singularity push image.sif ${req.targetImage}".toString()
         return result
     }
 
