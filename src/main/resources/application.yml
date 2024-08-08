@@ -68,7 +68,7 @@ wave:
   build:
     workspace-bucket: "${WAVE_WORKSPACE_BUCKET}"
     buildkit-image: "cr.seqera.io/public/wave/buildkit:ef67f15426f36b72"
-    singularity-image: "quay.io/singularity/singularity:v3.11.4-slim"
+    singularity-image: "cr.seqera.io/public/wave/singularity:f3a5accae865288f"
     singularity-image-arm64: "quay.io/singularity/singularity:v3.11.4-slim-arm64"
     repo: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/dev"
     cache: "195996028523.dkr.ecr.eu-west-1.amazonaws.com/wave/build/cache"

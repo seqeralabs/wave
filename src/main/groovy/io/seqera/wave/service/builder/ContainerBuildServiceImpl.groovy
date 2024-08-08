@@ -167,11 +167,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             }
             // save the conda file
             if( req.condaFile ) {
-                objectStorageOperations.upload(UploadRequest.fromBytes(req.condaFile.bytes, "$req.s3Key/conda.yml"))
-            }
-            // save the spack file
-            if( req.spackFile ) {
-                objectStorageOperations.upload(UploadRequest.fromBytes(req.condaFile.bytes, "$req.s3Key/spack.yaml"))
+                objectStorageOperations.upload(UploadRequest.fromBytes(req.condaFile.bytes, "$req.s3Key/context/conda.yml"))
             }
             // save layers provided via the container config
             if( req.containerConfig ) {

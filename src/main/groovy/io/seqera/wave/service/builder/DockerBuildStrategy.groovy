@@ -130,13 +130,11 @@ class DockerBuildStrategy extends BuildStrategy {
     protected List<String> cmdForSingularity(ContainerPlatform platform) {
         final wrapper = ['docker',
                          'run',
-                         '--rm',
                          '--privileged',
                          '-e',
                          "AWS_ACCESS_KEY_ID=${System.getenv('AWS_ACCESS_KEY_ID')}".toString(),
                          '-e',
-                         "AWS_SECRET_ACCESS_KEY=${System.getenv('AWS_SECRET_ACCESS_KEY')}".toString(),
-                         "--entrypoint", '']
+                         "AWS_SECRET_ACCESS_KEY=${System.getenv('AWS_SECRET_ACCESS_KEY')}".toString()]
 
         if( platform ) {
             wrapper.add('--platform')
