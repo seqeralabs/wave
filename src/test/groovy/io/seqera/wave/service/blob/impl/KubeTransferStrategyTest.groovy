@@ -31,6 +31,7 @@ import io.kubernetes.client.openapi.models.V1PodStatus
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.service.blob.BlobCacheInfo
+import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.k8s.K8sService
 /**
@@ -93,4 +94,31 @@ class KubeTransferStrategyTest extends Specification {
         result.done()
         !result.succeeded()
     }
+
+    void 'status should return correct status when job status is available'() {
+        given:
+        def info = BlobCacheInfo.create("https://test.com/blobs", null, null)
+        info.jobName = "job-123"
+        k8sService.getJobStatus("job-123") >> K8sService.JobStatus.SUCCEED
+
+        when:
+        def result = strategy.status(info)
+
+        then:
+        result == TransferStrategy.Status.SUCCEED
+    }
+
+    void 'status should handle null job status'() {
+        given:
+        def info = BlobCacheInfo.create("https://test.com/blobs", null, null)
+        info.jobName = "job-123"
+        k8sService.getJobStatus("job-123") >> null
+
+        when:
+        def result = strategy.status(info)
+
+        then:
+        result == TransferStrategy.Status.UNKNOWN
+    }
+
 }

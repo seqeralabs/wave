@@ -122,7 +122,8 @@ class KubeTransferStrategy implements TransferStrategy {
 
     @Override
     Status status(BlobCacheInfo info) {
-        return Status.valueOf(k8sService.getJobStatus(info.jobName).toString())
+        final status = k8sService.getJobStatus(info.jobName)
+        return status ? Status.valueOf(status.toString()) : Status.UNKNOWN
     }
 
 }
