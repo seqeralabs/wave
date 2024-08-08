@@ -73,4 +73,11 @@ class DockerTransferStrategy implements TransferStrategy {
         builder.redirectErrorStream(true)
         return builder
     }
+
+    @Override
+    Status status(BlobCacheInfo info) {
+        // TODO
+        return null
+    }
+
 }

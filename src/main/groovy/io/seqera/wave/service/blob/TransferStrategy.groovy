@@ -24,6 +24,9 @@ package io.seqera.wave.service.blob
  */
 interface TransferStrategy {
 
+    enum Status { PENDING, RUNNING, SUCCEED, FAILED, UNKNOWN }
+
     BlobCacheInfo transfer(BlobCacheInfo info, List<String> command)
 
+    Status status(BlobCacheInfo info)
 }

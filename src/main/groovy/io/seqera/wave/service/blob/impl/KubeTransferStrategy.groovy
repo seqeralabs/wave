@@ -120,4 +120,10 @@ class KubeTransferStrategy implements TransferStrategy {
                 executor)
     }
 
+    @Override
+    Status status(BlobCacheInfo info) {
+        // TODO
+        return null
+    }
+
 }
