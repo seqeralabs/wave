@@ -84,6 +84,12 @@ class BlobCacheInfo {
      */
     final String logs
 
+    /**
+     * k8s job name
+     *
+     */
+    String jobName
+
     boolean succeeded() {
         locationUri && exitStatus==0
     }
@@ -172,6 +178,21 @@ class BlobCacheInfo {
                 completionTime,
                 exitStatus,
                 logs
+        )
+    }
+
+    BlobCacheInfo withJobName(String name) {
+        new BlobCacheInfo(
+                locationUri,
+                headers,
+                contentLength,
+                contentType,
+                cacheControl,
+                creationTime,
+                completionTime,
+                exitStatus,
+                logs,
+                name
         )
     }
 

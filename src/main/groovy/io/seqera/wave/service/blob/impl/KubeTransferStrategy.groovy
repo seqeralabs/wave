@@ -67,7 +67,7 @@ class KubeTransferStrategy implements TransferStrategy {
         final result = transfer0(info, command, jobName)
         // delete job
         cleanupJob(jobName, result.exitStatus)
-        return result
+        return result.withJobName(jobName)
     }
 
     protected BlobCacheInfo transfer0(BlobCacheInfo info, List<String> command, String jobName) {
@@ -122,8 +122,7 @@ class KubeTransferStrategy implements TransferStrategy {
 
     @Override
     Status status(BlobCacheInfo info) {
-        // TODO
-        return null
+        return Status.valueOf(k8sService.getJobStatus(info.jobName).toString())
     }
 
 }
