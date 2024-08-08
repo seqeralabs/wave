@@ -138,6 +138,8 @@ class BuildRequest {
 
     volatile Path workDir
 
+    String s3Key
+
     BuildRequest(String containerId, String containerFile, String condaFile, String spackFile, Path workspace, String targetImage, PlatformId identity, ContainerPlatform platform, String cacheRepository, String ip, String configJson, String offsetId, ContainerConfig containerConfig, String scanId, BuildContext buildContext, BuildFormat format) {
         this.containerId = containerId
         this.containerFile = containerFile
@@ -255,6 +257,7 @@ class BuildRequest {
     BuildRequest withBuildId(String id) {
         this.buildId = containerId + SEP + id
         this.workDir = workspace.resolve(buildId).toAbsolutePath()
+        this.s3Key = "workspace/$buildId"
         return this
     }
 

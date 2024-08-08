@@ -56,6 +56,13 @@ class BuildConfig {
     @Value('${wave.build.public-repo}')
     String defaultPublicRepository
 
+    @Nullable
+    @Value('${wave.build.logs.bucket}')
+    String storageBucket
+
+    @Value('${wave.build.workspace-bucket}')
+    String workspaceBucket
+
     /**
      * File system path there the dockerfile is save
      */
