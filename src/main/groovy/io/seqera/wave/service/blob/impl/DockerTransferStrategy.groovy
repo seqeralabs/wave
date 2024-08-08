@@ -45,7 +45,8 @@ class DockerTransferStrategy implements TransferStrategy {
 
     @Override
     BlobCacheInfo transfer(BlobCacheInfo info, List<String> command) {
-        final proc = createProcess(command).start()
+        // create a unique name for the container
+        final proc = createProcess(command,info.jobName).start()
         // wait for the completion and save the result
         final completed = proc.waitFor(blobConfig.transferTimeout.toSeconds(), TimeUnit.SECONDS)
         final int status = completed ? proc.exitValue() : -1
@@ -53,11 +54,13 @@ class DockerTransferStrategy implements TransferStrategy {
         return info.completed(status, logs)
     }
 
-    protected ProcessBuilder createProcess(List<String> command) {
+    protected ProcessBuilder createProcess(List<String> command, String name) {
         // compose the docker command
         final cli = new ArrayList<String>(10)
         cli.add('docker')
         cli.add('run')
+        cli.add('--name')
+        cli.add(name)
         cli.add('-e')
         cli.add('AWS_ACCESS_KEY_ID')
         cli.add('-e')
@@ -76,8 +79,32 @@ class DockerTransferStrategy implements TransferStrategy {
 
     @Override
     Status status(BlobCacheInfo info) {
-        // TODO
-        return null
+        final status = checkDockerContainerStatus(info.jobName)
+        if(status == 'running') {
+            return Status.RUNNING
+        } else if(status == 'exited') {
+            return Status.SUCCEED
+        } else if (status == 'created' || status == 'paused') {
+            return Status.PENDING
+        } else {
+            return Status.FAILED
+        }
+    }
+
+    private static String checkDockerContainerStatus(String containerName) {
+        def cli = new ArrayList<String>()
+        cli.add('docker')
+        cli.add('inspect')
+        cli.add('--format')
+        cli.add('{{.State.Status}}')
+        cli.add(containerName)
+
+        def builder = new ProcessBuilder(cli)
+        builder.redirectErrorStream(true)
+        def process = builder.start()
+        def status = process.inputStream.text.trim()
+        process.waitFor()
+        return status
     }
 
 }

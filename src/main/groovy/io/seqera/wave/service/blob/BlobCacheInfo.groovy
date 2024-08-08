@@ -20,6 +20,7 @@ package io.seqera.wave.service.blob
 import java.time.Duration
 import java.time.Instant
 
+import com.google.common.hash.Hashing
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.Memoized
@@ -36,6 +37,8 @@ import groovy.util.logging.Slf4j
 @Canonical
 @CompileStatic
 class BlobCacheInfo {
+
+    final String id
 
     /**
      * The HTTP location from the where the cached container blob can be retrieved
@@ -84,12 +87,6 @@ class BlobCacheInfo {
      */
     final String logs
 
-    /**
-     * k8s job name
-     *
-     */
-    String jobName
-
     boolean succeeded() {
         locationUri && exitStatus==0
     }
@@ -111,7 +108,8 @@ class BlobCacheInfo {
         final length = headerLong0(response, 'Content-Length')
         final type = headerString0(response, 'Content-Type')
         final cache = headerString0(response, 'Cache-Control')
-        new BlobCacheInfo(locationUrl, headers0, length, type, cache, Instant.now(), null, null, null)
+        final creationTime = Instant.now()
+        new BlobCacheInfo(generateId(locationUrl, creationTime), locationUrl, headers0, length, type, cache, creationTime, null, null, null)
     }
 
     static String headerString0(Map<String,List<String>> headers, String name) {
@@ -130,6 +128,7 @@ class BlobCacheInfo {
 
     BlobCacheInfo cached() {
         new BlobCacheInfo(
+                id,
                 locationUri,
                 headers,
                 contentLength,
@@ -142,6 +141,7 @@ class BlobCacheInfo {
 
     BlobCacheInfo completed(int status, String logs) {
         new BlobCacheInfo(
+                id,
                 locationUri,
                 headers,
                 contentLength,
@@ -155,6 +155,7 @@ class BlobCacheInfo {
 
     BlobCacheInfo failed(String logs) {
         new BlobCacheInfo(
+                id,
                 locationUri,
                 headers,
                 contentLength,
@@ -169,6 +170,7 @@ class BlobCacheInfo {
 
     BlobCacheInfo withLocation(String uri) {
         new BlobCacheInfo(
+                id,
                 uri,
                 headers,
                 contentLength,
@@ -178,21 +180,6 @@ class BlobCacheInfo {
                 completionTime,
                 exitStatus,
                 logs
-        )
-    }
-
-    BlobCacheInfo withJobName(String name) {
-        new BlobCacheInfo(
-                locationUri,
-                headers,
-                contentLength,
-                contentType,
-                cacheControl,
-                creationTime,
-                completionTime,
-                exitStatus,
-                logs,
-                name
         )
     }
 
@@ -207,4 +194,16 @@ class BlobCacheInfo {
         }
     }
 
+    String getJobName() {
+        return 'transfer-' + id
+    }
+
+    static String generateId(String locationUri, Instant creationTime) {
+        Hashing
+                .sipHash24()
+                .newHasher()
+                .putUnencodedChars(locationUri)
+                .putUnencodedChars(creationTime.toString())
+                .hash()
+    }
 }

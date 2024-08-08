@@ -21,7 +21,6 @@ package io.seqera.wave.service.blob.impl
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
-import com.google.common.hash.Hashing
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Replaces
@@ -62,16 +61,15 @@ class KubeTransferStrategy implements TransferStrategy {
 
     @Override
     BlobCacheInfo transfer(BlobCacheInfo info, List<String> command) {
-        final jobName = getJobName(info)
         // run the transfer job
-        final result = transfer0(info, command, jobName)
+        final result = transfer0(info, command)
         // delete job
-        cleanupJob(jobName, result.exitStatus)
-        return result.withJobName(jobName)
+        cleanupJob(result.jobName, result.exitStatus)
+        return result
     }
 
-    protected BlobCacheInfo transfer0(BlobCacheInfo info, List<String> command, String jobName) {
-        final job = k8sService.transferJob(jobName, blobConfig.s5Image, command, blobConfig)
+    protected BlobCacheInfo transfer0(BlobCacheInfo info, List<String> command) {
+        final job = k8sService.transferJob(info.jobName, blobConfig.s5Image, command, blobConfig)
         final timeout = Math.round(blobConfig.transferTimeout.toMillis() *1.1f)
         final podList = k8sService.waitJob(job, timeout)
         final size = podList?.items?.size() ?: 0
@@ -96,15 +94,6 @@ class KubeTransferStrategy implements TransferStrategy {
         if( cleanup.shouldCleanup(exitCode) ) {
             CompletableFuture.supplyAsync (() -> k8sService.deleteJob(jobName), executor)
         }
-    }
-
-    protected static String getJobName(BlobCacheInfo info) {
-        return 'transfer-' + Hashing
-                .sipHash24()
-                .newHasher()
-                .putUnencodedChars(info.locationUri)
-                .putUnencodedChars(info.creationTime.toString())
-                .hash()
     }
 
     private void cleanupPod(String podName, int exitCode) {
