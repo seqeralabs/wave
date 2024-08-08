@@ -41,12 +41,14 @@ class DockerTransferStrategyTest extends Specification {
         def strategy = new DockerTransferStrategy(blobConfig: config)
 
         when:
-        def result = strategy.createProcess(['s5cmd', 'run', '--this'])
+        def result = strategy.createProcess(['s5cmd', 'run', '--this'], "job-name")
 
         then:
         result.command() == [
                 'docker', 
                 'run',
+                '--name',
+                'job-name',
                 '-e', 'AWS_ACCESS_KEY_ID',
                 '-e', 'AWS_SECRET_ACCESS_KEY',
                 'cr.seqera.io/public/s5cmd:latest',

@@ -98,8 +98,7 @@ class KubeTransferStrategyTest extends Specification {
     void 'status should return correct status when job status is available'() {
         given:
         def info = BlobCacheInfo.create("https://test.com/blobs", null, null)
-        info.jobName = "job-123"
-        k8sService.getJobStatus("job-123") >> K8sService.JobStatus.SUCCEED
+        k8sService.getJobStatus(info.jobName) >> K8sService.JobStatus.SUCCEED
 
         when:
         def result = strategy.status(info)
@@ -111,8 +110,7 @@ class KubeTransferStrategyTest extends Specification {
     void 'status should handle null job status'() {
         given:
         def info = BlobCacheInfo.create("https://test.com/blobs", null, null)
-        info.jobName = "job-123"
-        k8sService.getJobStatus("job-123") >> null
+        k8sService.getJobStatus(info.jobName) >> null
 
         when:
         def result = strategy.status(info)

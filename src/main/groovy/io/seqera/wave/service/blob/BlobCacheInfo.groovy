@@ -185,7 +185,7 @@ class BlobCacheInfo {
 
     @Memoized
     static BlobCacheInfo unknown() {
-        new BlobCacheInfo(null, null, null, null, null, Instant.ofEpochMilli(0), Instant.ofEpochMilli(0), null) {
+        new BlobCacheInfo(null,null, null, null, null, null, Instant.ofEpochMilli(0), Instant.ofEpochMilli(0), null) {
             @Override
             BlobCacheInfo withLocation(String uri) {
                 // prevent the change of location for unknown status
