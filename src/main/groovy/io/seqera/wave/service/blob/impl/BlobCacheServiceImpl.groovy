@@ -51,6 +51,7 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest
 import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
+import static io.seqera.wave.service.blob.TransferStrategy.Status.*
 /**
  * Implements cache for container image layer blobs
  *
@@ -106,9 +107,18 @@ class BlobCacheServiceImpl implements BlobCacheService {
 
         final info = BlobCacheInfo.create(uri, requestHeaders, responseHeaders)
         final target = route.targetPath
+        // both S3 and R2 are strongly consistent
+        // therefore it's safe to return it immediately to return directly
+        // if it exists (no risk of returning a partial upload)
+        // https://developers.cloudflare.com/r2/reference/consistency/
+        if( blobExists(info.locationUri) && !debug ) {
+            log.debug "== Blob cache exists for object '${info.locationUri}'"
+            return info.cached()
+        }
+
         if( blobStore.storeIfAbsent(target, info) ) {
             // start download and caching job
-            return storeIfAbsent(route, info)
+            return store(route, info)
         }
         else {
             final result = awaitCacheStore(target)
@@ -183,19 +193,13 @@ class BlobCacheServiceImpl implements BlobCacheService {
         return command
     }
 
-    protected BlobCacheInfo storeIfAbsent(RoutePath route, BlobCacheInfo info) {
+    protected BlobCacheInfo store(RoutePath route, BlobCacheInfo info) {
         BlobCacheInfo result
         try {
-            if( blobExists(info.locationUri) && !debug ) {
-                log.debug "== Blob cache exists for object '${info.locationUri}'"
-                result = info.cached()
-            }
-            else {
-                log.debug "== Blob cache begin for object '${info.locationUri}'"
-                result = store(route, info)
-                //check if the cached blob size is correct
-                result = checkUploadedBlobSize(result, route)
-            }
+            log.debug "== Blob cache begin for object '${info.locationUri}'"
+            result = store0(route, info)
+            //check if the cached blob size is correct
+            result = checkUploadedBlobSize(result, route)
         }
         finally {
             // use a short time-to-live for failed downloads
@@ -225,7 +229,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
         return info.failed("Mismatch cache size for object ${info.locationUri}")
     }
 
-    protected BlobCacheInfo store(RoutePath route, BlobCacheInfo info) {
+    protected BlobCacheInfo store0(RoutePath route, BlobCacheInfo info) {
         final target = route.targetPath
         try {
             // the transfer command to be executed
@@ -284,7 +288,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
      */
     BlobCacheInfo awaitCacheStore(String key) {
         final result = blobStore.getBlob(key)
-        return result ? Waiter.awaitCompletion(blobStore, key, result) : null
+        return result ? Waiter.awaitCompletion(transferStrategy, blobStore, key, result) : null
     }
 
     /**
@@ -293,23 +297,41 @@ class BlobCacheServiceImpl implements BlobCacheService {
     @CompileStatic
     private static class Waiter {
 
-        static BlobCacheInfo awaitCompletion(BlobStore store, String key, BlobCacheInfo current) {
+        static BlobCacheInfo awaitCompletion(TransferStrategy transfer, BlobStore store, String key, BlobCacheInfo current) {
             final beg = System.currentTimeMillis()
             // set the await timeout nearly double as the blob transfer timeout, this because the
             // transfer pod can spend `timeout` time in pending status awaiting to be scheduled
             // and the same `timeout` time amount carrying out the transfer (upload) operation
             final max = (store.timeout.toMillis() * 2.10) as long
+            final period = (store.delay.toMillis() * 5) as long
             while( true ) {
                 if( current==null ) {
                     return BlobCacheInfo.unknown()
                 }
-
+                // elapsed time
+                final delta = System.currentTimeMillis()-beg
                 // check is completed
                 if( current.done() ) {
                     return current
                 }
+                // double-check via transfer service
+                if( delta > period ) {
+                    final st = transfer.status(current)
+                    if( st==UNKNOWN ) {
+                        return BlobCacheInfo.unknown()
+                    }
+                    if( st==SUCCEED ) {
+                        current = current.completed(0, 'Job completed')
+                        store.storeBlob(key, current)
+                        return current
+                    }
+                    if( st==FAILED ) {
+                        current = current.failed('Job failed')
+                        store.storeBlob(key, current)
+                        return current
+                    }
+                }
                 // check if it's timed out
-                final delta = System.currentTimeMillis()-beg
                 if( delta > max )
                     throw new TransferTimeoutException("Blob cache transfer '$key' timed out")
                 // sleep a bit
