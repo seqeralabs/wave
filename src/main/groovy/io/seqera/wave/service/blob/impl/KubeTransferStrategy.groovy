@@ -34,6 +34,7 @@ import io.seqera.wave.service.k8s.K8sService
 import io.seqera.wave.util.K8sHelper
 import jakarta.inject.Inject
 import jakarta.inject.Named
+import io.seqera.wave.service.k8s.K8sService.JobStatus
 /**
  * Implements {@link TransferStrategy} that runs s5cmd using a
  * Kubernetes job
@@ -112,7 +113,26 @@ class KubeTransferStrategy implements TransferStrategy {
     @Override
     Status status(BlobCacheInfo info) {
         final status = k8sService.getJobStatus(info.jobName)
-        return status ? Status.valueOf(status.toString()) : Status.UNKNOWN
+        return mapToStatus(status)
     }
 
+    /**
+     * Map Kubernetes job status to Transfer status
+     * @param jobStatus
+     * @return
+     */
+    static Status mapToStatus(JobStatus jobStatus) {
+        switch (jobStatus) {
+            case JobStatus.Pending:
+                return Status.PENDING
+            case JobStatus.Running:
+                return Status.RUNNING
+            case JobStatus.Succeeded:
+                return Status.SUCCEED
+            case JobStatus.Failed:
+                return Status.FAILED
+            default:
+                return Status.UNKNOWN
+        }
+    }
 }

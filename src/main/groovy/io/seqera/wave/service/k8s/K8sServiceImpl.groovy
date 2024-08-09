@@ -203,12 +203,12 @@ class K8sServiceImpl implements K8sService {
                 .batchV1Api()
                 .readNamespacedJob(name, namespace, null)
         if( !job )
-            return JobStatus.UNKNOWN
+            return null
         if( job.status.succeeded==1 )
-            return JobStatus.SUCCEED
+            return JobStatus.Succeeded
         if( job.status.failed>0 )
-            return JobStatus.FAILED
-        return JobStatus.PENDING
+            return JobStatus.Failed
+        return JobStatus.Pending
     }
 
     /**
@@ -656,7 +656,7 @@ class K8sServiceImpl implements K8sService {
         while (System.currentTimeMillis() - startTime < timeout) {
             final name = job.metadata.name
             final status = getJobStatus(name)
-            if (status != JobStatus.PENDING) {
+            if (status != JobStatus.Pending) {
                 return k8sClient
                         .coreV1Api()
                         .listNamespacedPod(namespace, null, null, null, null, "job-name=$name", null, null, null, null, null, null)

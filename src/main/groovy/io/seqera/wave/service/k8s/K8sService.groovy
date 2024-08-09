@@ -33,7 +33,7 @@ import io.seqera.wave.configuration.SpackConfig
  */
 interface K8sService {
 
-    enum JobStatus { PENDING, RUNNING, SUCCEED, FAILED, UNKNOWN }
+    enum JobStatus { Pending, Running, Succeeded, Failed }
 
     V1Job createJob(String name, String containerImage, List<String> args)
 
