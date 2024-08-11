@@ -16,22 +16,32 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.blob
+package io.seqera.wave.service.blob.transfer
 
-import groovy.transform.CompileStatic
-import io.seqera.wave.exception.WaveException
+import java.time.Duration
 
+import io.seqera.wave.service.data.queue.MessageQueue
+import jakarta.inject.Inject
+import jakarta.inject.Singleton
 
 /**
- * Exception fired when the time to blob download takes too long
  *
- * @author: Paolo Di Tommaso <paolo.ditommaso@gmail.com>
- *
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@CompileStatic
-class TransferTimeoutException extends WaveException{
+@Singleton
+class TransferQueue {
 
-    TransferTimeoutException(String message) {
-        super(message)
+    final private static String QUEUE_NAME = 'transfer-queue/v1'
+
+    @Inject
+    private MessageQueue<String> transferQueue
+
+    void offer(String transferId) {
+        transferQueue.offer(QUEUE_NAME, transferId)
     }
+
+    String poll(Duration timeout) {
+        transferQueue.poll(QUEUE_NAME, timeout)
+    }
+
 }
