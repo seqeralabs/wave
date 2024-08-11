@@ -18,13 +18,15 @@
 
 package io.seqera.wave.service.data.queue.impl
 
+import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.service.data.queue.MessageBroker
+import io.seqera.wave.service.data.queue.MessageQueue
 import jakarta.inject.Singleton
 /**
  * Implement a message broker based on a simple blocking queue.
@@ -36,7 +38,7 @@ import jakarta.inject.Singleton
 @Requires(notEnv = 'redis')
 @Singleton
 @CompileStatic
-class LocalQueueBroker implements MessageBroker<String> {
+class LocalMessageQueue implements MessageQueue<String> {
 
     private ConcurrentHashMap<String, LinkedBlockingQueue<String>> store = new ConcurrentHashMap<>()
 
@@ -48,10 +50,17 @@ class LocalQueueBroker implements MessageBroker<String> {
     }
 
     @Override
-    String take(String target) {
+    String poll(String target) {
         store
             .computeIfAbsent(target, (it)->new LinkedBlockingQueue<String>())
             .poll()
     }
 
+    String poll(String target, Duration timeout) {
+        final q =  store .computeIfAbsent(target, (it)->new LinkedBlockingQueue<String>())
+        final millis = timeout.toMillis()
+        return millis>0
+                ? q.poll(millis, TimeUnit.MILLISECONDS)
+                : q.take()
+    }
 }
