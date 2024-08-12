@@ -32,7 +32,7 @@ import jakarta.inject.Singleton
 @Singleton
 class TransferQueue {
 
-    final static String QUEUE_NAME = 'transfer-queue/v1'
+    final private static String QUEUE_NAME = 'transfer-queue/v1'
 
     @Inject
     private MessageQueue<String> transferQueue
@@ -45,4 +45,8 @@ class TransferQueue {
         transferQueue.poll(QUEUE_NAME, timeout)
     }
 
+    String pollAndGetValue(Duration timeout){
+        def transferEntry = poll(timeout)
+        return transferEntry ? transferEntry.substring(transferEntry.indexOf(QUEUE_NAME) + QUEUE_NAME.length() + 1) : null
+    }
 }

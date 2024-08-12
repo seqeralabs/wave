@@ -73,11 +73,9 @@ class TransferManager  {
         log.info "+ Starting Blob cache transfer manager"
         while( !Thread.currentThread().isInterrupted() ) {
             try {
-                final transferEntry = queue.poll(blobConfig.statusDelay)
+                final transferId = queue.pollAndGetValue(blobConfig.statusDelay)
 
-                if( transferEntry ) {
-                    //parse the transfer id
-                    def transferId = transferEntry.substring(transferEntry.indexOf(TransferQueue.QUEUE_NAME)+TransferQueue.QUEUE_NAME.length()+1)
+                if( transferId ) {
                     handle(transferId)
                     attempt.reset()
                 }
