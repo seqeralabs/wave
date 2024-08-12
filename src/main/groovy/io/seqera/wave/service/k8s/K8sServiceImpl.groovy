@@ -199,7 +199,7 @@ class K8sServiceImpl implements K8sService {
      */
     @Override
     JobStatus getJobStatus(String name) {
-        def job = k8sClient
+        final job = k8sClient
                 .batchV1Api()
                 .readNamespacedJob(name, namespace, null)
         if( !job )

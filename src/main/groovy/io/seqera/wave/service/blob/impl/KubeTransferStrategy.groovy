@@ -23,18 +23,19 @@ import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Replaces
 import io.micronaut.context.annotation.Requires
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.service.blob.BlobCacheInfo
-import io.seqera.wave.service.blob.TransferStrategy
+import io.seqera.wave.service.blob.transfer.Transfer
+import io.seqera.wave.service.blob.transfer.Transfer.Status
+import io.seqera.wave.service.blob.transfer.TransferStrategy
 import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.k8s.K8sService
+import io.seqera.wave.service.k8s.K8sService.JobStatus
 import io.seqera.wave.util.K8sHelper
 import jakarta.inject.Inject
 import jakarta.inject.Named
-import io.seqera.wave.service.k8s.K8sService.JobStatus
 /**
  * Implements {@link TransferStrategy} that runs s5cmd using a
  * Kubernetes job
@@ -44,7 +45,7 @@ import io.seqera.wave.service.k8s.K8sService.JobStatus
 @Slf4j
 @CompileStatic
 @Requires(property = 'wave.build.k8s')
-@Replaces(SimpleTransferStrategy)
+@Requires(property = 'wave.blobCache.enabled', value = 'true')
 class KubeTransferStrategy implements TransferStrategy {
 
     @Inject
@@ -61,34 +62,15 @@ class KubeTransferStrategy implements TransferStrategy {
     private ExecutorService executor
 
     @Override
-    BlobCacheInfo transfer(BlobCacheInfo info, List<String> command) {
+    void transfer(BlobCacheInfo info, List<String> command) {
         // run the transfer job
-        final result = transfer0(info, command)
-        // delete job
-        cleanupJob(result.jobName, result.exitStatus)
-        return result
+        k8sService.transferJob(info.jobName, blobConfig.s5Image, command, blobConfig)
     }
 
-    protected BlobCacheInfo transfer0(BlobCacheInfo info, List<String> command) {
-        final job = k8sService.transferJob(info.jobName, blobConfig.s5Image, command, blobConfig)
-        final timeout = Math.round(blobConfig.transferTimeout.toMillis() *1.1f)
-        final podList = k8sService.waitJob(job, timeout)
-        final size = podList?.items?.size() ?: 0
-        // verify the upload pod has been created
-        if( size < 1 ) {
-            log.error "== Blob cache transfer failed - unable to schedule upload job: $info"
-            return info.failed("Unable to scheduler transfer job")
-        }
-        // Find the latest created pod among the pods associated with the job
-        final latestPod = K8sHelper.findLatestPod(podList)
 
-        final pod = k8sService.getPod(latestPod.metadata.name)
-        final exitCode = k8sService.waitPodCompletion(pod, timeout)
-        final stdout = k8sService.logsPod(pod)
-
-        return exitCode!=null
-                ? info.completed(exitCode, stdout)
-                : info.failed(stdout)
+    @Override
+    void cleanup(BlobCacheInfo blob) {
+        cleanupJob(blob.jobName, blob.exitStatus)
     }
 
     protected void cleanupJob(String jobName, Integer exitCode) {
@@ -97,23 +79,28 @@ class KubeTransferStrategy implements TransferStrategy {
         }
     }
 
-    private void cleanupPod(String podName, int exitCode) {
-        if( !cleanup.shouldCleanup(exitCode) ) {
-            return
-        }
-        
-        CompletableFuture.supplyAsync (() ->
-                k8sService.deletePodWhenReachStatus(
-                        podName,
-                        'Succeeded',
-                        blobConfig.podDeleteTimeout.toMillis()),
-                executor)
-    }
-
     @Override
-    Status status(BlobCacheInfo info) {
+    Transfer status(BlobCacheInfo info) {
         final status = k8sService.getJobStatus(info.jobName)
-        return mapToStatus(status)
+        if( !status || !status.completed() ) {
+            return new Transfer(mapToStatus(status))
+        }
+
+        final job = k8sService.getJob(info.jobName)
+        final timeout = 1_000
+        final podList = k8sService.waitJob(job, timeout)
+        final size = podList?.items?.size() ?: 0
+        // verify the upload pod has been created
+        if( size < 1 ) {
+            log.error "== Blob cache transfer failed - unable to schedule upload job: $info"
+            return Transfer.failed(null,null)
+        }
+        // Find the latest created pod among the pods associated with the job
+        final latestPod = K8sHelper.findLatestPod(podList)
+        final pod = k8sService.getPod(latestPod.metadata.name)
+        final exitCode = k8sService.waitPodCompletion(pod, timeout)
+        final stdout = k8sService.logsPod(pod)
+        return new Transfer(mapToStatus(status), exitCode, stdout)
     }
 
     /**
@@ -128,7 +115,7 @@ class KubeTransferStrategy implements TransferStrategy {
             case JobStatus.Running:
                 return Status.RUNNING
             case JobStatus.Succeeded:
-                return Status.SUCCEED
+                return Status.SUCCEEDED
             case JobStatus.Failed:
                 return Status.FAILED
             default:

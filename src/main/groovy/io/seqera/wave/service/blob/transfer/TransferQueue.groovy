@@ -16,17 +16,33 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.blob
+package io.seqera.wave.service.blob.transfer
+
+import java.time.Duration
+
+import io.seqera.wave.service.data.queue.MessageQueue
+import jakarta.inject.Inject
+import jakarta.inject.Singleton
+
 /**
- * Defines the contract to transfer a layer blob into a remote object storage
+ * Implements a simple persistent FIFO queue
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface TransferStrategy {
+@Singleton
+class TransferQueue {
 
-    enum Status { PENDING, RUNNING, SUCCEED, FAILED, UNKNOWN }
+    final private static String QUEUE_NAME = 'transfer-queue/v1'
 
-    BlobCacheInfo transfer(BlobCacheInfo info, List<String> command)
+    @Inject
+    private MessageQueue<String> transferQueue
 
-    Status status(BlobCacheInfo info)
+    void offer(String transferId) {
+        transferQueue.offer(QUEUE_NAME, transferId)
+    }
+
+    String poll(Duration timeout) {
+        transferQueue.poll(QUEUE_NAME, timeout)
+    }
+
 }

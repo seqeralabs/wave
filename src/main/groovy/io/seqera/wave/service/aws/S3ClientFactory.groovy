@@ -45,23 +45,6 @@ class S3ClientFactory {
     private String awsRegion;
 
     @Singleton
-    @Requires(property = 'wave.blobCache.enabled', value = 'true')
-    @Named('BlobS3Client')
-    S3Client cloudflareS3Client(BlobCacheConfig blobConfig) {
-        final creds = AwsBasicCredentials.create(blobConfig.storageAccessKey, blobConfig.storageSecretKey)
-        final builder = S3Client.builder()
-                    .region(Region.of(blobConfig.storageRegion))
-                    .credentialsProvider(StaticCredentialsProvider.create(creds))
-
-        if (blobConfig.storageEndpoint) {
-            builder.endpointOverride(URI.create(blobConfig.storageEndpoint))
-        }
-
-        log.info("Creating S3 client with configuration: $builder")
-        return builder.build()
-    }
-
-    @Singleton
     @Named('DefaultS3Client')
     S3Client defaultS3Client() {
         return S3Client.builder()
