@@ -62,7 +62,7 @@ class RedisMessageQueue implements MessageQueue<String>  {
         try (Jedis conn = pool.getResource()) {
             double d = duration.toMillis() / 1000.0
             def keyValue =  conn.brpop(d, target)
-            return keyValue != null ? keyValue.getValue() : null
+            return keyValue ? keyValue.getValue() : null
         }
     }
 }
