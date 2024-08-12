@@ -48,7 +48,7 @@ class TransferTest extends Specification {
         new Transfer(STATUS, EXIT).succeeded() == EXPECTED
 
         where:
-        STATUS                              | EXIT  | EXPECTED
+        STATUS                      | EXIT  | EXPECTED
         Transfer.Status.PENDING     | null  | false
         Transfer.Status.RUNNING     | null  | false
         Transfer.Status.UNKNOWN     | null  | false

@@ -19,6 +19,7 @@
 package io.seqera.wave.service.blob.impl
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.time.Duration
 import java.time.OffsetDateTime
@@ -32,7 +33,7 @@ import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.transfer.Transfer
-import io.seqera.wave.service.blob.transfer.TransferStrategy
+import io.seqera.wave.service.k8s.K8sService.JobStatus
 import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.k8s.K8sService
 /**
@@ -46,7 +47,7 @@ class KubeTransferStrategyTest extends Specification {
     CleanupStrategy cleanup = new CleanupStrategy(buildConfig: new BuildConfig(cleanup: "OnSuccess"))
     KubeTransferStrategy strategy = new KubeTransferStrategy(k8sService: k8sService, blobConfig: blobConfig, cleanup: cleanup, executor: Executors.newSingleThreadExecutor())
 
-   def "transfer should start a transferJob"() {
+    def "transfer should start a transferJob"() {
         given:
         def info = BlobCacheInfo.create("https://test.com/blobs", "https://test.com/bucket/blobs", null, null)
         def command = ["transfer", "blob"]
@@ -70,7 +71,7 @@ class KubeTransferStrategyTest extends Specification {
 
     def 'status should return correct status when job is not completed'() {
         given:
-        def info = BlobCacheInfo.create("https://test.com/blobs","https://test.com/bucket/blobs",  null, null)
+        def info = BlobCacheInfo.create("https://test.com/blobs", "https://test.com/bucket/blobs", null, null)
         k8sService.getJobStatus(info.id) >> K8sService.JobStatus.Running
 
         when:
@@ -83,7 +84,7 @@ class KubeTransferStrategyTest extends Specification {
 
     void 'status should return correct transfer status when pods are created'() {
         given:
-        def info = BlobCacheInfo.create("https://test.com/blobs","https://test.com/bucket/blobs",   null, null)
+        def info = BlobCacheInfo.create("https://test.com/blobs", "https://test.com/bucket/blobs", null, null)
         def pod = new V1Pod(metadata: [name: "pod-123"], status: new V1PodStatus(phase: "Succeeded"))
         def podList = new V1PodList(items: [pod])
         k8sService.getJobStatus(_) >> K8sService.JobStatus.Succeeded
@@ -104,7 +105,7 @@ class KubeTransferStrategyTest extends Specification {
 
     def 'status should return failed transfer when no pods are created'() {
         given:
-        def info = BlobCacheInfo.create("https://test.com/blobs","https://test.com/bucket/blobs",   null, null)
+        def info = BlobCacheInfo.create("https://test.com/blobs", "https://test.com/bucket/blobs", null, null)
         k8sService.getJobStatus(_) >> K8sService.JobStatus.Succeeded
         k8sService.getJob(_) >> new V1Job()
         k8sService.waitJob(_, _) >> new V1PodList(items: [])
@@ -118,7 +119,7 @@ class KubeTransferStrategyTest extends Specification {
 
     def 'status should handle null job status'() {
         given:
-        def info = BlobCacheInfo.create("https://test.com/blobs","https://test.com/bucket/blobs",  null, null)
+        def info = BlobCacheInfo.create("https://test.com/blobs", "https://test.com/bucket/blobs", null, null)
         k8sService.getJobStatus(info.id) >> null
 
         when:
@@ -128,4 +129,17 @@ class KubeTransferStrategyTest extends Specification {
         result.status == Transfer.Status.UNKNOWN
     }
 
+    @Unroll
+    def "mapToStatus should return correct transfer status for jobStatus #JOB_STATUS that is #TRANSFER_STATUS"() {
+        expect:
+        KubeTransferStrategy.mapToStatus(JOB_STATUS) == TRANSFER_STATUS
+
+        where:
+        JOB_STATUS          | TRANSFER_STATUS
+        JobStatus.Pending   | Transfer.Status.PENDING
+        JobStatus.Running   | Transfer.Status.RUNNING
+        JobStatus.Succeeded | Transfer.Status.SUCCEEDED
+        JobStatus.Failed    | Transfer.Status.FAILED
+        null                | Transfer.Status.UNKNOWN
+    }
 }
