@@ -45,8 +45,4 @@ class TransferQueue {
         transferQueue.poll(QUEUE_NAME, timeout)
     }
 
-    String pollAndGetValue(Duration timeout){
-        def transferEntry = poll(timeout)
-        return transferEntry ? transferEntry.substring(QUEUE_NAME.length() + 1) : null
-    }
 }
