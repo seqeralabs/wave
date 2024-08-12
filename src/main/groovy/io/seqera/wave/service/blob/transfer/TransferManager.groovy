@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutorService
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
+import io.micronaut.context.annotation.Requires
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.service.blob.BlobCacheInfo
@@ -42,6 +43,7 @@ import jakarta.inject.Named
 @Slf4j
 @Context
 @CompileStatic
+@Requires(property = 'wave.blobCache.enabled', value = 'true')
 class TransferManager  {
 
     @Inject

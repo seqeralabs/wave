@@ -41,6 +41,7 @@ import jakarta.inject.Singleton
 @CompileStatic
 @Singleton
 @Requires(missingProperty = 'wave.build.k8s')
+@Requires(property = 'wave.blobCache.enabled', value = 'true')
 class DockerTransferStrategy implements TransferStrategy {
 
     @Inject

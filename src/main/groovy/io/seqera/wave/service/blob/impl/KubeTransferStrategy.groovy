@@ -45,6 +45,7 @@ import jakarta.inject.Named
 @Slf4j
 @CompileStatic
 @Requires(property = 'wave.build.k8s')
+@Requires(property = 'wave.blobCache.enabled', value = 'true')
 class KubeTransferStrategy implements TransferStrategy {
 
     @Inject
