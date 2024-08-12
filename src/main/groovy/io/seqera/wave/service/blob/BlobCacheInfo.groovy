@@ -23,10 +23,8 @@ import java.time.Instant
 import com.google.common.hash.Hashing
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
-import groovy.transform.Memoized
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
-
 /**
  * Model a blob cache metadata entry
  *
@@ -192,9 +190,8 @@ class BlobCacheInfo {
         )
     }
 
-    @Memoized
-    static BlobCacheInfo unknown() {
-        new BlobCacheInfo(null, null, null, null, null, null, null, Instant.ofEpochMilli(0), Instant.ofEpochMilli(0), null) {
+    static BlobCacheInfo unknown(String logs) {
+        new BlobCacheInfo(null, null, null, null, null, null, null, Instant.ofEpochMilli(0), Instant.ofEpochMilli(0), null, logs) {
             @Override
             BlobCacheInfo withLocation(String uri) {
                 // prevent the change of location for unknown status

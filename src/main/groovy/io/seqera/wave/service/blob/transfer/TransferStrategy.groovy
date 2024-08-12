@@ -18,63 +18,14 @@
 
 package io.seqera.wave.service.blob.transfer
 
-import groovy.transform.Canonical
-import io.seqera.wave.service.blob.BlobCacheInfo
 
+import io.seqera.wave.service.blob.BlobCacheInfo
 /**
  * Defines the contract to transfer a layer blob into a remote object storage
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 interface TransferStrategy {
-
-    enum Status {
-        PENDING,
-        RUNNING,
-        SUCCEEDED,
-        FAILED,
-        UNKNOWN;
-
-        boolean completed() {
-            this==SUCCEEDED || this==FAILED
-        }
-    }
-
-    @Canonical
-    static class Transfer {
-        Status status
-        Integer exitCode
-        String stdout
-
-        final boolean completed() {
-            return status
-        }
-
-        final boolean succeeded() {
-            status==Status.SUCCEEDED && exitCode==0
-        }
-
-        static Transfer pending() {
-            return new Transfer(Status.PENDING)
-        }
-
-        static Transfer running() {
-            return new Transfer(Status.RUNNING)
-        }
-
-        static Transfer failed(Integer exit, String logs) {
-            return new Transfer(Status.FAILED, exit, logs)
-        }
-
-        static Transfer succeeded(String logs) {
-            return new Transfer(Status.SUCCEEDED, 0, logs)
-        }
-
-        static Transfer completed(Integer exit, String logs) {
-            final st = exit==0 ? Status.SUCCEEDED : Status.FAILED
-            return new Transfer(st, exit, logs)
-        }
-    }
 
     void transfer(BlobCacheInfo blob, List<String> command)
 

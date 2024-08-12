@@ -44,6 +44,9 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.failure.duration:4s}')
     Duration failureDuration
 
+    @Value('${wave.blobCache.grace.duration:10s}')
+    Duration graceDuration
+
     @Value('${wave.blobCache.timeout:10m}')
     Duration transferTimeout
 

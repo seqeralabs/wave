@@ -248,10 +248,10 @@ class BlobCacheServiceImpl implements BlobCacheService {
     private static class Waiter {
 
         static BlobCacheInfo awaitCompletion(BlobStore store, String key, BlobCacheInfo current) {
-
+            final target = current?.locationUri ?: "(unknown)"
             while( true ) {
                 if( current==null ) {
-                    return BlobCacheInfo.unknown()
+                    return BlobCacheInfo.unknown("Unable to cache blob $target")
                 }
                 // check is completed
                 if( current.done() ) {

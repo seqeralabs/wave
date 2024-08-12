@@ -21,10 +21,12 @@ package io.seqera.wave.service.blob.impl
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.service.blob.BlobCacheInfo
+import io.seqera.wave.service.blob.transfer.Transfer
 import io.seqera.wave.service.blob.transfer.TransferStrategy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -78,6 +80,7 @@ class DockerTransferStrategy implements TransferStrategy {
     @Override
     Transfer status(BlobCacheInfo blob) {
         final state = getDockerContainerState(blob.jobName)
+        log.debug "Docker transfer name=$blob.jobName; state=$state"
         if (state.status == 'running') {
             return Transfer.running()
         }
@@ -90,7 +93,7 @@ class DockerTransferStrategy implements TransferStrategy {
         }
         else {
             final logs = getDockerContainerLogs(blob.jobName)
-            return Transfer.failed(state.exitCode, logs)
+            return Transfer.unknown(logs)
         }
     }
 
@@ -107,6 +110,7 @@ class DockerTransferStrategy implements TransferStrategy {
         process.waitFor()
     }
 
+    @ToString(includePackage = false, includeNames = true)
     @Canonical
     static class State {
         String status

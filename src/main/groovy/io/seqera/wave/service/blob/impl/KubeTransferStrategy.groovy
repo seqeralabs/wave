@@ -27,13 +27,15 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.service.blob.BlobCacheInfo
+import io.seqera.wave.service.blob.transfer.Transfer
+import io.seqera.wave.service.blob.transfer.Transfer.Status
 import io.seqera.wave.service.blob.transfer.TransferStrategy
 import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.k8s.K8sService
+import io.seqera.wave.service.k8s.K8sService.JobStatus
 import io.seqera.wave.util.K8sHelper
 import jakarta.inject.Inject
 import jakarta.inject.Named
-import io.seqera.wave.service.k8s.K8sService.JobStatus
 /**
  * Implements {@link TransferStrategy} that runs s5cmd using a
  * Kubernetes job
@@ -90,7 +92,7 @@ class KubeTransferStrategy implements TransferStrategy {
         // verify the upload pod has been created
         if( size < 1 ) {
             log.error "== Blob cache transfer failed - unable to schedule upload job: $info"
-            return new Transfer(Status.FAILED)
+            return Transfer.failed(null,null)
         }
         // Find the latest created pod among the pods associated with the job
         final latestPod = K8sHelper.findLatestPod(podList)

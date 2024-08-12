@@ -35,6 +35,7 @@ import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Named
 /**
+ * Implement the logic to handle Blob cache transfer (uploads)
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -111,8 +112,14 @@ class TransferManager  {
     }
 
     protected void handle0(BlobCacheInfo info) {
+        final duration = Duration.between(info.creationTime, Instant.now())
         final transfer = transferStrategy.status(info)
-        if( transfer.completed() ) {
+        log.debug "Blob cache transfer name=${info.jobName}; state=${transfer}; object=${info.objectUri}"
+        final done =
+                transfer.completed() ||
+                // considered failed when remain in unknown status too long         
+                (transfer.status==Transfer.Status.UNKNOWN && duration>blobConfig.graceDuration)
+        if( done ) {
             // use a short time-to-live for failed downloads
             // this is needed to allow re-try caching of failure transfers
             final ttl = transfer.succeeded()
@@ -132,7 +139,6 @@ class TransferManager  {
         // transfer pod can spend `timeout` time in pending status awaiting to be scheduled
         // and the same `timeout` time amount carrying out the transfer (upload) operation
         final max = (blobConfig.transferTimeout.toMillis() * 2.10) as long
-        final duration = Duration.between(info.creationTime, Instant.now())
         if( duration.toMillis()>max ) {
             final result = info.failed("Blob cache transfer timed out - id: ${info.id}; object: ${info.objectUri}")
             log.warn "== Blob cache completed for object '${info.objectUri}'; id=${info.id}; duration=${result.duration()}"

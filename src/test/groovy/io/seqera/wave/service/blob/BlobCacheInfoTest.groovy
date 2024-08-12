@@ -178,15 +178,16 @@ class BlobCacheInfoTest extends Specification {
 
     def 'should unknown blob info'  () {
         given:
-        def result = BlobCacheInfo.unknown()
+        def result = BlobCacheInfo.unknown('Foo bar')
         expect:
+        result.id == null
         result.headers == null
         result.locationUri == null
         result.objectUri == null
         result.creationTime == Instant.ofEpochMilli(0)
         result.completionTime == Instant.ofEpochMilli(0)
         result.exitStatus == null
-        result.logs == null
+        result.logs == 'Foo bar'
         and:
         !result.done()
         !result.succeeded()

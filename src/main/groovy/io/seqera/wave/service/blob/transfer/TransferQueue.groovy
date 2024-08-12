@@ -25,6 +25,7 @@ import jakarta.inject.Inject
 import jakarta.inject.Singleton
 
 /**
+ * Implements a simple persistent FIFO queue
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
