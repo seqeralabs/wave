@@ -81,7 +81,7 @@ class DockerTransferStrategy implements TransferStrategy {
     @Override
     Transfer status(BlobCacheInfo blob) {
         final state = getDockerContainerState(blob.jobName)
-        log.debug "Docker transfer name=$blob.jobName; state=$state"
+        log.trace "Docker transfer name=$blob.jobName; state=$state"
         if (state.status == 'running') {
             return Transfer.running()
         }
