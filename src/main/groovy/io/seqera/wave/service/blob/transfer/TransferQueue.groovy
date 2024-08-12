@@ -32,7 +32,7 @@ import jakarta.inject.Singleton
 @Singleton
 class TransferQueue {
 
-    final private static String QUEUE_NAME = 'transfer-queue/v1'
+    final static String QUEUE_NAME = 'transfer-queue/v1'
 
     @Inject
     private MessageQueue<String> transferQueue
