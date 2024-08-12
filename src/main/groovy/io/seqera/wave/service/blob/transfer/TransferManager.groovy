@@ -119,7 +119,7 @@ class TransferManager  {
     protected void handle0(BlobCacheInfo info) {
         final duration = Duration.between(info.creationTime, Instant.now())
         final transfer = transferStrategy.status(info)
-        log.debug "Blob cache transfer name=${info.jobName}; state=${transfer}; object=${info.objectUri}"
+        log.trace "Blob cache transfer name=${info.jobName}; state=${transfer}; object=${info.objectUri}"
         final done =
                 transfer.completed() ||
                 // considered failed when remain in unknown status too long         
@@ -150,7 +150,7 @@ class TransferManager  {
             blobStore.storeBlob(info.id, result, blobConfig.failureDuration)
         }
         else {
-            log.debug "== Blob cache pending for completion $info"
+            log.trace "== Blob cache pending for completion $info"
             // re-schedule for a new check
             queue.offer(info.id)
         }
