@@ -65,13 +65,13 @@ class KubeTransferStrategyTest extends Specification {
         strategy.transfer(info, command)
 
         then:
-        1 * k8sService.transferJob(info.jobName, blobConfig.s5Image, command, blobConfig)
+        1 * k8sService.transferJob(info.id, blobConfig.s5Image, command, blobConfig)
     }
 
     def 'status should return correct status when job is not completed'() {
         given:
         def info = BlobCacheInfo.create("https://test.com/blobs","https://test.com/bucket/blobs",  null, null)
-        k8sService.getJobStatus(info.jobName) >> K8sService.JobStatus.Running
+        k8sService.getJobStatus(info.id) >> K8sService.JobStatus.Running
 
         when:
         def result = strategy.status(info)
@@ -119,7 +119,7 @@ class KubeTransferStrategyTest extends Specification {
     def 'status should handle null job status'() {
         given:
         def info = BlobCacheInfo.create("https://test.com/blobs","https://test.com/bucket/blobs",  null, null)
-        k8sService.getJobStatus(info.jobName) >> null
+        k8sService.getJobStatus(info.id) >> null
 
         when:
         def result = strategy.status(info)

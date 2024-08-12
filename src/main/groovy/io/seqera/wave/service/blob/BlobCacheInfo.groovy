@@ -200,12 +200,8 @@ class BlobCacheInfo {
         }
     }
 
-    String getJobName() {
-        return 'transfer-' + id
-    }
-
     static String generateId(String locationUri, Instant creationTime) {
-        Hashing
+        return 'transfer-' + Hashing
                 .sipHash24()
                 .newHasher()
                 .putUnencodedChars(locationUri)

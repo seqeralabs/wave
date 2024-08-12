@@ -64,29 +64,29 @@ class KubeTransferStrategy implements TransferStrategy {
     @Override
     void transfer(BlobCacheInfo info, List<String> command) {
         // run the transfer job
-        k8sService.transferJob(info.jobName, blobConfig.s5Image, command, blobConfig)
+        k8sService.transferJob(info.id, blobConfig.s5Image, command, blobConfig)
     }
 
 
     @Override
     void cleanup(BlobCacheInfo blob) {
-        cleanupJob(blob.jobName, blob.exitStatus)
+        cleanupJob(blob.id, blob.exitStatus)
     }
 
-    protected void cleanupJob(String jobName, Integer exitCode) {
+    protected void cleanupJob(String id, Integer exitCode) {
         if( cleanup.shouldCleanup(exitCode) ) {
-            CompletableFuture.supplyAsync (() -> k8sService.deleteJob(jobName), executor)
+            CompletableFuture.supplyAsync (() -> k8sService.deleteJob(id), executor)
         }
     }
 
     @Override
     Transfer status(BlobCacheInfo info) {
-        final status = k8sService.getJobStatus(info.jobName)
+        final status = k8sService.getJobStatus(info.id)
         if( !status || !status.completed() ) {
             return new Transfer(mapToStatus(status))
         }
 
-        final job = k8sService.getJob(info.jobName)
+        final job = k8sService.getJob(info.id)
         final timeout = 1_000
         final podList = k8sService.waitJob(job, timeout)
         final size = podList?.items?.size() ?: 0
