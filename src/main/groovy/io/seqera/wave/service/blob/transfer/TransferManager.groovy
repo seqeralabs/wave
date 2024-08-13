@@ -117,7 +117,7 @@ class TransferManager  {
     protected void handle0(BlobCacheInfo info) {
         final duration = Duration.between(info.creationTime, Instant.now())
         final transfer = transferStrategy.status(info)
-        log.trace "Blob cache transfer name=${info.id}; state=${transfer}; object=${info.objectUri}"
+        log.trace "Blob cache transfer name=${info.objectUri}; state=${transfer}; object=${info.objectUri}"
         final done =
                 transfer.completed() ||
                 // considered failed when remain in unknown status too long         
@@ -132,8 +132,8 @@ class TransferManager  {
             final result = transfer.succeeded()
                     ? info.completed(transfer.exitCode, transfer.stdout)
                     : info.failed(transfer.stdout)
-            blobStore.storeBlob(info.id, result, ttl)
-            log.debug "== Blob cache completed for object '${info.objectUri}'; id=${info.id}; status=${result.exitStatus}; duration=${result.duration()}"
+            blobStore.storeBlob(info.objectUri, result, ttl)
+            log.debug "== Blob cache completed for object '${info.objectUri}'; id=${info.objectUri}; status=${result.exitStatus}; duration=${result.duration()}"
             // finally cleanup the job
             transferStrategy.cleanup(result)
             return
@@ -143,14 +143,14 @@ class TransferManager  {
         // and the same `timeout` time amount carrying out the transfer (upload) operation
         final max = (blobConfig.transferTimeout.toMillis() * 2.10) as long
         if( duration.toMillis()>max ) {
-            final result = info.failed("Blob cache transfer timed out - id: ${info.id}; object: ${info.objectUri}")
-            log.warn "== Blob cache completed for object '${info.objectUri}'; id=${info.id}; duration=${result.duration()}"
-            blobStore.storeBlob(info.id, result, blobConfig.failureDuration)
+            final result = info.failed("Blob cache transfer timed out - id: ${info.objectUri}; object: ${info.objectUri}")
+            log.warn "== Blob cache completed for object '${info.objectUri}'; id=${info.objectUri}; duration=${result.duration()}"
+            blobStore.storeBlob(info.objectUri, result, blobConfig.failureDuration)
         }
         else {
             log.trace "== Blob cache pending for completion $info"
             // re-schedule for a new check
-            queue.offer(info.id)
+            queue.offer(info.objectUri)
         }
     }
 

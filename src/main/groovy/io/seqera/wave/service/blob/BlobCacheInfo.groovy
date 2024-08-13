@@ -36,8 +36,6 @@ import groovy.util.logging.Slf4j
 @CompileStatic
 class BlobCacheInfo {
 
-    final String id
-
     /**
      * The HTTP location from the where the cached container blob can be retrieved
      */
@@ -47,6 +45,11 @@ class BlobCacheInfo {
      * The object storage path URI e.g. s3://bucket-name/some/path
      */
     final String objectUri
+
+    /**
+     * it is the name of k8s job or docker container depends on the transfer strategy
+     */
+    final String jobName
 
     /**
      * The request http headers
@@ -90,11 +93,6 @@ class BlobCacheInfo {
      */
     final String logs
 
-    /**
-     * it is the name of k8s job or docker container depends on the transfer strategy
-     */
-    final String jobName
-
     boolean succeeded() {
         locationUri && exitStatus==0
     }
@@ -117,8 +115,8 @@ class BlobCacheInfo {
         final type = headerString0(response, 'Content-Type')
         final cache = headerString0(response, 'Cache-Control')
         final creationTime = Instant.now()
-        new BlobCacheInfo(generateId(objectUri), locationUri, objectUri, headers0, length, type, cache, creationTime,
-                null, null, null, generateJobName(locationUri, creationTime))
+        new BlobCacheInfo( locationUri, objectUri, generateJobName(locationUri, creationTime), headers0, length, type, cache, creationTime,
+                null, null, null)
     }
 
     static String headerString0(Map<String,List<String>> headers, String name) {
@@ -137,9 +135,9 @@ class BlobCacheInfo {
 
     BlobCacheInfo cached() {
         new BlobCacheInfo(
-                id,
                 locationUri,
                 objectUri,
+                jobName,
                 headers,
                 contentLength,
                 contentType,
@@ -147,16 +145,15 @@ class BlobCacheInfo {
                 creationTime,
                 creationTime,
                 0,
-                logs,
-                jobName
+                logs
         )
     }
 
     BlobCacheInfo completed(int status, String logs) {
         new BlobCacheInfo(
-                id,
                 locationUri,
                 objectUri,
+                jobName,
                 headers,
                 contentLength,
                 contentType,
@@ -164,16 +161,15 @@ class BlobCacheInfo {
                 creationTime,
                 Instant.now(),
                 status,
-                logs,
-                jobName
+                logs
         )
     }
 
     BlobCacheInfo failed(String logs) {
         new BlobCacheInfo(
-                id,
                 locationUri,
                 objectUri,
+                jobName,
                 headers,
                 contentLength,
                 contentType,
@@ -181,16 +177,15 @@ class BlobCacheInfo {
                 creationTime,
                 Instant.now(),
                 null,
-                logs,
-                jobName
+                logs
         )
     }
 
     BlobCacheInfo withLocation(String location) {
         new BlobCacheInfo(
-                id,
                 location,
                 objectUri,
+                jobName,
                 headers,
                 contentLength,
                 contentType,
@@ -198,8 +193,7 @@ class BlobCacheInfo {
                 creationTime,
                 completionTime,
                 exitStatus,
-                logs,
-                jobName
+                logs
         )
     }
 
@@ -211,14 +205,6 @@ class BlobCacheInfo {
                 return this
             }
         }
-    }
-
-    static String generateId(String objectUri) {
-        return Hashing
-                .sipHash24()
-                .newHasher()
-                .putUnencodedChars(objectUri)
-                .hash()
     }
 
     static String generateJobName(String locationUri, Instant creationTime) {

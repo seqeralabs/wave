@@ -102,12 +102,12 @@ class BlobCacheServiceImpl implements BlobCacheService {
             return info.cached()
         }
 
-        if( blobStore.storeIfAbsent(info.id, info) ) {
+        if( blobStore.storeIfAbsent(info.objectUri, info) ) {
             // start download and caching job
             store(route, info)
         }
 
-        final result = awaitCacheStore(info.id)
+        final result = awaitCacheStore(info.objectUri)
         // update the download signed uri
         return result?.withLocation(locationUri)
     }
@@ -185,13 +185,13 @@ class BlobCacheServiceImpl implements BlobCacheService {
             final cli = transferCommand(route, info)
             transferStrategy.transfer(info, cli)
             // signal the transfer started
-            transferQueue.offer(info.id)
+            transferQueue.offer(info.objectUri)
         }
         catch (Throwable t) {
             log.warn "== Blob cache failed for object '${info.objectUri}' - cause: ${t.message}", t
             final result = info.failed(t.message)
             // update the blob status
-            blobStore.storeBlob(info.id, result, blobConfig.failureDuration)
+            blobStore.storeBlob(info.objectUri, result, blobConfig.failureDuration)
         }
     }
 

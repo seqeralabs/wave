@@ -43,10 +43,10 @@ class TransferManagerTest extends Specification {
         def blob = BlobCacheInfo.create('http://foo.com', 's3://foo/com', [:], [:])
 
         when:
-        manager.handle(blob.id)
+        manager.handle(blob.objectUri)
 
         then:
-        1 * blobStore.get(blob.id) >> blob
+        1 * blobStore.get(blob.objectUri) >> blob
         thrown(RuntimeException) // this is thrown from handle0 method
     }
 
@@ -82,7 +82,7 @@ class TransferManagerTest extends Specification {
         manager.handle0(blob)
 
         then:
-        1 * blobStore.storeBlob(blob.id, _, blobConfig.statusDuration)
+        1 * blobStore.storeBlob(blob.objectUri, _, blobConfig.statusDuration)
         1 * transferStrategy.cleanup(_)
     }
 
@@ -101,7 +101,7 @@ class TransferManagerTest extends Specification {
         manager.handle0(info)
 
         then:
-        1 * blobStore.storeBlob(info.id, _, blobConfig.failureDuration)
+        1 * blobStore.storeBlob(info.objectUri, _, blobConfig.failureDuration)
         1 * transferStrategy.cleanup(_)
     }
 
@@ -120,7 +120,7 @@ class TransferManagerTest extends Specification {
         manager.handle0(info)
 
         then:
-        1 * queue.offer(info.id)
+        1 * queue.offer(info.objectUri)
     }
 
     def "handle0 should timeout transfer when duration exceeds max limit"() {
@@ -138,6 +138,6 @@ class TransferManagerTest extends Specification {
         manager.handle0(info)
 
         then:
-        1 * blobStore.storeBlob(info.id, _, blobConfig.failureDuration)
+        1 * blobStore.storeBlob(info.objectUri, _, blobConfig.failureDuration)
     }
 }

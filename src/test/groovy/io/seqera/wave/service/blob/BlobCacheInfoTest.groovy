@@ -34,7 +34,6 @@ class BlobCacheInfoTest extends Specification {
         when:
         def blob = BlobCacheInfo.create('http://foo.com', 's3://foo/com', [:], [:])
         then:
-        blob.id != null
         blob.locationUri == 'http://foo.com'
         blob.objectUri == 's3://foo/com'
         blob.headers == [:]
@@ -180,7 +179,6 @@ class BlobCacheInfoTest extends Specification {
         given:
         def result = BlobCacheInfo.unknown('Foo bar')
         expect:
-        result.id == null
         result.headers == null
         result.locationUri == null
         result.objectUri == null

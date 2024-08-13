@@ -50,7 +50,7 @@ class DockerTransferStrategy implements TransferStrategy {
     @Override
     void transfer(BlobCacheInfo info, List<String> command) {
         // create a unique name for the container
-        createProcess(command, info.id, blobConfig.transferTimeout.toSeconds()).start()
+        createProcess(command, info.jobName, blobConfig.transferTimeout.toSeconds()).start()
     }
 
     protected ProcessBuilder createProcess(List<String> command, String name, long timeoutSecs) {
@@ -80,20 +80,20 @@ class DockerTransferStrategy implements TransferStrategy {
 
     @Override
     Transfer status(BlobCacheInfo blob) {
-        final state = getDockerContainerState(blob.id)
-        log.trace "Docker transfer name=$blob.id; state=$state"
+        final state = getDockerContainerState(blob.jobName)
+        log.trace "Docker transfer name=$blob.jobName; state=$state"
         if (state.status == 'running') {
             return Transfer.running()
         }
         else if (state.status == 'exited') {
-            final logs = getDockerContainerLogs(blob.id)
+            final logs = getDockerContainerLogs(blob.jobName)
             return Transfer.completed(state.exitCode, logs)
         }
         else if (state.status == 'created' || state.status == 'paused') {
             return Transfer.pending()
         }
         else {
-            final logs = getDockerContainerLogs(blob.id)
+            final logs = getDockerContainerLogs(blob.jobName)
             return Transfer.unknown(logs)
         }
     }
@@ -103,7 +103,7 @@ class DockerTransferStrategy implements TransferStrategy {
         final cli = new ArrayList<String>()
         cli.add('docker')
         cli.add('rm')
-        cli.add(blob.id)
+        cli.add(blob.jobName)
 
         final builder = new ProcessBuilder(cli)
         builder.redirectErrorStream(true)
