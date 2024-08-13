@@ -89,13 +89,13 @@ class DockerBuildStrategy extends BuildStrategy {
 
     protected List<String> buildCmd(BuildRequest req) {
         final dockerCmd = req.formatDocker()
-                ? cmdForBuildkit( req, req.platform)
-                : cmdForSingularity(req.platform)
+                ? cmdForBuildkit( req)
+                : cmdForSingularity(req)
 
         return dockerCmd + launchCmd(req)
     }
 
-    protected List<String> cmdForBuildkit(BuildRequest req, ContainerPlatform platform ) {
+    protected List<String> cmdForBuildkit(BuildRequest req) {
         //checkout the documentation here to know more about these options https://github.com/moby/buildkit/blob/master/docs/rootless.md#docker
         final wrapper = ['docker',
                          'run',
@@ -106,19 +106,13 @@ class DockerBuildStrategy extends BuildStrategy {
                          "AWS_SECRET_ACCESS_KEY=${System.getenv('AWS_SECRET_ACCESS_KEY')}".toString()]
 
         if( req.configJson ) {
-            if( req.formatDocker() ) {
                 wrapper.add('-e')
                 wrapper.add("DOCKER_CONFIG=$FUSION_PREFIX/$buildConfig.workspaceBucket/$req.s3Key".toString())
-            }
-            else {
-                wrapper.add('-e')
-                wrapper.add("SINGULARITY_CACHEDIR=$FUSION_PREFIX/$buildConfig.workspaceBucket/$req.s3Key/.singularity".toString())
-            }
         }
 
-        if( platform ) {
+        if( req.platform ) {
             wrapper.add('--platform')
-            wrapper.add(platform.toString())
+            wrapper.add(req.platform.toString())
         }
 
         // the container image to be used to build
@@ -127,7 +121,7 @@ class DockerBuildStrategy extends BuildStrategy {
         return wrapper
     }
 
-    protected List<String> cmdForSingularity(ContainerPlatform platform) {
+    protected List<String> cmdForSingularity(BuildRequest req) {
         final wrapper = ['docker',
                          'run',
                          '--privileged',
@@ -136,12 +130,12 @@ class DockerBuildStrategy extends BuildStrategy {
                          '-e',
                          "AWS_SECRET_ACCESS_KEY=${System.getenv('AWS_SECRET_ACCESS_KEY')}".toString()]
 
-        if( platform ) {
+        if( req.platform ) {
             wrapper.add('--platform')
-            wrapper.add(platform.toString())
+            wrapper.add(req.platform.toString())
         }
 
-        wrapper.add(buildConfig.singularityImage(platform))
+        wrapper.add(buildConfig.singularityImage(req.platform))
         return wrapper
     }
 }

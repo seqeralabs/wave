@@ -110,7 +110,7 @@ abstract class BuildStrategy {
         result
             << 'sh'
             << '-c'
-            << "singularity build image.sif $FUSION_PREFIX/$buildConfig.workspaceBucket/$req.s3Key/Containerfile && singularity push image.sif ${req.targetImage}".toString()
+            << "ln -s $FUSION_PREFIX/$buildConfig.workspaceBucket/$req.s3Key/.singularity /root/.singularity && singularity build image.sif $FUSION_PREFIX/$buildConfig.workspaceBucket/$req.s3Key/Containerfile && singularity push image.sif ${req.targetImage}".toString()
         return result
     }
 
