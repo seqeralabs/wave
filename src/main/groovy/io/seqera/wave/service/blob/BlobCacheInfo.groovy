@@ -90,6 +90,11 @@ class BlobCacheInfo {
      */
     final String logs
 
+    /**
+     * it is the name of k8s job or docker container depends on the transfer strategy
+     */
+    final String jobName
+
     boolean succeeded() {
         locationUri && exitStatus==0
     }
@@ -112,7 +117,8 @@ class BlobCacheInfo {
         final type = headerString0(response, 'Content-Type')
         final cache = headerString0(response, 'Cache-Control')
         final creationTime = Instant.now()
-        new BlobCacheInfo(generateId(objectUri), locationUri, objectUri, headers0, length, type, cache, creationTime, null, null, null)
+        new BlobCacheInfo(generateId(objectUri), locationUri, objectUri, headers0, length, type, cache, creationTime,
+                null, null, null, generateJobName(locationUri, creationTime))
     }
 
     static String headerString0(Map<String,List<String>> headers, String name) {
@@ -140,7 +146,10 @@ class BlobCacheInfo {
                 cacheControl,
                 creationTime,
                 creationTime,
-                0)
+                0,
+                logs,
+                jobName
+        )
     }
 
     BlobCacheInfo completed(int status, String logs) {
@@ -155,7 +164,9 @@ class BlobCacheInfo {
                 creationTime,
                 Instant.now(),
                 status,
-                logs)
+                logs,
+                jobName
+        )
     }
 
     BlobCacheInfo failed(String logs) {
@@ -170,7 +181,8 @@ class BlobCacheInfo {
                 creationTime,
                 Instant.now(),
                 null,
-                logs
+                logs,
+                jobName
         )
     }
 
@@ -186,7 +198,8 @@ class BlobCacheInfo {
                 creationTime,
                 completionTime,
                 exitStatus,
-                logs
+                logs,
+                jobName
         )
     }
 
@@ -208,7 +221,7 @@ class BlobCacheInfo {
                 .hash()
     }
 
-    String getJobName() {
+    static String generateJobName(String locationUri, Instant creationTime) {
         return 'transfer-' + Hashing
                 .sipHash24()
                 .newHasher()
