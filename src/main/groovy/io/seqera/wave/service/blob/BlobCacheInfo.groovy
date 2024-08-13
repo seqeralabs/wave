@@ -17,6 +17,7 @@
  */
 package io.seqera.wave.service.blob
 
+import java.time.Duration
 import java.time.Instant
 
 import groovy.transform.Canonical
@@ -89,6 +90,12 @@ class BlobCacheInfo {
 
     boolean done() {
         locationUri && completionTime!=null
+    }
+
+    Duration duration() {
+        creationTime && completionTime
+                ? Duration.between(creationTime, completionTime)
+                : null
     }
 
     static BlobCacheInfo create(String locationUrl, Map<String,List<String>> request, Map<String,List<String>> response) {

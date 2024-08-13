@@ -231,7 +231,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
             // the transfer command to be executed
             final cli = transferCommand(route, info)
             final result = transferStrategy.transfer(info, cli)
-            log.debug "== Blob cache completed for object '${target}'; status=$result.exitStatus"
+            log.debug "== Blob cache completed for object '${target}'; status=$result.exitStatus; duration: ${result.duration()}"
             return result
         }
         catch (Throwable t) {
