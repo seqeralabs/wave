@@ -72,7 +72,7 @@ class KubeTransferStrategyTest extends Specification {
     def 'status should return correct status when job is not completed'() {
         given:
         def info = BlobCacheInfo.create("https://test.com/blobs", "https://test.com/bucket/blobs", null, null)
-        k8sService.getJobStatus(info.id) >> K8sService.JobStatus.Running
+        k8sService.getJobStatus(info.jobName) >> K8sService.JobStatus.Running
 
         when:
         def result = strategy.status(info)
