@@ -117,7 +117,7 @@ class TransferManager  {
     protected void handle0(BlobCacheInfo info) {
         final duration = Duration.between(info.creationTime, Instant.now())
         final transfer = transferStrategy.status(info)
-        log.trace "Blob cache transfer name=${info.objectUri}; state=${transfer}; object=${info.objectUri}"
+        log.trace "Blob cache transfer name=${info.jobName}; state=${transfer}; object=${info.objectUri}"
         final done =
                 transfer.completed() ||
                 // considered failed when remain in unknown status too long         
