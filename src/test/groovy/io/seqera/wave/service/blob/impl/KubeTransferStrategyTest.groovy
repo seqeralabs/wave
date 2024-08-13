@@ -66,7 +66,7 @@ class KubeTransferStrategyTest extends Specification {
         strategy.transfer(info, command)
 
         then:
-        1 * k8sService.transferJob(info.id, blobConfig.s5Image, command, blobConfig)
+        1 * k8sService.transferJob(info.jobName, blobConfig.s5Image, command, blobConfig)
     }
 
     def 'status should return correct status when job is not completed'() {

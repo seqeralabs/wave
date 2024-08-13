@@ -64,13 +64,13 @@ class KubeTransferStrategy implements TransferStrategy {
     @Override
     void transfer(BlobCacheInfo info, List<String> command) {
         // run the transfer job
-        k8sService.transferJob(info.id, blobConfig.s5Image, command, blobConfig)
+        k8sService.transferJob(info.jobName, blobConfig.s5Image, command, blobConfig)
     }
 
 
     @Override
     void cleanup(BlobCacheInfo blob) {
-        cleanupJob(blob.id, blob.exitStatus)
+        cleanupJob(blob.jobName, blob.exitStatus)
     }
 
     protected void cleanupJob(String id, Integer exitCode) {
@@ -81,12 +81,12 @@ class KubeTransferStrategy implements TransferStrategy {
 
     @Override
     Transfer status(BlobCacheInfo info) {
-        final status = k8sService.getJobStatus(info.id)
+        final status = k8sService.getJobStatus(info.jobName)
         if( !status || !status.completed() ) {
             return new Transfer(mapToStatus(status))
         }
 
-        final job = k8sService.getJob(info.id)
+        final job = k8sService.getJob(info.jobName)
         final timeout = 1_000
         final podList = k8sService.waitJob(job, timeout)
         final size = podList?.items?.size() ?: 0

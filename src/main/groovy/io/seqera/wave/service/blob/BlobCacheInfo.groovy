@@ -112,7 +112,7 @@ class BlobCacheInfo {
         final type = headerString0(response, 'Content-Type')
         final cache = headerString0(response, 'Cache-Control')
         final creationTime = Instant.now()
-        new BlobCacheInfo(generateId(locationUri, creationTime), locationUri, objectUri, headers0, length, type, cache, creationTime, null, null, null)
+        new BlobCacheInfo(generateId(objectUri), locationUri, objectUri, headers0, length, type, cache, creationTime, null, null, null)
     }
 
     static String headerString0(Map<String,List<String>> headers, String name) {
@@ -200,7 +200,15 @@ class BlobCacheInfo {
         }
     }
 
-    static String generateId(String locationUri, Instant creationTime) {
+    static String generateId(String objectUri) {
+        return Hashing
+                .sipHash24()
+                .newHasher()
+                .putUnencodedChars(objectUri)
+                .hash()
+    }
+
+    String getJobName() {
         return 'transfer-' + Hashing
                 .sipHash24()
                 .newHasher()
