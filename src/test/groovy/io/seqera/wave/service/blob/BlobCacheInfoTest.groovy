@@ -18,8 +18,10 @@
 
 package io.seqera.wave.service.blob
 
+import spock.lang.Shared
 import spock.lang.Specification
 
+import java.time.Duration
 import java.time.Instant
 
 /**
@@ -207,5 +209,31 @@ class BlobCacheInfoTest extends Specification {
         result2.contentType == 'text'
         result2.contentLength == 100L
         result2.cacheControl == '12345'
+    }
+
+    @Shared
+    Instant now = Instant.now()
+
+    def 'should validate duration' () {
+        given:
+        def info = new BlobCacheInfo(
+                null,
+                null,
+                null,
+                null,
+                null,
+                CREATE,
+                COMPLETE )
+
+        expect:
+        info.duration() == EXPECTED
+
+        where:
+        CREATE      | COMPLETE              | EXPECTED
+        null        | null                  | null
+        now         | null                  | null
+        null        | now                   | null
+        now         | now.plusSeconds(10)   | Duration.ofSeconds(10)
+        now         | now.plusSeconds(60)   | Duration.ofSeconds(60)
     }
 }
