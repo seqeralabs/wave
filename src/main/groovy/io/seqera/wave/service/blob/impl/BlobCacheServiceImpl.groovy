@@ -90,7 +90,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
     BlobCacheInfo retrieveBlobCache(RoutePath route, Map<String,List<String>> requestHeaders, Map<String,List<String>> responseHeaders) {
         final locationUri = blobDownloadUri(route)
         final objectUri = blobStorePath(route)
-        log.trace "Container blob download uri: $locationUri"
+        log.trace "Container blob download uri: $locationUri; target object: $objectUri"
 
         final info = BlobCacheInfo.create(locationUri, objectUri, requestHeaders, responseHeaders)
         // both S3 and R2 are strongly consistent
@@ -184,7 +184,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
             // the transfer command to be executed
             final cli = transferCommand(route, info)
             transferStrategy.transfer(info, cli)
-            // signal the transfer started
+            // signal the transfer to be started
             transferQueue.offer(info.id())
         }
         catch (Throwable t) {
