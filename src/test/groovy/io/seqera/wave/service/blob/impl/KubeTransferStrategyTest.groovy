@@ -120,7 +120,7 @@ class KubeTransferStrategyTest extends Specification {
     def 'status should handle null job status'() {
         given:
         def info = BlobCacheInfo.create("https://test.com/blobs", "https://test.com/bucket/blobs", null, null)
-        k8sService.getJobStatus(info.objectUri) >> null
+        k8sService.getJobStatus(info.id()) >> null
 
         when:
         def result = strategy.status(info)

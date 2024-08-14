@@ -37,6 +37,7 @@ class BlobCacheInfoTest extends Specification {
         blob.locationUri == 'http://foo.com'
         blob.objectUri == 's3://foo/com'
         blob.headers == [:]
+        blob.id() == 's3://foo/com'
 
         expect:
         BlobCacheInfo.create('http://foo.com', 's3://foo/com', [Foo:['alpha'], Bar:['delta', 'gamma', 'omega']], [:])
@@ -103,6 +104,8 @@ class BlobCacheInfoTest extends Specification {
         result.contentType == 'text'
         result.cacheControl == '12345'
         and:
+        result.id() == 's3://foo/bar'
+        and:
         result.done()
         result.succeeded()
 
@@ -118,6 +121,8 @@ class BlobCacheInfoTest extends Specification {
         result.contentLength == 100L
         result.contentType == 'text'
         result.cacheControl == '12345'
+        and:
+        result.id() == 's3://foo/bar'
         and:
         result.done()
         !result.succeeded()
@@ -145,6 +150,8 @@ class BlobCacheInfoTest extends Specification {
         result.contentType == 'text'
         result.cacheControl == '12345'
         and:
+        result.id() == 's3://foo/bar'
+        and:
         result.done()
         !result.succeeded()
     }
@@ -171,6 +178,8 @@ class BlobCacheInfoTest extends Specification {
         result.contentType == 'text'
         result.contentLength == 100L
         and:
+        result.id() == 's3://foo/bar'
+        and:
         result.done()
         result.succeeded()
     }
@@ -186,6 +195,8 @@ class BlobCacheInfoTest extends Specification {
         result.completionTime == Instant.ofEpochMilli(0)
         result.exitStatus == null
         result.logs == 'Foo bar'
+        and:
+        result.id() == null
         and:
         !result.done()
         !result.succeeded()
@@ -209,12 +220,16 @@ class BlobCacheInfoTest extends Specification {
         result1.contentType == 'text'
         result1.contentLength == 100L
         result1.cacheControl == '12345'
+        result1.id() == 's3://foo/bar'
+        and:
         
         when:
         def result2 = result1.withLocation('http://bar.com')
         then:
         result2.locationUri == 'http://bar.com'
         result2.objectUri == 's3://foo/bar'
+        and:
+        result2.id() == 's3://foo/bar'
         and:
         result2.headers == [Foo:'something']
         result2.contentType == 'text'
@@ -240,6 +255,8 @@ class BlobCacheInfoTest extends Specification {
 
         expect:
         info.duration() == EXPECTED
+        and:
+        info.id() == null
 
         where:
         CREATE      | COMPLETE              | EXPECTED

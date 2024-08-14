@@ -132,7 +132,7 @@ class TransferManager  {
             final result = transfer.succeeded()
                     ? info.completed(transfer.exitCode, transfer.stdout)
                     : info.failed(transfer.stdout)
-            blobStore.storeBlob(info.objectUri, result, ttl)
+            blobStore.storeBlob(info.id(), result, ttl)
             log.debug "== Blob cache completed for object '${info.objectUri}'; id=${info.objectUri}; status=${result.exitStatus}; duration=${result.duration()}"
             // finally cleanup the job
             transferStrategy.cleanup(result)
@@ -145,12 +145,12 @@ class TransferManager  {
         if( duration.toMillis()>max ) {
             final result = info.failed("Blob cache transfer timed out - id: ${info.objectUri}; object: ${info.objectUri}")
             log.warn "== Blob cache completed for object '${info.objectUri}'; id=${info.objectUri}; duration=${result.duration()}"
-            blobStore.storeBlob(info.objectUri, result, blobConfig.failureDuration)
+            blobStore.storeBlob(info.id(), result, blobConfig.failureDuration)
         }
         else {
             log.trace "== Blob cache pending for completion $info"
             // re-schedule for a new check
-            queue.offer(info.objectUri)
+            queue.offer(info.id())
         }
     }
 
