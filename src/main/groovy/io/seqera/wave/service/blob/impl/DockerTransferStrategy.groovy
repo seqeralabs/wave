@@ -50,7 +50,8 @@ class DockerTransferStrategy implements TransferStrategy {
     @Override
     void transfer(BlobCacheInfo info, List<String> command) {
         // create a unique name for the container
-        createProcess(command, info.jobName, blobConfig.transferTimeout.toSeconds()).start()
+        createProcess(command, info.jobName, blobConfig.transferTimeout.toSeconds())
+                .start()
     }
 
     protected ProcessBuilder createProcess(List<String> command, String name, long timeoutSecs) {
@@ -81,7 +82,8 @@ class DockerTransferStrategy implements TransferStrategy {
     @Override
     Transfer status(BlobCacheInfo blob) {
         final state = getDockerContainerState(blob.jobName)
-        log.trace "Docker transfer name=$blob.jobName; state=$state"
+        log.trace "Docker transfer status name=$blob.jobName; state=$state"
+        
         if (state.status == 'running') {
             return Transfer.running()
         }
