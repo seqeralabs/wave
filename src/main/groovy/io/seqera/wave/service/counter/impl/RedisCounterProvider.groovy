@@ -51,7 +51,7 @@ class RedisCounterProvider implements CounterProvider {
     long inc(String key, String field, long value) {
         try(Jedis conn=pool.getResource() ) {
             long count =  conn.hincrBy(key, field, value)
-            conn.expire(key, keyExpiry.toSeconds())
+            conn.hexpire(key, keyExpiry.toSeconds(), field)
             return count
         }
     }
@@ -78,16 +78,4 @@ class RedisCounterProvider implements CounterProvider {
         }
     }
 
-    @Override
-    void deleteAllMatchingEntries(String key, String pattern) {
-        try(Jedis conn=pool.getResource() ) {
-            final scanResult = conn.hscan(key, "0", new ScanParams().match(pattern).count(hscanCount))
-            if( !scanResult )
-                return
-            for(String entry : scanResult.result) {
-                final parts = entry.tokenize('=')
-                conn.hdel(key, parts[0])
-            }
-        }
-    }
 }

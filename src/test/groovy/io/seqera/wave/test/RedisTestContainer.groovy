@@ -45,7 +45,7 @@ trait RedisTestContainer {
 
     def setupSpec() {
         log.debug "Starting Redis test container"
-        redisContainer = new GenericContainer(DockerImageName.parse("redis:7.0.4-alpine"))
+        redisContainer = new GenericContainer(DockerImageName.parse("redis:7.4.0-alpine"))
                 .withExposedPorts(6379)
                 .waitingFor(Wait.forLogMessage(".*Ready to accept connections.*\\n", 1))
         redisContainer.start()

@@ -62,15 +62,4 @@ class LocalCounterProvider implements CounterProvider {
         return result
     }
 
-    @Override
-    void deleteAllMatchingEntries(String key, String pattern) {
-        Pattern compiledPattern = Pattern.compile(pattern.replace('*', '.*'))
-        Map keyStore = store.get(key)
-        if (keyStore){
-            def matchingPairs = keyStore.findAll {entry -> compiledPattern.matcher(entry.key).matches()}
-            matchingPairs.each { k, v ->
-            keyStore.remove(k)
-            }
-        }
-    }
 }

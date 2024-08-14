@@ -36,11 +36,4 @@ interface CounterProvider {
      */
     Map<String, Long> getAllMatchingEntries(String key, String pattern)
 
-    /**
-     *
-     * @param key
-     * @param pattern
-     * @return void
-     */
-    void deleteAllMatchingEntries(String key, String pattern)
 }

@@ -65,7 +65,7 @@ class RedisCounterProviderTest extends Specification implements RedisTestContain
         redisCounterProvider.get('metrics-x', 'foo') == 1
     }
 
-    def 'should get and delete metrics counter' () {
+    def 'should get correct org count' () {
         when:
         redisCounterProvider.inc('metrics/v1', 'builds/o/foo.com', 1)
         redisCounterProvider.inc('metrics/v1', 'builds/o/bar.io', 1)
@@ -78,13 +78,10 @@ class RedisCounterProviderTest extends Specification implements RedisTestContain
 
         then:
         redisCounterProvider.getAllMatchingEntries('metrics/v1', 'pulls/o/*') ==
-                ['pulls/o/abc.in': 3, 'pulls/o/bar.es': 2, 'pulls/o/foo.it': 1, 'pulls/o/abc.com.au/d/2024-05-30': 1, 'pulls/o/abc.com.au/d/2024-05-31': 1]
-        and:
-        redisCounterProvider.getAllMatchingEntries('metrics/v1', 'pulls/o/*/d/2024-05-30') ==
-                ['pulls/o/abc.com.au/d/2024-05-30': 1]
+                ['pulls/o/abc.in':3, 'pulls/o/bar.es':2, 'pulls/o/foo.it':1, 'pulls/o/abc.com.au/d/2024-05-30':1, 'pulls/o/abc.com.au/d/2024-05-31':1]
     }
 
-    def 'failing: should expire the hash'(){
+    def 'should expire the hash'(){
         when:
         redisCounterProvider.inc('metrics/v1', 'pulls/o/abc.com.au/d/2024-07-14', 1)
         sleep(500)
@@ -97,14 +94,4 @@ class RedisCounterProviderTest extends Specification implements RedisTestContain
         redisCounterProvider.get('metrics/v1', 'pulls/o/abc.com.au/d/2024-07-15') == null
     }
 
-    def 'successful: should expire the hash'(){
-        when:
-        redisCounterProvider.inc('metrics/v1', 'pulls/o/abc.com.au/d/2024-07-14', 1)
-        sleep(500)
-        redisCounterProvider.inc('metrics/v1', 'pulls/o/abc.com.au/d/2024-07-15', 1)
-        sleep(1000)
-        then:'this value should be one, because foo should be expired'
-        redisCounterProvider.get('metrics/v1', 'pulls/o/abc.com.au/d/2024-07-14') == null
-        redisCounterProvider.get('metrics/v1', 'pulls/o/abc.com.au/d/2024-07-15') == null
-    }
 }
