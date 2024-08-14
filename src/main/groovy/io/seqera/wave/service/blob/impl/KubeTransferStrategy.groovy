@@ -67,15 +67,10 @@ class KubeTransferStrategy implements TransferStrategy {
         k8sService.transferJob(info.jobName, blobConfig.s5Image, command, blobConfig)
     }
 
-
     @Override
     void cleanup(BlobCacheInfo blob) {
-        cleanupJob(blob.jobName, blob.exitStatus)
-    }
-
-    protected void cleanupJob(String id, Integer exitCode) {
-        if( cleanup.shouldCleanup(exitCode) ) {
-            CompletableFuture.supplyAsync (() -> k8sService.deleteJob(id), executor)
+        if( cleanup.shouldCleanup(blob.exitStatus) ) {
+            CompletableFuture.supplyAsync (() -> k8sService.deleteJob(blob.jobName), executor)
         }
     }
 
