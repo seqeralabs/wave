@@ -36,6 +36,9 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
     @Shared
     ApplicationContext applicationContext
 
+    @Inject
+    private RegistryTokenCacheStore tokenStore
+
     @Shared
     @Value('${wave.registries.docker.io.username}')
     String dockerUsername
@@ -162,6 +165,60 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
         REALM       | IMAGE  | SERVICE   | EXPECTED
         'localhost' | 'test' | 'service' | "localhost?scope=repository:test:pull&service=service"
         'localhost' | 'test' | null      | "localhost?scope=repository:test:pull"
+    }
+
+    void "getToken should return token from store cache if present"() {
+        given:
+        RegistryAuthServiceImpl impl = loginService as RegistryAuthServiceImpl
+        def key = Mock(RegistryAuthServiceImpl.CacheKey)
+        def expectedToken = "cachedToken"
+        and:
+        tokenStore.put("key-" + key.stableKey(), expectedToken)
+
+        when:
+        def result = impl.getToken(key)
+
+        then:
+        result == expectedToken
+    }
+
+    def 'check stableKey identity' () {
+        given:
+        def a1 = RegistryAuth.parse('Bearer realm="https://quay.io/v2/auth",service="quay.io"')
+        def a2 = RegistryAuth.parse('Bearer realm="https://quay.io/v2/auth",service="quay.io"')
+        def k1 = [username: 'foo', password: 'bar'] as RegistryCredentials
+        def k2 = [username: 'foo', password: 'bar'] as RegistryCredentials
+        def k3 = [username: 'foo', password: 'xyz'] as RegistryCredentials
+        def i1 = "ubuntu:latest"
+        def i2 = "ubuntu:24.04"
+        and:
+        def c1 = new RegistryAuthServiceImpl.CacheKey(i1, a1, k1)
+        def c2 = new RegistryAuthServiceImpl.CacheKey(i1, a1, k2)
+        def c3 = new RegistryAuthServiceImpl.CacheKey(i1, a2, k1)
+        def c4 = new RegistryAuthServiceImpl.CacheKey(i2, a1, k1)
+        def c5 = new RegistryAuthServiceImpl.CacheKey(i1, a1, k3)
+
+        expect:
+        c1.stableKey() == '23476a51c7b6216a'
+        c1.stableKey() == c2.stableKey()
+        c1.stableKey() == c3.stableKey()
+        and:
+        c1.stableKey() != c4.stableKey()
+        c1.stableKey() != c5.stableKey()
+    }
+
+    void 'invalidateAuthorization should remove token from cache'() {
+        given:
+        RegistryAuthServiceImpl impl = loginService as RegistryAuthServiceImpl
+        def key = new RegistryAuthServiceImpl.CacheKey("image", Mock(RegistryAuth), Mock(RegistryCredentials))
+        def stableKey = "key-" + key.stableKey()
+        tokenStore.put(stableKey, "token")
+
+        when:
+        impl.invalidateAuthorization("image", key.auth, key.creds)
+
+        then:
+        !tokenStore.get(stableKey)
     }
 
 }
