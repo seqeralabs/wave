@@ -26,13 +26,13 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
 import io.micronaut.context.ApplicationContext
-import io.seqera.wave.service.data.queue.impl.RedisQueueBroker
+import io.seqera.wave.service.data.queue.impl.RedisMessageQueue
 import io.seqera.wave.service.pairing.socket.PairingOutboundQueue
 import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import io.seqera.wave.test.RedisTestContainer
 /**
- * Test class {@link AbstractMessageQueue} using a {@link RedisQueueBroker}
+ * Test class {@link AbstractMessageQueue} using a {@link RedisMessageQueue}
  *
  * @author Jordi Deu-Pons <jordi@seqera.io>
  */
@@ -52,7 +52,7 @@ class AbstractMessageQueueRedisTest extends Specification implements RedisTestCo
 
     def 'should send and consume a request'() {
         given:
-        def broker = applicationContext.getBean(RedisQueueBroker)
+        def broker = applicationContext.getBean(RedisMessageQueue)
         def queue = new PairingOutboundQueue(broker, Duration.ofMillis(100))
         and:
         def result = new CompletableFuture<PairingMessage>()
@@ -70,10 +70,10 @@ class AbstractMessageQueueRedisTest extends Specification implements RedisTestCo
 
     def 'should send and consume a request across instances'() {
         given:
-        def broker1 = applicationContext.getBean(RedisQueueBroker)
+        def broker1 = applicationContext.getBean(RedisMessageQueue)
         def queue1 = new PairingOutboundQueue(broker1, Duration.ofMillis(100))
         and:
-        def broker2 = applicationContext.getBean(RedisQueueBroker)
+        def broker2 = applicationContext.getBean(RedisMessageQueue)
         def queue2 = new PairingOutboundQueue(broker2, Duration.ofMillis(100))
         and:
         def result = new CompletableFuture<PairingMessage>()

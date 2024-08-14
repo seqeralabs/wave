@@ -675,7 +675,7 @@ class K8sServiceImpl implements K8sService {
     void deleteJob(String name) {
         k8sClient
                 .batchV1Api()
-                .deleteNamespacedJob(name, namespace, null, null, null, null,"Background", null)
+                .deleteNamespacedJob(name, namespace, null, null, null, null,"Foreground", null)
     }
 
 }
