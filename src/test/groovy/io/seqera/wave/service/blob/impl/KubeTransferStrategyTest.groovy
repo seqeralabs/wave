@@ -25,6 +25,9 @@ import java.time.Duration
 import java.time.OffsetDateTime
 import java.util.concurrent.Executors
 
+import io.kubernetes.client.openapi.models.V1ContainerState
+import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
+import io.kubernetes.client.openapi.models.V1ContainerStatus
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
@@ -85,14 +88,11 @@ class KubeTransferStrategyTest extends Specification {
     void 'status should return correct transfer status when pods are created'() {
         given:
         def info = BlobCacheInfo.create("https://test.com/blobs", "https://test.com/bucket/blobs", null, null)
-        def pod = new V1Pod(metadata: [name: "pod-123"], status: new V1PodStatus(phase: "Succeeded"))
-        def podList = new V1PodList(items: [pod])
+        def status = new V1PodStatus(phase: "Succeeded", containerStatuses: [new V1ContainerStatus( state: new V1ContainerState(terminated: new V1ContainerStateTerminated(exitCode: 0)))])
+        def pod = new V1Pod(metadata: [name: "pod-123"], status: status)
         k8sService.getJobStatus(_) >> K8sService.JobStatus.Succeeded
-        k8sService.getJob(_) >> new V1Job()
-        k8sService.waitJob(_, _) >> podList
-        k8sService.getPod("pod-123") >> pod
-        k8sService.waitPodCompletion(_, _) >> 0
         k8sService.logsPod(_) >> "transfer successful"
+        k8sService.getLatestPodForJob(info.jobName) >> pod
 
         when:
         def result = strategy.status(info)
@@ -106,9 +106,10 @@ class KubeTransferStrategyTest extends Specification {
     def 'status should return failed transfer when no pods are created'() {
         given:
         def info = BlobCacheInfo.create("https://test.com/blobs", "https://test.com/bucket/blobs", null, null)
-        k8sService.getJobStatus(_) >> K8sService.JobStatus.Succeeded
-        k8sService.getJob(_) >> new V1Job()
-        k8sService.waitJob(_, _) >> new V1PodList(items: [])
+        def status = new V1PodStatus(phase: "Failed")
+        def pod = new V1Pod(metadata: [name: "pod-123"], status: status)
+        k8sService.getJobStatus(info.jobName) >> K8sService.JobStatus.Failed
+        k8sService.getLatestPodForJob(info.jobName) >> pod
 
         when:
         def result = strategy.status(info)

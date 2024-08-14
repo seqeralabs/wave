@@ -47,7 +47,7 @@ class TransferManagerTest extends Specification {
 
         then:
         1 * blobStore.get(blob.id()) >> blob
-        thrown(RuntimeException) // this is thrown from handle0 method
+        1 * transferStrategy.status(blob) >> Transfer.completed(0, 'logs')
     }
 
     def "handle should log error for unknown transferId"() {
