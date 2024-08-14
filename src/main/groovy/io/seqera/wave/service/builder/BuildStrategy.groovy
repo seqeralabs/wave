@@ -106,11 +106,15 @@ abstract class BuildStrategy {
     }
 
     protected List<String> singularityLaunchCmd(BuildRequest req) {
+        def symlinkSingularity = ""
+        if( req.configJson ){
+            symlinkSingularity = "ln -s $FUSION_PREFIX/$buildConfig.workspaceBucket/$req.s3Key/.singularity /root/.singularity &&"
+        }
         final result = new ArrayList(10)
         result
             << 'sh'
             << '-c'
-            << "ln -s $FUSION_PREFIX/$buildConfig.workspaceBucket/$req.s3Key/.singularity /root/.singularity && singularity build image.sif $FUSION_PREFIX/$buildConfig.workspaceBucket/$req.s3Key/Containerfile && singularity push image.sif ${req.targetImage}".toString()
+            << "$symlinkSingularity singularity build image.sif $FUSION_PREFIX/$buildConfig.workspaceBucket/$req.s3Key/Containerfile && singularity push image.sif ${req.targetImage}".toString()
         return result
     }
 
