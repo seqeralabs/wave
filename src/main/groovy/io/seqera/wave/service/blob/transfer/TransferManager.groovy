@@ -92,23 +92,29 @@ class TransferManager  {
         }
     }
 
-    protected void handle(String transferId) {
+    /**
+     * Handles the blob transfer operation i.e. check and update the current upload status
+     *
+     * @param blobId the blob cache id i.e. {@link BlobCacheInfo#id()}
+     */
+    protected void handle(String blobId) {
         try {
-            final blob = blobStore.get(transferId)
+            final blob = blobStore.get(blobId)
             if( !blob ) {
-                log.error "Unknown blob transfer with id: $transferId"
+                log.error "Unknown blob transfer with id: $blobId"
                 return
             }
             try {
                 handle0(blob)
             }
             catch (Throwable t) {
-                throw new RuntimeException("Unable to handle blob transfer: $blob",t)
+                log.error("Unexpected error caching blob '${blob.objectUri}' - job name '${blob.jobName}", t)
+                blobStore.put(blobId, blob.failed("Unexpected error caching blob '${blob.locationUri}' - job name '${blob.jobName}'"))
             }
         }
         catch (InterruptedException e) {
             // re-queue the transfer to not lose it
-            queue.offer(transferId)
+            queue.offer(blobId)
             // re-throw the exception
             throw e
         }

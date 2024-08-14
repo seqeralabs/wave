@@ -75,6 +75,7 @@ class K8sHelper {
         return Map.of(parts[0], parts[1])
     }
 
+    @Deprecated
     static V1Pod findLatestPod(V1PodList allPods) {
         // Find the latest created pod among the pods associated with the job
         def latest = allPods.getItems().get(0)

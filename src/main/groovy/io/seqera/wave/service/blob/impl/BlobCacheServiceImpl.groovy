@@ -185,6 +185,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
             final cli = transferCommand(route, info)
             transferStrategy.transfer(info, cli)
             // signal the transfer to be started
+            // note: both `transferQueue` and `blobStore` use the same object `id`
             transferQueue.offer(info.id())
         }
         catch (Throwable t) {

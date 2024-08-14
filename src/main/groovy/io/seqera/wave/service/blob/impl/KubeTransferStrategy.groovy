@@ -33,7 +33,6 @@ import io.seqera.wave.service.blob.transfer.TransferStrategy
 import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.k8s.K8sService
 import io.seqera.wave.service.k8s.K8sService.JobStatus
-import io.seqera.wave.util.K8sHelper
 import jakarta.inject.Inject
 import jakarta.inject.Named
 /**
@@ -81,19 +80,19 @@ class KubeTransferStrategy implements TransferStrategy {
             return new Transfer(mapToStatus(status))
         }
 
-        final job = k8sService.getJob(info.jobName)
-        final timeout = 1_000
-        final podList = k8sService.waitJob(job, timeout)
-        final size = podList?.items?.size() ?: 0
-        // verify the upload pod has been created
-        if( size < 1 ) {
-            log.error "== Blob cache transfer failed - unable to schedule upload job: $info"
-            return Transfer.failed(null,null)
-        }
         // Find the latest created pod among the pods associated with the job
-        final latestPod = K8sHelper.findLatestPod(podList)
-        final pod = k8sService.getPod(latestPod.metadata.name)
-        final exitCode = k8sService.waitPodCompletion(pod, timeout)
+        final pod = k8sService.getLatestPodForJob(info.jobName)
+        if( !pod )
+            throw new IllegalStateException("Missing carried pod for job: ${info.jobName}")
+
+        // determine exit code and logs
+        final exitCode = pod
+                .status
+                ?.containerStatuses
+                ?.first()
+                ?.state
+                ?.terminated
+                ?.exitCode
         final stdout = k8sService.logsPod(pod)
         return new Transfer(mapToStatus(status), exitCode, stdout)
     }
