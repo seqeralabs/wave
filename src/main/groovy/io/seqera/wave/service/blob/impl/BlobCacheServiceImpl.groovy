@@ -94,7 +94,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
 
         final info = BlobCacheInfo.create(locationUri, objectUri, requestHeaders, responseHeaders)
         // both S3 and R2 are strongly consistent
-        // therefore it's safe to return it immediately to return directly
+        // therefore it's safe to check and return directly
         // if it exists (no risk of returning a partial upload)
         // https://developers.cloudflare.com/r2/reference/consistency/
         if( blobExists(info.locationUri) && !debug ) {

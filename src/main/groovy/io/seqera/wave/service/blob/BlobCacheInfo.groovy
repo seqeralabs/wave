@@ -148,7 +148,7 @@ class BlobCacheInfo {
                 creationTime,
                 creationTime,
                 0,
-                logs
+                null
         )
     }
 
@@ -210,7 +210,7 @@ class BlobCacheInfo {
         }
     }
 
-    static String generateJobName(String locationUri, Instant creationTime) {
+    static private String generateJobName(String locationUri, Instant creationTime) {
         return 'transfer-' + Hashing
                 .sipHash24()
                 .newHasher()
