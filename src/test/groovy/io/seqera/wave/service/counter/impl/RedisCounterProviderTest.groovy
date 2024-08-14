@@ -83,6 +83,7 @@ class RedisCounterProviderTest extends Specification implements RedisTestContain
 
     def 'should expire the hash'(){
         when:
+        redisCounterProvider.inc('metrics/v1', 'pulls/o/abc.com.au', 1)
         redisCounterProvider.inc('metrics/v1', 'pulls/o/abc.com.au/d/2024-07-14', 1)
         sleep(500)
         redisCounterProvider.inc('metrics/v1', 'pulls/o/abc.com.au/d/2024-07-15', 1)
@@ -92,6 +93,8 @@ class RedisCounterProviderTest extends Specification implements RedisTestContain
         sleep(500)
         and:
         redisCounterProvider.get('metrics/v1', 'pulls/o/abc.com.au/d/2024-07-15') == null
+        and: 'this value should be one, because org metric should not expire'
+        redisCounterProvider.get('metrics/v1', 'pulls/o/abc.com.au') == 1
     }
 
 }

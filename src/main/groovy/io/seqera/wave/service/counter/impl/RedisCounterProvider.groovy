@@ -47,11 +47,17 @@ class RedisCounterProvider implements CounterProvider {
     @Value('${redis.key.expiry:1s}')
     private Duration keyExpiry
 
+    final private static String DATE_PATTERN = /\b\d{4}-\d{2}-\d{2}\b/
+
+    static boolean isMetricPerDate(String field) {
+        return field =~ DATE_PATTERN
+    }
     @Override
     long inc(String key, String field, long value) {
         try(Jedis conn=pool.getResource() ) {
             long count =  conn.hincrBy(key, field, value)
-            conn.hexpire(key, keyExpiry.toSeconds(), field)
+            if(isMetricPerDate(field))
+                conn.hexpire(key, keyExpiry.toSeconds(), field)
             return count
         }
     }
