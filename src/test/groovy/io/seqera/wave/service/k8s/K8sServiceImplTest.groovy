@@ -22,18 +22,23 @@ import spock.lang.Specification
 
 import java.nio.file.Path
 import java.time.Duration
+import java.time.OffsetDateTime
 
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.openapi.ApiClient
 import io.kubernetes.client.openapi.apis.CoreV1Api
 import io.kubernetes.client.openapi.models.V1EnvVar
+import io.kubernetes.client.openapi.models.V1ObjectMeta
 import io.kubernetes.client.openapi.models.V1Pod
+import io.kubernetes.client.openapi.models.V1PodList
 import io.kubernetes.client.openapi.models.V1PodStatus
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.SpackConfig
+import io.seqera.wave.util.K8sHelper
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -632,6 +637,57 @@ class K8sServiceImplTest extends Specification {
 
         then:
         0 * api.deleteNamespacedPod('test-pod', null, null, null, null, null, null, null)
+    }
+
+    def "getLatestPodForJob should return the latest pod when multiple pods are present"() {
+        given:
+        def jobName = "test-job"
+        def pod1 = new V1Pod().metadata(new V1ObjectMeta().creationTimestamp(OffsetDateTime.now().minusDays(1)))
+        def pod2 = new V1Pod().metadata(new V1ObjectMeta().creationTimestamp(OffsetDateTime.now()))
+        def allPods = new V1PodList().items(Arrays.asList(pod1, pod2))
+        def api = Mock(CoreV1Api)
+        api.listNamespacedPod(_, _, _, _, _, "job-name=${jobName}", _, _, _, _, _, _) >> allPods
+        def k8sClient = new K8sClient() {
+            @Override
+            ApiClient apiClient() {
+                return null
+            }
+            CoreV1Api coreV1Api() {
+                return api
+            }
+        }
+        and:
+        def k8sService = new K8sServiceImpl(k8sClient: k8sClient)
+
+        when:
+        def latestPod = k8sService.getLatestPodForJob(jobName)
+
+        then:
+        latestPod == pod2
+    }
+
+    def "getLatestPodForJob should return null when no pod is present"() {
+        given:
+        def jobName = "test-job"
+        def api = Mock(CoreV1Api)
+        api.listNamespacedPod(_, _, _, _, _, "job-name=${jobName}", _, _, _, _, _, _) >> null
+        def k8sClient = new K8sClient() {
+            @Override
+            ApiClient apiClient() {
+                return null
+            }
+            CoreV1Api coreV1Api() {
+                return api
+            }
+        }
+        and:
+        def k8sService = new K8sServiceImpl(k8sClient: k8sClient)
+
+        when:
+        def latestPod = k8sService.getLatestPodForJob(jobName)
+
+        then:
+        latestPod == null
     }
 
 }
