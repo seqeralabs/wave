@@ -16,49 +16,47 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.pairing.socket
+package io.seqera.wave.auth
 
 import java.time.Duration
-import javax.annotation.PreDestroy
 
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
-import io.seqera.wave.service.data.queue.AbstractMessageQueue
-import io.seqera.wave.service.data.queue.MessageQueue
-import io.seqera.wave.service.pairing.socket.msg.PairingMessage
+import io.seqera.wave.encoder.MoshiEncodeStrategy
+import io.seqera.wave.service.cache.AbstractCacheStore
+import io.seqera.wave.service.cache.impl.CacheProvider
 import jakarta.inject.Singleton
+
 /**
- * Implement a distributed queue for Wave pairing messages
+ * Implement a cache store for {@link RegistryAuth} object that
+ * can be distributed across wave replicas
  *
- * @author Jordi Deu-Pons <jordi@seqera.io>
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @Singleton
 @CompileStatic
-class PairingOutboundQueue extends AbstractMessageQueue<PairingMessage> {
+class RegistryAuthCacheStore extends AbstractCacheStore<RegistryAuth> {
 
-    final private Duration pollInterval
+    private Duration duration
 
-    PairingOutboundQueue(
-            MessageQueue<String> broker,
-            @Value('${wave.pairing.channel.awaitTimeout:100ms}') Duration pollInterval
-    ) {
-        super(broker)
-        this.pollInterval = pollInterval
+    RegistryAuthCacheStore(
+            CacheProvider<String, String> provider,
+            @Value('${wave.registry-auth.cache.duration:`3h`}') Duration duration)
+    {
+        super(provider, new MoshiEncodeStrategy<RegistryAuth>() {})
+        this.duration = duration
+        log.info "Creating Registry Auth cache store ― duration=$duration"
     }
 
     @Override
-    protected String prefix() {
-        return 'pairing-outbound-queue/v1:'
+    protected String getPrefix() {
+        return 'registry-auth/v1:'
     }
 
     @Override
-    protected String name() { "outbound-queue" }
-
-    @Override
-    protected Duration pollInterval() { return pollInterval }
-
-    @PreDestroy
-    void close() {
-        super.close()
+    protected Duration getDuration() {
+        return duration
     }
 }

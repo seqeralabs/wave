@@ -18,40 +18,50 @@
 
 package io.seqera.wave.service.data.queue.impl
 
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.LinkedBlockingQueue
+import java.time.Duration
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.service.data.queue.MessageBroker
+import io.seqera.wave.service.data.queue.MessageQueue
+import jakarta.inject.Inject
 import jakarta.inject.Singleton
+import redis.clients.jedis.Jedis
+import redis.clients.jedis.JedisPool
 /**
- * Implement a message broker based on a simple blocking queue.
- * This is only meant for local/development purposes
+ * Implements a message broker using Redis list
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
-@Requires(notEnv = 'redis')
+@Requires(env = 'redis')
 @Singleton
 @CompileStatic
-class LocalQueueBroker implements MessageBroker<String> {
+class RedisMessageQueue implements MessageQueue<String>  {
 
-    private ConcurrentHashMap<String, LinkedBlockingQueue<String>> store = new ConcurrentHashMap<>()
+    @Inject
+    private JedisPool pool
 
     @Override
     void offer(String target, String message) {
-        store
-            .computeIfAbsent(target, (it)->new LinkedBlockingQueue<String>())
-            .offer(message)
+        try (Jedis conn = pool.getResource()) {
+            conn.lpush(target, message)
+        }
     }
 
     @Override
-    String take(String target) {
-        store
-            .computeIfAbsent(target, (it)->new LinkedBlockingQueue<String>())
-            .poll()
+    String poll(String target) {
+        try (Jedis conn = pool.getResource()) {
+            return conn.rpop(target)
+        }
     }
 
+
+    @Override
+    String poll(String target, Duration duration) {
+        try (Jedis conn = pool.getResource()) {
+            double d = duration.toMillis() / 1000.0
+            return conn.brpop(d, target)
+        }
+    }
 }

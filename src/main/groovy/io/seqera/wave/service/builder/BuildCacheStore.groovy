@@ -89,9 +89,10 @@ class BuildCacheStore extends AbstractCacheStore<BuildResult> implements BuildSt
 
     @Override
     boolean storeIfAbsent(String imageName, BuildResult build) {
-        // store up 1.5 time the build timeout to prevent a missed cache
+        // store up 2.5 time the build timeout to prevent a missed cache
         // update on job termination remains too long in the store
-        final ttl = Duration.ofMillis(Math.round(getTimeout().toMillis() * 1.5f))
+        // note: this should be longer than the max await time used in the Waiter#awaitCompletion method
+        final ttl = Duration.ofMillis(Math.round(getTimeout().toMillis() * 2.5f))
         return putIfAbsent(imageName, build, ttl)
     }
 
@@ -115,8 +116,10 @@ class BuildCacheStore extends AbstractCacheStore<BuildResult> implements BuildSt
 
         static BuildResult awaitCompletion(BuildStore store, String imageName, BuildResult current) {
             final beg = System.currentTimeMillis()
-            // add 10% delay gap to prevent race condition with timeout expiration
-            final max = (store.timeout.toMillis() * 1.10) as long
+            // await nearly double of the build timeout time because the build job
+            // can require additional time, other than the build time, to be scheduled
+            // note: see also #storeIfAbsent method
+            final max = (store.timeout.toMillis() * 2.10) as long
             while( true ) {
                 if( current==null ) {
                     return BuildResult.unknown()

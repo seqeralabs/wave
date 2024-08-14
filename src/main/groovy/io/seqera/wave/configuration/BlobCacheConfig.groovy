@@ -44,10 +44,10 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.failure.duration:4s}')
     Duration failureDuration
 
-    @Value('${wave.blobCache.timeout:5m}')
+    @Value('${wave.blobCache.timeout:10m}')
     Duration transferTimeout
 
-    @Value('${wave.blobCache.status.duration:5d}')
+    @Value('${wave.blobCache.status.duration:1h}')
     Duration statusDuration
 
     @Value('${wave.blobCache.storage.bucket}')
@@ -86,6 +86,12 @@ class BlobCacheConfig {
     @Nullable
     @Value('${wave.blobCache.url-signature-duration:30m}')
     Duration urlSignatureDuration
+
+    @Value('${wave.blobCache.retryAttempts:3}')
+    Integer retryAttempts
+
+    @Value('${wave.blobCache.deleteAfterFinished:7d}')
+    Duration deleteAfterFinished
 
     @Value('${wave.blobCache.k8s.pod.delete.timeout:20s}')
     Duration podDeleteTimeout
