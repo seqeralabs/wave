@@ -199,7 +199,7 @@ class K8sServiceImpl implements K8sService {
      */
     @Override
     JobStatus getJobStatus(String name) {
-        def job = k8sClient
+        final job = k8sClient
                 .batchV1Api()
                 .readNamespacedJob(name, namespace, null)
         if( !job )
@@ -678,4 +678,23 @@ class K8sServiceImpl implements K8sService {
                 .deleteNamespacedJob(name, namespace, null, null, null, null,"Foreground", null)
     }
 
+    @Override
+    V1Pod getLatestPodForJob(String jobName) {
+        // list all pods for the given job
+        final allPods = k8sClient
+                .coreV1Api()
+                .listNamespacedPod(namespace, null, null, null, null, "job-name=${jobName}", null, null, null, null, null, null)
+
+        if( !allPods )
+            return null
+
+        // Find the latest created pod among the pods associated with the job
+        def latest = allPods.getItems().get(0)
+        for (def pod : allPods.items) {
+            if (pod.metadata?.creationTimestamp?.isAfter(latest.metadata.creationTimestamp)) {
+                latest = pod
+            }
+        }
+        return latest
+    }
 }

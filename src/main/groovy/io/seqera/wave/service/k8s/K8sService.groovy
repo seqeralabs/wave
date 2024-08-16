@@ -33,13 +33,7 @@ import io.seqera.wave.configuration.SpackConfig
  */
 interface K8sService {
 
-    enum JobStatus { Pending, Running, Succeeded, Failed }
-
-    V1Job createJob(String name, String containerImage, List<String> args)
-
-    V1Job getJob(String name)
-
-    JobStatus getJobStatus(String name)
+    enum JobStatus { Pending, Running, Succeeded, Failed; boolean completed() { return this == Succeeded || this == Failed } }
 
     V1Pod getPod(String name)
 
@@ -53,12 +47,20 @@ interface K8sService {
 
     Integer waitPodCompletion(V1Pod pod, long timeout)
 
+    void deletePodWhenReachStatus(String podName, String statusName, long timeout)
+
+    V1Job createJob(String name, String containerImage, List<String> args)
+
+    V1Job getJob(String name)
+
+    JobStatus getJobStatus(String name)
+
     void deleteJob(String name)
   
     V1Job transferJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig)
 
     V1PodList waitJob(V1Job job, Long timeout)
 
-    void deletePodWhenReachStatus(String podName, String statusName, long timeout)
+    V1Pod getLatestPodForJob(String jobName)
 
 }

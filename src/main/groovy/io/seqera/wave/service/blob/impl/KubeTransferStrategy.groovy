@@ -21,18 +21,18 @@ package io.seqera.wave.service.blob.impl
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
-import com.google.common.hash.Hashing
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Replaces
 import io.micronaut.context.annotation.Requires
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.service.blob.BlobCacheInfo
-import io.seqera.wave.service.blob.TransferStrategy
+import io.seqera.wave.service.blob.transfer.Transfer
+import io.seqera.wave.service.blob.transfer.Transfer.Status
+import io.seqera.wave.service.blob.transfer.TransferStrategy
 import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.k8s.K8sService
-import io.seqera.wave.util.K8sHelper
+import io.seqera.wave.service.k8s.K8sService.JobStatus
 import jakarta.inject.Inject
 import jakarta.inject.Named
 /**
@@ -44,7 +44,7 @@ import jakarta.inject.Named
 @Slf4j
 @CompileStatic
 @Requires(property = 'wave.build.k8s')
-@Replaces(SimpleTransferStrategy)
+@Requires(property = 'wave.blobCache.enabled', value = 'true')
 class KubeTransferStrategy implements TransferStrategy {
 
     @Inject
@@ -61,63 +61,59 @@ class KubeTransferStrategy implements TransferStrategy {
     private ExecutorService executor
 
     @Override
-    BlobCacheInfo transfer(BlobCacheInfo info, List<String> command) {
-        final jobName = getJobName(info)
+    void transfer(BlobCacheInfo info, List<String> command) {
         // run the transfer job
-        final result = transfer0(info, command, jobName)
-        // delete job
-        cleanupJob(jobName, result.exitStatus)
-        return result
+        k8sService.transferJob(info.jobName, blobConfig.s5Image, command, blobConfig)
     }
 
-    protected BlobCacheInfo transfer0(BlobCacheInfo info, List<String> command, String jobName) {
-        final job = k8sService.transferJob(jobName, blobConfig.s5Image, command, blobConfig)
-        final timeout = Math.round(blobConfig.transferTimeout.toMillis() *1.1f)
-        final podList = k8sService.waitJob(job, timeout)
-        final size = podList?.items?.size() ?: 0
-        // verify the upload pod has been created
-        if( size < 1 ) {
-            log.error "== Blob cache transfer failed - unable to schedule upload job: $info"
-            return info.failed("Unable to scheduler transfer job")
+    @Override
+    void cleanup(BlobCacheInfo blob) {
+        if( cleanup.shouldCleanup(blob.exitStatus) ) {
+            CompletableFuture.supplyAsync (() -> k8sService.deleteJob(blob.jobName), executor)
         }
+    }
+
+    @Override
+    Transfer status(BlobCacheInfo info) {
+        final status = k8sService.getJobStatus(info.jobName)
+        if( !status || !status.completed() ) {
+            return new Transfer(mapToStatus(status))
+        }
+
         // Find the latest created pod among the pods associated with the job
-        final latestPod = K8sHelper.findLatestPod(podList)
+        final pod = k8sService.getLatestPodForJob(info.jobName)
+        if( !pod )
+            throw new IllegalStateException("Missing carried pod for job: ${info.jobName}")
 
-        final pod = k8sService.getPod(latestPod.metadata.name)
-        final exitCode = k8sService.waitPodCompletion(pod, timeout)
+        // determine exit code and logs
+        final exitCode = pod
+                .status
+                ?.containerStatuses
+                ?.first()
+                ?.state
+                ?.terminated
+                ?.exitCode
         final stdout = k8sService.logsPod(pod)
-
-        return exitCode!=null
-                ? info.completed(exitCode, stdout)
-                : info.failed(stdout)
+        return new Transfer(mapToStatus(status), exitCode, stdout)
     }
 
-    protected void cleanupJob(String jobName, Integer exitCode) {
-        if( cleanup.shouldCleanup(exitCode) ) {
-            CompletableFuture.supplyAsync (() -> k8sService.deleteJob(jobName), executor)
+    /**
+     * Map Kubernetes job status to Transfer status
+     * @param jobStatus
+     * @return
+     */
+    static Status mapToStatus(JobStatus jobStatus) {
+        switch (jobStatus) {
+            case JobStatus.Pending:
+                return Status.PENDING
+            case JobStatus.Running:
+                return Status.RUNNING
+            case JobStatus.Succeeded:
+                return Status.SUCCEEDED
+            case JobStatus.Failed:
+                return Status.FAILED
+            default:
+                return Status.UNKNOWN
         }
     }
-
-    protected static String getJobName(BlobCacheInfo info) {
-        return 'transfer-' + Hashing
-                .sipHash24()
-                .newHasher()
-                .putUnencodedChars(info.locationUri)
-                .putUnencodedChars(info.creationTime.toString())
-                .hash()
-    }
-
-    private void cleanupPod(String podName, int exitCode) {
-        if( !cleanup.shouldCleanup(exitCode) ) {
-            return
-        }
-        
-        CompletableFuture.supplyAsync (() ->
-                k8sService.deletePodWhenReachStatus(
-                        podName,
-                        'Succeeded',
-                        blobConfig.podDeleteTimeout.toMillis()),
-                executor)
-    }
-
 }
