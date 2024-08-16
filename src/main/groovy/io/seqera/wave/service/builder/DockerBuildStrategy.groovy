@@ -27,7 +27,6 @@ import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.request.UploadRequest
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.SpackConfig
-import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import jakarta.inject.Inject
 import jakarta.inject.Named

@@ -25,7 +25,7 @@ package io.seqera.wave.service.builder
  */
 class BuildConstants {
 
-    protected static final String FUSION_PREFIX = "/fusion/s3"
+    public static final String FUSION_PREFIX = "/fusion/s3"
 
     static final public String BUILDKIT_ENTRYPOINT = 'buildctl-daemonless.sh'
 }
