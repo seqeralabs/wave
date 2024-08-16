@@ -44,7 +44,7 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.failure.duration:4s}')
     Duration failureDuration
 
-    @Value('${wave.blobCache.grace.duration:10s}')
+    @Value('${wave.blobCache.grace.duration:20s}')
     Duration graceDuration
 
     @Value('${wave.blobCache.timeout:10m}')
@@ -99,7 +99,7 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.k8s.pod.delete.timeout:20s}')
     Duration podDeleteTimeout
 
-    @Value('${wave.blobCache.transfer.executor-shutdown-timeout:10s}')
+    @Value('${wave.blobCache.transfer.executor-shutdown-timeout:20s}')
     Duration transferExecutorShutdownTimeout
 
     Map<String,String> getEnvironment() {
