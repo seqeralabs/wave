@@ -119,7 +119,7 @@ class BlobCacheInfo {
         final type = headerString0(response, 'Content-Type')
         final cache = headerString0(response, 'Cache-Control')
         final creationTime = Instant.now()
-        return new BlobCacheInfo(locationUri, objectUri, generateJobName(locationUri, creationTime), headers0, length, type, cache, creationTime,null, null, null)
+        return new BlobCacheInfo(locationUri, objectUri, generateJobName(locationUri, creationTime), headers0, length, type, cache, creationTime, null, null, null)
     }
 
     static String headerString0(Map<String,List<String>> headers, String name) {
