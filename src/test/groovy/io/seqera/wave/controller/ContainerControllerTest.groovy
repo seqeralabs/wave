@@ -37,7 +37,6 @@ import io.seqera.wave.api.PackagesSpec
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.api.SubmitContainerTokenResponse
 import io.seqera.wave.config.CondaOpts
-import io.seqera.wave.config.SpackOpts
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
@@ -279,17 +278,6 @@ class ContainerControllerTest extends Specification {
         build.targetImage == 'wave/build:c6dac2e544419f71'
         build.platform == ContainerPlatform.of('arm64')
 
-        when:
-        submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), spackFile: encode('some::spack-recipe'), containerPlatform: 'arm64')
-        build = controller.makeBuildRequest(submit, PlatformId.NULL, "")
-        then:
-        build.containerId =~ /b7d730d274d1e057/
-        build.containerFile.endsWith('\nFROM foo')
-        build.containerFile.startsWith('# Builder image\n')
-        build.condaFile == null
-        build.spackFile == 'some::spack-recipe'
-        build.targetImage == 'wave/build:b7d730d274d1e057'
-        build.platform == ContainerPlatform.of('arm64')
     }
 
     def 'should return a bad request exception when field is not encoded' () {
@@ -316,16 +304,6 @@ class ContainerControllerTest extends Specification {
         then:
         e = thrown(BadRequestException)
         e.message == "Invalid 'condaFile' attribute - make sure it encoded as a base64 string"
-
-        // validate spackFile
-        when:
-        controller.makeBuildRequest(
-                new SubmitContainerTokenRequest(containerFile: encode('FROM foo'), spackFile: 'spack@123'),
-                Mock(PlatformId),
-                null)
-        then:
-        e = thrown(BadRequestException)
-        e.message == "Invalid 'spackFile' attribute - make sure it encoded as a base64 string"
 
     }
 
@@ -454,42 +432,6 @@ class ContainerControllerTest extends Specification {
             targetImage == 'oras://docker.io/foo:9b266d5b5c455fe0'
             buildId == 'build123'
             containerToken == null
-            cached == true
-        }
-    }
-
-    def 'should create response with spack packages' () {
-        given:
-        def dockerAuth = Mock(ContainerInspectServiceImpl)
-        def freeze = new FreezeServiceImpl( inspectService: dockerAuth)
-        def builder = Mock(ContainerBuildService)
-        def proxyRegistry = Mock(RegistryProxyService)
-        def addressResolver = Mock(HttpClientAddressResolver)
-        def tokenService = Mock(ContainerTokenService)
-        def persistence = Mock(PersistenceService)
-        def controller = new ContainerController(freezeService:  freeze, buildService: builder, dockerAuthService: dockerAuth,
-                registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService),
-                addressResolver: addressResolver, tokenService: tokenService, persistenceService: persistence, serverUrl: 'https://wave.seqera.io')
-
-        when:'packages with spack'
-        def SPACK_OPTS = new SpackOpts([
-                basePackages: 'foo bar',
-                commands: ['run','--this','--that']
-        ])
-        def packages = new PackagesSpec(type: PackagesSpec.Type.SPACK, spackOpts: SPACK_OPTS)
-        def req = new SubmitContainerTokenRequest(format: 'docker', packages: packages)
-        def response = controller.handleRequest(null, req, new PlatformId(new User(id: 100), 10), true)
-
-        then:
-        1 * builder.buildImage(_) >> new BuildTrack('build123', 'foo:1234', true)
-        and:
-        1 * tokenService.computeToken(_) >> new TokenData('wavetoken123', Instant.now().plus(1, ChronoUnit.HOURS))
-        and:
-        response.status.code == 200
-        verifyAll(response.body.get() as SubmitContainerTokenResponse) {
-            targetImage == 'wave.seqera.io/wt/wavetoken123/library/foo:1234'
-            buildId == 'build123'
-            containerToken == 'wavetoken123'
             cached == true
         }
     }
