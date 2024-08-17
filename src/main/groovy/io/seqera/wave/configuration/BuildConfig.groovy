@@ -105,6 +105,7 @@ class BuildConfig {
                 "default-public-repository=${defaultPublicRepository}; " +
                 "build-workspace=${buildWorkspace}; " +
                 "build-timeout=${buildDefaultTimeout}; " +
+                "build-trusted-timeout=${buildTrustedTimeout}; " +
                 "status-delay=${statusDelay}; " +
                 "status-duration=${statusDuration}; " +
                 "record-duration=${recordDuration}; " +

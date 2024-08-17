@@ -95,7 +95,8 @@ class DockerBuildStrategy extends BuildStrategy {
                 .redirectErrorStream(true)
                 .start()
 
-        final completed = proc.waitFor(buildConfig.buildDefaultTimeout.toSeconds(), TimeUnit.SECONDS)
+        final timeout = req.maxDuration ?: buildConfig.buildDefaultTimeout
+        final completed = proc.waitFor(timeout.toSeconds(), TimeUnit.SECONDS)
         final stdout = proc.inputStream.text
         if( completed ) {
             final digest = proc.exitValue()==0 ? proxyService.getImageDigest(req, true) : null
