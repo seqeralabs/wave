@@ -327,7 +327,6 @@ class MoshiEncodingStrategyTest extends Specification {
                 containerId: '12345',
                 containerFile: 'from foo',
                 condaFile: 'conda spec',
-                spackFile: 'spack spec',
                 workspace:  Path.of("/some/path"),
                 targetImage:  'docker.io/some:image:12345',
                 identity: PlatformId.NULL,

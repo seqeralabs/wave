@@ -154,7 +154,7 @@ class DockerBuildStrategyTest extends Specification {
                 '-v', '/work/foo/d4869cc39b8d7d55:/work/foo/d4869cc39b8d7d55',
                 '-v', '/work/creds.json:/root/.singularity/docker-config.json:ro',
                 '-v', '/work/singularity-remote.yaml:/root/.singularity/remote.yaml:ro',
-                '--platform', 'linudx/amd64',
+                '--platform', 'linux/amd64',
                 'quay.io/singularity/singularity:v3.11.4-slim',
                 'sh',
                 '-c',

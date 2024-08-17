@@ -269,7 +269,6 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                         containerId: containerId,
                         containerFile: dockerFile,
                         condaFile: condaFile,
-                        spackFile: null,
                         workspace: folder,
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
@@ -291,7 +290,7 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         1 * strategy.build(req) >> RESPONSE
         1 * store.storeBuild(req.targetImage, RESPONSE, DURATION) >> null
         and:
-        req.workDir.resolve('Containerfile').text == new TemplateRenderer().render(dockerFile, [spack_cache_bucket:'s3://bucket/cache', spack_key_file:'/mnt/secret'])
+        req.workDir.resolve('Containerfile').text == new TemplateRenderer().render(dockerFile, [:])
         req.workDir.resolve('context/conda.yml').text == condaFile
         and:
         result == RESPONSE
