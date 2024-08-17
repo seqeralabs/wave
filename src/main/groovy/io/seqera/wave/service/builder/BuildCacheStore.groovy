@@ -61,17 +61,7 @@ class BuildCacheStore extends AbstractCacheStore<BuildResult> implements BuildSt
     protected Duration getDuration() {
         return buildConfig.statusDuration
     }
-
-    @Override
-    Duration getTimeout() {
-        return buildConfig.buildDefaultTimeout
-    }
-
-    @Override
-    Duration getDelay() {
-        return buildConfig.statusDelay
-    }
-
+    
     @Override
     BuildResult getBuild(String imageName) {
         return get(imageName)
@@ -92,8 +82,7 @@ class BuildCacheStore extends AbstractCacheStore<BuildResult> implements BuildSt
         // store up 2.5 time the build timeout to prevent a missed cache
         // update on job termination remains too long in the store
         // note: this should be longer than the max await time used in the Waiter#awaitCompletion method
-        final ttl = Duration.ofMillis(Math.round(getTimeout().toMillis() * 2.5f))
-        return putIfAbsent(imageName, build, ttl)
+        return putIfAbsent(imageName, build, buildConfig.statusInitialDelay)
     }
 
     @Override
@@ -114,12 +103,13 @@ class BuildCacheStore extends AbstractCacheStore<BuildResult> implements BuildSt
      */
     private static class Waiter {
 
-        static BuildResult awaitCompletion(BuildStore store, String imageName, BuildResult current) {
+        static BuildResult awaitCompletion(BuildCacheStore store, String imageName, BuildResult current) {
+            final await = store.buildConfig.statusDelay
             final beg = System.currentTimeMillis()
             // await nearly double of the build timeout time because the build job
             // can require additional time, other than the build time, to be scheduled
             // note: see also #storeIfAbsent method
-            final max = (store.timeout.toMillis() * 2.10) as long
+            final max = store.buildConfig.statusAwaitDuration.toMillis()
             while( true ) {
                 if( current==null ) {
                     return BuildResult.unknown()
@@ -134,7 +124,7 @@ class BuildCacheStore extends AbstractCacheStore<BuildResult> implements BuildSt
                 if( delta > max )
                     throw new BuildTimeoutException("Build of container '$imageName' timed out")
                 // sleep a bit
-                Thread.sleep(store.delay.toMillis())
+                Thread.sleep(await.toMillis())
                 // fetch the build status again
                 current = store.getBuild(imageName)
             }

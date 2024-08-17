@@ -19,6 +19,9 @@
 package io.seqera.wave.controller
 
 import spock.lang.Specification
+import spock.lang.Unroll
+
+import java.time.Duration
 
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
@@ -52,4 +55,34 @@ class BuildConfigTest extends Specification {
         config.singularityImage( ContainerPlatform.of('arm64') ) == 'bar'
     }
 
+    @Unroll
+    def 'should validate initial duration' () {
+        given:
+        def config = new BuildConfig(defaultTimeout:DEFAULT, trustedTimeout:TRUSTED)
+        expect:
+        config.statusInitialDelay == EXPECTED
+
+        where:
+        DEFAULT                     | TRUSTED                       | EXPECTED
+        Duration.ofMillis(1000)     | Duration.ofMillis(1000)       |  Duration.ofMillis(Math.round(1000 * 2.5))
+        Duration.ofMinutes(15)      | Duration.ofMinutes(15)        |  Duration.ofMillis(Math.round( 37.5 * 60 * 1000))
+        Duration.ofMinutes(15)      | Duration.ofMinutes(25)        |  Duration.ofMillis(Math.round( 2.5 * 15 * 60 * 1000))
+        Duration.ofMinutes(15)      | Duration.ofMinutes(25)        |  Duration.ofMillis(Math.round( 1.5 * 25 * 60 * 1000))
+        Duration.ofMinutes(15)      | Duration.ofMinutes(30)        |  Duration.ofMillis(Math.round( 1.5 * 30 * 60 * 1000))
+    }
+
+    @Unroll
+    def 'should validate await duration' () {
+        given:
+        def config = new BuildConfig(defaultTimeout:DEFAULT, trustedTimeout:TRUSTED)
+        expect:
+        config.statusAwaitDuration == EXPECTED
+
+        where:
+        DEFAULT                     | TRUSTED                       | EXPECTED
+        Duration.ofMillis(1000)     | Duration.ofMillis(1000)       |  Duration.ofMillis(Math.round(1000 * 2.1))
+        Duration.ofMinutes(15)      | Duration.ofMinutes(15)        |  Duration.ofMillis(Math.round( 2.1 * 15 * 60 * 1000))
+        Duration.ofMinutes(15)      | Duration.ofMinutes(25)        |  Duration.ofMillis(Math.round( 2.1 * 15 * 60 * 1000))
+        Duration.ofMinutes(15)      | Duration.ofMinutes(30)        |  Duration.ofMillis(Math.round( 1.1 * 30 * 60 * 1000))
+    }
 }

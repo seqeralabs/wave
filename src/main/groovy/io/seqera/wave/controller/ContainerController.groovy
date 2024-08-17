@@ -331,8 +331,8 @@ class ContainerController {
         final targetImage = makeTargetImage(format, buildRepository, containerId, condaContent, spackContent, nameStrategy)
         // build max duration
         final maxDuration = identity && req.freeze
-                ?  buildConfig.buildTrustedTimeout
-                :  buildConfig.buildDefaultTimeout
+                ?  buildConfig.trustedTimeout
+                :  buildConfig.defaultTimeout
 
         return new BuildRequest(
                 containerId,

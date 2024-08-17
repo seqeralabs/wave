@@ -95,7 +95,7 @@ class DockerBuildStrategy extends BuildStrategy {
                 .redirectErrorStream(true)
                 .start()
 
-        final timeout = req.maxDuration ?: buildConfig.buildDefaultTimeout
+        final timeout = req.maxDuration ?: buildConfig.defaultTimeout
         final completed = proc.waitFor(timeout.toSeconds(), TimeUnit.SECONDS)
         final stdout = proc.inputStream.text
         if( completed ) {

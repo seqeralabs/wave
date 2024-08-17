@@ -22,6 +22,7 @@ import javax.annotation.Nullable
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
+import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.core.ContainerPlatform
@@ -66,13 +67,27 @@ class BuildConfig {
     Duration statusDelay
 
     @Value('${wave.build.timeout:5m}')
-    Duration buildDefaultTimeout
+    Duration defaultTimeout
 
     @Value('${wave.build.trusted-timeout:10m}')
-    Duration buildTrustedTimeout
+    Duration trustedTimeout
 
     @Value('${wave.build.status.duration}')
     Duration statusDuration
+
+    @Memoized
+    Duration getStatusInitialDelay() {
+        final d1 = defaultTimeout.toMillis() * 2.5f
+        final d2 = trustedTimeout.toMillis() * 1.5f
+        return Duration.ofMillis(Math.round(Math.max(d1,d2)))
+    }
+
+    @Memoized
+    Duration getStatusAwaitDuration() {
+        final d1 = defaultTimeout.toMillis() * 2.1f
+        final d2 = trustedTimeout.toMillis() * 1.1f
+        return Duration.ofMillis(Math.round(Math.max(d1,d2)))
+    }
 
     @Value('${wave.build.cleanup}')
     @Nullable
@@ -104,8 +119,8 @@ class BuildConfig {
                 "default-cache-repository=${defaultCacheRepository}; " +
                 "default-public-repository=${defaultPublicRepository}; " +
                 "build-workspace=${buildWorkspace}; " +
-                "build-timeout=${buildDefaultTimeout}; " +
-                "build-trusted-timeout=${buildTrustedTimeout}; " +
+                "build-timeout=${defaultTimeout}; " +
+                "build-trusted-timeout=${trustedTimeout}; " +
                 "status-delay=${statusDelay}; " +
                 "status-duration=${statusDuration}; " +
                 "record-duration=${recordDuration}; " +
