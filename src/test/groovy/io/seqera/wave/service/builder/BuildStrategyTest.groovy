@@ -134,7 +134,6 @@ class BuildStrategyTest extends Specification {
                 containerId,
                 content,
                 null,
-                null,
                 workspace,
                 targetImage,
                 PlatformId.NULL,

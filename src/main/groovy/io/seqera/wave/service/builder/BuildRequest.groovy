@@ -61,12 +61,6 @@ class BuildRequest {
     final String condaFile
 
     /**
-     * The spock file recipe associated with this request
-     */
-    @Deprecated
-    final String spackFile
-
-    /**
      * The build context work directory
      */
     final Path workspace
@@ -117,12 +111,6 @@ class BuildRequest {
     final ContainerConfig containerConfig
 
     /**
-     * Whenever is a spack build
-     */
-    @Deprecated
-    final boolean isSpackBuild
-
-    /** 
      * The ID of the security scan triggered by this build 
      */
     final String scanId
@@ -149,7 +137,6 @@ class BuildRequest {
     BuildRequest(String containerId,
                  String containerFile,
                  String condaFile,
-                 String spackFile,
                  Path workspace,
                  String targetImage,
                  PlatformId identity,
@@ -168,7 +155,6 @@ class BuildRequest {
         this.containerId = containerId
         this.containerFile = containerFile
         this.condaFile = condaFile
-        this.spackFile = spackFile
         this.workspace = workspace
         this.targetImage = targetImage
         this.identity = identity
@@ -179,7 +165,6 @@ class BuildRequest {
         this.configJson = configJson
         this.offsetId = offsetId ?: OffsetDateTime.now().offset.id
         this.containerConfig = containerConfig
-        this.isSpackBuild = spackFile
         this.scanId = scanId
         this.buildContext = buildContext
         this.format = format
@@ -190,7 +175,6 @@ class BuildRequest {
         this.containerId = opts.containerId
         this.containerFile = opts.containerFile
         this.condaFile = opts.condaFile
-        this.spackFile = opts.spackFile
         this.workspace = opts.workspace as Path
         this.targetImage = opts.targetImage
         this.identity = opts.identity as PlatformId
@@ -201,7 +185,6 @@ class BuildRequest {
         this.configJson = opts.configJson
         this.offsetId = opts.offesetId
         this.containerConfig = opts.containerConfig as ContainerConfig
-        this.isSpackBuild = opts.isSpackBuild
         this.scanId = opts.scanId
         this.buildContext = opts.buildContext as BuildContext
         this.format = opts.format as BuildFormat
@@ -230,11 +213,6 @@ class BuildRequest {
 
     String getCondaFile() {
         return condaFile
-    }
-
-    @Deprecated
-    String getSpackFile() {
-        return spackFile
     }
 
     Path getWorkDir() {

@@ -339,7 +339,6 @@ class ContainerController {
                 containerId,
                 containerSpec,
                 condaContent,
-                null,
                 Path.of(buildConfig.buildWorkspace),
                 targetImage,
                 identity,

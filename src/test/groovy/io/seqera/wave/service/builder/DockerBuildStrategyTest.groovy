@@ -34,16 +34,13 @@ class DockerBuildStrategyTest extends Specification {
 
     def 'should get docker command' () {
         given:
-        def props = [
-                'wave.build.spack.secretKeyFile':'/host/spack/key',
-                'wave.build.spack.secretMountPath':'/opt/spack/key'  ]
-        def ctx = ApplicationContext.run(props)
+        def ctx = ApplicationContext.run()
         and:
         def service = ctx.getBean(DockerBuildStrategy)
         and:
         def work = Path.of('/work/foo')
         when:
-        def cmd = service.cmdForBuildkit(work, null, null, null)
+        def cmd = service.cmdForBuildkit(work, null, null)
         then:
         cmd == ['docker',
                 'run',
@@ -55,7 +52,7 @@ class DockerBuildStrategyTest extends Specification {
                 'moby/buildkit:v0.14.1-rootless']
 
         when:
-        cmd = service.cmdForBuildkit(work, Path.of('/foo/creds.json'), null, ContainerPlatform.of('arm64'))
+        cmd = service.cmdForBuildkit(work, Path.of('/foo/creds.json'), ContainerPlatform.of('arm64'))
         then:
         cmd == ['docker',
                 'run',
@@ -69,7 +66,7 @@ class DockerBuildStrategyTest extends Specification {
                 'moby/buildkit:v0.14.1-rootless']
 
         when:
-        cmd = service.cmdForBuildkit(work, Path.of('/foo/creds.json'), spackConfig, null)
+        cmd = service.cmdForBuildkit(work, Path.of('/foo/creds.json'), null)
         then:
         cmd == ['docker',
                 'run',
@@ -79,7 +76,6 @@ class DockerBuildStrategyTest extends Specification {
                 '--entrypoint',
                 'buildctl-daemonless.sh',
                 '-v', '/foo/creds.json:/home/user/.docker/config.json:ro',
-                '-v', '/host/spack/key:/opt/spack/key:ro',
                 'moby/buildkit:v0.14.1-rootless']
 
         cleanup:
@@ -136,10 +132,7 @@ class DockerBuildStrategyTest extends Specification {
 
     def 'should get singularity build command' () {
         given:
-        def props = [
-                'wave.build.spack.secretKeyFile':'/host/spack/key',
-                'wave.build.spack.secretMountPath':'/opt/spack/key'  ]
-        def ctx = ApplicationContext.run(props)
+        def ctx = ApplicationContext.run()
         def service = ctx.getBean(DockerBuildStrategy)
         and:
         def creds = Path.of('/work/creds.json')
@@ -149,8 +142,7 @@ class DockerBuildStrategyTest extends Specification {
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'oras://repo:d4869cc39b8d7d55',
                 cacheRepository: 'reg.io/wave/build/cache',
-                format: BuildFormat.SINGULARITY,
-                isSpackBuild: true )
+                format: BuildFormat.SINGULARITY  )
         when:
         def cmd = service.buildCmd(req, creds)
         then:
@@ -175,10 +167,7 @@ class DockerBuildStrategyTest extends Specification {
 
     def 'should get singularity build command for arm64 architecture' () {
         given:
-        def props = [
-                'wave.build.spack.secretKeyFile':'/host/spack/key',
-                'wave.build.spack.secretMountPath':'/opt/spack/key'  ]
-        def ctx = ApplicationContext.run(props)
+        def ctx = ApplicationContext.run()
         def service = ctx.getBean(DockerBuildStrategy)
         and:
         def creds = Path.of('/work/creds.json')

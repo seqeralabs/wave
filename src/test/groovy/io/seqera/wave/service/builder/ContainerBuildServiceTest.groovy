@@ -252,11 +252,9 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         def cacheRepo = buildConfig.defaultCacheRepository
         def DURATION = Duration.ofDays(1)
         and:
-        def cfg = 'some credentials'
         def dockerFile = '''
                 FROM busybox
                 RUN echo Hello > hello.txt
-                RUN {{spack_cache_bucket}} {{spack_key_file}}
                 '''.stripIndent()
         and:
         def condaFile = '''
@@ -271,8 +269,7 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                         containerId: containerId,
                         containerFile: dockerFile,
                         condaFile: condaFile,
-                        spackFile: spackFile,
-                        isSpackBuild: true,
+                        spackFile: null,
                         workspace: folder,
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
@@ -296,7 +293,6 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         and:
         req.workDir.resolve('Containerfile').text == new TemplateRenderer().render(dockerFile, [spack_cache_bucket:'s3://bucket/cache', spack_key_file:'/mnt/secret'])
         req.workDir.resolve('context/conda.yml').text == condaFile
-        req.workDir.resolve('context/spack.yaml').text == spackFile
         and:
         result == RESPONSE
 
@@ -513,7 +509,6 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                 containerId: 'container1234',
                 containerFile: 'test',
                 condaFile: 'test',
-                spackFile: 'test',
                 workspace: Path.of("."),
                 targetImage: 'docker.io/my/repo:container1234',
                 identity: PlatformId.NULL,
@@ -545,7 +540,6 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                         containerId: 'container1234',
                         containerFile:'test',
                         condaFile: 'test',
-                        spackFile: 'test',
                         workspace: Path.of("."),
                         targetImage: 'docker.io/my/repo:container1234',
                         identity: PlatformId.NULL,
@@ -581,7 +575,6 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                         containerId: 'container1234',
                         containerFile: 'test',
                         condaFile: 'test',
-                        spackFile: 'test',
                         workspace: Path.of("."),
                         targetImage: 'docker.io/my/repo:container1234',
                         identity: PlatformId.NULL,
