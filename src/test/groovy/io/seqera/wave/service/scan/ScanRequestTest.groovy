@@ -22,8 +22,6 @@ import spock.lang.Specification
 
 import java.nio.file.Path
 
-import io.seqera.wave.api.BuildContext
-import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
@@ -39,7 +37,7 @@ class ScanRequestTest extends Specification {
         def workspace = Path.of('/some/workspace')
         def platform = ContainerPlatform.of('amd64')
         final build = new BuildRequest(
-                'container1234',
+                containerId: 'container1234',
                 'FROM ubuntu',
                 null,
                 null,

@@ -66,7 +66,10 @@ class BuildConfig {
     Duration statusDelay
 
     @Value('${wave.build.timeout:5m}')
-    Duration buildTimeout
+    Duration buildDefaultTimeout
+
+    @Value('${wave.build.trusted-timeout:10m}')
+    Duration buildTrustedTimeout
 
     @Value('${wave.build.status.duration}')
     Duration statusDuration
@@ -101,7 +104,7 @@ class BuildConfig {
                 "default-cache-repository=${defaultCacheRepository}; " +
                 "default-public-repository=${defaultPublicRepository}; " +
                 "build-workspace=${buildWorkspace}; " +
-                "build-timeout=${buildTimeout}; " +
+                "build-timeout=${buildDefaultTimeout}; " +
                 "status-delay=${statusDelay}; " +
                 "status-duration=${statusDuration}; " +
                 "record-duration=${recordDuration}; " +

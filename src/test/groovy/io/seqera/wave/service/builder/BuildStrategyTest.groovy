@@ -40,7 +40,7 @@ class BuildStrategyTest extends Specification {
     def 'should get buildkit command' () {
         given:
         def req = new BuildRequest(
-                id: 'c168dba125e28777',
+                containerId: 'c168dba125e28777',
                 workDir: Path.of('/work/foo/c168dba125e28777'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'quay.io/wave:c168dba125e28777',
@@ -73,7 +73,7 @@ class BuildStrategyTest extends Specification {
     def 'should get buildkit command with build context' () {
         given:
         def req = new BuildRequest(
-                id: 'c168dba125e28777',
+                containerId: 'c168dba125e28777',
                 workDir: Path.of('/work/foo/3980470531b4a52a'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'quay.io/wave:3980470531b4a52a',

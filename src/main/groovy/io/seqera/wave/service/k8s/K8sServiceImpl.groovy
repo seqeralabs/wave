@@ -120,7 +120,7 @@ class K8sServiceImpl implements K8sService {
      */
     @PostConstruct
     private void init() {
-        log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; node-selector=$nodeSelectorMap; buildTimeout=$buildConfig.buildTimeout; cpus=$requestsCpu; memory=$requestsMemory; buildWorkspace=$buildConfig.buildWorkspace; storageClaimName=$storageClaimName; storageMountPath=$storageMountPath; "
+        log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; node-selector=$nodeSelectorMap; buildTimeout=$buildConfig.buildDefaultTimeout; cpus=$requestsCpu; memory=$requestsMemory; buildWorkspace=$buildConfig.buildWorkspace; storageClaimName=$storageClaimName; storageMountPath=$storageMountPath; "
         if( storageClaimName && !storageMountPath )
             throw new IllegalArgumentException("Missing 'wave.build.k8s.storage.mountPath' configuration attribute")
         if( storageMountPath ) {
@@ -380,7 +380,7 @@ class K8sServiceImpl implements K8sService {
                 .withNewSpec()
                 .withNodeSelector(nodeSelector)
                 .withServiceAccount(serviceAccount)
-                .withActiveDeadlineSeconds( buildConfig.buildTimeout.toSeconds() )
+                .withActiveDeadlineSeconds( buildConfig.buildDefaultTimeout.toSeconds() )
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
 

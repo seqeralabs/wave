@@ -64,7 +64,7 @@ class BuildCacheStore extends AbstractCacheStore<BuildResult> implements BuildSt
 
     @Override
     Duration getTimeout() {
-        return buildConfig.buildTimeout
+        return buildConfig.buildDefaultTimeout
     }
 
     @Override

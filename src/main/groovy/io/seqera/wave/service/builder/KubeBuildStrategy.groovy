@@ -100,7 +100,7 @@ class KubeBuildStrategy extends BuildStrategy {
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
             final spackCfg0 = req.isSpackBuild ? spackConfig : null
             final pod = k8sService.buildContainer(name, buildImage, buildCmd, req.workDir, configFile, spackCfg0, selector)
-            final exitCode = k8sService.waitPodCompletion(pod, buildConfig.buildTimeout.toMillis())
+            final exitCode = k8sService.waitPodCompletion(pod, buildConfig.buildDefaultTimeout.toMillis())
             final stdout = k8sService.logsPod(pod)
             if( exitCode!=null ) {
                 final digest = exitCode==0 ? proxyService.getImageDigest(req, true) : null
