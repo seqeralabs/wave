@@ -68,8 +68,8 @@ class KubeBuildStrategyTest extends Specification {
         def dockerfile = 'from foo'
 
         when:
-        def containerId = ContainerHelper.makeContainerId(dockerfile, null, null, ContainerPlatform.of('amd64'), repo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, repo, containerId, null, null, null)
+        def containerId = ContainerHelper.makeContainerId(dockerfile, null, ContainerPlatform.of('amd64'), repo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, repo, containerId, null, null)
         def req = new BuildRequest(containerId, dockerfile, null, null, PATH, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1)).withBuildId('1')
         Files.createDirectories(req.workDir)
 
@@ -100,8 +100,8 @@ class KubeBuildStrategyTest extends Specification {
         def dockerfile = 'from foo'
 
         when:'getting docker with amd64 arch in build request'
-        def containerId = ContainerHelper.makeContainerId(dockerfile, null, null, ContainerPlatform.of('amd64'), repo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, repo, containerId, null, null, null)
+        def containerId = ContainerHelper.makeContainerId(dockerfile, null, ContainerPlatform.of('amd64'), repo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, repo, containerId, null, null)
         def req = new BuildRequest(containerId, dockerfile, null, null, PATH, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1)).withBuildId('1')
 
         then: 'should return buildkit image'
@@ -127,8 +127,8 @@ class KubeBuildStrategyTest extends Specification {
         def repo = 'docker.io/wave'
         def cache = 'docker.io/cache'
         def dockerfile = 'from foo'
-        def containerId = ContainerHelper.makeContainerId(dockerfile, null, null, ContainerPlatform.of('amd64'), repo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, repo, containerId, null, null, null)
+        def containerId = ContainerHelper.makeContainerId(dockerfile, null, ContainerPlatform.of('amd64'), repo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, repo, containerId, null, null)
         def req = new BuildRequest(containerId, dockerfile, null, null, PATH, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1)).withBuildId('1')
 
         when:

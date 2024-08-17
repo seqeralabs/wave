@@ -212,7 +212,7 @@ class BuildRequest {
 
     @Override
     String toString() {
-        return "BuildRequest[containerId=$containerId; targetImage=$targetImage; identity=$identity; dockerFile=${trunc(containerFile)}; condaFile=${trunc(condaFile)}; spackFile=${trunc(spackFile)}; buildId=$buildId, maxDuration=$maxDuration]"
+        return "BuildRequest[containerId=$containerId; targetImage=$targetImage; identity=$identity; dockerFile=${trunc(containerFile)}; condaFile=${trunc(condaFile)}; buildId=$buildId, maxDuration=$maxDuration]"
     }
 
     String getContainerId() {
@@ -232,6 +232,7 @@ class BuildRequest {
         return condaFile
     }
 
+    @Deprecated
     String getSpackFile() {
         return spackFile
     }

@@ -34,14 +34,12 @@ import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.token.TokenData
 import org.yaml.snakeyaml.Yaml
 import static io.seqera.wave.service.builder.BuildFormat.SINGULARITY
-import static io.seqera.wave.util.DockerHelper.addPackagesToSpackYaml
 import static io.seqera.wave.util.DockerHelper.condaEnvironmentToCondaYaml
 import static io.seqera.wave.util.DockerHelper.condaFileToDockerFile
 import static io.seqera.wave.util.DockerHelper.condaFileToSingularityFile
 import static io.seqera.wave.util.DockerHelper.condaPackagesToCondaYaml
 import static io.seqera.wave.util.DockerHelper.condaPackagesToDockerFile
 import static io.seqera.wave.util.DockerHelper.condaPackagesToSingularityFile
-import static io.seqera.wave.util.DockerHelper.spackPackagesToSpackYaml
 /**
  * Container helper methods
  *
@@ -115,27 +113,6 @@ class ContainerHelper {
             throw new IllegalArgumentException("No more than one Conda lock remote file can be specified at the same time");
         }
         return result[0]
-    }
-
-    @Deprecated
-    static String spackFileFromRequest(SubmitContainerTokenRequest req) {
-        if( !req.packages )
-            return decodeBase64OrFail(req.spackFile,'spackFile')
-
-        if( req.packages.type != PackagesSpec.Type.SPACK )
-            return null
-
-        if( req.packages.environment ) {
-            final decoded = decodeBase64OrFail(req.packages.environment,'packages.envFile')
-            return addPackagesToSpackYaml(decoded, req.packages.spackOpts)
-        }
-
-        if( req.packages.entries ) {
-            final String packages = req.packages.entries.join(' ')
-            return spackPackagesToSpackYaml(packages, req.packages.spackOpts)
-        }
-
-        return null
     }
 
     static String decodeBase64OrFail(String value, String field) {
@@ -255,55 +232,6 @@ class ContainerHelper {
             return null
         final parts = tool.tokenize(sep)
         return new Tuple2<String, String>(parts[0], parts[1])
-    }
-
-    static NameVersionPair guessSpackRecipeName(String spackFileContent, boolean split=false) {
-        if( !spackFileContent )
-            return null
-        try {
-            final yaml = new Yaml().load(spackFileContent) as Map
-            final spack = yaml.spack as Map
-
-            if( !spack ){
-                throw new BadRequestException('Malformed Spack environment file - missing "spack:" section')
-            }
-            if( !spack.specs ){
-                throw new BadRequestException('Malformed Spack environment file - missing "spack.specs:" section')
-            }
-
-            if( spack.specs instanceof List ) {
-                final LinkedHashSet<String> result = new LinkedHashSet()
-                final LinkedHashSet<String> versions = new LinkedHashSet()
-                for( String it : spack.specs ) {
-                    final p = it.indexOf(' ')
-                    // remove everything after the first blank because they are supposed package directives
-                    if( p!=-1 )
-                        it = it.substring(0,p)
-                    if( split ) {
-                        final pair = splitVersion(it, '@')
-                        it = pair.v1
-                        versions.add(pair.v2)
-                    }
-                    else {
-                        // replaces '@' version separator with `-`
-                        it = it.replace('@','-')
-                    }
-                    if( it )
-                        result.add(it)
-                }
-                return split
-                        ? new NameVersionPair(result, versions)
-                        : new NameVersionPair(result)
-            }
-            return null
-        }
-        catch (BadRequestException e) {
-            throw  e
-        }
-        catch (Throwable e) {
-            log.warn "Unable to infer spack recipe name - cause: ${e.message}", e
-            return null
-        }
     }
 
     static String makeTargetImage(BuildFormat format, String repo, String id, @Nullable String condaFile, @Nullable ImageNameStrategy nameStrategy) {

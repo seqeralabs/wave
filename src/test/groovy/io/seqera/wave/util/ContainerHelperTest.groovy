@@ -222,48 +222,6 @@ class ContainerHelperTest extends Specification {
             '''.stripIndent()
     }
 
-    def 'should validate spack file helper' () {
-        given:
-        def SPACK = 'this and that'
-        def req = new SubmitContainerTokenRequest(spackFile: SPACK.bytes.encodeBase64().toString())
-        when:
-        def result = ContainerHelper.spackFileFromRequest(req)
-        then:
-        result == SPACK
-    }
-
-    def 'should validate spack env file helper' () {
-        given:
-        def SPACK = '''\
-                spack:
-                  specs: [bwa@0.7.15, salmon@1.1.1]
-                  concretizer: {unify: true, reuse: false}
-                '''.stripIndent(true)
-        and:
-        def spec = new PackagesSpec(type: PackagesSpec.Type.SPACK, environment: SPACK.bytes.encodeBase64().toString())
-        def req = new SubmitContainerTokenRequest(packages: spec)
-
-        when:
-        def result = ContainerHelper.spackFileFromRequest(req)
-        then:
-        result == SPACK
-    }
-
-    def 'should validate spack env packages helper' () {
-        given:
-        def spec = new PackagesSpec(type: PackagesSpec.Type.SPACK, entries: ['foo', 'bar'])
-        def req = new SubmitContainerTokenRequest(packages: spec)
-
-        when:
-        def result = ContainerHelper.spackFileFromRequest(req)
-        then:
-        result == '''\
-            spack:
-              specs: [foo, bar]
-              concretizer: {unify: true, reuse: false}
-            '''.stripIndent(true)
-    }
-
     def 'should create response v1' () {
         given:
         def data = new ContainerRequestData(null,
@@ -422,48 +380,6 @@ class ContainerHelperTest extends Specification {
         ContainerHelper.guessCondaRecipeName(CONDA,true) == new NameVersionPair(['pip','pandas'] as Set, [null, '2.2.2'] as Set)
     }
 
-    def 'should find spack recipe names from spack yaml file' () {
-        def SPACK = '''\
-            spack:
-              specs: [bwa@0.7.15, salmon@1.1.1, nano@1.0 x=one]
-              concretizer: {unify: true, reuse: true}
-            '''.stripIndent(true)
-
-        expect:
-        ContainerHelper.guessSpackRecipeName(null) == null
-        ContainerHelper.guessSpackRecipeName(SPACK) == new NameVersionPair(['bwa-0.7.15', 'salmon-1.1.1', 'nano-1.0'] as Set)
-        and:
-        ContainerHelper.guessSpackRecipeName(SPACK,true) == new NameVersionPair(['bwa', 'salmon', 'nano'] as Set, ['0.7.15', '1.1.1', '1.0'] as Set)
-    }
-
-    def 'should throw an exception when spack section is not present in spack yaml file' () {
-        def SPACK = '''\
-              specs: [bwa@0.7.15, salmon@1.1.1, nano@1.0 x=one]
-              concretizer: {unify: true, reuse: true}
-            '''.stripIndent(true)
-
-        when:
-        ContainerHelper.guessSpackRecipeName(SPACK)
-        then:
-        def e = thrown(BadRequestException)
-        and:
-        e.message == 'Malformed Spack environment file - missing "spack:" section'
-    }
-
-    def 'should throw an exception when spack.specs section is not present in spack yaml file' () {
-        def SPACK = '''\
-            spack:
-              concretizer: {unify: true, reuse: true}
-            '''.stripIndent(true)
-
-        when:
-        ContainerHelper.guessSpackRecipeName(SPACK)
-        then:
-        def e = thrown(BadRequestException)
-        and:
-        e.message == 'Malformed Spack environment file - missing "spack.specs:" section'
-    }
-
     @Unroll
     def 'should normalise tag' () {
         expect:
@@ -513,10 +429,10 @@ class ContainerHelperTest extends Specification {
 
     def 'should make request target' () {
         expect:
-        ContainerHelper.makeTargetImage(BuildFormat.DOCKER, 'quay.io/org/name', '12345', null, null, null)
+        ContainerHelper.makeTargetImage(BuildFormat.DOCKER, 'quay.io/org/name', '12345', null, null)
                 == 'quay.io/org/name:12345'
         and:
-        ContainerHelper.makeTargetImage(BuildFormat.SINGULARITY, 'quay.io/org/name', '12345', null, null, null)
+        ContainerHelper.makeTargetImage(BuildFormat.SINGULARITY, 'quay.io/org/name', '12345', null, null)
                 == 'oras://quay.io/org/name:12345'
 
         and:
@@ -524,16 +440,9 @@ class ContainerHelperTest extends Specification {
         dependencies:
         - salmon=1.2.3
         '''
-        ContainerHelper.makeTargetImage(BuildFormat.DOCKER, 'quay.io/org/name', '12345', conda, null, null)
+        ContainerHelper.makeTargetImage(BuildFormat.DOCKER, 'quay.io/org/name', '12345', conda, null)
                 == 'quay.io/org/name:salmon-1.2.3--12345'
 
-        and:
-        def spack = '''\
-         spack:
-            specs: [bwa@0.7.15]
-        '''
-        ContainerHelper.makeTargetImage(BuildFormat.DOCKER, 'quay.io/org/name', '12345', null, spack, null)
-                == 'quay.io/org/name:bwa-0.7.15--12345'
 
     }
 

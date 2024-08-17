@@ -174,11 +174,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 final condaFile = context.resolve('conda.yml')
                 Files.write(condaFile, req.condaFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
             }
-            // save the spack file
-            if( req.spackFile ) {
-                final spackFile = context.resolve('spack.yaml')
-                Files.write(spackFile, req.spackFile.bytes, CREATE, WRITE, TRUNCATE_EXISTING)
-            }
             // save layers provided via the container config
             if( req.containerConfig ) {
                 saveLayersToContext(req, context)

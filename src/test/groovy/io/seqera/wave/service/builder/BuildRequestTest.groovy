@@ -85,7 +85,6 @@ class BuildRequestTest extends Specification {
         req.cacheRepository == CACHE_REPO
         req.format == BuildFormat.DOCKER
         req.condaFile == null
-        req.spackFile == null
         req.platform == ContainerPlatform.of('amd64')
         req.configJson == '{"config":"json"}'
         req.scanId == SCAN_ID
@@ -128,7 +127,6 @@ class BuildRequestTest extends Specification {
         req.containerId == '8026e3a63b5c863f'
         req.targetImage == 'docker.io/wave:samtools-1.0--8026e3a63b5c863f'
         req.condaFile == CONDA_RECIPE
-        req.spackFile == null
         and:
         !req.isSpackBuild
 
