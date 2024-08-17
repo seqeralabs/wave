@@ -30,7 +30,6 @@ import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.configuration.BuildConfig
-import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
@@ -66,9 +65,6 @@ class KubeBuildStrategy extends BuildStrategy {
     private BuildConfig buildConfig
 
     @Inject
-    private SpackConfig spackConfig
-
-    @Inject
     private RegistryProxyService proxyService
 
     protected String podName(BuildRequest req) {
@@ -99,8 +95,7 @@ class KubeBuildStrategy extends BuildStrategy {
             final name = podName(req)
             final timeout = req.maxDuration ?: buildConfig.defaultTimeout
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
-            final spackCfg0 = req.isSpackBuild ? spackConfig : null
-            final pod = k8sService.buildContainer(name, buildImage, buildCmd, req.workDir, configFile, timeout, spackCfg0, selector)
+            final pod = k8sService.buildContainer(name, buildImage, buildCmd, req.workDir, configFile, timeout, selector)
             final exitCode = k8sService.waitPodCompletion(pod, timeout.toMillis())
             final stdout = k8sService.logsPod(pod)
             if( exitCode!=null ) {

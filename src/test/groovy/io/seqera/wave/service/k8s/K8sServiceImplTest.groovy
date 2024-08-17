@@ -36,7 +36,6 @@ import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.ScanConfig
-import io.seqera.wave.configuration.SpackConfig
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -173,30 +172,6 @@ class K8sServiceImplTest extends Specification {
         ctx.close()
     }
 
-    def 'should get spack dir vol' () {
-        given:
-        def PROPS = [
-                'wave.build.workspace': '/build/work',
-                'wave.build.k8s.namespace': 'foo',
-                'wave.build.k8s.configPath': '/home/kube.config',
-                'wave.build.k8s.storage.claimName': 'bar',
-                'wave.build.k8s.storage.mountPath': '/build' ]
-        and:
-        def ctx = ApplicationContext.run(PROPS)
-        def k8sService = ctx.getBean(K8sServiceImpl)
-
-        when:
-        def mount = k8sService.mountSpackCacheDir(Path.of('/foo/work/x1'), '/foo', '/opt/spack/cache')
-        then:
-        mount.name == 'build-data'
-        mount.mountPath == '/opt/spack/cache'
-        mount.subPath == 'work/x1'
-        !mount.readOnly
-
-        cleanup:
-        ctx.close()
-    }
-
     def 'should create build pod for buildkit' () {
         given:
         def PROPS = [
@@ -210,7 +185,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this', 'that'], Path.of('/build/work/xyz'), Path.of('/build/work/xyz/config.json'), Duration.ofSeconds(10), null, [:])
+        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this', 'that'], Path.of('/build/work/xyz'), Path.of('/build/work/xyz/config.json'), Duration.ofSeconds(10), [:])
         then:
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
@@ -253,7 +228,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
         def workDir = Path.of('/build/work/xyz')
         when:
-        def result = k8sService.buildSpec('foo', 'singularity:latest', ['this','that'], workDir, workDir.resolve('config.json'), Duration.ofSeconds(10), null, [:])
+        def result = k8sService.buildSpec('foo', 'singularity:latest', ['this','that'], workDir, workDir.resolve('config.json'), Duration.ofSeconds(10), [:])
         then:
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
@@ -278,52 +253,6 @@ class K8sServiceImplTest extends Specification {
             volumeMounts.get(2).subPath == 'work/xyz'
             getWorkingDir() == null
             getSecurityContext().privileged
-        }
-        and:
-        result.spec.volumes.get(0).name == 'build-data'
-        result.spec.volumes.get(0).persistentVolumeClaim.claimName == 'build-claim'
-
-        cleanup:
-        ctx.close()
-    }
-
-    def 'should create build pod with spack cache' () {
-        given:
-        def PROPS = [
-                'wave.build.workspace': '/build/work',
-                'wave.build.k8s.namespace': 'my-ns',
-                'wave.build.k8s.configPath': '/home/kube.config',
-                'wave.build.k8s.storage.claimName': 'build-claim',
-                'wave.build.k8s.storage.mountPath': '/build',
-                'wave.build.spack.secretKeyFile':'/build/host/spack/key',
-                'wave.build.spack.secretMountPath':'/opt/container/spack/key'
-        ]
-        and:
-        def ctx = ApplicationContext.run(PROPS)
-        def k8sService = ctx.getBean(K8sServiceImpl)
-        def spackConfig = ctx.getBean(SpackConfig)
-        when:
-        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null,Duration.ofSeconds(10), spackConfig, [:])
-        then:
-        result.metadata.name == 'foo'
-        result.metadata.namespace == 'my-ns'
-        and:
-        result.spec.activeDeadlineSeconds == 10
-        and:
-        verifyAll(result.spec.containers.get(0)) {
-            name == 'foo'
-            image == 'my-image:latest'
-            args == ['this', 'that']
-            env.name == ['BUILDKITD_FLAGS']
-            env.value == ['--oci-worker-no-process-sandbox']
-            volumeMounts.size() == 2
-            volumeMounts.get(0).name == 'build-data'
-            volumeMounts.get(0).mountPath == '/build/work/xyz'
-            volumeMounts.get(0).subPath == 'work/xyz'
-            volumeMounts.get(1).name == 'build-data'
-            volumeMounts.get(1).mountPath == '/opt/container/spack/key'
-            volumeMounts.get(1).subPath == 'host/spack/key'
-            volumeMounts.get(1).readOnly
         }
         and:
         result.spec.volumes.get(0).name == 'build-data'

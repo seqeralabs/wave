@@ -63,6 +63,7 @@ class BuildRequest {
     /**
      * The spock file recipe associated with this request
      */
+    @Deprecated
     final String spackFile
 
     /**
@@ -118,6 +119,7 @@ class BuildRequest {
     /**
      * Whenever is a spack build
      */
+    @Deprecated
     final boolean isSpackBuild
 
     /** 

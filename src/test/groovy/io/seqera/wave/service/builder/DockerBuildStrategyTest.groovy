@@ -24,7 +24,6 @@ import java.nio.file.Path
 
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
 /**
  *
@@ -41,7 +40,6 @@ class DockerBuildStrategyTest extends Specification {
         def ctx = ApplicationContext.run(props)
         and:
         def service = ctx.getBean(DockerBuildStrategy)
-        def spackConfig = ctx.getBean(SpackConfig)
         and:
         def work = Path.of('/work/foo')
         when:
@@ -143,8 +141,6 @@ class DockerBuildStrategyTest extends Specification {
                 'wave.build.spack.secretMountPath':'/opt/spack/key'  ]
         def ctx = ApplicationContext.run(props)
         def service = ctx.getBean(DockerBuildStrategy)
-        SpackConfig spackConfig = ctx.getBean(SpackConfig)
-        service.setSpackConfig(spackConfig)
         and:
         def creds = Path.of('/work/creds.json')
         and:
@@ -166,14 +162,13 @@ class DockerBuildStrategyTest extends Specification {
                 '-v', '/work/foo/d4869cc39b8d7d55:/work/foo/d4869cc39b8d7d55',
                 '-v', '/work/creds.json:/root/.singularity/docker-config.json:ro',
                 '-v', '/work/singularity-remote.yaml:/root/.singularity/remote.yaml:ro',
-                '-v', '/host/spack/key:/opt/spack/key:ro',
-                '--platform', 'linux/amd64',
+                '--platform', 'linudx/amd64',
                 'quay.io/singularity/singularity:v3.11.4-slim',
                 'sh',
                 '-c',
                 'singularity build image.sif /work/foo/d4869cc39b8d7d55/Containerfile && singularity push image.sif oras://repo:d4869cc39b8d7d55'
         ]
-        
+
         cleanup:
         ctx.close()
     }
@@ -185,8 +180,6 @@ class DockerBuildStrategyTest extends Specification {
                 'wave.build.spack.secretMountPath':'/opt/spack/key'  ]
         def ctx = ApplicationContext.run(props)
         def service = ctx.getBean(DockerBuildStrategy)
-        SpackConfig spackConfig = ctx.getBean(SpackConfig)
-        service.setSpackConfig(spackConfig)
         and:
         def creds = Path.of('/work/creds.json')
         and:
@@ -195,8 +188,7 @@ class DockerBuildStrategyTest extends Specification {
                 platform: ContainerPlatform.of('linux/arm64'),
                 targetImage: 'oras://repo:9c68af894bb2419c',
                 cacheRepository: 'reg.io/wave/build/cache',
-                format: BuildFormat.SINGULARITY,
-                isSpackBuild: true )
+                format: BuildFormat.SINGULARITY )
         when:
         def cmd = service.buildCmd(req, creds)
         then:
@@ -208,7 +200,6 @@ class DockerBuildStrategyTest extends Specification {
                 '-v', '/work/foo/9c68af894bb2419c:/work/foo/9c68af894bb2419c',
                 '-v', '/work/creds.json:/root/.singularity/docker-config.json:ro',
                 '-v', '/work/singularity-remote.yaml:/root/.singularity/remote.yaml:ro',
-                '-v', '/host/spack/key:/opt/spack/key:ro',
                 '--platform', 'linux/arm64',
                 'quay.io/singularity/singularity:v3.11.4-slim-arm64',
                 'sh',

@@ -143,63 +143,11 @@ class ContainerHelperTest extends Specification {
         def packages = new PackagesSpec(type: PackagesSpec.Type.SPACK, spackOpts: SPACK_OPTS)
 
         when:
-        def result = ContainerHelper.containerFileFromPackages(packages, true)
+        ContainerHelper.containerFileFromPackages(packages, true)
 
         then:
-        result == '''\
-                Bootstrap: docker
-                From: {{spack_runner_image}}
-                stage: final
-                
-                %files from build
-                    /opt/spack-env /opt/spack-env
-                    /opt/software /opt/software
-                    /opt/._view /opt/._view
-                    /opt/spack-env/z10_spack_environment.sh /.singularity.d/env/91-environment.sh
-                
-                %post
-                    run
-                    --this
-                    --that
-                    '''.stripIndent()
+        thrown(BadRequestException)
     }
-
-    def 'should create spack docker file'() {
-        given:
-        def SPACK_OPTS = new SpackOpts([
-                basePackages: 'foo bar',
-                commands: ['run','--this','--that']
-        ])
-        def packages = new PackagesSpec(type: PackagesSpec.Type.SPACK, spackOpts: SPACK_OPTS)
-
-        when:
-        def result = ContainerHelper.containerFileFromPackages(packages, false)
-
-        then:
-        result == '''\
-                # Runner image
-                FROM {{spack_runner_image}}
-                
-                COPY --from=builder /opt/spack-env /opt/spack-env
-                COPY --from=builder /opt/software /opt/software
-                COPY --from=builder /opt/._view /opt/._view
-                
-                # Entrypoint for Singularity
-                RUN mkdir -p /.singularity.d/env && \\
-                    cp -p /opt/spack-env/z10_spack_environment.sh /.singularity.d/env/91-environment.sh
-                # Entrypoint for Docker
-                RUN echo "#!/usr/bin/env bash\\n\\nset -ef -o pipefail\\nsource /opt/spack-env/z10_spack_environment.sh\\nexec \\"\\$@\\"" \\
-                    >/opt/spack-env/spack_docker_entrypoint.sh && chmod a+x /opt/spack-env/spack_docker_entrypoint.sh
-                
-                run
-                --this
-                --that
-                
-                ENTRYPOINT [ "/opt/spack-env/spack_docker_entrypoint.sh" ]
-                CMD [ "/bin/bash" ]
-                '''.stripIndent()
-    }
-
 
     def 'should validate conda file helper' () {
         given:

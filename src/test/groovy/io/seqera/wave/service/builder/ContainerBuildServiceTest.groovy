@@ -38,7 +38,6 @@ import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.HttpClientConfig
-import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.store.BuildRecordStore
 import io.seqera.wave.service.cleanup.CleanupStrategy
@@ -48,11 +47,10 @@ import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.test.RedisTestContainer
 import io.seqera.wave.test.SurrealDBTestContainer
 import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.util.ContainerHelper
 import io.seqera.wave.util.Packer
-import io.seqera.wave.util.SpackHelper
 import io.seqera.wave.util.TemplateRenderer
 import jakarta.inject.Inject
-import io.seqera.wave.util.ContainerHelper
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -85,8 +83,8 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         '''.stripIndent()
         and:
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, cacheRepo, Mock(PlatformId))
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
                 new BuildRequest(
                         containerId: containerId,
@@ -127,8 +125,8 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         '''.stripIndent()
         and:
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
                 new BuildRequest(
                         containerId: containerId,
@@ -172,8 +170,8 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         and:
         buildRepo = "quay.io/pditommaso/wave-tests"
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
                 new BuildRequest(
                         containerId: containerId,
@@ -216,8 +214,8 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         '''.stripIndent()
         and:
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
                 new BuildRequest(
                         containerId: containerId,
@@ -266,15 +264,8 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                   - salmon=1.6.0
                 '''
         and:
-        def spackFile = '''
-                spack:
-                  specs: [bwa@0.7.15, salmon@1.1.1]
-                  concretizer: {unify: true, reuse: true}
-                '''
-        and:
-        def spackConfig = new SpackConfig(cacheBucket: 's3://bucket/cache', secretMountPath: '/mnt/secret')
-        def containerId = ContainerHelper.makeContainerId(dockerFile, condaFile, spackFile, ContainerPlatform.of('amd64'), buildRepo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, condaFile, spackFile, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, condaFile, ContainerPlatform.of('amd64'), buildRepo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, condaFile, null)
         def req =
                 new BuildRequest(
                         containerId: containerId,
@@ -294,7 +285,7 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         and:
         def store = Mock(BuildStore)
         def strategy = Mock(BuildStrategy)
-        def builder = new ContainerBuildServiceImpl(buildStrategy: strategy, buildStore: store, buildConfig: buildConfig, spackConfig:spackConfig, cleanup: new CleanupStrategy(buildConfig: buildConfig))
+        def builder = new ContainerBuildServiceImpl(buildStrategy: strategy, buildStore: store, buildConfig: buildConfig, cleanup: new CleanupStrategy(buildConfig: buildConfig))
         def RESPONSE = Mock(BuildResult)
 
         when:
@@ -318,11 +309,10 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         def folder = Files.createTempDirectory('test')
         def builder = new ContainerBuildServiceImpl()
         def buildRepo = buildConfig.defaultBuildRepository
-        def cacheRepo = buildConfig.defaultCacheRepository
         and:
         def dockerFile = 'FROM something; {{foo}}'
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
                 new BuildRequest(
                         containerId: containerId,
@@ -336,106 +326,11 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                 )
                         .withBuildId('1')
         and:
-        def spack = Mock(SpackConfig)
 
         when:
-        def result = builder.containerFile0(req, null, spack)
+        def result = builder.containerFile0(req, null)
         then:
-        0* spack.getCacheMountPath() >> null
-        0* spack.getSecretMountPath() >> null
-        0* spack.getBuilderImage() >> null
-        and:
         result == 'FROM something; {{foo}}'
-
-        cleanup:
-        folder?.deleteDir()
-    }
-
-    def 'should resolve docker file with spack config' () {
-        given:
-        def folder = Files.createTempDirectory('test')
-        def builder = new ContainerBuildServiceImpl()
-        and:
-        def dockerFile = SpackHelper.builderDockerTemplate()
-        def spackFile = 'some spack packages'
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, spackFile, ContainerPlatform.of('amd64'), 'buildRepo', null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, 'foo.com/repo', containerId, null, spackFile, null)
-        def req = new BuildRequest(
-                containerId: containerId,
-                containerFile: dockerFile,
-                spackFile: spackFile,
-                isSpackBuild: true,
-                workspace: folder,
-                targetImage: targetImage,
-                identity:Mock(PlatformId),
-                platform: ContainerPlatform.of('amd64'),
-                format: BuildFormat.DOCKER,
-                startTime: Instant.now()
-        )
-                .withBuildId('1')
-        and:
-        def spack = Mock(SpackConfig)
-
-        when:
-        def result = builder.containerFile0(req, null, spack)
-        then:
-        1* spack.getCacheBucket() >> 's3://bucket/cache'
-        1* spack.getSecretMountPath() >> '/mnt/key'
-        1* spack.getBuilderImage() >> 'spack-builder:2.0'
-        1* spack.getRunnerImage() >> 'ubuntu:22.04'
-        and:
-        result.contains('FROM spack-builder:2.0 as builder')
-        result.contains('spack config add packages:all:target:[x86_64]')
-        result.contains('spack mirror add seqera-spack s3://bucket/cache')
-        result.contains('fingerprint="$(spack gpg trust /mnt/key 2>&1 | tee /dev/stderr | sed -nr "s/^gpg: key ([0-9A-F]{16}): secret key imported$/\\1/p")"')
-
-        cleanup:
-        folder?.deleteDir()
-    }
-
-    def 'should resolve singularity file with spack config' () {
-        given:
-        def folder = Files.createTempDirectory('test')
-        def builder = new ContainerBuildServiceImpl()
-        and:
-        def context = Path.of('/some/context/dir')
-        def dockerFile = SpackHelper.builderSingularityTemplate()
-        def spackFile = 'some spack packages'
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, spackFile, ContainerPlatform.of('amd64'), 'buildRepo', null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.SINGULARITY, 'foo.com/repo', containerId, null, spackFile, null)
-        def req =
-                new BuildRequest(
-                        containerId: containerId,
-                        containerFile: dockerFile,
-                        spackFile: spackFile,
-                        isSpackBuild: true,
-                        workspace: folder,
-                        targetImage: targetImage,
-                        identity: Mock(PlatformId),
-                        platform: ContainerPlatform.of('amd64'),
-                        format: BuildFormat.SINGULARITY,
-                        startTime: Instant.now()
-                )
-
-                .withBuildId('1')
-        and:
-        def spack = Mock(SpackConfig)
-
-        when:
-        def result = builder.containerFile0(req, context, spack)
-        then:
-        1* spack.getCacheBucket() >> 's3://bucket/cache'
-        1* spack.getSecretMountPath() >> '/mnt/key'
-        1* spack.getBuilderImage() >> 'spack-builder:2.0'
-        1* spack.getRunnerImage() >> 'ubuntu:22.04'
-        and:
-        result.contains('Bootstrap: docker\n' +
-                'From: spack-builder:2.0\n' +
-                'Stage: build')
-        result.contains('spack config add packages:all:target:[x86_64]')
-        result.contains('spack mirror add seqera-spack s3://bucket/cache')
-        result.contains('fingerprint="$(spack gpg trust /mnt/key 2>&1 | tee /dev/stderr | sed -nr "s/^gpg: key ([0-9A-F]{16}): secret key imported$/\\1/p")"')
-        result.contains('/some/context/dir/spack.yaml /opt/spack-env/spack.yaml')
 
         cleanup:
         folder?.deleteDir()
@@ -452,8 +347,8 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         '''.stripIndent()
         and:
         def builder = new ContainerBuildServiceImpl()
-        def containerId = ContainerHelper.makeContainerId(containerFile, null, null, ContainerPlatform.of('amd64'), 'buildRepo', null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.SINGULARITY, 'foo.com/repo', containerId, null, null, null)
+        def containerId = ContainerHelper.makeContainerId(containerFile, null, ContainerPlatform.of('amd64'), 'buildRepo', null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.SINGULARITY, 'foo.com/repo', containerId, null, null)
         def req =
                 new BuildRequest(
                         containerId: containerId,
@@ -468,7 +363,7 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                         .withBuildId('1')
 
         when:
-        def result = builder.containerFile0(req, Path.of('/some/context/'), null)
+        def result = builder.containerFile0(req, Path.of('/some/context/'))
         then:
         result == '''\
         BootStrap: docker
@@ -498,8 +393,8 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         def containerConfig = new ContainerConfig(cmd: ['echo', 'Hola'], layers: [l1])
         and:
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
                 new BuildRequest(
                         containerId: containerId,
@@ -584,8 +479,8 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         and:
         def dockerFile = 'from foo'
         def buildRepo = 'quay.io/org/name'
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
         def req =
                 new BuildRequest(
                         containerId: containerId,

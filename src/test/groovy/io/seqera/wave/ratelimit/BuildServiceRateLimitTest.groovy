@@ -103,8 +103,8 @@ class BuildServiceRateLimitTest extends Specification {
         RUN echo hi > hello.txt
         """.stripIndent()
         and:
-        def CONTAINER_ID = ContainerHelper.makeContainerId(dockerfile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def TARGET_IMAGE = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, CONTAINER_ID, null, null, null)
+        def CONTAINER_ID = ContainerHelper.makeContainerId(dockerfile, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def TARGET_IMAGE = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, CONTAINER_ID, null, null)
         def REQ = new BuildRequest(
                 containerId: CONTAINER_ID,
                 containerFile: dockerfile,

@@ -83,8 +83,6 @@ import static io.seqera.wave.util.ContainerHelper.makeResponseV1
 import static io.seqera.wave.util.ContainerHelper.makeResponseV2
 import static io.seqera.wave.util.ContainerHelper.makeTargetImage
 import static io.seqera.wave.util.ContainerHelper.patchPlatformEndpoint
-import static io.seqera.wave.util.ContainerHelper.spackFileFromRequest
-import static io.seqera.wave.util.SpackHelper.prependBuilderTemplate
 import static java.util.concurrent.CompletableFuture.completedFuture
 /**
  * Implement a controller to receive container token requests
@@ -230,6 +228,10 @@ class ContainerController {
             req = req.copyWith(containerFile: generated.bytes.encodeBase64().toString())
         }
 
+        if( req.spackFile ) {
+            throw new BadRequestException("Spack packages are not supported any more")
+        }
+
         final ip = addressResolver.resolve(httpRequest)
         final data = makeRequestData(req, identity, ip)
         final token = tokenService.computeToken(data)
@@ -306,7 +308,6 @@ class ContainerController {
 
         final containerSpec = decodeBase64OrFail(req.containerFile, 'containerFile')
         final condaContent = condaFileFromRequest(req)
-        final spackContent = spackFileFromRequest(req)
         final format = req.formatSingularity() ? SINGULARITY : DOCKER
         final platform = ContainerPlatform.of(req.containerPlatform)
         final buildRepository = targetRepo( req.buildRepository ?: (req.freeze && buildConfig.defaultPublicRepository
@@ -317,7 +318,6 @@ class ContainerController {
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
         final scanId = scanEnabled && format==DOCKER ? LongRndKey.rndHex() : null
-        final containerFile = spackContent ? prependBuilderTemplate(containerSpec,format) : containerSpec
         // use 'imageSuffix' strategy by default for public repo images
         final nameStrategy = req.nameStrategy==null
                 && buildRepository
@@ -327,8 +327,8 @@ class ContainerController {
         checkContainerSpec(containerSpec)
 
         // create a unique digest to identify the build request
-        final containerId = makeContainerId(containerFile, condaContent, spackContent, platform, buildRepository, req.buildContext)
-        final targetImage = makeTargetImage(format, buildRepository, containerId, condaContent, spackContent, nameStrategy)
+        final containerId = makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext)
+        final targetImage = makeTargetImage(format, buildRepository, containerId, condaContent, nameStrategy)
         // build max duration - when the user identity is provided and freeze is enabled
         // use `trustedTimeout` which is expected to be longer than `defaultTimeout` `
         final maxDuration = identity && req.freeze
@@ -337,9 +337,9 @@ class ContainerController {
 
         return new BuildRequest(
                 containerId,
-                containerFile,
+                containerSpec,
                 condaContent,
-                spackContent,
+                null,
                 Path.of(buildConfig.buildWorkspace),
                 targetImage,
                 identity,
