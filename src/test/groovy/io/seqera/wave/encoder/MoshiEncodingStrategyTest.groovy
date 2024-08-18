@@ -376,7 +376,7 @@ class MoshiEncodingStrategyTest extends Specification {
         given:
         def encoder = new MoshiEncodeStrategy<JobId>() { }
         and:
-        def job = new JobId('123-abc', JobId.Type.Transfer)
+        def job = new JobId(JobId.Type.Transfer, '123-abc', Instant.now())
 
         when:
         def json = encoder.encode(job)

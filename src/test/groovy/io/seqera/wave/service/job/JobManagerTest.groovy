@@ -18,14 +18,9 @@
 
 package io.seqera.wave.service.job
 
-
 import spock.lang.Specification
 
 import java.time.Duration
-
-import io.seqera.wave.configuration.BlobCacheConfig
-import io.seqera.wave.service.blob.BlobCacheInfo
-import io.seqera.wave.service.blob.impl.BlobCacheStore
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
@@ -34,111 +29,105 @@ class JobManagerTest extends Specification {
 
     def "handle should process valid transferId"() {
         given:
-        def blobStore = Mock(BlobCacheStore)
         def queue = Mock(JobQueue)
-        def transferStrategy = Mock(JobStrategy)
-        def blobConfig = Mock(BlobCacheConfig)
-        def manager = new JobManager(blobStore: blobStore, queue: queue, jobStrategy: transferStrategy, blobConfig: blobConfig)
-
+        def jobStrategy = Mock(JobStrategy)
+        def jobDispatcher = Mock(JobDispatcher)
+        def manager = new JobManager(queue: queue, jobStrategy: jobStrategy, dispatcher: jobDispatcher)
         and:
-        def blob = BlobCacheInfo.create('http://foo.com', 's3://foo/com', [:], [:])
+        def job = JobId.transfer('foo')
 
         when:
-        manager.handle(blob.id())
-
+        manager.handle(job)
         then:
-        1 * blobStore.get(blob.id()) >> blob
-        1 * transferStrategy.status(blob) >> JobState.completed(0, 'logs')
+        1 * jobStrategy.status(job) >> JobState.completed(0, 'My job logs')
+        and:
+        1 * jobDispatcher.onJobCompletion(job, _) >> { JobId id, JobState state ->
+            assert state.exitCode == 0
+            assert state.stdout == 'My job logs'
+        }
+        and:
+        1 * jobStrategy.cleanup(job,0)
+        and:
+        0 * queue.offer(_)
     }
 
     def "handle should log error for unknown transferId"() {
         given:
-        def transferId = 'unknown'
-        def blobStore = Mock(BlobCacheStore)
         def queue = Mock(JobQueue)
-        def transferStrategy = Mock(JobStrategy)
-        def blobConfig = Mock(BlobCacheConfig)
-        def manager = new JobManager(blobStore: blobStore, queue: queue, jobStrategy: transferStrategy, blobConfig: blobConfig)
+        def jobStrategy = Mock(JobStrategy)
+        def jobDispatcher = Mock(JobDispatcher)
+        def manager = new JobManager(queue: queue, jobStrategy: jobStrategy, dispatcher: jobDispatcher)
+        and:
+        def job = JobId.transfer('unknown')
 
         when:
-        manager.handle(transferId)
-
+        manager.handle(job)
         then:
-        1 * blobStore.get(transferId) >> null
-        0 * manager.handle0(_)
-    }
-
-    def "handle0 should complete transfer when status is completed"() {
-        given:
-        def blobStore = Mock(BlobCacheStore)
-        def transferStrategy = Mock(JobStrategy)
-        def blobConfig = Mock(BlobCacheConfig)
-        def manager = new JobManager(blobStore: blobStore, jobStrategy: transferStrategy, blobConfig: blobConfig)
-        def blob = BlobCacheInfo.create('http://foo.com', 's3://foo/com', [:], [:])
-        def transfer = JobState.succeeded('logs')
-        blobConfig.statusDuration >> Duration.ofMinutes(5)
-        transferStrategy.status(blob) >> transfer
-
-        when:
-        manager.handle0(blob)
-
-        then:
-        1 * blobStore.storeBlob(blob.id(), _, blobConfig.statusDuration)
-        1 * transferStrategy.cleanup(_)
+        1 * jobStrategy.status(job) >> null
+        and:
+        1 * jobDispatcher.onJobException(job,_)
+        and:
+        0 * queue.offer(_)
     }
 
     def "handle0 should fail transfer when status is unknown and duration exceeds grace period"() {
         given:
-        def blobStore = Mock(BlobCacheStore)
-        def transferStrategy = Mock(JobStrategy)
-        def blobConfig = new BlobCacheConfig(transferTimeout: Duration.ofSeconds(1), graceDuration: Duration.ofSeconds(1))
-        def manager = new JobManager(blobStore: blobStore, jobStrategy: transferStrategy, blobConfig: blobConfig)
-        def info = BlobCacheInfo.create('http://foo.com', 's3://foo/com', [:], [:])
-        def transfer = JobState.unknown('logs')
-        transferStrategy.status(info) >> transfer
+        def queue = Mock(JobQueue)
+        def jobStrategy = Mock(JobStrategy)
+        def jobDispatcher = Mock(JobDispatcher)
+        def config = new JobConfig(graveInterval: Duration.ofMillis(500))
+        def manager = new JobManager(queue: queue, jobStrategy: jobStrategy, dispatcher: jobDispatcher, config:config)
+        and:
+        def job = JobId.transfer('foo')
 
         when:
-        sleep 1_000 //sleep for grace period
-        manager.handle0(info)
+        sleep 1_000 //sleep longer than grace period
+        manager.handle(job)
 
         then:
-        1 * blobStore.storeBlob(info.id(), _, blobConfig.failureDuration)
-        1 * transferStrategy.cleanup(_)
+        1 * jobStrategy.status(job) >> JobState.unknown('logs')
+        1 * jobDispatcher.onJobCompletion(job, _)
+        1 * jobStrategy.cleanup(job, _)
+        and:
+        0 * queue.offer(_)
     }
 
-    def "handle0 should requeue transfer when duration is within limits"() {
+    def "should requeue transfer when duration is within limits"() {
         given:
-        def blobStore = Mock(BlobCacheStore)
-        def transferStrategy = Mock(JobStrategy)
-        def blobConfig = new BlobCacheConfig(transferTimeout: Duration.ofSeconds(1))
         def queue = Mock(JobQueue)
-        def manager = new JobManager(blobStore: blobStore, jobStrategy: transferStrategy, blobConfig: blobConfig, queue: queue)
-        def info = BlobCacheInfo.create('http://foo.com', 's3://foo/com', [:], [:])
-        def transfer = JobState.running()
-        transferStrategy.status(info) >> transfer
+        def jobStrategy = Mock(JobStrategy)
+        def jobDispatcher = Mock(JobDispatcher)
+        def manager = new JobManager(queue: queue, jobStrategy: jobStrategy, dispatcher: jobDispatcher)
+        and:
+        def job = JobId.transfer('foo')
 
         when:
-        manager.handle0(info)
-
+        manager.handle(job)
         then:
-        1 * queue.offer(info.id())
+        1 * jobStrategy.status(job) >> JobState.running()
+        1 * jobDispatcher.jobRunTimeout(job) >> Duration.ofSeconds(10)
+        and:
+        1 * queue.offer(job)
     }
 
     def "handle0 should timeout transfer when duration exceeds max limit"() {
         given:
-        def blobStore = Mock(BlobCacheStore)
-        def transferStrategy = Mock(JobStrategy)
-        def blobConfig = new BlobCacheConfig(transferTimeout: Duration.ofSeconds(1))
-        def manager = new JobManager(blobStore: blobStore, jobStrategy: transferStrategy, blobConfig: blobConfig)
-        def info = BlobCacheInfo.create('http://foo.com', 's3://foo/com', [:], [:])
-        def transfer = JobState.running()
-        transferStrategy.status(info) >> transfer
+        def queue = Mock(JobQueue)
+        def jobStrategy = Mock(JobStrategy)
+        def jobDispatcher = Mock(JobDispatcher)
+        def manager = new JobManager(queue: queue, jobStrategy: jobStrategy, dispatcher: jobDispatcher)
+        and:
+        def job = JobId.transfer('foo')
 
         when:
-        sleep 1_100 * 2 //await timeout
-        manager.handle0(info)
-
+        sleep 1_000 //await timeout
+        manager.handle(job)
         then:
-        1 * blobStore.storeBlob(info.id(), _, blobConfig.failureDuration)
+        1 * jobStrategy.status(job) >> JobState.running()
+        1 * jobDispatcher.jobRunTimeout(job) >> Duration.ofMillis(100)
+        and:
+        1 * jobDispatcher.onJobTimeout(job)
+        and:
+        0 * queue.offer(_)
     }
 }

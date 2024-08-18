@@ -36,6 +36,7 @@ import io.kubernetes.client.openapi.models.V1PodStatus
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.service.blob.BlobCacheInfo
+import io.seqera.wave.service.job.JobId
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.k8s.K8sService.JobStatus
 import io.seqera.wave.service.cleanup.CleanupStrategy
@@ -56,7 +57,7 @@ class KubeJobStrategyTest extends Specification {
         def info = BlobCacheInfo.create("https://test.com/blobs", "https://test.com/bucket/blobs", null, null)
         def command = ["transfer", "blob"]
         final jobName = "job-123"
-        def podName = "$jobName-abc"
+        def podName = "$jobName-abc".toString()
         def pod = new V1Pod(metadata: [name: podName, creationTimestamp: OffsetDateTime.now()])
         pod.status = new V1PodStatus(phase: "Succeeded")
         def podList = new V1PodList(items: [pod])
@@ -67,37 +68,37 @@ class KubeJobStrategyTest extends Specification {
         k8sService.logsPod(_) >> "transfer successful"
 
         when:
-        strategy.launchJob(info, command)
+        strategy.launchJob(podName, command)
 
         then:
-        1 * k8sService.launchJob(info.jobName, blobConfig.s5Image, command, blobConfig)
+        1 * k8sService.launchJob(podName, blobConfig.s5Image, command, blobConfig)
     }
 
     def 'status should return correct status when job is not completed'() {
         given:
-        def info = BlobCacheInfo.create("https://test.com/blobs", "https://test.com/bucket/blobs", null, null)
-        k8sService.getJobStatus(info.jobName) >> K8sService.JobStatus.Running
+        def job = JobId.transfer('foo')
+        and:
+        k8sService.getJobStatus(job.schedulerId) >> K8sService.JobStatus.Running
 
         when:
-        def result = strategy.status(info)
-
+        def result = strategy.status(job)
         then:
         result.status == JobState.Status.RUNNING
     }
 
-
     void 'status should return correct transfer status when pods are created'() {
         given:
-        def info = BlobCacheInfo.create("https://test.com/blobs", "https://test.com/bucket/blobs", null, null)
+        def job = JobId.transfer('foo')
+        and:
         def status = new V1PodStatus(phase: "Succeeded", containerStatuses: [new V1ContainerStatus( state: new V1ContainerState(terminated: new V1ContainerStateTerminated(exitCode: 0)))])
-        def pod = new V1Pod(metadata: [name: "pod-123"], status: status)
-        k8sService.getJobStatus(_) >> K8sService.JobStatus.Succeeded
-        k8sService.logsPod(_) >> "transfer successful"
-        k8sService.getLatestPodForJob(info.jobName) >> pod
+        def pod = new V1Pod(metadata: [name: job.schedulerId], status: status)
+        and:
+        k8sService.getJobStatus(job.schedulerId) >> K8sService.JobStatus.Succeeded
+        k8sService.getLatestPodForJob(job.schedulerId) >> pod
+        k8sService.logsPod(pod) >> "transfer successful"
 
         when:
-        def result = strategy.status(info)
-
+        def result = strategy.status(job)
         then:
         result.status == JobState.Status.SUCCEEDED
         result.exitCode == 0
@@ -106,27 +107,28 @@ class KubeJobStrategyTest extends Specification {
 
     def 'status should return failed transfer when no pods are created'() {
         given:
-        def info = BlobCacheInfo.create("https://test.com/blobs", "https://test.com/bucket/blobs", null, null)
+        def job = JobId.transfer('foo')
+        and:
         def status = new V1PodStatus(phase: "Failed")
-        def pod = new V1Pod(metadata: [name: "pod-123"], status: status)
-        k8sService.getJobStatus(info.jobName) >> K8sService.JobStatus.Failed
-        k8sService.getLatestPodForJob(info.jobName) >> pod
+        def pod = new V1Pod(metadata: [name: job.schedulerId], status: status)
+        and:
+        k8sService.getLatestPodForJob(job.schedulerId) >> pod
+        k8sService.getJobStatus(job.schedulerId) >> K8sService.JobStatus.Failed
 
         when:
-        def result = strategy.status(info)
-
+        def result = strategy.status(job)
         then:
         result.status == JobState.Status.FAILED
     }
 
     def 'status should handle null job status'() {
         given:
-        def info = BlobCacheInfo.create("https://test.com/blobs", "https://test.com/bucket/blobs", null, null)
-        k8sService.getJobStatus(info.id()) >> null
-
+        def job = JobId.transfer('foo')
+        and:
+        k8sService.getJobStatus(job.schedulerId) >> null
+        
         when:
-        def result = strategy.status(info)
-
+        def result = strategy.status(job)
         then:
         result.status == JobState.Status.UNKNOWN
     }
