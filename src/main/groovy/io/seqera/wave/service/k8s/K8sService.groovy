@@ -19,6 +19,7 @@
 package io.seqera.wave.service.k8s
 
 import java.nio.file.Path
+import java.time.Duration
 
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1Pod
@@ -47,9 +48,9 @@ interface K8sService {
 
     void deletePod(String name)
 
-    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector)
+    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, SpackConfig spackConfig, Map <String,String> nodeSelector)
 
-    V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map <String,String> nodeSelector)
+    V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector)
 
     Integer waitPodCompletion(V1Pod pod, long timeout)
 
