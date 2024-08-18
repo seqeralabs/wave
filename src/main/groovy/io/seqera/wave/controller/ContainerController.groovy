@@ -329,11 +329,7 @@ class ContainerController {
         // create a unique digest to identify the build request
         final containerId = makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext)
         final targetImage = makeTargetImage(format, buildRepository, containerId, condaContent, nameStrategy)
-        // build max duration - when the user identity is provided and freeze is enabled
-        // use `trustedTimeout` which is expected to be longer than `defaultTimeout` `
-        final maxDuration = identity && req.freeze
-                ?  buildConfig.trustedTimeout
-                :  buildConfig.defaultTimeout
+        final maxDuration = buildConfig.buildMaxDuration(req)
 
         return new BuildRequest(
                 containerId,
