@@ -16,21 +16,32 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.blob.transfer
+package io.seqera.wave.service.job
 
-
+import groovy.transform.CompileStatic
 import io.seqera.wave.service.blob.BlobCacheInfo
+import jakarta.inject.Inject
 /**
- * Defines the contract to transfer a layer blob into a remote object storage
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface TransferStrategy {
+@CompileStatic
+class JobServiceImpl implements JobService {
 
-    void transfer(BlobCacheInfo blob, List<String> command)
+    @Inject
+    private JobStrategy jobStrategy
 
-    Transfer status(BlobCacheInfo blob)
+    @Inject
+    private JobQueue jobQueue
 
-    void cleanup(BlobCacheInfo blob)
+    @Override
+    JobId launchTransfer(BlobCacheInfo blob, List<String> command) {
+        final job = JobId.transfer(blob.id())
+        jobStrategy.launchJob(job.schedulerId, command)
+        // signal the transfer to be started
+        // note: both `transferQueue` and `blobStore` use the same object `id`
+        jobQueue.offer(job)
+        return job
+    }
 
 }

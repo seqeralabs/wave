@@ -45,6 +45,7 @@ class BlobCacheConfig {
     Duration failureDuration
 
     @Value('${wave.blobCache.grace.duration:20s}')
+    @Deprecated
     Duration graceDuration
 
     @Value('${wave.blobCache.timeout:10m}')

@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.blob.transfer
+package io.seqera.wave.service.job
 
 import java.time.Duration
 import java.time.Instant
@@ -28,9 +28,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Requires
 import io.micronaut.scheduling.TaskExecutors
-import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.service.blob.BlobCacheInfo
-import io.seqera.wave.service.blob.impl.BlobCacheStore
 import io.seqera.wave.util.ExponentialAttempt
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
@@ -44,23 +42,23 @@ import jakarta.inject.Named
 @Context
 @CompileStatic
 @Requires(property = 'wave.blobCache.enabled', value = 'true')
-class TransferManager  {
+class JobManager {
 
     @Inject
-    private TransferStrategy transferStrategy
+    private JobStrategy jobStrategy
 
     @Inject
-    private BlobCacheStore blobStore
-
-    @Inject
-    private BlobCacheConfig blobConfig
-
-    @Inject
-    private TransferQueue queue
+    private JobQueue queue
 
     @Inject
     @Named(TaskExecutors.IO)
     private ExecutorService executor
+
+    @Inject
+    private JobDispatcher dispatcher
+
+    @Inject
+    private JobConfig config
 
     private final ExponentialAttempt attempt = new ExponentialAttempt()
 
@@ -70,13 +68,13 @@ class TransferManager  {
     }
 
     void run() {
-        log.info "+ Starting Blob cache transfer manager"
+        log.info "+ Starting Job manager"
         while( !Thread.currentThread().isInterrupted() ) {
             try {
-                final transferId = queue.poll(blobConfig.statusDelay)
+                final jobId = queue.poll(config.pollTimeout)
 
-                if( transferId ) {
-                    handle(transferId)
+                if( jobId ) {
+                    handle(jobId)
                     attempt.reset()
                 }
             }
@@ -97,66 +95,49 @@ class TransferManager  {
      *
      * @param blobId the blob cache id i.e. {@link BlobCacheInfo#id()}
      */
-    protected void handle(String blobId) {
+    protected void handle(JobId jobId) {
         try {
-            final blob = blobStore.get(blobId)
-            if( !blob ) {
-                log.error "Unknown blob transfer with id: $blobId"
-                return
-            }
             try {
-                handle0(blob)
+                handle0(jobId)
             }
-            catch (Throwable t) {
-                log.error("Unexpected error caching blob '${blob.objectUri}' - job name '${blob.jobName}", t)
-                blobStore.put(blobId, blob.failed("Unexpected error caching blob '${blob.locationUri}' - job name '${blob.jobName}'"))
+            catch (Throwable error) {
+                dispatcher.onJobException(jobId, error)
             }
         }
         catch (InterruptedException e) {
             // re-queue the transfer to not lose it
-            queue.offer(blobId)
+            queue.offer(jobId)
             // re-throw the exception
             throw e
         }
     }
 
-    protected void handle0(BlobCacheInfo info) {
-        final duration = Duration.between(info.creationTime, Instant.now())
-        final transfer = transferStrategy.status(info)
-        log.trace "Blob cache transfer name=${info.jobName}; state=${transfer}; object=${info.objectUri}"
+    protected void handle0(JobId jobId) {
+        final duration = Duration.between(jobId.creationTime, Instant.now())
+        final state = jobStrategy.status(jobId)
+        log.trace "Job status id=${jobId.schedulerId}; state=${state}"
         final done =
-                transfer.completed() ||
+                state.completed() ||
                 // considered failed when remain in unknown status too long         
-                (transfer.status==Transfer.Status.UNKNOWN && duration>blobConfig.graceDuration)
+                (state.status==JobState.Status.UNKNOWN && duration>config.graveInterval)
         if( done ) {
-            // use a short time-to-live for failed downloads
-            // this is needed to allow re-try caching of failure transfers
-            final ttl = transfer.succeeded()
-                    ? blobConfig.statusDuration
-                    : blobConfig.failureDuration
-            // update the blob status
-            final result = transfer.succeeded()
-                    ? info.completed(transfer.exitCode, transfer.stdout)
-                    : info.failed(transfer.stdout)
-            blobStore.storeBlob(info.id(), result, ttl)
-            log.debug "== Blob cache completed for object '${info.objectUri}'; id=${info.objectUri}; status=${result.exitStatus}; duration=${result.duration()}"
-            // finally cleanup the job
-            transferStrategy.cleanup(result)
+            // publish the completion event
+            dispatcher.onJobCompletion(jobId, state)
+             // cleanup the job
+            jobStrategy.cleanup(jobId, state.exitCode)
             return
         }
         // set the await timeout nearly double as the blob transfer timeout, this because the
         // transfer pod can spend `timeout` time in pending status awaiting to be scheduled
         // and the same `timeout` time amount carrying out the transfer (upload) operation
-        final max = (blobConfig.transferTimeout.toMillis() * 2.10) as long
+        final max = (dispatcher.jobRunTimeout(jobId).toMillis() * 2.10) as long
         if( duration.toMillis()>max ) {
-            final result = info.failed("Blob cache transfer timed out - id: ${info.objectUri}; object: ${info.objectUri}")
-            log.warn "== Blob cache completed for object '${info.objectUri}'; id=${info.objectUri}; duration=${result.duration()}"
-            blobStore.storeBlob(info.id(), result, blobConfig.failureDuration)
+            dispatcher.onJobTimeout(jobId)
         }
         else {
-            log.trace "== Blob cache pending for completion $info"
+            log.trace "== Job pending for completion $jobId"
             // re-schedule for a new check
-            queue.offer(info.id())
+            queue.offer(jobId)
         }
     }
 

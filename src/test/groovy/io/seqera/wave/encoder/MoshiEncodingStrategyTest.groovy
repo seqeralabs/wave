@@ -32,6 +32,7 @@ import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.service.job.JobId
 import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingResponse
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
@@ -369,5 +370,21 @@ class MoshiEncodingStrategyTest extends Specification {
         and:
         copy == auth
 
+    }
+
+    def 'should encode and decode job request' () {
+        given:
+        def encoder = new MoshiEncodeStrategy<JobId>() { }
+        and:
+        def job = new JobId('123-abc', JobId.Type.Transfer)
+
+        when:
+        def json = encoder.encode(job)
+        and:
+        def copy = encoder.decode(json)
+        then:
+        copy.getClass() == JobId
+        and:
+        copy == job
     }
 }

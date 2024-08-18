@@ -16,22 +16,18 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.blob.transfer
-
-import groovy.transform.CompileStatic
-import io.seqera.wave.exception.WaveException
-
-
+package io.seqera.wave.service.job
 /**
- * Exception fired when the time to blob download takes too long
+ * Defines the contract to transfer a layer blob into a remote object storage
  *
- * @author: Paolo Di Tommaso <paolo.ditommaso@gmail.com>
- *
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@CompileStatic
-class TransferTimeoutException extends WaveException{
+interface JobStrategy {
 
-    TransferTimeoutException(String message) {
-        super(message)
-    }
+    void launchJob(String jobName, List<String> command)
+
+    JobState status(JobId jobId)
+
+    void cleanup(JobId jobId, Integer exitStatus)
+
 }

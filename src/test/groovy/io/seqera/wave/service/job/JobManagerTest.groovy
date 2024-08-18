@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2024, Seqera Labs
+ *  Copyright (c) 2023-2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -16,7 +16,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.blob.transfer
+package io.seqera.wave.service.job
+
 
 import spock.lang.Specification
 
@@ -29,15 +30,15 @@ import io.seqera.wave.service.blob.impl.BlobCacheStore
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-class TransferManagerTest extends Specification {
+class JobManagerTest extends Specification {
 
     def "handle should process valid transferId"() {
         given:
         def blobStore = Mock(BlobCacheStore)
-        def queue = Mock(TransferQueue)
-        def transferStrategy = Mock(TransferStrategy)
+        def queue = Mock(JobQueue)
+        def transferStrategy = Mock(JobStrategy)
         def blobConfig = Mock(BlobCacheConfig)
-        def manager = new TransferManager(blobStore: blobStore, queue: queue, transferStrategy: transferStrategy, blobConfig: blobConfig)
+        def manager = new JobManager(blobStore: blobStore, queue: queue, jobStrategy: transferStrategy, blobConfig: blobConfig)
 
         and:
         def blob = BlobCacheInfo.create('http://foo.com', 's3://foo/com', [:], [:])
@@ -47,17 +48,17 @@ class TransferManagerTest extends Specification {
 
         then:
         1 * blobStore.get(blob.id()) >> blob
-        1 * transferStrategy.status(blob) >> Transfer.completed(0, 'logs')
+        1 * transferStrategy.status(blob) >> JobState.completed(0, 'logs')
     }
 
     def "handle should log error for unknown transferId"() {
         given:
         def transferId = 'unknown'
         def blobStore = Mock(BlobCacheStore)
-        def queue = Mock(TransferQueue)
-        def transferStrategy = Mock(TransferStrategy)
+        def queue = Mock(JobQueue)
+        def transferStrategy = Mock(JobStrategy)
         def blobConfig = Mock(BlobCacheConfig)
-        def manager = new TransferManager(blobStore: blobStore, queue: queue, transferStrategy: transferStrategy, blobConfig: blobConfig)
+        def manager = new JobManager(blobStore: blobStore, queue: queue, jobStrategy: transferStrategy, blobConfig: blobConfig)
 
         when:
         manager.handle(transferId)
@@ -70,11 +71,11 @@ class TransferManagerTest extends Specification {
     def "handle0 should complete transfer when status is completed"() {
         given:
         def blobStore = Mock(BlobCacheStore)
-        def transferStrategy = Mock(TransferStrategy)
+        def transferStrategy = Mock(JobStrategy)
         def blobConfig = Mock(BlobCacheConfig)
-        def manager = new TransferManager(blobStore: blobStore, transferStrategy: transferStrategy, blobConfig: blobConfig)
+        def manager = new JobManager(blobStore: blobStore, jobStrategy: transferStrategy, blobConfig: blobConfig)
         def blob = BlobCacheInfo.create('http://foo.com', 's3://foo/com', [:], [:])
-        def transfer = Transfer.succeeded('logs')
+        def transfer = JobState.succeeded('logs')
         blobConfig.statusDuration >> Duration.ofMinutes(5)
         transferStrategy.status(blob) >> transfer
 
@@ -89,11 +90,11 @@ class TransferManagerTest extends Specification {
     def "handle0 should fail transfer when status is unknown and duration exceeds grace period"() {
         given:
         def blobStore = Mock(BlobCacheStore)
-        def transferStrategy = Mock(TransferStrategy)
+        def transferStrategy = Mock(JobStrategy)
         def blobConfig = new BlobCacheConfig(transferTimeout: Duration.ofSeconds(1), graceDuration: Duration.ofSeconds(1))
-        def manager = new TransferManager(blobStore: blobStore, transferStrategy: transferStrategy, blobConfig: blobConfig)
+        def manager = new JobManager(blobStore: blobStore, jobStrategy: transferStrategy, blobConfig: blobConfig)
         def info = BlobCacheInfo.create('http://foo.com', 's3://foo/com', [:], [:])
-        def transfer = Transfer.unknown('logs')
+        def transfer = JobState.unknown('logs')
         transferStrategy.status(info) >> transfer
 
         when:
@@ -108,12 +109,12 @@ class TransferManagerTest extends Specification {
     def "handle0 should requeue transfer when duration is within limits"() {
         given:
         def blobStore = Mock(BlobCacheStore)
-        def transferStrategy = Mock(TransferStrategy)
+        def transferStrategy = Mock(JobStrategy)
         def blobConfig = new BlobCacheConfig(transferTimeout: Duration.ofSeconds(1))
-        def queue = Mock(TransferQueue)
-        def manager = new TransferManager(blobStore: blobStore, transferStrategy: transferStrategy, blobConfig: blobConfig, queue: queue)
+        def queue = Mock(JobQueue)
+        def manager = new JobManager(blobStore: blobStore, jobStrategy: transferStrategy, blobConfig: blobConfig, queue: queue)
         def info = BlobCacheInfo.create('http://foo.com', 's3://foo/com', [:], [:])
-        def transfer = Transfer.running()
+        def transfer = JobState.running()
         transferStrategy.status(info) >> transfer
 
         when:
@@ -126,11 +127,11 @@ class TransferManagerTest extends Specification {
     def "handle0 should timeout transfer when duration exceeds max limit"() {
         given:
         def blobStore = Mock(BlobCacheStore)
-        def transferStrategy = Mock(TransferStrategy)
+        def transferStrategy = Mock(JobStrategy)
         def blobConfig = new BlobCacheConfig(transferTimeout: Duration.ofSeconds(1))
-        def manager = new TransferManager(blobStore: blobStore, transferStrategy: transferStrategy, blobConfig: blobConfig)
+        def manager = new JobManager(blobStore: blobStore, jobStrategy: transferStrategy, blobConfig: blobConfig)
         def info = BlobCacheInfo.create('http://foo.com', 's3://foo/com', [:], [:])
-        def transfer = Transfer.running()
+        def transfer = JobState.running()
         transferStrategy.status(info) >> transfer
 
         when:

@@ -26,17 +26,17 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BlobCacheConfig
-import io.seqera.wave.service.blob.BlobCacheInfo
-import io.seqera.wave.service.blob.transfer.Transfer
-import io.seqera.wave.service.blob.transfer.Transfer.Status
-import io.seqera.wave.service.blob.transfer.TransferStrategy
 import io.seqera.wave.service.cleanup.CleanupStrategy
+import io.seqera.wave.service.job.JobId
+import io.seqera.wave.service.job.JobState
+import io.seqera.wave.service.job.JobState.Status
+import io.seqera.wave.service.job.JobStrategy
 import io.seqera.wave.service.k8s.K8sService
 import io.seqera.wave.service.k8s.K8sService.JobStatus
 import jakarta.inject.Inject
 import jakarta.inject.Named
 /**
- * Implements {@link TransferStrategy} that runs s5cmd using a
+ * Implements {@link JobStrategy} that runs s5cmd using a
  * Kubernetes job
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -45,7 +45,7 @@ import jakarta.inject.Named
 @CompileStatic
 @Requires(property = 'wave.build.k8s')
 @Requires(property = 'wave.blobCache.enabled', value = 'true')
-class KubeTransferStrategy implements TransferStrategy {
+class KubeTransferStrategy implements JobStrategy {
 
     @Inject
     private BlobCacheConfig blobConfig
@@ -61,29 +61,29 @@ class KubeTransferStrategy implements TransferStrategy {
     private ExecutorService executor
 
     @Override
-    void transfer(BlobCacheInfo info, List<String> command) {
+    void launchJob(String jobName, List<String> command) {
         // run the transfer job
-        k8sService.transferJob(info.jobName, blobConfig.s5Image, command, blobConfig)
+        k8sService.launchJob(jobName, blobConfig.s5Image, command, blobConfig)
     }
 
     @Override
-    void cleanup(BlobCacheInfo blob) {
-        if( cleanup.shouldCleanup(blob.exitStatus) ) {
-            CompletableFuture.supplyAsync (() -> k8sService.deleteJob(blob.jobName), executor)
+    void cleanup(JobId job, Integer exitStatus) {
+        if( cleanup.shouldCleanup(exitStatus) ) {
+            CompletableFuture.supplyAsync (() -> k8sService.deleteJob(job.schedulerId), executor)
         }
     }
 
     @Override
-    Transfer status(BlobCacheInfo info) {
-        final status = k8sService.getJobStatus(info.jobName)
+    JobState status(JobId job) {
+        final status = k8sService.getJobStatus(job.schedulerId)
         if( !status || !status.completed() ) {
-            return new Transfer(mapToStatus(status))
+            return new JobState(mapToStatus(status))
         }
 
         // Find the latest created pod among the pods associated with the job
-        final pod = k8sService.getLatestPodForJob(info.jobName)
+        final pod = k8sService.getLatestPodForJob(job.schedulerId)
         if( !pod )
-            throw new IllegalStateException("Missing carried pod for job: ${info.jobName}")
+            throw new IllegalStateException("Missing carried pod for job: ${job.schedulerId}")
 
         // determine exit code and logs
         final exitCode = pod
@@ -94,7 +94,7 @@ class KubeTransferStrategy implements TransferStrategy {
                 ?.terminated
                 ?.exitCode
         final stdout = k8sService.logsPod(pod)
-        return new Transfer(mapToStatus(status), exitCode, stdout)
+        return new JobState(mapToStatus(status), exitCode, stdout)
     }
 
     /**
