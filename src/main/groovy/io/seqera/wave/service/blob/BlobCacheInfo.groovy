@@ -30,7 +30,7 @@ import groovy.util.logging.Slf4j
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
-@ToString(includePackage = false, includeNames = true)
+@ToString(includePackage = false, includeNames = true, excludes = ['headers','logs'])
 @Canonical
 @CompileStatic
 class BlobCacheInfo {
