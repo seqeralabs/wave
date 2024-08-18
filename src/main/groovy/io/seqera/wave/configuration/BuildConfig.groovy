@@ -25,6 +25,7 @@ import groovy.transform.CompileStatic
 import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
 import jakarta.inject.Singleton
 /**
@@ -111,7 +112,7 @@ class BuildConfig {
 
     @PostConstruct
     private void init() {
-        log.debug("Builder config: " +
+        log.info("Builder config: " +
                 "buildkit-image=${buildkitImage}; " +
                 "singularity-image=${singularityImage}; " +
                 "singularity-image-amr64=${singularityImageArm64}; " +
@@ -128,6 +129,10 @@ class BuildConfig {
                 "oci-mediatypes=${ociMediatypes}; " +
                 "compression=${compression}; " +
                 "force-compression=${forceCompression}; ")
+        // minimal validation
+        if( trustedTimeout < defaultTimeout ) {
+            log.warn "Trusted build timeout should be longer than default timeout - check configuration setting 'wave.build.trusted-timeout'"
+        }
     }
 
     String singularityImage(ContainerPlatform containerPlatform){
@@ -140,4 +145,11 @@ class BuildConfig {
         return singularityImageArm64 ?: singularityImage + "-arm64"
     }
 
+    Duration buildMaxDuration(SubmitContainerTokenRequest request) {
+        // build max duration - when the user identity is provided and freeze is enabled
+        // use `trustedTimeout` which is expected to be longer than `defaultTimeout`
+        return request.towerAccessToken && request.freeze && trustedTimeout>defaultTimeout
+                ? trustedTimeout
+                : defaultTimeout
+    }
 }

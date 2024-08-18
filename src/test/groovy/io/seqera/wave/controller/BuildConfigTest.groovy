@@ -23,6 +23,7 @@ import spock.lang.Unroll
 
 import java.time.Duration
 
+import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.core.ContainerPlatform
 
@@ -84,5 +85,23 @@ class BuildConfigTest extends Specification {
         Duration.ofMinutes(15)      | Duration.ofMinutes(15)        |  Duration.ofMillis(Math.round( 2.1 * 15 * 60 * 1000))
         Duration.ofMinutes(15)      | Duration.ofMinutes(25)        |  Duration.ofMillis(Math.round( 2.1 * 15 * 60 * 1000))
         Duration.ofMinutes(15)      | Duration.ofMinutes(30)        |  Duration.ofMillis(Math.round( 1.1 * 30 * 60 * 1000))
+    }
+
+    @Unroll
+    def 'should validate build max duration' () {
+        given:
+        def config = new BuildConfig(defaultTimeout: Duration.ofMinutes(DEFAULT), trustedTimeout: Duration.ofMinutes(TRUSTED))
+        expect:
+        config.buildMaxDuration(new SubmitContainerTokenRequest(towerAccessToken: TOKEN, freeze: FREEZE)) == Duration.ofMinutes(EXPECTED)
+
+        where:
+        TOKEN       | FREEZE        | DEFAULT       | TRUSTED       | EXPECTED
+        null        | false         | 5             | 10            | 5
+        null        | true          | 5             | 10            | 5
+        null        | true          | 5             | 1             | 5
+        'xyz'       | false         | 5             | 10            | 5
+        'xtz'       | true          | 5             | 10            | 10    // <-- pick "trusted" because both "freeze" and "token" are provided
+        'xtz'       | true          | 20            | 10            | 20    // <-- pick "default" when it's greater than "trusted"
+
     }
 }
