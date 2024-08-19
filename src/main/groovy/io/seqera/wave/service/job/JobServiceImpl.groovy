@@ -22,6 +22,7 @@ import groovy.transform.CompileStatic
 import io.seqera.wave.service.blob.BlobCacheInfo
 import jakarta.inject.Inject
 /**
+ * Implement a service for job creation and execution
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -36,7 +37,9 @@ class JobServiceImpl implements JobService {
 
     @Override
     JobId launchTransfer(BlobCacheInfo blob, List<String> command) {
+        // create the ID for the job transfer
         final job = JobId.transfer(blob.id())
+
         jobStrategy.launchJob(job.schedulerId, command)
         // signal the transfer to be started
         // note: both `transferQueue` and `blobStore` use the same object `id`

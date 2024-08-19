@@ -130,7 +130,7 @@ class JobManager {
         // set the await timeout nearly double as the blob transfer timeout, this because the
         // transfer pod can spend `timeout` time in pending status awaiting to be scheduled
         // and the same `timeout` time amount carrying out the transfer (upload) operation
-        final max = (dispatcher.jobRunTimeout(jobId).toMillis() * 2.10) as long
+        final max = (dispatcher.jobMaxDuration(jobId).toMillis() * 2.10) as long
         if( duration.toMillis()>max ) {
             dispatcher.onJobTimeout(jobId)
         }

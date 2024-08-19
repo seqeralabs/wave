@@ -28,6 +28,8 @@ import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
+ * Concrete implementation of {@link JobHandler} that dispatcher event invocations
+ * to the target implementation based on the job {@link JobId#type}
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -43,14 +45,18 @@ class JobDispatcher implements JobHandler {
 
     @PostConstruct
     void init() {
-        add(dispatch, JobId.Type.Transfer)
+        // implementation should be added here
+        add(JobId.Type.Transfer, dispatch, false)
     }
 
-    protected void add(Map<JobId.Type, JobHandler> map, JobId.Type type) {
+    protected void add(JobId.Type type, Map<JobId.Type, JobHandler> map, boolean required) {
         final handler = context.findBean(JobHandler.class, Qualifiers.byName(type.toString()))
         if( handler.isPresent() ) {
             log.debug "Adding job handler for type: $type; handler=$handler"
             map.put(type, handler.get())
+        }
+        else if( required ) {
+            throw new IllegalStateException("Unable to find Job handler for type: $type")
         }
         else {
             log.debug "Disabled job handler for type: $type"
@@ -58,22 +64,22 @@ class JobDispatcher implements JobHandler {
     }
 
     @Override
-    Duration jobRunTimeout(JobId job) {
-        dispatch.get(job.type).jobRunTimeout(job)
+    final Duration jobMaxDuration(JobId job) {
+        return dispatch.get(job.type).jobMaxDuration(job)
     }
 
     @Override
-    void onJobCompletion(JobId job, JobState state) {
+    final void onJobCompletion(JobId job, JobState state) {
         dispatch.get(job.type).onJobCompletion(job, state)
     }
 
     @Override
-    void onJobException(JobId job, Throwable error) {
+    final void onJobException(JobId job, Throwable error) {
         dispatch.get(job.type).onJobException(job, error)
     }
 
     @Override
-    void onJobTimeout(JobId job) {
+    final void onJobTimeout(JobId job) {
         dispatch.get(job.type).onJobTimeout(job)
     }
 }

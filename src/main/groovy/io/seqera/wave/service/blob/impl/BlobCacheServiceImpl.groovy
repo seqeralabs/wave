@@ -180,18 +180,18 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler {
         return command
     }
 
-    protected void store(RoutePath route, BlobCacheInfo info) {
-        log.debug "== Blob cache begin for object '${info.locationUri}'"
+    protected void store(RoutePath route, BlobCacheInfo blob) {
+        log.debug "== Blob cache begin for object '${blob.locationUri}'"
         try {
             // the transfer command to be executed
-            final cli = transferCommand(route, info)
-            jobService.launchTransfer(info, cli)
+            final cli = transferCommand(route, blob)
+            jobService.launchTransfer(blob, cli)
         }
         catch (Throwable t) {
-            log.warn "== Blob cache failed for object '${info.objectUri}' - cause: ${t.message}", t
-            final result = info.failed(t.message)
+            log.warn "== Blob cache failed for object '${blob.objectUri}' - cause: ${t.message}", t
+            final result = blob.failed(t.message)
             // update the blob status
-            blobStore.storeBlob(info.id(), result, blobConfig.failureDuration)
+            blobStore.storeBlob(blob.id(), result, blobConfig.failureDuration)
         }
     }
 
@@ -268,15 +268,14 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler {
 
     // ============ handles transfer job events ============
 
-
     @Override
-    Duration jobRunTimeout(JobId job) {
+    Duration jobMaxDuration(JobId job) {
         return blobConfig.transferTimeout
     }
 
     @Override
     void onJobCompletion(JobId job, JobState state) {
-        final info = blobStore.getBlob(job.id)
+        final blob = blobStore.getBlob(job.id)
         // use a short time-to-live for failed downloads
         // this is needed to allow re-try caching of failure transfers
         final ttl = state.succeeded()
@@ -284,19 +283,18 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler {
                 : blobConfig.failureDuration
         // update the blob status
         final result = state.succeeded()
-                ? info.completed(state.exitCode, state.stdout)
-                : info.failed(state.stdout)
-        blobStore.storeBlob(info.id(), result, ttl)
-        log.debug "== Blob cache completed for object '${info.objectUri}'; id=${info.objectUri}; status=${result.exitStatus}; duration=${result.duration()}"
-
+                ? blob.completed(state.exitCode, state.stdout)
+                : blob.failed(state.stdout)
+        blobStore.storeBlob(blob.id(), result, ttl)
+        log.debug "== Blob cache completed for object '${blob.objectUri}'; id=${blob.objectUri}; status=${result.exitStatus}; duration=${result.duration()}"
     }
 
     @Override
     void onJobException(JobId job, Throwable error) {
         final blob = blobStore.getBlob(job.id)
-        log.error("Unexpected error caching blob '${blob.objectUri}'; job name=${job.schedulerId};", error)
-        blobStore.storeBlob(job.id, blob.failed("Unexpected error caching blob '${blob.locationUri}' - job name '${job.schedulerId}'"))
-
+        final result = blob.failed("Unexpected error caching blob '${blob.locationUri}' - job name '${job.schedulerId}'")
+        log.error("== Blob cache exception for object '${blob.objectUri}'; job name=${job.schedulerId}; cause=${error.message}", error)
+        blobStore.storeBlob(job.id, result, blobConfig.failureDuration)
     }
 
     @Override

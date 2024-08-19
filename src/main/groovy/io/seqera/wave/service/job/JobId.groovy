@@ -24,7 +24,7 @@ import com.google.common.hash.Hashing
 import groovy.transform.Canonical
 
 /**
- * Model a job id
+ * Model a unique job to be managed
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

@@ -105,7 +105,7 @@ class JobManagerTest extends Specification {
         manager.handle(job)
         then:
         1 * jobStrategy.status(job) >> JobState.running()
-        1 * jobDispatcher.jobRunTimeout(job) >> Duration.ofSeconds(10)
+        1 * jobDispatcher.jobMaxDuration(job) >> Duration.ofSeconds(10)
         and:
         1 * queue.offer(job)
     }
@@ -124,7 +124,7 @@ class JobManagerTest extends Specification {
         manager.handle(job)
         then:
         1 * jobStrategy.status(job) >> JobState.running()
-        1 * jobDispatcher.jobRunTimeout(job) >> Duration.ofMillis(100)
+        1 * jobDispatcher.jobMaxDuration(job) >> Duration.ofMillis(100)
         and:
         1 * jobDispatcher.onJobTimeout(job)
         and:
