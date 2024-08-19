@@ -39,10 +39,9 @@ class JobServiceImpl implements JobService {
     JobId launchTransfer(BlobCacheInfo blob, List<String> command) {
         // create the ID for the job transfer
         final job = JobId.transfer(blob.id())
-
+        // submit the job execution
         jobStrategy.launchJob(job.schedulerId, command)
         // signal the transfer to be started
-        // note: both `transferQueue` and `blobStore` use the same object `id`
         jobQueue.offer(job)
         return job
     }

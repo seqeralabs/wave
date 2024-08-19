@@ -276,6 +276,10 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler {
     @Override
     void onJobCompletion(JobId job, JobState state) {
         final blob = blobStore.getBlob(job.id)
+        if( !blob ) {
+            log.error "== Blob cache entry unknown for job=$job [1]"
+            return
+        }
         // use a short time-to-live for failed downloads
         // this is needed to allow re-try caching of failure transfers
         final ttl = state.succeeded()
@@ -292,6 +296,10 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler {
     @Override
     void onJobException(JobId job, Throwable error) {
         final blob = blobStore.getBlob(job.id)
+        if( !blob ) {
+            log.error "== Blob cache entry unknown for job=$job [2]"
+            return
+        }
         final result = blob.failed("Unexpected error caching blob '${blob.locationUri}' - job name '${job.schedulerId}'")
         log.error("== Blob cache exception for object '${blob.objectUri}'; job name=${job.schedulerId}; cause=${error.message}", error)
         blobStore.storeBlob(job.id, result, blobConfig.failureDuration)
@@ -300,6 +308,10 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler {
     @Override
     void onJobTimeout(JobId job) {
         final blob = blobStore.getBlob(job.id)
+        if( !blob ) {
+            log.error "== Blob cache entry unknown for job=$job [3]"
+            return
+        }
         final result = blob.failed("Blob cache transfer timed out ${blob.objectUri}")
         log.warn "== Blob cache completed for object '${blob.objectUri}'; job name=${job.schedulerId}; duration=${result.duration()}"
         blobStore.storeBlob(blob.id(), result, blobConfig.failureDuration)
