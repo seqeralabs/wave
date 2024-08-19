@@ -65,7 +65,7 @@ class JobManagerTest extends Specification {
         then:
         1 * jobStrategy.status(job) >> null
         and:
-        1 * jobDispatcher.onJobException(job,_)
+        1 * jobDispatcher.onJobException(job,_) >> null
         and:
         0 * queue.offer(_)
     }

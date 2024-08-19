@@ -64,22 +64,22 @@ class JobDispatcher implements JobHandler {
     }
 
     @Override
-    final Duration jobMaxDuration(JobId job) {
+    Duration jobMaxDuration(JobId job) {
         return dispatch.get(job.type).jobMaxDuration(job)
     }
 
     @Override
-    final void onJobCompletion(JobId job, JobState state) {
+    void onJobCompletion(JobId job, JobState state) {
         dispatch.get(job.type).onJobCompletion(job, state)
     }
 
     @Override
-    final void onJobException(JobId job, Throwable error) {
+    void onJobException(JobId job, Throwable error) {
         dispatch.get(job.type).onJobException(job, error)
     }
 
     @Override
-    final void onJobTimeout(JobId job) {
+    void onJobTimeout(JobId job) {
         dispatch.get(job.type).onJobTimeout(job)
     }
 }
