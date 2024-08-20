@@ -96,7 +96,7 @@ class DockerBuildStrategyTest extends Specification {
         def creds = Path.of('/work/creds.json')
         and:
         def req = new BuildRequest(
-                id: '89fb83ce6ec8627b',
+                containerId: '89fb83ce6ec8627b',
                 workDir: Path.of('/work/foo/89fb83ce6ec8627b'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'repo:89fb83ce6ec8627b',

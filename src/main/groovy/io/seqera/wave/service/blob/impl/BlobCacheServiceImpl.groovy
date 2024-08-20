@@ -20,14 +20,11 @@ package io.seqera.wave.service.blob.impl
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
-import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.RegistryProxyService
@@ -37,19 +34,14 @@ import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.BlobCacheService
 import io.seqera.wave.service.blob.BlobSigningService
 import io.seqera.wave.service.blob.BlobStore
-import io.seqera.wave.service.blob.TransferStrategy
-import io.seqera.wave.service.blob.TransferTimeoutException
-import io.seqera.wave.util.BucketTokenizer
+import io.seqera.wave.service.blob.transfer.TransferQueue
+import io.seqera.wave.service.blob.transfer.TransferStrategy
 import io.seqera.wave.util.Escape
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.StringUtils
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
-import jakarta.inject.Named
 import jakarta.inject.Singleton
-import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
-import software.amazon.awssdk.services.s3.model.HeadObjectRequest
 import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
 /**
  * Implements cache for container image layer blobs
@@ -75,21 +67,16 @@ class BlobCacheServiceImpl implements BlobCacheService {
     private RegistryProxyService proxyService
 
     @Inject
-    @Named(TaskExecutors.IO)
-    private ExecutorService executor
+    private TransferStrategy transferStrategy
 
     @Inject
-    private TransferStrategy transferStrategy
+    private TransferQueue transferQueue
 
     @Inject
     private BlobSigningService signingService
 
     @Inject
     private HttpClientConfig httpConfig
-
-    @Inject
-    @Named('BlobS3Client')
-    private S3Client s3Client
 
     private HttpClient httpClient
 
@@ -101,20 +88,28 @@ class BlobCacheServiceImpl implements BlobCacheService {
 
     @Override
     BlobCacheInfo retrieveBlobCache(RoutePath route, Map<String,List<String>> requestHeaders, Map<String,List<String>> responseHeaders) {
-        final uri = blobDownloadUri(route)
-        log.trace "Container blob download uri: $uri"
+        final locationUri = blobDownloadUri(route)
+        final objectUri = blobStorePath(route)
+        log.trace "Container blob download uri: $locationUri; target object: $objectUri"
 
-        final info = BlobCacheInfo.create(uri, requestHeaders, responseHeaders)
-        final target = route.targetPath
-        if( blobStore.storeIfAbsent(target, info) ) {
+        final info = BlobCacheInfo.create(locationUri, objectUri, requestHeaders, responseHeaders)
+        // both S3 and R2 are strongly consistent
+        // therefore it's safe to check and return directly
+        // if it exists (no risk of returning a partial upload)
+        // https://developers.cloudflare.com/r2/reference/consistency/
+        if( blobExists(info.locationUri) && !debug ) {
+            log.debug "== Blob cache exists for object '${info.locationUri}'"
+            return info.cached()
+        }
+
+        if( blobStore.storeIfAbsent(info.id(), info) ) {
             // start download and caching job
-            return storeIfAbsent(route, info)
+            store(route, info)
         }
-        else {
-            final result = awaitCacheStore(target)
-            // update the download signed uri
-            return result?.withLocation(uri)
-        }
+
+        final result = awaitCacheStore(info.id())
+        // update the download signed uri
+        return result?.withLocation(locationUri)
     }
 
     protected boolean blobExists(String uri) {
@@ -183,61 +178,21 @@ class BlobCacheServiceImpl implements BlobCacheService {
         return command
     }
 
-    protected BlobCacheInfo storeIfAbsent(RoutePath route, BlobCacheInfo info) {
-        BlobCacheInfo result
-        try {
-            if( blobExists(info.locationUri) && !debug ) {
-                log.debug "== Blob cache exists for object '${info.locationUri}'"
-                result = info.cached()
-            }
-            else {
-                log.debug "== Blob cache begin for object '${info.locationUri}'"
-                result = store(route, info)
-                //check if the cached blob size is correct
-                result = checkUploadedBlobSize(result, route)
-            }
-        }
-        finally {
-            // use a short time-to-live for failed downloads
-            // this is needed to allow re-try caching of failure transfers
-            final ttl = result.succeeded()
-                    ? blobConfig.statusDuration
-                    : blobConfig.failureDuration
-
-            blobStore.storeBlob(route.targetPath, result, ttl)
-            return result
-        }
-    }
-
-    /**
-     * Check the size of the blob stored in the cache
-     *
-     * @return {@link BlobCacheInfo} the blob cache info
-     */
-    protected BlobCacheInfo checkUploadedBlobSize(BlobCacheInfo info, RoutePath route) {
-        if( !info.succeeded() )
-            return info
-        final blobSize = getBlobSize(route)
-        if( blobSize == info.contentLength )
-            return info
-        log.warn("== Blob cache mismatch size for uploaded object '${info.locationUri}'; upload blob size: ${blobSize}; expect size: ${info.contentLength}")
-        CompletableFuture.supplyAsync(() -> deleteBlob(route), executor)
-        return info.failed("Mismatch cache size for object ${info.locationUri}")
-    }
-
-    protected BlobCacheInfo store(RoutePath route, BlobCacheInfo info) {
-        final target = route.targetPath
+    protected void store(RoutePath route, BlobCacheInfo info) {
+        log.debug "== Blob cache begin for object '${info.locationUri}'"
         try {
             // the transfer command to be executed
             final cli = transferCommand(route, info)
-            final result = transferStrategy.transfer(info, cli)
-            log.debug "== Blob cache completed for object '${target}'; status=$result.exitStatus; duration: ${result.duration()}"
-            return result
+            transferStrategy.transfer(info, cli)
+            // signal the transfer to be started
+            // note: both `transferQueue` and `blobStore` use the same object `id`
+            transferQueue.offer(info.id())
         }
         catch (Throwable t) {
-            log.warn "== Blob cache failed for object '${target}' - cause: ${t.message}", t
+            log.warn "== Blob cache failed for object '${info.objectUri}' - cause: ${t.message}", t
             final result = info.failed(t.message)
-            return result
+            // update the blob status
+            blobStore.storeBlob(info.id(), result, blobConfig.failureDuration)
         }
     }
 
@@ -294,24 +249,15 @@ class BlobCacheServiceImpl implements BlobCacheService {
     private static class Waiter {
 
         static BlobCacheInfo awaitCompletion(BlobStore store, String key, BlobCacheInfo current) {
-            final beg = System.currentTimeMillis()
-            // set the await timeout nearly double as the blob transfer timeout, this because the
-            // transfer pod can spend `timeout` time in pending status awaiting to be scheduled
-            // and the same `timeout` time amount carrying out the transfer (upload) operation
-            final max = (store.timeout.toMillis() * 2.10) as long
+            final target = current?.locationUri ?: "(unknown)"
             while( true ) {
                 if( current==null ) {
-                    return BlobCacheInfo.unknown()
+                    return BlobCacheInfo.unknown("Unable to cache blob $target")
                 }
-
                 // check is completed
                 if( current.done() ) {
                     return current
                 }
-                // check if it's timed out
-                final delta = System.currentTimeMillis()-beg
-                if( delta > max )
-                    throw new TransferTimeoutException("Blob cache transfer '$key' timed out")
                 // sleep a bit
                 Thread.sleep(store.delay.toMillis())
                 // fetch the build status again
@@ -320,49 +266,4 @@ class BlobCacheServiceImpl implements BlobCacheService {
         }
     }
 
-   /**
-    * get the size of the blob stored in the cache
-    *
-    * @return {@link Long} the size of the blob stored in the cache
-    */
-   protected Long getBlobSize(RoutePath route) {
-       final objectUri = blobStorePath(route)
-       final object = BucketTokenizer.from(objectUri)
-       try {
-            final request =
-                    HeadObjectRequest.builder()
-                            .bucket(object.bucket)
-                            .key(object.key)
-                            .build()
-            final headObjectResponse = s3Client.headObject(request as HeadObjectRequest)
-            final contentLength = headObjectResponse.contentLength()
-            return contentLength!=null ? contentLength : -1L
-       }
-       catch (Exception e){
-           log.error("== Blob cache Error getting content length of object $objectUri from bucket ${blobConfig.storageBucket}", e)
-            return -1L
-       }
-    }
-
-   /**
-    * delete the blob stored in the cache
-    *
-    */
-   protected void deleteBlob(RoutePath route) {
-       final objectUri = blobStorePath(route)
-       log.debug "== Blob cache Deleting object $objectUri"
-       final object = BucketTokenizer.from(objectUri)
-       try {
-            final request =
-                    DeleteObjectRequest.builder()
-                            .bucket(object.bucket)
-                            .key(object.key)
-                            .build()
-            s3Client.deleteObject(request as DeleteObjectRequest)
-            log.debug("== Blob cache Deleted object $objectUri from bucket ${blobConfig.storageBucket}")
-        }
-        catch (Exception e){
-            log.error("== Blob cache Error deleting object $objectUri from bucket ${blobConfig.storageBucket}", e)
-        }
-   }
 }

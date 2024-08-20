@@ -30,10 +30,6 @@ import groovy.transform.CompileStatic
 @CompileStatic
 interface BuildStore {
 
-    Duration getTimeout()
-
-    Duration getDelay()
-
     /**
      * Retrieve a container image {@link BuildResult}
      *

@@ -324,22 +324,19 @@ class MoshiEncodingStrategyTest extends Specification {
         def context = new BuildContext('http://foo.com', '12345', 100, '67890')
         and:
         def build = new BuildRequest(
-                '12345',
-                'from foo',
-                'conda spec',
-                'spack spec',
-                Path.of("/some/path"),
-                'docker.io/some:image:12345',
-                PlatformId.NULL,
-                ContainerPlatform.of('linux/amd64'),
-                'cacherepo',
-                "1.2.3.4",
-                '{"config":"json"}',
-                null,
-                null,
-                'scan12345',
-                context,
-                null)
+                containerId: '12345',
+                containerFile: 'from foo',
+                condaFile: 'conda spec',
+                spackFile: 'spack spec',
+                workspace:  Path.of("/some/path"),
+                targetImage:  'docker.io/some:image:12345',
+                identity: PlatformId.NULL,
+                platform:  ContainerPlatform.of('linux/amd64'),
+                cacheRepository:  'cacherepo',
+                ip: "1.2.3.4",
+                configJson:  '{"config":"json"}',
+                scanId: 'scan12345',
+                buildContext: context )
                 .withBuildId('1')
         def result = new BuildResult(build.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         def event = new BuildEvent(build, result)

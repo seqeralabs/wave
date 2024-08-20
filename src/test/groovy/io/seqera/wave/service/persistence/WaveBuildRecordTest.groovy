@@ -57,7 +57,8 @@ class WaveBuildRecordTest extends Specification {
                 null,
                 'scan12345',
                 null,
-                BuildFormat.DOCKER
+                BuildFormat.DOCKER,
+                Duration.ofMinutes(1)
         )
         final result = new BuildResult(request.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         final event = new BuildEvent(request, result)
@@ -88,7 +89,8 @@ class WaveBuildRecordTest extends Specification {
                 null,
                 'scan12345',
                 null,
-                BuildFormat.DOCKER
+                BuildFormat.DOCKER,
+                Duration.ofMinutes(1)
         ).withBuildId('123')
 
         and:

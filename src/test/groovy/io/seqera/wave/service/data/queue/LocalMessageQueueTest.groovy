@@ -47,7 +47,7 @@ class LocalMessageQueueTest extends Specification {
         and:
         def delta = System.currentTimeMillis()-start
         then:
-        assert delta>500
+        assert delta>=500
         assert delta<1000
     }
 

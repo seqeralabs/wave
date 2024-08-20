@@ -41,7 +41,7 @@ class BuildCacheStoreRedisTest extends Specification implements RedisTestContain
 
     def setup() {
         applicationContext = ApplicationContext.run([
-                wave:[ build:[ timeout: '5s' ]],
+                wave:[ build:[ timeout: '5s', 'trusted-timeout': '5s' ]],
                 REDIS_HOST: redisHostName,
                 REDIS_PORT: redisPort
         ], 'test', 'redis')
