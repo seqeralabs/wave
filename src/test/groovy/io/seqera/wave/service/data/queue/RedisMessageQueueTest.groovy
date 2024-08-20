@@ -76,4 +76,17 @@ class RedisMessageQueueTest extends Specification implements RedisTestContainer 
         broker.poll('bar') == 'beta'
     }
 
+    def 'should offer and poll a value after wait' () {
+        given:
+        def broker = context.getBean(RedisMessageQueue)
+        def wait = Duration.ofMillis(500)
+        and:
+        broker.offer('bar1', 'alpha1')
+        broker.offer('bar1', 'beta1')
+
+        expect:
+        broker.poll('foo1', wait) == null
+        broker.poll('bar1', wait) == 'alpha1'
+        broker.poll('bar1', wait) == 'beta1'
+    }
 }

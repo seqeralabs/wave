@@ -103,6 +103,7 @@ class DockerBuildStrategyTest extends Specification {
         def req = new BuildRequest(
                 buildId: '1234',
                 id: '89fb83ce6ec8627b',
+                containerId: '89fb83ce6ec8627b',
                 workDir: Path.of('/work/foo/89fb83ce6ec8627b'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'repo:89fb83ce6ec8627b',
