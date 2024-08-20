@@ -22,8 +22,6 @@ import spock.lang.Specification
 
 import java.nio.file.Path
 
-import io.seqera.wave.api.BuildContext
-import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
@@ -38,24 +36,19 @@ class ScanRequestTest extends Specification {
         given:
         def workspace = Path.of('/some/workspace')
         def platform = ContainerPlatform.of('amd64')
-        final build = new BuildRequest(
-                'container1234',
-                'FROM ubuntu',
-                null,
-                null,
-                workspace,
-                'docker.io/my/repo:container1234',
-                PlatformId.NULL,
-                platform,
-                'docker.io/my/cache',
-                '127.0.0.1',
-                '{"config":"json"}',
-                null,
-                null,
-                'scan12345',
-                null,
-                BuildFormat.DOCKER
-        ).withBuildId('123')
+        final build =
+                new BuildRequest(
+                        containerId: 'container1234',
+                        containerFile: 'FROM ubuntu',
+                        workspace: workspace,
+                        targetImage: 'docker.io/my/repo:container1234',
+                        identity: PlatformId.NULL,
+                        platform: platform,
+                        configJson: '{"config":"json"}',
+                        scanId: 'scan12345',
+                        format: BuildFormat.DOCKER
+                )
+                        .withBuildId('123')
 
         when:
         def scan = ScanRequest.fromBuild(build)

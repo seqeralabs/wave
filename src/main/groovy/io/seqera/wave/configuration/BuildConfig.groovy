@@ -22,8 +22,10 @@ import javax.annotation.Nullable
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
+import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
 import jakarta.inject.Singleton
 /**
@@ -66,10 +68,27 @@ class BuildConfig {
     Duration statusDelay
 
     @Value('${wave.build.timeout:5m}')
-    Duration buildTimeout
+    Duration defaultTimeout
+
+    @Value('${wave.build.trusted-timeout:10m}')
+    Duration trustedTimeout
 
     @Value('${wave.build.status.duration}')
     Duration statusDuration
+
+    @Memoized
+    Duration getStatusInitialDelay() {
+        final d1 = defaultTimeout.toMillis() * 2.5f
+        final d2 = trustedTimeout.toMillis() * 1.5f
+        return Duration.ofMillis(Math.round(Math.max(d1,d2)))
+    }
+
+    @Memoized
+    Duration getStatusAwaitDuration() {
+        final d1 = defaultTimeout.toMillis() * 2.1f
+        final d2 = trustedTimeout.toMillis() * 1.1f
+        return Duration.ofMillis(Math.round(Math.max(d1,d2)))
+    }
 
     @Value('${wave.build.cleanup}')
     @Nullable
@@ -93,7 +112,7 @@ class BuildConfig {
 
     @PostConstruct
     private void init() {
-        log.debug("Builder config: " +
+        log.info("Builder config: " +
                 "buildkit-image=${buildkitImage}; " +
                 "singularity-image=${singularityImage}; " +
                 "singularity-image-amr64=${singularityImageArm64}; " +
@@ -101,7 +120,8 @@ class BuildConfig {
                 "default-cache-repository=${defaultCacheRepository}; " +
                 "default-public-repository=${defaultPublicRepository}; " +
                 "build-workspace=${buildWorkspace}; " +
-                "build-timeout=${buildTimeout}; " +
+                "build-timeout=${defaultTimeout}; " +
+                "build-trusted-timeout=${trustedTimeout}; " +
                 "status-delay=${statusDelay}; " +
                 "status-duration=${statusDuration}; " +
                 "record-duration=${recordDuration}; " +
@@ -109,6 +129,10 @@ class BuildConfig {
                 "oci-mediatypes=${ociMediatypes}; " +
                 "compression=${compression}; " +
                 "force-compression=${forceCompression}; ")
+        // minimal validation
+        if( trustedTimeout < defaultTimeout ) {
+            log.warn "Trusted build timeout should be longer than default timeout - check configuration setting 'wave.build.trusted-timeout'"
+        }
     }
 
     String singularityImage(ContainerPlatform containerPlatform){
@@ -121,4 +145,11 @@ class BuildConfig {
         return singularityImageArm64 ?: singularityImage + "-arm64"
     }
 
+    Duration buildMaxDuration(SubmitContainerTokenRequest request) {
+        // build max duration - when the user identity is provided and freeze is enabled
+        // use `trustedTimeout` which is expected to be longer than `defaultTimeout`
+        return request.towerAccessToken && request.freeze && trustedTimeout>defaultTimeout
+                ? trustedTimeout
+                : defaultTimeout
+    }
 }
