@@ -93,5 +93,4 @@ class RegistryControllerPullLimitTest extends Specification implements DockerReg
         e.response.body() == '{"errors":[{"code":"TOOMANYREQUESTS","message":"Request exceeded expected pull rate limit"}]}'
     }
 
-
 }
