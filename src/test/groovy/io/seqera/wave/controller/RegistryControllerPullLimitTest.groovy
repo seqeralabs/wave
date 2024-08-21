@@ -22,6 +22,7 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
+import io.micronaut.context.annotation.Requires
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.MediaType
@@ -41,9 +42,10 @@ import jakarta.inject.Singleton
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@MicronautTest
+@MicronautTest(environments = ['test-rate-limit'])
 class RegistryControllerPullLimitTest extends Specification implements DockerRegistryContainer{
 
+    @Requires(env = 'test-rate-limit')
     @Singleton
     static class Limit implements RateLimiterService {
 
