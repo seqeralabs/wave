@@ -46,12 +46,12 @@ import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.ScanConfig
-import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.scan.Trivy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import static io.seqera.wave.service.builder.BuildConstants.BUILDKIT_ENTRYPOINT
+import static io.seqera.wave.service.builder.BuildConstants.FUSION_PREFIX
 /**
  * implements the support for Kubernetes cluster
  *
@@ -96,9 +96,6 @@ class K8sServiceImpl implements K8sService {
     @Value('${wave.build.k8s.resources.requests.memory}')
     @Nullable
     private String requestsMemory
-
-    @Inject
-    private SpackConfig spackConfig
 
     @Inject
     private K8sClient k8sClient
@@ -332,38 +329,29 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Pod} description the submitted pod
      */
     @Override
-    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, SpackConfig spackConfig, Map<String,String> nodeSelector) {
-        final spec = buildSpec(name, containerImage, args, workDir, creds, timeout, spackConfig, nodeSelector)
+    V1Pod buildContainer(String name, String containerImage, List<String> args, String workDir, String creds, Duration timeout, Map<String,String> nodeSelector) {
+        final spec = buildSpec(name, containerImage, args, workDir, creds, timeout, nodeSelector)
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
-    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, Duration timeout, SpackConfig spackConfig, Map<String,String> nodeSelector) {
+    V1Pod buildSpec(String name, String containerImage, List<String> args, String s3Key, String credsFile, Duration timeout, Map<String,String> nodeSelector) {
 
         // dirty dependency to avoid introducing another parameter
         final singularity = containerImage.contains('singularity')
 
-        // required volumes
-        final mounts = new ArrayList<V1VolumeMount>(5)
-        mounts.add(mountBuildStorage(workDir, storageMountPath, true))
 
-        final volumes = new ArrayList<V1Volume>(5)
-        volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
-
+        Map<String, String> env = new HashMap<String, String>()
+        addAWSCreds(env)
         if( credsFile ){
             if( !singularity ) {
-                mounts.add(0, mountHostPath(credsFile, storageMountPath, '/home/user/.docker/config.json'))
+                env.put('DOCKER_CONFIG', "$FUSION_PREFIX/$buildConfig.workspaceBucket/$s3Key".toString())
             }
             else {
-                final remoteFile = credsFile.resolveSibling('singularity-remote.yaml')
-                mounts.add(0, mountHostPath(credsFile, storageMountPath, '/root/.singularity/docker-config.json'))
-                mounts.add(1, mountHostPath(remoteFile, storageMountPath, '/root/.singularity/remote.yaml'))
+                env.put('DOCKER_CONFIG', "$FUSION_PREFIX/$buildConfig.workspaceBucket/$s3Key".toString())
+                env.put('DOCKER_CONFIG', "$FUSION_PREFIX/$buildConfig.workspaceBucket/$s3Key".toString())
             }
-        }
-
-        if( spackConfig ) {
-            mounts.add(mountSpackSecretFile(spackConfig.secretKeyFile, storageMountPath, spackConfig.secretMountPath))
         }
 
         V1PodBuilder builder = new V1PodBuilder()
@@ -383,7 +371,6 @@ class K8sServiceImpl implements K8sService {
                 .withServiceAccount(serviceAccount)
                 .withActiveDeadlineSeconds( timeout.toSeconds() )
                 .withRestartPolicy("Never")
-                .addAllToVolumes(volumes)
 
 
         final requests = new V1ResourceRequirements()
@@ -396,7 +383,7 @@ class K8sServiceImpl implements K8sService {
         final container = new V1ContainerBuilder()
                 .withName(name)
                 .withImage(containerImage)
-                .withVolumeMounts(mounts)
+                .withEnv(toEnvList(env))
                 .withResources(requests)
 
         if( singularity ) {
@@ -512,24 +499,23 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
-    V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
-        final spec = scanSpec(name, containerImage, args, workDir, creds, scanConfig, nodeSelector)
+    V1Pod scanContainer(String name, String containerImage, List<String> args, String s3Key, String creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
+        final spec = scanSpec(name, containerImage, args, s3Key, creds, scanConfig, nodeSelector)
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
-    V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig, Map<String,String> nodeSelector) {
+    V1Pod scanSpec(String name, String containerImage, List<String> args, String s3Key, String creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
 
-        final mounts = new ArrayList<V1VolumeMount>(5)
-        mounts.add(mountBuildStorage(workDir, storageMountPath, false))
-        mounts.add(mountScanCacheDir(scanConfig.cacheDirectory, storageMountPath))
 
         final volumes = new ArrayList<V1Volume>(5)
         volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
 
-        if( credsFile ){
-            mounts.add(0, mountHostPath(credsFile, storageMountPath, Trivy.CONFIG_MOUNT_PATH))
+        Map<String, String> env = new HashMap<String, String>()
+        addAWSCreds(env)
+        if( creds ){
+            env.put('DOCKER_CONFIG', "$FUSION_PREFIX/$buildConfig.workspaceBucket/$s3Key".toString())
         }
 
         V1PodBuilder builder = new V1PodBuilder()
@@ -562,7 +548,7 @@ class K8sServiceImpl implements K8sService {
                 .withName(name)
                 .withImage(containerImage)
                 .withArgs(args)
-                .withVolumeMounts(mounts)
+                .withEnv(toEnvList(env))
                 .withResources(requests)
                 .endContainer()
                 .endSpec()
@@ -697,5 +683,10 @@ class K8sServiceImpl implements K8sService {
             }
         }
         return latest
+    }
+
+    private void addAWSCreds(Map <String, String> env) {
+        env.put('AWS_ACCESS_KEY_ID', "${System.getenv('AWS_ACCESS_KEY_ID')}".toString())
+        env.put('AWS_SECRET_ACCESS_KEY', "${System.getenv('AWS_SECRET_ACCESS_KEY')}".toString())
     }
 }
