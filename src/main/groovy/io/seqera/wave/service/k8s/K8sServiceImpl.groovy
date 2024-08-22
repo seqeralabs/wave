@@ -73,10 +73,6 @@ class K8sServiceImpl implements K8sService {
     @Nullable
     private String storageClaimName
 
-    @Value('${wave.build.k8s.storage.mountPath}')
-    @Nullable
-    private String storageMountPath
-
     @Property(name='wave.build.k8s.labels')
     @Nullable
     private Map<String, String> labels
@@ -118,15 +114,9 @@ class K8sServiceImpl implements K8sService {
      */
     @PostConstruct
     private void init() {
-        log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; node-selector=$nodeSelectorMap; cpus=$requestsCpu; memory=$requestsMemory; buildWorkspace=$buildConfig.buildWorkspace; storageClaimName=$storageClaimName; storageMountPath=$storageMountPath; "
-        if( storageClaimName && !storageMountPath )
-            throw new IllegalArgumentException("Missing 'wave.build.k8s.storage.mountPath' configuration attribute")
-        if( storageMountPath ) {
-            if( !buildConfig.buildWorkspace )
-                throw new IllegalArgumentException("Missing 'wave.build.workspace' configuration attribute")
-            if( !Path.of(buildConfig.buildWorkspace).startsWith(storageMountPath) )
-                throw new IllegalArgumentException("Build workspace should be a sub-directory of 'wave.build.k8s.storage.mountPath' - offending value: '$buildConfig.buildWorkspace' - expected value: '$storageMountPath'")
-        }
+        log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; node-selector=$nodeSelectorMap; cpus=$requestsCpu; memory=$requestsMemory; buildWorkspaceBucket=$buildConfig.workspaceBucket;"
+        if( !buildConfig.workspaceBucket )
+            throw new IllegalArgumentException("Missing 'wave.build.workspaceBucket' configuration attribute")
         // validate node selectors
         final platforms = nodeSelectorMap ?: Collections.<String,String>emptyMap()
         for( Map.Entry<String,String> it : platforms ) {
@@ -508,10 +498,6 @@ class K8sServiceImpl implements K8sService {
 
     V1Pod scanSpec(String name, String containerImage, List<String> args, String s3Key, String creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
 
-
-        final volumes = new ArrayList<V1Volume>(5)
-        volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
-
         Map<String, String> env = new HashMap<String, String>()
         addAWSCreds(env)
         if( creds ){
@@ -534,7 +520,6 @@ class K8sServiceImpl implements K8sService {
                 .withServiceAccount(serviceAccount)
                 .withActiveDeadlineSeconds( scanConfig.timeout.toSeconds() )
                 .withRestartPolicy("Never")
-                .addAllToVolumes(volumes)
 
 
         final requests = new V1ResourceRequirements()

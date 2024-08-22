@@ -19,8 +19,10 @@
 package io.seqera.wave.service.builder
 
 import groovy.transform.CompileStatic
+import io.micronaut.objectstorage.ObjectStorageOperations
 import io.seqera.wave.configuration.BuildConfig
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import static io.seqera.wave.service.builder.BuildConstants.FUSION_PREFIX
 import static io.seqera.wave.service.builder.BuildConstants.BUILDKIT_ENTRYPOINT
 /**
@@ -37,10 +39,14 @@ abstract class BuildStrategy {
     @Inject
     private BuildConfig buildConfig
 
+    @Inject
+    @Named('build-workspace')
+    private ObjectStorageOperations<?, ?, ?> objectStorageOperations
+
     abstract BuildResult build(BuildRequest req)
 
     void cleanup(BuildRequest req) {
-        req.workDir?.deleteDir()
+        objectStorageOperations.delete(req.s3Key)
     }
 
     List<String> launchCmd(BuildRequest req) {

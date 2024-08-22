@@ -335,7 +335,6 @@ class ContainerController {
                 containerFile,
                 condaContent,
                 spackContent,
-                Path.of(buildConfig.buildWorkspace),
                 targetImage,
                 identity,
                 platform,

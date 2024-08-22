@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.builder
 
-import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 import java.time.OffsetDateTime
@@ -64,11 +63,6 @@ class BuildRequest {
      * The spock file recipe associated with this request
      */
     final String spackFile
-
-    /**
-     * The build context work directory
-     */
-    final Path workspace
 
     /**
      * The target fully qualified image of the built container. It includes the target registry name
@@ -142,7 +136,6 @@ class BuildRequest {
     
     volatile String buildId
 
-    volatile Path workDir
 
     String s3Key
 
@@ -150,7 +143,6 @@ class BuildRequest {
                  String containerFile,
                  String condaFile,
                  String spackFile,
-                 Path workspace,
                  String targetImage,
                  PlatformId identity,
                  ContainerPlatform platform,
@@ -169,7 +161,6 @@ class BuildRequest {
         this.containerFile = containerFile
         this.condaFile = condaFile
         this.spackFile = spackFile
-        this.workspace = workspace
         this.targetImage = targetImage
         this.identity = identity
         this.platform = platform
@@ -191,7 +182,6 @@ class BuildRequest {
         this.containerFile = opts.containerFile
         this.condaFile = opts.condaFile
         this.spackFile = opts.spackFile
-        this.workspace = opts.workspace as Path
         this.targetImage = opts.targetImage
         this.identity = opts.identity as PlatformId
         this.platform = opts.platform as ContainerPlatform
@@ -205,7 +195,6 @@ class BuildRequest {
         this.scanId = opts.scanId
         this.buildContext = opts.buildContext as BuildContext
         this.format = opts.format as BuildFormat
-        this.workDir = opts.workDir as Path
         this.buildId = opts.buildId
         this.maxDuration = opts.maxDuration as Duration
     }
@@ -234,10 +223,6 @@ class BuildRequest {
 
     String getSpackFile() {
         return spackFile
-    }
-
-    Path getWorkDir() {
-        return workDir
     }
 
     String getTargetImage() {
@@ -286,7 +271,6 @@ class BuildRequest {
 
     BuildRequest withBuildId(String id) {
         this.buildId = containerId + SEP + id
-        this.workDir = workspace.resolve(buildId).toAbsolutePath()
         this.s3Key = "workspace/$buildId"
         return this
     }

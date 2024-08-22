@@ -65,12 +65,6 @@ class BuildConfig {
     @Value('${wave.build.workspace-bucket}')
     String workspaceBucket
 
-    /**
-     * File system path there the dockerfile is save
-     */
-    @Value('${wave.build.workspace}')
-    String buildWorkspace
-
     @Value('${wave.build.status.delay}')
     Duration statusDelay
 
@@ -126,7 +120,6 @@ class BuildConfig {
                 "default-build-repository=${defaultBuildRepository}; " +
                 "default-cache-repository=${defaultCacheRepository}; " +
                 "default-public-repository=${defaultPublicRepository}; " +
-                "build-workspace=${buildWorkspace}; " +
                 "build-timeout=${defaultTimeout}; " +
                 "build-trusted-timeout=${trustedTimeout}; " +
                 "status-delay=${statusDelay}; " +
