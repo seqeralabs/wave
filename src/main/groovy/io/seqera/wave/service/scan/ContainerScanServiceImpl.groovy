@@ -25,6 +25,7 @@ import java.util.concurrent.ExecutorService
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
+import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.ScanConfig
@@ -66,6 +67,10 @@ class ContainerScanServiceImpl implements ContainerScanService {
 
     @Inject
     private CleanupStrategy cleanup
+
+    @Inject
+    @Named('build-workspace')
+    private ObjectStorageOperations<?, ?, ?> objectStorageOperations
 
     @EventListener
     void onBuildEvent(BuildEvent event) {
@@ -109,9 +114,10 @@ class ContainerScanServiceImpl implements ContainerScanService {
             log.warn "Unable to launch the scan results for scan id: ${request.id} - cause: ${e.message}", e
         }
         finally{
-            // cleanup build context
+            // cleanup scan workspace
             if( cleanup.shouldCleanup(scanResult?.isSucceeded() ? 0 : 1) )
-                request.workDir?.deleteDir()
+                objectStorageOperations.delete(request.s3Key)
+
         }
         return scanResult
     }

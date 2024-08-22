@@ -72,6 +72,8 @@ class DockerBuildStrategy extends BuildStrategy {
         final builder = new ProcessBuilder()
                 .command(buildCmd)
                 .redirectErrorStream(true)
+                .redirectError(ProcessBuilder.Redirect.INHERIT)
+        builder.redirectOutput(ProcessBuilder.Redirect.INHERIT)
 
         def proc = builder.start()
 
@@ -99,6 +101,7 @@ class DockerBuildStrategy extends BuildStrategy {
         //checkout the documentation here to know more about these options https://github.com/moby/buildkit/blob/master/docs/rootless.md#docker
         final wrapper = ['docker',
                          'run',
+                         '--rm',
                          '--privileged',
                          '-e',
                          "AWS_ACCESS_KEY_ID=${System.getenv('AWS_ACCESS_KEY_ID')}".toString(),

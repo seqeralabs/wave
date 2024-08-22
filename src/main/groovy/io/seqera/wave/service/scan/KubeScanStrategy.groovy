@@ -31,10 +31,16 @@ import io.kubernetes.client.openapi.ApiException
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
+import io.micronaut.objectstorage.ObjectStorageOperations
+import io.micronaut.objectstorage.request.UploadRequest
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
+import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
+import static io.seqera.wave.service.builder.BuildConstants.FUSION_PREFIX
 import static io.seqera.wave.util.K8sHelper.getSelectorLabel
 import static java.nio.file.StandardOpenOption.CREATE
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
@@ -55,6 +61,13 @@ class KubeScanStrategy extends ScanStrategy {
     @Nullable
     private Map<String, String> nodeSelectorMap
 
+    @Inject
+    BuildConfig buildConfig
+
+    @Inject
+    @Named('build-workspace')
+    private ObjectStorageOperations<?, ?, ?> objectStorageOperations
+
     private final K8sService k8sService
 
     private final ScanConfig scanConfig
@@ -71,30 +84,22 @@ class KubeScanStrategy extends ScanStrategy {
 
         final podName = "scan-${req.id}"
         try{
-            // create the scan dir
-            try {
-                Files.createDirectory(req.workDir)
-            }
-            catch (FileAlreadyExistsException e) {
-                log.warn("Container scan directory already exists: $e")
-            }
-
             // save the config file with docker auth credentials
-            Path configFile = null
             if( req.configJson ) {
-                configFile = req.workDir.resolve('config.json')
-                Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+                objectStorageOperations.upload(UploadRequest.fromBytes(req.configJson.bytes, "$req.s3Key/config.json".toString()))
             }
 
-            final reportFile = req.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
-
+            // outfile file name
+            final reportFile = "$FUSION_PREFIX/$buildConfig.workspaceBucket/$req.s3Key/$Trivy.OUTPUT_FILE_NAME"
             final trivyCommand = scanCommand(req.targetImage, reportFile, scanConfig)
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
-            final pod = k8sService.scanContainer(podName, scanConfig.scanImage, trivyCommand, req.workDir, configFile, scanConfig, selector)
+            final pod = k8sService.scanContainer(podName, scanConfig.scanImage, trivyCommand, req.workDir, null, scanConfig, selector)
             final exitCode = k8sService.waitPodCompletion(pod, scanConfig.timeout.toMillis())
             if( exitCode==0 ) {
                 log.info("Container scan completed for id: ${req.id}")
-                return ScanResult.success(req, startTime, TrivyResultProcessor.process(reportFile.text))
+                def scanReportFile =  objectStorageOperations.retrieve("$req.s3Key/$Trivy.OUTPUT_FILE_NAME".toString()).get()
+                scanReportFile = scanReportFile ? scanReportFile as String : null
+                return ScanResult.success(req, startTime, TrivyResultProcessor.process(scanReportFile))
             }
             else{
                 final stdout = k8sService.logsPod(pod)

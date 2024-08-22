@@ -37,13 +37,11 @@ class ScanRequest {
     final String configJson
     final String targetImage
     final ContainerPlatform platform
-    final Path workDir
     String s3Key
 
     static ScanRequest fromBuild(BuildRequest request) {
         final id = request.scanId
-        final workDir = request.workDir.resolveSibling("scan-${id}")
         final s3Key = "workspace/scan-${id}"
-        return new ScanRequest(id, request.buildId, request.configJson, request.targetImage, request.platform, workDir)
+        return new ScanRequest(id, request.buildId, request.configJson, request.targetImage, request.platform, s3Key)
     }
 }
