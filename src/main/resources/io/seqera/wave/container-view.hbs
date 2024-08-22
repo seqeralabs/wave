@@ -89,6 +89,10 @@
             <td>Wave digest</td>
             <td>{{wave_container_digest}}</td>
         </tr>
+        <tr>
+            <td>Fusion version</td>
+            <td>{{fusion_version}}</td>
+        </tr>
     </table>
 
     {{#if request_container_config}}
@@ -106,6 +110,18 @@
 
         <table cellpadding="4" >
             <tr>
+                <td>Build ID</td>
+                <td>{{build_id}}</td>
+            </tr>
+            <tr>
+                <td>Cached</td>
+                <td>{{build_cached}}</td>
+            </tr>
+            <tr>
+                <td>Freeze mode</td>
+                <td>{{build_freeze}}</td>
+            </tr>
+            <tr>
                 <td>Build repository</td>
                 <td>{{build_repository}}</td>
             </tr>
@@ -116,8 +132,9 @@
         </table>
     {{/if}}
 
+    <!-- Build & user info -->
 
-    <!-- Tower & user info -->
+    <!-- Platform & user info -->
     {{#if tower_user_id}}
     <h3>Tower &amp; User info</h3>
     <table cellpadding="4" >
