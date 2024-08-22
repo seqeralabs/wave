@@ -127,6 +127,7 @@ class DockerBuildStrategy extends BuildStrategy {
     protected List<String> cmdForSingularity(BuildRequest req) {
         final wrapper = ['docker',
                          'run',
+                         '--rm',
                          '--privileged',
                          '-e',
                          "AWS_ACCESS_KEY_ID=${System.getenv('AWS_ACCESS_KEY_ID')}".toString(),
