@@ -24,7 +24,6 @@ import java.util.function.Consumer
 import io.seqera.wave.service.data.stream.AbstractMessageStream
 import io.seqera.wave.service.data.stream.MessageStream
 import jakarta.annotation.PreDestroy
-import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
  * Implements a simple persistent FIFO queue
@@ -36,11 +35,11 @@ class JobQueue extends AbstractMessageStream<JobId> {
 
     final private static String STREAM_NAME = 'jobs-queue/v1'
 
-    @Inject
-    private JobConfig config
+    private volatile JobConfig config
 
-    JobQueue(MessageStream<String> target) {
+    JobQueue(MessageStream<String> target, JobConfig config) {
         super(target)
+        this.config = config
     }
 
     @Override
@@ -50,7 +49,7 @@ class JobQueue extends AbstractMessageStream<JobId> {
 
     @Override
     protected Duration pollInterval() {
-        return config.pollInternal
+        return config.pollInterval
     }
 
     final void offer(JobId job) {

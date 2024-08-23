@@ -33,5 +33,5 @@ class JobConfig {
     Duration graveInterval
 
     @Value('${wave.job-manager.poll-interval:200ms}')
-    Duration pollInternal
+    Duration pollInterval
 }
