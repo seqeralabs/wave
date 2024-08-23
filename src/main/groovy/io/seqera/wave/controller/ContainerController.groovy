@@ -470,4 +470,12 @@ class ContainerController {
                 .header(WWW_AUTHENTICATE, "Basic realm=Wave Authentication")
     }
 
+    @Get('/v1alpha2/container/{containerId}')
+    HttpResponse<WaveContainerRecord> getContainerDetails(String containerId) {
+        final data = persistenceService.loadContainerRequest(containerId)
+        if( !data )
+            return HttpResponse.notFound()
+        return HttpResponse.ok(data)
+    }
+
 }
