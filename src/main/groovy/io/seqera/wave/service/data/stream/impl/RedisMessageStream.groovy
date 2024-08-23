@@ -39,6 +39,9 @@ import redis.clients.jedis.params.XAutoClaimParams
 import redis.clients.jedis.params.XReadGroupParams
 import redis.clients.jedis.resps.StreamEntry
 /**
+ * Implement a distributed {@link MessageStream} backed by a Redis stream.
+ * This implementation allows multiple concurrent consumers and guarantee consistency
+ * across replicas restart. 
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

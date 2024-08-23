@@ -19,33 +19,32 @@
 package io.seqera.wave.service.data.stream
 
 
-import java.util.function.Consumer
 import java.util.function.Predicate
-
 /**
+ * Define the contract for a generic message stream
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 interface MessageStream<M> {
 
     /**
-     * Inserts the specified element at the tail of the specified queue.
+     * Offer a message to the stream.
      *
-     * @param value
-     *  The value that should be added to the queue
+     * @param message
+     *      The message that should be offered to the queue
      */
     void offer(String streamId, M message)
 
     /**
-     * Consume a message from the stream and invoke
+     * Consume a message from the stream and invoke the specified predicate
      *
      * @param streamId
-     *      The target stream name
+     *      The target stream ID
      * @param consumer
-     *      The {@link Consumer} instance to be invoked to consume the message
+     *      The {@link Predicate} instance to be invoked to consume the message
      * @return
-     *      {code true} when the message has been processed successfully, otherwise {@code false}
-     *      when the message needs to be further processed
+     *      {code true} when the message has been processed successfully,
+     *      otherwise {@code false} when the message needs to be further processed
      */
     boolean consume(String streamId, Predicate<M> consumer)
 

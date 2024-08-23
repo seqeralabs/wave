@@ -28,6 +28,8 @@ import io.micronaut.context.annotation.Requires
 import io.seqera.wave.service.data.stream.MessageStream
 import jakarta.inject.Singleton
 /**
+ * Implement a {@link MessageStream} using a Java {@link java.util.concurrent.BlockingQueue}.
+ * This is only meant for developing purpose.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
