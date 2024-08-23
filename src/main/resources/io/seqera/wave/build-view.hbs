@@ -28,9 +28,36 @@
             </h4>
         </div>
     {{else build_in_progress}}
-        <div style="color: #3c763d; background-color: #ffd300; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+    {{! build is not completed, show a spinning icon }}
+        <style>
+        .lds-dual-ring {
+            display: inline-block;
+            width: 50px;
+            height: 30px;
+        }
+        .lds-dual-ring:after {
+            content: " ";
+            display: block;
+            width: 20px;
+            height: 20px;
+            margin: 8px;
+            border-radius: 50%;
+            border: 6px solid #3c763d;
+            border-color: #3c763d transparent #3c763d transparent;
+            animation: lds-dual-ring 1.2s linear infinite;
+        }
+        @keyframes lds-dual-ring {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+        </style>
+        <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
             <h4 style="margin-top:0; color: inherit;">
-                Container build in progress
+                <div class="lds-dual-ring"></div> Container build in progress...
             </h4>
         </div>
     {{/if}}
