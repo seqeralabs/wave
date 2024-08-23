@@ -18,10 +18,9 @@
 
 package io.seqera.wave.service.data.stream.impl
 
-
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.LinkedBlockingQueue
-import java.util.function.Consumer
+import java.util.function.Predicate
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -48,12 +47,27 @@ class LocalMessageStream implements MessageStream<String> {
     }
 
     @Override
-    void consume(String streamId, Consumer<String> consumer) {
+    boolean consume(String streamId, Predicate<String> consumer) {
         final message = delegate
                 .computeIfAbsent(streamId, (it)-> new LinkedBlockingQueue<>())
                 .poll()
-        if( message!=null ) {
-            consumer.accept(message)
+        if( message==null ) {
+            return false
+        }
+
+        def result = false
+        try {
+            result = consumer.test(message)
+        }
+        catch (Throwable e) {
+            result = false
+            throw e
+        }
+        finally {
+            if( !result ) {
+                offer(streamId, message)
+            }
+            return result
         }
     }
 

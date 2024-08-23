@@ -20,6 +20,8 @@ package io.seqera.wave.service.data.stream
 
 
 import java.util.function.Consumer
+import java.util.function.Predicate
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -37,10 +39,14 @@ interface MessageStream<M> {
     /**
      * Consume a message from the stream and invoke
      *
-     * @param streamId The target stream name
-     * @param consumer The {@link Consumer} instance to be invoked to consume the message
-     * @return number of message consumed
+     * @param streamId
+     *      The target stream name
+     * @param consumer
+     *      The {@link Consumer} instance to be invoked to consume the message
+     * @return
+     *      {code true} when the message has been processed successfully, otherwise {@code false}
+     *      when the message needs to be further processed
      */
-    void consume(String streamId, Consumer<M> consumer)
+    boolean consume(String streamId, Predicate<M> consumer)
 
 }

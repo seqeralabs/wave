@@ -53,10 +53,10 @@ class JobManager {
     @PostConstruct
     void init() {
         log.info "Creating job manager - config=$config"
-        queue.consume((job)-> handle(job))
+        queue.consume((job)-> processJob(job))
     }
 
-    protected void handle(JobId jobId) {
+    protected boolean processJob(JobId jobId) {
         final duration = Duration.between(jobId.creationTime, Instant.now())
         final state = jobStrategy.status(jobId)
         log.trace "Job status id=${jobId.schedulerId}; state=${state}"
@@ -69,7 +69,7 @@ class JobManager {
             dispatcher.onJobCompletion(jobId, state)
              // cleanup the job
             jobStrategy.cleanup(jobId, state.exitCode)
-            return
+            return true
         }
         // set the await timeout nearly double as the blob transfer timeout, this because the
         // transfer pod can spend `timeout` time in pending status awaiting to be scheduled
@@ -77,11 +77,11 @@ class JobManager {
         final max = (dispatcher.jobMaxDuration(jobId).toMillis() * 2.10) as long
         if( duration.toMillis()>max ) {
             dispatcher.onJobTimeout(jobId)
+            return true
         }
         else {
             log.trace "== Job pending for completion $jobId"
-            // re-schedule for a new check
-            queue.offer(jobId)
+            return false
         }
     }
 

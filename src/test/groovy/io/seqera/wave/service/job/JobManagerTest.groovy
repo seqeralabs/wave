@@ -37,7 +37,7 @@ class JobManagerTest extends Specification {
         def job = JobId.transfer('foo')
 
         when:
-        manager.handle(job)
+        manager.processJob(job)
         then:
         1 * jobStrategy.status(job) >> JobState.completed(0, 'My job logs')
         and:
@@ -61,7 +61,7 @@ class JobManagerTest extends Specification {
         def job = JobId.transfer('unknown')
 
         when:
-        manager.handle(job)
+        manager.processJob(job)
         then:
         1 * jobStrategy.status(job) >> null
         and:
@@ -82,7 +82,7 @@ class JobManagerTest extends Specification {
 
         when:
         sleep 1_000 //sleep longer than grace period
-        manager.handle(job)
+        manager.processJob(job)
 
         then:
         1 * jobStrategy.status(job) >> JobState.unknown('logs')
@@ -102,7 +102,7 @@ class JobManagerTest extends Specification {
         def job = JobId.transfer('foo')
 
         when:
-        manager.handle(job)
+        manager.processJob(job)
         then:
         1 * jobStrategy.status(job) >> JobState.running()
         1 * jobDispatcher.jobMaxDuration(job) >> Duration.ofSeconds(10)
@@ -121,7 +121,7 @@ class JobManagerTest extends Specification {
 
         when:
         sleep 1_000 //await timeout
-        manager.handle(job)
+        manager.processJob(job)
         then:
         1 * jobStrategy.status(job) >> JobState.running()
         1 * jobDispatcher.jobMaxDuration(job) >> Duration.ofMillis(100)

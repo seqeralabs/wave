@@ -20,7 +20,7 @@ package io.seqera.wave.service.data.stream.impl
 
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
-import java.util.function.Consumer
+import java.util.function.Predicate
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -59,7 +59,7 @@ class RedisMessageStream implements MessageStream<String> {
     @Inject
     private JedisPool pool
 
-    @Value('${wave.message-stream.claim-timeout:1m}')
+    @Value('${wave.message-stream.claim-timeout:10s}')
     private Duration claimTimeout
 
     private String consumerName
@@ -67,7 +67,7 @@ class RedisMessageStream implements MessageStream<String> {
     @PostConstruct
     private void init() {
         consumerName = "consumer-${LongRndKey.rndLong()}"
-        log.debug "Creating Redis message stream - consumer=${consumerName}; idle-timeout=${claimTimeout}"
+        log.info "Creating Redis message stream - consumer=${consumerName}; claim-timeout=${claimTimeout}"
     }
 
     protected void createGroup(Jedis jedis, String stream, String group) {
@@ -98,16 +98,17 @@ class RedisMessageStream implements MessageStream<String> {
     }
 
     @Override
-    void consume(String streamId, Consumer<String> consumer) {
+    boolean consume(String streamId, Predicate<String> consumer) {
         try (Jedis jedis = pool.getResource()) {
             createGroup(jedis, streamId, CONSUMER_GROUP_NAME)
-            final entry = readMessage(jedis, streamId) ?: claimMessage(jedis,streamId)
-            if( entry ) {
-                // callback the consumer
-                consumer.accept(entry.getFields().get(DATA_FIELD))
+            final entry = claimMessage(jedis,streamId) ?: readMessage(jedis, streamId)
+            if( entry && consumer.test(entry.getFields().get(DATA_FIELD)) ) {
                 // Acknowledge the job after processing
                 jedis.xack(streamId, CONSUMER_GROUP_NAME, entry.getID())
+                return true
             }
+            else
+                return false
         }
     }
 

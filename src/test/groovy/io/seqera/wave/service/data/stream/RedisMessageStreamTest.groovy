@@ -39,9 +39,9 @@ class RedisMessageStreamTest extends Specification implements RedisTestContainer
 
     def setup() {
         context = ApplicationContext.run([
+                'wave.message-stream.claim-timeout': '1s',
                 REDIS_HOST: redisHostName,
                 REDIS_PORT: redisPort,
-                'wave.message-stream.claim-timeout': '1s'
         ], 'test', 'redis')
     }
 
@@ -59,16 +59,16 @@ class RedisMessageStreamTest extends Specification implements RedisTestContainer
         stream.offer(id2, 'gamma')
 
         then:
-        stream.consume(id1, { it-> assert it=='one'})
+        stream.consume(id1, { it-> it=='one'})
         and:
-        stream.consume(id2, { it-> assert it=='alpha'})
-        stream.consume(id2, { it-> assert it=='delta'})
-        stream.consume(id2, { it-> assert it=='gamma'})
+        stream.consume(id2, { it-> it=='alpha'})
+        stream.consume(id2, { it-> it=='delta'})
+        stream.consume(id2, { it-> it=='gamma'})
         and:
-        stream.consume(id2, { it-> assert false /* <-- this should not be invoked */ })
+        !stream.consume(id2, { it-> assert false /* <-- this should not be invoked */ })
     }
 
-    def 'should offer and consume a value' () {
+    def 'should offer and consume a value with a failure' () {
         given:
         def id1 = "stream-${LongRndKey.rndHex()}"
         def stream = context.getBean(RedisMessageStream)
@@ -78,7 +78,7 @@ class RedisMessageStreamTest extends Specification implements RedisTestContainer
         stream.offer(id1, 'gamma')
 
         then:
-        stream.consume(id1, { it-> assert it=='alpha'})
+        stream.consume(id1, { it-> it=='alpha'})
         and:
         try {
             stream.consume(id1, { it-> throw new RuntimeException("Oops")})
@@ -88,22 +88,22 @@ class RedisMessageStreamTest extends Specification implements RedisTestContainer
         }
         and:
         // next message is 'gamma' as expected
-        stream.consume(id1, { it-> assert it=='gamma'})
+        stream.consume(id1, { it-> it=='gamma'})
         and:
         // still nothing
-        stream.consume(id1, { it-> assert false /* <-- this should not be invoked */ })
+        !stream.consume(id1, { it-> assert false /* <-- this should not be invoked */ })
         and:
         // wait 2 seconds (claim timeout is 1 sec)
         sleep 2_000
         // now the errored message is available
-        stream.consume(id1, { it-> assert it=='delta'})
+        stream.consume(id1, { it-> it=='delta'})
         and:
-        stream.consume(id1, { it-> assert false /* <-- this should not be invoked */ })
+        !stream.consume(id1, { it-> assert false /* <-- this should not be invoked */ })
         
         when:
         stream.offer(id1, 'something')
         then:
-        stream.consume(id1, { it-> assert it=='something'})
+        stream.consume(id1, { it-> it=='something'})
     }
 
 }

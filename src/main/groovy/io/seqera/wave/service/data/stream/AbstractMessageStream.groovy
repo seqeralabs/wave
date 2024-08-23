@@ -21,7 +21,7 @@ package io.seqera.wave.service.data.stream
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.function.Consumer
+import java.util.function.Predicate
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -35,9 +35,9 @@ import io.seqera.wave.util.TypeHelper
  */
 @Slf4j
 @CompileStatic
-abstract class AbstractMessageStream<M> implements MessageStream<M>, Runnable {
+abstract class AbstractMessageStream<M> implements Closeable {
 
-    static final private Map<String,Consumer<M>> listeners = new ConcurrentHashMap<>()
+    static final private Map<String,Predicate<M>> listeners = new ConcurrentHashMap<>()
 
     static final private AtomicInteger count = new AtomicInteger()
 
@@ -56,7 +56,7 @@ abstract class AbstractMessageStream<M> implements MessageStream<M>, Runnable {
         this.encoder = new MoshiEncodeStrategy<M>(type) {}
         this.stream = target
         this.name0 = name() + '-thread-' + count.getAndIncrement()
-        this.thread = new Thread(this, name0)
+        this.thread = new Thread(()-> processMessages(), name0)
         this.thread.setDaemon(true)
         this.thread.start()
     }
@@ -65,30 +65,27 @@ abstract class AbstractMessageStream<M> implements MessageStream<M>, Runnable {
 
     protected abstract Duration pollInterval()
 
-    @Override
     void offer(String streamId, M message) {
         final msg = encoder.encode(message)
         stream.offer(streamId, msg)
     }
 
-    @Override
-    void consume(String streamId, Consumer<M> consumer) {
+    void consume(String streamId, Predicate<M> consumer) {
         listeners.put(streamId, consumer)
     }
 
-    @Override
-    void run() {
-        log.trace "Message stream starting listener thread"
+    protected void processMessages() {
+        log.trace "Message stream - starting listener thread"
         while( !thread.interrupted() ) {
             try {
                 int count=0
-                for( Map.Entry<String,Consumer<M>> entry : listeners.entrySet() ) {
+                for( Map.Entry<String,Predicate<M>> entry : listeners.entrySet() ) {
                     final consumer0 = entry.value
                     stream.consume(entry.key, (String msg)-> {
                         count+=1
                         log.trace "Message streaming - receiving message=$msg"
-                        consumer0.accept(encoder.decode(msg)) }
-                    )
+                        consumer0.test(encoder.decode(msg))
+                    })
                 }
                 // reset the attempt count because no error has been thrown
                 attempt.reset()
@@ -108,9 +105,10 @@ abstract class AbstractMessageStream<M> implements MessageStream<M>, Runnable {
                 sleep(d0.toMillis())
             }
         }
-        log.trace "Message stream exiting listener thread"
+        log.trace "Message stream - exiting listener thread"
     }
 
+    @Override
     void close() {
         if( !thread )
             return
