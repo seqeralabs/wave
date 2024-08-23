@@ -17,7 +17,7 @@ namespace wave {
     };
 
     @route("/{token}")
-    @get op getContainerDetails(@path containerId: string): {
+    @get op getContainerDetails(@path token: string): {
       @body response: WaveContainerRecord;
       @statusCode statusCode: 200;
     }|{
