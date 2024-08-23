@@ -133,7 +133,10 @@ class ViewController {
         binding.build_conda_file = data.condaFile ?: '-'
         binding.build_repository = data.buildRepository ?: '-'
         binding.build_cache_repository = data.cacheRepository  ?: '-'
-
+        binding.build_id = data.buildId ?: '-'
+        binding.build_cached = data.buildId ? !data.buildNew : '-'
+        binding.build_freeze = data.buildId ? data.freeze : '-'
+        binding.fusion_version = data.fusionVersion ?: '-'
 
         return HttpResponse.<Map<String,Object>>ok(binding)
     }
