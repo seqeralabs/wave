@@ -51,7 +51,8 @@ class JobManager {
     private JobConfig config
 
     @PostConstruct
-    private init() {
+    void init() {
+        log.info "Creating job manager - config=$config"
         queue.consume((job)-> handle(job))
     }
 
@@ -79,6 +80,8 @@ class JobManager {
         }
         else {
             log.trace "== Job pending for completion $jobId"
+            // re-schedule for a new check
+            queue.offer(jobId)
         }
     }
 

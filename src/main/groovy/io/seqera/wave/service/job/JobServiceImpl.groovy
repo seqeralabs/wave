@@ -21,11 +21,14 @@ package io.seqera.wave.service.job
 import groovy.transform.CompileStatic
 import io.seqera.wave.service.blob.BlobCacheInfo
 import jakarta.inject.Inject
+import jakarta.inject.Singleton
+
 /**
  * Implement a service for job creation and execution
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Singleton
 @CompileStatic
 class JobServiceImpl implements JobService {
 

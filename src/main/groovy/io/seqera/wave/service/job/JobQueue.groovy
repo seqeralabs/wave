@@ -21,6 +21,7 @@ package io.seqera.wave.service.job
 import java.time.Duration
 import java.util.function.Consumer
 
+import groovy.transform.CompileStatic
 import io.seqera.wave.service.data.stream.AbstractMessageStream
 import io.seqera.wave.service.data.stream.MessageStream
 import jakarta.annotation.PreDestroy
@@ -31,6 +32,7 @@ import jakarta.inject.Singleton
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Singleton
+@CompileStatic
 class JobQueue extends AbstractMessageStream<JobId> {
 
     final private static String STREAM_NAME = 'jobs-queue/v1'

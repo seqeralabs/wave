@@ -78,12 +78,17 @@ abstract class AbstractMessageStream<M> implements MessageStream<M>, Runnable {
 
     @Override
     void run() {
+        log.trace "Message stream starting listener thread"
         while( !thread.interrupted() ) {
             try {
                 int count=0
                 for( Map.Entry<String,Consumer<M>> entry : listeners.entrySet() ) {
                     final consumer0 = entry.value
-                    stream.consume(entry.key, (String msg)-> { count+=1; consumer0.accept(encoder.decode(msg)) })
+                    stream.consume(entry.key, (String msg)-> {
+                        count+=1
+                        log.trace "Message streaming - receiving message=$msg"
+                        consumer0.accept(encoder.decode(msg)) }
+                    )
                 }
                 // reset the attempt count because no error has been thrown
                 attempt.reset()
@@ -93,7 +98,7 @@ abstract class AbstractMessageStream<M> implements MessageStream<M>, Runnable {
                 }
             }
             catch (InterruptedException e) {
-                log.debug "Interrupting consumer thread for message stream ${name0}"
+                log.debug "Message streaming interrupt exception - cause: ${e.message}"
                 Thread.currentThread().interrupt()
                 break
             }
@@ -103,6 +108,7 @@ abstract class AbstractMessageStream<M> implements MessageStream<M>, Runnable {
                 sleep(d0.toMillis())
             }
         }
+        log.trace "Message stream exiting listener thread"
     }
 
     void close() {

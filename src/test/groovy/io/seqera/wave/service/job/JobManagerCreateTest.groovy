@@ -18,25 +18,24 @@
 
 package io.seqera.wave.service.job
 
-import java.time.Duration
+import spock.lang.Specification
 
-import groovy.transform.ToString
-import io.micronaut.context.annotation.Value
-import jakarta.inject.Singleton
+import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import jakarta.inject.Inject
 
 /**
- * Model Job manager configuration settings
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@ToString(includeNames = true, includePackage = false)
-@Singleton
-class JobConfig {
+@MicronautTest(environments = ['blobcache-dev-cloudflare'])
+class JobManagerCreateTest extends Specification {
 
-    @Value('${wave.job-manager.grace-interval:20s}')
-    Duration graveInterval
+    @Inject
+    JobManager manager
 
-    @Value('${wave.job-manager.poll-interval:200ms}')
-    Duration pollInterval
+    def 'should create job manager' () {
+        expect:
+        manager != null
+    }
 
 }
