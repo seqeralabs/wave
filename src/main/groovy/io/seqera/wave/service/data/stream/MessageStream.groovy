@@ -16,22 +16,31 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job
+package io.seqera.wave.service.data.stream
 
-import java.time.Duration
 
-import io.micronaut.context.annotation.Value
-
+import java.util.function.Consumer
 /**
- * Model Job manager configuration settings
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class JobConfig {
+interface MessageStream<M> {
 
-    @Value('${wave.job-manager.grace-interval:20s}')
-    Duration graveInterval
+    /**
+     * Inserts the specified element at the tail of the specified queue.
+     *
+     * @param value
+     *  The value that should be added to the queue
+     */
+    void offer(String streamId, M message)
 
-    @Value('${wave.job-manager.poll-interval:200ms}')
-    Duration pollInternal
+    /**
+     * Consume a message from the stream and invoke
+     *
+     * @param streamId The target stream name
+     * @param consumer The {@link Consumer} instance to be invoked to consume the message
+     * @return number of message consumed
+     */
+    void consume(String streamId, Consumer<M> consumer)
+
 }

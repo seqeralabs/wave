@@ -16,22 +16,27 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job
+package io.seqera.wave.service.data.stream
 
 import java.time.Duration
 
-import io.micronaut.context.annotation.Value
-
 /**
- * Model Job manager configuration settings
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class JobConfig {
+class TestStream extends AbstractMessageStream<TestMessage> {
 
-    @Value('${wave.job-manager.grace-interval:20s}')
-    Duration graveInterval
+    TestStream(MessageStream<String> target) {
+        super(target)
+    }
 
-    @Value('${wave.job-manager.poll-interval:200ms}')
-    Duration pollInternal
+    @Override
+    protected String name() {
+        return 'test-stream'
+    }
+
+    @Override
+    protected Duration pollInterval() {
+        return Duration.ofSeconds(1)
+    }
 }

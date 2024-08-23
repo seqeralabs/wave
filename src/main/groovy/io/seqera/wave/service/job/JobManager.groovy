@@ -20,19 +20,13 @@ package io.seqera.wave.service.job
 
 import java.time.Duration
 import java.time.Instant
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Requires
-import io.micronaut.scheduling.TaskExecutors
-import io.seqera.wave.service.blob.BlobCacheInfo
-import io.seqera.wave.util.ExponentialAttempt
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
-import jakarta.inject.Named
 /**
  * Implement the logic to handle Blob cache transfer (uploads)
  *
@@ -51,68 +45,17 @@ class JobManager {
     private JobQueue queue
 
     @Inject
-    @Named(TaskExecutors.IO)
-    private ExecutorService executor
-
-    @Inject
     private JobDispatcher dispatcher
 
     @Inject
     private JobConfig config
 
-    private final ExponentialAttempt attempt = new ExponentialAttempt()
-
     @PostConstruct
     private init() {
-        CompletableFuture.supplyAsync(()->run(), executor)
+        queue.consume((job)-> handle(job))
     }
 
-    void run() {
-        log.info "+ Starting Job manager"
-        while( !Thread.currentThread().isInterrupted() ) {
-            try {
-                final jobId = queue.poll(config.pollTimeout)
-
-                if( jobId ) {
-                    handle(jobId)
-                    attempt.reset()
-                }
-            }
-            catch (InterruptedException e) {
-                log.debug "Interrupting transfer manager watcher thread"
-                break
-            }
-            catch (Throwable e) {
-                final d0 = attempt.delay()
-                log.error("Transfer manager unexpected error (await: ${d0}) - cause: ${e.message}", e)
-                sleep(d0.toMillis())
-            }
-        }
-    }
-
-    /**
-     * Handles the blob transfer operation i.e. check and update the current upload status
-     *
-     * @param blobId the blob cache id i.e. {@link BlobCacheInfo#id()}
-     */
     protected void handle(JobId jobId) {
-        try {
-            try {
-                handle0(jobId)
-            }
-            catch (Throwable error) {
-                dispatcher.onJobException(jobId, error)
-            }
-        }
-        catch (InterruptedException e) {
-            // re-queue the transfer to not lose it
-            queue.offer(jobId)
-            // re-throw the exception
-            throw e
-        }
-    }
-
-    protected void handle0(JobId jobId) {
         final duration = Duration.between(jobId.creationTime, Instant.now())
         final state = jobStrategy.status(jobId)
         log.trace "Job status id=${jobId.schedulerId}; state=${state}"
@@ -136,8 +79,6 @@ class JobManager {
         }
         else {
             log.trace "== Job pending for completion $jobId"
-            // re-schedule for a new check
-            queue.offer(jobId)
         }
     }
 

@@ -16,53 +16,45 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job
+package io.seqera.wave.service.data.stream.impl
 
-import java.time.Duration
+
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.function.Consumer
 
-import io.seqera.wave.service.data.stream.AbstractMessageStream
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.seqera.wave.service.data.stream.MessageStream
-import jakarta.annotation.PreDestroy
-import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
- * Implements a simple persistent FIFO queue
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
+@Requires(notEnv = 'redis')
 @Singleton
-class JobQueue extends AbstractMessageStream<JobId> {
+@CompileStatic
+class LocalMessageStream implements MessageStream<String> {
 
-    final private static String STREAM_NAME = 'jobs-queue/v1'
+    private ConcurrentHashMap<String, LinkedBlockingQueue<String>> delegate = new ConcurrentHashMap<>()
 
-    @Inject
-    private JobConfig config
-
-    JobQueue(MessageStream<String> target) {
-        super(target)
+    @Override
+    void offer(String streamId, String message) {
+        delegate
+                .computeIfAbsent(streamId, (it)-> new LinkedBlockingQueue<>())
+                .offer(message)
     }
 
     @Override
-    protected String name() {
-        return 'jobs-queue'
+    void consume(String streamId, Consumer<String> consumer) {
+        final message = delegate
+                .computeIfAbsent(streamId, (it)-> new LinkedBlockingQueue<>())
+                .poll()
+        if( message!=null ) {
+            consumer.accept(message)
+        }
     }
 
-    @Override
-    protected Duration pollInterval() {
-        return config.pollInternal
-    }
-
-    final void offer(JobId job) {
-        super.offer(STREAM_NAME, job)
-    }
-
-    final void consume(Consumer<JobId> consumer) {
-        super.consume(STREAM_NAME, consumer)
-    }
-
-    @PreDestroy
-    void destroy() {
-        this.close()
-    }
 }

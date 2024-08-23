@@ -16,22 +16,16 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job
+package io.seqera.wave.service.data.stream
 
-import java.time.Duration
-
-import io.micronaut.context.annotation.Value
+import groovy.transform.Canonical
 
 /**
- * Model Job manager configuration settings
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class JobConfig {
-
-    @Value('${wave.job-manager.grace-interval:20s}')
-    Duration graveInterval
-
-    @Value('${wave.job-manager.poll-interval:200ms}')
-    Duration pollInternal
+@Canonical
+class TestMessage {
+    String x
+    String y
 }
