@@ -213,96 +213,6 @@ class K8sServiceImpl implements K8sService {
     }
 
     /**
-     * Create a volume mount for the build storage.
-     *
-     * @param workDir The path representing a container build context
-     * @param storageMountPath
-     * @return A {@link V1VolumeMount} representing the mount path for the build config
-     */
-    protected V1VolumeMount mountBuildStorage(Path workDir, String storageMountPath, boolean readOnly) {
-        assert workDir, "K8s mount build storage is mandatory"
-
-        final vol = new V1VolumeMount()
-                .name('build-data')
-                .mountPath(workDir.toString())
-                .readOnly(readOnly)
-
-        if( storageMountPath ) {
-            // check sub-path
-            final rel = Path.of(storageMountPath).relativize(workDir).toString()
-            if (rel)
-                vol.subPath(rel)
-        }
-        return vol
-    }
-
-    /**
-     * Defines the volume for the container building shared context
-     *
-     * @param workDir The path where the container image build context is located
-     * @param claimName The claim name of the corresponding storage
-     * @return An instance of {@link V1Volume} representing the build storage volume
-     */
-    protected V1Volume volumeBuildStorage(String mountPath, @Nullable String claimName) {
-        final vol= new V1Volume()
-                .name('build-data')
-        if( claimName ) {
-            vol.persistentVolumeClaim( new V1PersistentVolumeClaimVolumeSource().claimName(claimName) )
-        }
-        else {
-            vol.hostPath( new V1HostPathVolumeSource().path(mountPath) )
-        }
-
-        return vol
-    }
-
-    /**
-     * Defines the volume mount for the  docker config
-     *
-     * @return A {@link V1VolumeMount} representing the docker config
-     */
-    protected V1VolumeMount mountHostPath(Path filePath, String storageMountPath, String mountPath) {
-        final rel = Path.of(storageMountPath).relativize(filePath).toString()
-        if( !rel ) throw new IllegalStateException("Mount relative path cannot be empty")
-        return new V1VolumeMount()
-                .name('build-data')
-                .mountPath(mountPath)
-                .subPath(rel)
-                .readOnly(true)
-    }
-
-    protected V1VolumeMount mountSpackCacheDir(Path spackCacheDir, String storageMountPath, String containerPath) {
-        final rel = Path.of(storageMountPath).relativize(spackCacheDir).toString()
-        if( !rel || rel.startsWith('../') )
-            throw new IllegalArgumentException("Spack cacheDirectory '$spackCacheDir' must be a sub-directory of storage path '$storageMountPath'")
-        return new V1VolumeMount()
-                .name('build-data')
-                .mountPath(containerPath)
-                .subPath(rel)
-    }
-
-    protected V1VolumeMount mountSpackSecretFile(Path secretFile, String storageMountPath, String containerPath) {
-        final rel = Path.of(storageMountPath).relativize(secretFile).toString()
-        if( !rel || rel.startsWith('../') )
-            throw new IllegalArgumentException("Spack secretKeyFile '$secretFile' must be a sub-directory of storage path '$storageMountPath'")
-        return new V1VolumeMount()
-                .name('build-data')
-                .readOnly(true)
-                .mountPath(containerPath)
-                .subPath(rel)
-    }
-
-    protected V1VolumeMount mountScanCacheDir(Path scanCacheDir, String storageMountPath) {
-        final rel = Path.of(storageMountPath).relativize(scanCacheDir).toString()
-        if( !rel || rel.startsWith('../') )
-            throw new IllegalArgumentException("Container scan cacheDirectory '$scanCacheDir' must be a sub-directory of storage path '$storageMountPath'")
-        return new V1VolumeMount()
-                .name('build-data')
-                .mountPath( Trivy.CACHE_MOUNT_PATH )
-                .subPath(rel)
-    }
-
-    /**
      * Create a container for container image building via buildkit
      *
      * @param name
@@ -369,25 +279,19 @@ class K8sServiceImpl implements K8sService {
         if( requestsMemory )
             requests.putRequestsItem('memory', new Quantity(requestsMemory))
 
+        //add https://github.com/nextflow-io/k8s-fuse-plugin
+        requests.limits(Map.of("nextflow.io/fuse", new Quantity("1")))
+
         // container section
         final container = new V1ContainerBuilder()
                 .withName(name)
                 .withImage(containerImage)
                 .withEnv(toEnvList(env))
                 .withResources(requests)
+                .withArgs(args)
 
         if( singularity ) {
-            container
-            // use 'command' to override the entrypoint of the container
-                    .withCommand(args)
-                    .withNewSecurityContext().withPrivileged(true).endSecurityContext()
-        } else {
-            container
-                    //required by buildkit rootless container
-                    .withEnv(toEnvList(BUILDKIT_FLAGS))
-                    // buildCommand is to set entrypoint for buildkit
-                    .withCommand(BUILDKIT_ENTRYPOINT)
-                    .withArgs(args)
+            container.withNewSecurityContext().withPrivileged(true).endSecurityContext()
         }
 
         // spec section
