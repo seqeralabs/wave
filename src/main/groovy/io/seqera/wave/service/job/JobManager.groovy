@@ -57,6 +57,16 @@ class JobManager {
     }
 
     protected boolean processJob(JobId jobId) {
+        try {
+            return processJob0(jobId)
+        }
+        catch (Throwable err) {
+            dispatcher.onJobException(jobId, err)
+            return true
+        }
+    }
+
+    protected boolean processJob0(JobId jobId) {
         final duration = Duration.between(jobId.creationTime, Instant.now())
         final state = jobStrategy.status(jobId)
         log.trace "Job status id=${jobId.schedulerId}; state=${state}"

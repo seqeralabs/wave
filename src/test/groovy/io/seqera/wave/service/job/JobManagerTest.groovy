@@ -29,15 +29,14 @@ class JobManagerTest extends Specification {
 
     def "handle should process valid transferId"() {
         given:
-        def queue = Mock(JobQueue)
         def jobStrategy = Mock(JobStrategy)
         def jobDispatcher = Mock(JobDispatcher)
-        def manager = new JobManager(queue: queue, jobStrategy: jobStrategy, dispatcher: jobDispatcher)
+        def manager = new JobManager(jobStrategy: jobStrategy, dispatcher: jobDispatcher)
         and:
         def job = JobId.transfer('foo')
 
         when:
-        manager.processJob(job)
+        def done = manager.processJob(job)
         then:
         1 * jobStrategy.status(job) >> JobState.completed(0, 'My job logs')
         and:
@@ -48,86 +47,82 @@ class JobManagerTest extends Specification {
         and:
         1 * jobStrategy.cleanup(job,0)
         and:
-        0 * queue.offer(_)
+        done
     }
 
     def "handle should log error for unknown transferId"() {
         given:
-        def queue = Mock(JobQueue)
         def jobStrategy = Mock(JobStrategy)
         def jobDispatcher = Mock(JobDispatcher)
-        def manager = new JobManager(queue: queue, jobStrategy: jobStrategy, dispatcher: jobDispatcher)
+        def manager = new JobManager(jobStrategy: jobStrategy, dispatcher: jobDispatcher)
         and:
         def job = JobId.transfer('unknown')
 
         when:
-        manager.processJob(job)
+        def done = manager.processJob(job)
         then:
         1 * jobStrategy.status(job) >> null
         and:
         1 * jobDispatcher.onJobException(job,_) >> null
         and:
-        0 * queue.offer(_)
+        done
     }
 
     def "handle0 should fail transfer when status is unknown and duration exceeds grace period"() {
         given:
-        def queue = Mock(JobQueue)
         def jobStrategy = Mock(JobStrategy)
         def jobDispatcher = Mock(JobDispatcher)
         def config = new JobConfig(graveInterval: Duration.ofMillis(500))
-        def manager = new JobManager(queue: queue, jobStrategy: jobStrategy, dispatcher: jobDispatcher, config:config)
+        def manager = new JobManager(jobStrategy: jobStrategy, dispatcher: jobDispatcher, config:config)
         and:
         def job = JobId.transfer('foo')
 
         when:
         sleep 1_000 //sleep longer than grace period
-        manager.processJob(job)
+        def done = manager.processJob(job)
 
         then:
         1 * jobStrategy.status(job) >> JobState.unknown('logs')
         1 * jobDispatcher.onJobCompletion(job, _)
         1 * jobStrategy.cleanup(job, _)
         and:
-        0 * queue.offer(_)
+        done
     }
 
     def "should requeue transfer when duration is within limits"() {
         given:
-        def queue = Mock(JobQueue)
         def jobStrategy = Mock(JobStrategy)
         def jobDispatcher = Mock(JobDispatcher)
-        def manager = new JobManager(queue: queue, jobStrategy: jobStrategy, dispatcher: jobDispatcher)
+        def manager = new JobManager(jobStrategy: jobStrategy, dispatcher: jobDispatcher)
         and:
         def job = JobId.transfer('foo')
 
         when:
-        manager.processJob(job)
+        def done = manager.processJob(job)
         then:
         1 * jobStrategy.status(job) >> JobState.running()
         1 * jobDispatcher.jobMaxDuration(job) >> Duration.ofSeconds(10)
         and:
-        1 * queue.offer(job)
+        !done
     }
 
     def "handle0 should timeout transfer when duration exceeds max limit"() {
         given:
-        def queue = Mock(JobQueue)
         def jobStrategy = Mock(JobStrategy)
         def jobDispatcher = Mock(JobDispatcher)
-        def manager = new JobManager(queue: queue, jobStrategy: jobStrategy, dispatcher: jobDispatcher)
+        def manager = new JobManager(jobStrategy: jobStrategy, dispatcher: jobDispatcher)
         and:
         def job = JobId.transfer('foo')
 
         when:
         sleep 1_000 //await timeout
-        manager.processJob(job)
+        def done = manager.processJob(job)
         then:
         1 * jobStrategy.status(job) >> JobState.running()
         1 * jobDispatcher.jobMaxDuration(job) >> Duration.ofMillis(100)
         and:
         1 * jobDispatcher.onJobTimeout(job)
         and:
-        0 * queue.offer(_)
+        done
     }
 }
