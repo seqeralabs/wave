@@ -95,7 +95,7 @@ class ErrorHandler {
         }
 
         if( t instanceof SlowDownException ) {
-            final resp = responseFactory.apply(msg, 'DENIED')
+            final resp = responseFactory.apply(msg, 'TOOMANYREQUESTS')
             return HttpResponseFactory.INSTANCE.status(HttpStatus.TOO_MANY_REQUESTS).body(resp)
         }
 
