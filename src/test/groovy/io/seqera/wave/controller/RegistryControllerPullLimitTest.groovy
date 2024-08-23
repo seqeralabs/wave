@@ -16,33 +16,54 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.ratelimit
+package io.seqera.wave.controller
 
 import spock.lang.Shared
 import spock.lang.Specification
 
-import java.util.concurrent.atomic.AtomicInteger
-
-import groovy.json.JsonSlurper
 import io.micronaut.context.ApplicationContext
+import io.micronaut.context.annotation.Requires
 import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpStatus
 import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
-import io.micronaut.http.server.util.HttpClientAddressResolver
-import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.configuration.RateLimiterConfig
+import io.seqera.wave.exception.SlowDownException
 import io.seqera.wave.model.ContentType
+import io.seqera.wave.ratelimit.AcquireRequest
+import io.seqera.wave.ratelimit.RateLimiterService
+import io.seqera.wave.storage.ManifestCacheStore
 import io.seqera.wave.test.DockerRegistryContainer
 import jakarta.inject.Inject
+import jakarta.inject.Singleton
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@MicronautTest(environments = ['test', 'rate-limit'])
-class SpillwayRegistryControllerTest extends Specification implements DockerRegistryContainer{
+@MicronautTest(environments = ['test-rate-limit'])
+class RegistryControllerPullLimitTest extends Specification implements DockerRegistryContainer{
+
+    @Requires(env = 'test-rate-limit')
+    @Singleton
+    static class Limit implements RateLimiterService {
+
+        @Override
+        void acquireBuild(AcquireRequest request) throws SlowDownException {
+            throw new SlowDownException("Request exceeded expected build rate limit")
+        }
+
+        @Override
+        void acquirePull(AcquireRequest request) throws SlowDownException {
+            throw new SlowDownException("Request exceeded expected pull rate limit")
+        }
+
+        @Override
+        boolean acquireTimeoutCounter(String endpoint) {
+            return false
+        }
+    }
 
     @Inject
     @Client("/")
@@ -53,45 +74,25 @@ class SpillwayRegistryControllerTest extends Specification implements DockerRegi
     ApplicationContext applicationContext
 
     @Inject
-    RateLimiterConfig configuration
-
-    @MockBean(HttpClientAddressResolver)
-    HttpClientAddressResolver addressResolver(){
-        final AtomicInteger counter = new AtomicInteger()
-        Mock(HttpClientAddressResolver){
-            resolve(_) >> {
-                counter.incrementAndGet() % 2 == 0 ? "127.0.0.1" : "10.0.0.1"
-            }
-        }
-    }
+    ManifestCacheStore storage
 
     def setupSpec() {
         initRegistryContainer(applicationContext)
     }
 
-    void 'should check rate limit in ip of anonymous manifest'() {
-        given:
-        def max = configuration.pull.anonymous.max
+    void 'should get manifest'() {
         when:
-        HttpRequest request = HttpRequest.GET("/v2/library/hello-world/manifests/sha256:975f4b14f326b05db86e16de00144f9c12257553bba9484fed41f9b6f2257800").headers({h->
+        HttpRequest request = HttpRequest.GET("/v2/library/hello-world/manifests/sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6").headers({h->
             h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
             h.add('Accept', ContentType.DOCKER_MANIFEST_V1_JWS_TYPE)
             h.add('Accept', MediaType.APPLICATION_JSON)
         })
-        max.times { client.toBlocking().exchange(request, String) }
-        then:
-        true
-
-        when:
-        (max*2).times {client.toBlocking().exchange(request, String) }
+        client.toBlocking().exchange(request,String)
 
         then:
-        def e = thrown(HttpClientResponseException)
-        e.message == "Client '/': Too Many Requests"
-        def b = new JsonSlurper().parseText( e.response.body.get() as String)
-        b.errors.size()
-        b.errors.first().code == 'TOOMANYREQUESTS'
-        b.errors.first().message.contains('Request exceeded pull rate limit for IP')
+        HttpClientResponseException e = thrown()
+        e.status == HttpStatus.TOO_MANY_REQUESTS
+        e.response.body() == '{"errors":[{"code":"TOOMANYREQUESTS","message":"Request exceeded expected pull rate limit"}]}'
     }
 
 }
