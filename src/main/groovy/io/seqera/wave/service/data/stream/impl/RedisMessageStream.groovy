@@ -115,7 +115,7 @@ class RedisMessageStream implements MessageStream<String> {
         }
     }
 
-    protected StreamEntry readMessage(Jedis jedis, String target) {
+    protected StreamEntry readMessage(Jedis jedis, String streamId) {
         // Create parameters for reading with a group
         final params = new XReadGroupParams()
                 // Read one message at a time
@@ -126,22 +126,20 @@ class RedisMessageStream implements MessageStream<String> {
                 CONSUMER_GROUP_NAME,
                 consumerName,
                 params,
-                Map.of(target, StreamEntryID.UNRECEIVED_ENTRY) )
+                Map.of(streamId, StreamEntryID.UNRECEIVED_ENTRY) )
 
         final entry = messages?.first()?.value?.first()
-        if( entry ) {
-            log.debug "Redis stream read entry=$entry"
-        }
+        log.trace "Redis stream id=$streamId; read entry=$entry"
         return entry
     }
 
-    protected StreamEntry claimMessage(Jedis jedis, String target) {
+    protected StreamEntry claimMessage(Jedis jedis, String streamId) {
         // Attempt to claim any pending messages that are idle for more than the threshold
         final params = new XAutoClaimParams()
                 // claim one entry at time
                 .count(1)
         final messages = jedis.xautoclaim(
-                target,
+                streamId,
                 CONSUMER_GROUP_NAME,
                 consumerName,
                 claimTimeout.toMillis(),
@@ -149,9 +147,7 @@ class RedisMessageStream implements MessageStream<String> {
                 params
         )
         final entry = messages?.getValue()?[0]
-        if( entry ) {
-            log.debug "Redis stream claimed entry=$entry"
-        }
+        log.trace "Redis stream id=$streamId; claimed entry=$entry"
         return entry
     }
 
