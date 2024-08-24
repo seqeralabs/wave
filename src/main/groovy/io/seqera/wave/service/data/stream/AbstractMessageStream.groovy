@@ -30,6 +30,8 @@ import io.seqera.wave.encoder.MoshiEncodeStrategy
 import io.seqera.wave.util.ExponentialAttempt
 import io.seqera.wave.util.TypeHelper
 /**
+ * Implement an abstract stream that allows that consumes messages asynchronously
+ * as soon as they are available.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -61,31 +63,79 @@ abstract class AbstractMessageStream<M> implements Closeable {
         this.thread.start()
     }
 
+    /**
+     * @return The name of the message queue implementation
+     */
     protected abstract String name()
 
+    /**
+     * @return
+     *      The time interval to await before trying to read again the stream
+     *      when no more entries are available.
+     */
     protected abstract Duration pollInterval()
 
+    /**
+     * Add a message to the stream with the specified identifier
+     *
+     * @param streamId
+     *      The stream unique ID
+     * @param message
+     *      The message object to be added to the stream
+     */
     void offer(String streamId, M message) {
         final msg = encoder.encode(message)
         stream.offer(streamId, msg)
     }
 
+    /**
+     * Define the consumer {@link Predicate} to be applied when a message is available
+     * for reading in the stream.
+     *
+     * @param streamId
+     *      The stream unique ID
+     * @param consumer
+     *      The {@link Predicate} to be invoked when a stream message is consumed (read from) the stream.
+     */
     void consume(String streamId, Predicate<M> consumer) {
-        listeners.put(streamId, consumer)
+        final value = listeners.put(streamId, consumer)
+        if( value!=null )
+            throw new IllegalStateException("Only one consumer can be defined for each stream - offending streamId=$streamId; consumer=$consumer")
     }
 
+    /**
+     * Deserialize the message as string into the target message object and process it by applying
+     * the given consumer {@link Predicate<M>}.
+     *
+     * @param msg
+     *      The message serialised as a string value
+     * @param consumer
+     *      The consumer {@link Predicate<M>} that will handle the message as a object
+     * @param count
+     *      An {@link AtomicInteger} counter incremented by one when this method is invoked,
+     *      irrespective if the consumer is successful or not.
+     * @return
+     *      The result of the consumer {@link Predicate<M>} operation.
+     */
+    protected boolean processMessage(String msg, Predicate<M> consumer, AtomicInteger count) {
+        count.incrementAndGet()
+        final decoded = encoder.decode(msg)
+        log.trace "Message streaming - receiving message=$msg; decoded=$decoded"
+        return consumer.test(decoded)
+    }
+
+    /**
+     * Process the messages as they are available from the underlying stream
+     */
     protected void processMessages() {
         log.trace "Message stream - starting listener thread"
         while( !thread.interrupted() ) {
             try {
-                int count=0
+                final count=new AtomicInteger()
                 for( Map.Entry<String,Predicate<M>> entry : listeners.entrySet() ) {
-                    final consumer0 = entry.value
-                    stream.consume(entry.key, (String msg)-> {
-                        count+=1
-                        log.trace "Message streaming - receiving message=$msg"
-                        consumer0.test(encoder.decode(msg))
-                    })
+                    final streamId = entry.key
+                    final consumer = entry.value
+                    stream.consume(streamId, (String msg)-> processMessage(msg, consumer, count))
                 }
                 // reset the attempt count because no error has been thrown
                 attempt.reset()
@@ -108,6 +158,9 @@ abstract class AbstractMessageStream<M> implements Closeable {
         log.trace "Message stream - exiting listener thread"
     }
 
+    /**
+     * Shutdown orderly the stream
+     */
     @Override
     void close() {
         if( !thread )

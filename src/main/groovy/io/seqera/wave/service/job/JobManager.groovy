@@ -61,7 +61,9 @@ class JobManager {
             return processJob0(jobId)
         }
         catch (Throwable err) {
+            // in the case of an expected exception report the error condition by using `onJobException`
             dispatcher.onJobException(jobId, err)
+            // finally return `true` to signal the job should not be processed anymore
             return true
         }
     }

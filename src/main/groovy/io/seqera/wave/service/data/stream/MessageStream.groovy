@@ -22,6 +22,7 @@ package io.seqera.wave.service.data.stream
 import java.util.function.Predicate
 /**
  * Define the contract for a generic message stream
+ * able to add message and consume them asynchronously.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
