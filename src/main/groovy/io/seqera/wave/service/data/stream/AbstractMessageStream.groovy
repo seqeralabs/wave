@@ -39,10 +39,10 @@ import io.seqera.wave.util.TypeHelper
 @CompileStatic
 abstract class AbstractMessageStream<M> implements Closeable {
 
-    static final private Map<String,Predicate<M>> listeners = new ConcurrentHashMap<>()
-
     static final private AtomicInteger count = new AtomicInteger()
 
+    final private Map<String,Predicate<M>> listeners = new ConcurrentHashMap<>()
+    
     final private ExponentialAttempt attempt = new ExponentialAttempt()
 
     final private EncodingStrategy<M> encoder
