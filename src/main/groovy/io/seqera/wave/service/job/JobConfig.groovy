@@ -34,7 +34,7 @@ import jakarta.inject.Singleton
 class JobConfig {
 
     @Value('${wave.job-manager.grace-interval:20s}')
-    Duration graveInterval
+    Duration graceInterval
 
     @Value('${wave.job-manager.poll-interval:200ms}')
     Duration pollInterval

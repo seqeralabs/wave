@@ -72,7 +72,7 @@ class JobManagerTest extends Specification {
         given:
         def jobStrategy = Mock(JobStrategy)
         def jobDispatcher = Mock(JobDispatcher)
-        def config = new JobConfig(graveInterval: Duration.ofMillis(500))
+        def config = new JobConfig(graceInterval: Duration.ofMillis(500))
         def manager = new JobManager(jobStrategy: jobStrategy, dispatcher: jobDispatcher, config:config)
         and:
         def job = JobId.transfer('foo')

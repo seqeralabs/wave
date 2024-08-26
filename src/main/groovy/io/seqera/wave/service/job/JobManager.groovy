@@ -75,7 +75,7 @@ class JobManager {
         final done =
                 state.completed() ||
                 // considered failed when remain in unknown status too long         
-                (state.status==JobState.Status.UNKNOWN && duration>config.graveInterval)
+                (state.status==JobState.Status.UNKNOWN && duration>config.graceInterval)
         if( done ) {
             // publish the completion event
             dispatcher.onJobCompletion(jobId, state)
