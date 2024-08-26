@@ -86,7 +86,7 @@ class RedisMessageStream implements MessageStream<String> {
         catch (JedisDataException e) {
             if (e.message.contains("BUSYGROUP")) {
                 // The group already exists, so we can safely ignore this exception
-                log.debug "Redis message stream - consume group=$group alreayd exists"
+                log.debug "Redis message stream - consume group=$group already exists"
                 return true
             }
             throw e
