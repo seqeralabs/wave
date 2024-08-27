@@ -95,7 +95,7 @@ class DockerBuildStrategy extends BuildStrategy {
                 ? cmdForBuildkit( req)
                 : cmdForSingularity(req)
 
-        return dockerCmd + "" +launchCmd(req)
+        return dockerCmd + launchCmd(req)
     }
 
     protected List<String> cmdForBuildkit(BuildRequest req) {

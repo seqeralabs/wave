@@ -104,6 +104,7 @@ class DockerScanStrategy extends ScanStrategy {
 
         final wrapper = ['docker',
                          'run',
+                         '--rm',
                          '--privileged',
                          '-e',
                          "AWS_ACCESS_KEY_ID=${System.getenv('AWS_ACCESS_KEY_ID')}".toString(),
