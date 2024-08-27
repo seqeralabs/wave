@@ -20,7 +20,6 @@ package io.seqera.wave.service.blob
 import java.time.Duration
 import java.time.Instant
 
-import com.google.common.hash.Hashing
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
@@ -31,7 +30,7 @@ import groovy.util.logging.Slf4j
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
-@ToString(includePackage = false, includeNames = true)
+@ToString(includePackage = false, includeNames = true, excludes = ['headers','logs'])
 @Canonical
 @CompileStatic
 class BlobCacheInfo {
@@ -45,11 +44,6 @@ class BlobCacheInfo {
      * The object storage path URI e.g. s3://bucket-name/some/path
      */
     final String objectUri
-
-    /**
-     * it is the name of k8s job or docker container depends on the transfer strategy
-     */
-    final String jobName
 
     /**
      * The request http headers
@@ -119,7 +113,7 @@ class BlobCacheInfo {
         final type = headerString0(response, 'Content-Type')
         final cache = headerString0(response, 'Cache-Control')
         final creationTime = Instant.now()
-        return new BlobCacheInfo(locationUri, objectUri, generateJobName(locationUri, creationTime), headers0, length, type, cache, creationTime, null, null, null)
+        return new BlobCacheInfo(locationUri, objectUri, headers0, length, type, cache, creationTime, null, null, null)
     }
 
     static String headerString0(Map<String,List<String>> headers, String name) {
@@ -140,7 +134,6 @@ class BlobCacheInfo {
         new BlobCacheInfo(
                 locationUri,
                 objectUri,
-                jobName,
                 headers,
                 contentLength,
                 contentType,
@@ -156,7 +149,6 @@ class BlobCacheInfo {
         new BlobCacheInfo(
                 locationUri,
                 objectUri,
-                jobName,
                 headers,
                 contentLength,
                 contentType,
@@ -172,7 +164,6 @@ class BlobCacheInfo {
         new BlobCacheInfo(
                 locationUri,
                 objectUri,
-                jobName,
                 headers,
                 contentLength,
                 contentType,
@@ -188,7 +179,6 @@ class BlobCacheInfo {
         new BlobCacheInfo(
                 location,
                 objectUri,
-                jobName,
                 headers,
                 contentLength,
                 contentType,
@@ -201,7 +191,7 @@ class BlobCacheInfo {
     }
 
     static BlobCacheInfo unknown(String logs) {
-        new BlobCacheInfo(null, null, null, null, null, null, null, Instant.ofEpochMilli(0), Instant.ofEpochMilli(0), null, logs) {
+        new BlobCacheInfo(null, null, null, null, null, null, Instant.ofEpochMilli(0), Instant.ofEpochMilli(0), null, logs) {
             @Override
             BlobCacheInfo withLocation(String uri) {
                 // prevent the change of location for unknown status
@@ -210,12 +200,4 @@ class BlobCacheInfo {
         }
     }
 
-    static private String generateJobName(String locationUri, Instant creationTime) {
-        return 'transfer-' + Hashing
-                .sipHash24()
-                .newHasher()
-                .putUnencodedChars(locationUri)
-                .putUnencodedChars(creationTime.toString())
-                .hash()
-    }
 }

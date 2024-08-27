@@ -18,21 +18,19 @@
 
 package io.seqera.wave.service.blob.impl
 
-
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.BlobCacheConfig
-import io.seqera.wave.service.blob.BlobCacheInfo
-import io.seqera.wave.service.blob.transfer.Transfer
-import io.seqera.wave.service.blob.transfer.TransferStrategy
+import io.seqera.wave.service.job.JobId
+import io.seqera.wave.service.job.JobState
+import io.seqera.wave.service.job.JobStrategy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-
 /**
- * Implements {@link TransferStrategy} that runs s5cmd using a docker
+ * Implements {@link JobStrategy} that runs s5cmd using a docker
  * container. Meant for development purposes
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -42,15 +40,15 @@ import jakarta.inject.Singleton
 @Singleton
 @Requires(missingProperty = 'wave.build.k8s')
 @Requires(property = 'wave.blobCache.enabled', value = 'true')
-class DockerTransferStrategy implements TransferStrategy {
+class DockerTransferStrategy implements JobStrategy {
 
     @Inject
     private BlobCacheConfig blobConfig
 
     @Override
-    void transfer(BlobCacheInfo info, List<String> command) {
+    void launchJob(String jobName, List<String> command) {
         // create a unique name for the container
-        createProcess(command, info.jobName, blobConfig.transferTimeout.toSeconds())
+        createProcess(command, jobName, blobConfig.transferTimeout.toSeconds())
                 .start()
     }
 
@@ -80,32 +78,32 @@ class DockerTransferStrategy implements TransferStrategy {
     }
 
     @Override
-    Transfer status(BlobCacheInfo blob) {
-        final state = getDockerContainerState(blob.jobName)
-        log.trace "Docker transfer status name=$blob.jobName; state=$state"
+    JobState status(JobId job) {
+        final state = getDockerContainerState(job.schedulerId)
+        log.trace "Docker transfer status name=$job.schedulerId; state=$state"
         
         if (state.status == 'running') {
-            return Transfer.running()
+            return JobState.running()
         }
         else if (state.status == 'exited') {
-            final logs = getDockerContainerLogs(blob.jobName)
-            return Transfer.completed(state.exitCode, logs)
+            final logs = getDockerContainerLogs(job.schedulerId)
+            return JobState.completed(state.exitCode, logs)
         }
         else if (state.status == 'created' || state.status == 'paused') {
-            return Transfer.pending()
+            return JobState.pending()
         }
         else {
-            final logs = getDockerContainerLogs(blob.jobName)
-            return Transfer.unknown(logs)
+            final logs = getDockerContainerLogs(job.schedulerId)
+            return JobState.unknown(logs)
         }
     }
 
     @Override
-    void cleanup(BlobCacheInfo blob) {
+    void cleanup(JobId jobId, Integer exitStatus) {
         final cli = new ArrayList<String>()
         cli.add('docker')
         cli.add('rm')
-        cli.add(blob.jobName)
+        cli.add(jobId.schedulerId)
 
         final builder = new ProcessBuilder(cli)
         builder.redirectErrorStream(true)
