@@ -735,7 +735,8 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                 null,
                 'scan12345',
                 null,
-                BuildFormat.DOCKER
+                BuildFormat.DOCKER,
+                Duration.ofMinutes(1)
         ).withBuildId('1')
 
         final request2 = new BuildRequest(
@@ -754,7 +755,8 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                 null,
                 'scan12345',
                 null,
-                BuildFormat.DOCKER
+                BuildFormat.DOCKER,
+                Duration.ofMinutes(1)
         ).withBuildId('2')
 
         and:

@@ -177,7 +177,8 @@ class BuildControllerTest extends Specification {
                 null,
                 'scan12345',
                 null,
-                format1)
+                format1,
+                Duration.ofMinutes(1))
                 .withBuildId('1')
         final result1 = new BuildResult(build1.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         final event1 = new BuildEvent(build1, result1)
@@ -202,7 +203,8 @@ class BuildControllerTest extends Specification {
                 null,
                 'scan12345',
                 null,
-                format2)
+                format2,
+                Duration.ofMinutes(1))
                 .withBuildId('2')
         final result2 = new BuildResult(build2.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         final event2 = new BuildEvent(build2, result2)
