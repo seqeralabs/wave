@@ -34,6 +34,7 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildFormat
@@ -46,10 +47,9 @@ import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
-import jakarta.inject.Inject
 import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.util.ContainerHelper
-
+import jakarta.inject.Inject
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -82,22 +82,17 @@ class BuildControllerTest extends Specification {
         final containerId = ContainerHelper.makeContainerId(containerFile, null, null, platform, 'buildrepo', null)
         final targetImage = ContainerHelper.makeTargetImage(format, repo, containerId, null, null, null)
         final build = new BuildRequest(
-                containerId,
-                containerFile,
-                null,
-                null,
-                Path.of("/some/path"),
-                targetImage,
-                PlatformId.NULL,
-                platform,
-                'cacherepo',
-                "1.2.3.4",
-                '{"config":"json"}',
-                null,
-                null,
-                'scan12345',
-                null,
-                format)
+                containerId: containerId,
+                containerFile: containerFile,
+                workspace: Path.of("/some/path"),
+                targetImage: targetImage,
+                identity: PlatformId.NULL,
+                platform: platform,
+                cacheRepository: 'cacherepo',
+                ip: "1.2.3.4",
+                configJson: '{"config":"json"}',
+                scanId: 'scan12345',
+                format: format )
             .withBuildId('1')
         final result = new BuildResult(build.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         final event = new BuildEvent(build, result)

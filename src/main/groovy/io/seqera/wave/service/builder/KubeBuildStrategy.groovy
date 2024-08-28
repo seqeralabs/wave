@@ -44,7 +44,7 @@ import static java.nio.file.StandardOpenOption.WRITE
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
 /**
- * Build a container image using running a K8s job
+ * Build a container image using running a K8s pod
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -97,14 +97,15 @@ class KubeBuildStrategy extends BuildStrategy {
             final buildImage = getBuildImage(req)
             final buildCmd = launchCmd(req)
             final name = podName(req)
+            final timeout = req.maxDuration ?: buildConfig.defaultTimeout
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
             final spackCfg0 = req.isSpackBuild ? spackConfig : null
-            final pod = k8sService.buildContainer(name, buildImage, buildCmd, req.workDir, configFile, spackCfg0, selector)
-            final terminated = k8sService.waitPod(pod, buildConfig.buildTimeout.toMillis())
-            final stdout = k8sService.logsPod(name)
-            if( terminated ) {
-                final digest = terminated.exitCode==0 ? proxyService.getImageDigest(req, true) : null
-                return BuildResult.completed(req.buildId, terminated.exitCode, stdout, req.startTime, digest)
+            final pod = k8sService.buildContainer(name, buildImage, buildCmd, req.workDir, configFile, timeout, spackCfg0, selector)
+            final exitCode = k8sService.waitPodCompletion(pod, timeout.toMillis())
+            final stdout = k8sService.logsPod(pod)
+            if( exitCode!=null ) {
+                final digest = exitCode==0 ? proxyService.getImageDigest(req, true) : null
+                return BuildResult.completed(req.buildId, exitCode, stdout, req.startTime, digest)
             }
             else {
                 return BuildResult.failed(req.buildId, stdout, req.startTime)

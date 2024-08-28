@@ -24,7 +24,6 @@ import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.configuration.BlobCacheConfig
-import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
@@ -42,16 +41,13 @@ import software.amazon.awssdk.services.s3.S3Client
 @Slf4j
 class S3ClientFactory {
 
-    @Inject
-    private BlobCacheConfig blobConfig
-
     @Value('${aws.region}')
     private String awsRegion;
 
     @Singleton
     @Requires(property = 'wave.blobCache.enabled', value = 'true')
     @Named('BlobS3Client')
-    S3Client cloudflareS3Client() {
+    S3Client cloudflareS3Client(BlobCacheConfig blobConfig) {
         final creds = AwsBasicCredentials.create(blobConfig.storageAccessKey, blobConfig.storageSecretKey)
         final builder = S3Client.builder()
                     .region(Region.of(blobConfig.storageRegion))

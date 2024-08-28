@@ -55,7 +55,8 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         embeddedServer = ApplicationContext.run(EmbeddedServer, [
                 REDIS_HOST   : redisHostName,
                 REDIS_PORT   : redisPort,
-                'wave.build.timeout':'3s',
+                'wave.build.timeout':'2s',
+                'wave.build.trusted-timeout':'2s',
                 'micronaut.server.port': port,
                 'micronaut.http.services.default.url' : "http://localhost:$port".toString(),
         ], 'test', 'h2', 'redis')
@@ -107,7 +108,7 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         response.getContentLength() == 10242
     }
 
-    @Timeout(10)
+    @Timeout(15)
     void 'should render a timeout when build failed'() {
         given:
         HttpClient client = applicationContext.createBean(HttpClient)

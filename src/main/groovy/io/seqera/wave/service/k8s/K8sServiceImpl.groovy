@@ -19,6 +19,7 @@
 package io.seqera.wave.service.k8s
 
 import java.nio.file.Path
+import java.time.Duration
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileDynamic
@@ -26,7 +27,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.openapi.models.V1ContainerBuilder
-import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1DeleteOptions
 import io.kubernetes.client.openapi.models.V1EnvVar
 import io.kubernetes.client.openapi.models.V1HostPathVolumeSource
@@ -35,6 +35,7 @@ import io.kubernetes.client.openapi.models.V1JobBuilder
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodBuilder
+import io.kubernetes.client.openapi.models.V1PodList
 import io.kubernetes.client.openapi.models.V1ResourceRequirements
 import io.kubernetes.client.openapi.models.V1Volume
 import io.kubernetes.client.openapi.models.V1VolumeMount
@@ -120,7 +121,7 @@ class K8sServiceImpl implements K8sService {
      */
     @PostConstruct
     private void init() {
-        log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; node-selector=$nodeSelectorMap; buildTimeout=$buildConfig.buildTimeout; cpus=$requestsCpu; memory=$requestsMemory; buildWorkspace=$buildConfig.buildWorkspace; storageClaimName=$storageClaimName; storageMountPath=$storageMountPath; "
+        log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; node-selector=$nodeSelectorMap; cpus=$requestsCpu; memory=$requestsMemory; buildWorkspace=$buildConfig.buildWorkspace; storageClaimName=$storageClaimName; storageMountPath=$storageMountPath; "
         if( storageClaimName && !storageMountPath )
             throw new IllegalArgumentException("Missing 'wave.build.k8s.storage.mountPath' configuration attribute")
         if( storageMountPath ) {
@@ -199,7 +200,7 @@ class K8sServiceImpl implements K8sService {
      */
     @Override
     JobStatus getJobStatus(String name) {
-        def job = k8sClient
+        final job = k8sClient
                 .batchV1Api()
                 .readNamespacedJob(name, namespace, null)
         if( !job )
@@ -331,14 +332,14 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Pod} description the submitted pod
      */
     @Override
-    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector) {
-        final spec = buildSpec(name, containerImage, args, workDir, creds, spackConfig, nodeSelector)
+    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, SpackConfig spackConfig, Map<String,String> nodeSelector) {
+        final spec = buildSpec(name, containerImage, args, workDir, creds, timeout, spackConfig, nodeSelector)
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
-    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, SpackConfig spackConfig, Map<String,String> nodeSelector) {
+    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, Duration timeout, SpackConfig spackConfig, Map<String,String> nodeSelector) {
 
         // dirty dependency to avoid introducing another parameter
         final singularity = containerImage.contains('singularity')
@@ -380,7 +381,7 @@ class K8sServiceImpl implements K8sService {
                 .withNewSpec()
                 .withNodeSelector(nodeSelector)
                 .withServiceAccount(serviceAccount)
-                .withActiveDeadlineSeconds( buildConfig.buildTimeout.toSeconds() )
+                .withActiveDeadlineSeconds( timeout.toSeconds() )
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
 
@@ -419,31 +420,32 @@ class K8sServiceImpl implements K8sService {
     }
 
     /**
-     * Wait for a pod a completion
+     * Wait for a pod a completion.
+     *
+     * NOTE: this method assumes the pod is running exactly *one* container.
      *
      * @param pod
      *      The pod name
      * @param timeout
      *      Max wait time in milliseconds
      * @return
-     *      An instance of {@link V1ContainerStateTerminated} representing the termination state
-     *      or {@code null} if the state cannot be determined or timeout was reached,
+     *      An Integer value representing the container exit code or {@code null} if the state cannot be determined
+     *      or timeout was reached.
      */
     @Override
-    V1ContainerStateTerminated waitPod(V1Pod pod, long timeout) {
-        final name = pod.metadata.name
+    Integer waitPodCompletion(V1Pod pod, long timeout) {
         final start = System.currentTimeMillis()
         // wait for termination
         while( true ) {
             final phase = pod.status?.phase
             if(  phase && phase != 'Pending' ) {
-                final status = pod.status.containerStatuses.find( it -> it.name==name )
+                final status = pod.status.containerStatuses.first()
                 if( !status )
                     return null
                 if( !status.state )
                     return null
                 if( status.state.terminated ) {
-                    return status.state.terminated
+                    return status.state.terminated.exitCode
                 }
             }
 
@@ -453,24 +455,26 @@ class K8sServiceImpl implements K8sService {
             if( delta > timeout )
                 return null
             sleep 5_000
-            pod = getPod(name)
+            pod = getPod(pod.metadata.name)
         }
     }
 
     /**
-     * Fetch the logs of a pod
+     * Fetch the logs of a pod.
      *
-     * @param name The pod name
+     * NOTE: this method assume the pod runs exactly *one* container.
+     *
+     * @param name The {@link V1Pod} object representing the pod from where retrieve the logs
      * @return The logs as a string or when logs are not available or cannot be accessed
      */
     @Override
-    String logsPod(String name) {
+    String logsPod(V1Pod pod) {
         try {
             final logs = k8sClient.podLogs()
-            logs.streamNamespacedPodLog(namespace, name, name).getText()
+            logs.streamNamespacedPodLog(namespace, pod.metadata.name, pod.spec.containers.first().name).getText()
         }
         catch (Exception e) {
-            log.error "Unable to fetch logs for pod: $name", e
+            log.error "Unable to fetch logs for pod: ${pod.metadata.name}", e
             return null
         }
     }
@@ -485,6 +489,26 @@ class K8sServiceImpl implements K8sService {
         k8sClient
                 .coreV1Api()
                 .deleteNamespacedPod(name, namespace, (String)null, (String)null, (Integer)null, (Boolean)null, (String)null, (V1DeleteOptions)null)
+    }
+
+    /**
+     * Delete a pod where the status is reached
+     *
+     * @param name The name of the pod to be deleted
+     * @param statusName The status to be reached
+     * @param timeout The max wait time in milliseconds
+     */
+    @Override
+    void deletePodWhenReachStatus(String podName, String statusName, long timeout){
+        final pod = getPod(podName)
+        final start = System.currentTimeMillis()
+        while( (System.currentTimeMillis() - start) < timeout ) {
+            if( pod?.status?.phase == statusName ) {
+                deletePod(podName)
+                return
+            }
+            sleep 5_000
+        }
     }
 
     @Override
@@ -546,31 +570,39 @@ class K8sServiceImpl implements K8sService {
         builder.build()
     }
 
+    /**
+     * Create a Job for blob transfer
+     *
+     * @param name
+     *      The name of job and container
+     * @param containerImage
+     *      The container image to be used
+     * @param args
+     *      The transfer command to be performed
+     * @param blobConfig
+     *      The config to be used for transfer
+     * @return
+     *      The {@link V1Job} description the submitted job
+     */
     @Override
-    V1Pod transferContainer(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
-        final spec = transferSpec(name, containerImage, args, blobConfig)
+    V1Job launchJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
+        final spec = createTransferJobSpec(name, containerImage, args, blobConfig)
+
         return k8sClient
-                .coreV1Api()
-                .createNamespacedPod(namespace, spec, null, null, null,null)
+                .batchV1Api()
+                .createNamespacedJob(namespace, spec, null, null, null,null)
     }
 
-    V1Pod transferSpec(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
+    V1Job createTransferJobSpec(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
 
-        V1PodBuilder builder = new V1PodBuilder()
+        V1JobBuilder builder = new V1JobBuilder()
 
         //metadata section
         builder.withNewMetadata()
                 .withNamespace(namespace)
                 .withName(name)
-                .addToLabels(labels)
+                .withLabels(labels)
                 .endMetadata()
-
-        //spec section
-        def spec = builder
-                .withNewSpec()
-                .withServiceAccount(serviceAccount)
-                .withActiveDeadlineSeconds( blobConfig.transferTimeout.toSeconds() )
-                .withRestartPolicy("Never")
 
         final requests = new V1ResourceRequirements()
         if( blobConfig.requestsCpu )
@@ -578,17 +610,28 @@ class K8sServiceImpl implements K8sService {
         if( blobConfig.requestsMemory )
             requests.putRequestsItem('memory', new Quantity(blobConfig.requestsMemory))
 
+        //spec section
+        def spec = builder.withNewSpec()
+                .withBackoffLimit(blobConfig.retryAttempts)
+                .withTtlSecondsAfterFinished(blobConfig.deleteAfterFinished.toSeconds() as Integer)
+                .withNewTemplate()
+                    .editOrNewSpec()
+                    .withServiceAccount(serviceAccount)
+                    .withActiveDeadlineSeconds(blobConfig.transferTimeout.toSeconds())
+                    .withRestartPolicy("Never")
         //container section
-        spec.addNewContainer()
-                .withName(name)
-                .withImage(containerImage)
-                .withEnv(toEnvList(blobConfig.getEnvironment()))
-                .withArgs(args)
-                .withResources(requests)
-                .endContainer()
+                    .addNewContainer()
+                        .withName(name)
+                        .withImage(containerImage)
+                        .withArgs(args)
+                        .withResources(requests)
+                        .withEnv(toEnvList(blobConfig.getEnvironment()))
+                    .endContainer()
+                .endSpec()
+                .endTemplate()
                 .endSpec()
 
-        builder.build()
+        return spec.build()
     }
 
     protected List<V1EnvVar> toEnvList(Map<String,String> env) {
@@ -598,4 +641,61 @@ class K8sServiceImpl implements K8sService {
         return result
     }
 
+    /**
+     * Wait for a job to complete
+     *
+     * @param k8s job
+     * @param timeout
+     *      Max wait time in milliseconds
+     * @return list of pods created by the job
+     */
+    @Override
+    V1PodList waitJob(V1Job job, Long timeout) {
+        sleep 5_000
+        final startTime = System.currentTimeMillis()
+        // wait for termination
+        while (System.currentTimeMillis() - startTime < timeout) {
+            final name = job.metadata.name
+            final status = getJobStatus(name)
+            if (status != JobStatus.Pending) {
+                return k8sClient
+                        .coreV1Api()
+                        .listNamespacedPod(namespace, null, null, null, null, "job-name=$name", null, null, null, null, null, null)
+            }
+            job = getJob(name)
+        }
+        return null
+    }
+
+    /**
+     * Delete a job
+     *
+     * @param name, name of the job to be deleted
+     */
+    @Override
+    void deleteJob(String name) {
+        k8sClient
+                .batchV1Api()
+                .deleteNamespacedJob(name, namespace, null, null, null, null,"Foreground", null)
+    }
+
+    @Override
+    V1Pod getLatestPodForJob(String jobName) {
+        // list all pods for the given job
+        final allPods = k8sClient
+                .coreV1Api()
+                .listNamespacedPod(namespace, null, null, null, null, "job-name=${jobName}", null, null, null, null, null, null)
+
+        if( !allPods )
+            return null
+
+        // Find the latest created pod among the pods associated with the job
+        def latest = allPods.getItems().get(0)
+        for (def pod : allPods.items) {
+            if (pod.metadata?.creationTimestamp?.isAfter(latest.metadata.creationTimestamp)) {
+                latest = pod
+            }
+        }
+        return latest
+    }
 }

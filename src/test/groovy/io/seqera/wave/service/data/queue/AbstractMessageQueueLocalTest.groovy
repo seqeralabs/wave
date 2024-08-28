@@ -30,7 +30,7 @@ import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import jakarta.inject.Inject
 /**
- * Test class {@link AbstractMessageQueue} using a {@link io.seqera.wave.service.data.queue.impl.LocalQueueBroker}
+ * Test class {@link AbstractMessageQueue} using a {@link io.seqera.wave.service.data.queue.impl.LocalMessageQueue}
  *
  * @author Jordi Deu-Pons <jordi@seqera.io>
  */
@@ -38,7 +38,7 @@ import jakarta.inject.Inject
 class AbstractMessageQueueLocalTest extends Specification {
 
     @Inject
-    private MessageBroker<String> broker
+    private MessageQueue<String> broker
 
 
     def 'should send and consume a request'() {

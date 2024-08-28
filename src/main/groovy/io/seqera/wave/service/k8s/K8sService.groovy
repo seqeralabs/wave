@@ -19,10 +19,11 @@
 package io.seqera.wave.service.k8s
 
 import java.nio.file.Path
+import java.time.Duration
 
-import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1Pod
+import io.kubernetes.client.openapi.models.V1PodList
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.configuration.SpackConfig
@@ -33,7 +34,21 @@ import io.seqera.wave.configuration.SpackConfig
  */
 interface K8sService {
 
-    enum JobStatus { Pending, Running, Succeeded, Failed }
+    enum JobStatus { Pending, Running, Succeeded, Failed; boolean completed() { return this == Succeeded || this == Failed } }
+
+    V1Pod getPod(String name)
+
+    String logsPod(V1Pod pod)
+
+    void deletePod(String name)
+
+    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, SpackConfig spackConfig, Map <String,String> nodeSelector)
+
+    V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector)
+
+    Integer waitPodCompletion(V1Pod pod, long timeout)
+
+    void deletePodWhenReachStatus(String podName, String statusName, long timeout)
 
     V1Job createJob(String name, String containerImage, List<String> args)
 
@@ -41,17 +56,12 @@ interface K8sService {
 
     JobStatus getJobStatus(String name)
 
-    V1Pod getPod(String name)
+    void deleteJob(String name)
+  
+    V1Job launchJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig)
 
-    String logsPod(String name)
+    V1PodList waitJob(V1Job job, Long timeout)
 
-    void deletePod(String name)
+    V1Pod getLatestPodForJob(String jobName)
 
-    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector)
-
-    V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map <String,String> nodeSelector)
-
-    V1Pod transferContainer(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig)
-
-    V1ContainerStateTerminated waitPod(V1Pod pod, long timeout)
 }

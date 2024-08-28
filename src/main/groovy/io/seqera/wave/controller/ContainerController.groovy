@@ -329,7 +329,7 @@ class ContainerController {
         // create a unique digest to identify the build request
         final containerId = makeContainerId(containerFile, condaContent, spackContent, platform, buildRepository, req.buildContext)
         final targetImage = makeTargetImage(format, buildRepository, containerId, condaContent, spackContent, nameStrategy)
-
+        final maxDuration = buildConfig.buildMaxDuration(req)
         return new BuildRequest(
                 containerId,
                 containerFile,
@@ -346,7 +346,8 @@ class ContainerController {
                 containerConfig,
                 scanId,
                 req.buildContext,
-                format
+                format,
+                maxDuration
         )
     }
 
@@ -467,6 +468,14 @@ class ContainerController {
     HttpResponse<?> handleAuthorizationException() {
         return HttpResponse.unauthorized()
                 .header(WWW_AUTHENTICATE, "Basic realm=Wave Authentication")
+    }
+
+    @Get('/v1alpha2/container/{containerId}')
+    HttpResponse<WaveContainerRecord> getContainerDetails(String containerId) {
+        final data = persistenceService.loadContainerRequest(containerId)
+        if( !data )
+            return HttpResponse.notFound()
+        return HttpResponse.ok(data)
     }
 
 }

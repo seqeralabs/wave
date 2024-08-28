@@ -48,7 +48,7 @@ abstract class AbstractMessageQueue<M> implements Runnable {
 
     final private static AtomicInteger count = new AtomicInteger()
 
-    final private MessageBroker<String> broker
+    final private MessageQueue<String> broker
 
     final private EncodingStrategy<M> encoder
 
@@ -65,7 +65,7 @@ abstract class AbstractMessageQueue<M> implements Runnable {
                     .expireAfterWrite(10, TimeUnit.MINUTES)
                     .build()
 
-    AbstractMessageQueue(MessageBroker<String> broker) {
+    AbstractMessageQueue(MessageQueue<String> broker) {
         final type = TypeHelper.getGenericType(this, 0)
         this.encoder = new MoshiEncodeStrategy<M>(type) {}
         this.broker = broker
@@ -160,7 +160,7 @@ abstract class AbstractMessageQueue<M> implements Runnable {
                     // infer the target queue from the client key
                     final target = targetFromClientKey(entry.key)
                     // poll for a message from the queue
-                    final value = broker.take(target)
+                    final value = broker.poll(target)
                     // if there's a message try to send it
                     if( value != null ) {
                         try {
