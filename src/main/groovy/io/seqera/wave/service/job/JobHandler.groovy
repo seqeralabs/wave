@@ -16,33 +16,23 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.blob.transfer
+package io.seqera.wave.service.job
 
 import java.time.Duration
 
-import io.seqera.wave.service.data.queue.MessageQueue
-import jakarta.inject.Inject
-import jakarta.inject.Singleton
-
 /**
- * Implements a simple persistent FIFO queue
+ * Define events and properties for jobs managed via {@link JobManager}
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Singleton
-class TransferQueue {
+interface JobHandler {
 
-    final private static String QUEUE_NAME = 'transfer-queue/v1'
+    Duration jobMaxDuration(JobId job)
 
-    @Inject
-    private MessageQueue<String> transferQueue
+    void onJobCompletion(JobId job, JobState state)
 
-    void offer(String transferId) {
-        transferQueue.offer(QUEUE_NAME, transferId)
-    }
+    void onJobException(JobId job, Throwable error)
 
-    String poll(Duration timeout) {
-        transferQueue.poll(QUEUE_NAME, timeout)
-    }
+    void onJobTimeout(JobId job)
 
 }
