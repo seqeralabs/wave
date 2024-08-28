@@ -315,7 +315,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 null,
                 'scan12345',
                 null,
-                BuildFormat.DOCKER
+                BuildFormat.DOCKER,
+                Duration.ofMinutes(1)
         ).withBuildId('1')
         def result1 = new BuildResult(request1.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         def event1 = new BuildEvent(request1, result1)
