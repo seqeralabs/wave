@@ -24,6 +24,7 @@ import java.time.Duration
 import java.time.Instant
 
 import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.test.annotation.MockBean
@@ -31,7 +32,10 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
+import io.seqera.wave.core.spec.ContainerSpec
+import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.logs.BuildLogServiceImpl
 import io.seqera.wave.service.persistence.PersistenceService
@@ -62,6 +66,9 @@ class ViewControllerTest extends Specification {
 
     @Inject
     BuildLogService buildLogService
+
+    @Inject
+    private ContainerInspectService inspectService
 
     def 'should render build page' () {
         given:
@@ -228,4 +235,17 @@ class ViewControllerTest extends Specification {
         then:
         response.body().contains(token)
     }
+
+    def 'should render inspect view'() {
+        when:
+        def request = HttpRequest.GET('/view/inspects/ubuntu')
+        def response = client.toBlocking().exchange(request, String)
+
+        then:
+        response.status == HttpStatus.OK
+        response.body().contains('ubuntu')
+        response.body().contains('latest')
+        response.body().contains('https://registry-1.docker.io')
+    }
+
 }
