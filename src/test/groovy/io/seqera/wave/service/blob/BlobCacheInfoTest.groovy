@@ -249,7 +249,6 @@ class BlobCacheInfoTest extends Specification {
                 null,
                 null,
                 null,
-                null,
                 CREATE,
                 COMPLETE )
 

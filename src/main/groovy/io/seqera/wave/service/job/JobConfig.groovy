@@ -16,22 +16,27 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.blob.transfer
+package io.seqera.wave.service.job
 
-import groovy.transform.CompileStatic
-import io.seqera.wave.exception.WaveException
+import java.time.Duration
 
+import groovy.transform.ToString
+import io.micronaut.context.annotation.Value
+import jakarta.inject.Singleton
 
 /**
- * Exception fired when the time to blob download takes too long
+ * Model Job manager configuration settings
  *
- * @author: Paolo Di Tommaso <paolo.ditommaso@gmail.com>
- *
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@CompileStatic
-class TransferTimeoutException extends WaveException{
+@ToString(includeNames = true, includePackage = false)
+@Singleton
+class JobConfig {
 
-    TransferTimeoutException(String message) {
-        super(message)
-    }
+    @Value('${wave.job-manager.grace-interval:20s}')
+    Duration graceInterval
+
+    @Value('${wave.job-manager.poll-interval:200ms}')
+    Duration pollInterval
+
 }

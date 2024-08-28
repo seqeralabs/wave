@@ -1,4 +1,11 @@
 # Wave changelog
+1.11.0 - 23 Aug 2024
+- added /v1alpha2/container/{containerId} (#609) [5221b5a0]
+- Improve contaiener view page (#615) [9e15b455]
+- Fix too many requests error code (#610) [cc9fa23f]
+- Add trusted builds timeout (#600) [7500fc5f]
+- Change k8s Job deletion to foreground pods propagation (#595) [816bd6b4]
+
 1.10.4 - 6 Aug 2024
 - Fix Prevent NPE when creds are empty [14f0476d]
 - Remove ContentReader and ContentReaderFactory classes (#584) [f05623a2]

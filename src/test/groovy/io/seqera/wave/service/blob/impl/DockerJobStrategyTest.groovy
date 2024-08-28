@@ -26,7 +26,7 @@ import io.seqera.wave.configuration.BlobCacheConfig
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class DockerTransferStrategyTest extends Specification {
+class DockerJobStrategyTest extends Specification {
 
     def 'should create transfer cli' () {
         given:
