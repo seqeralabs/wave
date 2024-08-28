@@ -598,7 +598,7 @@ class K8sServiceImpl implements K8sService {
 
         return k8sClient
                 .batchV1Api()
-                .createNamespacedJob(namespace, spec, null, null, null,null)
+                .createNamespacedJob(namespace, spec)
                 .execute()
     }
 
@@ -670,7 +670,8 @@ class K8sServiceImpl implements K8sService {
             if (status != JobStatus.Pending) {
                 return k8sClient
                         .coreV1Api()
-                        .listNamespacedPod(namespace, null, null, null, null, "job-name=$name", null, null, null, null, null, null)
+                        .listNamespacedPod(namespace)
+                        .execute()
             }
             job = getJob(name)
         }
@@ -686,7 +687,8 @@ class K8sServiceImpl implements K8sService {
     void deleteJob(String name) {
         k8sClient
                 .batchV1Api()
-                .deleteNamespacedJob(name, namespace, null, null, null, null,"Foreground", null)
+                .deleteNamespacedJob(name, namespace)
+                .execute()
     }
 
     @Override
@@ -694,7 +696,8 @@ class K8sServiceImpl implements K8sService {
         // list all pods for the given job
         final allPods = k8sClient
                 .coreV1Api()
-                .listNamespacedPod(namespace, null, null, null, null, "job-name=${jobName}", null, null, null, null, null, null)
+                .listNamespacedPod(namespace)
+                .execute()
 
         if( !allPods )
             return null
