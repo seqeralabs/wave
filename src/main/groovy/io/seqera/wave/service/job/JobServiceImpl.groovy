@@ -16,42 +16,37 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.data.queue.impl
-
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.LinkedBlockingQueue
+package io.seqera.wave.service.job
 
 import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Requires
-import io.seqera.wave.service.data.queue.MessageBroker
+import io.seqera.wave.service.blob.BlobCacheInfo
+import jakarta.inject.Inject
 import jakarta.inject.Singleton
+
 /**
- * Implement a message broker based on a simple blocking queue.
- * This is only meant for local/development purposes
+ * Implement a service for job creation and execution
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Slf4j
-@Requires(notEnv = 'redis')
 @Singleton
 @CompileStatic
-class LocalQueueBroker implements MessageBroker<String> {
+class JobServiceImpl implements JobService {
 
-    private ConcurrentHashMap<String, LinkedBlockingQueue<String>> store = new ConcurrentHashMap<>()
+    @Inject
+    private JobStrategy jobStrategy
 
-    @Override
-    void offer(String target, String message) {
-        store
-            .computeIfAbsent(target, (it)->new LinkedBlockingQueue<String>())
-            .offer(message)
-    }
+    @Inject
+    private JobQueue jobQueue
 
     @Override
-    String take(String target) {
-        store
-            .computeIfAbsent(target, (it)->new LinkedBlockingQueue<String>())
-            .poll()
+    JobId launchTransfer(BlobCacheInfo blob, List<String> command) {
+        // create the ID for the job transfer
+        final job = JobId.transfer(blob.id())
+        // submit the job execution
+        jobStrategy.launchJob(job.schedulerId, command)
+        // signal the transfer to be started
+        jobQueue.offer(job)
+        return job
     }
 
 }

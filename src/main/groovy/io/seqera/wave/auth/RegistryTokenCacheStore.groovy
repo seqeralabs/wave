@@ -16,43 +16,39 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.data.queue.impl
+package io.seqera.wave.auth
 
+import java.time.Duration
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Requires
-import io.seqera.wave.service.data.queue.MessageBroker
-import jakarta.inject.Inject
+import io.seqera.wave.encoder.MoshiEncodeStrategy
+import io.seqera.wave.service.cache.AbstractCacheStore
+import io.seqera.wave.service.cache.impl.CacheProvider
 import jakarta.inject.Singleton
-import redis.clients.jedis.Jedis
-import redis.clients.jedis.JedisPool
 /**
- * Implements a message broker using Redis list
+ * Implement a cache store for {@link io.seqera.wave.auth.RegistryAuthServiceImpl.CacheKey} object and token that
+ * can be distributed across wave replicas
  *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @Slf4j
-@Requires(env = 'redis')
 @Singleton
 @CompileStatic
-class RedisQueueBroker implements MessageBroker<String>  {
+class RegistryTokenCacheStore extends AbstractCacheStore<String> {
 
-    @Inject
-    private JedisPool pool
-
-    @Override
-    void offer(String target, String message) {
-        try (Jedis conn = pool.getResource()) {
-            conn.lpush(target, message)
-        }
+    RegistryTokenCacheStore(CacheProvider<String, String> provider) {
+        super(provider, new MoshiEncodeStrategy<String>() {})
+        log.info "Creating Registry Auth token cache store"
     }
 
     @Override
-    String take(String target) {
-        try (Jedis conn = pool.getResource()) {
-            return conn.rpop(target)
-        }
+    protected String getPrefix() {
+        return 'registry-token/v1:'
     }
 
+    @Override
+    protected Duration getDuration() {
+        return RegistryAuthServiceImpl._1_HOUR
+    }
 }

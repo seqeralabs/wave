@@ -19,6 +19,7 @@
 package io.seqera.wave.service.k8s
 
 import java.nio.file.Path
+import java.time.Duration
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileDynamic
@@ -120,7 +121,7 @@ class K8sServiceImpl implements K8sService {
      */
     @PostConstruct
     private void init() {
-        log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; node-selector=$nodeSelectorMap; buildTimeout=$buildConfig.buildTimeout; cpus=$requestsCpu; memory=$requestsMemory; buildWorkspace=$buildConfig.buildWorkspace; storageClaimName=$storageClaimName; storageMountPath=$storageMountPath; "
+        log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; node-selector=$nodeSelectorMap; cpus=$requestsCpu; memory=$requestsMemory; buildWorkspace=$buildConfig.buildWorkspace; storageClaimName=$storageClaimName; storageMountPath=$storageMountPath; "
         if( storageClaimName && !storageMountPath )
             throw new IllegalArgumentException("Missing 'wave.build.k8s.storage.mountPath' configuration attribute")
         if( storageMountPath ) {
@@ -200,7 +201,7 @@ class K8sServiceImpl implements K8sService {
      */
     @Override
     JobStatus getJobStatus(String name) {
-        def job = k8sClient
+        final job = k8sClient
                 .batchV1Api()
                 .readNamespacedJob(name, namespace)
                 .execute()
@@ -334,15 +335,15 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Pod} description the submitted pod
      */
     @Override
-    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector) {
-        final spec = buildSpec(name, containerImage, args, workDir, creds, spackConfig, nodeSelector)
+    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, SpackConfig spackConfig, Map<String,String> nodeSelector) {
+        final spec = buildSpec(name, containerImage, args, workDir, creds, timeout, spackConfig, nodeSelector)
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec)
                 .execute()
     }
 
-    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, SpackConfig spackConfig, Map<String,String> nodeSelector) {
+    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, Duration timeout, SpackConfig spackConfig, Map<String,String> nodeSelector) {
 
         // dirty dependency to avoid introducing another parameter
         final singularity = containerImage.contains('singularity')
@@ -384,7 +385,7 @@ class K8sServiceImpl implements K8sService {
                 .withNewSpec()
                 .withNodeSelector(nodeSelector)
                 .withServiceAccount(serviceAccount)
-                .withActiveDeadlineSeconds( buildConfig.buildTimeout.toSeconds() )
+                .withActiveDeadlineSeconds( timeout.toSeconds() )
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
                 .withOverhead(null)
@@ -592,7 +593,7 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Job} description the submitted job
      */
     @Override
-    V1Job transferJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
+    V1Job launchJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
         final spec = createTransferJobSpec(name, containerImage, args, blobConfig)
 
         return k8sClient
@@ -685,7 +686,26 @@ class K8sServiceImpl implements K8sService {
     void deleteJob(String name) {
         k8sClient
                 .batchV1Api()
-                .deleteNamespacedJob(name, namespace, null, null, null, null,"Background", null)
+                .deleteNamespacedJob(name, namespace, null, null, null, null,"Foreground", null)
     }
 
+    @Override
+    V1Pod getLatestPodForJob(String jobName) {
+        // list all pods for the given job
+        final allPods = k8sClient
+                .coreV1Api()
+                .listNamespacedPod(namespace, null, null, null, null, "job-name=${jobName}", null, null, null, null, null, null)
+
+        if( !allPods )
+            return null
+
+        // Find the latest created pod among the pods associated with the job
+        def latest = allPods.getItems().get(0)
+        for (def pod : allPods.items) {
+            if (pod.metadata?.creationTimestamp?.isAfter(latest.metadata.creationTimestamp)) {
+                latest = pod
+            }
+        }
+        return latest
+    }
 }
