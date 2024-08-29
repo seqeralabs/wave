@@ -1,6 +1,9 @@
 <html>
 <head>
     <head>
+        {{#if build_in_progress}}
+            <meta http-equiv="refresh" content="5">
+        {{/if}}
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -16,17 +19,50 @@
     </div>
 
     {{#if build_success}}
-    <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
-        <h4 style="margin-top:0; color: inherit;">
-            Container build completed successfully!
-        </h4>
-    </div>
-    {{else}}
-    <div style="color: #a94442; background-color: #f2dede; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
-        <h4 style="margin-top:0; color: inherit;">
-            Container build failed
-        </h4>
-    </div>
+        <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+            <h4 style="margin-top:0; color: inherit;">
+                Container build completed successfully!
+            </h4>
+        </div>
+    {{else build_failed}}
+        <div style="color: #a94442; background-color: #f2dede; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+            <h4 style="margin-top:0; color: inherit;">
+                Container build failed
+            </h4>
+        </div>
+    {{else build_in_progress}}
+    {{! build is not completed, show a spinning icon }}
+        <style>
+        .lds-dual-ring {
+            display: inline-block;
+            width: 50px;
+            height: 30px;
+        }
+        .lds-dual-ring:after {
+            content: " ";
+            display: block;
+            width: 20px;
+            height: 20px;
+            margin: 8px;
+            border-radius: 50%;
+            border: 6px solid #3c763d;
+            border-color: #3c763d transparent #3c763d transparent;
+            animation: lds-dual-ring 1.2s linear infinite;
+        }
+        @keyframes lds-dual-ring {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+        </style>
+        <div style="color: #3c763d; background-color: #dff0d8; padding: 15px; border: 1px solid transparent; border-radius: 4px;">
+            <h4 style="margin-top:0; color: inherit;">
+                <div class="lds-dual-ring"></div> Container build in progress
+            </h4>
+        </div>
     {{/if}}
 
     <h3>Summary</h3>
@@ -75,35 +111,34 @@
             <td>Exit status</td>
             <td>{{build_exit_status}}</td>
         </tr>
-    {{#if scan_url}}
-        <tr>
-            <td>Security</td>
-            <td><a href="{{scan_url}}">Image scan report</a></td>
-        </tr>
-    {{/if}}
+        {{#if scan_url}}
+            <tr>
+                <td>Security</td>
+                <td><a href="{{scan_url}}">Image scan report</a></td>
+            </tr>
+        {{/if}}
     </table>
 
     <h3>Container file</h3>
     <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{build_containerfile}}</pre>
 
     {{#if build_condafile}}
-    <h3>Conda file</h3>
-    <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{build_condafile}}</pre>
+        <h3>Conda file</h3>
+        <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{build_condafile}}</pre>
     {{/if}}
 
     {{#if build_spackfile}}
-    <h3>Spack file</h3>
-    <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{build_spackfile}}</pre>
+        <h3>Spack file</h3>
+        <pre style="white-space: pre-wrap; overflow: visible; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{build_spackfile}}</pre>
     {{/if}}
 
     {{#if build_log_data}}
-    <h3>Build logs</h3>
-    <pre style="white-space: pre-wrap; overflow-x: auto; overflow-y: auto; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{build_log_data}}</pre>
-      {{#if build_log_truncated}}
-      <a href="{{build_log_url}}" download>Click here to download the complete build log</a>
-      {{/if}}
+        <h3>Build logs</h3>
+        <pre style="white-space: pre-wrap; overflow-x: auto; overflow-y: auto; background-color: #ededed; padding: 15px; border-radius: 4px; margin-bottom:30px;">{{build_log_data}}</pre>
+        {{#if build_log_truncated}}
+            <a href="{{build_log_url}}" download>Click here to download the complete build log</a>
+        {{/if}}
     {{/if}}
-
 
     <div class="footer" style="clear:both;width:100%;">
         <hr class="footer-hr" style="height:0;overflow:visible;margin-top:30px;border:0;border-top:1px solid #eee;color:#999999;font-size:12px;line-height:18px;margin-bottom:30px;">
