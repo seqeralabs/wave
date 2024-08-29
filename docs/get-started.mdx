@@ -18,8 +18,8 @@ In this guide, you'll request a containerized Conda package from Seqera Containe
 ### Request a Conda package as a Seqera Container
 
 1. Open [Seqera Containers][sc] in a browser.
-1. In the search box, enter `faker`.
-1. In the search results, select **Add** in the `conda-forge::faker` result, and then **Get Container** to initiate the container build.
+1. In the search box, enter `samtools`.
+1. In the search results, select **Add** in the `bioconda::samtools` result, and then **Get Container** to initiate the container build.
 1. From the **Fetching container** modal, copy the the durable container image URI that Seqera Containers provides.
 1. Optional: Select **View build details** to watch Seqera Containers build the requested container in real time.
 
@@ -39,25 +39,26 @@ Nextflow can use the container that Seqera Containers built in the previous sect
 1. Create a `main.nf` file with the following contents:
 
     ```groovy
-    process FAKER {
-      container '<container_uri>'
-      debug true
+        process SAMTOOLS {
+        container '<container_uri>'
+        debug true
 
-      """
-      faker address
-      """
-    }
-
-    workflow {
-      FAKER()
-    }
+        """
+        samtools --version-only
+        """
+        }
+        workflow {
+        SAMTOOLS()
+        }
     ```
 
-    Substitute `<container_uri>` for the container URI that you received from Seqera Containers in the previous section.
+    Substitute `<container_uri>` for the container URI that you received from Seqera Containers in the previous section. e.g.
+        - `community.wave.seqera.io/library/samtools:1.20--b5dfbd93de237464` for linux/amd64.
+        - `community.wave.seqera.io/library/samtools:1.20--497854c5df637867` for linux/arm64.
 
 ### Run the Nextflow pipeline
 
-To confirm that the `faker` command is available from your pipeline, run the following command:
+To confirm that the `samtools` command is available from your pipeline, run the following command:
 
 ```
 nextflow run main.nf
@@ -66,12 +67,14 @@ nextflow run main.nf
 The output from a successful execution is displayed in the following example:
 
 ```
-Launching `main.nf` [jolly_edison] DSL2 - revision: 5c414bd927
+ N E X T F L O W   ~  version 24.04.4
+
+Launching `samtools.nf` [furious_carlsson] DSL2 - revision: 04817f962f
 
 executor >  local (1)
-[86/0d56e8] faker | 1 of 1 ✔
-234 Nicholas Circle
-Masonport, MS 98018
+[2f/d2ccc7] process > SAMTOOLS [100%] 1 of 1 ✔
+1.20+htslib-1.20
+
 ```
 ## Nextflow
 
