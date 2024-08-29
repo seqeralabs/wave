@@ -16,7 +16,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.blob.transfer
+package io.seqera.wave.service.job
+
 
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -30,31 +31,31 @@ class TransferTest extends Specification {
     @Unroll
     def 'should validate completed status' () {
         expect:
-        new Transfer(STATUS).completed() == EXPECTED
+        new JobState(STATUS).completed() == EXPECTED
         
         where:
         STATUS                              | EXPECTED
-        Transfer.Status.PENDING     | false
-        Transfer.Status.RUNNING     | false
-        Transfer.Status.UNKNOWN     | false
+        JobState.Status.PENDING   | false
+        JobState.Status.RUNNING   | false
+        JobState.Status.UNKNOWN   | false
         and:
-        Transfer.Status.SUCCEEDED   | true
-        Transfer.Status.FAILED      | true
+        JobState.Status.SUCCEEDED | true
+        JobState.Status.FAILED    | true
     }
 
     @Unroll
     def 'should validate succeeded status' () {
         expect:
-        new Transfer(STATUS, EXIT).succeeded() == EXPECTED
+        new JobState(STATUS, EXIT).succeeded() == EXPECTED
 
         where:
         STATUS                      | EXIT  | EXPECTED
-        Transfer.Status.PENDING     | null  | false
-        Transfer.Status.RUNNING     | null  | false
-        Transfer.Status.UNKNOWN     | null  | false
-        Transfer.Status.FAILED      | null  | false
-        Transfer.Status.SUCCEEDED   | 1     | false
-        Transfer.Status.SUCCEEDED   | 0     | true
+        JobState.Status.PENDING   | null | false
+        JobState.Status.RUNNING   | null | false
+        JobState.Status.UNKNOWN   | null | false
+        JobState.Status.FAILED    | null | false
+        JobState.Status.SUCCEEDED | 1    | false
+        JobState.Status.SUCCEEDED | 0    | true
 
     }
 
