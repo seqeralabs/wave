@@ -19,8 +19,12 @@
 package io.seqera.wave.service.builder
 
 import groovy.transform.CompileStatic
+import io.micronaut.objectstorage.ObjectStorageOperations
 import io.seqera.wave.configuration.BuildConfig
 import jakarta.inject.Inject
+import jakarta.inject.Named
+import static io.seqera.wave.service.builder.BuildConstants.FUSION_PREFIX
+import static io.seqera.wave.service.builder.BuildConstants.BUILDKIT_ENTRYPOINT
 /**
  * Defines an abstract container build strategy.
  *
@@ -35,12 +39,14 @@ abstract class BuildStrategy {
     @Inject
     private BuildConfig buildConfig
 
+    @Inject
+    @Named('build-workspace')
+    private ObjectStorageOperations<?, ?, ?> objectStorageOperations
+
     abstract BuildResult build(BuildRequest req)
 
-    static final public String BUILDKIT_ENTRYPOINT = 'buildctl-daemonless.sh'
-
     void cleanup(BuildRequest req) {
-        req.workDir?.deleteDir()
+        objectStorageOperations.delete(req.s3Key)
     }
 
     List<String> launchCmd(BuildRequest req) {
@@ -57,15 +63,16 @@ abstract class BuildStrategy {
     protected List<String> dockerLaunchCmd(BuildRequest req) {
         final result = new ArrayList(10)
         result
+                << BUILDKIT_ENTRYPOINT
                 << "build"
                 << "--frontend"
                 << "dockerfile.v0"
                 << "--local"
-                << "dockerfile=$req.workDir".toString()
+                << "dockerfile=$FUSION_PREFIX/$buildConfig.workspaceBucket/$req.s3Key".toString()
                 << "--opt"
                 << "filename=Containerfile"
                 << "--local"
-                << "context=$req.workDir/context".toString()
+                << "context=$FUSION_PREFIX/$buildConfig.workspaceBucket/$req.s3Key/context".toString()
                 << "--output"
                 << "type=image,name=$req.targetImage,push=true,oci-mediatypes=${buildConfig.ociMediatypes}".toString()
                 << "--opt"
@@ -105,11 +112,15 @@ abstract class BuildStrategy {
     }
 
     protected List<String> singularityLaunchCmd(BuildRequest req) {
+        def symlinkSingularity = ""
+        if( req.configJson ){
+            symlinkSingularity = "ln -s $FUSION_PREFIX/$buildConfig.workspaceBucket/$req.s3Key/.singularity /root/.singularity &&"
+        }
         final result = new ArrayList(10)
         result
             << 'sh'
             << '-c'
-            << "singularity build image.sif ${req.workDir}/Containerfile && singularity push image.sif ${req.targetImage}".toString()
+            << "$symlinkSingularity singularity build image.sif $FUSION_PREFIX/$buildConfig.workspaceBucket/$req.s3Key/Containerfile && singularity push image.sif ${req.targetImage}".toString()
         return result
     }
 

@@ -46,12 +46,12 @@ import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.ScanConfig
-import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.scan.Trivy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import static io.seqera.wave.service.builder.BuildStrategy.BUILDKIT_ENTRYPOINT
+import static io.seqera.wave.service.builder.BuildConstants.BUILDKIT_ENTRYPOINT
+import static io.seqera.wave.service.builder.BuildConstants.FUSION_PREFIX
 /**
  * implements the support for Kubernetes cluster
  *
@@ -72,10 +72,6 @@ class K8sServiceImpl implements K8sService {
     @Value('${wave.build.k8s.storage.claimName}')
     @Nullable
     private String storageClaimName
-
-    @Value('${wave.build.k8s.storage.mountPath}')
-    @Nullable
-    private String storageMountPath
 
     @Property(name='wave.build.k8s.labels')
     @Nullable
@@ -98,9 +94,6 @@ class K8sServiceImpl implements K8sService {
     private String requestsMemory
 
     @Inject
-    private SpackConfig spackConfig
-
-    @Inject
     private K8sClient k8sClient
 
     @Inject
@@ -121,15 +114,9 @@ class K8sServiceImpl implements K8sService {
      */
     @PostConstruct
     private void init() {
-        log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; node-selector=$nodeSelectorMap; cpus=$requestsCpu; memory=$requestsMemory; buildWorkspace=$buildConfig.buildWorkspace; storageClaimName=$storageClaimName; storageMountPath=$storageMountPath; "
-        if( storageClaimName && !storageMountPath )
-            throw new IllegalArgumentException("Missing 'wave.build.k8s.storage.mountPath' configuration attribute")
-        if( storageMountPath ) {
-            if( !buildConfig.buildWorkspace )
-                throw new IllegalArgumentException("Missing 'wave.build.workspace' configuration attribute")
-            if( !Path.of(buildConfig.buildWorkspace).startsWith(storageMountPath) )
-                throw new IllegalArgumentException("Build workspace should be a sub-directory of 'wave.build.k8s.storage.mountPath' - offending value: '$buildConfig.buildWorkspace' - expected value: '$storageMountPath'")
-        }
+        log.info "K8s build config: namespace=$namespace; service-account=$serviceAccount; node-selector=$nodeSelectorMap; cpus=$requestsCpu; memory=$requestsMemory; buildWorkspaceBucket=$buildConfig.workspaceBucket;"
+        if( !buildConfig.workspaceBucket )
+            throw new IllegalArgumentException("Missing 'wave.build.workspaceBucket' configuration attribute")
         // validate node selectors
         final platforms = nodeSelectorMap ?: Collections.<String,String>emptyMap()
         for( Map.Entry<String,String> it : platforms ) {
@@ -226,96 +213,6 @@ class K8sServiceImpl implements K8sService {
     }
 
     /**
-     * Create a volume mount for the build storage.
-     *
-     * @param workDir The path representing a container build context
-     * @param storageMountPath
-     * @return A {@link V1VolumeMount} representing the mount path for the build config
-     */
-    protected V1VolumeMount mountBuildStorage(Path workDir, String storageMountPath, boolean readOnly) {
-        assert workDir, "K8s mount build storage is mandatory"
-
-        final vol = new V1VolumeMount()
-                .name('build-data')
-                .mountPath(workDir.toString())
-                .readOnly(readOnly)
-
-        if( storageMountPath ) {
-            // check sub-path
-            final rel = Path.of(storageMountPath).relativize(workDir).toString()
-            if (rel)
-                vol.subPath(rel)
-        }
-        return vol
-    }
-
-    /**
-     * Defines the volume for the container building shared context
-     *
-     * @param workDir The path where the container image build context is located
-     * @param claimName The claim name of the corresponding storage
-     * @return An instance of {@link V1Volume} representing the build storage volume
-     */
-    protected V1Volume volumeBuildStorage(String mountPath, @Nullable String claimName) {
-        final vol= new V1Volume()
-                .name('build-data')
-        if( claimName ) {
-            vol.persistentVolumeClaim( new V1PersistentVolumeClaimVolumeSource().claimName(claimName) )
-        }
-        else {
-            vol.hostPath( new V1HostPathVolumeSource().path(mountPath) )
-        }
-
-        return vol
-    }
-
-    /**
-     * Defines the volume mount for the  docker config
-     *
-     * @return A {@link V1VolumeMount} representing the docker config
-     */
-    protected V1VolumeMount mountHostPath(Path filePath, String storageMountPath, String mountPath) {
-        final rel = Path.of(storageMountPath).relativize(filePath).toString()
-        if( !rel ) throw new IllegalStateException("Mount relative path cannot be empty")
-        return new V1VolumeMount()
-                .name('build-data')
-                .mountPath(mountPath)
-                .subPath(rel)
-                .readOnly(true)
-    }
-
-    protected V1VolumeMount mountSpackCacheDir(Path spackCacheDir, String storageMountPath, String containerPath) {
-        final rel = Path.of(storageMountPath).relativize(spackCacheDir).toString()
-        if( !rel || rel.startsWith('../') )
-            throw new IllegalArgumentException("Spack cacheDirectory '$spackCacheDir' must be a sub-directory of storage path '$storageMountPath'")
-        return new V1VolumeMount()
-                .name('build-data')
-                .mountPath(containerPath)
-                .subPath(rel)
-    }
-
-    protected V1VolumeMount mountSpackSecretFile(Path secretFile, String storageMountPath, String containerPath) {
-        final rel = Path.of(storageMountPath).relativize(secretFile).toString()
-        if( !rel || rel.startsWith('../') )
-            throw new IllegalArgumentException("Spack secretKeyFile '$secretFile' must be a sub-directory of storage path '$storageMountPath'")
-        return new V1VolumeMount()
-                .name('build-data')
-                .readOnly(true)
-                .mountPath(containerPath)
-                .subPath(rel)
-    }
-
-    protected V1VolumeMount mountScanCacheDir(Path scanCacheDir, String storageMountPath) {
-        final rel = Path.of(storageMountPath).relativize(scanCacheDir).toString()
-        if( !rel || rel.startsWith('../') )
-            throw new IllegalArgumentException("Container scan cacheDirectory '$scanCacheDir' must be a sub-directory of storage path '$storageMountPath'")
-        return new V1VolumeMount()
-                .name('build-data')
-                .mountPath( Trivy.CACHE_MOUNT_PATH )
-                .subPath(rel)
-    }
-
-    /**
      * Create a container for container image building via buildkit
      *
      * @param name
@@ -332,38 +229,29 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Pod} description the submitted pod
      */
     @Override
-    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, SpackConfig spackConfig, Map<String,String> nodeSelector) {
-        final spec = buildSpec(name, containerImage, args, workDir, creds, timeout, spackConfig, nodeSelector)
+    V1Pod buildContainer(String name, String containerImage, List<String> args, String workDir, String creds, Duration timeout, Map<String,String> nodeSelector) {
+        final spec = buildSpec(name, containerImage, args, workDir, creds, timeout, nodeSelector)
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
-    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, Duration timeout, SpackConfig spackConfig, Map<String,String> nodeSelector) {
+    V1Pod buildSpec(String name, String containerImage, List<String> args, String s3Key, String credsFile, Duration timeout, Map<String,String> nodeSelector) {
 
         // dirty dependency to avoid introducing another parameter
         final singularity = containerImage.contains('singularity')
 
-        // required volumes
-        final mounts = new ArrayList<V1VolumeMount>(5)
-        mounts.add(mountBuildStorage(workDir, storageMountPath, true))
 
-        final volumes = new ArrayList<V1Volume>(5)
-        volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
-
+        Map<String, String> env = new HashMap<String, String>()
+        addAWSCreds(env)
         if( credsFile ){
             if( !singularity ) {
-                mounts.add(0, mountHostPath(credsFile, storageMountPath, '/home/user/.docker/config.json'))
+                env.put('DOCKER_CONFIG', "$FUSION_PREFIX/$buildConfig.workspaceBucket/$s3Key".toString())
             }
             else {
-                final remoteFile = credsFile.resolveSibling('singularity-remote.yaml')
-                mounts.add(0, mountHostPath(credsFile, storageMountPath, '/root/.singularity/docker-config.json'))
-                mounts.add(1, mountHostPath(remoteFile, storageMountPath, '/root/.singularity/remote.yaml'))
+                env.put('DOCKER_CONFIG', "$FUSION_PREFIX/$buildConfig.workspaceBucket/$s3Key".toString())
+                env.put('DOCKER_CONFIG', "$FUSION_PREFIX/$buildConfig.workspaceBucket/$s3Key".toString())
             }
-        }
-
-        if( spackConfig ) {
-            mounts.add(mountSpackSecretFile(spackConfig.secretKeyFile, storageMountPath, spackConfig.secretMountPath))
         }
 
         V1PodBuilder builder = new V1PodBuilder()
@@ -383,7 +271,6 @@ class K8sServiceImpl implements K8sService {
                 .withServiceAccount(serviceAccount)
                 .withActiveDeadlineSeconds( timeout.toSeconds() )
                 .withRestartPolicy("Never")
-                .addAllToVolumes(volumes)
 
 
         final requests = new V1ResourceRequirements()
@@ -392,25 +279,19 @@ class K8sServiceImpl implements K8sService {
         if( requestsMemory )
             requests.putRequestsItem('memory', new Quantity(requestsMemory))
 
+        //add https://github.com/nextflow-io/k8s-fuse-plugin
+        requests.limits(Map.of("nextflow.io/fuse", new Quantity("1")))
+
         // container section
         final container = new V1ContainerBuilder()
                 .withName(name)
                 .withImage(containerImage)
-                .withVolumeMounts(mounts)
+                .withEnv(toEnvList(env))
                 .withResources(requests)
+                .withArgs(args)
 
         if( singularity ) {
-            container
-            // use 'command' to override the entrypoint of the container
-                    .withCommand(args)
-                    .withNewSecurityContext().withPrivileged(true).endSecurityContext()
-        } else {
-            container
-                    //required by buildkit rootless container
-                    .withEnv(toEnvList(BUILDKIT_FLAGS))
-                    // buildCommand is to set entrypoint for buildkit
-                    .withCommand(BUILDKIT_ENTRYPOINT)
-                    .withArgs(args)
+            container.withNewSecurityContext().withPrivileged(true).endSecurityContext()
         }
 
         // spec section
@@ -512,24 +393,19 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
-    V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
-        final spec = scanSpec(name, containerImage, args, workDir, creds, scanConfig, nodeSelector)
+    V1Pod scanContainer(String name, String containerImage, List<String> args, String s3Key, String creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
+        final spec = scanSpec(name, containerImage, args, s3Key, creds, scanConfig, nodeSelector)
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
-    V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig, Map<String,String> nodeSelector) {
+    V1Pod scanSpec(String name, String containerImage, List<String> args, String s3Key, String creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
 
-        final mounts = new ArrayList<V1VolumeMount>(5)
-        mounts.add(mountBuildStorage(workDir, storageMountPath, false))
-        mounts.add(mountScanCacheDir(scanConfig.cacheDirectory, storageMountPath))
-
-        final volumes = new ArrayList<V1Volume>(5)
-        volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
-
-        if( credsFile ){
-            mounts.add(0, mountHostPath(credsFile, storageMountPath, Trivy.CONFIG_MOUNT_PATH))
+        Map<String, String> env = new HashMap<String, String>()
+        addAWSCreds(env)
+        if( creds ){
+            env.put('DOCKER_CONFIG', "$FUSION_PREFIX/$buildConfig.workspaceBucket/$s3Key".toString())
         }
 
         V1PodBuilder builder = new V1PodBuilder()
@@ -548,7 +424,6 @@ class K8sServiceImpl implements K8sService {
                 .withServiceAccount(serviceAccount)
                 .withActiveDeadlineSeconds( scanConfig.timeout.toSeconds() )
                 .withRestartPolicy("Never")
-                .addAllToVolumes(volumes)
 
 
         final requests = new V1ResourceRequirements()
@@ -562,7 +437,7 @@ class K8sServiceImpl implements K8sService {
                 .withName(name)
                 .withImage(containerImage)
                 .withArgs(args)
-                .withVolumeMounts(mounts)
+                .withEnv(toEnvList(env))
                 .withResources(requests)
                 .endContainer()
                 .endSpec()
@@ -697,5 +572,10 @@ class K8sServiceImpl implements K8sService {
             }
         }
         return latest
+    }
+
+    private void addAWSCreds(Map <String, String> env) {
+        env.put('AWS_ACCESS_KEY_ID', "${System.getenv('AWS_ACCESS_KEY_ID')}".toString())
+        env.put('AWS_SECRET_ACCESS_KEY', "${System.getenv('AWS_SECRET_ACCESS_KEY')}".toString())
     }
 }

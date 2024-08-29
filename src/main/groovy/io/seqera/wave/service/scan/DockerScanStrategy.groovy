@@ -18,21 +18,19 @@
 
 package io.seqera.wave.service.scan
 
-import java.nio.file.FileAlreadyExistsException
-import java.nio.file.Files
-import java.nio.file.Path
 import java.time.Instant
 
-import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
+import io.micronaut.objectstorage.ObjectStorageOperations
+import io.micronaut.objectstorage.request.UploadRequest
+import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.ScanConfig
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
-import static java.nio.file.StandardOpenOption.CREATE
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
-import static java.nio.file.StandardOpenOption.WRITE
+import static io.seqera.wave.service.builder.BuildConstants.FUSION_PREFIX
 /**
  * Implements ScanStrategy for Docker
  *
@@ -47,6 +45,13 @@ class DockerScanStrategy extends ScanStrategy {
     @Inject
     private ScanConfig scanConfig
 
+    @Inject
+    BuildConfig buildConfig
+
+    @Inject
+    @Named('build-workspace')
+    private ObjectStorageOperations<?, ?, ?> objectStorageOperations
+
     DockerScanStrategy(ScanConfig scanConfig) {
         this.scanConfig = scanConfig
     }
@@ -57,25 +62,16 @@ class DockerScanStrategy extends ScanStrategy {
         final startTime = Instant.now()
 
         try {
-            // create the scan dir
-            try {
-                Files.createDirectory(req.workDir)
-            }
-            catch (FileAlreadyExistsException e) {
-                log.warn("Container scan directory already exists: $e")
-            }
-
             // save the config file with docker auth credentials
-            Path configFile = null
             if( req.configJson ) {
-                configFile = req.workDir.resolve('config.json')
-                Files.write(configFile, JsonOutput.prettyPrint(req.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+                objectStorageOperations.upload(UploadRequest.fromBytes(req.configJson.bytes, "$req.s3Key/config.json".toString()))
             }
 
-            // outfile file name
-            final reportFile = req.workDir.resolve(Trivy.OUTPUT_FILE_NAME)
+            // create outfile file
+            objectStorageOperations.upload(UploadRequest.fromBytes(new byte[0], "$req.s3Key/$Trivy.OUTPUT_FILE_NAME".toString()))
+            final reportFile = "$FUSION_PREFIX/$buildConfig.workspaceBucket/$req.s3Key/$Trivy.OUTPUT_FILE_NAME"
             // create the launch command 
-            final dockerCommand = dockerWrapper(req.workDir, configFile)
+            final dockerCommand = dockerWrapper(req)
             final trivyCommand = List.of(scanConfig.scanImage) + scanCommand(req.targetImage, reportFile, scanConfig)
             final command = dockerCommand + trivyCommand
 
@@ -93,7 +89,9 @@ class DockerScanStrategy extends ScanStrategy {
             }
             else{
                 log.info("Container scan completed with id: ${req.id}")
-                return ScanResult.success(req, startTime, TrivyResultProcessor.process(reportFile.text))
+                def scanReportFile =  objectStorageOperations.retrieve("$req.s3Key/$Trivy.OUTPUT_FILE_NAME".toString())
+                        .map { it.toStreamedFile().inputStream.text }.get()
+                return ScanResult.success(req, startTime, TrivyResultProcessor.process(scanReportFile))
             }
         }
         catch (Throwable e){
@@ -102,26 +100,29 @@ class DockerScanStrategy extends ScanStrategy {
         }
     }
 
-    protected List<String> dockerWrapper(Path scanDir, Path credsFile) {
+    protected List<String> dockerWrapper(ScanRequest req) {
 
-        final wrapper = ['docker','run', '--rm']
-        
+        final wrapper = ['docker',
+                         'run',
+                         '--rm',
+                         '--privileged',
+                         '-e',
+                         "AWS_ACCESS_KEY_ID=${System.getenv('AWS_ACCESS_KEY_ID')}".toString(),
+                         '-e',
+                         "AWS_SECRET_ACCESS_KEY=${System.getenv('AWS_SECRET_ACCESS_KEY')}".toString()]
+
         // scan work dir
-        wrapper.add('-w')
-        wrapper.add(scanDir.toString())
-
-        wrapper.add('-v')
-        wrapper.add("$scanDir:$scanDir:rw".toString())
+        wrapper.add('-e')
+        wrapper.add("TRIVY_WORKSPACE_DIR=$FUSION_PREFIX/$buildConfig.workspaceBucket/$req.s3Key".toString())
 
         // cache directory
-        wrapper.add('-v')
-        wrapper.add("${scanConfig.cacheDirectory}:${Trivy.CACHE_MOUNT_PATH}:rw".toString())
+        wrapper.add('-e')
+        wrapper.add("TRIVY_CACHE_DIR=$FUSION_PREFIX/$buildConfig.workspaceBucket/.trivy-cache".toString())
 
-        if(credsFile) {
-            wrapper.add('-v')
-            wrapper.add("${credsFile}:${Trivy.CONFIG_MOUNT_PATH}:ro".toString())
+        if(req.configJson) {
+            wrapper.add('-e')
+            wrapper.add("DOCKER_CONFIG=$FUSION_PREFIX/$buildConfig.workspaceBucket/$req.s3Key".toString())
         }
-
 
         return wrapper
     }

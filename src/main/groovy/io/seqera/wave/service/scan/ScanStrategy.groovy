@@ -34,15 +34,16 @@ abstract class ScanStrategy {
 
     abstract ScanResult scanContainer(ScanRequest request)
 
-    protected List<String> scanCommand(String targetImage, Path outputFile, ScanConfig config) {
-        def cmd = ['--quiet',
+    protected List<String> scanCommand(String targetImage, String outputFile, ScanConfig config) {
+        def cmd = ['trivy',
+                '--quiet',
                 'image',
                 '--timeout',
                 "${config.timeout.toMinutes()}m".toString(),
                 '--format',
                 'json',
                 '--output',
-                outputFile.toString()]
+                outputFile]
 
         if( config.severity ) {
             cmd << '--severity'
