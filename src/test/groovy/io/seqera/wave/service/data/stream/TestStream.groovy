@@ -16,21 +16,27 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.blob.transfer
+package io.seqera.wave.service.data.stream
 
+import java.time.Duration
 
-import io.seqera.wave.service.blob.BlobCacheInfo
 /**
- * Defines the contract to transfer a layer blob into a remote object storage
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface TransferStrategy {
+class TestStream extends AbstractMessageStream<TestMessage> {
 
-    void transfer(BlobCacheInfo blob, List<String> command)
+    TestStream(MessageStream<String> target) {
+        super(target)
+    }
 
-    Transfer status(BlobCacheInfo blob)
+    @Override
+    protected String name() {
+        return 'test-stream'
+    }
 
-    void cleanup(BlobCacheInfo blob)
-
+    @Override
+    protected Duration pollInterval() {
+        return Duration.ofSeconds(1)
+    }
 }
