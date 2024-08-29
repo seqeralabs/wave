@@ -40,20 +40,20 @@ Nextflow can use the container that Seqera Containers built in the previous sect
 
     ```groovy
     process SAMTOOLS {
-    container '<container_uri>'
-    debug true
-    """
-    samtools --version-only
-    """
+      container '<container_uri>'
+      debug true
+      """
+      samtools --version-only
+      """
     }
     workflow {
-    SAMTOOLS()
+      SAMTOOLS()
     }
     ```
 
     Substitute `<container_uri>` for the container URI that you received from Seqera Containers in the previous section. e.g.
-        - `community.wave.seqera.io/library/samtools:1.20--b5dfbd93de237464` for linux/amd64.
-        - `community.wave.seqera.io/library/samtools:1.20--497854c5df637867` for linux/arm64.
+    - `community.wave.seqera.io/library/samtools:1.20--b5dfbd93de237464` for linux/amd64.
+    - `community.wave.seqera.io/library/samtools:1.20--497854c5df637867` for linux/arm64.
 
 ### Run the Nextflow pipeline
 
