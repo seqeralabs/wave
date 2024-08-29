@@ -375,4 +375,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         return buildRecordStore.getBuildRecord(buildId) ?: persistenceService.loadBuild(buildId)
     }
 
+    @Override
+    List<WaveBuildRecord> getBuildRecords(String imageName, String user) {
+        return persistenceService.loadBuilds(imageName, user)
+    }
 }
