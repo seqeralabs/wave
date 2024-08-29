@@ -39,17 +39,16 @@ Nextflow can use the container that Seqera Containers built in the previous sect
 1. Create a `main.nf` file with the following contents:
 
     ```groovy
-        process SAMTOOLS {
-        container '<container_uri>'
-        debug true
-
-        """
-        samtools --version-only
-        """
-        }
-        workflow {
-        SAMTOOLS()
-        }
+    process SAMTOOLS {
+    container '<container_uri>'
+    debug true
+    """
+    samtools --version-only
+    """
+    }
+    workflow {
+    SAMTOOLS()
+    }
     ```
 
     Substitute `<container_uri>` for the container URI that you received from Seqera Containers in the previous section. e.g.
