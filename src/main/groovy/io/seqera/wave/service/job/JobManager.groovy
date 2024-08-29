@@ -39,7 +39,7 @@ import jakarta.inject.Inject
 class JobManager {
 
     @Inject
-    private JobStrategy jobStrategy
+    private JobService jobService
 
     @Inject
     private JobQueue queue
@@ -70,7 +70,7 @@ class JobManager {
 
     protected boolean processJob0(JobId jobId) {
         final duration = Duration.between(jobId.creationTime, Instant.now())
-        final state = jobStrategy.status(jobId)
+        final state = jobService.status(jobId)
         log.trace "Job status id=${jobId.schedulerId}; state=${state}"
         final done =
                 state.completed() ||
@@ -80,7 +80,7 @@ class JobManager {
             // publish the completion event
             dispatcher.onJobCompletion(jobId, state)
              // cleanup the job
-            jobStrategy.cleanup(jobId, state.exitCode)
+            jobService.cleanup(jobId, state.exitCode)
             return true
         }
         // set the await timeout nearly double as the blob transfer timeout, this because the

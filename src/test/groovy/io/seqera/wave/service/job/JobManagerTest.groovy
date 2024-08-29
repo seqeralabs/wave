@@ -29,39 +29,39 @@ class JobManagerTest extends Specification {
 
     def "handle should process valid transferId"() {
         given:
-        def jobStrategy = Mock(JobStrategy)
+        def jobService = Mock(JobService)
         def jobDispatcher = Mock(JobDispatcher)
-        def manager = new JobManager(jobStrategy: jobStrategy, dispatcher: jobDispatcher)
+        def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher)
         and:
         def job = JobId.transfer('foo')
 
         when:
         def done = manager.processJob(job)
         then:
-        1 * jobStrategy.status(job) >> JobState.completed(0, 'My job logs')
+        1 * jobService.status(job) >> JobState.completed(0, 'My job logs')
         and:
         1 * jobDispatcher.onJobCompletion(job, _) >> { JobId id, JobState state ->
             assert state.exitCode == 0
             assert state.stdout == 'My job logs'
         }
         and:
-        1 * jobStrategy.cleanup(job,0)
+        1 * jobService.cleanup(job,0)
         and:
         done
     }
 
     def "handle should log error for unknown transferId"() {
         given:
-        def jobStrategy = Mock(JobStrategy)
+        def jobService = Mock(JobService)
         def jobDispatcher = Mock(JobDispatcher)
-        def manager = new JobManager(jobStrategy: jobStrategy, dispatcher: jobDispatcher)
+        def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher)
         and:
         def job = JobId.transfer('unknown')
 
         when:
         def done = manager.processJob(job)
         then:
-        1 * jobStrategy.status(job) >> null
+        1 * jobService.status(job) >> null
         and:
         1 * jobDispatcher.onJobException(job,_) >> null
         and:
@@ -70,10 +70,10 @@ class JobManagerTest extends Specification {
 
     def "handle0 should fail transfer when status is unknown and duration exceeds grace period"() {
         given:
-        def jobStrategy = Mock(JobStrategy)
+        def jobService = Mock(JobService)
         def jobDispatcher = Mock(JobDispatcher)
         def config = new JobConfig(graceInterval: Duration.ofMillis(500))
-        def manager = new JobManager(jobStrategy: jobStrategy, dispatcher: jobDispatcher, config:config)
+        def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config:config)
         and:
         def job = JobId.transfer('foo')
 
@@ -82,25 +82,25 @@ class JobManagerTest extends Specification {
         def done = manager.processJob(job)
 
         then:
-        1 * jobStrategy.status(job) >> JobState.unknown('logs')
+        1 * jobService.status(job) >> JobState.unknown('logs')
         1 * jobDispatcher.onJobCompletion(job, _)
-        1 * jobStrategy.cleanup(job, _)
+        1 * jobService.cleanup(job, _)
         and:
         done
     }
 
     def "should requeue transfer when duration is within limits"() {
         given:
-        def jobStrategy = Mock(JobStrategy)
+        def jobService = Mock(JobService)
         def jobDispatcher = Mock(JobDispatcher)
-        def manager = new JobManager(jobStrategy: jobStrategy, dispatcher: jobDispatcher)
+        def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher)
         and:
         def job = JobId.transfer('foo')
 
         when:
         def done = manager.processJob(job)
         then:
-        1 * jobStrategy.status(job) >> JobState.running()
+        1 * jobService.status(job) >> JobState.running()
         1 * jobDispatcher.jobMaxDuration(job) >> Duration.ofSeconds(10)
         and:
         !done
@@ -108,9 +108,9 @@ class JobManagerTest extends Specification {
 
     def "handle0 should timeout transfer when duration exceeds max limit"() {
         given:
-        def jobStrategy = Mock(JobStrategy)
+        def jobService = Mock(JobService)
         def jobDispatcher = Mock(JobDispatcher)
-        def manager = new JobManager(jobStrategy: jobStrategy, dispatcher: jobDispatcher)
+        def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher)
         and:
         def job = JobId.transfer('foo')
 
@@ -118,7 +118,7 @@ class JobManagerTest extends Specification {
         sleep 1_000 //await timeout
         def done = manager.processJob(job)
         then:
-        1 * jobStrategy.status(job) >> JobState.running()
+        1 * jobService.status(job) >> JobState.running()
         1 * jobDispatcher.jobMaxDuration(job) >> Duration.ofMillis(100)
         and:
         1 * jobDispatcher.onJobTimeout(job)

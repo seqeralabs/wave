@@ -18,18 +18,33 @@
 
 package io.seqera.wave.service.job
 
+import groovy.transform.CompileStatic
 import io.seqera.wave.service.blob.BlobCacheInfo
+import io.seqera.wave.service.blob.TransferStrategy
 
 /**
- * Define the contract for submitting and monitoring jobs
+ * Implement a service for job creation and execution
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface JobService {
+@CompileStatic
+abstract class JobServiceBase implements JobService {
 
-    JobId launchTransfer(BlobCacheInfo blob, List<String> command)
+    abstract protected JobQueue getJobQueue()
 
-    JobState status(JobId jobId)
+    abstract protected TransferStrategy getTransferStrategy()
 
-    void cleanup(JobId jobId, Integer exitStatus)
+    @Override
+    JobId launchTransfer(BlobCacheInfo blob, List<String> command) {
+        if( !transferStrategy )
+            throw new IllegalStateException("Blob cache service is not available - check configuration setting 'wave.blobCache.enabled'")
+        // create the ID for the job transfer
+        final job = JobId.transfer(blob.id())
+        // submit the job execution
+        transferStrategy.launchJob(job.schedulerId, command)
+        // signal the transfer has started
+        jobQueue.offer(job)
+        return job
+    }
+
 }

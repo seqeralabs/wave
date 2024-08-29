@@ -16,18 +16,28 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job
+package io.seqera.wave.service.job.impl
+
+import spock.lang.Specification
+import spock.lang.Unroll
 /**
- * Defines the contract to transfer a layer blob into a remote object storage
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface JobStrategy {
+class DockerJobServiceTest extends Specification {
 
-    void launchJob(String jobName, List<String> command)
+    @Unroll
+    def 'should parse state string' () {
+        expect:
+        DockerJobService.State.parse(STATE) == EXPECTED
 
-    JobState status(JobId jobId)
-
-    void cleanup(JobId jobId, Integer exitStatus)
+        where:
+        STATE               | EXPECTED
+        'running'           | new DockerJobService.State('running')
+        'exited'            | new DockerJobService.State('exited')
+        'exited,'           | new DockerJobService.State('exited')
+        'exited,0'          | new DockerJobService.State('exited', 0)
+        'exited,10'         | new DockerJobService.State('exited', 10)
+    }
 
 }
