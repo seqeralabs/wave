@@ -96,7 +96,7 @@ class KubeBuildStrategy extends BuildStrategy {
         try {
             final buildImage = getBuildImage(req)
             final buildCmd = launchCmd(req)
-            final name = podName(req)
+            final name = podName(req.buildId)
             final timeout = req.maxDuration ?: buildConfig.defaultTimeout
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
             final spackCfg0 = req.isSpackBuild ? spackConfig : null

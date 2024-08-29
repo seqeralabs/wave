@@ -64,8 +64,6 @@ interface K8sService {
 
     InputStream getCurrentLogsPod(String name)
 
-    void deletePodWhenReachStatus(String podName, String statusName, long timeout)
-
     V1Pod getLatestPodForJob(String jobName)
 
 }
