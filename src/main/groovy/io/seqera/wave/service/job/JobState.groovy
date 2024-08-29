@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.blob.transfer
+package io.seqera.wave.service.job
 
 import groovy.transform.Canonical
 import groovy.transform.ToString
@@ -29,7 +29,7 @@ import groovy.transform.ToString
 
 @ToString(includePackage = false, includeNames = true)
 @Canonical
-class Transfer {
+class JobState {
 
     enum Status { PENDING, RUNNING, SUCCEEDED, FAILED, UNKNOWN }
 
@@ -45,28 +45,28 @@ class Transfer {
         status==Status.SUCCEEDED && exitCode==0
     }
 
-    static Transfer pending() {
-        return new Transfer(Status.PENDING)
+    static JobState pending() {
+        return new JobState(Status.PENDING)
     }
 
-    static Transfer running() {
-        return new Transfer(Status.RUNNING)
+    static JobState running() {
+        return new JobState(Status.RUNNING)
     }
 
-    static Transfer failed(Integer exit, String logs) {
-        return new Transfer(Status.FAILED, exit, logs)
+    static JobState failed(Integer exit, String logs) {
+        return new JobState(Status.FAILED, exit, logs)
     }
 
-    static Transfer succeeded(String logs) {
-        return new Transfer(Status.SUCCEEDED, 0, logs)
+    static JobState succeeded(String logs) {
+        return new JobState(Status.SUCCEEDED, 0, logs)
     }
 
-    static Transfer completed(Integer exit, String logs) {
+    static JobState completed(Integer exit, String logs) {
         final st = exit==0 ? Status.SUCCEEDED : Status.FAILED
-        return new Transfer(st, exit, logs)
+        return new JobState(st, exit, logs)
     }
 
-    static Transfer unknown(String logs) {
-        return new Transfer(Status.UNKNOWN,null,logs)
+    static JobState unknown(String logs) {
+        return new JobState(Status.UNKNOWN,null,logs)
     }
 }
