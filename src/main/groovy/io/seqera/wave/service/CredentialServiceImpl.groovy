@@ -81,12 +81,12 @@ class CredentialServiceImpl implements CredentialsService {
         //  This cannot be implemented at the moment since, in tower, container registry
         //  credentials are associated to the whole registry
         final repo = container.repository ?: DOCKER_IO
-        final creds = findBestMatchingCreds(repo,  all)
-        if (!creds && identity.workflowId && AwsEcrService.isEcrHost(registryName) ) {
+        def creds = findBestMatchingCreds(repo,  all)
+        if (!creds && identity.workflowId && AwsEcrService.isEcrHost(container.registry) ) {
             creds = findComputeCreds(identity)
         }
         if (!creds) {
-            log.debug "No credentials matching criteria registryName=$registryName; userId=$identity.userId; workspaceId=$identity.workspaceId; workflowId=${identity.workflowId}; endpoint=$identity.towerEndpoint"
+            log.debug "No credentials matching criteria registryName=$container.registry; userId=$identity.userId; workspaceId=$identity.workspaceId; workflowId=${identity.workflowId}; endpoint=$identity.towerEndpoint"
             return null
         }
 
