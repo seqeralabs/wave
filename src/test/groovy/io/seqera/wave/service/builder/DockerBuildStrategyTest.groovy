@@ -45,7 +45,9 @@ class DockerBuildStrategyTest extends Specification {
         and:
         def work = Path.of('/work/foo')
         when:
-        def cmd = service.cmdForBuildkit(work, null, null, null)
+
+        def cmd = service.cmdForBuildkit(work, null, null, null, '1234')
+          
         then:
         cmd == ['docker',
                 'run',
@@ -54,10 +56,11 @@ class DockerBuildStrategyTest extends Specification {
                 '-v', '/work/foo:/work/foo',
                 '--entrypoint',
                 'buildctl-daemonless.sh',
+                '--name', 'build-1234',
                 'moby/buildkit:v0.14.1-rootless']
 
         when:
-        cmd = service.cmdForBuildkit(work, Path.of('/foo/creds.json'), null, ContainerPlatform.of('arm64'))
+        cmd = service.cmdForBuildkit(work, Path.of('/foo/creds.json'), null, ContainerPlatform.of('arm64'), '1234')
         then:
         cmd == ['docker',
                 'run',
@@ -68,10 +71,11 @@ class DockerBuildStrategyTest extends Specification {
                 'buildctl-daemonless.sh',
                 '-v', '/foo/creds.json:/home/user/.docker/config.json:ro',
                 '--platform', 'linux/arm64',
+                '--name', 'build-1234',
                 'moby/buildkit:v0.14.1-rootless']
 
         when:
-        cmd = service.cmdForBuildkit(work, Path.of('/foo/creds.json'), spackConfig, null)
+        cmd = service.cmdForBuildkit(work, Path.of('/foo/creds.json'), spackConfig, null, '1234')
         then:
         cmd == ['docker',
                 'run',
@@ -82,6 +86,7 @@ class DockerBuildStrategyTest extends Specification {
                 'buildctl-daemonless.sh',
                 '-v', '/foo/creds.json:/home/user/.docker/config.json:ro',
                 '-v', '/host/spack/key:/opt/spack/key:ro',
+                '--name', 'build-1234',
                 'moby/buildkit:v0.14.1-rootless']
 
         cleanup:
@@ -96,6 +101,8 @@ class DockerBuildStrategyTest extends Specification {
         def creds = Path.of('/work/creds.json')
         and:
         def req = new BuildRequest(
+                buildId: '1234',
+                id: '89fb83ce6ec8627b',
                 containerId: '89fb83ce6ec8627b',
                 workDir: Path.of('/work/foo/89fb83ce6ec8627b'),
                 platform: ContainerPlatform.of('linux/amd64'),
@@ -113,6 +120,7 @@ class DockerBuildStrategyTest extends Specification {
                 'buildctl-daemonless.sh',
                 '-v', '/work/creds.json:/home/user/.docker/config.json:ro',
                 '--platform', 'linux/amd64',
+                '--name', 'build-1234',
                 'moby/buildkit:v0.14.1-rootless',
                 'build',
                 '--frontend',
@@ -149,6 +157,7 @@ class DockerBuildStrategyTest extends Specification {
         def creds = Path.of('/work/creds.json')
         and:
         def req = new BuildRequest(
+                buildId: '1234',
                 workDir: Path.of('/work/foo/d4869cc39b8d7d55'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'oras://repo:d4869cc39b8d7d55',
@@ -168,6 +177,7 @@ class DockerBuildStrategyTest extends Specification {
                 '-v', '/work/singularity-remote.yaml:/root/.singularity/remote.yaml:ro',
                 '-v', '/host/spack/key:/opt/spack/key:ro',
                 '--platform', 'linux/amd64',
+                '--name', 'build-1234',
                 'quay.io/singularity/singularity:v3.11.4-slim',
                 'sh',
                 '-c',
@@ -191,6 +201,7 @@ class DockerBuildStrategyTest extends Specification {
         def creds = Path.of('/work/creds.json')
         and:
         def req = new BuildRequest(
+                buildId: '1234',
                 workDir: Path.of('/work/foo/9c68af894bb2419c'),
                 platform: ContainerPlatform.of('linux/arm64'),
                 targetImage: 'oras://repo:9c68af894bb2419c',
@@ -210,6 +221,7 @@ class DockerBuildStrategyTest extends Specification {
                 '-v', '/work/singularity-remote.yaml:/root/.singularity/remote.yaml:ro',
                 '-v', '/host/spack/key:/opt/spack/key:ro',
                 '--platform', 'linux/arm64',
+                '--name', 'build-1234',
                 'quay.io/singularity/singularity:v3.11.4-slim-arm64',
                 'sh',
                 '-c',

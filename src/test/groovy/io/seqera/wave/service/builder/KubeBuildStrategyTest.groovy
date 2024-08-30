@@ -132,7 +132,7 @@ class KubeBuildStrategyTest extends Specification {
         def req = new BuildRequest(containerId, dockerfile, null, null, PATH, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1)).withBuildId('1')
 
         when:
-        def podName = strategy.podName(req)
+        def podName = strategy.podName(req.buildId)
 
         then:
         req.buildId == '143ee73bcdac45b1_1'

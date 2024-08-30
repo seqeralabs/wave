@@ -480,6 +480,25 @@ class K8sServiceImpl implements K8sService {
     }
 
     /**
+     * Fetch current available logs of a running pod
+     *
+     * @param name The pod name
+     * @return The logs as a string or when logs are not available or cannot be accessed
+     */
+    @Override
+    InputStream getCurrentLogsPod(String name) {
+        try {
+            def logs = k8sClient.coreV1Api().readNamespacedPodLog(name, namespace, name, false, null, null, "false", false, null, null, null)
+            logs = logs ? logs.replaceAll("\u001B\\[[;\\d]*m", "") : null // strip ansi escape codes
+            return new ByteArrayInputStream(logs.getBytes())
+        } catch (Exception e) {
+            // logging trace here because errors are expected when the pod is not running
+            log.trace "Unable to fetch logs for pod: $name", e
+            return null
+        }
+    }
+
+    /**
      * Delete a pod
      *
      * @param name The name of the pod to be deleted
