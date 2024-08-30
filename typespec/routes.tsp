@@ -11,11 +11,18 @@ namespace wave {
   @route("/v1alpha2/container")
   interface  ContainerService {
 
-    @post op createV1Alpha2Container(@body requestBody: ContainerRequest): {
+    @post op createContainer(@body requestBody: ContainerRequest): {
     @body response: ContainerResponse;
     @statusCode statusCode: 200;
     };
 
+    @route("/{token}")
+    @get op getContainerDetails(@path token: string): {
+      @body response: WaveContainerRecord;
+      @statusCode statusCode: 200;
+    }|{
+      @statusCode statusCode: 404;
+      };
   }
 
   @route("/v1alpha1/builds/{buildId}")

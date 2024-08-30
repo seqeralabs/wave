@@ -23,10 +23,12 @@ import groovy.util.logging.Slf4j
 import io.seqera.tower.crypto.AsymmetricCipher
 import io.seqera.tower.crypto.EncryptedPacket
 import io.seqera.wave.core.ContainerPath
+import io.seqera.wave.service.aws.AwsEcrService
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.tower.client.CredentialsDescription
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.auth.JwtAuth
+import io.seqera.wave.tower.client.CredentialsDescription
 import io.seqera.wave.tower.client.TowerClient
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -69,10 +71,22 @@ class CredentialServiceImpl implements CredentialsService {
         }
 
         // find credentials with a matching registry
+        // TODO @t0randr
+        //  for the time being we take the first matching credentials.
+        //  A better approach would be to match the credentials
+        //  based on user repository, but this is not supported by tower:
+        //  For instance if we try to pull from docker.io/seqera/tower:v22
+        //  then we should match credentials for docker.io/seqera instead of
+        //  the ones associated with docker.io.
+        //  This cannot be implemented at the moment since, in tower, container registry
+        //  credentials are associated to the whole registry
         final repo = container.repository ?: DOCKER_IO
         final creds = findBestMatchingCreds(repo,  all)
+        if (!creds && identity.workflowId && AwsEcrService.isEcrHost(registryName) ) {
+            creds = findComputeCreds(identity)
+        }
         if (!creds) {
-            log.debug "No credentials matching criteria registryName=$container.registry; userId=$identity.userId; workspaceId=$identity.workspaceId; endpoint=$identity.towerEndpoint"
+            log.debug "No credentials matching criteria registryName=$registryName; userId=$identity.userId; workspaceId=$identity.workspaceId; workflowId=${identity.workflowId}; endpoint=$identity.towerEndpoint"
             return null
         }
 
@@ -131,6 +145,28 @@ class CredentialServiceImpl implements CredentialsService {
 
     protected int repoLen(String repo) {
         repo ? repo.tokenize('/').size() : 0
+    }
+      
+    CredentialsDescription findComputeCreds(PlatformId identity) {
+        try {
+            return findComputeCreds0(identity)
+        }
+        catch (Exception e) {
+            log.error("Unable to retrieve Platform launch credentials for $identity - cause ${e.message}")
+            return null
+        }
+    }
+
+    protected CredentialsDescription findComputeCreds0(PlatformId identity) {
+        final response = towerClient.describeWorkflowLaunch(identity.towerEndpoint, JwtAuth.of(identity), identity.workflowId)
+        if( !response )
+            return null
+        final computeEnv = response.get()?.launch?.computeEnv
+        if( !computeEnv )
+            return null
+        if( computeEnv.platform != 'aws-batch' )
+            return null
+        return new CredentialsDescription(id: computeEnv.credentialsId, provider: 'aws')
     }
 
     protected String decryptCredentials(byte[] encodedKey, String payload) {

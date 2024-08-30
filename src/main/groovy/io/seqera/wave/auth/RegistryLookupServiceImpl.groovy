@@ -50,12 +50,23 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
     @Inject
     private HttpClientConfig httpConfig
 
+    @Inject
+    private RegistryAuthCacheStore store
 
     private CacheLoader<URI, RegistryAuth> loader = new CacheLoader<URI, RegistryAuth>() {
         @Override
         RegistryAuth load(URI endpoint) throws Exception {
-            final result = lookup0(endpoint)
+            // check if there's a record in the store cache (redis)
+            def result = store.get(endpoint.toString())
+            if( result ) {
+                log.debug "Authority lookup for endpoint: '$endpoint' => $result [from store]"
+               return result
+            }
+            // look-up using the corresponding API endpoint
+            result = lookup0(endpoint)
             log.debug "Authority lookup for endpoint: '$endpoint' => $result"
+            // save it in the store cache (redis)
+            store.put(endpoint.toString(), result)
             return result
         }
     }
@@ -65,7 +76,6 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
                 .maximumSize(10_000)
                 .expireAfterAccess(1, TimeUnit.HOURS)
                 .build(loader)
-
 
     protected RegistryAuth lookup0(URI endpoint) {
         final httpClient = HttpClientFactory.followRedirectsHttpClient()

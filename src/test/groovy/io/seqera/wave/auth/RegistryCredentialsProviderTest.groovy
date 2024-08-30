@@ -107,6 +107,7 @@ class RegistryCredentialsProviderTest extends Specification {
         def WORKSPACE_ID = 200
         def TOWER_TOKEN = "token"
         def TOWER_ENDPOINT = "localhost:8080"
+        def WORKFLOW_ID = "id123"
         and:
         def credentialService = Mock(CredentialsService)
         def credentialsFactory = new RegistryCredentialsFactoryImpl(awsEcrService: Mock(AwsEcrService))

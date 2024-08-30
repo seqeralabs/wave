@@ -26,11 +26,13 @@ import java.time.Instant
 
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.auth.RegistryAuth
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.service.job.JobId
 import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingResponse
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
@@ -38,14 +40,10 @@ import io.seqera.wave.service.pairing.socket.msg.ProxyHttpResponse
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.DockerDigestStore
-import io.seqera.wave.storage.LazyDigestStore
 import io.seqera.wave.storage.HttpDigestStore
 import io.seqera.wave.storage.ZippedDigestStore
-import io.seqera.wave.storage.reader.DataContentReader
-import io.seqera.wave.storage.reader.GzipContentReader
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -152,52 +150,6 @@ class MoshiEncodingStrategyTest extends Specification {
         result.buildId == 'build-123'
         result.buildNew
         result.freeze
-    }
-
-    def 'should encode and decode lazy digest store' () {
-        given:
-        def encoder = new MoshiEncodeStrategy<DigestStore>() { }
-        and:
-        def data = new LazyDigestStore(new DataContentReader('FOO'.bytes.encodeBase64().toString()), 'media', '12345', 1000)
-
-        when:
-        def json = encoder.encode(data)
-        println json
-
-        and:
-        def copy = encoder.decode(json)
-        then:
-        copy.getClass() == data.getClass()
-        and:
-        copy.bytes == data.bytes
-        copy.digest == data.digest
-        copy.mediaType == data.mediaType
-        copy.size == 1000
-    }
-
-    def 'should encode and decode gzip content reader' () {
-        given:
-        def encoder = new MoshiEncodeStrategy<DigestStore>() { }
-        and:
-        def data = new LazyDigestStore(
-                GzipContentReader.fromPlainString('Hello world'),
-                'text/json',
-                '12345',
-                2000 )
-
-        when:
-        def json = encoder.encode(data)
-        println json
-
-        and:
-        def copy = encoder.decode(json)
-        then:
-        copy.getClass() == data.getClass()
-        and:
-        copy.bytes == data.bytes
-        copy.digest == data.digest
-        copy.mediaType == data.mediaType
-        copy.size == data.size
     }
 
     def 'should encode and decode zipped digest store' () {
@@ -373,22 +325,19 @@ class MoshiEncodingStrategyTest extends Specification {
         def context = new BuildContext('http://foo.com', '12345', 100, '67890')
         and:
         def build = new BuildRequest(
-                '12345',
-                'from foo',
-                'conda spec',
-                'spack spec',
-                Path.of("/some/path"),
-                'docker.io/some:image:12345',
-                PlatformId.NULL,
-                ContainerPlatform.of('linux/amd64'),
-                'cacherepo',
-                "1.2.3.4",
-                '{"config":"json"}',
-                null,
-                null,
-                'scan12345',
-                context,
-                null)
+                containerId: '12345',
+                containerFile: 'from foo',
+                condaFile: 'conda spec',
+                spackFile: 'spack spec',
+                workspace:  Path.of("/some/path"),
+                targetImage:  'docker.io/some:image:12345',
+                identity: PlatformId.NULL,
+                platform:  ContainerPlatform.of('linux/amd64'),
+                cacheRepository:  'cacherepo',
+                ip: "1.2.3.4",
+                configJson:  '{"config":"json"}',
+                scanId: 'scan12345',
+                buildContext: context )
                 .withBuildId('1')
         def result = new BuildResult(build.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         def event = new BuildEvent(build, result)
@@ -404,5 +353,38 @@ class MoshiEncodingStrategyTest extends Specification {
         copy.getClass() == record1.getClass()
         and:
         copy == record1
+    }
+
+    def 'should encode and decode registry info' () {
+        given:
+        def encoder = new MoshiEncodeStrategy<RegistryAuth>() { }
+        and:
+        def auth = RegistryAuth.parse('Bearer realm="https://auth.docker.io/token",service="registry.docker.io"')
+
+        when:
+        def json = encoder.encode(auth)
+        and:
+        def copy = encoder.decode(json)
+        then:
+        copy.getClass() == auth.getClass()
+        and:
+        copy == auth
+
+    }
+
+    def 'should encode and decode job request' () {
+        given:
+        def encoder = new MoshiEncodeStrategy<JobId>() { }
+        and:
+        def job = new JobId(JobId.Type.Transfer, '123-abc', Instant.now())
+
+        when:
+        def json = encoder.encode(job)
+        and:
+        def copy = encoder.decode(json)
+        then:
+        copy.getClass() == JobId
+        and:
+        copy == job
     }
 }

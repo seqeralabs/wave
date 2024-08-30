@@ -22,7 +22,6 @@ import spock.lang.Specification
 
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -54,6 +53,5 @@ class K8sHelperTest extends Specification {
         def err = thrown(BadRequestException)
         err.message == "Unsupported container platform 'linux/amd64'"
     }
-
 
 }

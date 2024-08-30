@@ -45,7 +45,6 @@ import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
-import io.seqera.wave.storage.reader.ContentReaderFactory
 import io.seqera.wave.test.RedisTestContainer
 import io.seqera.wave.test.SurrealDBTestContainer
 import io.seqera.wave.tower.PlatformId
@@ -88,13 +87,23 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, cacheRepo, Mock(PlatformId))
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
-        def req = new BuildRequest(containerId, dockerFile, null, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", cfg, null,null , null, null, BuildFormat.DOCKER)
-        .withBuildId('1')
+        def req =
+                new BuildRequest(
+                        containerId: containerId,
+                        containerFile: dockerFile,
+                        workspace: folder,
+                        targetImage: targetImage,
+                        identity: Mock(PlatformId),
+                        platform: ContainerPlatform.of('amd64'),
+                        cacheRepository: cacheRepo,
+                        configJson: cfg,
+                        format: BuildFormat.DOCKER,
+                        startTime: Instant.now()
+                )
+                    .withBuildId('1')
 
         when:
         def result = service.launch(req)
-        and:
-        println result.logs
         then:
         result.id
         result.startTime
@@ -120,7 +129,19 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
-        def req = new BuildRequest(containerId, dockerFile, null, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", cfg, null,null , null, null, BuildFormat.DOCKER)
+        def req =
+                new BuildRequest(
+                        containerId: containerId,
+                        containerFile: dockerFile,
+                        workspace: folder,
+                        targetImage: targetImage,
+                        identity: Mock(PlatformId),
+                        platform: ContainerPlatform.of('amd64'),
+                        cacheRepository: cacheRepo,
+                        configJson: cfg,
+                        format: BuildFormat.DOCKER,
+                        startTime: Instant.now(),
+                )
                 .withBuildId('1')
 
         when:
@@ -153,7 +174,19 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
-        def req = new BuildRequest(containerId, dockerFile, null, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", cfg, null,null , null, null, BuildFormat.DOCKER)
+        def req =
+                new BuildRequest(
+                        containerId: containerId,
+                        containerFile: dockerFile,
+                        workspace: folder,
+                        targetImage: targetImage,
+                        identity: Mock(PlatformId),
+                        platform: ContainerPlatform.of('amd64'),
+                        cacheRepository: cacheRepo,
+                        configJson: cfg,
+                        format: BuildFormat.DOCKER,
+                        startTime: Instant.now()
+                )
                 .withBuildId('1')
 
         when:
@@ -185,7 +218,19 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
-        def req = new BuildRequest(containerId, dockerFile, null, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", cfg, null,null , null, null, BuildFormat.DOCKER)
+        def req =
+                new BuildRequest(
+                        containerId: containerId,
+                        containerFile: dockerFile,
+                        workspace: folder,
+                        targetImage: targetImage,
+                        identity: Mock(PlatformId),
+                        platform: ContainerPlatform.of('amd64'),
+                        cacheRepository: cacheRepo,
+                        configJson: cfg,
+                        format: BuildFormat.DOCKER,
+                        startTime: Instant.now()
+                )
                 .withBuildId('1')
 
         when:
@@ -230,7 +275,21 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         def spackConfig = new SpackConfig(cacheBucket: 's3://bucket/cache', secretMountPath: '/mnt/secret')
         def containerId = ContainerHelper.makeContainerId(dockerFile, condaFile, spackFile, ContainerPlatform.of('amd64'), buildRepo, null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, condaFile, spackFile, null)
-        def req = new BuildRequest(containerId, dockerFile, condaFile, spackFile, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", null, null,null , null, null, BuildFormat.DOCKER)
+        def req =
+                new BuildRequest(
+                        containerId: containerId,
+                        containerFile: dockerFile,
+                        condaFile: condaFile,
+                        spackFile: spackFile,
+                        isSpackBuild: true,
+                        workspace: folder,
+                        targetImage: targetImage,
+                        identity: Mock(PlatformId),
+                        platform: ContainerPlatform.of('amd64'),
+                        cacheRepository: cacheRepo,
+                        format: BuildFormat.DOCKER,
+                        startTime: Instant.now()
+                )
                 .withBuildId('1')
         and:
         def store = Mock(BuildStore)
@@ -264,8 +323,18 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         def dockerFile = 'FROM something; {{foo}}'
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
-        def req = new BuildRequest(containerId, dockerFile, null, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", null, null,null , null, null, BuildFormat.DOCKER)
-                .withBuildId('1')
+        def req =
+                new BuildRequest(
+                        containerId: containerId,
+                        containerFile: dockerFile,
+                        workspace: folder,
+                        targetImage: targetImage,
+                        identity: Mock(PlatformId),
+                        platform: ContainerPlatform.of('amd64'),
+                        format: BuildFormat.DOCKER,
+                        startTime: Instant.now()
+                )
+                        .withBuildId('1')
         and:
         def spack = Mock(SpackConfig)
 
@@ -291,7 +360,18 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         def spackFile = 'some spack packages'
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, spackFile, ContainerPlatform.of('amd64'), 'buildRepo', null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, 'foo.com/repo', containerId, null, spackFile, null)
-        def req = new BuildRequest(containerId, dockerFile, null, spackFile, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), 'cacheRepo', "10.20.30.40", null, null,null , null, null, BuildFormat.DOCKER)
+        def req = new BuildRequest(
+                containerId: containerId,
+                containerFile: dockerFile,
+                spackFile: spackFile,
+                isSpackBuild: true,
+                workspace: folder,
+                targetImage: targetImage,
+                identity:Mock(PlatformId),
+                platform: ContainerPlatform.of('amd64'),
+                format: BuildFormat.DOCKER,
+                startTime: Instant.now()
+        )
                 .withBuildId('1')
         and:
         def spack = Mock(SpackConfig)
@@ -323,7 +403,20 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         def spackFile = 'some spack packages'
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, spackFile, ContainerPlatform.of('amd64'), 'buildRepo', null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.SINGULARITY, 'foo.com/repo', containerId, null, spackFile, null)
-        def req = new BuildRequest(containerId, dockerFile, null, spackFile, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), 'cacheRepo', "10.20.30.40", null, null,null , null, null, BuildFormat.SINGULARITY)
+        def req =
+                new BuildRequest(
+                        containerId: containerId,
+                        containerFile: dockerFile,
+                        spackFile: spackFile,
+                        isSpackBuild: true,
+                        workspace: folder,
+                        targetImage: targetImage,
+                        identity: Mock(PlatformId),
+                        platform: ContainerPlatform.of('amd64'),
+                        format: BuildFormat.SINGULARITY,
+                        startTime: Instant.now()
+                )
+
                 .withBuildId('1')
         and:
         def spack = Mock(SpackConfig)
@@ -361,7 +454,18 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         def builder = new ContainerBuildServiceImpl()
         def containerId = ContainerHelper.makeContainerId(containerFile, null, null, ContainerPlatform.of('amd64'), 'buildRepo', null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.SINGULARITY, 'foo.com/repo', containerId, null, null, null)
-        def req = new BuildRequest(containerId, containerFile, null, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), 'cacheRepo', "10.20.30.40", null, null,null , null, null, BuildFormat.SINGULARITY).withBuildId('1')
+        def req =
+                new BuildRequest(
+                        containerId: containerId,
+                        containerFile: containerFile,
+                        workspace: folder,
+                        targetImage: targetImage,
+                        identity: Mock(PlatformId),
+                        platform: ContainerPlatform.of('amd64'),
+                        format: BuildFormat.SINGULARITY,
+                        startTime: Instant.now()
+                )
+                        .withBuildId('1')
 
         when:
         def result = builder.containerFile0(req, Path.of('/some/context/'), null)
@@ -396,7 +500,21 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
-        def req = new BuildRequest(containerId, dockerFile, null, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", cfg, null,containerConfig , null, null, BuildFormat.DOCKER).withBuildId('1')
+        def req =
+                new BuildRequest(
+                        containerId: containerId,
+                        containerFile: dockerFile,
+                        workspace: folder,
+                        targetImage: targetImage,
+                        identity: Mock(PlatformId),
+                        platform: ContainerPlatform.of('amd64'),
+                        cacheRepository: cacheRepo,
+                        configJson: cfg,
+                        containerConfig: containerConfig ,
+                        format: BuildFormat.DOCKER,
+                        startTime: Instant.now()
+                )
+                        .withBuildId('1')
 
         when:
         def result = service.launch(req)
@@ -452,7 +570,7 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
 
         and:
         HttpHandler handler = { HttpExchange exchange ->
-            def body = ContentReaderFactory.of(cl.location).readAllBytes()
+            def body = cl.location.bytes
             exchange.getResponseHeaders().add("Content-Type", "application/tar+gzip")
             exchange.sendResponseHeaders(200, body.size())
             exchange.getResponseBody() << body
@@ -468,7 +586,20 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         def buildRepo = 'quay.io/org/name'
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
-        def req = new BuildRequest(containerId, dockerFile, null, null, Path.of('/wsp'), targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), 'cacheRepo', "10.20.30.40", '{"config":"json"}', null,config , null, null, BuildFormat.DOCKER).withBuildId('1')
+        def req =
+                new BuildRequest(
+                        containerId: containerId,
+                        containerFile: dockerFile,
+                        workspace: Path.of('/wsp'),
+                        targetImage: targetImage,
+                        identity: Mock(PlatformId),
+                        platform: ContainerPlatform.of('amd64'),
+                        configJson: '{"config":"json"}',
+                        containerConfig: config ,
+                        format: BuildFormat.DOCKER,
+                        startTime: Instant.now()
+                )
+                        .withBuildId('1')
 
         when:
         service.saveLayersToContext(req, folder)
@@ -484,23 +615,20 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
     void "an event insert a build"() {
         given:
         final request = new BuildRequest(
-                'container1234',
-                'test',
-                'test',
-                'test',
-                Path.of("."),
-                'docker.io/my/repo:container1234',
-                PlatformId.NULL,
-                ContainerPlatform.of('amd64'),
-                'docker.io/my/cache',
-                '127.0.0.1',
-                '{"config":"json"}',
-                null,
-                null,
-                'scan12345',
-                null,
-                BuildFormat.DOCKER
-        ).withBuildId('123')
+                containerId: 'container1234',
+                containerFile: 'test',
+                condaFile: 'test',
+                spackFile: 'test',
+                workspace: Path.of("."),
+                targetImage: 'docker.io/my/repo:container1234',
+                identity: PlatformId.NULL,
+                platform: ContainerPlatform.of('amd64'),
+                configJson: '{"config":"json"}',
+                scanId: 'scan12345',
+                format: BuildFormat.DOCKER,
+                startTime: Instant.now()
+        )
+                .withBuildId('123')
 
         and:
         def result = new BuildResult(request.buildId, 0, "content", Instant.now(), Duration.ofSeconds(1), 'abc123')
@@ -517,24 +645,24 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
 
     void "should create build record in redis"() {
         given:
-        final request = new BuildRequest(
-                'container1234',
-                'test',
-                'test',
-                'test',
-                Path.of("."),
-                'docker.io/my/repo:container1234',
-                PlatformId.NULL,
-                ContainerPlatform.of('amd64'),
-                'docker.io/my/cache',
-                '127.0.0.1',
-                '{"config":"json"}',
-                null,
-                null,
-                'scan12345',
-                null,
-                BuildFormat.DOCKER
-        ).withBuildId('123')
+        final request =
+                new BuildRequest(
+                        containerId: 'container1234',
+                        containerFile:'test',
+                        condaFile: 'test',
+                        spackFile: 'test',
+                        workspace: Path.of("."),
+                        targetImage: 'docker.io/my/repo:container1234',
+                        identity: PlatformId.NULL,
+                        platform: ContainerPlatform.of('amd64'),
+                        cacheRepository: 'docker.io/my/cache',
+                        ip: '127.0.0.1',
+                        configJson: '{"config":"json"}',
+                        scanId: 'scan12345',
+                        format: BuildFormat.DOCKER,
+                        startTime: Instant.now()
+                    )
+                .withBuildId('123')
 
         and:
         def result = BuildResult.completed(request.buildId, 1, 'Hello', Instant.now().minusSeconds(60), 'xyz')
@@ -553,24 +681,23 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
 
     void "should save build record in redis and surrealdb"() {
         given:
-        final request = new BuildRequest(
-                'container1234',
-                'test',
-                'test',
-                'test',
-                Path.of("."),
-                'docker.io/my/repo:container1234',
-                PlatformId.NULL,
-                ContainerPlatform.of('amd64'),
-                'docker.io/my/cache',
-                '127.0.0.1',
-                '{"config":"json"}',
-                null,
-                null,
-                'scan12345',
-                null,
-                BuildFormat.DOCKER
-        ).withBuildId('123')
+        final request =
+                new BuildRequest(
+                        containerId: 'container1234',
+                        containerFile: 'test',
+                        condaFile: 'test',
+                        spackFile: 'test',
+                        workspace: Path.of("."),
+                        targetImage: 'docker.io/my/repo:container1234',
+                        identity: PlatformId.NULL,
+                        platform: ContainerPlatform.of('amd64'),
+                        cacheRepository: 'docker.io/my/cache',
+                        ip: '127.0.0.1',
+                        configJson: '{"config":"json"}',
+                        scanId: 'scan12345',
+                        format: BuildFormat.DOCKER
+                    )
+                        .withBuildId('123')
 
         and:
         def result = new BuildResult(request.buildId, 0, "content", Instant.now(), Duration.ofSeconds(1), 'abc123')
@@ -588,5 +715,14 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         def record2 = buildRecordStore.getBuildRecord(request.buildId)
         record2.buildId == request.buildId
         record2.digest == 'abc123'
+    }
+
+    def 'should return only the host name' () {
+        expect:
+        ContainerInspectServiceImpl.host0(CONTAINER) == EXPECTED
+        where:
+        CONTAINER       | EXPECTED
+        'docker.io'     | 'docker.io'
+        'docker.io/foo/'| 'docker.io'
     }
 }

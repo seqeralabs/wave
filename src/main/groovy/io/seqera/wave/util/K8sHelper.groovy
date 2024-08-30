@@ -21,7 +21,6 @@ package io.seqera.wave.util
 import groovy.transform.CompileStatic
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
