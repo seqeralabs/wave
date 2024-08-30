@@ -22,12 +22,15 @@ import spock.lang.Specification
 
 import java.nio.file.Path
 import java.time.Duration
+import java.time.OffsetDateTime
 
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.openapi.ApiClient
 import io.kubernetes.client.openapi.apis.CoreV1Api
 import io.kubernetes.client.openapi.models.V1EnvVar
+import io.kubernetes.client.openapi.models.V1ObjectMeta
 import io.kubernetes.client.openapi.models.V1Pod
+import io.kubernetes.client.openapi.models.V1PodList
 import io.kubernetes.client.openapi.models.V1PodStatus
 import io.micronaut.context.ApplicationContext
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
@@ -198,7 +201,6 @@ class K8sServiceImplTest extends Specification {
         given:
         def PROPS = [
                 'wave.build.workspace'            : '/build/work',
-                'wave.build.timeout'              : '10s',
                 'wave.build.k8s.namespace'        : 'my-ns',
                 'wave.build.k8s.configPath'       : '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'build-claim',
@@ -208,7 +210,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this', 'that'], Path.of('/build/work/xyz'), Path.of('/build/work/xyz/config.json'), null, [:])
+        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this', 'that'], Path.of('/build/work/xyz'), Path.of('/build/work/xyz/config.json'), Duration.ofSeconds(10), null, [:])
         then:
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
@@ -242,7 +244,6 @@ class K8sServiceImplTest extends Specification {
         given:
         def PROPS = [
                 'wave.build.workspace': '/build/work',
-                'wave.build.timeout': '10s',
                 'wave.build.k8s.namespace': 'my-ns',
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'build-claim',
@@ -252,7 +253,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
         def workDir = Path.of('/build/work/xyz')
         when:
-        def result = k8sService.buildSpec('foo', 'singularity:latest', ['this','that'], workDir, workDir.resolve('config.json'), null, [:])
+        def result = k8sService.buildSpec('foo', 'singularity:latest', ['this','that'], workDir, workDir.resolve('config.json'), Duration.ofSeconds(10), null, [:])
         then:
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
@@ -290,7 +291,6 @@ class K8sServiceImplTest extends Specification {
         given:
         def PROPS = [
                 'wave.build.workspace': '/build/work',
-                'wave.build.timeout': '10s',
                 'wave.build.k8s.namespace': 'my-ns',
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'build-claim',
@@ -303,7 +303,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
         def spackConfig = ctx.getBean(SpackConfig)
         when:
-        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null, spackConfig, [:])
+        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null,Duration.ofSeconds(10), spackConfig, [:])
         then:
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
@@ -337,7 +337,6 @@ class K8sServiceImplTest extends Specification {
         given:
         def PROPS = [
                 'wave.build.workspace': '/build/work',
-                'wave.build.timeout': '10s',
                 'wave.build.k8s.namespace': 'my-ns',
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'build-claim',
@@ -347,7 +346,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null, null,[:])
+        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null, Duration.ofSeconds(10), null,[:])
         then:
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
@@ -391,7 +390,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null, null,[:])
+        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null, Duration.ofSeconds(10), null,[:])
         then:
         result.metadata.name == 'foo'
         result.metadata.labels.toString() == PROPS['wave.build.k8s.labels'].toString()
@@ -419,7 +418,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null, null, PROPS['wave.build.k8s.node-selector'] as Map<String,String>)
+        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null, Duration.ofSeconds(10), null, PROPS['wave.build.k8s.node-selector'] as Map<String,String>)
         then:
         result.spec.nodeSelector.toString() == PROPS['wave.build.k8s.node-selector'].toString()
         and:
@@ -444,7 +443,7 @@ class K8sServiceImplTest extends Specification {
         def k8sService = ctx.getBean(K8sServiceImpl)
 
         when:
-        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null, null,[:])
+        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null, Duration.ofSeconds(10), null,[:])
         then:
         result.spec.serviceAccount == PROPS['wave.build.k8s.service-account']
         and:
@@ -632,6 +631,57 @@ class K8sServiceImplTest extends Specification {
 
         then:
         0 * api.deleteNamespacedPod('test-pod', null, null, null, null, null, null, null)
+    }
+
+    def "getLatestPodForJob should return the latest pod when multiple pods are present"() {
+        given:
+        def jobName = "test-job"
+        def pod1 = new V1Pod().metadata(new V1ObjectMeta().creationTimestamp(OffsetDateTime.now().minusDays(1)))
+        def pod2 = new V1Pod().metadata(new V1ObjectMeta().creationTimestamp(OffsetDateTime.now()))
+        def allPods = new V1PodList().items(Arrays.asList(pod1, pod2))
+        def api = Mock(CoreV1Api)
+        api.listNamespacedPod(_, _, _, _, _, "job-name=${jobName}", _, _, _, _, _, _) >> allPods
+        def k8sClient = new K8sClient() {
+            @Override
+            ApiClient apiClient() {
+                return null
+            }
+            CoreV1Api coreV1Api() {
+                return api
+            }
+        }
+        and:
+        def k8sService = new K8sServiceImpl(k8sClient: k8sClient)
+
+        when:
+        def latestPod = k8sService.getLatestPodForJob(jobName)
+
+        then:
+        latestPod == pod2
+    }
+
+    def "getLatestPodForJob should return null when no pod is present"() {
+        given:
+        def jobName = "test-job"
+        def api = Mock(CoreV1Api)
+        api.listNamespacedPod(_, _, _, _, _, "job-name=${jobName}", _, _, _, _, _, _) >> null
+        def k8sClient = new K8sClient() {
+            @Override
+            ApiClient apiClient() {
+                return null
+            }
+            CoreV1Api coreV1Api() {
+                return api
+            }
+        }
+        and:
+        def k8sService = new K8sServiceImpl(k8sClient: k8sClient)
+
+        when:
+        def latestPod = k8sService.getLatestPodForJob(jobName)
+
+        then:
+        latestPod == null
     }
 
 }

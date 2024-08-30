@@ -56,6 +56,7 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
                 REDIS_HOST   : redisHostName,
                 REDIS_PORT   : redisPort,
                 'wave.build.timeout':'2s',
+                'wave.build.trusted-timeout':'2s',
                 'micronaut.server.port': port,
                 'micronaut.http.services.default.url' : "http://localhost:$port".toString(),
         ], 'test', 'h2', 'redis')

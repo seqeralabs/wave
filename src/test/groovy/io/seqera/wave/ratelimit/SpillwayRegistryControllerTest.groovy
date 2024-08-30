@@ -90,7 +90,7 @@ class SpillwayRegistryControllerTest extends Specification implements DockerRegi
         e.message == "Client '/': Too Many Requests"
         def b = new JsonSlurper().parseText( e.response.body.get() as String)
         b.errors.size()
-        b.errors.first().code == 'DENIED'
+        b.errors.first().code == 'TOOMANYREQUESTS'
         b.errors.first().message.contains('Request exceeded pull rate limit for IP')
     }
 

@@ -16,22 +16,27 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.blob
+package io.seqera.wave.service.data.stream
 
-import groovy.transform.CompileStatic
-import io.seqera.wave.exception.WaveException
-
+import java.time.Duration
 
 /**
- * Exception fired when the time to blob download takes too long
  *
- * @author: Paolo Di Tommaso <paolo.ditommaso@gmail.com>
- *
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@CompileStatic
-class TransferTimeoutException extends WaveException{
+class TestStream extends AbstractMessageStream<TestMessage> {
 
-    TransferTimeoutException(String message) {
-        super(message)
+    TestStream(MessageStream<String> target) {
+        super(target)
+    }
+
+    @Override
+    protected String name() {
+        return 'test-stream'
+    }
+
+    @Override
+    protected Duration pollInterval() {
+        return Duration.ofSeconds(1)
     }
 }

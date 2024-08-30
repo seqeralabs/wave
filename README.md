@@ -37,6 +37,7 @@ container registry where the image is stored, while the instrumented layers are 
 
 * Java 19 or later
 * Linux or macOS
+* Redis 6.2 (or later)
 * Docker engine (for development)
 * Kubernetes cluster (for production)
 

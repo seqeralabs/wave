@@ -21,6 +21,7 @@ package io.seqera.wave.service.builder
 import spock.lang.Specification
 
 import java.nio.file.Path
+import java.time.Duration
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.ContainerPlatform
@@ -40,7 +41,7 @@ class BuildStrategyTest extends Specification {
     def 'should get buildkit command' () {
         given:
         def req = new BuildRequest(
-                id: 'c168dba125e28777',
+                containerId: 'c168dba125e28777',
                 workDir: Path.of('/work/foo/c168dba125e28777'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'quay.io/wave:c168dba125e28777',
@@ -73,7 +74,7 @@ class BuildStrategyTest extends Specification {
     def 'should get buildkit command with build context' () {
         given:
         def req = new BuildRequest(
-                id: 'c168dba125e28777',
+                containerId: 'c168dba125e28777',
                 workDir: Path.of('/work/foo/3980470531b4a52a'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'quay.io/wave:3980470531b4a52a',
@@ -123,6 +124,7 @@ class BuildStrategyTest extends Specification {
 
     def 'should create request' () {
         when:
+        def timeout = Duration.ofMinutes(5)
         def content = 'FROM foo:latest'
         def workspace = Path.of("some/path")
         def buildrepo = 'foo.com/repo'
@@ -144,7 +146,8 @@ class BuildStrategyTest extends Specification {
                 null,
                 'scan12345',
                 null,
-                BuildFormat.DOCKER
+                BuildFormat.DOCKER,
+                timeout
         )
 
         then:
@@ -162,5 +165,6 @@ class BuildStrategyTest extends Specification {
         and:
         build.buildId == 'af15cb0a413a2d48_100'
         build.workDir == Path.of('.').toRealPath().resolve('some/path/af15cb0a413a2d48_100')
+        build.maxDuration == timeout
     }
 }
