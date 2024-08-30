@@ -29,6 +29,7 @@ import java.util.concurrent.CompletableFuture
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.tower.crypto.AsymmetricCipher
+import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.pairing.PairingRecord
 import io.seqera.wave.service.pairing.PairingService
@@ -313,9 +314,10 @@ class CredentialsServiceTest extends Specification {
         and:
         def identity = new PlatformId(new User(id:userId), workspaceId,token,towerEndpoint,workflowId)
         def auth = JwtAuth.of(identity)
+        def containerPath = ContainerCoordinates.parse("$registryName/foo")
 
         when: 'look those registry credentials from tower'
-        def containerCredentials = credentialsService.findRegistryCreds(registryName,identity)
+        def containerCredentials = credentialsService.findRegistryCreds(containerPath, identity)
 
         then: 'the registered key is fetched correctly from the security service'
         1 * securityService.getPairingRecord(PairingService.TOWER_SERVICE, towerEndpoint) >> keyRecord

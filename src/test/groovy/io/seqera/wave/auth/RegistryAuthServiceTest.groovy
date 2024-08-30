@@ -204,7 +204,7 @@ class RegistryAuthServiceTest extends Specification implements SecureDockerRegis
         def c5 = new RegistryAuthServiceImpl.CacheKey(i1, a1, k3)
 
         expect:
-        c1.stableKey() == '23476a51c7b6216a'
+        c1.stableKey() == 'c234dc4c210c6612'
         c1.stableKey() == c2.stableKey()
         c1.stableKey() == c3.stableKey()
         and:
