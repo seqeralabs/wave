@@ -22,6 +22,11 @@ import spock.lang.Specification
 
 import java.time.Instant
 
+import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.tower.User
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -52,12 +57,19 @@ class JobIdTest extends Specification {
     }
 
     def 'should create build job' () {
+        given:
+        def ts = Instant.parse('2024-08-18T19:23:33.650722Z')
+        def user = new User(email: 'foo@bar.com', userName: 'foo')
+        def id = PlatformId.of(user, new SubmitContainerTokenRequest(towerEndpoint: 'http:/foo.com', towerAccessToken: 'token-1234'))
+        def request = new BuildRequest([targetImage: 'docker.io/foo:bar', buildId: '1234_5', startTime: ts, identity: id])
         when:
-        def job = JobId.build('abc-123')
+        def job = JobId.build(request)
         then:
-        job.id == 'abc-123'
-        job.schedulerId =~ /build-.+/
+        job.id == 'docker.io/foo:bar'
+        job.schedulerId =~ /build-1234_5/
         job.type == JobId.Type.Build
+        job.context.buildId == '1234_5'
+        job.context.identity == id
     }
 
     def 'should create scan job' () {

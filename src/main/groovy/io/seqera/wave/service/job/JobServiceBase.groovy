@@ -18,9 +18,13 @@
 
 package io.seqera.wave.service.job
 
+import java.time.Duration
+
 import groovy.transform.CompileStatic
 import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.TransferStrategy
+import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.builder.BuildStrategy
 
 /**
  * Implement a service for job creation and execution
@@ -34,15 +38,28 @@ abstract class JobServiceBase implements JobService {
 
     abstract protected TransferStrategy getTransferStrategy()
 
+    abstract protected BuildStrategy getBuildStrategy()
+
     @Override
-    JobId launchTransfer(BlobCacheInfo blob, List<String> command) {
+    JobId launchTransfer(BlobCacheInfo blob, List<String> command, Duration maxDuration) {
         if( !transferStrategy )
             throw new IllegalStateException("Blob cache service is not available - check configuration setting 'wave.blobCache.enabled'")
         // create the ID for the job transfer
-        final job = JobId.transfer(blob.id())
+        final job = JobId.transfer(blob.id(), maxDuration)
         // submit the job execution
         transferStrategy.launchJob(job.schedulerId, command)
-        // signal the transfer has started
+        // signal the transfer has been submitted
+        jobQueue.offer(job)
+        return job
+    }
+
+    @Override
+    JobId launchBuild(BuildRequest request) {
+        // create the unique job id for the build
+        final job = JobId.build(request)
+        // launch the build job
+        buildStrategy.build(job.schedulerId, request)
+        // signal the build has been submitted
         jobQueue.offer(job)
         return job
     }

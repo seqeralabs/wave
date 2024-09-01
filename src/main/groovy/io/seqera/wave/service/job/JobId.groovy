@@ -18,16 +18,20 @@
 
 package io.seqera.wave.service.job
 
+import java.time.Duration
 import java.time.Instant
 
 import com.google.common.hash.Hashing
 import groovy.transform.Canonical
+import groovy.transform.CompileStatic
+import io.seqera.wave.service.builder.BuildRequest
 
 /**
  * Model a unique job to be managed
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@CompileStatic
 @Canonical
 class JobId {
     enum Type { Transfer, Build, Scan }
@@ -35,25 +39,45 @@ class JobId {
     final Type type
     final String id
     final Instant creationTime
+    final Duration maxDuration
     final String schedulerId
+    final Map<String,Object> context
 
-    JobId( Type type, String id, Instant creationTime ) {
+    JobId( Type type, String id, Instant creationTime, Duration maxDuration ) {
         this.type = type
         this.id = id
         this.creationTime = creationTime
-        schedulerId = generate(type, id, creationTime)
+        this.maxDuration = maxDuration
+        this.schedulerId = generate(type, id, creationTime)
+        this.context = Map.of()
     }
 
-    static JobId transfer(String id) {
-        new JobId(Type.Transfer, id, Instant.now())
+    JobId( Type type, String id, Instant creationTime, Duration maxDuration, String operationId, Map<String,Object> context) {
+        this.type = type
+        this.id = id
+        this.creationTime = creationTime
+        this.maxDuration = maxDuration
+        this.schedulerId = operationId
+        this.context = context
     }
 
-    static JobId build(String id) {
-        new JobId(Type.Build, id, Instant.now())
+    static JobId transfer(String id, Duration maxDuration) {
+        new JobId(Type.Transfer, id, Instant.now(), maxDuration)
     }
 
-    static JobId scan(String id) {
-        new JobId(Type.Scan, id, Instant.now())
+    static JobId build(BuildRequest request) {
+        new JobId(
+                Type.Build,
+                request.targetImage,
+                request.startTime,
+                request.maxDuration,
+                "build-${request.buildId}".toString(),
+                [buildId:request.buildId, identity:request.identity]
+        )
+    }
+
+    static JobId scan(String id, Duration maxDuration) {
+        new JobId(Type.Scan, id, Instant.now(), maxDuration)
     }
 
     static private String generate(Type type, String id, Instant creationTime) {

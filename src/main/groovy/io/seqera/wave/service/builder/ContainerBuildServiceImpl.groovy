@@ -36,11 +36,16 @@ import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.configuration.SpackConfig
+import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.HttpServerRetryableErrorException
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.builder.store.BuildRecordStore
 import io.seqera.wave.service.cleanup.CleanupStrategy
+import io.seqera.wave.service.job.JobHandler
+import io.seqera.wave.service.job.JobId
+import io.seqera.wave.service.job.JobService
+import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.metric.MetricsService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
@@ -55,7 +60,6 @@ import jakarta.inject.Named
 import jakarta.inject.Singleton
 import static io.seqera.wave.util.RegHelper.layerDir
 import static io.seqera.wave.util.RegHelper.layerName
-import static io.seqera.wave.util.StringUtils.indent
 import static java.nio.file.StandardOpenOption.CREATE
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import static java.nio.file.StandardOpenOption.WRITE
@@ -66,8 +70,9 @@ import static java.nio.file.StandardOpenOption.WRITE
  */
 @Slf4j
 @Singleton
+@Named('Build')
 @CompileStatic
-class ContainerBuildServiceImpl implements ContainerBuildService {
+class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
 
     @Inject
     private BuildConfig buildConfig
@@ -89,7 +94,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     private RegistryCredentialsProvider credentialsProvider
 
     @Inject
-    private BuildStrategy buildStrategy
+    private JobService jobService
 
     @Inject
     @Nullable
@@ -111,13 +116,16 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     private BuildCounterStore buildCounter
 
     @Inject
-    PersistenceService persistenceService
+    private PersistenceService persistenceService
 
     @Inject
     private MetricsService metricsService
 
     @Inject
-    BuildRecordStore buildRecordStore
+    private BuildRecordStore buildRecordStore
+
+    @Inject
+    private RegistryProxyService proxyService
     
     /**
      * Build a container image for the given {@link BuildRequest}
@@ -169,9 +177,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         }
     }
 
-    protected BuildResult launch(BuildRequest req) {
-        // launch an external process to build the container
-        BuildResult resp=null
+    protected void launch(BuildRequest req) {
         try {
             // create the workdir path
             Files.createDirectories(req.workDir)
@@ -200,29 +206,13 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             if( req.containerConfig ) {
                 saveLayersToContext(req, context)
             }
-            resp = buildStrategy.build(req)
-            def msg = "== Build request ${req.buildId} completed with status=$resp.exitStatus"
-            if( log.isTraceEnabled() )
-                msg += "; stdout: (see below)\n${indent(resp.logs)}"
-            log.info(msg)
-            return resp
+            // launch the container build
+            jobService.launchBuild(req)
         }
         catch (Throwable e) {
             log.error "== Ouch! Unable to build container req=$req", e
-            return resp = BuildResult.failed(req.buildId, e.message, req.startTime)
-        }
-        finally {
-            // use a short time-to-live for failed build
-            // this is needed to allow re-try builds failed for
-            // temporary error conditions e.g. expired credentials
-            final ttl = resp.failed()
-                    ? buildConfig.statusDelay.multipliedBy(10)
-                    : buildConfig.statusDuration
-            // update build status store
-            buildStore.storeBuild(req.targetImage, resp, ttl)
-            // cleanup build context
-            if( cleanup.shouldCleanup(resp) )
-                buildStrategy.cleanup(req)
+            final result = BuildResult.failed(req.buildId, e.message, req.startTime)
+            buildStore.storeBuild(req.targetImage, result, buildConfig.failureDuration)
         }
     }
 
@@ -246,8 +236,9 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
         // launch the build async
         CompletableFuture
-                .<BuildResult>supplyAsync(() -> launch(request), executor)
-                .thenApply((result) -> { notifyCompletion(request,result); return result })
+                .runAsync(() -> launch(request), executor)
+                .thenCompose((it)-> buildResult(request) )
+                .thenApply((result) -> { if(result) notifyCompletion(request,result); return result })
     }
 
     protected notifyCompletion(BuildRequest request, BuildResult result) {
@@ -344,6 +335,74 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
                 .<Void>of(httpClientConfig)
                 .retryCondition((Throwable t) -> t instanceof SocketException || t instanceof HttpServerRetryableErrorException)
                 .onRetry((event)-> log.warn("$message - event: $event"))
+    }
+
+    // **************************************************************
+    // **               build job handle implementation
+    // **************************************************************
+
+    @Override
+    void onJobCompletion(JobId job, JobState state) {
+        final build = buildStore.getBuild(job.id)
+        if( !build ) {
+            log.error "Build result unknown for job=$job [1]"
+            return
+        }
+        if( build.done() ) {
+            log.warn "Build result already marked as completed for job=$job [1] - entry=$build; state=$state"
+            return
+        }
+
+        final buildId = job.context.buildId as String
+        final identity = job.context.identity as PlatformId
+        final digest = state.succeeded()
+                        ? proxyService.getImageDigest(job.id, identity, true)
+                        : null
+        // use a short time-to-live for failed build
+        // this is needed to allow re-try builds failed for
+        // temporary error conditions e.g. expired credentials
+        final ttl = state.succeeded()
+                ? buildConfig.statusDuration
+                : buildConfig.failureDuration
+        // update build status store
+        final result = state.completed()
+                ? BuildResult.completed(buildId, state.exitCode, state.stdout, build.startTime, digest)
+                : BuildResult.failed(buildId, state.stdout, build.startTime)
+        buildStore.storeBuild(job.id, result, ttl)
+    }
+
+    @Override
+    void onJobException(JobId job, Throwable error) {
+        final build = buildStore.getBuild(job.id)
+        if( !build ) {
+            log.error "Build result unknown for job=$job [2]"
+            return
+        }
+        if( build.done() ) {
+            log.warn "Build result already marked as completed for job=$job [2] - entry=$build; error=${error.message}"
+            return
+        }
+
+        final result= BuildResult.failed(job.context.buildId as String, error.message, build.startTime)
+        log.error("Unable to build container image '${job.id}'; job name=${job.schedulerId}; cause=${error.message}", error)
+        buildStore.storeBuild(job.id, result, buildConfig.failureDuration)
+    }
+
+    @Override
+    void onJobTimeout(JobId job) {
+        final build = buildStore.getBuild(job.id)
+        if( !build ) {
+            log.error "== Blob cache entry unknown for job=$job [3]"
+            return
+        }
+        if( build.done() ) {
+            log.warn "== Blob cache entry already marked as completed for job=$job [3] - entry=$build; duration=${build.duration}"
+            return
+        }
+
+        final result= BuildResult.failed(job.context.buildId as String, "Container image build timed out '${build.id}'", build.startTime)
+        log.warn "== Blob cache completed for object '${build.id}'; job name=${job.schedulerId}; duration=${result.duration}"
+        buildStore.storeBuild(job.id, result, buildConfig.failureDuration)
     }
 
     // **************************************************************

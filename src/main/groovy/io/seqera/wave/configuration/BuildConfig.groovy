@@ -76,6 +76,14 @@ class BuildConfig {
     @Value('${wave.build.status.duration}')
     Duration statusDuration
 
+    @Nullable
+    @Value('${wave.build.failure.duration}')
+    Duration failureDuration
+
+    Duration getFailureDuration() {
+        return failureDuration ?: statusDelay.multipliedBy(10)
+    }
+
     @Memoized
     Duration getStatusInitialDelay() {
         final d1 = defaultTimeout.toMillis() * 2.5f
@@ -124,6 +132,7 @@ class BuildConfig {
                 "build-trusted-timeout=${trustedTimeout}; " +
                 "status-delay=${statusDelay}; " +
                 "status-duration=${statusDuration}; " +
+                "failure-duration=${getFailureDuration()}; " +
                 "record-duration=${recordDuration}; " +
                 "cleanup=${cleanup}; "+
                 "oci-mediatypes=${ociMediatypes}; " +

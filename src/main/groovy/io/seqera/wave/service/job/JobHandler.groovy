@@ -17,17 +17,12 @@
  */
 
 package io.seqera.wave.service.job
-
-import java.time.Duration
-
 /**
  * Define events and properties for jobs managed via {@link JobManager}
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 interface JobHandler {
-
-    Duration jobMaxDuration(JobId job)
 
     void onJobCompletion(JobId job, JobState state)
 

@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.job.impl
 
+
 import javax.annotation.Nullable
 
 import groovy.transform.Canonical
@@ -26,6 +27,7 @@ import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.service.blob.TransferStrategy
+import io.seqera.wave.service.builder.BuildStrategy
 import io.seqera.wave.service.job.JobId
 import io.seqera.wave.service.job.JobQueue
 import io.seqera.wave.service.job.JobServiceBase
@@ -50,6 +52,9 @@ class DockerJobService extends JobServiceBase {
     @Nullable
     private TransferStrategy transferStrategy
 
+    @Inject
+    private BuildStrategy buildStrategy
+
     @Override
     protected JobQueue getJobQueue() {
         return jobQueue
@@ -60,6 +65,10 @@ class DockerJobService extends JobServiceBase {
         return transferStrategy
     }
 
+    @Override
+    protected BuildStrategy getBuildStrategy() {
+        return buildStrategy
+    }
 
     @Override
     JobState status(JobId job) {

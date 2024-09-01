@@ -46,6 +46,7 @@ class JobDispatcher implements JobHandler {
     @PostConstruct
     void init() {
         // implementation should be added here
+        add(JobId.Type.Build, dispatch, true)
         add(JobId.Type.Transfer, dispatch, false)
     }
 
@@ -63,10 +64,6 @@ class JobDispatcher implements JobHandler {
         }
     }
 
-    @Override
-    Duration jobMaxDuration(JobId job) {
-        return dispatch.get(job.type).jobMaxDuration(job)
-    }
 
     @Override
     void onJobCompletion(JobId job, JobState state) {

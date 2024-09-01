@@ -18,8 +18,10 @@
 
 package io.seqera.wave.service.job
 
-import io.seqera.wave.service.blob.BlobCacheInfo
+import java.time.Duration
 
+import io.seqera.wave.service.blob.BlobCacheInfo
+import io.seqera.wave.service.builder.BuildRequest
 /**
  * Define the contract for submitting and monitoring jobs
  *
@@ -27,7 +29,9 @@ import io.seqera.wave.service.blob.BlobCacheInfo
  */
 interface JobService {
 
-    JobId launchTransfer(BlobCacheInfo blob, List<String> command)
+    JobId launchTransfer(BlobCacheInfo blob, List<String> command, Duration maxDuration)
+
+    JobId launchBuild(BuildRequest request)
 
     JobState status(JobId jobId)
 

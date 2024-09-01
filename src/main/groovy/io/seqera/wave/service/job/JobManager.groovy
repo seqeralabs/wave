@@ -24,7 +24,6 @@ import java.time.Instant
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
-import io.micronaut.context.annotation.Requires
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 /**
@@ -35,7 +34,6 @@ import jakarta.inject.Inject
 @Slf4j
 @Context
 @CompileStatic
-@Requires(property = 'wave.blobCache.enabled', value = 'true')
 class JobManager {
 
     @Inject
@@ -86,7 +84,7 @@ class JobManager {
         // set the await timeout nearly double as the blob transfer timeout, this because the
         // transfer pod can spend `timeout` time in pending status awaiting to be scheduled
         // and the same `timeout` time amount carrying out the transfer (upload) operation
-        final max = (dispatcher.jobMaxDuration(jobId).toMillis() * 2.10) as long
+        final max = (jobId.maxDuration.toMillis() * 2.10) as long
         if( duration.toMillis()>max ) {
             dispatcher.onJobTimeout(jobId)
             return true

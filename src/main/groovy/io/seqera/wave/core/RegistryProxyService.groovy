@@ -40,6 +40,7 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.storage.DigestStore
 import io.seqera.wave.storage.Storage
+import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.RegHelper
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
@@ -186,12 +187,17 @@ class RegistryProxyService {
         }
     }
 
+    @Deprecated
     String getImageDigest(BuildRequest request, boolean retryOnNotFound=false) {
+        getImageDigest(request.targetImage, request.identity)
+    }
+
+    String getImageDigest(String image, PlatformId identity, boolean retryOnNotFound=false) {
         try {
-            return getImageDigest0(request, retryOnNotFound)
+            return getImageDigest0(image, identity, retryOnNotFound)
         }
         catch(Exception e) {
-            log.warn "Unable to retrieve digest for image '${request.getTargetImage()}' -- cause: ${e.message}"
+            log.warn "Unable to retrieve digest for image '${image}' -- cause: ${e.message}"
             return null
         }
     }
@@ -199,10 +205,9 @@ class RegistryProxyService {
     static private List<Integer> RETRY_ON_NOT_FOUND = HTTP_RETRYABLE_ERRORS + 404
 
     @Cacheable(value = 'cache-registry-proxy', atomic = true)
-    protected String getImageDigest0(BuildRequest request, boolean retryOnNotFound) {
-        final image = request.targetImage
+    protected String getImageDigest0(String image, PlatformId identity, boolean retryOnNotFound) {
         final coords = ContainerCoordinates.parse(image)
-        final route = RoutePath.v2manifestPath(coords, request.identity)
+        final route = RoutePath.v2manifestPath(coords, identity)
         final proxyClient = client(route)
                 .withRetryableHttpErrors(retryOnNotFound ? RETRY_ON_NOT_FOUND : HTTP_RETRYABLE_ERRORS)
         final resp = proxyClient.head(route.path, WaveDefault.ACCEPT_HEADERS)

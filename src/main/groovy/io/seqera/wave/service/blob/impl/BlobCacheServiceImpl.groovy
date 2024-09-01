@@ -20,7 +20,6 @@ package io.seqera.wave.service.blob.impl
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import java.time.Duration
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -185,7 +184,7 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler {
         try {
             // the transfer command to be executed
             final cli = transferCommand(route, blob)
-            jobService.launchTransfer(blob, cli)
+            jobService.launchTransfer(blob, cli, blobConfig.transferTimeout)
         }
         catch (Throwable t) {
             log.warn "== Blob cache failed for object '${blob.objectUri}' - cause: ${t.message}", t
@@ -269,11 +268,6 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler {
     // ============ handles transfer job events ============
 
     @Override
-    Duration jobMaxDuration(JobId job) {
-        return blobConfig.transferTimeout
-    }
-
-    @Override
     void onJobCompletion(JobId job, JobState state) {
         final blob = blobStore.getBlob(job.id)
         if( !blob ) {
@@ -326,6 +320,6 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler {
         }
         final result = blob.failed("Blob cache transfer timed out ${blob.objectUri}")
         log.warn "== Blob cache completed for object '${blob.objectUri}'; job name=${job.schedulerId}; duration=${result.duration()}"
-        blobStore.storeBlob(blob.id(), result, blobConfig.failureDuration)
+        blobStore.storeBlob(job.id, result, blobConfig.failureDuration)
     }
 }
