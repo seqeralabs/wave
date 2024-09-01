@@ -34,10 +34,11 @@ import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.BlobCacheService
 import io.seqera.wave.service.blob.BlobSigningService
 import io.seqera.wave.service.blob.BlobStore
+import io.seqera.wave.service.job.JobEvent
 import io.seqera.wave.service.job.JobHandler
-import io.seqera.wave.service.job.JobId
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobState
+import io.seqera.wave.service.job.id.TransferJobId
 import io.seqera.wave.util.Escape
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.StringUtils
@@ -184,7 +185,7 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler {
         try {
             // the transfer command to be executed
             final cli = transferCommand(route, blob)
-            jobService.launchTransfer(blob, cli, blobConfig.transferTimeout)
+            jobService.launchTransfer(blob, cli)
         }
         catch (Throwable t) {
             log.warn "== Blob cache failed for object '${blob.objectUri}' - cause: ${t.message}", t
@@ -268,16 +269,32 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler {
     // ============ handles transfer job events ============
 
     @Override
-    void onJobCompletion(JobId job, JobState state) {
-        final blob = blobStore.getBlob(job.id)
+    void onJobEvent(JobEvent event) {
+        final blob = blobStore.getBlob(event.job.id)
         if( !blob ) {
-            log.error "== Blob cache entry unknown for job=$job [1]"
+            log.error "== Blob cache entry unknown for job=${event.job.id}; event=${event}"
             return
         }
         if( blob.done() ) {
-            log.warn "== Blob cache entry already marked as completed for job=$job [1] - entry=$blob; state=$state"
+            log.warn "== Blob cache entry already marked as completed for job=${event.job.id}; event=${event}"
             return
         }
+
+        if( event.type == JobEvent.Type.Complete) {
+            handleJobCompletion(event.job as TransferJobId, blob, event.state)
+        }
+        else if( event.type == JobEvent.Type.Timeout ) {
+            handleJobTimeout(event.job as TransferJobId, blob)
+        }
+        else if( event.type == JobEvent.Type.Error ) {
+            handleJobException(event.job as TransferJobId, blob, event.error)
+        }
+        else {
+            throw new IllegalStateException("Unknown blob cache job event type=$event")
+        }
+    }
+
+    protected void handleJobCompletion(TransferJobId job, BlobCacheInfo blob, JobState state) {
         // use a short time-to-live for failed downloads
         // this is needed to allow re-try caching of failure transfers
         final ttl = state.succeeded()
@@ -291,35 +308,15 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler {
         log.debug "== Blob cache completed for object '${blob.objectUri}'; id=${blob.objectUri}; status=${result.exitStatus}; duration=${result.duration()}"
     }
 
-    @Override
-    void onJobException(JobId job, Throwable error) {
-        final blob = blobStore.getBlob(job.id)
-        if( !blob ) {
-            log.error "== Blob cache entry unknown for job=$job [2]"
-            return
-        }
-        if( blob.done() ) {
-            log.warn "== Blob cache entry already marked as completed for job=$job [2] - entry=$blob; error=${error.message}"
-            return
-        }
+    protected void handleJobException(TransferJobId job, BlobCacheInfo blob, Throwable error) {
         final result = blob.failed("Unexpected error caching blob '${blob.locationUri}' - job name '${job.schedulerId}'")
         log.error("== Blob cache exception for object '${blob.objectUri}'; job name=${job.schedulerId}; cause=${error.message}", error)
-        blobStore.storeBlob(job.id, result, blobConfig.failureDuration)
+        blobStore.storeBlob(blob.id(), result, blobConfig.failureDuration)
     }
 
-    @Override
-    void onJobTimeout(JobId job) {
-        final blob = blobStore.getBlob(job.id)
-        if( !blob ) {
-            log.error "== Blob cache entry unknown for job=$job [3]"
-            return
-        }
-        if( blob.done() ) {
-            log.warn "== Blob cache entry already marked as completed for job=$job [3] - entry=$blob; duration=${blob.duration()}"
-            return
-        }
+    protected void handleJobTimeout(TransferJobId job, BlobCacheInfo blob) {
         final result = blob.failed("Blob cache transfer timed out ${blob.objectUri}")
         log.warn "== Blob cache completed for object '${blob.objectUri}'; job name=${job.schedulerId}; duration=${result.duration()}"
-        blobStore.storeBlob(job.id, result, blobConfig.failureDuration)
+        blobStore.storeBlob(blob.id(), result, blobConfig.failureDuration)
     }
 }

@@ -60,7 +60,7 @@ class JobManager {
         }
         catch (Throwable err) {
             // in the case of an expected exception report the error condition by using `onJobException`
-            dispatcher.onJobException(jobId, err)
+            dispatcher.notifyJobError(jobId, err)
             // finally return `true` to signal the job should not be processed anymore
             return true
         }
@@ -76,7 +76,7 @@ class JobManager {
                 (state.status==JobState.Status.UNKNOWN && duration>config.graceInterval)
         if( done ) {
             // publish the completion event
-            dispatcher.onJobCompletion(jobId, state)
+            dispatcher.notifyJobCompletion(jobId, state)
              // cleanup the job
             jobService.cleanup(jobId, state.exitCode)
             return true
@@ -86,7 +86,7 @@ class JobManager {
         // and the same `timeout` time amount carrying out the transfer (upload) operation
         final max = (jobId.maxDuration.toMillis() * 2.10) as long
         if( duration.toMillis()>max ) {
-            dispatcher.onJobTimeout(jobId)
+            dispatcher.notifyJobTimeout(jobId)
             return true
         }
         else {

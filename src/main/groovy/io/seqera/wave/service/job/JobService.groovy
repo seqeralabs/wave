@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.job
 
-import java.time.Duration
 
 import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.builder.BuildRequest
@@ -29,11 +28,12 @@ import io.seqera.wave.service.builder.BuildRequest
  */
 interface JobService {
 
-    JobId launchTransfer(BlobCacheInfo blob, List<String> command, Duration maxDuration)
+    JobId launchTransfer(BlobCacheInfo blob, List<String> command)
 
     JobId launchBuild(BuildRequest request)
 
     JobState status(JobId jobId)
 
     void cleanup(JobId jobId, Integer exitStatus)
+
 }

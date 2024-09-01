@@ -36,7 +36,7 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-class JobDispatcher implements JobHandler {
+class JobDispatcher  {
 
     @Inject
     private ApplicationContext context
@@ -64,19 +64,16 @@ class JobDispatcher implements JobHandler {
         }
     }
 
-
-    @Override
-    void onJobCompletion(JobId job, JobState state) {
-        dispatch.get(job.type).onJobCompletion(job, state)
+    void notifyJobError(JobId job, Throwable error) {
+        dispatch.get(job.type).onJobEvent(JobEvent.error(job, error))
     }
 
-    @Override
-    void onJobException(JobId job, Throwable error) {
-        dispatch.get(job.type).onJobException(job, error)
+    void notifyJobCompletion(JobId job, JobState state) {
+        dispatch.get(job.type).onJobEvent(JobEvent.complete(job,state))
     }
 
-    @Override
-    void onJobTimeout(JobId job) {
-        dispatch.get(job.type).onJobTimeout(job)
+    void notifyJobTimeout(JobId job) {
+        dispatch.get(job.type).onJobEvent(JobEvent.timeout(job))
     }
+
 }

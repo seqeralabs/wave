@@ -42,10 +42,11 @@ import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.builder.store.BuildRecordStore
 import io.seqera.wave.service.cleanup.CleanupStrategy
+import io.seqera.wave.service.job.JobEvent
 import io.seqera.wave.service.job.JobHandler
-import io.seqera.wave.service.job.JobId
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobState
+import io.seqera.wave.service.job.id.BuildJobId
 import io.seqera.wave.service.metric.MetricsService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
@@ -217,7 +218,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
     }
 
 
-    protected CompletableFuture<BuildResult> launchAsync(BuildRequest request) {
+    protected void launchAsync(BuildRequest request) {
         // check the build rate limit
         try {
             if( rateLimiterService )
@@ -237,12 +238,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
         // launch the build async
         CompletableFuture
                 .runAsync(() -> launch(request), executor)
-                .thenCompose((it)-> buildResult(request) )
-                .thenApply((result) -> { if(result) notifyCompletion(request,result); return result })
-    }
-
-    protected notifyCompletion(BuildRequest request, BuildResult result) {
-        eventPublisher.publishEvent(new BuildEvent(request, result))
     }
 
     protected BuildTrack checkOrSubmit(BuildRequest request) {
@@ -341,20 +336,35 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
     // **               build job handle implementation
     // **************************************************************
 
-    @Override
-    void onJobCompletion(JobId job, JobState state) {
-        final build = buildStore.getBuild(job.id)
+
+    void onJobEvent(JobEvent event) {
+        final build = buildStore.getBuild(event.job.id)
         if( !build ) {
-            log.error "Build result unknown for job=$job [1]"
+            log.error "Build result unknown for job=${event.job.id}; event=${event}"
             return
         }
         if( build.done() ) {
-            log.warn "Build result already marked as completed for job=$job [1] - entry=$build; state=$state"
+            log.warn "Build result already marked as completed for job=${event.job.id}; event=${event}"
             return
         }
 
-        final buildId = job.context.buildId as String
-        final identity = job.context.identity as PlatformId
+        if( event.type == JobEvent.Type.Complete ) {
+            handleJobCompletion(event.job as BuildJobId, event.state)
+        }
+        else if( event.type == JobEvent.Type.Error ) {
+          handleJobException(event.job as BuildJobId, event.error)
+        }
+        else if( event.type == JobEvent.Type.Timeout ) {
+            handleJobTimeout(event.job as BuildJobId)
+        }
+        else {
+            throw new IllegalStateException("Unknown container build job event type=$event")
+        }
+    }
+
+    protected void handleJobCompletion(BuildJobId job, JobState state) {
+        final buildId = job.buildId
+        final identity = job.identity
         final digest = state.succeeded()
                         ? proxyService.getImageDigest(job.id, identity, true)
                         : null
@@ -366,42 +376,22 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
                 : buildConfig.failureDuration
         // update build status store
         final result = state.completed()
-                ? BuildResult.completed(buildId, state.exitCode, state.stdout, build.startTime, digest)
-                : BuildResult.failed(buildId, state.stdout, build.startTime)
+                ? BuildResult.completed(buildId, state.exitCode, state.stdout, job.request.startTime, digest)
+                : BuildResult.failed(buildId, state.stdout, job.request.startTime)
         buildStore.storeBuild(job.id, result, ttl)
+        // finally notify completion
+        eventPublisher.publishEvent(new BuildEvent(job.request, result))
     }
 
-    @Override
-    void onJobException(JobId job, Throwable error) {
-        final build = buildStore.getBuild(job.id)
-        if( !build ) {
-            log.error "Build result unknown for job=$job [2]"
-            return
-        }
-        if( build.done() ) {
-            log.warn "Build result already marked as completed for job=$job [2] - entry=$build; error=${error.message}"
-            return
-        }
-
-        final result= BuildResult.failed(job.context.buildId as String, error.message, build.startTime)
+    protected void handleJobException(BuildJobId job, Throwable error) {
+        final result= BuildResult.failed(job.buildId as String, error.message, job.request.startTime)
         log.error("Unable to build container image '${job.id}'; job name=${job.schedulerId}; cause=${error.message}", error)
         buildStore.storeBuild(job.id, result, buildConfig.failureDuration)
     }
 
-    @Override
-    void onJobTimeout(JobId job) {
-        final build = buildStore.getBuild(job.id)
-        if( !build ) {
-            log.error "== Blob cache entry unknown for job=$job [3]"
-            return
-        }
-        if( build.done() ) {
-            log.warn "== Blob cache entry already marked as completed for job=$job [3] - entry=$build; duration=${build.duration}"
-            return
-        }
-
-        final result= BuildResult.failed(job.context.buildId as String, "Container image build timed out '${build.id}'", build.startTime)
-        log.warn "== Blob cache completed for object '${build.id}'; job name=${job.schedulerId}; duration=${result.duration}"
+    protected void handleJobTimeout(BuildJobId job) {
+        final result= BuildResult.failed(job.buildId, "Container image build timed out '${job.buildId}'", job.request.startTime)
+        log.warn "== Blob cache completed for object '${job.buildId}'; job name=${job.schedulerId}; duration=${result.duration}"
         buildStore.storeBuild(job.id, result, buildConfig.failureDuration)
     }
 

@@ -20,23 +20,18 @@ package io.seqera.wave.service.job.impl
 
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
-import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.scheduling.TaskExecutors
-import io.seqera.wave.service.blob.TransferStrategy
-import io.seqera.wave.service.builder.BuildStrategy
 import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.job.JobId
-import io.seqera.wave.service.job.JobQueue
-import io.seqera.wave.service.job.JobServiceBase
+import io.seqera.wave.service.job.JobServiceImpl
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Inject
 import jakarta.inject.Named
-
 /**
  * Kubernetes implementation for {@link io.seqera.wave.service.job.JobService}
  *
@@ -45,14 +40,7 @@ import jakarta.inject.Named
 @Slf4j
 @CompileStatic
 @Requires(property = 'wave.build.k8s')
-class K8sJobService extends JobServiceBase {
-
-    @Inject
-    private JobQueue jobQueue
-
-    @Inject
-    @Nullable
-    private TransferStrategy transferStrategy
+class K8sJobService extends JobServiceImpl {
 
     @Inject
     private CleanupStrategy cleanup
@@ -63,21 +51,6 @@ class K8sJobService extends JobServiceBase {
     @Inject
     @Named(TaskExecutors.IO)
     private ExecutorService executor
-
-    @Override
-    protected JobQueue getJobQueue() {
-        return jobQueue
-    }
-
-    @Override
-    protected TransferStrategy getTransferStrategy() {
-        return transferStrategy
-    }
-
-    @Override
-    protected BuildStrategy getBuildStrategy() {
-        return null
-    }
 
     @Override
     void cleanup(JobId job, Integer exitStatus) {

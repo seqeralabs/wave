@@ -18,34 +18,47 @@
 
 package io.seqera.wave.service.job
 
-import java.time.Duration
+
+import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildStrategy
-
+import jakarta.inject.Inject
+import jakarta.inject.Singleton
 /**
  * Implement a service for job creation and execution
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Singleton
 @CompileStatic
-abstract class JobServiceBase implements JobService {
+class JobServiceImpl implements JobService {
 
-    abstract protected JobQueue getJobQueue()
+    @Inject
+    private JobOperation operations
 
-    abstract protected TransferStrategy getTransferStrategy()
+    @Inject
+    @Nullable
+    private TransferStrategy transferStrategy
 
-    abstract protected BuildStrategy getBuildStrategy()
+    @Inject
+    private BuildStrategy buildStrategy
+
+    @Inject
+    private JobQueue jobQueue
+
+    @Inject
+    private JobFactory jobFactory
 
     @Override
-    JobId launchTransfer(BlobCacheInfo blob, List<String> command, Duration maxDuration) {
+    JobId launchTransfer(BlobCacheInfo blob, List<String> command) {
         if( !transferStrategy )
             throw new IllegalStateException("Blob cache service is not available - check configuration setting 'wave.blobCache.enabled'")
         // create the ID for the job transfer
-        final job = JobId.transfer(blob.id(), maxDuration)
+        final job = jobFactory.transfer(blob.id())
         // submit the job execution
         transferStrategy.launchJob(job.schedulerId, command)
         // signal the transfer has been submitted
@@ -56,7 +69,7 @@ abstract class JobServiceBase implements JobService {
     @Override
     JobId launchBuild(BuildRequest request) {
         // create the unique job id for the build
-        final job = JobId.build(request)
+        final job = jobFactory.build(request)
         // launch the build job
         buildStrategy.build(job.schedulerId, request)
         // signal the build has been submitted
@@ -64,4 +77,13 @@ abstract class JobServiceBase implements JobService {
         return job
     }
 
+    @Override
+    JobState status(JobId jobId) {
+        return operations.status(jobId)
+    }
+
+    @Override
+    void cleanup(JobId jobId, Integer exitStatus) {
+        operations.cleanup(jobId, exitStatus)
+    }
 }

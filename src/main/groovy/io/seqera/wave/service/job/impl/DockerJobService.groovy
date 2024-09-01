@@ -18,21 +18,14 @@
 
 package io.seqera.wave.service.job.impl
 
-
-import javax.annotation.Nullable
-
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.service.blob.TransferStrategy
-import io.seqera.wave.service.builder.BuildStrategy
 import io.seqera.wave.service.job.JobId
-import io.seqera.wave.service.job.JobQueue
-import io.seqera.wave.service.job.JobServiceBase
+import io.seqera.wave.service.job.JobOperation
 import io.seqera.wave.service.job.JobState
-import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
  * Docker implementation for {@link io.seqera.wave.service.job.JobService}
@@ -43,32 +36,7 @@ import jakarta.inject.Singleton
 @CompileStatic
 @Singleton
 @Requires(missingProperty = 'wave.build.k8s')
-class DockerJobService extends JobServiceBase {
-
-    @Inject
-    private JobQueue jobQueue
-
-    @Inject
-    @Nullable
-    private TransferStrategy transferStrategy
-
-    @Inject
-    private BuildStrategy buildStrategy
-
-    @Override
-    protected JobQueue getJobQueue() {
-        return jobQueue
-    }
-
-    @Override
-    protected TransferStrategy getTransferStrategy() {
-        return transferStrategy
-    }
-
-    @Override
-    protected BuildStrategy getBuildStrategy() {
-        return buildStrategy
-    }
+class DockerJobService implements JobOperation {
 
     @Override
     JobState status(JobId job) {

@@ -16,25 +16,60 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job
+package io.seqera.wave.service.job.id
 
 import java.time.Duration
 import java.time.Instant
 
+import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.job.JobId
+import io.seqera.wave.tower.PlatformId
+
 /**
- * Model a unique job to be managed
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Canonical
 @CompileStatic
-interface JobId {
-    enum Type { Transfer, Build, Scan }
+class BuildJobId implements JobId {
 
-    Type getType()
-    String getId()
-    Instant getCreationTime()
-    Duration getMaxDuration()
-    String getSchedulerId()
+    final BuildRequest request
 
+    Type getType() {
+        return Type.Build
+    }
+
+    @Override
+    String getId() {
+        return request.getTargetImage()
+    }
+
+    @Override
+    Instant getCreationTime() {
+        return request.getStartTime()
+    }
+
+    @Override
+    Duration getMaxDuration() {
+        return request.getMaxDuration()
+    }
+
+    @Override
+    String getSchedulerId() {
+        return "build-" + request.buildId
+    }
+
+    String getBuildId() {
+        return request.buildId
+    }
+
+    String getTargetImage() {
+        return request.getTargetImage()
+    }
+
+    PlatformId getIdentity() {
+        return request.getIdentity()
+    }
 }

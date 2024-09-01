@@ -17,13 +17,34 @@
  */
 
 package io.seqera.wave.service.job
+
+import groovy.transform.Canonical
+import groovy.transform.CompileStatic
+
 /**
- * Define events and properties for jobs managed via {@link JobManager}
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface JobHandler {
+@CompileStatic
+@Canonical
+class JobEvent {
+    enum Type { Complete, Error, Timeout }
 
-    void onJobEvent(JobEvent event)
+    Type type
+    JobId job
+    JobState state
+    Throwable error
+
+    static JobEvent complete(JobId job, JobState state) {
+        new JobEvent(Type.Complete, job, state)
+    }
+
+    static JobEvent timeout(JobId job) {
+        new JobEvent(Type.Timeout, job)
+    }
+
+    static JobEvent error(JobId job, Throwable error) {
+        new JobEvent(Type.Error, job, null, error)
+    }
 
 }
