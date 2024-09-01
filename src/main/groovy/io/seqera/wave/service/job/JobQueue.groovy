@@ -33,7 +33,7 @@ import jakarta.inject.Singleton
  */
 @Singleton
 @CompileStatic
-class JobQueue extends AbstractMessageStream<JobId> {
+class JobQueue extends AbstractMessageStream<JobSpec> {
 
     final private static String STREAM_NAME = 'jobs-queue/v1:'
 
@@ -54,11 +54,11 @@ class JobQueue extends AbstractMessageStream<JobId> {
         return config.pollInterval
     }
 
-    final void offer(JobId job) {
+    final void offer(JobSpec job) {
         super.offer(STREAM_NAME, job)
     }
 
-    final void consume(Predicate<JobId> consumer) {
+    final void consume(Predicate<JobSpec> consumer) {
         super.consume(STREAM_NAME, consumer)
     }
 

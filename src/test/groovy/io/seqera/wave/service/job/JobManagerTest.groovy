@@ -21,6 +21,7 @@ package io.seqera.wave.service.job
 import spock.lang.Specification
 
 import java.time.Duration
+
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
@@ -33,14 +34,14 @@ class JobManagerTest extends Specification {
         def jobDispatcher = Mock(JobDispatcher)
         def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher)
         and:
-        def job = JobId.transfer('foo')
+        def job = JobSpec.transfer('foo')
 
         when:
         def done = manager.processJob(job)
         then:
         1 * jobService.status(job) >> JobState.completed(0, 'My job logs')
         and:
-        1 * jobDispatcher.onJobCompletion(job, _) >> { JobId id, JobState state ->
+        1 * jobDispatcher.onJobCompletion(job, _) >> { JobSpec id, JobState state ->
             assert state.exitCode == 0
             assert state.stdout == 'My job logs'
         }
@@ -56,7 +57,7 @@ class JobManagerTest extends Specification {
         def jobDispatcher = Mock(JobDispatcher)
         def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher)
         and:
-        def job = JobId.transfer('unknown')
+        def job = JobSpec.transfer('unknown')
 
         when:
         def done = manager.processJob(job)
@@ -75,7 +76,7 @@ class JobManagerTest extends Specification {
         def config = new JobConfig(graceInterval: Duration.ofMillis(500))
         def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config:config)
         and:
-        def job = JobId.transfer('foo')
+        def job = JobSpec.transfer('foo')
 
         when:
         sleep 1_000 //sleep longer than grace period
@@ -95,7 +96,7 @@ class JobManagerTest extends Specification {
         def jobDispatcher = Mock(JobDispatcher)
         def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher)
         and:
-        def job = JobId.transfer('foo')
+        def job = JobSpec.transfer('foo')
 
         when:
         def done = manager.processJob(job)
@@ -112,7 +113,7 @@ class JobManagerTest extends Specification {
         def jobDispatcher = Mock(JobDispatcher)
         def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher)
         and:
-        def job = JobId.transfer('foo')
+        def job = JobSpec.transfer('foo')
 
         when:
         sleep 1_000 //await timeout

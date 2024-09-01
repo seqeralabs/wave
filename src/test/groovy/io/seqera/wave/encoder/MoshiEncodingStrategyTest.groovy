@@ -26,13 +26,16 @@ import java.time.Instant
 
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
+import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.auth.RegistryAuth
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
-import io.seqera.wave.service.job.JobId
+import io.seqera.wave.service.job.JobSpec
+import io.seqera.wave.service.job.spec.BuildJobSpec
+import io.seqera.wave.service.job.spec.TransferJobSpec
 import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingResponse
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
@@ -372,19 +375,47 @@ class MoshiEncodingStrategyTest extends Specification {
 
     }
 
-    def 'should encode and decode job request' () {
+    def 'should encode and decode transfer job spec' () {
         given:
-        def encoder = new MoshiEncodeStrategy<JobId>() { }
+        def encoder = new MoshiEncodeStrategy<JobSpec>() { }
         and:
-        def job = new JobId(JobId.Type.Transfer, '123-abc', Instant.now())
+        def transfer = new TransferJobSpec('12345', Instant.now(), Duration.ofMinutes(1), 'xyz')
 
         when:
-        def json = encoder.encode(job)
+        def json = encoder.encode(transfer)
         and:
         def copy = encoder.decode(json)
         then:
-        copy.getClass() == JobId
+        copy.getClass() == TransferJobSpec
         and:
-        copy == job
+        copy == transfer
+    }
+
+    def 'should encode and decode build job spec' () {
+        given:
+        def encoder = new MoshiEncodeStrategy<JobSpec>() { }
+        and:
+        def id = PlatformId.of(new User(id: 1), Mock(SubmitContainerTokenRequest))
+        def ts = Instant.parse('2024-08-18T19:23:33.650722Z')
+        and:
+        def request = new BuildRequest(
+                targetImage: 'docker.io/foo:bar',
+                buildId: '12345',
+                startTime: ts,
+                maxDuration: Duration.ofMinutes(1),
+                identity: id
+        )
+        and:
+        def build = new BuildJobSpec(request)
+
+        when:
+        def json = encoder.encode(build)
+        println json
+        and:
+        def copy = encoder.decode(json)
+        then:
+        copy.getClass() == BuildJobSpec
+        and:
+        copy == build
     }
 }

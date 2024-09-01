@@ -20,9 +20,11 @@ package io.seqera.wave.service.job
 
 import spock.lang.Specification
 
+import java.time.Duration
 import java.time.Instant
 
 import io.seqera.wave.api.SubmitContainerTokenRequest
+import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
@@ -31,54 +33,48 @@ import io.seqera.wave.tower.User
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class JobIdTest extends Specification {
+class JobFactoryTest extends Specification {
 
     def 'should create job id' () {
         given:
+        def id = PlatformId.of(new User(id: 1), Mock(SubmitContainerTokenRequest))
         def ts = Instant.parse('2024-08-18T19:23:33.650722Z')
+        def factory = new JobFactory()
+        and:
+        def request = new BuildRequest(
+                targetImage: 'docker.io/foo:bar',
+                buildId: '12345',
+                startTime: ts,
+                maxDuration: Duration.ofMinutes(1),
+                identity: id
+        )
 
         when:
-        def job = new JobId(JobId.Type.Transfer, 'foo', ts)
+        def job = factory.build(request)
         then:
-        job.id == 'foo'
-        job.schedulerId == 'transfer-8e5e0d3b81e48cac'
+        job.id == 'docker.io/foo:bar'
+        job.schedulerId == 'build-12345'
         job.creationTime == ts
-        job.type == JobId.Type.Transfer
-
+        job.type == JobSpec.Type.Build
+        job.maxDuration == Duration.ofMinutes(1)
+        job.getBuildId() == '12345'
+        job.getTargetImage() == 'docker.io/foo:bar'
+        job.getIdentity() == id
     }
 
     def 'should create transfer job' () {
-        when:
-        def job = JobId.transfer('abc-123')
-        then:
-        job.id == 'abc-123'
-        job.schedulerId =~ /transfer-.+/
-        job.type == JobId.Type.Transfer
-    }
-
-    def 'should create build job' () {
         given:
-        def ts = Instant.parse('2024-08-18T19:23:33.650722Z')
-        def user = new User(email: 'foo@bar.com', userName: 'foo')
-        def id = PlatformId.of(user, new SubmitContainerTokenRequest(towerEndpoint: 'http:/foo.com', towerAccessToken: 'token-1234'))
-        def request = new BuildRequest([targetImage: 'docker.io/foo:bar', buildId: '1234_5', startTime: ts, identity: id])
-        when:
-        def job = JobId.build(request)
-        then:
-        job.id == 'docker.io/foo:bar'
-        job.schedulerId =~ /build-1234_5/
-        job.type == JobId.Type.Build
-        job.context.buildId == '1234_5'
-        job.context.identity == id
-    }
+        def duration = Duration.ofMinutes(1)
+        def config = new BlobCacheConfig(transferTimeout: duration)
+        def factory = new JobFactory(blobConfig:config)
 
-    def 'should create scan job' () {
         when:
-        def job = JobId.scan('abc-123')
+        def job = factory.transfer('foo-123')
         then:
-        job.id == 'abc-123'
-        job.schedulerId =~ /scan-.+/
-        job.type == JobId.Type.Scan
+        job.id == 'foo-123'
+        job.schedulerId =~ /transfer-.+/
+        job.type == JobSpec.Type.Transfer
+        job.maxDuration == duration
     }
 
 }

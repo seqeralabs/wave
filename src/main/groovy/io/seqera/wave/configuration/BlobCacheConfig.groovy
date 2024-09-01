@@ -32,7 +32,7 @@ import io.micronaut.core.annotation.Nullable
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
-@Requires(property = 'wave.blobCache')
+@Requires(property = 'wave.blobCache.enabled', value = 'true')
 @ToString(includeNames = true, includePackage = false, excludes = 'storageSecretKey', ignoreNulls = true)
 @CompileStatic
 class BlobCacheConfig {

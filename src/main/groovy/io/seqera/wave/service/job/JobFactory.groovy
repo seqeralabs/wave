@@ -25,8 +25,8 @@ import com.google.common.hash.Hashing
 import groovy.transform.CompileStatic
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.job.id.BuildJobId
-import io.seqera.wave.service.job.id.TransferJobId
+import io.seqera.wave.service.job.spec.BuildJobSpec
+import io.seqera.wave.service.job.spec.TransferJobSpec
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -41,9 +41,9 @@ class JobFactory {
     @Nullable
     private BlobCacheConfig blobConfig
 
-    TransferJobId transfer(String id) {
+    TransferJobSpec transfer(String id) {
         final ts = Instant.now()
-        return new TransferJobId(
+        return new TransferJobSpec(
                 id,
                 ts,
                 blobConfig.transferTimeout,
@@ -51,8 +51,8 @@ class JobFactory {
         )
     }
 
-    BuildJobId build(BuildRequest request) {
-        return new BuildJobId(request)
+    BuildJobSpec build(BuildRequest request) {
+        return new BuildJobSpec(request)
     }
 
     static private String generate(String type, String id, Instant creationTime) {

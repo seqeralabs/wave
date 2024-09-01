@@ -54,7 +54,7 @@ class JobServiceImpl implements JobService {
     private JobFactory jobFactory
 
     @Override
-    JobId launchTransfer(BlobCacheInfo blob, List<String> command) {
+    JobSpec launchTransfer(BlobCacheInfo blob, List<String> command) {
         if( !transferStrategy )
             throw new IllegalStateException("Blob cache service is not available - check configuration setting 'wave.blobCache.enabled'")
         // create the ID for the job transfer
@@ -67,7 +67,7 @@ class JobServiceImpl implements JobService {
     }
 
     @Override
-    JobId launchBuild(BuildRequest request) {
+    JobSpec launchBuild(BuildRequest request) {
         // create the unique job id for the build
         final job = jobFactory.build(request)
         // launch the build job
@@ -78,12 +78,12 @@ class JobServiceImpl implements JobService {
     }
 
     @Override
-    JobState status(JobId jobId) {
+    JobState status(JobSpec jobId) {
         return operations.status(jobId)
     }
 
     @Override
-    void cleanup(JobId jobId, Integer exitStatus) {
+    void cleanup(JobSpec jobId, Integer exitStatus) {
         operations.cleanup(jobId, exitStatus)
     }
 }

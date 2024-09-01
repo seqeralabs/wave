@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.job
 
-import java.time.Duration
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -29,7 +28,7 @@ import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
  * Concrete implementation of {@link JobHandler} that dispatcher event invocations
- * to the target implementation based on the job {@link JobId#type}
+ * to the target implementation based on the job {@link JobSpec#type}
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -41,16 +40,16 @@ class JobDispatcher  {
     @Inject
     private ApplicationContext context
 
-    private Map<JobId.Type, JobHandler> dispatch = new HashMap<>()
+    private Map<JobSpec.Type, JobHandler> dispatch = new HashMap<>()
 
     @PostConstruct
     void init() {
         // implementation should be added here
-        add(JobId.Type.Build, dispatch, true)
-        add(JobId.Type.Transfer, dispatch, false)
+        add(JobSpec.Type.Build, dispatch, true)
+        add(JobSpec.Type.Transfer, dispatch, false)
     }
 
-    protected void add(JobId.Type type, Map<JobId.Type, JobHandler> map, boolean required) {
+    protected void add(JobSpec.Type type, Map<JobSpec.Type, JobHandler> map, boolean required) {
         final handler = context.findBean(JobHandler.class, Qualifiers.byName(type.toString()))
         if( handler.isPresent() ) {
             log.debug "Adding job handler for type: $type; handler=$handler"
@@ -64,15 +63,15 @@ class JobDispatcher  {
         }
     }
 
-    void notifyJobError(JobId job, Throwable error) {
+    void notifyJobError(JobSpec job, Throwable error) {
         dispatch.get(job.type).onJobEvent(JobEvent.error(job, error))
     }
 
-    void notifyJobCompletion(JobId job, JobState state) {
+    void notifyJobCompletion(JobSpec job, JobState state) {
         dispatch.get(job.type).onJobEvent(JobEvent.complete(job,state))
     }
 
-    void notifyJobTimeout(JobId job) {
+    void notifyJobTimeout(JobSpec job) {
         dispatch.get(job.type).onJobEvent(JobEvent.timeout(job))
     }
 

@@ -26,8 +26,8 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.service.cleanup.CleanupStrategy
-import io.seqera.wave.service.job.JobId
 import io.seqera.wave.service.job.JobServiceImpl
+import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Inject
@@ -53,14 +53,14 @@ class K8sJobService extends JobServiceImpl {
     private ExecutorService executor
 
     @Override
-    void cleanup(JobId job, Integer exitStatus) {
+    void cleanup(JobSpec job, Integer exitStatus) {
         if( cleanup.shouldCleanup(exitStatus) ) {
             CompletableFuture.supplyAsync (() -> k8sService.deleteJob(job.schedulerId), executor)
         }
     }
 
     @Override
-    JobState status(JobId job) {
+    JobState status(JobSpec job) {
         final status = k8sService.getJobStatus(job.schedulerId)
         if( !status || !status.completed() ) {
             return new JobState(mapToStatus(status))

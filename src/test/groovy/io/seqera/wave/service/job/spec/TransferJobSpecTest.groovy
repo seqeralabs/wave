@@ -16,25 +16,32 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job
+package io.seqera.wave.service.job.spec
+
+import spock.lang.Specification
 
 import java.time.Duration
 import java.time.Instant
 
-import groovy.transform.CompileStatic
+import io.seqera.wave.service.job.JobSpec
+
 /**
- * Model a unique job to be managed
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@CompileStatic
-interface JobId {
-    enum Type { Transfer, Build, Scan }
+class TransferJobSpecTest extends Specification {
 
-    Type getType()
-    String getId()
-    Instant getCreationTime()
-    Duration getMaxDuration()
-    String getSchedulerId()
+    def 'should validate constructor' () {
+
+        given:
+        def now = Instant.now()
+        def job = new TransferJobSpec('12345', now, Duration.ofMinutes(1), 'xyz')
+        expect:
+        job.id == '12345'
+        job.type == JobSpec.Type.Transfer
+        job.creationTime == now
+        job.maxDuration == Duration.ofMinutes(1)
+        job.schedulerId == 'xyz'
+    }
 
 }

@@ -23,8 +23,8 @@ import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.service.job.JobId
 import io.seqera.wave.service.job.JobOperation
+import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import jakarta.inject.Singleton
 /**
@@ -39,7 +39,7 @@ import jakarta.inject.Singleton
 class DockerJobService implements JobOperation {
 
     @Override
-    JobState status(JobId job) {
+    JobState status(JobSpec job) {
         final state = getDockerContainerState(job.schedulerId)
         log.trace "Docker transfer status name=$job.schedulerId; state=$state"
 
@@ -60,7 +60,7 @@ class DockerJobService implements JobOperation {
     }
 
     @Override
-    void cleanup(JobId jobId, Integer exitStatus) {
+    void cleanup(JobSpec jobId, Integer exitStatus) {
         final cli = new ArrayList<String>()
         cli.add('docker')
         cli.add('rm')

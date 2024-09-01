@@ -46,7 +46,7 @@ import io.seqera.wave.service.job.JobEvent
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobState
-import io.seqera.wave.service.job.id.BuildJobId
+import io.seqera.wave.service.job.spec.BuildJobSpec
 import io.seqera.wave.service.metric.MetricsService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
@@ -349,20 +349,20 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
         }
 
         if( event.type == JobEvent.Type.Complete ) {
-            handleJobCompletion(event.job as BuildJobId, event.state)
+            handleJobCompletion(event.job as BuildJobSpec, event.state)
         }
         else if( event.type == JobEvent.Type.Error ) {
-          handleJobException(event.job as BuildJobId, event.error)
+          handleJobException(event.job as BuildJobSpec, event.error)
         }
         else if( event.type == JobEvent.Type.Timeout ) {
-            handleJobTimeout(event.job as BuildJobId)
+            handleJobTimeout(event.job as BuildJobSpec)
         }
         else {
             throw new IllegalStateException("Unknown container build job event type=$event")
         }
     }
 
-    protected void handleJobCompletion(BuildJobId job, JobState state) {
+    protected void handleJobCompletion(BuildJobSpec job, JobState state) {
         final buildId = job.buildId
         final identity = job.identity
         final digest = state.succeeded()
@@ -383,13 +383,13 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
         eventPublisher.publishEvent(new BuildEvent(job.request, result))
     }
 
-    protected void handleJobException(BuildJobId job, Throwable error) {
+    protected void handleJobException(BuildJobSpec job, Throwable error) {
         final result= BuildResult.failed(job.buildId as String, error.message, job.request.startTime)
         log.error("Unable to build container image '${job.id}'; job name=${job.schedulerId}; cause=${error.message}", error)
         buildStore.storeBuild(job.id, result, buildConfig.failureDuration)
     }
 
-    protected void handleJobTimeout(BuildJobId job) {
+    protected void handleJobTimeout(BuildJobSpec job) {
         final result= BuildResult.failed(job.buildId, "Container image build timed out '${job.buildId}'", job.request.startTime)
         log.warn "== Blob cache completed for object '${job.buildId}'; job name=${job.schedulerId}; duration=${result.duration}"
         buildStore.storeBuild(job.id, result, buildConfig.failureDuration)

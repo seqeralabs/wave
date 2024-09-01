@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job.id
+package io.seqera.wave.service.job.spec
 
 import java.time.Duration
 import java.time.Instant
@@ -24,7 +24,7 @@ import java.time.Instant
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.job.JobId
+import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.tower.PlatformId
 
 /**
@@ -33,7 +33,7 @@ import io.seqera.wave.tower.PlatformId
  */
 @Canonical
 @CompileStatic
-class BuildJobId implements JobId {
+class BuildJobSpec implements JobSpec {
 
     final BuildRequest request
 

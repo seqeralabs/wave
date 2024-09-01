@@ -16,10 +16,14 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job
+package io.seqera.wave.service.job.spec
+
+import java.time.Duration
+import java.time.Instant
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import io.seqera.wave.service.job.JobSpec
 
 /**
  *
@@ -27,24 +31,12 @@ import groovy.transform.CompileStatic
  */
 @CompileStatic
 @Canonical
-class JobEvent {
-    enum Type { Complete, Error, Timeout }
+class TransferJobSpec implements JobSpec {
 
-    Type type
-    JobSpec job
-    JobState state
-    Throwable error
+    final String id
+    final Instant creationTime
+    final Duration maxDuration
+    final String schedulerId
 
-    static JobEvent complete(JobSpec job, JobState state) {
-        new JobEvent(Type.Complete, job, state)
-    }
-
-    static JobEvent timeout(JobSpec job) {
-        new JobEvent(Type.Timeout, job)
-    }
-
-    static JobEvent error(JobSpec job, Throwable error) {
-        new JobEvent(Type.Error, job, null, error)
-    }
-
+    Type getType() { Type.Transfer }
 }

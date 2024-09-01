@@ -16,27 +16,25 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job.id
+package io.seqera.wave.service.job
 
 import java.time.Duration
 import java.time.Instant
 
-import groovy.transform.Canonical
 import groovy.transform.CompileStatic
-import io.seqera.wave.service.job.JobId
-
 /**
+ * Model a unique job to be managed
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-@Canonical
-class TransferJobId implements JobId {
+interface JobSpec {
+    enum Type { Transfer, Build, Scan }
 
-    final String id
-    final Instant creationTime
-    final Duration maxDuration
-    final String schedulerId
+    Type getType()
+    String getId()
+    Instant getCreationTime()
+    Duration getMaxDuration()
+    String getSchedulerId()
 
-    Type getType() { Type.Transfer }
 }

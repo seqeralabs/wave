@@ -54,7 +54,7 @@ class JobManager {
         queue.consume((job)-> processJob(job))
     }
 
-    protected boolean processJob(JobId jobId) {
+    protected boolean processJob(JobSpec jobId) {
         try {
             return processJob0(jobId)
         }
@@ -66,7 +66,7 @@ class JobManager {
         }
     }
 
-    protected boolean processJob0(JobId jobId) {
+    protected boolean processJob0(JobSpec jobId) {
         final duration = Duration.between(jobId.creationTime, Instant.now())
         final state = jobService.status(jobId)
         log.trace "Job status id=${jobId.schedulerId}; state=${state}"

@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.job.impl
 
+
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -26,7 +27,7 @@ import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1ContainerStatus
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodStatus
-import io.seqera.wave.service.job.JobId
+import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.k8s.K8sService
 /**
@@ -40,7 +41,7 @@ class K8sJobServiceTest extends Specification {
 
     def 'status should return correct status when job is not completed'() {
         given:
-        def job = JobId.transfer('foo')
+        def job = JobSpec.transfer('foo')
         and:
         k8sService.getJobStatus(job.schedulerId) >> K8sService.JobStatus.Running
 
@@ -52,7 +53,7 @@ class K8sJobServiceTest extends Specification {
 
     void 'status should return correct transfer status when pods are created'() {
         given:
-        def job = JobId.transfer('foo')
+        def job = JobSpec.transfer('foo')
         and:
         def status = new V1PodStatus(phase: "Succeeded", containerStatuses: [new V1ContainerStatus( state: new V1ContainerState(terminated: new V1ContainerStateTerminated(exitCode: 0)))])
         def pod = new V1Pod(metadata: [name: job.schedulerId], status: status)
@@ -71,7 +72,7 @@ class K8sJobServiceTest extends Specification {
 
     def 'status should return failed transfer when no pods are created'() {
         given:
-        def job = JobId.transfer('foo')
+        def job = JobSpec.transfer('foo')
         and:
         def status = new V1PodStatus(phase: "Failed")
         def pod = new V1Pod(metadata: [name: job.schedulerId], status: status)
@@ -87,7 +88,7 @@ class K8sJobServiceTest extends Specification {
 
     def 'status should handle null job status'() {
         given:
-        def job = JobId.transfer('foo')
+        def job = JobSpec.transfer('foo')
         and:
         k8sService.getJobStatus(job.schedulerId) >> null
 

@@ -17,15 +17,14 @@
  */
 
 package io.seqera.wave.service.job
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 interface JobOperation {
 
-    JobState status(JobId jobId)
+    JobState status(JobSpec jobId)
 
-    void cleanup(JobId jobId, Integer exitStatus)
+    void cleanup(JobSpec jobId, Integer exitStatus)
 
 }
