@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.job.impl
 
+
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
@@ -60,7 +61,7 @@ class DockerJobService implements JobOperation {
     }
 
     @Override
-    void cleanup(JobSpec jobId, Integer exitStatus) {
+    void cleanup(JobSpec jobId) {
         final cli = new ArrayList<String>()
         cli.add('docker')
         cli.add('rm')

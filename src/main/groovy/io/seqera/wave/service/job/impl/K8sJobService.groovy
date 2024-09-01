@@ -18,20 +18,15 @@
 
 package io.seqera.wave.service.job.impl
 
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.micronaut.scheduling.TaskExecutors
-import io.seqera.wave.service.cleanup.CleanupStrategy
-import io.seqera.wave.service.job.JobServiceImpl
+import io.seqera.wave.service.job.JobOperation
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Inject
-import jakarta.inject.Named
 /**
  * Kubernetes implementation for {@link io.seqera.wave.service.job.JobService}
  *
@@ -40,23 +35,14 @@ import jakarta.inject.Named
 @Slf4j
 @CompileStatic
 @Requires(property = 'wave.build.k8s')
-class K8sJobService extends JobServiceImpl {
-
-    @Inject
-    private CleanupStrategy cleanup
+class K8sJobService implements JobOperation {
 
     @Inject
     private K8sService k8sService
 
-    @Inject
-    @Named(TaskExecutors.IO)
-    private ExecutorService executor
-
     @Override
-    void cleanup(JobSpec job, Integer exitStatus) {
-        if( cleanup.shouldCleanup(exitStatus) ) {
-            CompletableFuture.supplyAsync (() -> k8sService.deleteJob(job.schedulerId), executor)
-        }
+    void cleanup(JobSpec job) {
+        k8sService.deleteJob(job.schedulerId)
     }
 
     @Override

@@ -17,14 +17,15 @@
  */
 
 package io.seqera.wave.service.job
+
+import java.nio.file.Path
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface JobOperation {
+interface CleanableAware {
 
-    JobState status(JobSpec jobId)
-
-    void cleanup(JobSpec jobId)
+    Path getCleanableDir()
 
 }

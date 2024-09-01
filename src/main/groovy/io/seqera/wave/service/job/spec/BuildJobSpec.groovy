@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.job.spec
 
+import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
@@ -25,6 +26,7 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.job.JobSpec
+import io.seqera.wave.service.job.CleanableAware
 import io.seqera.wave.tower.PlatformId
 
 /**
@@ -33,7 +35,7 @@ import io.seqera.wave.tower.PlatformId
  */
 @Canonical
 @CompileStatic
-class BuildJobSpec implements JobSpec {
+class BuildJobSpec implements JobSpec, CleanableAware {
 
     final BuildRequest request
 
@@ -71,5 +73,9 @@ class BuildJobSpec implements JobSpec {
 
     PlatformId getIdentity() {
         return request.getIdentity()
+    }
+
+    Path getCleanableDir() {
+        return request.getWorkDir()
     }
 }

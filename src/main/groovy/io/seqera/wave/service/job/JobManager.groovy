@@ -20,12 +20,17 @@ package io.seqera.wave.service.job
 
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Context
+import io.micronaut.scheduling.TaskExecutors
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
+import jakarta.inject.Named
+
 /**
  * Implement the logic to handle Blob cache transfer (uploads)
  *
@@ -47,6 +52,10 @@ class JobManager {
 
     @Inject
     private JobConfig config
+
+    @Inject
+    @Named(TaskExecutors.IO)
+    private ExecutorService ioExecutor
 
     @PostConstruct
     void init() {
@@ -78,7 +87,7 @@ class JobManager {
             // publish the completion event
             dispatcher.notifyJobCompletion(jobId, state)
              // cleanup the job
-            jobService.cleanup(jobId, state.exitCode)
+            CompletableFuture.runAsync(()-> jobService.cleanup(jobId, state.exitCode), ioExecutor)
             return true
         }
         // set the await timeout nearly double as the blob transfer timeout, this because the
