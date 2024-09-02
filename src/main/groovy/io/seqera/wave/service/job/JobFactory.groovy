@@ -24,9 +24,12 @@ import javax.annotation.Nullable
 import com.google.common.hash.Hashing
 import groovy.transform.CompileStatic
 import io.seqera.wave.configuration.BlobCacheConfig
+import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.job.spec.BuildJobSpec
+import io.seqera.wave.service.job.spec.ScanJobSpec
 import io.seqera.wave.service.job.spec.TransferJobSpec
+import io.seqera.wave.service.scan.ScanRequest
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -41,6 +44,10 @@ class JobFactory {
     @Nullable
     private BlobCacheConfig blobConfig
 
+    @Inject
+    @Nullable
+    private ScanConfig scanConfig
+
     TransferJobSpec transfer(String id) {
         final ts = Instant.now()
         return new TransferJobSpec(
@@ -53,6 +60,16 @@ class JobFactory {
 
     BuildJobSpec build(BuildRequest request) {
         return new BuildJobSpec(request)
+    }
+
+    ScanJobSpec scan(ScanRequest request) {
+        return new ScanJobSpec(
+                request.id,
+                request.creationTime,
+                scanConfig.timeout,
+                "scan-${request.id}",
+                request.workDir
+        )
     }
 
     static private String generate(String type, String id, Instant creationTime) {

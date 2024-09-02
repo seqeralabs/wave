@@ -21,8 +21,6 @@ package io.seqera.wave.service.scan
 import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
 import java.nio.file.Path
-import java.time.Instant
-import io.micronaut.core.annotation.Nullable
 
 import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
@@ -31,6 +29,7 @@ import io.kubernetes.client.openapi.ApiException
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Requires
+import io.micronaut.core.annotation.Nullable
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.service.k8s.K8sService
@@ -65,11 +64,8 @@ class KubeScanStrategy extends ScanStrategy {
     }
 
     @Override
-    ScanResult scanContainer(ScanRequest req) {
+    void scanContainer(String jobName, ScanRequest req) {
         log.info("Launching container scan for buildId: ${req.buildId} with scanId ${req.id}")
-        final startTime = Instant.now()
-
-        final podName = "scan-${req.id}"
         try{
             // create the scan dir
             try {
@@ -90,27 +86,10 @@ class KubeScanStrategy extends ScanStrategy {
 
             final trivyCommand = scanCommand(req.targetImage, reportFile, scanConfig)
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
-            final pod = k8sService.scanContainer(podName, scanConfig.scanImage, trivyCommand, req.workDir, configFile, scanConfig, selector)
-            final exitCode = k8sService.waitPodCompletion(pod, scanConfig.timeout.toMillis())
-            if( exitCode==0 ) {
-                log.info("Container scan completed for id: ${req.id}")
-                return ScanResult.success(req, startTime, TrivyResultProcessor.process(reportFile.text))
-            }
-            else{
-                final stdout = k8sService.logsPod(pod)
-                log.info("Container scan failed for scan id: ${req.id} - stdout: $stdout")
-                return ScanResult.failure(req, startTime)
-            }
+            k8sService.scanContainer(jobName, scanConfig.scanImage, trivyCommand, req.workDir, configFile, scanConfig, selector)
         }
         catch (ApiException e) {
             throw new BadRequestException("Unexpected scan failure: ${e.responseBody}", e)
-        }
-        catch (Throwable e){
-            log.error("Error while scanning with id: ${req.id} - cause: ${e.getMessage()}", e)
-            return ScanResult.failure(req, startTime)
-        }
-        finally {
-            cleanup(podName)
         }
     }
 

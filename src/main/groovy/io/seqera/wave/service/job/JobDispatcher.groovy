@@ -46,6 +46,7 @@ class JobDispatcher  {
     void init() {
         // implementation should be added here
         add(JobSpec.Type.Build, dispatch, true)
+        add(JobSpec.Type.Scan, dispatch, false)
         add(JobSpec.Type.Transfer, dispatch, false)
     }
 

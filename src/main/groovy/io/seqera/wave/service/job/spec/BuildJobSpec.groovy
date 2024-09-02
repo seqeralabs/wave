@@ -24,6 +24,7 @@ import java.time.Instant
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import groovy.transform.ToString
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.CleanableAware
@@ -35,6 +36,7 @@ import io.seqera.wave.tower.PlatformId
  */
 @Canonical
 @CompileStatic
+@ToString(includePackage = false, includeNames = true)
 class BuildJobSpec implements JobSpec, CleanableAware {
 
     final BuildRequest request

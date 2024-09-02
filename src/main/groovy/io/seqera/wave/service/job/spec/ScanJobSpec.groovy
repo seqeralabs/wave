@@ -18,13 +18,16 @@
 
 package io.seqera.wave.service.job.spec
 
+import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
+import io.seqera.wave.service.job.CleanableAware
 import io.seqera.wave.service.job.JobSpec
+import io.seqera.wave.service.scan.Trivy
 
 /**
  *
@@ -33,12 +36,20 @@ import io.seqera.wave.service.job.JobSpec
 @Canonical
 @CompileStatic
 @ToString(includePackage = false, includeNames = true)
-class TransferJobSpec implements JobSpec {
+class ScanJobSpec implements JobSpec, CleanableAware {
 
     final String id
     final Instant creationTime
     final Duration maxDuration
     final String schedulerId
+    final Path workDir
 
-    Type getType() { Type.Transfer }
+    Type getType() { Type.Scan }
+
+    Path getCleanableDir() { workDir }
+
+    Path getReportFile() {
+        workDir ? workDir.resolve(Trivy.OUTPUT_FILE_NAME) : null
+    }
+
 }

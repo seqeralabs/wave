@@ -42,13 +42,14 @@ class DockerScanStrategyTest extends Specification {
         when:
         def scanDir = Path.of('/some/scan/dir')
         def config = Path.of("/user/test/build-workspace/config.json")
-        def command = dockerContainerStrategy.dockerWrapper(scanDir, config)
+        def command = dockerContainerStrategy.dockerWrapper('foo-123', scanDir, config)
 
         then:
         command == [
                 'docker',
                 'run',
-                '--rm',
+                '--name',
+                'foo-123',
                 '-w',
                 '/some/scan/dir',
                 '-v',

@@ -35,6 +35,7 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.spec.BuildJobSpec
+import io.seqera.wave.service.job.spec.ScanJobSpec
 import io.seqera.wave.service.job.spec.TransferJobSpec
 import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingResponse
@@ -417,5 +418,30 @@ class MoshiEncodingStrategyTest extends Specification {
         copy.getClass() == BuildJobSpec
         and:
         copy == build
+    }
+
+    def 'should encode and decode scan job spec' () {
+        given:
+        def encoder = new MoshiEncodeStrategy<JobSpec>() { }
+        and:
+        def ts = Instant.parse('2024-08-18T19:23:33.650722Z')
+        and:
+        def scan = new ScanJobSpec(
+                '12345',
+                ts,
+                Duration.ofMinutes(1),
+                'scan-12345',
+                Path.of('/some/scan/dir')
+        )
+
+        when:
+        def json = encoder.encode(scan)
+        println json
+        and:
+        def copy = encoder.decode(json)
+        then:
+        copy.getClass() == ScanJobSpec
+        and:
+        copy == scan
     }
 }
