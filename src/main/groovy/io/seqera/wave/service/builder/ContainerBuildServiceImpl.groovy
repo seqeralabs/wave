@@ -45,6 +45,7 @@ import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.job.JobEvent
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
+import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.job.spec.BuildJobSpec
 import io.seqera.wave.service.metric.MetricsService
@@ -178,7 +179,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
         }
     }
 
-    protected void launch(BuildRequest req) {
+    protected JobSpec launch(BuildRequest req) {
         try {
             // create the workdir path
             Files.createDirectories(req.workDir)
@@ -208,12 +209,13 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
                 saveLayersToContext(req, context)
             }
             // launch the container build
-            jobService.launchBuild(req)
+            return jobService.launchBuild(req)
         }
         catch (Throwable e) {
             log.error "== Ouch! Unable to build container req=$req", e
             final result = BuildResult.failed(req.buildId, e.message, req.startTime)
             buildStore.storeBuild(req.targetImage, result, buildConfig.failureDuration)
+            return null
         }
     }
 

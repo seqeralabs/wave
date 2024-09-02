@@ -43,6 +43,8 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.store.BuildRecordStore
 import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
+import io.seqera.wave.service.job.JobService
+import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.test.RedisTestContainer
@@ -59,7 +61,6 @@ import io.seqera.wave.util.ContainerHelper
  */
 @Slf4j
 @MicronautTest
-
 class ContainerBuildServiceTest extends Specification implements RedisTestContainer, SurrealDBTestContainer{
 
     @Inject ContainerBuildServiceImpl service
@@ -70,6 +71,7 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
     @Inject BuildConfig buildConfig
     @Inject BuildRecordStore buildRecordStore
     @Inject PersistenceService persistenceService
+    @Inject JobService jobService
 
 
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
@@ -103,12 +105,12 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                     .withBuildId('1')
 
         when:
-        def result = service.launch(req)
+        def jobSpec = service.launch(req)
+        sleep 5000 //wait for build
         then:
-        result.id
-        result.startTime
-        result.duration
-        result.exitStatus == 0
+        if(jobService.status(jobSpec).status == JobState.Status.RUNNING)
+            sleep 5000 //wait for build
+        jobService.status(jobSpec).status == JobState.Status.SUCCEEDED
 
         cleanup:
         folder?.deleteDir()
@@ -145,14 +147,12 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                 .withBuildId('1')
 
         when:
-        def result = service.launch(req)
-        and:
-        println result.logs
+        def jobSpec = service.launch(req)
+        sleep 5000 //wait for build
         then:
-        result.id
-        result.startTime
-        result.duration
-        result.exitStatus == 0
+        if(jobService.status(jobSpec).status == JobState.Status.RUNNING)
+            sleep 5000 //wait for build
+        jobService.status(jobSpec).status == JobState.Status.SUCCEEDED
 
         cleanup:
         folder?.deleteDir()
@@ -190,14 +190,12 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                 .withBuildId('1')
 
         when:
-        def result = service.launch(req)
-        and:
-        println result.logs
+        def jobSpec = service.launch(req)
+        sleep 5000 //wait for build
         then:
-        result.id
-        result.startTime
-        result.duration
-        result.exitStatus == 0
+        if(jobService.status(jobSpec).status == JobState.Status.RUNNING)
+            sleep 5000 //wait for build
+        jobService.status(jobSpec).status == JobState.Status.SUCCEEDED
 
         cleanup:
         folder?.deleteDir()
@@ -234,14 +232,12 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                 .withBuildId('1')
 
         when:
-        def result = service.launch(req)
-        and:
-        println result.logs
+        def jobSpec = service.launch(req)
+        sleep 5000 //wait for build
         then:
-        result.id
-        result.startTime
-        result.duration
-        result.exitStatus == 0
+        if(jobService.status(jobSpec).status == JobState.Status.RUNNING)
+            sleep 5000 //wait for build
+        jobService.status(jobSpec).status == JobState.Status.SUCCEEDED
 
         cleanup:
         folder?.deleteDir()
@@ -294,7 +290,8 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         and:
         def store = Mock(BuildStore)
         def strategy = Mock(BuildStrategy)
-        def builder = new ContainerBuildServiceImpl(buildStrategy: strategy, buildStore: store, buildConfig: buildConfig, spackConfig:spackConfig, cleanup: new CleanupStrategy(buildConfig: buildConfig))
+        def jobService = Mock(JobService)
+        def builder = new ContainerBuildServiceImpl(buildStore: store, buildConfig: buildConfig, spackConfig:spackConfig, cleanup: new CleanupStrategy(buildConfig: buildConfig), jobService: jobService)
         def RESPONSE = Mock(BuildResult)
 
         when:
