@@ -44,6 +44,7 @@ import io.seqera.wave.service.builder.store.BuildRecordStore
 import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.service.job.JobService
+import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
@@ -292,13 +293,12 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         def strategy = Mock(BuildStrategy)
         def jobService = Mock(JobService)
         def builder = new ContainerBuildServiceImpl(buildStore: store, buildConfig: buildConfig, spackConfig:spackConfig, cleanup: new CleanupStrategy(buildConfig: buildConfig), jobService: jobService)
-        def RESPONSE = Mock(BuildResult)
+        def RESPONSE = Mock(JobSpec)
 
         when:
         def result = builder.launch(req)
         then:
-        1 * strategy.build(req) >> RESPONSE
-        1 * store.storeBuild(req.targetImage, RESPONSE, DURATION) >> null
+        1 * jobService.launchBuild(req) >> RESPONSE
         and:
         req.workDir.resolve('Containerfile').text == new TemplateRenderer().render(dockerFile, [spack_cache_bucket:'s3://bucket/cache', spack_key_file:'/mnt/secret'])
         req.workDir.resolve('context/conda.yml').text == condaFile
@@ -514,14 +514,12 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                         .withBuildId('1')
 
         when:
-        def result = service.launch(req)
-        and:
-        println result.logs
+        def jobSpec = service.launch(req)
+        sleep 5000 //wait for build
         then:
-        result.id
-        result.startTime
-        result.duration
-        result.exitStatus == 0
+        if(jobService.status(jobSpec).status == JobState.Status.RUNNING)
+            sleep 5000 //wait for build
+        jobService.status(jobSpec).status == JobState.Status.SUCCEEDED
 
         cleanup:
         folder?.deleteDir()

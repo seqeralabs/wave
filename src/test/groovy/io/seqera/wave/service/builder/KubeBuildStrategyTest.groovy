@@ -73,7 +73,7 @@ class KubeBuildStrategyTest extends Specification {
         def req = new BuildRequest(containerId, dockerfile, null, null, PATH, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1)).withBuildId('1')
         Files.createDirectories(req.workDir)
 
-        def resp = strategy.build(req)
+        def resp = strategy.build('build-job-name', req)
         then:
         resp
         and:
@@ -120,22 +120,4 @@ class KubeBuildStrategyTest extends Specification {
         strategy.getBuildImage(req) == 'quay.io/singularity/singularity:v3.11.4-slim-arm64'
     }
 
-    def 'should get correct pod name for build' () {
-        given:
-        def USER = new PlatformId(new User(id:1, email: 'foo@user.com'))
-        def PATH = Files.createTempDirectory('test')
-        def repo = 'docker.io/wave'
-        def cache = 'docker.io/cache'
-        def dockerfile = 'from foo'
-        def containerId = ContainerHelper.makeContainerId(dockerfile, null, null, ContainerPlatform.of('amd64'), repo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, repo, containerId, null, null, null)
-        def req = new BuildRequest(containerId, dockerfile, null, null, PATH, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1)).withBuildId('1')
-
-        when:
-        def podName = strategy.podName(req)
-
-        then:
-        req.buildId == '143ee73bcdac45b1_1'
-        podName == 'build-143ee73bcdac45b1-1'
-    }
 }
