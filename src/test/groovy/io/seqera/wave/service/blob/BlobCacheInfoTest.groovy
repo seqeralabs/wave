@@ -31,21 +31,23 @@ import java.time.Instant
 class BlobCacheInfoTest extends Specification {
 
     def 'should create blob info' () {
+        when:
+        def blob = BlobCacheInfo.create('http://foo.com', 's3://foo/com', [:], [:])
+        then:
+        blob.locationUri == 'http://foo.com'
+        blob.objectUri == 's3://foo/com'
+        blob.headers == [:]
+        blob.id() == 's3://foo/com'
+
         expect:
-        BlobCacheInfo.create('http://foo.com', [:], [:])
-                .locationUri == 'http://foo.com'
-        and:
-        BlobCacheInfo.create('http://foo.com', [:], [:])
-                .headers == [:]
-        and:
-        BlobCacheInfo.create('http://foo.com', [Foo:['alpha'], Bar:['delta', 'gamma', 'omega']], [:])
+        BlobCacheInfo.create('http://foo.com', 's3://foo/com', [Foo:['alpha'], Bar:['delta', 'gamma', 'omega']], [:])
                 .headers == [Foo:'alpha', Bar: 'delta,gamma,omega']
 
     }
 
     def 'should find content type' () {
         expect:
-        BlobCacheInfo.create('http://foo', [:], HEADERS ).getContentType() == EXPECTED
+        BlobCacheInfo.create('http://foo', 's3://foo/com', [:], HEADERS ).getContentType() == EXPECTED
 
         where:
         HEADERS                     | EXPECTED
@@ -57,7 +59,7 @@ class BlobCacheInfoTest extends Specification {
 
     def 'should find cache control' () {
         expect:
-        BlobCacheInfo.create('http://foo', [:], HEADERS ).getCacheControl() == EXPECTED
+        BlobCacheInfo.create('http://foo', 's3://foo/com', [:], HEADERS ).getCacheControl() == EXPECTED
 
         where:
         HEADERS                          | EXPECTED
@@ -69,7 +71,7 @@ class BlobCacheInfoTest extends Specification {
 
     def 'should find content length' () {
         expect:
-        BlobCacheInfo.create('http://foo', [:], HEADERS ).getContentLength() == EXPECTED
+        BlobCacheInfo.create('http://foo', 's3://foo/com', [:], HEADERS ).getContentLength() == EXPECTED
 
         where:
         HEADERS                          | EXPECTED
@@ -82,16 +84,18 @@ class BlobCacheInfoTest extends Specification {
 
     def 'should complete blob info'  () {
         given:
-        def location = 'http://foo.com'
+        String location = 'http://foo.com'
+        String object = 's3://foo/bar'
         def headers = [Foo:['something']]
         def response = ['Content-Length':['100'], 'Content-Type':['text'], 'Cache-Control': ['12345']]
-        def cache = BlobCacheInfo.create(location, headers, response)
+        def cache = BlobCacheInfo.create(location, object, headers, response)
 
         when:
         def result = cache.completed(0, 'OK')
         then:
         result.headers == [Foo:'something']
         result.locationUri == 'http://foo.com'
+        result.objectUri == 's3://foo/bar'
         result.creationTime == cache.creationTime
         result.completionTime >= cache.creationTime
         result.exitStatus == 0
@@ -99,6 +103,8 @@ class BlobCacheInfoTest extends Specification {
         result.contentLength == 100L
         result.contentType == 'text'
         result.cacheControl == '12345'
+        and:
+        result.id() == 's3://foo/bar'
         and:
         result.done()
         result.succeeded()
@@ -108,12 +114,15 @@ class BlobCacheInfoTest extends Specification {
         then:
         result.headers == [Foo:'something']
         result.locationUri == 'http://foo.com'
+        result.objectUri == 's3://foo/bar'
         result.creationTime == cache.creationTime
         result.completionTime >= cache.creationTime
         result.exitStatus == 1
         result.contentLength == 100L
         result.contentType == 'text'
         result.cacheControl == '12345'
+        and:
+        result.id() == 's3://foo/bar'
         and:
         result.done()
         !result.succeeded()
@@ -122,15 +131,17 @@ class BlobCacheInfoTest extends Specification {
     def 'should fail blob info'  () {
         given:
         def location = 'http://foo.com'
+        def object = 's3://foo/bar'
         def headers = [Foo:['something']]
         def response = ['Content-Length':['100'], 'Content-Type':['text'], 'Cache-Control': ['12345']]
-        def cache = BlobCacheInfo.create(location, headers, response)
+        def cache = BlobCacheInfo.create(location, object, headers, response)
 
         when:
         def result = cache.failed('Oops')
         then:
         result.headers == [Foo:'something']
         result.locationUri == 'http://foo.com'
+        result.objectUri == 's3://foo/bar'
         result.creationTime == cache.creationTime
         result.completionTime >= cache.creationTime
         result.exitStatus == null
@@ -139,6 +150,8 @@ class BlobCacheInfoTest extends Specification {
         result.contentType == 'text'
         result.cacheControl == '12345'
         and:
+        result.id() == 's3://foo/bar'
+        and:
         result.done()
         !result.succeeded()
     }
@@ -146,15 +159,17 @@ class BlobCacheInfoTest extends Specification {
     def 'should cache blob info'  () {
         given:
         def location = 'http://foo.com'
+        def object = 's3://foo/bar'
         def headers = [Foo:['something']]
         def response = ['Content-Length':['100'], 'Content-Type':['text'], 'Cache-Control': ['12345']]
         and:
-        def cache = BlobCacheInfo.create(location, headers, response)
+        def cache = BlobCacheInfo.create(location, object, headers, response)
         when:
         def result = cache.cached()
         then:
         result.headers == [Foo:'something']
         result.locationUri == 'http://foo.com'
+        result.objectUri == 's3://foo/bar'
         result.creationTime == cache.creationTime
         result.completionTime == cache.creationTime
         result.exitStatus == 0
@@ -163,20 +178,25 @@ class BlobCacheInfoTest extends Specification {
         result.contentType == 'text'
         result.contentLength == 100L
         and:
+        result.id() == 's3://foo/bar'
+        and:
         result.done()
         result.succeeded()
     }
 
     def 'should unknown blob info'  () {
         given:
-        def result = BlobCacheInfo.unknown()
+        def result = BlobCacheInfo.unknown('Foo bar')
         expect:
         result.headers == null
         result.locationUri == null
+        result.objectUri == null
         result.creationTime == Instant.ofEpochMilli(0)
         result.completionTime == Instant.ofEpochMilli(0)
         result.exitStatus == null
-        result.logs == null
+        result.logs == 'Foo bar'
+        and:
+        result.id() == null
         and:
         !result.done()
         !result.succeeded()
@@ -191,19 +211,25 @@ class BlobCacheInfoTest extends Specification {
         def response = ['Content-Length':['100'], 'Content-Type':['text'], 'Cache-Control': ['12345']]
 
         when:
-        def result1 = BlobCacheInfo.create('http://foo.com', headers, response)
+        def result1 = BlobCacheInfo.create('http://foo.com', 's3://foo/bar', headers, response)
         then:
         result1.locationUri == 'http://foo.com'
+        result1.objectUri == 's3://foo/bar'
         and:
         result1.headers == [Foo:'something']
         result1.contentType == 'text'
         result1.contentLength == 100L
         result1.cacheControl == '12345'
+        result1.id() == 's3://foo/bar'
+        and:
         
         when:
         def result2 = result1.withLocation('http://bar.com')
         then:
         result2.locationUri == 'http://bar.com'
+        result2.objectUri == 's3://foo/bar'
+        and:
+        result2.id() == 's3://foo/bar'
         and:
         result2.headers == [Foo:'something']
         result2.contentType == 'text'
@@ -222,11 +248,14 @@ class BlobCacheInfoTest extends Specification {
                 null,
                 null,
                 null,
+                null,
                 CREATE,
                 COMPLETE )
 
         expect:
         info.duration() == EXPECTED
+        and:
+        info.id() == null
 
         where:
         CREATE      | COMPLETE              | EXPECTED

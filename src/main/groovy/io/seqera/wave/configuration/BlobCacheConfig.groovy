@@ -96,6 +96,9 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.k8s.pod.delete.timeout:20s}')
     Duration podDeleteTimeout
 
+    @Value('${wave.blobCache.transfer.executor-shutdown-timeout:20s}')
+    Duration transferExecutorShutdownTimeout
+
     Map<String,String> getEnvironment() {
         final result = new HashMap<String,String>(10)
         if( storageRegion ) {

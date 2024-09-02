@@ -75,6 +75,8 @@ class ViewController {
         final binding = new HashMap(20)
         binding.build_id = result.buildId
         binding.build_success = result.succeeded()
+        binding.build_failed = result.exitStatus  && result.exitStatus != 0
+        binding.build_in_progress = result.exitStatus == null
         binding.build_exit_status = result.exitStatus
         binding.build_user = (result.userName ?: '-') + " (ip: ${result.requestIp})"
         binding.build_time = formatTimestamp(result.startTime, result.offsetId) ?: '-'
@@ -133,7 +135,11 @@ class ViewController {
         binding.build_conda_file = data.condaFile ?: '-'
         binding.build_repository = data.buildRepository ?: '-'
         binding.build_cache_repository = data.cacheRepository  ?: '-'
-
+        binding.build_id = data.buildId ?: '-'
+        binding.build_cached = data.buildId ? !data.buildNew : '-'
+        binding.build_freeze = data.buildId ? data.freeze : '-'
+        binding.build_url = data.buildId ? "$serverUrl/view/builds/${data.buildId}" : '#'
+        binding.fusion_version = data.fusionVersion ?: '-'
 
         return HttpResponse.<Map<String,Object>>ok(binding)
     }

@@ -19,6 +19,7 @@
 package io.seqera.wave.service.k8s
 
 import java.nio.file.Path
+import java.time.Duration
 
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1Pod
@@ -33,13 +34,7 @@ import io.seqera.wave.configuration.SpackConfig
  */
 interface K8sService {
 
-    enum JobStatus { Pending, Running, Succeeded, Failed }
-
-    V1Job createJob(String name, String containerImage, List<String> args)
-
-    V1Job getJob(String name)
-
-    JobStatus getJobStatus(String name)
+    enum JobStatus { Pending, Running, Succeeded, Failed; boolean completed() { return this == Succeeded || this == Failed } }
 
     V1Pod getPod(String name)
 
@@ -47,18 +42,26 @@ interface K8sService {
 
     void deletePod(String name)
 
-    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, SpackConfig spackConfig, Map<String,String> nodeSelector)
+    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, SpackConfig spackConfig, Map <String,String> nodeSelector)
 
-    V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map <String,String> nodeSelector)
+    V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector)
 
     Integer waitPodCompletion(V1Pod pod, long timeout)
 
+    void deletePodWhenReachStatus(String podName, String statusName, long timeout)
+
+    V1Job createJob(String name, String containerImage, List<String> args)
+
+    V1Job getJob(String name)
+
+    JobStatus getJobStatus(String name)
+
     void deleteJob(String name)
   
-    V1Job transferJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig)
+    V1Job launchJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig)
 
     V1PodList waitJob(V1Job job, Long timeout)
 
-    void deletePodWhenReachStatus(String podName, String statusName, long timeout)
+    V1Pod getLatestPodForJob(String jobName)
 
 }

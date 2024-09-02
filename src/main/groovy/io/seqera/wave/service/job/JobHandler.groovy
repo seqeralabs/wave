@@ -16,14 +16,23 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.blob
+package io.seqera.wave.service.job
+
+import java.time.Duration
+
 /**
- * Defines the contract to transfer a layer blob into a remote object storage
+ * Define events and properties for jobs managed via {@link JobManager}
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface TransferStrategy {
+interface JobHandler {
 
-    BlobCacheInfo transfer(BlobCacheInfo info, List<String> command)
+    Duration jobMaxDuration(JobId job)
+
+    void onJobCompletion(JobId job, JobState state)
+
+    void onJobException(JobId job, Throwable error)
+
+    void onJobTimeout(JobId job)
 
 }

@@ -20,14 +20,8 @@ package io.seqera.wave.util
 
 import spock.lang.Specification
 
-import java.time.OffsetDateTime
-
-import io.kubernetes.client.openapi.models.V1ObjectMeta
-import io.kubernetes.client.openapi.models.V1Pod
-import io.kubernetes.client.openapi.models.V1PodList
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.exception.BadRequestException
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -58,31 +52,6 @@ class K8sHelperTest extends Specification {
         then:
         def err = thrown(BadRequestException)
         err.message == "Unsupported container platform 'linux/amd64'"
-    }
-
-    def "should return the latest pod when multiple pods are present"() {
-        given:
-        def pod1 = new V1Pod().metadata(new V1ObjectMeta().creationTimestamp(OffsetDateTime.now().minusDays(1)))
-        def pod2 = new V1Pod().metadata(new V1ObjectMeta().creationTimestamp(OffsetDateTime.now()))
-        def allPods = new V1PodList().items(Arrays.asList(pod1, pod2))
-
-        when:
-        def latestPod = K8sHelper.findLatestPod(allPods)
-
-        then:
-        latestPod == pod2
-    }
-
-    def "should return the only pod when one pod is present"() {
-        given:
-        def pod = new V1Pod().metadata(new V1ObjectMeta().creationTimestamp(OffsetDateTime.now()))
-        def allPods = new V1PodList().items(Collections.singletonList(pod))
-
-        when:
-        def latestPod = K8sHelper.findLatestPod(allPods)
-
-        then:
-        latestPod == pod
     }
 
 }

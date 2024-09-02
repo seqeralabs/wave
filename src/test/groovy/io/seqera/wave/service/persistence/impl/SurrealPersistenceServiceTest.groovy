@@ -118,7 +118,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 null,
                 'scan12345',
                 null,
-                BuildFormat.DOCKER
+                BuildFormat.DOCKER,
+                Duration.ofMinutes(1)
         ).withBuildId('1')
         def result = new BuildResult(request.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         def event = new BuildEvent(request, result)
@@ -154,7 +155,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 null,
                 'scan12345',
                 null,
-                BuildFormat.DOCKER
+                BuildFormat.DOCKER,
+                Duration.ofMinutes(1)
         ).withBuildId('123')
         def result = new BuildResult(request.buildId, -1, "ok", Instant.now(), Duration.ofSeconds(3), null)
         def event = new BuildEvent(request, result)
@@ -190,7 +192,8 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 null,
                 'scan12345',
                 null,
-                BuildFormat.DOCKER
+                BuildFormat.DOCKER,
+                Duration.ofMinutes(1)
         ).withBuildId('123')
         and:
         def result = BuildResult.completed(request.buildId, 1, 'Hello', Instant.now().minusSeconds(60), 'xyz')
