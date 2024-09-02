@@ -54,8 +54,8 @@ class JobQueue extends AbstractMessageStream<JobSpec> {
         return config.pollInterval
     }
 
-    final void offer(JobSpec job) {
-        super.offer(STREAM_NAME, job)
+    final void offer(JobSpec jobSpec) {
+        super.offer(STREAM_NAME, jobSpec)
     }
 
     final void consume(Predicate<JobSpec> consumer) {

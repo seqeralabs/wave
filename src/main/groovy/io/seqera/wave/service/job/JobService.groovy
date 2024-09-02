@@ -33,8 +33,8 @@ interface JobService {
 
     JobSpec launchBuild(BuildRequest request)
 
-    JobState status(JobSpec jobId)
+    JobState status(JobSpec jobSpec)
 
-    void cleanup(JobSpec jobId, Integer exitStatus)
+    void cleanup(JobSpec jobSpec, Integer exitStatus)
 
 }

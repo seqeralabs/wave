@@ -63,43 +63,43 @@ class JobManager {
         queue.consume((job)-> processJob(job))
     }
 
-    protected boolean processJob(JobSpec jobId) {
+    protected boolean processJob(JobSpec jobSpec) {
         try {
-            return processJob0(jobId)
+            return processJob0(jobSpec)
         }
         catch (Throwable err) {
             // in the case of an expected exception report the error condition by using `onJobException`
-            dispatcher.notifyJobError(jobId, err)
+            dispatcher.notifyJobError(jobSpec, err)
             // finally return `true` to signal the job should not be processed anymore
             return true
         }
     }
 
-    protected boolean processJob0(JobSpec jobId) {
-        final duration = Duration.between(jobId.creationTime, Instant.now())
-        final state = jobService.status(jobId)
-        log.trace "Job status id=${jobId.schedulerId}; state=${state}"
+    protected boolean processJob0(JobSpec jobSpec) {
+        final duration = Duration.between(jobSpec.creationTime, Instant.now())
+        final state = jobService.status(jobSpec)
+        log.trace "Job status id=${jobSpec.schedulerId}; state=${state}"
         final done =
                 state.completed() ||
                 // considered failed when remain in unknown status too long         
                 (state.status==JobState.Status.UNKNOWN && duration>config.graceInterval)
         if( done ) {
             // publish the completion event
-            dispatcher.notifyJobCompletion(jobId, state)
+            dispatcher.notifyJobCompletion(jobSpec, state)
              // cleanup the job
-            CompletableFuture.runAsync(()-> jobService.cleanup(jobId, state.exitCode), ioExecutor)
+            CompletableFuture.runAsync(()-> jobService.cleanup(jobSpec, state.exitCode), ioExecutor)
             return true
         }
         // set the await timeout nearly double as the blob transfer timeout, this because the
         // transfer pod can spend `timeout` time in pending status awaiting to be scheduled
         // and the same `timeout` time amount carrying out the transfer (upload) operation
-        final max = (jobId.maxDuration.toMillis() * 2.10) as long
+        final max = (jobSpec.maxDuration.toMillis() * 2.10) as long
         if( duration.toMillis()>max ) {
-            dispatcher.notifyJobTimeout(jobId)
+            dispatcher.notifyJobTimeout(jobSpec)
             return true
         }
         else {
-            log.trace "== Job pending for completion $jobId"
+            log.trace "== Job pending for completion $jobSpec.id"
             return false
         }
     }

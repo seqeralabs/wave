@@ -23,8 +23,8 @@ package io.seqera.wave.service.job
  */
 interface JobOperation {
 
-    JobState status(JobSpec jobId)
+    JobState status(JobSpec jobSpec)
 
-    void cleanup(JobSpec jobId)
+    void cleanup(JobSpec jobSpec)
 
 }
