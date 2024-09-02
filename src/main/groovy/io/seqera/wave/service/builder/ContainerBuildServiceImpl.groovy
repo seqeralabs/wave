@@ -338,7 +338,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
     // **               build job handle implementation
     // **************************************************************
 
-
+    @Override
     void onJobEvent(JobEvent event) {
         final build = buildStore.getBuild(event.job.id)
         if( !build ) {
