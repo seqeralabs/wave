@@ -72,21 +72,17 @@ class KubeBuildStrategyTest extends Specification {
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, repo, containerId, null, null, null)
         def req = new BuildRequest(containerId, dockerfile, null, null, PATH, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1)).withBuildId('1')
         Files.createDirectories(req.workDir)
+        strategy.build('build-job-name', req)
 
-        def resp = strategy.build('build-job-name', req)
         then:
-        resp
-        and:
         1 * k8sService.buildContainer(_, _, _, _, _, _, _, [service:'wave-build']) >> null
 
         when:
         def req2 = new BuildRequest(containerId, dockerfile, null, null, PATH, targetImage, USER, ContainerPlatform.of('arm64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1)).withBuildId('1')
         Files.createDirectories(req2.workDir)
+        strategy.build('job-name', req2)
 
-        def resp2 = strategy.build(req2)
         then:
-        resp2
-        and:
         1 * k8sService.buildContainer(_, _, _, _, _, _, _, [service:'wave-build-arm64']) >> null
 
     }

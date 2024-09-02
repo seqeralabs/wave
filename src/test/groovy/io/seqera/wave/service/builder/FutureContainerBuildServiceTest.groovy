@@ -25,7 +25,6 @@ import java.nio.file.Files
 import java.time.Duration
 
 import io.micronaut.context.annotation.Value
-import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
@@ -45,17 +44,6 @@ class FutureContainerBuildServiceTest extends Specification {
     ContainerBuildServiceImpl service
 
     int exitCode
-
-    @MockBean(BuildStrategy)
-    BuildStrategy fakeBuildStrategy(){
-        new BuildStrategy() {
-            @Override
-            void build(String jobName, BuildRequest req) {
-                new BuildResult("", exitCode, "a fake build result in a test", Instant.now(), Duration.ofSeconds(3), 'abc')
-            }
-        }
-    }
-
 
     @Timeout(30)
     def 'should wait to build container completion' () {
