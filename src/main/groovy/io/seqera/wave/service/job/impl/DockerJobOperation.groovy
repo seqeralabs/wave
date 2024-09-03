@@ -37,7 +37,7 @@ import jakarta.inject.Singleton
 @CompileStatic
 @Singleton
 @Requires(missingProperty = 'wave.build.k8s')
-class DockerJobService implements JobOperation {
+class DockerJobOperation implements JobOperation {
 
     @Override
     JobState status(JobSpec jobSpec) {

@@ -27,7 +27,6 @@ import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1ContainerStatus
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodStatus
-import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.job.spec.BuildJobSpec
 import io.seqera.wave.service.job.spec.TransferJobSpec
@@ -36,10 +35,10 @@ import io.seqera.wave.service.k8s.K8sService
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class K8sJobServiceTest extends Specification {
+class K8SJobOperationTest extends Specification {
 
     K8sService k8sService = Mock(K8sService)
-    K8sJobService strategy = new K8sJobService(k8sService: k8sService)
+    K8sJobOperation strategy = new K8sJobOperation(k8sService: k8sService)
 
     def 'status should return correct status when job is not completed'() {
         given:
@@ -103,7 +102,7 @@ class K8sJobServiceTest extends Specification {
     @Unroll
     def "mapToStatus should return correct transfer status for jobStatus #JOB_STATUS that is #TRANSFER_STATUS"() {
         expect:
-        K8sJobService.mapToStatus(JOB_STATUS) == TRANSFER_STATUS
+        K8sJobOperation.mapToStatus(JOB_STATUS) == TRANSFER_STATUS
 
         where:
         JOB_STATUS                      | TRANSFER_STATUS

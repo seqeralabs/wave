@@ -35,7 +35,7 @@ import jakarta.inject.Inject
 @Slf4j
 @CompileStatic
 @Requires(property = 'wave.build.k8s')
-class K8sJobService implements JobOperation {
+class K8sJobOperation implements JobOperation {
 
     @Inject
     private K8sService k8sService
