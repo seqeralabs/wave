@@ -29,6 +29,8 @@ import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodStatus
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
+import io.seqera.wave.service.job.spec.BuildJobSpec
+import io.seqera.wave.service.job.spec.TransferJobSpec
 import io.seqera.wave.service.k8s.K8sService
 /**
  *
@@ -41,7 +43,7 @@ class K8sJobServiceTest extends Specification {
 
     def 'status should return correct status when job is not completed'() {
         given:
-        def job = JobSpec.transfer('foo')
+        def job = Mock(BuildJobSpec)
         and:
         k8sService.getJobStatus(job.schedulerId) >> K8sService.JobStatus.Running
 
@@ -53,7 +55,7 @@ class K8sJobServiceTest extends Specification {
 
     void 'status should return correct transfer status when pods are created'() {
         given:
-        def job = JobSpec.transfer('foo')
+        def job = Mock(TransferJobSpec)
         and:
         def status = new V1PodStatus(phase: "Succeeded", containerStatuses: [new V1ContainerStatus( state: new V1ContainerState(terminated: new V1ContainerStateTerminated(exitCode: 0)))])
         def pod = new V1Pod(metadata: [name: job.schedulerId], status: status)
@@ -72,7 +74,7 @@ class K8sJobServiceTest extends Specification {
 
     def 'status should return failed transfer when no pods are created'() {
         given:
-        def job = JobSpec.transfer('foo')
+        def job = Mock(TransferJobSpec)
         and:
         def status = new V1PodStatus(phase: "Failed")
         def pod = new V1Pod(metadata: [name: job.schedulerId], status: status)
@@ -88,7 +90,7 @@ class K8sJobServiceTest extends Specification {
 
     def 'status should handle null job status'() {
         given:
-        def job = JobSpec.transfer('foo')
+        def job = Mock(TransferJobSpec)
         and:
         k8sService.getJobStatus(job.schedulerId) >> null
 
