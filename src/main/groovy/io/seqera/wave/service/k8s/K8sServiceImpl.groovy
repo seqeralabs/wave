@@ -585,7 +585,7 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Job} description the submitted job
      */
     @Override
-    V1Job launchJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
+    V1Job launchTransferJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
         final spec = createTransferJobSpec(name, containerImage, args, blobConfig)
 
         return k8sClient
