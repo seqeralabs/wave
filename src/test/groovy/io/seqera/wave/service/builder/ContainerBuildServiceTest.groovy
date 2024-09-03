@@ -488,7 +488,7 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         and:
         def dockerFile = '''
         FROM busybox
-        RUN echo Hello > hello.txt
+        RUN echo Hello > hello_docker.txt
         '''.stripIndent()
         and:
         def l1 = new Packer().layer(layer, [file1, file2])
