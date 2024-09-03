@@ -30,6 +30,7 @@ import io.seqera.wave.service.job.spec.TransferJobSpec
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
+ * Simple factory for {@link JobSpec} objects
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

@@ -26,6 +26,7 @@ import groovy.transform.CompileStatic
 import io.seqera.wave.service.job.JobSpec
 
 /**
+ * JobSepc implementation specific for container blob uploads
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

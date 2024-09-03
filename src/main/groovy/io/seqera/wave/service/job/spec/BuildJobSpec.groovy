@@ -30,6 +30,7 @@ import io.seqera.wave.service.job.CleanableAware
 import io.seqera.wave.tower.PlatformId
 
 /**
+ * JobSpec implementation or container builds
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
