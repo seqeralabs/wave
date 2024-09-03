@@ -60,7 +60,7 @@ class BuildJobSpec implements JobSpec, CleanableAware {
 
     @Override
     String getSchedulerId() {
-        return "build-" + request.buildId
+        return "build-" + request.buildId.replace('_', '-')
     }
 
     String getBuildId() {

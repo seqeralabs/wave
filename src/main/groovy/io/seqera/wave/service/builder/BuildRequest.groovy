@@ -41,7 +41,7 @@ import static io.seqera.wave.util.StringUtils.trunc
 @CompileStatic
 class BuildRequest {
 
-    static final String SEP = '-'
+    static final String SEP = '_'
 
     /**
      * Unique request Id. This is computed as a consistent hash generated from
