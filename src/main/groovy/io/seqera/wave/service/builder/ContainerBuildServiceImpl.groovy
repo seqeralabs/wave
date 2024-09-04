@@ -378,7 +378,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
                 : buildConfig.failureDuration
         // update build status store
         final result = state.completed()
-                ? BuildResult.completed(buildId, state.exitCode, state.stdout, job.request.startTime, digest)
+                ? BuildResult.completed(buildId, state.exitCode!=null ? state.exitCode : -1, state.stdout, job.request.startTime, digest)
                 : BuildResult.failed(buildId, state.stdout, job.request.startTime)
         buildStore.storeBuild(job.id, result, ttl)
         // finally notify completion
