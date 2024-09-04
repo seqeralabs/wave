@@ -438,6 +438,7 @@ class MoshiEncodingStrategyTest extends Specification {
                 scanId: 'scan12345',
                 buildContext: context )
                 .withBuildId('1')
+        and:
         def entry = new BuildStoreEntry(req, res)
         when:
         def json = encoder.encode(entry)

@@ -195,7 +195,7 @@ class BuildCacheStoreRedisTest extends Specification implements RedisTestContain
         // update a value in a separate thread
         Thread.start {
             res = BuildResult.completed('1', 0, '', Instant.now(), null)
-            entry = entry.withBuildResult(res)
+            entry = entry.withResult(res)
             cacheStore.storeBuild('foo', entry)
         }
 

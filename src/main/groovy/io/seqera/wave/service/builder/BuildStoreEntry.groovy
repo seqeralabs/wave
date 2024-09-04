@@ -43,7 +43,7 @@ class BuildStoreEntry {
         this.result = result
     }
 
-    BuildStoreEntry withBuildResult(BuildResult result) {
+    BuildStoreEntry withResult(BuildResult result) {
         new BuildStoreEntry(request, result)
     }
 }
