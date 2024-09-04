@@ -398,15 +398,16 @@ class MoshiEncodingStrategyTest extends Specification {
         def id = PlatformId.of(new User(id: 1), Mock(SubmitContainerTokenRequest))
         def ts = Instant.parse('2024-08-18T19:23:33.650722Z')
         and:
-        def request = new BuildRequest(
-                targetImage: 'docker.io/foo:bar',
-                buildId: '12345',
-                startTime: ts,
-                maxDuration: Duration.ofMinutes(1),
-                identity: id
+        def build = new BuildJobSpec(
+                'docker.io/foo:bar',
+                ts,
+                Duration.ofMinutes(1),
+                'build-12345-1',
+                '12345',
+                'docker.io/foo:bar',
+                id,
+                Path.of('/some/path')
         )
-        and:
-        def build = new BuildJobSpec(request)
 
         when:
         def json = encoder.encode(build)

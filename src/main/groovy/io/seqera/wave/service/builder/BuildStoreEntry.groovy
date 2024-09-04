@@ -17,11 +17,19 @@
  */
 
 package io.seqera.wave.service.builder
+
+import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
+import groovy.transform.ToString
+
 /**
  * Class to store build request and result in cache
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
+@ToString(includePackage = false, includeNames = true)
+@EqualsAndHashCode
+@CompileStatic
 class BuildStoreEntry {
 
     final BuildRequest request

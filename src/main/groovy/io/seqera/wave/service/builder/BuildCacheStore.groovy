@@ -92,7 +92,7 @@ class BuildCacheStore extends AbstractCacheStore<BuildStoreEntry> implements Bui
 
     @Override
     CompletableFuture<BuildResult> awaitBuild(String imageName) {
-        final result = getBuild(imageName).result
+        final result = getBuild(imageName)?.result
         if( !result )
             return null
         return CompletableFuture<BuildResult>.supplyAsync(() -> Waiter.awaitCompletion(this,imageName,result), ioExecutor)
