@@ -188,7 +188,7 @@ public class App implements Runnable {
     @Option(names = {"--inspect"}, paramLabel = "false", description = "Inspect specified container image")
     private boolean inspect;
 
-    @Option(names = {"--include"}, paramLabel = "false", description = "Include one or more containers in the specified base image")
+    @Option(names = {"--include"}, paramLabel = "''", description = "Include one or more containers in the specified base image")
     private List<String> includes;
 
     @Option(names = {"--name-strategy"}, paramLabel = "false", description = "Specify the name strategy for the container name, it can be 'none' or 'tagPrefix' or 'imageSuffix'", hidden = true)
