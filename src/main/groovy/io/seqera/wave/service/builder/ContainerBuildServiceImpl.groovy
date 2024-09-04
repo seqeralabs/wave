@@ -257,7 +257,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
         }
         // since it was unable to initialise the build result status
         // this means the build status already exists, retrieve it
-        final ret2 = buildStore.getBuild(request.targetImage).result
+        final ret2 = buildStore.getBuildResult(request.targetImage)
         if( ret2 ) {
             log.info "== Hit build cache for request: $request"
             // note: mark as cached only if the build result is 'done'

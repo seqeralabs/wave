@@ -53,7 +53,7 @@ class FutureContainerBuildServiceTest extends Specification {
         and:
         def buildStore = Mock(BuildStore)
         def buildCounter = Mock(BuildCounterStore)
-        buildStore.getBuild(targetImage) >> new BuildStoreEntry(req, res)
+        buildStore.getBuildResult(targetImage) >> res
         buildStore.awaitBuild(targetImage) >> CompletableFuture.completedFuture(res)
         def service = new ContainerBuildServiceImpl(buildStore: buildStore, buildCounter: buildCounter)
 
@@ -88,7 +88,7 @@ class FutureContainerBuildServiceTest extends Specification {
         and:
         def buildStore = Mock(BuildStore)
         def buildCounter = Mock(BuildCounterStore)
-        buildStore.getBuild(targetImage) >> new BuildStoreEntry(req, res)
+        buildStore.getBuildResult(targetImage) >> res
         buildStore.awaitBuild(targetImage) >> CompletableFuture.completedFuture(res)
         def service = new ContainerBuildServiceImpl(buildStore: buildStore, buildCounter: buildCounter)
 

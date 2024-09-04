@@ -31,12 +31,24 @@ import groovy.transform.CompileStatic
 interface BuildStore {
 
     /**
-     * Retrieve a container image {@link BuildStoreEntry}
+     * Retrieve the build entry {@link BuildStoreEntry} for a given container image name
      *
-     * @param imageName The container image name
-     * @return The corresponding {@link BuildStoreEntry} or {@code null} otherwise
+     * @param imageName
+     *      The container image name
+     * @return
+     *      The corresponding {@link BuildStoreEntry} or {@code null} otherwise
      */
     BuildStoreEntry getBuild(String imageName)
+
+    /**
+     * Retrieve the build entry {@link BuildResult} for a given container image name
+     *
+     * @param imageName
+     *      The container image name
+     * @return
+     *      The corresponding {@link BuildStoreEntry} or {@code null} otherwise
+     */
+    BuildResult getBuildResult(String imageName)
 
     /**
      * Store a container image build request

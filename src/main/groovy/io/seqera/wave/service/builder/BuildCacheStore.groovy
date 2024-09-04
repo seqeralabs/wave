@@ -68,6 +68,11 @@ class BuildCacheStore extends AbstractCacheStore<BuildStoreEntry> implements Bui
     }
 
     @Override
+    BuildResult getBuildResult(String imageName) {
+        return getBuild(imageName)?.getResult()
+    }
+
+    @Override
     void storeBuild(String imageName, BuildStoreEntry buildStoreEntry) {
         put(imageName, buildStoreEntry)
     }
@@ -79,9 +84,6 @@ class BuildCacheStore extends AbstractCacheStore<BuildStoreEntry> implements Bui
 
     @Override
     boolean storeIfAbsent(String imageName, BuildStoreEntry build) {
-        // store up 2.5 time the build timeout to prevent a missed cache
-        // update on job termination remains too long in the store
-        // note: this should be longer than the max await time used in the Waiter#awaitCompletion method
         return putIfAbsent(imageName, build, buildConfig.statusInitialDelay)
     }
 
@@ -92,10 +94,10 @@ class BuildCacheStore extends AbstractCacheStore<BuildStoreEntry> implements Bui
 
     @Override
     CompletableFuture<BuildResult> awaitBuild(String imageName) {
-        final result = getBuild(imageName)?.result
+        final result = getBuildResult(imageName)
         if( !result )
             return null
-        return CompletableFuture<BuildResult>.supplyAsync(() -> Waiter.awaitCompletion(this,imageName,result), ioExecutor)
+        return CompletableFuture<BuildResult>.supplyAsync(() -> Waiter.awaitCompletion(this, imageName, result), ioExecutor)
     }
 
     /**
@@ -126,7 +128,7 @@ class BuildCacheStore extends AbstractCacheStore<BuildStoreEntry> implements Bui
                 // sleep a bit
                 Thread.sleep(await.toMillis())
                 // fetch the build status again
-                result = store.getBuild(imageName).result
+                result = store.getBuildResult(imageName)
             }
         }
     }
