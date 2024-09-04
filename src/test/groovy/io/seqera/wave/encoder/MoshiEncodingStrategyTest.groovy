@@ -26,7 +26,6 @@ import java.time.Instant
 
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
-import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.auth.RegistryAuth
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.ContainerRequestData
@@ -396,17 +395,14 @@ class MoshiEncodingStrategyTest extends Specification {
         given:
         def encoder = new MoshiEncodeStrategy<JobSpec>() { }
         and:
-        def id = PlatformId.of(new User(id: 1), Mock(SubmitContainerTokenRequest))
         def ts = Instant.parse('2024-08-18T19:23:33.650722Z')
         and:
         def build = new BuildJobSpec(
                 'docker.io/foo:bar',
                 ts,
                 Duration.ofMinutes(1),
-                'build-12345-1',
                 '12345',
                 'docker.io/foo:bar',
-                id,
                 Path.of('/some/path')
         )
 
