@@ -58,7 +58,6 @@ class JobFactory {
                 request.startTime,
                 request.maxDuration,
                 "build-" + request.buildId.replace('_', '-'),
-                request.buildId,
                 request.targetImage,
                 request.workDir
         )

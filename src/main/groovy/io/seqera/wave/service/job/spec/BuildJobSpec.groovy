@@ -38,7 +38,6 @@ class BuildJobSpec implements JobSpec, CleanableAware {
     final Instant creationTime
     final Duration maxDuration
     final String schedulerId
-    final String buildId
     final String targetImage
     final Path cleanableDir
 

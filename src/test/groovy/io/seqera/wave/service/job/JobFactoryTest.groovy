@@ -51,7 +51,6 @@ class JobFactoryTest extends Specification {
         job.creationTime == ts
         job.type == JobSpec.Type.Build
         job.maxDuration == Duration.ofMinutes(1)
-        job.getBuildId() == '12345_9'
         job.getTargetImage() == 'docker.io/foo:bar'
     }
 
