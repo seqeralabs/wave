@@ -36,6 +36,8 @@ class BuildStoreEntry {
 
     final BuildResult result
 
+    protected BuildStoreEntry() {}
+
     BuildStoreEntry(BuildRequest request, BuildResult result) {
         this.request = request
         this.result = result
