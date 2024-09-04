@@ -1,7 +1,7 @@
 plugins {
     id 'groovy'
     id 'io.seqera.wave.cli.java-application-conventions'
-    id 'org.graalvm.buildtools.native' version '0.9.28'
+    id 'org.graalvm.buildtools.native' version '0.10.2'
     id 'com.github.johnrengelman.shadow' version '7.1.2'
 }
 
@@ -82,6 +82,7 @@ graalvmNative {
 
             javaLauncher = javaToolchains.launcherFor {
                 languageVersion = JavaLanguageVersion.of(21)
+                vendor = JvmVendorSpec.matching("Oracle Corporation")
             }
             buildArgs.add('--enable-url-protocols=https')
             buildArgs.add('-R:MaxHeapSize=100M')
