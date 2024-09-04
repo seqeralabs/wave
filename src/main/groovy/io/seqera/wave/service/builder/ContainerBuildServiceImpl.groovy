@@ -365,10 +365,11 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
     }
 
     protected void handleJobCompletion(BuildStoreEntry build, BuildJobSpec job, JobState state) {
-        final buildId = job.buildId
-        final identity = job.identity
+        final buildId = build.request.buildId
+        final identity = build.request.identity
+        final targetImage = build.request.targetImage
         final digest = state.succeeded()
-                        ? proxyService.getImageDigest(job.id, identity, true)
+                        ? proxyService.getImageDigest(targetImage, identity, true)
                         : null
         // use a short time-to-live for failed build
         // this is needed to allow re-try builds failed for

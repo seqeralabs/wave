@@ -24,10 +24,8 @@ import java.time.Instant
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
-import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.CleanableAware
-import io.seqera.wave.tower.PlatformId
-
+import io.seqera.wave.service.job.JobSpec
 /**
  * JobSpec implementation or container builds
  *
@@ -42,7 +40,6 @@ class BuildJobSpec implements JobSpec, CleanableAware {
     final String schedulerId
     final String buildId
     final String targetImage
-    final PlatformId identity
     final Path cleanableDir
 
     Type getType() { Type.Build }

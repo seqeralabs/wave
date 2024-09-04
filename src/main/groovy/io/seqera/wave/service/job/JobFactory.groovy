@@ -60,7 +60,6 @@ class JobFactory {
                 "build-" + request.buildId.replace('_', '-'),
                 request.buildId,
                 request.targetImage,
-                request.identity,
                 request.workDir
         )
     }
