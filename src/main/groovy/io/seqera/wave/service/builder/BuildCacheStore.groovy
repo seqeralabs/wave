@@ -54,7 +54,7 @@ class BuildCacheStore extends AbstractCacheStore<BuildStoreEntry> implements Bui
 
     @Override
     protected String getPrefix() {
-        return 'wave-build/v1:'
+        return 'wave-build/v2:'
     }
 
     @Override
