@@ -55,7 +55,7 @@ class DockerScanStrategyTest extends Specification {
                 '-v',
                 '/some/scan/dir:/some/scan/dir:rw',
                 '-v',
-                 "$workspace/.trivy-cache:/root/.cache/:rw",
+                "/build/scan/cache:/root/.cache/:rw",
                 '-v',
                 '/user/test/build-workspace/config.json:/root/.docker/config.json:ro'
         ]

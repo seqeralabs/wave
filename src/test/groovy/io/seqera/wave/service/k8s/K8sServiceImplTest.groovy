@@ -777,7 +777,7 @@ class K8sServiceImplTest extends Specification {
         def workDir = Path.of('/work/dir')
         def credsFile = Path.of('/creds/file')
         def scanConfig = Mock(ScanConfig) {
-            getCacheDirectory() >> Path.of('/cache/dir')
+            getCacheDirectory() >> Path.of('/build/cache/dir')
             getRequestsCpu() >> '2'
             getRequestsMemory() >> '4Gi'
         }
@@ -788,13 +788,13 @@ class K8sServiceImplTest extends Specification {
 
         then:
         job.metadata.name == name
-        job.metadata.namespace == 'my-ns'
+        job.metadata.namespace == 'foo'
         job.spec.template.spec.containers[0].image == containerImage
         job.spec.template.spec.containers[0].args == args
         job.spec.template.spec.containers[0].resources.requests.get('cpu') == new Quantity('2')
         job.spec.template.spec.containers[0].resources.requests.get('memory') == new Quantity('4Gi')
         job.spec.template.spec.volumes.size() == 1
-        job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'build-claim'
+        job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
         job.spec.template.spec.nodeSelector == nodeSelector
         job.spec.template.spec.restartPolicy == 'Never'
     }
@@ -818,7 +818,7 @@ class K8sServiceImplTest extends Specification {
         def workDir = Path.of('/work/dir')
         def credsFile = null
         def scanConfig = Mock(ScanConfig) {
-            getCacheDirectory() >> Path.of('/cache/dir')
+            getCacheDirectory() >> Path.of('/build/cache/dir')
             getRequestsCpu() >> '2'
             getRequestsMemory() >> '4Gi'
         }
@@ -829,13 +829,13 @@ class K8sServiceImplTest extends Specification {
 
         then:
         job.metadata.name == name
-        job.metadata.namespace == 'my-ns'
+        job.metadata.namespace == 'foo'
         job.spec.template.spec.containers[0].image == containerImage
         job.spec.template.spec.containers[0].args == args
         job.spec.template.spec.containers[0].resources.requests.get('cpu') == new Quantity('2')
         job.spec.template.spec.containers[0].resources.requests.get('memory') == new Quantity('4Gi')
         job.spec.template.spec.volumes.size() == 1
-        job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'build-claim'
+        job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
         job.spec.template.spec.nodeSelector == nodeSelector
         job.spec.template.spec.restartPolicy == 'Never'
     }
@@ -859,7 +859,7 @@ class K8sServiceImplTest extends Specification {
         def workDir = Path.of('/work/dir')
         def credsFile = Path.of('/creds/file')
         def scanConfig = Mock(ScanConfig) {
-            getCacheDirectory() >> Path.of('/cache/dir')
+            getCacheDirectory() >> Path.of('/build/cache/dir')
             getRequestsCpu() >> '2'
             getRequestsMemory() >> '4Gi'
         }
@@ -870,13 +870,13 @@ class K8sServiceImplTest extends Specification {
 
         then:
         job.metadata.name == name
-        job.metadata.namespace == 'my-ns'
+        job.metadata.namespace == 'foo'
         job.spec.template.spec.containers[0].image == containerImage
         job.spec.template.spec.containers[0].args == args
         job.spec.template.spec.containers[0].resources.requests.get('cpu') == new Quantity('2')
         job.spec.template.spec.containers[0].resources.requests.get('memory') == new Quantity('4Gi')
         job.spec.template.spec.volumes.size() == 1
-        job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'build-claim'
+        job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
         job.spec.template.spec.nodeSelector == null
         job.spec.template.spec.restartPolicy == 'Never'
     }
@@ -900,7 +900,7 @@ class K8sServiceImplTest extends Specification {
         def workDir = Path.of('/work/dir')
         def credsFile = Path.of('/creds/file')
         def scanConfig = Mock(ScanConfig) {
-            getCacheDirectory() >> Path.of('/cache/dir')
+            getCacheDirectory() >> Path.of('/build/cache/dir')
             getRequestsCpu() >> null
             getRequestsMemory() >> null
         }
@@ -911,12 +911,12 @@ class K8sServiceImplTest extends Specification {
 
         then:
         job.metadata.name == name
-        job.metadata.namespace == 'my-ns'
+        job.metadata.namespace == 'foo'
         job.spec.template.spec.containers[0].image == containerImage
         job.spec.template.spec.containers[0].args == args
-        job.spec.template.spec.containers[0].resources.requests.isEmpty()
+        job.spec.template.spec.containers[0].resources.requests == null
         job.spec.template.spec.volumes.size() == 1
-        job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'build-claim'
+        job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
         job.spec.template.spec.nodeSelector == nodeSelector
         job.spec.template.spec.restartPolicy == 'Never'
     }
