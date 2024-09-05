@@ -24,13 +24,10 @@ import java.time.Instant
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
-import groovy.transform.ToString
-import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.CleanableAware
-import io.seqera.wave.tower.PlatformId
-
+import io.seqera.wave.service.job.JobSpec
 /**
+ * JobSpec implementation or container builds
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -38,46 +35,13 @@ import io.seqera.wave.tower.PlatformId
 @CompileStatic
 @ToString(includePackage = false, includeNames = true)
 class BuildJobSpec implements JobSpec, CleanableAware {
+    final String id
+    final Instant creationTime
+    final Duration maxDuration
+    final String schedulerId
+    final String targetImage
+    final Path cleanableDir
 
-    final BuildRequest request
+    Type getType() { Type.Build }
 
-    Type getType() {
-        return Type.Build
-    }
-
-    @Override
-    String getId() {
-        return request.getTargetImage()
-    }
-
-    @Override
-    Instant getCreationTime() {
-        return request.getStartTime()
-    }
-
-    @Override
-    Duration getMaxDuration() {
-        return request.getMaxDuration()
-    }
-
-    @Override
-    String getSchedulerId() {
-        return "build-" + request.buildId
-    }
-
-    String getBuildId() {
-        return request.buildId
-    }
-
-    String getTargetImage() {
-        return request.getTargetImage()
-    }
-
-    PlatformId getIdentity() {
-        return request.getIdentity()
-    }
-
-    Path getCleanableDir() {
-        return request.getWorkDir()
-    }
 }

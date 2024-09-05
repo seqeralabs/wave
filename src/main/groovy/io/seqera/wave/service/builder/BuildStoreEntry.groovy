@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023-2024, Seqera Labs
+ *  Copyright (c) 2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -16,30 +16,34 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job.spec
+package io.seqera.wave.service.builder
 
-import java.time.Duration
-import java.time.Instant
-
-import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-import io.seqera.wave.service.job.JobSpec
 
 /**
- * JobSepc implementation specific for container blob uploads
+ * Class to store build request and result in cache
  *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-@Canonical
-@CompileStatic
 @ToString(includePackage = false, includeNames = true)
-class TransferJobSpec implements JobSpec {
+@EqualsAndHashCode
+@CompileStatic
+class BuildStoreEntry {
 
-    final String id
-    final Instant creationTime
-    final Duration maxDuration
-    final String schedulerId
+    final BuildRequest request
 
-    Type getType() { Type.Transfer }
+    final BuildResult result
+
+    protected BuildStoreEntry() {}
+
+    BuildStoreEntry(BuildRequest request, BuildResult result) {
+        this.request = request
+        this.result = result
+    }
+
+    BuildStoreEntry withResult(BuildResult result) {
+        new BuildStoreEntry(request, result)
+    }
 }

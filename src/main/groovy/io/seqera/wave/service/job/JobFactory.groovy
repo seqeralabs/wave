@@ -33,6 +33,7 @@ import io.seqera.wave.service.scan.ScanRequest
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
+ * Simple factory for {@link JobSpec} objects
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
@@ -59,7 +60,14 @@ class JobFactory {
     }
 
     BuildJobSpec build(BuildRequest request) {
-        return new BuildJobSpec(request)
+        return new BuildJobSpec(
+                request.targetImage,
+                request.startTime,
+                request.maxDuration,
+                "build-" + request.buildId.replace('_', '-'),
+                request.targetImage,
+                request.workDir
+        )
     }
 
     ScanJobSpec scan(ScanRequest request) {

@@ -24,20 +24,20 @@ import spock.lang.Unroll
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class DockerJobServiceTest extends Specification {
+class DockerJobOperationTest extends Specification {
 
     @Unroll
     def 'should parse state string' () {
         expect:
-        DockerJobService.State.parse(STATE) == EXPECTED
+        DockerJobOperation.State.parse(STATE) == EXPECTED
 
         where:
         STATE               | EXPECTED
-        'running'           | new DockerJobService.State('running')
-        'exited'            | new DockerJobService.State('exited')
-        'exited,'           | new DockerJobService.State('exited')
-        'exited,0'          | new DockerJobService.State('exited', 0)
-        'exited,10'         | new DockerJobService.State('exited', 10)
+        'running'           | new DockerJobOperation.State('running')
+        'exited'            | new DockerJobOperation.State('exited')
+        'exited,'           | new DockerJobOperation.State('exited')
+        'exited,0'          | new DockerJobOperation.State('exited', 0)
+        'exited,10'         | new DockerJobOperation.State('exited', 10)
     }
 
 }

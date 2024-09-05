@@ -22,6 +22,7 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 
 /**
+ * Model a job event
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

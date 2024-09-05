@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.job
 /**
+ * Define job operations contract
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

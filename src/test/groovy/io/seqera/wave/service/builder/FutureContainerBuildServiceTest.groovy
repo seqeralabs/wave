@@ -49,11 +49,12 @@ class FutureContainerBuildServiceTest extends Specification {
         def containerId = ContainerHelper.makeContainerId(dockerfile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
         def req = new BuildRequest(containerId, dockerfile, null, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1)).withBuildId('1')
+        def res = new BuildResult("", 0, "a fake build result in a test", Instant.now(), Duration.ofSeconds(3), 'abc')
         and:
         def buildStore = Mock(BuildStore)
         def buildCounter = Mock(BuildCounterStore)
-        buildStore.getBuild(targetImage) >> new BuildResult("", 0, "a fake build result in a test", Instant.now(), Duration.ofSeconds(3), 'abc')
-        buildStore.awaitBuild(targetImage) >> CompletableFuture.completedFuture(new BuildResult("", 0, "a fake build result in a test", Instant.now(), Duration.ofSeconds(3), 'abc'))
+        buildStore.getBuildResult(targetImage) >> res
+        buildStore.awaitBuild(targetImage) >> CompletableFuture.completedFuture(res)
         def service = new ContainerBuildServiceImpl(buildStore: buildStore, buildCounter: buildCounter)
 
         when:
@@ -83,11 +84,12 @@ class FutureContainerBuildServiceTest extends Specification {
         def containerId = ContainerHelper.makeContainerId(dockerfile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
         def req = new BuildRequest(containerId, dockerfile, null, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1)).withBuildId('1')
+        def res = new BuildResult("", 1, "a fake build result in a test", Instant.now(), Duration.ofSeconds(3), 'abc')
         and:
         def buildStore = Mock(BuildStore)
         def buildCounter = Mock(BuildCounterStore)
-        buildStore.getBuild(targetImage) >> new BuildResult("", 1, "a fake build result in a test", Instant.now(), Duration.ofSeconds(3), 'abc')
-        buildStore.awaitBuild(targetImage) >> CompletableFuture.completedFuture(new BuildResult("", 1, "a fake build result in a test", Instant.now(), Duration.ofSeconds(3), 'abc'))
+        buildStore.getBuildResult(targetImage) >> res
+        buildStore.awaitBuild(targetImage) >> CompletableFuture.completedFuture(res)
         def service = new ContainerBuildServiceImpl(buildStore: buildStore, buildCounter: buildCounter)
 
         when:

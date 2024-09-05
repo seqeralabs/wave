@@ -21,6 +21,8 @@ package io.seqera.wave.service.job
 import java.nio.file.Path
 
 /**
+ * Annotation interface to mark job providing a temporary path
+ * that's expected to be deleted upon job completion
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

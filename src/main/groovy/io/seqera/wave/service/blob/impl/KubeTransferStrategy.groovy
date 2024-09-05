@@ -47,7 +47,7 @@ class KubeTransferStrategy implements TransferStrategy {
     @Override
     void launchJob(String jobName, List<String> command) {
         // run the transfer job
-        k8sService.launchJob(jobName, blobConfig.s5Image, command, blobConfig)
+        k8sService.launchTransferJob(jobName, blobConfig.s5Image, command, blobConfig)
     }
 
 }

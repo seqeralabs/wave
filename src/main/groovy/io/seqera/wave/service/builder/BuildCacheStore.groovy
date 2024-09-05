@@ -33,28 +33,28 @@ import io.seqera.wave.service.cache.impl.CacheProvider
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 /**
- * Implements Cache store for {@link BuildResult}
+ * Implements Cache store for {@link BuildStoreEntry}
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @Singleton
 @CompileStatic
-class BuildCacheStore extends AbstractCacheStore<BuildResult> implements BuildStore {
+class BuildCacheStore extends AbstractCacheStore<BuildStoreEntry> implements BuildStore {
 
     private BuildConfig buildConfig
 
     private ExecutorService ioExecutor
 
     BuildCacheStore(CacheProvider<String, String> provider, BuildConfig buildConfig, @Named(TaskExecutors.IO) ExecutorService ioExecutor) {
-        super(provider, new MoshiEncodeStrategy<BuildResult>() {})
+        super(provider, new MoshiEncodeStrategy<BuildStoreEntry>() {})
         this.buildConfig = buildConfig
         this.ioExecutor = ioExecutor
     }
 
     @Override
     protected String getPrefix() {
-        return 'wave-build/v1:'
+        return 'wave-build/v2:'
     }
 
     @Override
@@ -63,25 +63,27 @@ class BuildCacheStore extends AbstractCacheStore<BuildResult> implements BuildSt
     }
     
     @Override
-    BuildResult getBuild(String imageName) {
+    BuildStoreEntry getBuild(String imageName) {
         return get(imageName)
     }
 
     @Override
-    void storeBuild(String imageName, BuildResult result) {
-        put(imageName, result)
+    BuildResult getBuildResult(String imageName) {
+        return getBuild(imageName)?.getResult()
     }
 
     @Override
-    void storeBuild(String imageName, BuildResult result, Duration ttl) {
+    void storeBuild(String imageName, BuildStoreEntry buildStoreEntry) {
+        put(imageName, buildStoreEntry)
+    }
+
+    @Override
+    void storeBuild(String imageName, BuildStoreEntry result, Duration ttl) {
         put(imageName, result, ttl)
     }
 
     @Override
-    boolean storeIfAbsent(String imageName, BuildResult build) {
-        // store up 2.5 time the build timeout to prevent a missed cache
-        // update on job termination remains too long in the store
-        // note: this should be longer than the max await time used in the Waiter#awaitCompletion method
+    boolean storeIfAbsent(String imageName, BuildStoreEntry build) {
         return putIfAbsent(imageName, build, buildConfig.statusInitialDelay)
     }
 
@@ -92,10 +94,10 @@ class BuildCacheStore extends AbstractCacheStore<BuildResult> implements BuildSt
 
     @Override
     CompletableFuture<BuildResult> awaitBuild(String imageName) {
-        final result = getBuild(imageName)
+        final result = getBuildResult(imageName)
         if( !result )
             return null
-        return CompletableFuture<BuildResult>.supplyAsync(() -> Waiter.awaitCompletion(this,imageName,result), ioExecutor)
+        return CompletableFuture<BuildResult>.supplyAsync(() -> Waiter.awaitCompletion(this, imageName, result), ioExecutor)
     }
 
     /**
@@ -103,7 +105,7 @@ class BuildCacheStore extends AbstractCacheStore<BuildResult> implements BuildSt
      */
     private static class Waiter {
 
-        static BuildResult awaitCompletion(BuildCacheStore store, String imageName, BuildResult current) {
+        static BuildResult awaitCompletion(BuildCacheStore store, String imageName, BuildResult result) {
             final await = store.buildConfig.statusDelay
             final beg = System.currentTimeMillis()
             // await nearly double of the build timeout time because the build job
@@ -111,13 +113,13 @@ class BuildCacheStore extends AbstractCacheStore<BuildResult> implements BuildSt
             // note: see also #storeIfAbsent method
             final max = store.buildConfig.statusAwaitDuration.toMillis()
             while( true ) {
-                if( current==null ) {
+                if( result==null ) {
                     return BuildResult.unknown()
                 }
 
                 // check is completed
-                if( current.done() ) {
-                    return current
+                if( result.done() ) {
+                    return result
                 }
                 // check if it's timed out
                 final delta = System.currentTimeMillis()-beg
@@ -126,7 +128,7 @@ class BuildCacheStore extends AbstractCacheStore<BuildResult> implements BuildSt
                 // sleep a bit
                 Thread.sleep(await.toMillis())
                 // fetch the build status again
-                current = store.getBuild(imageName)
+                result = store.getBuildResult(imageName)
             }
         }
     }

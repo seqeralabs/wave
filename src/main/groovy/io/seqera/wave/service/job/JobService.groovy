@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.job
 
-
 import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.scan.ScanRequest

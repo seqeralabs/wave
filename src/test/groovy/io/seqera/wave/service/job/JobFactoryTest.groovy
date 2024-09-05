@@ -24,16 +24,10 @@ import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
-import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.scan.ScanRequest
-import io.seqera.wave.service.scan.Trivy
-import io.seqera.wave.tower.PlatformId
-import io.seqera.wave.tower.User
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -42,29 +36,25 @@ class JobFactoryTest extends Specification {
 
     def 'should create job id' () {
         given:
-        def id = PlatformId.of(new User(id: 1), Mock(SubmitContainerTokenRequest))
         def ts = Instant.parse('2024-08-18T19:23:33.650722Z')
         def factory = new JobFactory()
         and:
         def request = new BuildRequest(
                 targetImage: 'docker.io/foo:bar',
-                buildId: '12345',
+                buildId: '12345_9',
                 startTime: ts,
-                maxDuration: Duration.ofMinutes(1),
-                identity: id
+                maxDuration: Duration.ofMinutes(1)
         )
 
         when:
         def job = factory.build(request)
         then:
         job.id == 'docker.io/foo:bar'
-        job.schedulerId == 'build-12345'
+        job.schedulerId == 'build-12345-9'
         job.creationTime == ts
         job.type == JobSpec.Type.Build
         job.maxDuration == Duration.ofMinutes(1)
-        job.getBuildId() == '12345'
         job.getTargetImage() == 'docker.io/foo:bar'
-        job.getIdentity() == id
     }
 
     def 'should create transfer job' () {

@@ -26,13 +26,13 @@ import java.time.Instant
 
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
-import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.auth.RegistryAuth
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.service.builder.BuildStoreEntry
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.spec.BuildJobSpec
 import io.seqera.wave.service.job.spec.ScanJobSpec
@@ -396,18 +396,16 @@ class MoshiEncodingStrategyTest extends Specification {
         given:
         def encoder = new MoshiEncodeStrategy<JobSpec>() { }
         and:
-        def id = PlatformId.of(new User(id: 1), Mock(SubmitContainerTokenRequest))
         def ts = Instant.parse('2024-08-18T19:23:33.650722Z')
         and:
-        def request = new BuildRequest(
-                targetImage: 'docker.io/foo:bar',
-                buildId: '12345',
-                startTime: ts,
-                maxDuration: Duration.ofMinutes(1),
-                identity: id
+        def build = new BuildJobSpec(
+                'docker.io/foo:bar',
+                ts,
+                Duration.ofMinutes(1),
+                '12345',
+                'docker.io/foo:bar',
+                Path.of('/some/path')
         )
-        and:
-        def build = new BuildJobSpec(request)
 
         when:
         def json = encoder.encode(build)
@@ -420,7 +418,40 @@ class MoshiEncodingStrategyTest extends Specification {
         copy == build
     }
 
-    def 'should encode and decode scan job spec' () {
+    def 'should encode and decode build store entry' () {
+        given:
+        def encoder = new MoshiEncodeStrategy<BuildStoreEntry>() { }
+        def context = new BuildContext('http://foo.com', '12345', 100, '67890')
+        and:
+        def res = BuildResult.completed('1', 2, 'Oops', Instant.now(), null)
+        def req = new BuildRequest(
+                containerId: '12345',
+                containerFile: 'from foo',
+                condaFile: 'conda spec',
+                spackFile: 'spack spec',
+                workspace:  Path.of("/some/path"),
+                targetImage:  'docker.io/some:image:12345',
+                identity: PlatformId.NULL,
+                platform:  ContainerPlatform.of('linux/amd64'),
+                cacheRepository:  'cacherepo',
+                ip: "1.2.3.4",
+                configJson:  '{"config":"json"}',
+                scanId: 'scan12345',
+                buildContext: context )
+                .withBuildId('1')
+        and:
+        def entry = new BuildStoreEntry(req, res)
+        when:
+        def json = encoder.encode(entry)
+        and:
+        def copy = encoder.decode(json)
+        then:
+        copy.getClass() == entry.getClass()
+        and:
+        copy == entry
+    }
+
+       def 'should encode and decode scan job spec' () {
         given:
         def encoder = new MoshiEncodeStrategy<JobSpec>() { }
         and:
@@ -444,4 +475,5 @@ class MoshiEncodingStrategyTest extends Specification {
         and:
         copy == scan
     }
+    
 }
