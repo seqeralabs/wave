@@ -20,12 +20,12 @@ package io.seqera.wave.service.builder
 
 import spock.lang.Requires
 import spock.lang.Specification
-import spock.lang.Timeout
 
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.TimeUnit
 
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
@@ -59,7 +59,6 @@ import jakarta.inject.Inject
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Timeout(60)
 @Slf4j
 @MicronautTest
 class ContainerBuildServiceTest extends Specification {
@@ -81,6 +80,7 @@ class ContainerBuildServiceTest extends Specification {
         def folder = Files.createTempDirectory('test')
         def buildRepo = buildConfig.defaultBuildRepository
         def cacheRepo = buildConfig.defaultCacheRepository
+        def duration = Duration.ofMinutes(1)
         and:
         def dockerFile = '''
         FROM busybox
@@ -102,7 +102,7 @@ class ContainerBuildServiceTest extends Specification {
                         configJson: cfg,
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now(),
-                        maxDuration: Duration.ofMinutes(1)
+                        maxDuration: duration
                 )
                     .withBuildId('1')
         and:
@@ -111,7 +111,10 @@ class ContainerBuildServiceTest extends Specification {
         when:
         service.launch(req)
         then:
-        service.buildResult(targetImage).get().succeeded()
+        service
+                .buildResult(targetImage)
+                .get(duration.toSeconds(), TimeUnit.SECONDS)
+                .succeeded()
 
         cleanup:
         folder?.deleteDir()
@@ -123,6 +126,7 @@ class ContainerBuildServiceTest extends Specification {
         def folder = Files.createTempDirectory('test')
         def buildRepo = "docker.io/pditommaso/wave-tests"
         def cacheRepo = buildConfig.defaultCacheRepository
+        def duration = Duration.ofMinutes(1)
         and:
         def dockerFile = '''
         FROM busybox
@@ -144,7 +148,7 @@ class ContainerBuildServiceTest extends Specification {
                         configJson: cfg,
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now(),
-                        maxDuration: Duration.ofMinutes(1)
+                        maxDuration: duration
                 )
                 .withBuildId('1')
         and:
@@ -153,7 +157,10 @@ class ContainerBuildServiceTest extends Specification {
         when:
         service.launch(req)
         then:
-        service.buildResult(targetImage).get().succeeded()
+        service
+                .buildResult(targetImage)
+                .get(duration.toSeconds(), TimeUnit.SECONDS)
+                .succeeded()
 
         cleanup:
         folder?.deleteDir()
@@ -164,6 +171,7 @@ class ContainerBuildServiceTest extends Specification {
         given:
         def folder = Files.createTempDirectory('test')
         def cacheRepo = buildConfig.defaultCacheRepository
+        def duration = Duration.ofMinutes(1)
         and:
         def dockerFile = '''
         FROM busybox
@@ -186,7 +194,7 @@ class ContainerBuildServiceTest extends Specification {
                         configJson: cfg,
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now(),
-                        maxDuration: Duration.ofMinutes(1)
+                        maxDuration: duration
                 )
                 .withBuildId('1')
         and:
@@ -195,7 +203,10 @@ class ContainerBuildServiceTest extends Specification {
         when:
         service.launch(req)
         then:
-        service.buildResult(targetImage).get().succeeded()
+        service
+                .buildResult(targetImage)
+                .get(duration.toSeconds(), TimeUnit.SECONDS)
+                .succeeded()
 
         cleanup:
         folder?.deleteDir()
@@ -213,6 +224,7 @@ class ContainerBuildServiceTest extends Specification {
         RUN echo Hello > hello.txt
         '''.stripIndent()
         and:
+        def duration = Duration.ofMinutes(1)
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
@@ -228,7 +240,7 @@ class ContainerBuildServiceTest extends Specification {
                         configJson: cfg,
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now(),
-                        maxDuration: Duration.ofMinutes(1)
+                        maxDuration: duration
                 )
                 .withBuildId('1')
         and:
@@ -237,7 +249,10 @@ class ContainerBuildServiceTest extends Specification {
         when:
         service.launch(req)
         then:
-        service.buildResult(targetImage).get().succeeded()
+        service
+                .buildResult(targetImage)
+                .get(duration.toSeconds(), TimeUnit.SECONDS)
+                .succeeded()
 
         cleanup:
         folder?.deleteDir()
@@ -248,7 +263,6 @@ class ContainerBuildServiceTest extends Specification {
         def folder = Files.createTempDirectory('test')
         def buildRepo = buildConfig.defaultBuildRepository
         def cacheRepo = buildConfig.defaultCacheRepository
-        def DURATION = Duration.ofDays(1)
         and:
         def cfg = 'some credentials'
         def dockerFile = '''
@@ -296,15 +310,13 @@ class ContainerBuildServiceTest extends Specification {
         def RESPONSE = Mock(JobSpec)
 
         when:
-        def result = builder.launch(req)
+        builder.launch(req)
         then:
         1 * jobService.launchBuild(req) >> RESPONSE
         and:
         req.workDir.resolve('Containerfile').text == new TemplateRenderer().render(dockerFile, [spack_cache_bucket:'s3://bucket/cache', spack_key_file:'/mnt/secret'])
         req.workDir.resolve('context/conda.yml').text == condaFile
         req.workDir.resolve('context/spack.yaml').text == spackFile
-        and:
-        result == RESPONSE
 
         cleanup:
         folder?.deleteDir()
@@ -494,6 +506,7 @@ class ContainerBuildServiceTest extends Specification {
         def l1 = new Packer().layer(layer, [file1, file2])
         def containerConfig = new ContainerConfig(cmd: ['echo', 'Hola'], layers: [l1])
         and:
+        def duration = Duration.ofMinutes(1)
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
@@ -504,13 +517,13 @@ class ContainerBuildServiceTest extends Specification {
                         workspace: folder,
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
-                        platform: ContainerPlatform.of('amd64'),
+                        platform: TestHelper.containerPlatform(),
                         cacheRepository: cacheRepo,
                         configJson: cfg,
                         containerConfig: containerConfig ,
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now(),
-                        maxDuration: Duration.ofMinutes(1)
+                        maxDuration: duration
                 )
                         .withBuildId('1')
         and:
@@ -519,12 +532,14 @@ class ContainerBuildServiceTest extends Specification {
         when:
         service.launch(req)
         then:
-        service.buildResult(targetImage).get().succeeded()
+        service
+                .buildResult(targetImage)
+                .get(duration.toSeconds(), TimeUnit.SECONDS)
+                .succeeded()
 
         cleanup:
         folder?.deleteDir()
     }
-
 
     def 'should untar build context' () {
         given:
