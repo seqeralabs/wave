@@ -50,7 +50,7 @@ class K8sServiceImplTest extends Specification {
     static class MockScanConfig extends ScanConfig {
         @Override
         Path getCacheDirectory() {
-            return Path.of('/cache/dir')
+            return Path.of('/build/scan/cache')
         }
     }
 
