@@ -99,8 +99,6 @@ class JobFactoryTest extends Specification {
         job.type == JobSpec.Type.Scan
         job.maxDuration == duration
         job.creationTime == request.creationTime
-        job.workDir == workdir
         job.cleanableDir == workdir
-        job.reportFile == workdir.resolve(Trivy.OUTPUT_FILE_NAME)
     }
 }

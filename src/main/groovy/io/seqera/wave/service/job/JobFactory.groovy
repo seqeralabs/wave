@@ -71,7 +71,7 @@ class JobFactory {
     JobSpec scan(ScanRequest request) {
         return new JobSpec(
                 JobSpec.Type.Scan,
-                request.targetImage,
+                request.id,
                 request.creationTime,
                 scanConfig.timeout,
                 "scan-${request.id}",
