@@ -33,7 +33,7 @@ import io.seqera.wave.service.job.JobEvent
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobState
-import io.seqera.wave.service.job.spec.ScanJobSpec
+import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveScanRecord
 import jakarta.inject.Inject
@@ -127,24 +127,24 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler {
         }
 
         if( event.type == JobEvent.Type.Complete ) {
-            handleJobCompletion(event.job as ScanJobSpec, scan, event.state)
+            handleJobCompletion(event.job, scan, event.state)
         }
         else if( event.type == JobEvent.Type.Error ) {
-            handleJobException(event.job as ScanJobSpec, scan, event.error)
+            handleJobException(event.job, scan, event.error)
         }
         else if( event.type == JobEvent.Type.Timeout ) {
-            handleJobTimeout(event.job as ScanJobSpec, scan)
+            handleJobTimeout(event.job, scan)
         }
         else {
             throw new IllegalStateException("Unknown container build job event type=$event")
         }
     }
 
-    protected void handleJobCompletion(ScanJobSpec job, WaveScanRecord scan, JobState state) {
+    protected void handleJobCompletion(JobSpec job, WaveScanRecord scan, JobState state) {
         ScanResult result
         if( state.completed() ) {
             log.info("Container scan completed for id: ${scan.id}")
-            result = ScanResult.success(scan, TrivyResultProcessor.process(job.getReportFile()))
+            result = ScanResult.success(scan, TrivyResultProcessor.process(job.cleanableDir.resolve(Trivy.OUTPUT_FILE_NAME)))
         }
         else{
             log.info("Container scan failed for scan id: ${scan.id} - stdout: $state.stdout")
@@ -154,12 +154,12 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler {
         updateScanRecord(result)
     }
 
-    protected void handleJobException(ScanJobSpec job, WaveScanRecord scan, Throwable e) {
+    protected void handleJobException(JobSpec job, WaveScanRecord scan, Throwable e) {
         log.error("Container scan failed for scan id: ${scan.id} - cause: ${e.getMessage()}", e)
         updateScanRecord(ScanResult.failure(scan))
     }
 
-    protected void handleJobTimeout(ScanJobSpec job, WaveScanRecord scan) {
+    protected void handleJobTimeout(JobSpec job, WaveScanRecord scan) {
         log.warn("Container scan timed out for scan id: ${scan.id}")
         updateScanRecord(ScanResult.failure(scan))
     }
