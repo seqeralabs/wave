@@ -48,21 +48,20 @@ import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
-import io.seqera.wave.test.RedisTestContainer
-import io.seqera.wave.test.SurrealDBTestContainer
+import io.seqera.wave.test.TestHelper
 import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.util.ContainerHelper
 import io.seqera.wave.util.Packer
 import io.seqera.wave.util.SpackHelper
 import io.seqera.wave.util.TemplateRenderer
 import jakarta.inject.Inject
-import io.seqera.wave.util.ContainerHelper
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @MicronautTest
-class ContainerBuildServiceTest extends Specification implements RedisTestContainer, SurrealDBTestContainer{
+class ContainerBuildServiceTest extends Specification {
 
     @Inject ContainerBuildServiceImpl service
     @Inject RegistryLookupService lookupService
@@ -139,11 +138,12 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                         workspace: folder,
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
-                        platform: ContainerPlatform.of('amd64'),
+                        platform: TestHelper.containerPlatform(),
                         cacheRepository: cacheRepo,
                         configJson: cfg,
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now(),
+                        maxDuration: Duration.ofMinutes(1)
                 )
                 .withBuildId('1')
 
@@ -163,7 +163,6 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
     def 'should build & push container to quay.io' () {
         given:
         def folder = Files.createTempDirectory('test')
-        def buildRepo = buildConfig.defaultBuildRepository
         def cacheRepo = buildConfig.defaultCacheRepository
         and:
         def dockerFile = '''
@@ -173,7 +172,7 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         and:
         buildRepo = "quay.io/pditommaso/wave-tests"
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('linux/arm64'), buildRepo, null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
         def req =
                 new BuildRequest(
@@ -186,7 +185,8 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                         cacheRepository: cacheRepo,
                         configJson: cfg,
                         format: BuildFormat.DOCKER,
-                        startTime: Instant.now()
+                        startTime: Instant.now(),
+                        maxDuration: Duration.ofMinutes(1)
                 )
                 .withBuildId('1')
 
