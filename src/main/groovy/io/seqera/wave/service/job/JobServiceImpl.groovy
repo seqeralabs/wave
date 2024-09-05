@@ -94,7 +94,7 @@ class JobServiceImpl implements JobService {
         // create the unique job id for the build
         final job = jobFactory.scan(request)
         // launch the scan job
-        scanStrategy.scanContainer(job.schedulerId, request)
+        scanStrategy.scanContainer(job.operationName, request)
         // signal the build has been submitted
         jobQueue.offer(job)
         return job

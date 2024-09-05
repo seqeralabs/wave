@@ -94,8 +94,8 @@ class JobFactoryTest extends Specification {
         when:
         def job = factory.scan(request)
         then:
-        job.id == '12345'
-        job.schedulerId == 'scan-12345'
+        job.stateId == '12345'
+        job.operationName == 'scan-12345'
         job.type == JobSpec.Type.Scan
         job.maxDuration == duration
         job.creationTime == request.creationTime
