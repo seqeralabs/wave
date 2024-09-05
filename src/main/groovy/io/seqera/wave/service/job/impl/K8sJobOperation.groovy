@@ -42,20 +42,20 @@ class K8sJobOperation implements JobOperation {
 
     @Override
     void cleanup(JobSpec job) {
-        k8sService.deleteJob(job.schedulerId)
+        k8sService.deleteJob(job.operationName)
     }
 
     @Override
     JobState status(JobSpec job) {
-        final status = k8sService.getJobStatus(job.schedulerId)
+        final status = k8sService.getJobStatus(job.operationName)
         if( !status || !status.completed() ) {
             return new JobState(mapToStatus(status))
         }
 
         // Find the latest created pod among the pods associated with the job
-        final pod = k8sService.getLatestPodForJob(job.schedulerId)
+        final pod = k8sService.getLatestPodForJob(job.operationName)
         if( !pod )
-            throw new IllegalStateException("Missing carried pod for job: ${job.schedulerId}")
+            throw new IllegalStateException("Missing carried pod for job: ${job.operationName}")
 
         // determine exit code and logs
         final exitCode = pod

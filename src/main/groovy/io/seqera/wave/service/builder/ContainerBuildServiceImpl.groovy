@@ -337,13 +337,13 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
 
     @Override
     void onJobEvent(JobEvent event) {
-        final build = buildStore.getBuild(event.job.id)
+        final build = buildStore.getBuild(event.job.stateId)
         if( !build ) {
-            log.error "Build result unknown for job=${event.job.id}; event=${event}"
+            log.error "Build result unknown for job=${event.job.stateId}; event=${event}"
             return
         }
         if( build.result.done() ) {
-            log.warn "Build result already marked as completed for job=${event.job.id}; event=${event}"
+            log.warn "Build result already marked as completed for job=${event.job.stateId}; event=${event}"
             return
         }
 
@@ -376,22 +376,22 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
         final result = state.completed()
                 ? BuildResult.completed(buildId, state.exitCode!=null ? state.exitCode : -1, state.stdout, job.creationTime, digest)
                 : BuildResult.failed(buildId, state.stdout, job.creationTime)
-        buildStore.storeBuild(job.id, build.withResult(result), ttl)
+        buildStore.storeBuild(job.stateId, build.withResult(result), ttl)
         // finally notify completion
         eventPublisher.publishEvent(new BuildEvent(build.request, result))
     }
 
     protected void handleJobException(JobSpec job, BuildStoreEntry build, Throwable error) {
         final result= BuildResult.failed(build.request.buildId, error.message, job.creationTime)
-        log.error("Unable to build container image '${job.id}'; job name=${job.schedulerId}; cause=${error.message}", error)
-        buildStore.storeBuild(job.id, build.withResult(result), buildConfig.failureDuration)
+        log.error("Unable to build container image '${job.stateId}'; job name=${job.operationName}; cause=${error.message}", error)
+        buildStore.storeBuild(job.stateId, build.withResult(result), buildConfig.failureDuration)
     }
 
     protected void handleJobTimeout(JobSpec job, BuildStoreEntry build) {
         final buildId = build.request.buildId
         final result= BuildResult.failed(buildId, "Container image build timed out '${buildId}'", job.creationTime)
-        log.warn "== Blob cache completed for object '${buildId}'; job name=${job.schedulerId}; duration=${result.duration}"
-        buildStore.storeBuild(job.id, build.withResult(result), buildConfig.failureDuration)
+        log.warn "== Blob cache completed for object '${buildId}'; job name=${job.operationName}; duration=${result.duration}"
+        buildStore.storeBuild(job.stateId, build.withResult(result), buildConfig.failureDuration)
     }
 
     // **************************************************************

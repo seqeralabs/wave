@@ -78,7 +78,7 @@ class JobManager {
     protected boolean processJob0(JobSpec jobSpec) {
         final duration = Duration.between(jobSpec.creationTime, Instant.now())
         final state = jobService.status(jobSpec)
-        log.trace "Job status id=${jobSpec.schedulerId}; state=${state}"
+        log.trace "Job status id=${jobSpec.operationName}; state=${state}"
         final done =
                 state.completed() ||
                 // considered failed when remain in unknown status too long         
@@ -99,7 +99,7 @@ class JobManager {
             return true
         }
         else {
-            log.trace "== Job pending for completion $jobSpec.id"
+            log.trace "== Job pending for completion $jobSpec.stateId"
             return false
         }
     }

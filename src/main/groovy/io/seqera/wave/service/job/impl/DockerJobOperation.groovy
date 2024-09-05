@@ -41,21 +41,21 @@ class DockerJobOperation implements JobOperation {
 
     @Override
     JobState status(JobSpec jobSpec) {
-        final state = getDockerContainerState(jobSpec.schedulerId)
-        log.trace "Docker transfer status name=$jobSpec.schedulerId; state=$state"
+        final state = getDockerContainerState(jobSpec.operationName)
+        log.trace "Docker transfer status name=$jobSpec.operationName; state=$state"
 
         if (state.status == 'running') {
             return JobState.running()
         }
         else if (state.status == 'exited') {
-            final logs = getDockerContainerLogs(jobSpec.schedulerId)
+            final logs = getDockerContainerLogs(jobSpec.operationName)
             return JobState.completed(state.exitCode, logs)
         }
         else if (state.status == 'created' || state.status == 'paused') {
             return JobState.pending()
         }
         else {
-            final logs = getDockerContainerLogs(jobSpec.schedulerId)
+            final logs = getDockerContainerLogs(jobSpec.operationName)
             return JobState.unknown(logs)
         }
     }
@@ -65,7 +65,7 @@ class DockerJobOperation implements JobOperation {
         final cli = new ArrayList<String>()
         cli.add('docker')
         cli.add('rm')
-        cli.add(jobSpec.schedulerId)
+        cli.add(jobSpec.operationName)
 
         final builder = new ProcessBuilder(cli)
         builder.redirectErrorStream(true)

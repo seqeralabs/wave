@@ -41,29 +41,26 @@ class JobFactory {
     @Inject
     @Nullable
     private BlobCacheConfig blobConfig
-
+  
     @Inject
     @Nullable
     private ScanConfig scanConfig
 
-    JobSpec transfer(String id) {
-        final ts = Instant.now()
-        return new JobSpec(
-                JobSpec.Type.Transfer,
-                id,
-                ts,
+    JobSpec transfer(String stateId) {
+        JobSpec.transfer(
+                stateId,
+                generate("transfer", stateId, Instant.now()),
+                Instant.now(),
                 blobConfig.transferTimeout,
-                generate("transfer", id, ts)
         )
     }
 
     JobSpec build(BuildRequest request) {
-        return new JobSpec(
-                JobSpec.Type.Build,
+        JobSpec.build(
                 request.targetImage,
+                "build-" + request.buildId.replace('_', '-'),
                 request.startTime,
                 request.maxDuration,
-                "build-" + request.buildId.replace('_', '-'),
                 request.workDir
         )
     }

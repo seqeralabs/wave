@@ -37,7 +37,7 @@ class JobManagerTest extends Specification {
         def ioExecutor = Mock(ExecutorService)
         def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, ioExecutor: ioExecutor)
         and:
-        def jobSpec = new JobSpec(JobSpec.Type.Transfer, 'foo', Instant.now(), Duration.ofMinutes(10), 'scheduler-1')
+        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now(), Duration.ofMinutes(10))
 
         when:
         def result = manager.processJob0(jobSpec)
@@ -54,7 +54,7 @@ class JobManagerTest extends Specification {
         def jobDispatcher = Mock(JobDispatcher)
         def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher)
         and:
-        def jobSpec = new JobSpec(JobSpec.Type.Transfer, 'foo', Instant.now(), Duration.ofMinutes(10), 'scheduler-1')
+        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now(), Duration.ofMinutes(10))
 
         when:
         def result = manager.processJob(jobSpec)
@@ -71,7 +71,7 @@ class JobManagerTest extends Specification {
         def jobDispatcher = Mock(JobDispatcher)
         def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher)
         and:
-        def jobSpec = new JobSpec(JobSpec.Type.Transfer, 'foo', Instant.now() - Duration.ofMinutes(5), Duration.ofMinutes(2), 'scheduler-1')
+        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now() - Duration.ofMinutes(5), Duration.ofMinutes(2))
 
         when:
         def result = manager.processJob0(jobSpec)
@@ -88,7 +88,7 @@ class JobManagerTest extends Specification {
         def jobDispatcher = Mock(JobDispatcher)
         def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher)
         and:
-        def jobSpec = new JobSpec(JobSpec.Type.Transfer, 'foo', Instant.now().minus(Duration.ofMillis(500)), Duration.ofMinutes(10), 'scheduler-1')
+        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now().minus(Duration.ofMillis(500)), Duration.ofMinutes(10))
 
         when:
         def result = manager.processJob0(jobSpec)
