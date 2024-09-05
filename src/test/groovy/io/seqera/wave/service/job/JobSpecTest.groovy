@@ -16,26 +16,24 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job.spec
+package io.seqera.wave.service.job
 
 import spock.lang.Specification
 
 import java.time.Duration
 import java.time.Instant
 
-import io.seqera.wave.service.job.JobSpec
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class TransferJobSpecTest extends Specification {
+class JobSpecTest extends Specification {
 
     def 'should validate constructor' () {
 
         given:
         def now = Instant.now()
-        def job = new TransferJobSpec('12345', now, Duration.ofMinutes(1), 'xyz')
+        def job = new JobSpec(JobSpec.Type.Transfer, '12345', now, Duration.ofMinutes(1), 'xyz')
         expect:
         job.id == '12345'
         job.type == JobSpec.Type.Transfer

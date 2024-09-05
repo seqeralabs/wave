@@ -46,7 +46,8 @@ class JobFactoryTest extends Specification {
                 targetImage: 'docker.io/foo:bar',
                 buildId: '12345_9',
                 startTime: ts,
-                maxDuration: Duration.ofMinutes(1)
+                maxDuration: Duration.ofMinutes(1),
+                workDir: Path.of('/some/work/dir')
         )
 
         when:
@@ -57,7 +58,7 @@ class JobFactoryTest extends Specification {
         job.creationTime == ts
         job.type == JobSpec.Type.Build
         job.maxDuration == Duration.ofMinutes(1)
-        job.getTargetImage() == 'docker.io/foo:bar'
+        job.cleanableDir == Path.of('/some/work/dir')
     }
 
     def 'should create transfer job' () {

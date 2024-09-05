@@ -45,8 +45,8 @@ import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.job.JobEvent
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
+import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
-import io.seqera.wave.service.job.spec.BuildJobSpec
 import io.seqera.wave.service.metric.MetricsService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
@@ -348,20 +348,20 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
         }
 
         if( event.type == JobEvent.Type.Complete ) {
-            handleJobCompletion(event.job as BuildJobSpec, build, event.state)
+            handleJobCompletion(event.job, build, event.state)
         }
         else if( event.type == JobEvent.Type.Error ) {
-          handleJobException(event.job as BuildJobSpec, build, event.error)
+          handleJobException(event.job, build, event.error)
         }
         else if( event.type == JobEvent.Type.Timeout ) {
-            handleJobTimeout(event.job as BuildJobSpec, build)
+            handleJobTimeout(event.job, build)
         }
         else {
             throw new IllegalStateException("Unknown container build job event type=$event")
         }
     }
 
-    protected void handleJobCompletion(BuildJobSpec job, BuildStoreEntry build, JobState state) {
+    protected void handleJobCompletion(JobSpec job, BuildStoreEntry build, JobState state) {
         final buildId = build.request.buildId
         final digest = state.succeeded()
                         ? proxyService.getImageDigest(build.request, true)
@@ -381,13 +381,13 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
         eventPublisher.publishEvent(new BuildEvent(build.request, result))
     }
 
-    protected void handleJobException(BuildJobSpec job, BuildStoreEntry build, Throwable error) {
+    protected void handleJobException(JobSpec job, BuildStoreEntry build, Throwable error) {
         final result= BuildResult.failed(build.request.buildId, error.message, job.creationTime)
         log.error("Unable to build container image '${job.id}'; job name=${job.schedulerId}; cause=${error.message}", error)
         buildStore.storeBuild(job.id, build.withResult(result), buildConfig.failureDuration)
     }
 
-    protected void handleJobTimeout(BuildJobSpec job, BuildStoreEntry build) {
+    protected void handleJobTimeout(JobSpec job, BuildStoreEntry build) {
         final buildId = build.request.buildId
         final result= BuildResult.failed(buildId, "Container image build timed out '${buildId}'", job.creationTime)
         log.warn "== Blob cache completed for object '${buildId}'; job name=${job.schedulerId}; duration=${result.duration}"
