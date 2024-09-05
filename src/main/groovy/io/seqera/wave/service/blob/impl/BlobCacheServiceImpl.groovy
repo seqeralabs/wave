@@ -309,14 +309,14 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler {
     }
 
     protected void handleJobException(JobSpec job, BlobCacheInfo blob, Throwable error) {
-        final result = blob.failed("Unexpected error caching blob '${blob.locationUri}' - job name '${job.operationName}'")
-        log.error("== Blob cache exception for object '${blob.objectUri}'; job name=${job.operationName}; cause=${error.message}", error)
+        final result = blob.failed("Unexpected error caching blob '${blob.locationUri}' - operation '${job.operationName}'")
+        log.error("== Blob cache exception for object '${blob.objectUri}'; operation=${job.operationName}; cause=${error.message}", error)
         blobStore.storeBlob(blob.id(), result, blobConfig.failureDuration)
     }
 
     protected void handleJobTimeout(JobSpec job, BlobCacheInfo blob) {
         final result = blob.failed("Blob cache transfer timed out ${blob.objectUri}")
-        log.warn "== Blob cache completed for object '${blob.objectUri}'; job name=${job.operationName}; duration=${result.duration()}"
+        log.warn "== Blob cache completed for object '${blob.objectUri}'; operation=${job.operationName}; duration=${result.duration()}"
         blobStore.storeBlob(blob.id(), result, blobConfig.failureDuration)
     }
 }

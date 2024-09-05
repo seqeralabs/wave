@@ -383,14 +383,14 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
 
     protected void handleJobException(JobSpec job, BuildStoreEntry build, Throwable error) {
         final result= BuildResult.failed(build.request.buildId, error.message, job.creationTime)
-        log.error("Unable to build container image '${job.stateId}'; job name=${job.operationName}; cause=${error.message}", error)
+        log.error("Unable to build container image '${job.stateId}'; operation=${job.operationName}; cause=${error.message}", error)
         buildStore.storeBuild(job.stateId, build.withResult(result), buildConfig.failureDuration)
     }
 
     protected void handleJobTimeout(JobSpec job, BuildStoreEntry build) {
         final buildId = build.request.buildId
         final result= BuildResult.failed(buildId, "Container image build timed out '${buildId}'", job.creationTime)
-        log.warn "== Blob cache completed for object '${buildId}'; job name=${job.operationName}; duration=${result.duration}"
+        log.warn "== Blob cache completed for object '${buildId}'; operation=${job.operationName}; duration=${result.duration}"
         buildStore.storeBuild(job.stateId, build.withResult(result), buildConfig.failureDuration)
     }
 
