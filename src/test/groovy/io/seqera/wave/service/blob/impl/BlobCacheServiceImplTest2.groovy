@@ -165,7 +165,7 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
         def config = new BlobCacheConfig(failureDuration: Duration.ofMinutes(1))
         def service = new BlobCacheServiceImpl(blobStore: blobStore, blobConfig: config)
         def event = Mock(JobEvent)
-        event.job >> JobSpec(JobSpec.Type.Transfer,'job-id')
+        event.job >> new JobSpec(JobSpec.Type.Transfer,'job-id')
         event.type >> JobEvent.Type.Complete
         event.state >> JobState.completed(0, 'Job completed')
 
@@ -186,7 +186,7 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
         def config = new BlobCacheConfig(failureDuration: Duration.ofMinutes(1))
         def service = new BlobCacheServiceImpl(blobStore: blobStore, blobConfig: config)
         def event = Mock(JobEvent)
-        event.job >> JobSpec(JobSpec.Type.Transfer,'job-id')
+        event.job >> new JobSpec(JobSpec.Type.Transfer,'job-id')
         event.type >> JobEvent.Type.Timeout
 
         when:
@@ -204,7 +204,7 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
         def config = new BlobCacheConfig(failureDuration: Duration.ofMinutes(1))
         def service = new BlobCacheServiceImpl(blobStore: blobStore, blobConfig: config)
         def event = Mock(JobEvent)
-        event.job >> JobSpec(JobSpec.Type.Transfer,'job-id')
+        event.job >> new JobSpec(JobSpec.Type.Transfer,'job-id')
         event.type >> JobEvent.Type.Error
         event.error >> new RuntimeException("Error message")
 
