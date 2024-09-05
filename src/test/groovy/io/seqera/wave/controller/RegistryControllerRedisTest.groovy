@@ -21,6 +21,9 @@ package io.seqera.wave.controller
 import spock.lang.Specification
 import spock.lang.Timeout
 
+import java.time.Duration
+import java.time.Instant
+
 import io.micronaut.context.ApplicationContext
 import io.micronaut.core.io.socket.SocketUtils
 import io.micronaut.http.HttpRequest
@@ -33,9 +36,18 @@ import io.micronaut.runtime.server.EmbeddedServer
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.exchange.RegistryErrorResponse
 import io.seqera.wave.model.ContentType
+import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.builder.BuildCacheStore
+import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.service.builder.BuildStoreEntry
+import io.seqera.wave.service.token.TokenCacheStore
 import io.seqera.wave.storage.ManifestCacheStore
 import io.seqera.wave.test.DockerRegistryContainer
 import io.seqera.wave.test.RedisTestContainer
+import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.tower.User
+import jakarta.inject.Inject
 import redis.clients.jedis.Jedis
 /**
  *
@@ -111,10 +123,22 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
     @Timeout(15)
     void 'should render a timeout when build failed'() {
         given:
-        HttpClient client = applicationContext.createBean(HttpClient)
+        def client = applicationContext.createBean(HttpClient)
+        def buildCacheStore = applicationContext.getBean(BuildCacheStore)
+        def tokenCacheStore = applicationContext.getBean(TokenCacheStore)
+        def res = BuildResult.create('1')
+        def req = new BuildRequest(
+                targetImage: 'library/hello-world',
+                buildId: '1',
+                startTime: Instant.now(),
+                maxDuration: Duration.ofMinutes(1)
+        )
+        def entry = new BuildStoreEntry(req, res)
+        def containerRequestData = new ContainerRequestData(new PlatformId(new User(id:1)), "library/hello-world")
         and:
-        jedis.set("wave-tokens/v1:1234", '{"containerImage":"library/hello-world"}')
-        jedis.set("wave-build/v2:library/hello-world", '{"request":{"buildId":"1234","containerImage":"library/hello-world","startTime":"2021-09-29T15:00:00Z"},"result":{"containerImage":"library/hello-world","id":"1234","exitStatus":1}}')
+        tokenCacheStore.put("1234", containerRequestData)
+        buildCacheStore.put("library/hello-world", entry)
+
         when:
         HttpRequest request = HttpRequest.GET("http://localhost:$port/v2/wt/1234/library/hello-world/manifests/latest").headers({h->
             h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
