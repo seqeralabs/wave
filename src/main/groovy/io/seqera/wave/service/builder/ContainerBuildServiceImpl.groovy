@@ -219,7 +219,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
         }
     }
 
-
     protected void launchAsync(BuildRequest request) {
         // check the build rate limit
         try {
