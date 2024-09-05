@@ -62,7 +62,7 @@ class RedisMessageStream implements MessageStream<String> {
     @Inject
     private JedisPool pool
 
-    @Value('${wave.message-stream.claim-timeout:10s}')
+    @Value('${wave.message-stream.claim-timeout:5s}')
     private Duration claimTimeout
 
     private String consumerName
@@ -106,7 +106,8 @@ class RedisMessageStream implements MessageStream<String> {
             createGroup(jedis, streamId, CONSUMER_GROUP_NAME)
             final entry = claimMessage(jedis,streamId) ?: readMessage(jedis, streamId)
             if( entry && consumer.test(entry.getFields().get(DATA_FIELD)) ) {
-                // Acknowledge the job after processing
+                // acknowledge the job after processing
+                // this remove permanently the entry from the stream
                 jedis.xack(streamId, CONSUMER_GROUP_NAME, entry.getID())
                 return true
             }

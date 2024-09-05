@@ -70,7 +70,7 @@ class JobManager {
         catch (Throwable err) {
             // in the case of an expected exception report the error condition by using `onJobException`
             dispatcher.notifyJobError(jobSpec, err)
-            // finally return `true` to signal the job should not be processed anymore
+            // note: return `true` to signal the job should not be processed anymore
             return true
         }
     }
