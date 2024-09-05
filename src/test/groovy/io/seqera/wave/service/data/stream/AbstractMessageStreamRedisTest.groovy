@@ -44,6 +44,10 @@ class AbstractMessageStreamRedisTest extends Specification implements RedisTestC
         ], 'test', 'redis')
     }
 
+    def cleanup() {
+        context.stop()
+    }
+
     def 'should offer and consume some messages' () {
         given:
         def id1 = "stream-${LongRndKey.rndHex()}"
