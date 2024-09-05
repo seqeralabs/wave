@@ -116,13 +116,13 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler {
 
     @Override
     void onJobEvent(JobEvent event) {
-        final scan = persistenceService.loadScanRecord(event.job.id)
+        final scan = persistenceService.loadScanRecord(event.job.stateId)
         if( !scan ) {
-            log.error "Scan record unknown for job=${event.job.id}; event=${event}"
+            log.error "Scan record unknown for job=${event.job.stateId}; event=${event}"
             return
         }
         if( scan.done() ) {
-            log.warn "Scan record already marked as completed for job=${event.job.id}; event=${event}"
+            log.warn "Scan record already marked as completed for job=${event.job.stateId}; event=${event}"
             return
         }
 
