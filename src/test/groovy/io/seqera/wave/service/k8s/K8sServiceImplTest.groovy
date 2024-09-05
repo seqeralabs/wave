@@ -20,6 +20,7 @@ package io.seqera.wave.service.k8s
 
 import spock.lang.Specification
 
+import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
 import java.time.OffsetDateTime
@@ -33,6 +34,7 @@ import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
 import io.kubernetes.client.openapi.models.V1PodStatus
 import io.micronaut.context.ApplicationContext
+import io.micronaut.context.annotation.Replaces
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.ScanConfig
@@ -43,6 +45,14 @@ import io.seqera.wave.configuration.SpackConfig
  */
 @MicronautTest
 class K8sServiceImplTest extends Specification {
+
+    @Replaces(ScanConfig.class)
+    static class MockScanConfig extends ScanConfig {
+        @Override
+        Path getCacheDirectory() {
+            return Path.of('/cache/dir')
+        }
+    }
 
     def 'should validate context OK ' () {
         when:
