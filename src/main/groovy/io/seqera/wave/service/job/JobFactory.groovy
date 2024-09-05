@@ -66,12 +66,11 @@ class JobFactory {
     }
 
     JobSpec scan(ScanRequest request) {
-        return new JobSpec(
-                JobSpec.Type.Scan,
+        JobSpec.scan(
                 request.id,
+                "scan-${request.id}",
                 request.creationTime,
                 scanConfig.timeout,
-                "scan-${request.id}",
                 request.workDir
         )
     }
