@@ -214,7 +214,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
         catch (Throwable e) {
             log.error "== Ouch! Unable to build container req=$req", e
             final result = BuildResult.failed(req.buildId, e.message, req.startTime)
-            buildStore.storeBuild(req.targetImage, result, buildConfig.failureDuration)
+            buildStore.storeBuild(req.targetImage, new BuildStoreEntry(req, result), buildConfig.failureDuration)
             return null
         }
     }
@@ -249,7 +249,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
         // try to store a new build status for the given target image
         // this returns true if and only if such container image was not set yet
         final ret1 = BuildResult.create(request)
-        if( buildStore.storeIfAbsent(request.targetImage, ret1) ) {
+        if( buildStore.storeIfAbsent(request.targetImage, new BuildStoreEntry(request, ret1)) ) {
             // go ahead
             log.info "== Submit build request: $request"
             launchAsync(request)
@@ -257,7 +257,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
         }
         // since it was unable to initialise the build result status
         // this means the build status already exists, retrieve it
-        final ret2 = buildStore.getBuild(request.targetImage)
+        final ret2 = buildStore.getBuildResult(request.targetImage)
         if( ret2 ) {
             log.info "== Hit build cache for request: $request"
             // note: mark as cached only if the build result is 'done'
@@ -345,30 +345,31 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
             log.error "Build result unknown for job=${event.job.id}; event=${event}"
             return
         }
-        if( build.done() ) {
+        if( build.result.done() ) {
             log.warn "Build result already marked as completed for job=${event.job.id}; event=${event}"
             return
         }
 
         if( event.type == JobEvent.Type.Complete ) {
-            handleJobCompletion(event.job as BuildJobSpec, event.state)
+            handleJobCompletion(event.job as BuildJobSpec, build, event.state)
         }
         else if( event.type == JobEvent.Type.Error ) {
-          handleJobException(event.job as BuildJobSpec, event.error)
+          handleJobException(event.job as BuildJobSpec, build, event.error)
         }
         else if( event.type == JobEvent.Type.Timeout ) {
-            handleJobTimeout(event.job as BuildJobSpec)
+            handleJobTimeout(event.job as BuildJobSpec, build)
         }
         else {
             throw new IllegalStateException("Unknown container build job event type=$event")
         }
     }
 
-    protected void handleJobCompletion(BuildJobSpec job, JobState state) {
-        final buildId = job.buildId
-        final identity = job.identity
+    protected void handleJobCompletion(BuildJobSpec job, BuildStoreEntry build, JobState state) {
+        final buildId = build.request.buildId
+        final identity = build.request.identity
+        final targetImage = build.request.targetImage
         final digest = state.succeeded()
-                        ? proxyService.getImageDigest(job.id, identity, true)
+                        ? proxyService.getImageDigest(targetImage, identity, true)
                         : null
         // use a short time-to-live for failed build
         // this is needed to allow re-try builds failed for
@@ -378,23 +379,24 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
                 : buildConfig.failureDuration
         // update build status store
         final result = state.completed()
-                ? BuildResult.completed(buildId, state.exitCode!=null ? state.exitCode : -1, state.stdout, job.request.startTime, digest)
-                : BuildResult.failed(buildId, state.stdout, job.request.startTime)
-        buildStore.storeBuild(job.id, result, ttl)
+                ? BuildResult.completed(buildId, state.exitCode!=null ? state.exitCode : -1, state.stdout, job.creationTime, digest)
+                : BuildResult.failed(buildId, state.stdout, job.creationTime)
+        buildStore.storeBuild(job.id, build.withResult(result), ttl)
         // finally notify completion
-        eventPublisher.publishEvent(new BuildEvent(job.request, result))
+        eventPublisher.publishEvent(new BuildEvent(build.request, result))
     }
 
-    protected void handleJobException(BuildJobSpec job, Throwable error) {
-        final result= BuildResult.failed(job.buildId as String, error.message, job.request.startTime)
+    protected void handleJobException(BuildJobSpec job, BuildStoreEntry build, Throwable error) {
+        final result= BuildResult.failed(build.request.buildId, error.message, job.creationTime)
         log.error("Unable to build container image '${job.id}'; job name=${job.schedulerId}; cause=${error.message}", error)
-        buildStore.storeBuild(job.id, result, buildConfig.failureDuration)
+        buildStore.storeBuild(job.id, build.withResult(result), buildConfig.failureDuration)
     }
 
-    protected void handleJobTimeout(BuildJobSpec job) {
-        final result= BuildResult.failed(job.buildId, "Container image build timed out '${job.buildId}'", job.request.startTime)
-        log.warn "== Blob cache completed for object '${job.buildId}'; job name=${job.schedulerId}; duration=${result.duration}"
-        buildStore.storeBuild(job.id, result, buildConfig.failureDuration)
+    protected void handleJobTimeout(BuildJobSpec job, BuildStoreEntry build) {
+        final buildId = build.request.buildId
+        final result= BuildResult.failed(buildId, "Container image build timed out '${buildId}'", job.creationTime)
+        log.warn "== Blob cache completed for object '${buildId}'; job name=${job.schedulerId}; duration=${result.duration}"
+        buildStore.storeBuild(job.id, build.withResult(result), buildConfig.failureDuration)
     }
 
     // **************************************************************

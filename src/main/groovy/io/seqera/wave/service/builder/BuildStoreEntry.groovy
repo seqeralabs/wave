@@ -1,6 +1,6 @@
 /*
  *  Wave, containers provisioning service
- *  Copyright (c) 2023-2024, Seqera Labs
+ *  Copyright (c) 2024, Seqera Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
@@ -16,31 +16,34 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job.spec
+package io.seqera.wave.service.builder
 
-import java.nio.file.Path
-import java.time.Duration
-import java.time.Instant
-
-import groovy.transform.Canonical
 import groovy.transform.CompileStatic
-import io.seqera.wave.service.job.CleanableAware
-import io.seqera.wave.service.job.JobSpec
+import groovy.transform.EqualsAndHashCode
+import groovy.transform.ToString
+
 /**
- * JobSpec implementation or container builds
+ * Class to store build request and result in cache
  *
- * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
+ * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-@Canonical
+@ToString(includePackage = false, includeNames = true)
+@EqualsAndHashCode
 @CompileStatic
-class BuildJobSpec implements JobSpec, CleanableAware {
-    final String id
-    final Instant creationTime
-    final Duration maxDuration
-    final String schedulerId
-    final String targetImage
-    final Path cleanableDir
+class BuildStoreEntry {
 
-    Type getType() { Type.Build }
+    final BuildRequest request
 
+    final BuildResult result
+
+    protected BuildStoreEntry() {}
+
+    BuildStoreEntry(BuildRequest request, BuildResult result) {
+        this.request = request
+        this.result = result
+    }
+
+    BuildStoreEntry withResult(BuildResult result) {
+        new BuildStoreEntry(request, result)
+    }
 }

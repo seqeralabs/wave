@@ -53,7 +53,14 @@ class JobFactory {
     }
 
     BuildJobSpec build(BuildRequest request) {
-        return new BuildJobSpec(request)
+        return new BuildJobSpec(
+                request.targetImage,
+                request.startTime,
+                request.maxDuration,
+                "build-" + request.buildId.replace('_', '-'),
+                request.targetImage,
+                request.workDir
+        )
     }
 
     static private String generate(String type, String id, Instant creationTime) {

@@ -20,13 +20,9 @@ package io.seqera.wave.service.job.spec
 
 import spock.lang.Specification
 
+import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
-
-import io.seqera.wave.api.SubmitContainerTokenRequest
-import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.tower.PlatformId
-import io.seqera.wave.tower.User
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -35,27 +31,23 @@ class BuildJobSpecTest extends Specification {
 
     def 'should create build job spec' () {
         given:
-        def id = PlatformId.of(new User(id: 1), Mock(SubmitContainerTokenRequest))
         def ts = Instant.parse('2024-08-18T19:23:33.650722Z')
-        and:
-        def request = new BuildRequest(
-                targetImage: 'docker.io/foo:bar',
-                buildId: '12345',
-                startTime: ts,
-                maxDuration: Duration.ofMinutes(1),
-                identity: id
-        )
 
         when:
-        def spec = new BuildJobSpec(request)
+        def spec = new BuildJobSpec(
+                'docker.io/foo:bar',
+                ts,
+                Duration.ofMinutes(1),
+                'build-12345-1',
+                'docker.io/foo:bar',
+                Path.of('/some/path')
+        )
         then:
         spec.id == 'docker.io/foo:bar'
         spec.creationTime == ts
         spec.maxDuration == Duration.ofMinutes(1)
-        spec.getSchedulerId() == 'build-12345'
-        spec.getBuildId() == '12345'
+        spec.getSchedulerId() == 'build-12345-1'
         spec.getTargetImage() == spec.id
-        spec.identity == id
     }
 
 }
