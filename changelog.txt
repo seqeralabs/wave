@@ -1,4 +1,7 @@
 # Wave changelog
+1.11.1 - 5 Sep 2024 
+- Add rate limiter to container request [a3c63525]
+
 1.11.0 - 23 Aug 2024
 - added /v1alpha2/container/{containerId} (#609) [5221b5a0]
 - Improve contaiener view page (#615) [9e15b455]
