@@ -219,7 +219,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
         }
     }
 
-
     protected void launchAsync(BuildRequest request) {
         // check the build rate limit
         try {
@@ -366,10 +365,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
 
     protected void handleJobCompletion(BuildJobSpec job, BuildStoreEntry build, JobState state) {
         final buildId = build.request.buildId
-        final identity = build.request.identity
-        final targetImage = build.request.targetImage
         final digest = state.succeeded()
-                        ? proxyService.getImageDigest(targetImage, identity, true)
+                        ? proxyService.getImageDigest(build.request, true)
                         : null
         // use a short time-to-live for failed build
         // this is needed to allow re-try builds failed for

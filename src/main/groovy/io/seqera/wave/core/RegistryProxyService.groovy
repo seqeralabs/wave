@@ -187,17 +187,12 @@ class RegistryProxyService {
         }
     }
 
-    @Deprecated
     String getImageDigest(BuildRequest request, boolean retryOnNotFound=false) {
-        getImageDigest(request.targetImage, request.identity)
-    }
-
-    String getImageDigest(String image, PlatformId identity, boolean retryOnNotFound=false) {
         try {
-            return getImageDigest0(image, identity, retryOnNotFound)
+            return getImageDigest0(request.targetImage, request.identity, retryOnNotFound)
         }
         catch(Exception e) {
-            log.warn "Unable to retrieve digest for image '${image}' -- cause: ${e.message}"
+            log.warn "Unable to retrieve digest for image '${request.targetImage}' -- cause: ${e.message}"
             return null
         }
     }

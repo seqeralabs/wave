@@ -20,6 +20,7 @@ package io.seqera.wave.service.builder
 
 import spock.lang.Requires
 import spock.lang.Specification
+import spock.lang.Timeout
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -45,24 +46,23 @@ import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
-import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
-import io.seqera.wave.test.RedisTestContainer
-import io.seqera.wave.test.SurrealDBTestContainer
+import io.seqera.wave.test.TestHelper
 import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.util.ContainerHelper
 import io.seqera.wave.util.Packer
 import io.seqera.wave.util.SpackHelper
 import io.seqera.wave.util.TemplateRenderer
 import jakarta.inject.Inject
-import io.seqera.wave.util.ContainerHelper
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Timeout(60)
 @Slf4j
 @MicronautTest
-class ContainerBuildServiceTest extends Specification implements RedisTestContainer, SurrealDBTestContainer{
+class ContainerBuildServiceTest extends Specification {
 
     @Inject ContainerBuildServiceImpl service
     @Inject RegistryLookupService lookupService
@@ -71,9 +71,9 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
     @Inject HttpClientConfig httpClientConfig
     @Inject BuildConfig buildConfig
     @Inject BuildRecordStore buildRecordStore
+    @Inject BuildCacheStore buildCacheStore
     @Inject PersistenceService persistenceService
     @Inject JobService jobService
-
 
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
     def 'should build & push container to aws' () {
@@ -101,17 +101,17 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                         cacheRepository: cacheRepo,
                         configJson: cfg,
                         format: BuildFormat.DOCKER,
-                        startTime: Instant.now()
+                        startTime: Instant.now(),
+                        maxDuration: Duration.ofMinutes(1)
                 )
                     .withBuildId('1')
+        and:
+        buildCacheStore.storeBuild(targetImage, new BuildStoreEntry(req, BuildResult.create(req)))
 
         when:
-        def jobSpec = service.launch(req)
-        sleep 5000 //wait for build
+        service.launch(req)
         then:
-        if(jobService.status(jobSpec).status == JobState.Status.RUNNING)
-            sleep 5000 //wait for build
-        jobService.status(jobSpec).status == JobState.Status.SUCCEEDED
+        service.buildResult(targetImage).get().succeeded()
 
         cleanup:
         folder?.deleteDir()
@@ -139,21 +139,21 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                         workspace: folder,
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
-                        platform: ContainerPlatform.of('amd64'),
+                        platform: TestHelper.containerPlatform(),
                         cacheRepository: cacheRepo,
                         configJson: cfg,
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now(),
+                        maxDuration: Duration.ofMinutes(1)
                 )
                 .withBuildId('1')
+        and:
+        buildCacheStore.storeBuild(targetImage, new BuildStoreEntry(req, BuildResult.create(req)))
 
         when:
-        def jobSpec = service.launch(req)
-        sleep 5000 //wait for build
+        service.launch(req)
         then:
-        if(jobService.status(jobSpec).status == JobState.Status.RUNNING)
-            sleep 5000 //wait for build
-        jobService.status(jobSpec).status == JobState.Status.SUCCEEDED
+        service.buildResult(targetImage).get().succeeded()
 
         cleanup:
         folder?.deleteDir()
@@ -163,7 +163,6 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
     def 'should build & push container to quay.io' () {
         given:
         def folder = Files.createTempDirectory('test')
-        def buildRepo = buildConfig.defaultBuildRepository
         def cacheRepo = buildConfig.defaultCacheRepository
         and:
         def dockerFile = '''
@@ -171,9 +170,9 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         RUN echo Hello > hello.txt
         '''.stripIndent()
         and:
-        buildRepo = "quay.io/pditommaso/wave-tests"
+        def buildRepo = "quay.io/pditommaso/wave-tests"
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('linux/arm64'), buildRepo, null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
         def req =
                 new BuildRequest(
@@ -182,21 +181,21 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                         workspace: folder,
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
-                        platform: ContainerPlatform.of('amd64'),
+                        platform: TestHelper.containerPlatform(),
                         cacheRepository: cacheRepo,
                         configJson: cfg,
                         format: BuildFormat.DOCKER,
-                        startTime: Instant.now()
+                        startTime: Instant.now(),
+                        maxDuration: Duration.ofMinutes(1)
                 )
                 .withBuildId('1')
+        and:
+        buildCacheStore.storeBuild(targetImage, new BuildStoreEntry(req, BuildResult.create(req)))
 
         when:
-        def jobSpec = service.launch(req)
-        sleep 5000 //wait for build
+        service.launch(req)
         then:
-        if(jobService.status(jobSpec).status == JobState.Status.RUNNING)
-            sleep 5000 //wait for build
-        jobService.status(jobSpec).status == JobState.Status.SUCCEEDED
+        service.buildResult(targetImage).get().succeeded()
 
         cleanup:
         folder?.deleteDir()
@@ -224,21 +223,21 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                         workspace: folder,
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
-                        platform: ContainerPlatform.of('amd64'),
+                        platform: TestHelper.containerPlatform(),
                         cacheRepository: cacheRepo,
                         configJson: cfg,
                         format: BuildFormat.DOCKER,
-                        startTime: Instant.now()
+                        startTime: Instant.now(),
+                        maxDuration: Duration.ofMinutes(1)
                 )
                 .withBuildId('1')
+        and:
+        buildCacheStore.storeBuild(targetImage, new BuildStoreEntry(req, BuildResult.create(req)))
 
         when:
-        def jobSpec = service.launch(req)
-        sleep 5000 //wait for build
+        service.launch(req)
         then:
-        if(jobService.status(jobSpec).status == JobState.Status.RUNNING)
-            sleep 5000 //wait for build
-        jobService.status(jobSpec).status == JobState.Status.SUCCEEDED
+        service.buildResult(targetImage).get().succeeded()
 
         cleanup:
         folder?.deleteDir()
@@ -282,10 +281,11 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                         workspace: folder,
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
-                        platform: ContainerPlatform.of('amd64'),
+                        platform: TestHelper.containerPlatform(),
                         cacheRepository: cacheRepo,
                         format: BuildFormat.DOCKER,
-                        startTime: Instant.now()
+                        startTime: Instant.now(),
+                        maxDuration: Duration.ofMinutes(1)
                 )
                 .withBuildId('1')
         and:
@@ -475,13 +475,13 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         '''.stripIndent()
 
     }
+
     @Requires({System.getenv('DOCKER_USER') && System.getenv('DOCKER_PAT')})
     def 'should build & push container to docker.io with local layers' () {
         given:
         def folder = Files.createTempDirectory('test')
         def buildRepo = "docker.io/pditommaso/wave-tests"
         def cacheRepo = buildConfig.defaultCacheRepository
-        def context = Files.createDirectories(folder.resolve('context'))
         def layer = Files.createDirectories(folder.resolve('layer'))
         def file1 = layer.resolve('hola.txt'); file1.text = 'Hola\n'
         def file2 = layer.resolve('ciao.txt'); file2.text = 'Ciao\n'
@@ -509,17 +509,17 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                         configJson: cfg,
                         containerConfig: containerConfig ,
                         format: BuildFormat.DOCKER,
-                        startTime: Instant.now()
+                        startTime: Instant.now(),
+                        maxDuration: Duration.ofMinutes(1)
                 )
                         .withBuildId('1')
-
+        and:
+        buildCacheStore.storeBuild(targetImage, new BuildStoreEntry(req, BuildResult.create(req)))
+        
         when:
-        def jobSpec = service.launch(req)
-        sleep 5000 //wait for build
+        service.launch(req)
         then:
-        if(jobService.status(jobSpec).status == JobState.Status.RUNNING)
-            sleep 5000 //wait for build
-        jobService.status(jobSpec).status == JobState.Status.SUCCEEDED
+        service.buildResult(targetImage).get().succeeded()
 
         cleanup:
         folder?.deleteDir()
