@@ -18,23 +18,30 @@
 
 package io.seqera.wave.service.job
 
+import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
+import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import groovy.transform.ToString
+
 /**
  * Model a unique job to be managed
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@ToString(includePackage = false, includeNames = true)
+@Canonical
 @CompileStatic
-interface JobSpec {
+class JobSpec {
     enum Type { Transfer, Build, Scan }
 
-    Type getType()
-    String getId()
-    Instant getCreationTime()
-    Duration getMaxDuration()
-    String getSchedulerId()
+    final Type type
+    final String id
+    final Instant creationTime
+    final Duration maxDuration
+    final String schedulerId
+    final Path cleanableDir
 
 }

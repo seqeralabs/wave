@@ -34,8 +34,6 @@ import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildStoreEntry
 import io.seqera.wave.service.job.JobSpec
-import io.seqera.wave.service.job.spec.BuildJobSpec
-import io.seqera.wave.service.job.spec.TransferJobSpec
 import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingResponse
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
@@ -375,34 +373,18 @@ class MoshiEncodingStrategyTest extends Specification {
 
     }
 
-    def 'should encode and decode transfer job spec' () {
-        given:
-        def encoder = new MoshiEncodeStrategy<JobSpec>() { }
-        and:
-        def transfer = new TransferJobSpec('12345', Instant.now(), Duration.ofMinutes(1), 'xyz')
-
-        when:
-        def json = encoder.encode(transfer)
-        and:
-        def copy = encoder.decode(json)
-        then:
-        copy.getClass() == TransferJobSpec
-        and:
-        copy == transfer
-    }
-
     def 'should encode and decode build job spec' () {
         given:
         def encoder = new MoshiEncodeStrategy<JobSpec>() { }
         and:
         def ts = Instant.parse('2024-08-18T19:23:33.650722Z')
         and:
-        def build = new BuildJobSpec(
+        def build = new JobSpec(
+                JobSpec.Type.Build,
                 'docker.io/foo:bar',
                 ts,
                 Duration.ofMinutes(1),
                 '12345',
-                'docker.io/foo:bar',
                 Path.of('/some/path')
         )
 
@@ -412,8 +394,6 @@ class MoshiEncodingStrategyTest extends Specification {
         and:
         def copy = encoder.decode(json)
         then:
-        copy.getClass() == BuildJobSpec
-        and:
         copy == build
     }
 

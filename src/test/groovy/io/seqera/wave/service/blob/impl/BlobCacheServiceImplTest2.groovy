@@ -30,8 +30,8 @@ import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.BlobStore
 import io.seqera.wave.service.job.JobEvent
+import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
-import io.seqera.wave.service.job.spec.TransferJobSpec
 import io.seqera.wave.test.AwsS3TestContainer
 /**
  *
@@ -132,7 +132,7 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
         def blobStore = Mock(BlobStore)
         def service = new BlobCacheServiceImpl(blobStore: blobStore)
         def event = Mock(JobEvent)
-        event.job >> new TransferJobSpec('unknown-id')
+        event.job >> new JobSpec(JobSpec.Type.Transfer, 'unknown-id')
 
         when:
         service.onJobEvent(event)
@@ -147,7 +147,7 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
         def blob = Mock(BlobCacheInfo)
         def service = new BlobCacheServiceImpl(blobStore: blobStore)
         def event = Mock(JobEvent)
-        event.job >> new TransferJobSpec('completed-id')
+        event.job >> new JobSpec(JobSpec.Type.Transfer,'completed-id')
 
         when:
         service.onJobEvent(event)
@@ -165,7 +165,7 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
         def config = new BlobCacheConfig(failureDuration: Duration.ofMinutes(1))
         def service = new BlobCacheServiceImpl(blobStore: blobStore, blobConfig: config)
         def event = Mock(JobEvent)
-        event.job >> new TransferJobSpec('job-id')
+        event.job >> JobSpec(JobSpec.Type.Transfer,'job-id')
         event.type >> JobEvent.Type.Complete
         event.state >> JobState.completed(0, 'Job completed')
 
@@ -186,7 +186,7 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
         def config = new BlobCacheConfig(failureDuration: Duration.ofMinutes(1))
         def service = new BlobCacheServiceImpl(blobStore: blobStore, blobConfig: config)
         def event = Mock(JobEvent)
-        event.job >> new TransferJobSpec('job-id')
+        event.job >> JobSpec(JobSpec.Type.Transfer,'job-id')
         event.type >> JobEvent.Type.Timeout
 
         when:
@@ -204,7 +204,7 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
         def config = new BlobCacheConfig(failureDuration: Duration.ofMinutes(1))
         def service = new BlobCacheServiceImpl(blobStore: blobStore, blobConfig: config)
         def event = Mock(JobEvent)
-        event.job >> new TransferJobSpec('job-id')
+        event.job >> JobSpec(JobSpec.Type.Transfer,'job-id')
         event.type >> JobEvent.Type.Error
         event.error >> new RuntimeException("Error message")
 

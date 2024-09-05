@@ -94,8 +94,8 @@ class JobServiceImpl implements JobService {
         // delete compute resource
         operations.cleanup(job)
         // delete temporary work directory
-        if( job instanceof CleanableAware ) {
-            job.getCleanableDir().deleteDir()
+        if( job.cleanableDir ) {
+            job.cleanableDir.deleteDir()
         }
     }
 }

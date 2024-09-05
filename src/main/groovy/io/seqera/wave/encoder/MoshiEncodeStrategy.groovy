@@ -24,9 +24,6 @@ import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import groovy.transform.CompileStatic
-import io.seqera.wave.service.job.JobSpec
-import io.seqera.wave.service.job.spec.BuildJobSpec
-import io.seqera.wave.service.job.spec.TransferJobSpec
 import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingMessage
 import io.seqera.wave.service.pairing.socket.msg.PairingResponse
@@ -78,10 +75,6 @@ abstract class MoshiEncodeStrategy<V> implements EncodingStrategy<V> {
                         .withSubtype(PairingHeartbeat.class, PairingHeartbeat.simpleName)
                         .withSubtype(PairingResponse.class, PairingResponse.simpleName)
 
-                )
-                .add(PolymorphicJsonAdapterFactory.of(JobSpec.class, "@type")
-                        .withSubtype(BuildJobSpec.class, BuildJobSpec.simpleName)
-                        .withSubtype(TransferJobSpec.class, TransferJobSpec.simpleName)
                 )
                 .build()
         this.jsonAdapter = moshi.adapter(type)

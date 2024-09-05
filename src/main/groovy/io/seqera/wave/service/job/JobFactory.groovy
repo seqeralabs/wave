@@ -25,8 +25,6 @@ import com.google.common.hash.Hashing
 import groovy.transform.CompileStatic
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.job.spec.BuildJobSpec
-import io.seqera.wave.service.job.spec.TransferJobSpec
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -42,9 +40,10 @@ class JobFactory {
     @Nullable
     private BlobCacheConfig blobConfig
 
-    TransferJobSpec transfer(String id) {
+    JobSpec transfer(String id) {
         final ts = Instant.now()
-        return new TransferJobSpec(
+        return new JobSpec(
+                JobSpec.Type.Transfer,
                 id,
                 ts,
                 blobConfig.transferTimeout,
@@ -52,13 +51,13 @@ class JobFactory {
         )
     }
 
-    BuildJobSpec build(BuildRequest request) {
-        return new BuildJobSpec(
+    JobSpec build(BuildRequest request) {
+        return new JobSpec(
+                JobSpec.Type.Build,
                 request.targetImage,
                 request.startTime,
                 request.maxDuration,
                 "build-" + request.buildId.replace('_', '-'),
-                request.targetImage,
                 request.workDir
         )
     }
