@@ -20,6 +20,7 @@ package io.seqera.wave.service.job
 
 import spock.lang.Specification
 
+import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
@@ -30,11 +31,34 @@ import java.time.Instant
 class JobSpecTest extends Specification {
 
     def 'should validate constructor' () {
+        given:
+        def ts = Instant.now()
+        when:
+        def job = new JobSpec(
+                '1234',
+                JobSpec.Type.Build,
+                'state-123',
+                'oper-123',
+                ts,
+                Duration.ofMinutes(1),
+                Path.of('/some/path')
+        )
+        then:
+        job.id == '1234'
+        job.stateId == 'state-123'
+        job.operationName == 'oper-123'
+        job.creationTime == ts
+        job.maxDuration == Duration.ofMinutes(1)
+        job.cleanableDir == Path.of('/some/path')
 
+    }
+
+    def 'should create transfer job' () {
         given:
         def now = Instant.now()
-        def job = new JobSpec(JobSpec.Type.Transfer, '12345', now, Duration.ofMinutes(1), 'xyz')
+        def job = JobSpec.transfer('12345','xyz', now, Duration.ofMinutes(1))
         expect:
+        job.id
         job.stateId == '12345'
         job.type == JobSpec.Type.Transfer
         job.creationTime == now
@@ -42,4 +66,31 @@ class JobSpecTest extends Specification {
         job.operationName == 'xyz'
     }
 
+    def 'should create build job' () {
+        given:
+        def now = Instant.now()
+        def job = JobSpec.build('12345','xyz', now, Duration.ofMinutes(1), Path.of('/some/path'))
+        expect:
+        job.id
+        job.stateId == '12345'
+        job.type == JobSpec.Type.Build
+        job.creationTime == now
+        job.maxDuration == Duration.ofMinutes(1)
+        job.operationName == 'xyz'
+        job.cleanableDir == Path.of('/some/path')
+    }
+
+    def 'should create scan job' () {
+        given:
+        def now = Instant.now()
+        def job = JobSpec.scan('12345','xyz', now, Duration.ofMinutes(1), Path.of('/some/path'))
+        expect:
+        job.id
+        job.stateId == '12345'
+        job.type == JobSpec.Type.Scan
+        job.creationTime == now
+        job.maxDuration == Duration.ofMinutes(1)
+        job.operationName == 'xyz'
+        job.cleanableDir == Path.of('/some/path')
+    }
 }

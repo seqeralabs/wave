@@ -379,14 +379,12 @@ class MoshiEncodingStrategyTest extends Specification {
         and:
         def ts = Instant.parse('2024-08-18T19:23:33.650722Z')
         and:
-        def build = new JobSpec(
-                JobSpec.Type.Build,
+        def build = JobSpec.build(
                 'docker.io/foo:bar',
+                '12345',
                 ts,
                 Duration.ofMinutes(1),
-                '12345',
-                Path.of('/some/path')
-        )
+                Path.of('/some/path') )
 
         when:
         def json = encoder.encode(build)
