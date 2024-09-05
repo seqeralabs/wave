@@ -74,7 +74,6 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
     @Inject PersistenceService persistenceService
     @Inject JobService jobService
 
-    private static final BUILD_WAIT_TIME = 10_000
 
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
     def 'should build & push container to aws' () {
@@ -108,10 +107,10 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
 
         when:
         def jobSpec = service.launch(req)
-        sleep BUILD_WAIT_TIME
+        sleep 5000 //wait for build
         then:
         if(jobService.status(jobSpec).status == JobState.Status.RUNNING)
-            sleep BUILD_WAIT_TIME
+            sleep 5000 //wait for build
         jobService.status(jobSpec).status == JobState.Status.SUCCEEDED
 
         cleanup:
@@ -150,10 +149,10 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
 
         when:
         def jobSpec = service.launch(req)
-        sleep BUILD_WAIT_TIME
+        sleep 5000 //wait for build
         then:
         if(jobService.status(jobSpec).status == JobState.Status.RUNNING)
-            sleep BUILD_WAIT_TIME
+            sleep 5000 //wait for build
         jobService.status(jobSpec).status == JobState.Status.SUCCEEDED
 
         cleanup:
@@ -193,10 +192,10 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
 
         when:
         def jobSpec = service.launch(req)
-        sleep BUILD_WAIT_TIME
+        sleep 5000 //wait for build
         then:
         if(jobService.status(jobSpec).status == JobState.Status.RUNNING)
-            sleep BUILD_WAIT_TIME
+            sleep 5000 //wait for build
         jobService.status(jobSpec).status == JobState.Status.SUCCEEDED
 
         cleanup:
@@ -235,10 +234,10 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
 
         when:
         def jobSpec = service.launch(req)
-        sleep BUILD_WAIT_TIME
+        sleep 5000 //wait for build
         then:
         if(jobService.status(jobSpec).status == JobState.Status.RUNNING)
-            sleep BUILD_WAIT_TIME
+            sleep 5000 //wait for build
         jobService.status(jobSpec).status == JobState.Status.SUCCEEDED
 
         cleanup:
@@ -516,10 +515,10 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
 
         when:
         def jobSpec = service.launch(req)
-        sleep BUILD_WAIT_TIME
+        sleep 5000 //wait for build
         then:
         if(jobService.status(jobSpec).status == JobState.Status.RUNNING)
-            sleep BUILD_WAIT_TIME
+            sleep 5000 //wait for build
         jobService.status(jobSpec).status == JobState.Status.SUCCEEDED
 
         cleanup:
