@@ -28,6 +28,7 @@ import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.scan.ScanRequest
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>

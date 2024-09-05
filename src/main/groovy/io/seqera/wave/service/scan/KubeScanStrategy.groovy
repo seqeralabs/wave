@@ -86,7 +86,7 @@ class KubeScanStrategy extends ScanStrategy {
 
             final trivyCommand = scanCommand(req.targetImage, reportFile, scanConfig)
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
-            k8sService.scanContainer(jobName, scanConfig.scanImage, trivyCommand, req.workDir, configFile, scanConfig, selector)
+            k8sService.launchScanJob(jobName, scanConfig.scanImage, trivyCommand, req.workDir, configFile, scanConfig, selector)
         }
         catch (ApiException e) {
             throw new BadRequestException("Unexpected scan failure: ${e.responseBody}", e)

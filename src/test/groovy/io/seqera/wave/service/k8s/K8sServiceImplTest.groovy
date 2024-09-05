@@ -51,7 +51,8 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.namespace': 'foo',
                 'wave.build.k8s.configPath': '/home/kube.config',
                 'wave.build.k8s.storage.claimName': 'bar',
-                'wave.build.k8s.storage.mountPath': '/build' ]
+                'wave.build.k8s.storage.mountPath': '/build',
+                'wave.scan.enabled': 'true']
         and:
         def ctx = ApplicationContext.run(PROPS)
         ctx.getBean(K8sServiceImpl)
@@ -745,6 +746,169 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.containers[0].env.find { it.name == 'BUILDKITD_FLAGS' }
         job.spec.template.spec.containers[0].command == ['buildctl-daemonless.sh']
         job.spec.template.spec.containers[0].args == args
+    }
+
+    def 'should create scan job spec with valid inputs'() {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'foo',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.storage.claimName': 'bar',
+                'wave.build.k8s.storage.mountPath': '/build',
+                'wave.build.k8s.service-account': 'theAdminAccount'
+        ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def name = 'scan-job'
+        def containerImage = 'scan-image:latest'
+        def args = ['arg1', 'arg2']
+        def workDir = Path.of('/work/dir')
+        def credsFile = Path.of('/creds/file')
+        def scanConfig = Mock(ScanConfig) {
+            getCacheDirectory() >> Path.of('/cache/dir')
+            getRequestsCpu() >> '2'
+            getRequestsMemory() >> '4Gi'
+        }
+        def nodeSelector = [key: 'value']
+
+        when:
+        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig, nodeSelector)
+
+        then:
+        job.metadata.name == name
+        job.metadata.namespace == 'my-ns'
+        job.spec.template.spec.containers[0].image == containerImage
+        job.spec.template.spec.containers[0].args == args
+        job.spec.template.spec.containers[0].resources.requests.get('cpu') == new Quantity('2')
+        job.spec.template.spec.containers[0].resources.requests.get('memory') == new Quantity('4Gi')
+        job.spec.template.spec.volumes.size() == 1
+        job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'build-claim'
+        job.spec.template.spec.nodeSelector == nodeSelector
+        job.spec.template.spec.restartPolicy == 'Never'
+    }
+
+    def 'should create scan job spec without creds file'() {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'foo',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.storage.claimName': 'bar',
+                'wave.build.k8s.storage.mountPath': '/build',
+                'wave.build.k8s.service-account': 'theAdminAccount'
+        ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def name = 'scan-job'
+        def containerImage = 'scan-image:latest'
+        def args = ['arg1', 'arg2']
+        def workDir = Path.of('/work/dir')
+        def credsFile = null
+        def scanConfig = Mock(ScanConfig) {
+            getCacheDirectory() >> Path.of('/cache/dir')
+            getRequestsCpu() >> '2'
+            getRequestsMemory() >> '4Gi'
+        }
+        def nodeSelector = [key: 'value']
+
+        when:
+        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig, nodeSelector)
+
+        then:
+        job.metadata.name == name
+        job.metadata.namespace == 'my-ns'
+        job.spec.template.spec.containers[0].image == containerImage
+        job.spec.template.spec.containers[0].args == args
+        job.spec.template.spec.containers[0].resources.requests.get('cpu') == new Quantity('2')
+        job.spec.template.spec.containers[0].resources.requests.get('memory') == new Quantity('4Gi')
+        job.spec.template.spec.volumes.size() == 1
+        job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'build-claim'
+        job.spec.template.spec.nodeSelector == nodeSelector
+        job.spec.template.spec.restartPolicy == 'Never'
+    }
+
+    def 'should create scan job spec without node selector'() {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'foo',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.storage.claimName': 'bar',
+                'wave.build.k8s.storage.mountPath': '/build',
+                'wave.build.k8s.service-account': 'theAdminAccount'
+        ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def name = 'scan-job'
+        def containerImage = 'scan-image:latest'
+        def args = ['arg1', 'arg2']
+        def workDir = Path.of('/work/dir')
+        def credsFile = Path.of('/creds/file')
+        def scanConfig = Mock(ScanConfig) {
+            getCacheDirectory() >> Path.of('/cache/dir')
+            getRequestsCpu() >> '2'
+            getRequestsMemory() >> '4Gi'
+        }
+        def nodeSelector = null
+
+        when:
+        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig, nodeSelector)
+
+        then:
+        job.metadata.name == name
+        job.metadata.namespace == 'my-ns'
+        job.spec.template.spec.containers[0].image == containerImage
+        job.spec.template.spec.containers[0].args == args
+        job.spec.template.spec.containers[0].resources.requests.get('cpu') == new Quantity('2')
+        job.spec.template.spec.containers[0].resources.requests.get('memory') == new Quantity('4Gi')
+        job.spec.template.spec.volumes.size() == 1
+        job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'build-claim'
+        job.spec.template.spec.nodeSelector == null
+        job.spec.template.spec.restartPolicy == 'Never'
+    }
+
+    def 'should create scan job spec without resource requests'() {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'foo',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.storage.claimName': 'bar',
+                'wave.build.k8s.storage.mountPath': '/build',
+                'wave.build.k8s.service-account': 'theAdminAccount'
+        ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def name = 'scan-job'
+        def containerImage = 'scan-image:latest'
+        def args = ['arg1', 'arg2']
+        def workDir = Path.of('/work/dir')
+        def credsFile = Path.of('/creds/file')
+        def scanConfig = Mock(ScanConfig) {
+            getCacheDirectory() >> Path.of('/cache/dir')
+            getRequestsCpu() >> null
+            getRequestsMemory() >> null
+        }
+        def nodeSelector = [key: 'value']
+
+        when:
+        def job = k8sService.scanJobSpec(name, containerImage, args, workDir, credsFile, scanConfig, nodeSelector)
+
+        then:
+        job.metadata.name == name
+        job.metadata.namespace == 'my-ns'
+        job.spec.template.spec.containers[0].image == containerImage
+        job.spec.template.spec.containers[0].args == args
+        job.spec.template.spec.containers[0].resources.requests.isEmpty()
+        job.spec.template.spec.volumes.size() == 1
+        job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'build-claim'
+        job.spec.template.spec.nodeSelector == nodeSelector
+        job.spec.template.spec.restartPolicy == 'Never'
     }
 
 }
