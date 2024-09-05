@@ -105,7 +105,7 @@ class BuildCacheStore extends AbstractCacheStore<BuildStoreEntry> implements Bui
      */
     private static class Waiter {
 
-        static BuildResult awaitCompletion(BuildCacheStore store, String imageName, BuildResult result) {
+        static BuildResult awaitCompletion(BuildCacheStore store, String imageName, BuildResult current) {
             final await = store.buildConfig.statusDelay
             final beg = System.currentTimeMillis()
             // await nearly double of the build timeout time because the build job
@@ -113,13 +113,13 @@ class BuildCacheStore extends AbstractCacheStore<BuildStoreEntry> implements Bui
             // note: see also #storeIfAbsent method
             final max = store.buildConfig.statusAwaitDuration.toMillis()
             while( true ) {
-                if( result==null ) {
+                if( current==null ) {
                     return BuildResult.unknown()
                 }
 
                 // check is completed
-                if( result.done() ) {
-                    return result
+                if( current.done() ) {
+                    return current
                 }
                 // check if it's timed out
                 final delta = System.currentTimeMillis()-beg
@@ -128,7 +128,7 @@ class BuildCacheStore extends AbstractCacheStore<BuildStoreEntry> implements Bui
                 // sleep a bit
                 Thread.sleep(await.toMillis())
                 // fetch the build status again
-                result = store.getBuildResult(imageName)
+                current = store.getBuildResult(imageName)
             }
         }
     }
