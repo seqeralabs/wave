@@ -42,7 +42,7 @@ class DockerJobOperation implements JobOperation {
     @Override
     JobState status(JobSpec jobSpec) {
         final state = getDockerContainerState(jobSpec.operationName)
-        log.trace "Docker transfer status name=$jobSpec.operationName; state=$state"
+        log.trace "Docker container status name=$jobSpec.operationName; state=$state"
 
         if (state.status == 'running') {
             return JobState.running()

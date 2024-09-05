@@ -129,7 +129,8 @@ class RedisMessageStream implements MessageStream<String> {
                 Map.of(streamId, StreamEntryID.UNRECEIVED_ENTRY) )
 
         final entry = messages?.first()?.value?.first()
-        log.trace "Redis stream id=$streamId; read entry=$entry"
+        if( entry!=null )
+            log.trace "Redis stream id=$streamId; read entry=$entry"
         return entry
     }
 
@@ -147,7 +148,8 @@ class RedisMessageStream implements MessageStream<String> {
                 params
         )
         final entry = messages?.getValue()?[0]
-        log.trace "Redis stream id=$streamId; claimed entry=$entry"
+        if( entry!=null )
+            log.trace "Redis stream id=$streamId; claimed entry=$entry"
         return entry
     }
 
