@@ -18,19 +18,15 @@
 
 package io.seqera.wave.service.job.impl
 
-import javax.annotation.Nullable
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.seqera.wave.service.blob.TransferStrategy
-import io.seqera.wave.service.job.JobId
-import io.seqera.wave.service.job.JobQueue
-import io.seqera.wave.service.job.JobServiceBase
+import io.seqera.wave.service.job.JobOperation
+import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
-import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
  * Docker implementation for {@link io.seqera.wave.service.job.JobService}
@@ -41,53 +37,35 @@ import jakarta.inject.Singleton
 @CompileStatic
 @Singleton
 @Requires(missingProperty = 'wave.build.k8s')
-class DockerJobService extends JobServiceBase {
-
-    @Inject
-    private JobQueue jobQueue
-
-    @Inject
-    @Nullable
-    private TransferStrategy transferStrategy
+class DockerJobOperation implements JobOperation {
 
     @Override
-    protected JobQueue getJobQueue() {
-        return jobQueue
-    }
-
-    @Override
-    protected TransferStrategy getTransferStrategy() {
-        return transferStrategy
-    }
-
-
-    @Override
-    JobState status(JobId job) {
-        final state = getDockerContainerState(job.schedulerId)
-        log.trace "Docker transfer status name=$job.schedulerId; state=$state"
+    JobState status(JobSpec jobSpec) {
+        final state = getDockerContainerState(jobSpec.operationName)
+        log.trace "Docker transfer status name=$jobSpec.operationName; state=$state"
 
         if (state.status == 'running') {
             return JobState.running()
         }
         else if (state.status == 'exited') {
-            final logs = getDockerContainerLogs(job.schedulerId)
+            final logs = getDockerContainerLogs(jobSpec.operationName)
             return JobState.completed(state.exitCode, logs)
         }
         else if (state.status == 'created' || state.status == 'paused') {
             return JobState.pending()
         }
         else {
-            final logs = getDockerContainerLogs(job.schedulerId)
+            final logs = getDockerContainerLogs(jobSpec.operationName)
             return JobState.unknown(logs)
         }
     }
 
     @Override
-    void cleanup(JobId jobId, Integer exitStatus) {
+    void cleanup(JobSpec jobSpec) {
         final cli = new ArrayList<String>()
         cli.add('docker')
         cli.add('rm')
-        cli.add(jobId.schedulerId)
+        cli.add(jobSpec.operationName)
 
         final builder = new ProcessBuilder(cli)
         builder.redirectErrorStream(true)

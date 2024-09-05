@@ -25,6 +25,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.TimeUnit
 
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
@@ -43,24 +44,24 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.store.BuildRecordStore
 import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
+import io.seqera.wave.service.job.JobService
+import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
-import io.seqera.wave.test.RedisTestContainer
-import io.seqera.wave.test.SurrealDBTestContainer
+import io.seqera.wave.test.TestHelper
 import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.util.ContainerHelper
 import io.seqera.wave.util.Packer
 import io.seqera.wave.util.SpackHelper
 import io.seqera.wave.util.TemplateRenderer
 import jakarta.inject.Inject
-import io.seqera.wave.util.ContainerHelper
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
 @MicronautTest
-
-class ContainerBuildServiceTest extends Specification implements RedisTestContainer, SurrealDBTestContainer{
+class ContainerBuildServiceTest extends Specification {
 
     @Inject ContainerBuildServiceImpl service
     @Inject RegistryLookupService lookupService
@@ -69,8 +70,9 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
     @Inject HttpClientConfig httpClientConfig
     @Inject BuildConfig buildConfig
     @Inject BuildRecordStore buildRecordStore
+    @Inject BuildCacheStore buildCacheStore
     @Inject PersistenceService persistenceService
-
+    @Inject JobService jobService
 
     @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
     def 'should build & push container to aws' () {
@@ -78,6 +80,7 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         def folder = Files.createTempDirectory('test')
         def buildRepo = buildConfig.defaultBuildRepository
         def cacheRepo = buildConfig.defaultCacheRepository
+        def duration = Duration.ofMinutes(1)
         and:
         def dockerFile = '''
         FROM busybox
@@ -98,17 +101,20 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                         cacheRepository: cacheRepo,
                         configJson: cfg,
                         format: BuildFormat.DOCKER,
-                        startTime: Instant.now()
+                        startTime: Instant.now(),
+                        maxDuration: duration
                 )
                     .withBuildId('1')
+        and:
+        buildCacheStore.storeBuild(targetImage, new BuildStoreEntry(req, BuildResult.create(req)))
 
         when:
-        def result = service.launch(req)
+        service.launch(req)
         then:
-        result.id
-        result.startTime
-        result.duration
-        result.exitStatus == 0
+        service
+                .buildResult(targetImage)
+                .get(duration.toSeconds(), TimeUnit.SECONDS)
+                .succeeded()
 
         cleanup:
         folder?.deleteDir()
@@ -120,6 +126,7 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         def folder = Files.createTempDirectory('test')
         def buildRepo = "docker.io/pditommaso/wave-tests"
         def cacheRepo = buildConfig.defaultCacheRepository
+        def duration = Duration.ofMinutes(1)
         and:
         def dockerFile = '''
         FROM busybox
@@ -136,23 +143,24 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                         workspace: folder,
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
-                        platform: ContainerPlatform.of('amd64'),
+                        platform: TestHelper.containerPlatform(),
                         cacheRepository: cacheRepo,
                         configJson: cfg,
                         format: BuildFormat.DOCKER,
                         startTime: Instant.now(),
+                        maxDuration: duration
                 )
                 .withBuildId('1')
+        and:
+        buildCacheStore.storeBuild(targetImage, new BuildStoreEntry(req, BuildResult.create(req)))
 
         when:
-        def result = service.launch(req)
-        and:
-        println result.logs
+        service.launch(req)
         then:
-        result.id
-        result.startTime
-        result.duration
-        result.exitStatus == 0
+        service
+                .buildResult(targetImage)
+                .get(duration.toSeconds(), TimeUnit.SECONDS)
+                .succeeded()
 
         cleanup:
         folder?.deleteDir()
@@ -162,17 +170,17 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
     def 'should build & push container to quay.io' () {
         given:
         def folder = Files.createTempDirectory('test')
-        def buildRepo = buildConfig.defaultBuildRepository
         def cacheRepo = buildConfig.defaultCacheRepository
+        def duration = Duration.ofMinutes(1)
         and:
         def dockerFile = '''
         FROM busybox
         RUN echo Hello > hello.txt
         '''.stripIndent()
         and:
-        buildRepo = "quay.io/pditommaso/wave-tests"
+        def buildRepo = "quay.io/pditommaso/wave-tests"
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('linux/arm64'), buildRepo, null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
         def req =
                 new BuildRequest(
@@ -181,23 +189,24 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                         workspace: folder,
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
-                        platform: ContainerPlatform.of('amd64'),
+                        platform: TestHelper.containerPlatform(),
                         cacheRepository: cacheRepo,
                         configJson: cfg,
                         format: BuildFormat.DOCKER,
-                        startTime: Instant.now()
+                        startTime: Instant.now(),
+                        maxDuration: duration
                 )
                 .withBuildId('1')
+        and:
+        buildCacheStore.storeBuild(targetImage, new BuildStoreEntry(req, BuildResult.create(req)))
 
         when:
-        def result = service.launch(req)
-        and:
-        println result.logs
+        service.launch(req)
         then:
-        result.id
-        result.startTime
-        result.duration
-        result.exitStatus == 0
+        service
+                .buildResult(targetImage)
+                .get(duration.toSeconds(), TimeUnit.SECONDS)
+                .succeeded()
 
         cleanup:
         folder?.deleteDir()
@@ -215,6 +224,7 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         RUN echo Hello > hello.txt
         '''.stripIndent()
         and:
+        def duration = Duration.ofMinutes(1)
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
@@ -225,23 +235,24 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                         workspace: folder,
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
-                        platform: ContainerPlatform.of('amd64'),
+                        platform: TestHelper.containerPlatform(),
                         cacheRepository: cacheRepo,
                         configJson: cfg,
                         format: BuildFormat.DOCKER,
-                        startTime: Instant.now()
+                        startTime: Instant.now(),
+                        maxDuration: duration
                 )
                 .withBuildId('1')
+        and:
+        buildCacheStore.storeBuild(targetImage, new BuildStoreEntry(req, BuildResult.create(req)))
 
         when:
-        def result = service.launch(req)
-        and:
-        println result.logs
+        service.launch(req)
         then:
-        result.id
-        result.startTime
-        result.duration
-        result.exitStatus == 0
+        service
+                .buildResult(targetImage)
+                .get(duration.toSeconds(), TimeUnit.SECONDS)
+                .succeeded()
 
         cleanup:
         folder?.deleteDir()
@@ -252,7 +263,6 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         def folder = Files.createTempDirectory('test')
         def buildRepo = buildConfig.defaultBuildRepository
         def cacheRepo = buildConfig.defaultCacheRepository
-        def DURATION = Duration.ofDays(1)
         and:
         def cfg = 'some credentials'
         def dockerFile = '''
@@ -285,29 +295,28 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                         workspace: folder,
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
-                        platform: ContainerPlatform.of('amd64'),
+                        platform: TestHelper.containerPlatform(),
                         cacheRepository: cacheRepo,
                         format: BuildFormat.DOCKER,
-                        startTime: Instant.now()
+                        startTime: Instant.now(),
+                        maxDuration: Duration.ofMinutes(1)
                 )
                 .withBuildId('1')
         and:
         def store = Mock(BuildStore)
         def strategy = Mock(BuildStrategy)
-        def builder = new ContainerBuildServiceImpl(buildStrategy: strategy, buildStore: store, buildConfig: buildConfig, spackConfig:spackConfig, cleanup: new CleanupStrategy(buildConfig: buildConfig))
-        def RESPONSE = Mock(BuildResult)
+        def jobService = Mock(JobService)
+        def builder = new ContainerBuildServiceImpl(buildStore: store, buildConfig: buildConfig, spackConfig:spackConfig, cleanup: new CleanupStrategy(buildConfig: buildConfig), jobService: jobService)
+        def RESPONSE = Mock(JobSpec)
 
         when:
-        def result = builder.launch(req)
+        builder.launch(req)
         then:
-        1 * strategy.build(req) >> RESPONSE
-        1 * store.storeBuild(req.targetImage, RESPONSE, DURATION) >> null
+        1 * jobService.launchBuild(req) >> RESPONSE
         and:
         req.workDir.resolve('Containerfile').text == new TemplateRenderer().render(dockerFile, [spack_cache_bucket:'s3://bucket/cache', spack_key_file:'/mnt/secret'])
         req.workDir.resolve('context/conda.yml').text == condaFile
         req.workDir.resolve('context/spack.yaml').text == spackFile
-        and:
-        result == RESPONSE
 
         cleanup:
         folder?.deleteDir()
@@ -478,25 +487,26 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
         '''.stripIndent()
 
     }
+
     @Requires({System.getenv('DOCKER_USER') && System.getenv('DOCKER_PAT')})
     def 'should build & push container to docker.io with local layers' () {
         given:
         def folder = Files.createTempDirectory('test')
         def buildRepo = "docker.io/pditommaso/wave-tests"
         def cacheRepo = buildConfig.defaultCacheRepository
-        def context = Files.createDirectories(folder.resolve('context'))
         def layer = Files.createDirectories(folder.resolve('layer'))
         def file1 = layer.resolve('hola.txt'); file1.text = 'Hola\n'
         def file2 = layer.resolve('ciao.txt'); file2.text = 'Ciao\n'
         and:
         def dockerFile = '''
         FROM busybox
-        RUN echo Hello > hello.txt
+        RUN echo Hello > hello_docker.txt
         '''.stripIndent()
         and:
         def l1 = new Packer().layer(layer, [file1, file2])
         def containerConfig = new ContainerConfig(cmd: ['echo', 'Hola'], layers: [l1])
         and:
+        def duration = Duration.ofMinutes(1)
         def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
         def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
@@ -507,29 +517,29 @@ class ContainerBuildServiceTest extends Specification implements RedisTestContai
                         workspace: folder,
                         targetImage: targetImage,
                         identity: Mock(PlatformId),
-                        platform: ContainerPlatform.of('amd64'),
+                        platform: TestHelper.containerPlatform(),
                         cacheRepository: cacheRepo,
                         configJson: cfg,
                         containerConfig: containerConfig ,
                         format: BuildFormat.DOCKER,
-                        startTime: Instant.now()
+                        startTime: Instant.now(),
+                        maxDuration: duration
                 )
                         .withBuildId('1')
-
-        when:
-        def result = service.launch(req)
         and:
-        println result.logs
+        buildCacheStore.storeBuild(targetImage, new BuildStoreEntry(req, BuildResult.create(req)))
+        
+        when:
+        service.launch(req)
         then:
-        result.id
-        result.startTime
-        result.duration
-        result.exitStatus == 0
+        service
+                .buildResult(targetImage)
+                .get(duration.toSeconds(), TimeUnit.SECONDS)
+                .succeeded()
 
         cleanup:
         folder?.deleteDir()
     }
-
 
     def 'should untar build context' () {
         given:

@@ -58,7 +58,9 @@ interface K8sService {
 
     void deleteJob(String name)
   
-    V1Job launchJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig)
+    V1Job launchTransferJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig)
+
+    V1Job launchBuildJob(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, SpackConfig spackConfig, Map<String,String> nodeSelector)
 
     V1PodList waitJob(V1Job job, Long timeout)
 

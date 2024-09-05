@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.job.impl
 
+
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -26,23 +27,23 @@ import io.kubernetes.client.openapi.models.V1ContainerStateTerminated
 import io.kubernetes.client.openapi.models.V1ContainerStatus
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodStatus
-import io.seqera.wave.service.job.JobId
+import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.k8s.K8sService
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class K8sJobServiceTest extends Specification {
+class K8SJobOperationTest extends Specification {
 
     K8sService k8sService = Mock(K8sService)
-    K8sJobService strategy = new K8sJobService(k8sService: k8sService)
+    K8sJobOperation strategy = new K8sJobOperation(k8sService: k8sService)
 
     def 'status should return correct status when job is not completed'() {
         given:
-        def job = JobId.transfer('foo')
+        def job = Mock(JobSpec)
         and:
-        k8sService.getJobStatus(job.schedulerId) >> K8sService.JobStatus.Running
+        k8sService.getJobStatus(job.operationName) >> K8sService.JobStatus.Running
 
         when:
         def result = strategy.status(job)
@@ -52,13 +53,13 @@ class K8sJobServiceTest extends Specification {
 
     void 'status should return correct transfer status when pods are created'() {
         given:
-        def job = JobId.transfer('foo')
+        def job = Mock(JobSpec)
         and:
         def status = new V1PodStatus(phase: "Succeeded", containerStatuses: [new V1ContainerStatus( state: new V1ContainerState(terminated: new V1ContainerStateTerminated(exitCode: 0)))])
-        def pod = new V1Pod(metadata: [name: job.schedulerId], status: status)
+        def pod = new V1Pod(metadata: [name: job.operationName], status: status)
         and:
-        k8sService.getJobStatus(job.schedulerId) >> K8sService.JobStatus.Succeeded
-        k8sService.getLatestPodForJob(job.schedulerId) >> pod
+        k8sService.getJobStatus(job.operationName) >> K8sService.JobStatus.Succeeded
+        k8sService.getLatestPodForJob(job.operationName) >> pod
         k8sService.logsPod(pod) >> "transfer successful"
 
         when:
@@ -71,13 +72,13 @@ class K8sJobServiceTest extends Specification {
 
     def 'status should return failed transfer when no pods are created'() {
         given:
-        def job = JobId.transfer('foo')
+        def job = Mock(JobSpec)
         and:
         def status = new V1PodStatus(phase: "Failed")
-        def pod = new V1Pod(metadata: [name: job.schedulerId], status: status)
+        def pod = new V1Pod(metadata: [name: job.operationName], status: status)
         and:
-        k8sService.getLatestPodForJob(job.schedulerId) >> pod
-        k8sService.getJobStatus(job.schedulerId) >> K8sService.JobStatus.Failed
+        k8sService.getLatestPodForJob(job.operationName) >> pod
+        k8sService.getJobStatus(job.operationName) >> K8sService.JobStatus.Failed
 
         when:
         def result = strategy.status(job)
@@ -87,9 +88,9 @@ class K8sJobServiceTest extends Specification {
 
     def 'status should handle null job status'() {
         given:
-        def job = JobId.transfer('foo')
+        def job = Mock(JobSpec)
         and:
-        k8sService.getJobStatus(job.schedulerId) >> null
+        k8sService.getJobStatus(job.operationName) >> null
 
         when:
         def result = strategy.status(job)
@@ -100,7 +101,7 @@ class K8sJobServiceTest extends Specification {
     @Unroll
     def "mapToStatus should return correct transfer status for jobStatus #JOB_STATUS that is #TRANSFER_STATUS"() {
         expect:
-        K8sJobService.mapToStatus(JOB_STATUS) == TRANSFER_STATUS
+        K8sJobOperation.mapToStatus(JOB_STATUS) == TRANSFER_STATUS
 
         where:
         JOB_STATUS                      | TRANSFER_STATUS

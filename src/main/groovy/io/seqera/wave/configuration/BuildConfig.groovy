@@ -76,6 +76,17 @@ class BuildConfig {
     @Value('${wave.build.status.duration}')
     Duration statusDuration
 
+    @Nullable
+    @Value('${wave.build.failure.duration}')
+    Duration failureDuration
+
+    @Value('${wave.build.deleteAfterFinished:10d}')
+    Duration deleteAfterFinished
+
+    Duration getFailureDuration() {
+        return failureDuration ?: statusDelay.multipliedBy(10)
+    }
+
     @Memoized
     Duration getStatusInitialDelay() {
         final d1 = defaultTimeout.toMillis() * 2.5f
@@ -124,11 +135,13 @@ class BuildConfig {
                 "build-trusted-timeout=${trustedTimeout}; " +
                 "status-delay=${statusDelay}; " +
                 "status-duration=${statusDuration}; " +
+                "failure-duration=${getFailureDuration()}; " +
                 "record-duration=${recordDuration}; " +
                 "cleanup=${cleanup}; "+
                 "oci-mediatypes=${ociMediatypes}; " +
                 "compression=${compression}; " +
-                "force-compression=${forceCompression}; ")
+                "force-compression=${forceCompression}; " +
+                "delete-after-finished=${deleteAfterFinished}")
         // minimal validation
         if( trustedTimeout < defaultTimeout ) {
             log.warn "Trusted build timeout should be longer than default timeout - check configuration setting 'wave.build.trusted-timeout'"

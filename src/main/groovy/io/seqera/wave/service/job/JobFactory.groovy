@@ -19,45 +19,48 @@
 package io.seqera.wave.service.job
 
 import java.time.Instant
+import javax.annotation.Nullable
 
 import com.google.common.hash.Hashing
-import groovy.transform.Canonical
-
+import groovy.transform.CompileStatic
+import io.seqera.wave.configuration.BlobCacheConfig
+import io.seqera.wave.service.builder.BuildRequest
+import jakarta.inject.Inject
+import jakarta.inject.Singleton
 /**
- * Model a unique job to be managed
+ * Simple factory for {@link JobSpec} objects
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Canonical
-class JobId {
-    enum Type { Transfer, Build, Scan }
+@Singleton
+@CompileStatic
+class JobFactory {
 
-    final Type type
-    final String id
-    final Instant creationTime
-    final String schedulerId
+    @Inject
+    @Nullable
+    private BlobCacheConfig blobConfig
 
-    JobId( Type type, String id, Instant creationTime ) {
-        this.type = type
-        this.id = id
-        this.creationTime = creationTime
-        schedulerId = generate(type, id, creationTime)
+    JobSpec transfer(String stateId) {
+        JobSpec.transfer(
+                stateId,
+                generate("transfer", stateId, Instant.now()),
+                Instant.now(),
+                blobConfig.transferTimeout,
+        )
     }
 
-    static JobId transfer(String id) {
-        new JobId(Type.Transfer, id, Instant.now())
+    JobSpec build(BuildRequest request) {
+        JobSpec.build(
+                request.targetImage,
+                "build-" + request.buildId.replace('_', '-'),
+                request.startTime,
+                request.maxDuration,
+                request.workDir
+        )
     }
 
-    static JobId build(String id) {
-        new JobId(Type.Build, id, Instant.now())
-    }
-
-    static JobId scan(String id) {
-        new JobId(Type.Scan, id, Instant.now())
-    }
-
-    static private String generate(Type type, String id, Instant creationTime) {
-        final prefix = type.toString().toLowerCase()
+    static private String generate(String type, String id, Instant creationTime) {
+        final prefix = type.toLowerCase()
         return prefix + '-' + Hashing
                 .sipHash24()
                 .newHasher()

@@ -684,4 +684,67 @@ class K8sServiceImplTest extends Specification {
         latestPod == null
     }
 
+    def 'buildJobSpec should create job with singularity image'() {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'foo',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.storage.claimName': 'bar',
+                'wave.build.k8s.storage.mountPath': '/build',
+                'wave.build.k8s.service-account': 'theAdminAccount'
+        ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def name = 'test-job'
+        def containerImage = 'singularity://test-image'
+        def args = ['arg1', 'arg2']
+        def workDir = Path.of('/work/dir')
+        def credsFile = Path.of('/creds/file')
+        def timeout = Duration.ofMinutes(10)
+        def spackConfig = new SpackConfig(secretKeyFile: Path.of('/build/secret/key'), secretMountPath: '/secret/mount')
+        def nodeSelector = [key: 'value']
+
+        when:
+        def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, spackConfig, nodeSelector)
+
+        then:
+        job.spec.template.spec.containers[0].image == containerImage
+        job.spec.template.spec.containers[0].command == args
+        job.spec.template.spec.containers[0].securityContext.privileged
+    }
+
+    def 'buildJobSpec should create job with docker image'() {
+        given:
+        def PROPS = [
+                'wave.build.workspace': '/build/work',
+                'wave.build.k8s.namespace': 'foo',
+                'wave.build.k8s.configPath': '/home/kube.config',
+                'wave.build.k8s.storage.claimName': 'bar',
+                'wave.build.k8s.storage.mountPath': '/build',
+                'wave.build.k8s.service-account': 'theAdminAccount'
+        ]
+        and:
+        def ctx = ApplicationContext.run(PROPS)
+        def k8sService = ctx.getBean(K8sServiceImpl)
+        def name = 'test-job'
+        def containerImage = 'docker://test-image'
+        def args = ['arg1', 'arg2']
+        def workDir = Path.of('/work/dir')
+        def credsFile = Path.of('/creds/file')
+        def timeout = Duration.ofMinutes(10)
+        def spackConfig = new SpackConfig(secretKeyFile: Path.of('/build/secret/key'), secretMountPath: '/secret/mount')
+        def nodeSelector = [key: 'value']
+
+        when:
+        def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, spackConfig, nodeSelector)
+
+        then:
+        job.spec.template.spec.containers[0].image == containerImage
+        job.spec.template.spec.containers[0].env.find { it.name == 'BUILDKITD_FLAGS' }
+        job.spec.template.spec.containers[0].command == ['buildctl-daemonless.sh']
+        job.spec.template.spec.containers[0].args == args
+    }
+
 }

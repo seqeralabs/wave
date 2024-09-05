@@ -32,7 +32,8 @@ import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
-import io.seqera.wave.service.job.JobId
+import io.seqera.wave.service.builder.BuildStoreEntry
+import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.pairing.socket.msg.PairingHeartbeat
 import io.seqera.wave.service.pairing.socket.msg.PairingResponse
 import io.seqera.wave.service.pairing.socket.msg.ProxyHttpRequest
@@ -372,19 +373,58 @@ class MoshiEncodingStrategyTest extends Specification {
 
     }
 
-    def 'should encode and decode job request' () {
+    def 'should encode and decode build job spec' () {
         given:
-        def encoder = new MoshiEncodeStrategy<JobId>() { }
+        def encoder = new MoshiEncodeStrategy<JobSpec>() { }
         and:
-        def job = new JobId(JobId.Type.Transfer, '123-abc', Instant.now())
+        def ts = Instant.parse('2024-08-18T19:23:33.650722Z')
+        and:
+        def build = JobSpec.build(
+                'docker.io/foo:bar',
+                '12345',
+                ts,
+                Duration.ofMinutes(1),
+                Path.of('/some/path') )
 
         when:
-        def json = encoder.encode(job)
+        def json = encoder.encode(build)
+        println json
         and:
         def copy = encoder.decode(json)
         then:
-        copy.getClass() == JobId
+        copy == build
+    }
+
+    def 'should encode and decode build store entry' () {
+        given:
+        def encoder = new MoshiEncodeStrategy<BuildStoreEntry>() { }
+        def context = new BuildContext('http://foo.com', '12345', 100, '67890')
         and:
-        copy == job
+        def res = BuildResult.completed('1', 2, 'Oops', Instant.now(), null)
+        def req = new BuildRequest(
+                containerId: '12345',
+                containerFile: 'from foo',
+                condaFile: 'conda spec',
+                spackFile: 'spack spec',
+                workspace:  Path.of("/some/path"),
+                targetImage:  'docker.io/some:image:12345',
+                identity: PlatformId.NULL,
+                platform:  ContainerPlatform.of('linux/amd64'),
+                cacheRepository:  'cacherepo',
+                ip: "1.2.3.4",
+                configJson:  '{"config":"json"}',
+                scanId: 'scan12345',
+                buildContext: context )
+                .withBuildId('1')
+        and:
+        def entry = new BuildStoreEntry(req, res)
+        when:
+        def json = encoder.encode(entry)
+        and:
+        def copy = encoder.decode(json)
+        then:
+        copy.getClass() == entry.getClass()
+        and:
+        copy == entry
     }
 }

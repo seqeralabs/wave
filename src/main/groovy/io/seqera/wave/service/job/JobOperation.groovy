@@ -18,12 +18,14 @@
 
 package io.seqera.wave.service.job
 /**
- * Define events and properties for jobs managed via {@link JobManager}
+ * Define job operations contract
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface JobHandler {
+interface JobOperation {
 
-    void onJobEvent(JobEvent event)
+    JobState status(JobSpec jobSpec)
+
+    void cleanup(JobSpec jobSpec)
 
 }

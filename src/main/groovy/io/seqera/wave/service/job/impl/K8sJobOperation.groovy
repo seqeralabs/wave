@@ -18,24 +18,15 @@
 
 package io.seqera.wave.service.job.impl
 
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutorService
-import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
-import io.micronaut.scheduling.TaskExecutors
-import io.seqera.wave.service.blob.TransferStrategy
-import io.seqera.wave.service.cleanup.CleanupStrategy
-import io.seqera.wave.service.job.JobId
-import io.seqera.wave.service.job.JobQueue
-import io.seqera.wave.service.job.JobServiceBase
+import io.seqera.wave.service.job.JobOperation
+import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.k8s.K8sService
 import jakarta.inject.Inject
-import jakarta.inject.Named
-
 /**
  * Kubernetes implementation for {@link io.seqera.wave.service.job.JobService}
  *
@@ -44,53 +35,27 @@ import jakarta.inject.Named
 @Slf4j
 @CompileStatic
 @Requires(property = 'wave.build.k8s')
-class K8sJobService extends JobServiceBase {
-
-    @Inject
-    private JobQueue jobQueue
-
-    @Inject
-    @Nullable
-    private TransferStrategy transferStrategy
-
-    @Inject
-    private CleanupStrategy cleanup
+class K8sJobOperation implements JobOperation {
 
     @Inject
     private K8sService k8sService
 
-    @Inject
-    @Named(TaskExecutors.IO)
-    private ExecutorService executor
-
     @Override
-    protected JobQueue getJobQueue() {
-        return jobQueue
+    void cleanup(JobSpec job) {
+        k8sService.deleteJob(job.operationName)
     }
 
     @Override
-    protected TransferStrategy getTransferStrategy() {
-        return transferStrategy
-    }
-
-    @Override
-    void cleanup(JobId job, Integer exitStatus) {
-        if( cleanup.shouldCleanup(exitStatus) ) {
-            CompletableFuture.supplyAsync (() -> k8sService.deleteJob(job.schedulerId), executor)
-        }
-    }
-
-    @Override
-    JobState status(JobId job) {
-        final status = k8sService.getJobStatus(job.schedulerId)
+    JobState status(JobSpec job) {
+        final status = k8sService.getJobStatus(job.operationName)
         if( !status || !status.completed() ) {
             return new JobState(mapToStatus(status))
         }
 
         // Find the latest created pod among the pods associated with the job
-        final pod = k8sService.getLatestPodForJob(job.schedulerId)
+        final pod = k8sService.getLatestPodForJob(job.operationName)
         if( !pod )
-            throw new IllegalStateException("Missing carried pod for job: ${job.schedulerId}")
+            throw new IllegalStateException("Missing carried pod for job: ${job.operationName}")
 
         // determine exit code and logs
         final exitCode = pod

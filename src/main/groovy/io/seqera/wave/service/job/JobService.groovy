@@ -19,6 +19,7 @@
 package io.seqera.wave.service.job
 
 import io.seqera.wave.service.blob.BlobCacheInfo
+import io.seqera.wave.service.builder.BuildRequest
 
 /**
  * Define the contract for submitting and monitoring jobs
@@ -27,9 +28,12 @@ import io.seqera.wave.service.blob.BlobCacheInfo
  */
 interface JobService {
 
-    JobId launchTransfer(BlobCacheInfo blob, List<String> command)
+    JobSpec launchTransfer(BlobCacheInfo blob, List<String> command)
 
-    JobState status(JobId jobId)
+    JobSpec launchBuild(BuildRequest request)
 
-    void cleanup(JobId jobId, Integer exitStatus)
+    JobState status(JobSpec jobSpec)
+
+    void cleanup(JobSpec jobSpec, Integer exitStatus)
+
 }

@@ -21,108 +21,80 @@ package io.seqera.wave.service.job
 import spock.lang.Specification
 
 import java.time.Duration
+import java.time.Instant
+import java.util.concurrent.ExecutorService
+
+
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 class JobManagerTest extends Specification {
+    def 'processJob should handle valid TransferJobSpec'() {
+        given:
+        def jobService = Mock(JobService)
+        def jobDispatcher = Mock(JobDispatcher)
+        def ioExecutor = Mock(ExecutorService)
+        def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, ioExecutor: ioExecutor)
+        and:
+        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now(), Duration.ofMinutes(10))
 
-    def "handle should process valid transferId"() {
+        when:
+        def result = manager.processJob0(jobSpec)
+
+        then:
+        1 * jobService.status(jobSpec) >> JobState.completed(0, 'My job logs')
+        1 * jobDispatcher.notifyJobCompletion(jobSpec, _)
+        result
+    }
+
+    def 'processJob should handle exception for TransferJobSpec'() {
         given:
         def jobService = Mock(JobService)
         def jobDispatcher = Mock(JobDispatcher)
         def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher)
         and:
-        def job = JobId.transfer('foo')
+        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now(), Duration.ofMinutes(10))
 
         when:
-        def done = manager.processJob(job)
+        def result = manager.processJob(jobSpec)
+
         then:
-        1 * jobService.status(job) >> JobState.completed(0, 'My job logs')
-        and:
-        1 * jobDispatcher.onJobCompletion(job, _) >> { JobId id, JobState state ->
-            assert state.exitCode == 0
-            assert state.stdout == 'My job logs'
-        }
-        and:
-        1 * jobService.cleanup(job,0)
-        and:
-        done
+        1 * jobService.status(jobSpec) >> { throw new RuntimeException('Error') }
+        1 * jobDispatcher.notifyJobError(jobSpec, _)
+        result
     }
 
-    def "handle should log error for unknown transferId"() {
+    def 'processJob0 should timeout TransferJobSpec when duration exceeds max limit'() {
         given:
         def jobService = Mock(JobService)
         def jobDispatcher = Mock(JobDispatcher)
         def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher)
         and:
-        def job = JobId.transfer('unknown')
+        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now() - Duration.ofMinutes(5), Duration.ofMinutes(2))
 
         when:
-        def done = manager.processJob(job)
-        then:
-        1 * jobService.status(job) >> null
-        and:
-        1 * jobDispatcher.onJobException(job,_) >> null
-        and:
-        done
-    }
-
-    def "handle0 should fail transfer when status is unknown and duration exceeds grace period"() {
-        given:
-        def jobService = Mock(JobService)
-        def jobDispatcher = Mock(JobDispatcher)
-        def config = new JobConfig(graceInterval: Duration.ofMillis(500))
-        def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config:config)
-        and:
-        def job = JobId.transfer('foo')
-
-        when:
-        sleep 1_000 //sleep longer than grace period
-        def done = manager.processJob(job)
+        def result = manager.processJob0(jobSpec)
 
         then:
-        1 * jobService.status(job) >> JobState.unknown('logs')
-        1 * jobDispatcher.onJobCompletion(job, _)
-        1 * jobService.cleanup(job, _)
-        and:
-        done
+        1 * jobService.status(jobSpec) >> JobState.running()
+        1 * jobDispatcher.notifyJobTimeout(jobSpec)
+        result
     }
 
-    def "should requeue transfer when duration is within limits"() {
+    def 'processJob0 should requeue TransferJobSpec when duration is within limits'() {
         given:
         def jobService = Mock(JobService)
         def jobDispatcher = Mock(JobDispatcher)
         def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher)
         and:
-        def job = JobId.transfer('foo')
+        def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now().minus(Duration.ofMillis(500)), Duration.ofMinutes(10))
 
         when:
-        def done = manager.processJob(job)
-        then:
-        1 * jobService.status(job) >> JobState.running()
-        1 * jobDispatcher.jobMaxDuration(job) >> Duration.ofSeconds(10)
-        and:
-        !done
-    }
+        def result = manager.processJob0(jobSpec)
 
-    def "handle0 should timeout transfer when duration exceeds max limit"() {
-        given:
-        def jobService = Mock(JobService)
-        def jobDispatcher = Mock(JobDispatcher)
-        def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher)
-        and:
-        def job = JobId.transfer('foo')
-
-        when:
-        sleep 1_000 //await timeout
-        def done = manager.processJob(job)
         then:
-        1 * jobService.status(job) >> JobState.running()
-        1 * jobDispatcher.jobMaxDuration(job) >> Duration.ofMillis(100)
-        and:
-        1 * jobDispatcher.onJobTimeout(job)
-        and:
-        done
+        1 * jobService.status(jobSpec) >> JobState.running()
+        !result
     }
 }

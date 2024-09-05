@@ -23,6 +23,7 @@ import java.time.Duration
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 /**
@@ -31,6 +32,7 @@ import io.micronaut.core.annotation.Nullable
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
+@Requires(property = 'wave.blobCache.enabled', value = 'true')
 @ToString(includeNames = true, includePackage = false, excludes = 'storageSecretKey', ignoreNulls = true)
 @CompileStatic
 class BlobCacheConfig {
