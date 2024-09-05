@@ -21,6 +21,8 @@ package io.seqera.wave.configuration
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
+
+import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Nullable
 import javax.annotation.PostConstruct
 
@@ -37,6 +39,7 @@ import jakarta.inject.Singleton
 @CompileStatic
 @Singleton
 @Slf4j
+@Requires(property = 'wave.scan.enabled', value = 'true')
 class ScanConfig {
 
     /**

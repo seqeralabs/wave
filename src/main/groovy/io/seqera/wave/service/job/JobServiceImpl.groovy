@@ -18,7 +18,6 @@
 
 package io.seqera.wave.service.job
 
-
 import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
@@ -27,6 +26,8 @@ import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildStrategy
 import io.seqera.wave.service.cleanup.CleanupStrategy
+import io.seqera.wave.service.scan.ScanRequest
+import io.seqera.wave.service.scan.ScanStrategy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
@@ -50,6 +51,10 @@ class JobServiceImpl implements JobService {
 
     @Inject
     private BuildStrategy buildStrategy
+
+    @Inject
+    @Nullable
+    private ScanStrategy scanStrategy
 
     @Inject
     private JobQueue jobQueue
@@ -76,6 +81,20 @@ class JobServiceImpl implements JobService {
         final job = jobFactory.build(request)
         // launch the build job
         buildStrategy.build(job.operationName, request)
+        // signal the build has been submitted
+        jobQueue.offer(job)
+        return job
+    }
+
+    @Override
+    JobSpec launchScan(ScanRequest request) {
+        if( !scanStrategy )
+            throw new IllegalStateException("Container scan service is not available - check configuration setting 'wave.scan.enabled'")
+
+        // create the unique job id for the build
+        final job = jobFactory.scan(request)
+        // launch the scan job
+        scanStrategy.scanContainer(job.operationName, request)
         // signal the build has been submitted
         jobQueue.offer(job)
         return job

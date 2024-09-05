@@ -735,6 +735,70 @@ class K8sServiceImpl implements K8sService {
 
         return builder.build()
     }
+
+    @Override
+    V1Job launchScanJob(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
+        final spec = scanJobSpec(name, containerImage, args, workDir, creds, scanConfig, nodeSelector)
+        return k8sClient
+                .batchV1Api()
+                .createNamespacedJob(namespace, spec, null, null, null,null)
+    }
+
+    V1Job scanJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig, Map<String,String> nodeSelector) {
+
+        final mounts = new ArrayList<V1VolumeMount>(5)
+        mounts.add(mountBuildStorage(workDir, storageMountPath, false))
+        mounts.add(mountScanCacheDir(scanConfig.cacheDirectory, storageMountPath))
+
+        final volumes = new ArrayList<V1Volume>(5)
+        volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
+
+        if( credsFile ){
+            mounts.add(0, mountHostPath(credsFile, storageMountPath, Trivy.CONFIG_MOUNT_PATH))
+        }
+
+        V1JobBuilder builder = new V1JobBuilder()
+
+        //metadata section
+        builder.withNewMetadata()
+                .withNamespace(namespace)
+                .withName(name)
+                .addToLabels(labels)
+                .endMetadata()
+
+        //spec section
+        def spec = builder
+                .withNewSpec()
+                .withTtlSecondsAfterFinished(buildConfig.deleteAfterFinished.toSeconds() as Integer)
+                .withNewTemplate()
+                .editOrNewSpec()
+                .withNodeSelector(nodeSelector)
+                .withServiceAccount(serviceAccount)
+                .withRestartPolicy("Never")
+                .addAllToVolumes(volumes)
+
+
+        final requests = new V1ResourceRequirements()
+        if( scanConfig.requestsCpu )
+            requests.putRequestsItem('cpu', new Quantity(scanConfig.requestsCpu))
+        if( scanConfig.requestsMemory )
+            requests.putRequestsItem('memory', new Quantity(scanConfig.requestsMemory))
+
+        // container section
+        final container = new V1ContainerBuilder()
+                .withName(name)
+                .withImage(containerImage)
+                .withArgs(args)
+                .withVolumeMounts(mounts)
+                .withResources(requests)
+
+
+        // spec section
+        spec.withContainers(container.build()).endSpec().endTemplate().endSpec()
+
+        builder.build()
+    }
+
     protected List<V1EnvVar> toEnvList(Map<String,String> env) {
         final result = new ArrayList<V1EnvVar>(env.size())
         for( Map.Entry<String,String> it : env )

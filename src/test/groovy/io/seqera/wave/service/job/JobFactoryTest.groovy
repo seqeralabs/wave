@@ -25,7 +25,12 @@ import java.time.Duration
 import java.time.Instant
 
 import io.seqera.wave.configuration.BlobCacheConfig
+import io.seqera.wave.configuration.ScanConfig
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.scan.ScanRequest
+import io.seqera.wave.service.scan.Trivy
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -71,4 +76,29 @@ class JobFactoryTest extends Specification {
         job.maxDuration == duration
     }
 
+    def 'should create scan job' () {
+        given:
+        def workdir = Path.of('/some/work/dir')
+        def duration = Duration.ofMinutes(1)
+        def config = new ScanConfig(timeout: duration)
+        def factory = new JobFactory(scanConfig: config)
+        def request = new ScanRequest(
+                '12345',
+                'build-123',
+                '{ jsonConfig }',
+                'docker.io/foo:bar',
+                ContainerPlatform.of('linux/amd64'),
+                workdir
+        )
+
+        when:
+        def job = factory.scan(request)
+        then:
+        job.stateId == '12345'
+        job.operationName == 'scan-12345'
+        job.type == JobSpec.Type.Scan
+        job.maxDuration == duration
+        job.creationTime == request.creationTime
+        job.cleanableDir == workdir
+    }
 }
