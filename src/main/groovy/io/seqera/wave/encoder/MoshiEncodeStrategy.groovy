@@ -74,7 +74,6 @@ abstract class MoshiEncodeStrategy<V> implements EncodingStrategy<V> {
                         .withSubtype(ProxyHttpResponse.class, ProxyHttpResponse.simpleName)
                         .withSubtype(PairingHeartbeat.class, PairingHeartbeat.simpleName)
                         .withSubtype(PairingResponse.class, PairingResponse.simpleName)
-
                 )
                 .build()
         this.jsonAdapter = moshi.adapter(type)
