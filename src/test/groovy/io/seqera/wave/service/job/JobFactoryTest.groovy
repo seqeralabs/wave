@@ -29,6 +29,8 @@ import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.scan.ScanRequest
+import io.seqera.wave.service.scan.Trivy
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
