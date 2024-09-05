@@ -42,6 +42,11 @@ class RedisRangeProviderTest extends Specification implements RedisTestContainer
         sleep(500) // workaround to wait for Redis connection
     }
 
+    def cleanup() {
+        applicationContext.close()
+    }
+
+
     def 'should add and get elements' () {
         given:
         provider.add('foo', 'x', 1)

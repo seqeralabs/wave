@@ -40,6 +40,10 @@ class RedisCacheProviderTest extends Specification implements RedisTestContainer
         sleep(500) // workaround to wait for Redis connection
     }
 
+    def cleanup() {
+        applicationContext.close()
+    }
+
     def 'conditional put with current value when ke is not set'() {
         when: 'conditionally set a key that has no current value'
         def current = redisCacheProvider.putIfAbsentAndGetCurrent('key', 'new-value', Duration.ofSeconds(100))

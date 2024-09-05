@@ -20,7 +20,6 @@ package io.seqera.wave.service.k8s
 
 import spock.lang.Specification
 
-import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
 import java.time.OffsetDateTime
@@ -724,6 +723,9 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.containers[0].image == containerImage
         job.spec.template.spec.containers[0].command == args
         job.spec.template.spec.containers[0].securityContext.privileged
+
+        cleanup:
+        ctx.close()
     }
 
     def 'buildJobSpec should create job with docker image'() {
@@ -756,6 +758,9 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.containers[0].env.find { it.name == 'BUILDKITD_FLAGS' }
         job.spec.template.spec.containers[0].command == ['buildctl-daemonless.sh']
         job.spec.template.spec.containers[0].args == args
+
+        cleanup:
+        ctx.close()
     }
 
     def 'should create scan job spec with valid inputs'() {
@@ -797,6 +802,9 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
         job.spec.template.spec.nodeSelector == nodeSelector
         job.spec.template.spec.restartPolicy == 'Never'
+
+        cleanup:
+        ctx.close()
     }
 
     def 'should create scan job spec without creds file'() {
@@ -838,6 +846,9 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
         job.spec.template.spec.nodeSelector == nodeSelector
         job.spec.template.spec.restartPolicy == 'Never'
+
+        cleanup:
+        ctx.close()
     }
 
     def 'should create scan job spec without node selector'() {
@@ -879,6 +890,9 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
         job.spec.template.spec.nodeSelector == null
         job.spec.template.spec.restartPolicy == 'Never'
+
+        cleanup:
+        ctx.close()
     }
 
     def 'should create scan job spec without resource requests'() {
@@ -919,6 +933,9 @@ class K8sServiceImplTest extends Specification {
         job.spec.template.spec.volumes[0].persistentVolumeClaim.claimName == 'bar'
         job.spec.template.spec.nodeSelector == nodeSelector
         job.spec.template.spec.restartPolicy == 'Never'
+
+        cleanup:
+        ctx.close()
     }
 
 }

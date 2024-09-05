@@ -51,6 +51,7 @@ class BuildCacheStoreRedisTest extends Specification implements RedisTestContain
     def cleanup(){
         jedis.flushAll()
         jedis.close()
+        applicationContext.close()
     }
 
     def 'should get and put key values' () {

@@ -52,6 +52,7 @@ class SpillwayRedisRateLimiterTest extends Specification implements RedisTestCon
 
     def cleanup(){
         jedis.close()
+        applicationContext.close()
     }
 
     void "can acquire 1 auth resource"() {
