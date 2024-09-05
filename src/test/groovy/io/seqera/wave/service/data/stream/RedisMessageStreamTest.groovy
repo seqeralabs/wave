@@ -22,16 +22,13 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
-import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.service.data.stream.impl.RedisMessageStream
 import io.seqera.wave.test.RedisTestContainer
 import io.seqera.wave.util.LongRndKey
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@MicronautTest(environments = ['test'])
 class RedisMessageStreamTest extends Specification implements RedisTestContainer {
 
     @Shared
@@ -43,6 +40,10 @@ class RedisMessageStreamTest extends Specification implements RedisTestContainer
                 REDIS_HOST: redisHostName,
                 REDIS_PORT: redisPort,
         ], 'test', 'redis')
+    }
+
+    def cleanup() {
+        context.stop()
     }
 
     def 'should offer and consume a value' () {

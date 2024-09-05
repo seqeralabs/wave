@@ -53,6 +53,7 @@ trait RedisTestContainer {
     }
 
     def cleanupSpec(){
+        log.debug "Stopping Redis test container"
         redisContainer.stop()
     }
 }
