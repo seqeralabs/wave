@@ -270,13 +270,13 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler {
 
     @Override
     void onJobEvent(JobEvent event) {
-        final blob = blobStore.getBlob(event.job.id)
+        final blob = blobStore.getBlob(event.job.stateId)
         if( !blob ) {
-            log.error "== Blob cache entry unknown for job=${event.job.id}; event=${event}"
+            log.error "== Blob cache entry unknown for job=${event.job.stateId}; event=${event}"
             return
         }
         if( blob.done() ) {
-            log.warn "== Blob cache entry already marked as completed for job=${event.job.id}; event=${event}"
+            log.warn "== Blob cache entry already marked as completed for job=${event.job.stateId}; event=${event}"
             return
         }
 
@@ -309,14 +309,14 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler {
     }
 
     protected void handleJobException(JobSpec job, BlobCacheInfo blob, Throwable error) {
-        final result = blob.failed("Unexpected error caching blob '${blob.locationUri}' - job name '${job.schedulerId}'")
-        log.error("== Blob cache exception for object '${blob.objectUri}'; job name=${job.schedulerId}; cause=${error.message}", error)
+        final result = blob.failed("Unexpected error caching blob '${blob.locationUri}' - job name '${job.operationName}'")
+        log.error("== Blob cache exception for object '${blob.objectUri}'; job name=${job.operationName}; cause=${error.message}", error)
         blobStore.storeBlob(blob.id(), result, blobConfig.failureDuration)
     }
 
     protected void handleJobTimeout(JobSpec job, BlobCacheInfo blob) {
         final result = blob.failed("Blob cache transfer timed out ${blob.objectUri}")
-        log.warn "== Blob cache completed for object '${blob.objectUri}'; job name=${job.schedulerId}; duration=${result.duration()}"
+        log.warn "== Blob cache completed for object '${blob.objectUri}'; job name=${job.operationName}; duration=${result.duration()}"
         blobStore.storeBlob(blob.id(), result, blobConfig.failureDuration)
     }
 }

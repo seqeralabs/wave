@@ -35,11 +35,11 @@ class JobSpecTest extends Specification {
         def now = Instant.now()
         def job = new JobSpec(JobSpec.Type.Transfer, '12345', now, Duration.ofMinutes(1), 'xyz')
         expect:
-        job.id == '12345'
+        job.stateId == '12345'
         job.type == JobSpec.Type.Transfer
         job.creationTime == now
         job.maxDuration == Duration.ofMinutes(1)
-        job.schedulerId == 'xyz'
+        job.operationName == 'xyz'
     }
 
 }

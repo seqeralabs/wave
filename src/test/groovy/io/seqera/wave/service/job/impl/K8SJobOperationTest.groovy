@@ -43,7 +43,7 @@ class K8SJobOperationTest extends Specification {
         given:
         def job = Mock(JobSpec)
         and:
-        k8sService.getJobStatus(job.schedulerId) >> K8sService.JobStatus.Running
+        k8sService.getJobStatus(job.operationName) >> K8sService.JobStatus.Running
 
         when:
         def result = strategy.status(job)
@@ -56,10 +56,10 @@ class K8SJobOperationTest extends Specification {
         def job = Mock(JobSpec)
         and:
         def status = new V1PodStatus(phase: "Succeeded", containerStatuses: [new V1ContainerStatus( state: new V1ContainerState(terminated: new V1ContainerStateTerminated(exitCode: 0)))])
-        def pod = new V1Pod(metadata: [name: job.schedulerId], status: status)
+        def pod = new V1Pod(metadata: [name: job.operationName], status: status)
         and:
-        k8sService.getJobStatus(job.schedulerId) >> K8sService.JobStatus.Succeeded
-        k8sService.getLatestPodForJob(job.schedulerId) >> pod
+        k8sService.getJobStatus(job.operationName) >> K8sService.JobStatus.Succeeded
+        k8sService.getLatestPodForJob(job.operationName) >> pod
         k8sService.logsPod(pod) >> "transfer successful"
 
         when:
@@ -75,10 +75,10 @@ class K8SJobOperationTest extends Specification {
         def job = Mock(JobSpec)
         and:
         def status = new V1PodStatus(phase: "Failed")
-        def pod = new V1Pod(metadata: [name: job.schedulerId], status: status)
+        def pod = new V1Pod(metadata: [name: job.operationName], status: status)
         and:
-        k8sService.getLatestPodForJob(job.schedulerId) >> pod
-        k8sService.getJobStatus(job.schedulerId) >> K8sService.JobStatus.Failed
+        k8sService.getLatestPodForJob(job.operationName) >> pod
+        k8sService.getJobStatus(job.operationName) >> K8sService.JobStatus.Failed
 
         when:
         def result = strategy.status(job)
@@ -90,7 +90,7 @@ class K8SJobOperationTest extends Specification {
         given:
         def job = Mock(JobSpec)
         and:
-        k8sService.getJobStatus(job.schedulerId) >> null
+        k8sService.getJobStatus(job.operationName) >> null
 
         when:
         def result = strategy.status(job)

@@ -37,11 +37,35 @@ import groovy.transform.ToString
 class JobSpec {
     enum Type { Transfer, Build, Scan }
 
+    /**
+     * The type of the job. See {@link Type}
+     */
     final Type type
-    final String id
+
+    /**
+     * The unique id of the state record associated with this job
+     */
+    final String stateId
+
+    /**
+     * The instant when this job was created
+     */
     final Instant creationTime
+
+    /**
+     * The max time to live of the job
+     */
     final Duration maxDuration
-    final String schedulerId
+
+    /**
+     * The unique name of the underlying infra operation associated with this job
+     * e.g. the K8s job name or Docker container name
+     */
+    final String operationName
+
+    /**
+     * The temporary path associated with this job (optional)
+     */
     final Path cleanableDir
 
 }

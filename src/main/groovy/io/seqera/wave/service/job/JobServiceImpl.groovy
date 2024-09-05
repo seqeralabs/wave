@@ -64,7 +64,7 @@ class JobServiceImpl implements JobService {
         // create the ID for the job transfer
         final job = jobFactory.transfer(blob.id())
         // submit the job execution
-        transferStrategy.launchJob(job.schedulerId, command)
+        transferStrategy.launchJob(job.operationName, command)
         // signal the transfer has been submitted
         jobQueue.offer(job)
         return job
@@ -75,7 +75,7 @@ class JobServiceImpl implements JobService {
         // create the unique job id for the build
         final job = jobFactory.build(request)
         // launch the build job
-        buildStrategy.build(job.schedulerId, request)
+        buildStrategy.build(job.operationName, request)
         // signal the build has been submitted
         jobQueue.offer(job)
         return job
