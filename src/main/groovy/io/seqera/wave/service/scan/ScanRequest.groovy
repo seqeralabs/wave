@@ -19,6 +19,7 @@
 package io.seqera.wave.service.scan
 
 import java.nio.file.Path
+import java.time.Instant
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
@@ -38,10 +39,11 @@ class ScanRequest {
     final String targetImage
     final ContainerPlatform platform
     final Path workDir
+    final Instant creationTime
 
     static ScanRequest fromBuild(BuildRequest request) {
         final id = request.scanId
         final workDir = request.workDir.resolveSibling("scan-${id}")
-        return new ScanRequest(id, request.buildId, request.configJson, request.targetImage, request.platform, workDir)
+        return new ScanRequest(id, request.buildId, request.configJson, request.targetImage, request.platform, workDir, Instant.now())
     }
 }

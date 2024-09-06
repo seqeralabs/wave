@@ -45,6 +45,7 @@ class MetricsCounterStoreRedisTest  extends Specification implements RedisTestCo
     def cleanup(){
         jedis.flushAll()
         jedis.close()
+        applicationContext.close()
     }
     
     def 'should get correct count value' () {

@@ -46,6 +46,11 @@ class JwtTimeRedisTest extends Specification implements RedisTestContainer{
         timer = applicationContext.getBean(JwtTimeStore)
     }
 
+    def cleanup() {
+        applicationContext.close()
+    }
+
+
     def 'should add and get token timers' () {
         given:
         def now = Instant.now().epochSecond

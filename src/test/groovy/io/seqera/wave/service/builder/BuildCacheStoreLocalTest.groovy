@@ -45,10 +45,40 @@ class BuildCacheStoreLocalTest extends Specification {
     @Named(TaskExecutors.IO)
     ExecutorService ioExecutor
 
-    BuildResult zero = BuildResult.create('0')
-    BuildResult one = BuildResult.completed('1', 0, 'done', Instant.now(), 'abc')
-    BuildResult two = BuildResult.completed('2', 0, 'done', Instant.now(), 'abc')
-    BuildResult three = BuildResult.completed('3', 0, 'done', Instant.now(), 'abc')
+    BuildResult zeroResult = BuildResult.create('0')
+    BuildResult oneResult = BuildResult.completed('1', 0, 'done', Instant.now(), 'abc')
+    BuildResult twoResult = BuildResult.completed('2', 0, 'done', Instant.now(), 'abc')
+    BuildResult threeResult = BuildResult.completed('3', 0, 'done', Instant.now(), 'abc')
+
+    def zeroRequest = new BuildRequest(
+            targetImage: 'docker.io/foo:0',
+            buildId: '0',
+            startTime: Instant.now(),
+            maxDuration: Duration.ofMinutes(1)
+    )
+    def oneRequest = new BuildRequest(
+            targetImage: 'docker.io/foo:1',
+            buildId: '1',
+            startTime: Instant.now(),
+            maxDuration: Duration.ofMinutes(1)
+    )
+    def twoRequest = new BuildRequest(
+            targetImage: 'docker.io/foo:2',
+            buildId: '2',
+            startTime: Instant.now(),
+            maxDuration: Duration.ofMinutes(1)
+    )
+    def threeRequest = new BuildRequest(
+            targetImage: 'docker.io/foo:3',
+            buildId: '3',
+            startTime: Instant.now(),
+            maxDuration: Duration.ofMinutes(1)
+    )
+
+    def zero = new BuildStoreEntry(zeroRequest, zeroResult)
+    def one = new BuildStoreEntry(oneRequest, oneResult)
+    def two = new BuildStoreEntry(twoRequest, twoResult)
+    def three = new BuildStoreEntry(threeRequest, threeResult)
 
     def 'should get and put key values' () {
         given:
@@ -145,14 +175,13 @@ class BuildCacheStoreLocalTest extends Specification {
         // stops until the value is updated
         def result = cache.awaitBuild('foo')
         then:
-        result.get() == one
+        result.get() == one.result
 
         when:
         cache.storeBuild('foo',two)
         cache.storeBuild('foo',three)
         then:
-        cache.awaitBuild('foo').get()==three
-
+        cache.awaitBuild('foo').get() == three.result
     }
 
 }

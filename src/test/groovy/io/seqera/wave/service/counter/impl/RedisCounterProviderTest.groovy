@@ -41,6 +41,10 @@ class RedisCounterProviderTest extends Specification implements RedisTestContain
         sleep(500) // workaround to wait for Redis connection
     }
 
+    def cleanup() {
+        applicationContext.close()
+    }
+
 
     def 'should increment a counter value' () {
         expect:

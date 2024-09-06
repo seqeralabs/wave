@@ -35,13 +35,9 @@ abstract class BuildStrategy {
     @Inject
     private BuildConfig buildConfig
 
-    abstract BuildResult build(BuildRequest req)
+    abstract void build(String jobName, BuildRequest req)
 
     static final public String BUILDKIT_ENTRYPOINT = 'buildctl-daemonless.sh'
-
-    void cleanup(BuildRequest req) {
-        req.workDir?.deleteDir()
-    }
 
     List<String> launchCmd(BuildRequest req) {
         if(req.formatDocker()) {
