@@ -89,7 +89,7 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.url-signature-duration:30m}')
     Duration urlSignatureDuration
 
-    @Value('${wave.blobCache.retryAttempts:3}')
+    @Value('${wave.blobCache.retry-attempts:3}')
     Integer retryAttempts
 
     @Value('${wave.blobCache.deleteAfterFinished:7d}')

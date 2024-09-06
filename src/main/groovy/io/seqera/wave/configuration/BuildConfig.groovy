@@ -121,7 +121,7 @@ class BuildConfig {
     @Value('${wave.build.force-compression:false}')
     Boolean forceCompression
 
-    @Value('${wave.build.retryAttempts:1}')
+    @Value('${wave.build.retry-attempts:3}')
     int retryAttempts
 
     @PostConstruct
@@ -145,7 +145,7 @@ class BuildConfig {
                 "compression=${compression}; " +
                 "force-compression=${forceCompression}; " +
                 "delete-after-finished=${deleteAfterFinished}"+
-                "retryAttempts=${retryAttempts}")
+                "retry-attempts=${retryAttempts}")
         // minimal validation
         if( trustedTimeout < defaultTimeout ) {
             log.warn "Trusted build timeout should be longer than default timeout - check configuration setting 'wave.build.trusted-timeout'"

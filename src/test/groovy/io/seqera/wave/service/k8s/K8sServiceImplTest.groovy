@@ -704,7 +704,7 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.storage.mountPath': '/build',
                 'wave.build.k8s.service-account': 'theAdminAccount',
                 'wave.build.deleteAfterFinished': '1d',
-                'wave.build.retryAttempts': 3
+                'wave.build.retry-attempts': 3
         ]
         and:
         def ctx = ApplicationContext.run(PROPS)
@@ -913,7 +913,7 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.storage.mountPath': '/build',
                 'wave.build.k8s.service-account': 'theAdminAccount',
                 'wave.build.deleteAfterFinished': '1d',
-                'wave.scan.retryAttempts': 3
+                'wave.scan.retry-attempts': 3
         ]
         and:
         def ctx = ApplicationContext.run(PROPS)
