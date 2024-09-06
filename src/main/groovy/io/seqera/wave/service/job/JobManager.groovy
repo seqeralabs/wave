@@ -60,7 +60,7 @@ class JobManager {
     @PostConstruct
     void init() {
         log.info "Creating job manager - config=$config"
-        queue.consume((job)-> processJob(job))
+        queue.addConsumer((job)-> processJob(job))
     }
 
     protected boolean processJob(JobSpec jobSpec) {

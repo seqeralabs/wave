@@ -19,7 +19,6 @@
 package io.seqera.wave.service.data.stream.impl
 
 import java.time.Duration
-import java.util.concurrent.ConcurrentHashMap
 import java.util.function.Predicate
 
 import groovy.transform.CompileStatic
@@ -57,8 +56,6 @@ class RedisMessageStream implements MessageStream<String> {
 
     private static final String DATA_FIELD = 'data'
 
-    private final ConcurrentHashMap<String,Boolean> group0 = new ConcurrentHashMap<>()
-
     @Inject
     private JedisPool pool
 
@@ -68,28 +65,30 @@ class RedisMessageStream implements MessageStream<String> {
     private String consumerName
 
     @PostConstruct
-    private void init() {
+    private void create() {
         consumerName = "consumer-${LongRndKey.rndLong()}"
         log.info "Creating Redis message stream - consumer=${consumerName}; claim-timeout=${claimTimeout}"
     }
 
-    protected void createGroup(Jedis jedis, String stream, String group) {
-        // use a concurrent hash map to create it only the very first time
-        group0.computeIfAbsent("$stream/$group".toString(),(it)-> createGroup0(jedis,stream,group))
-    }
-
-    protected boolean createGroup0(Jedis jedis, String stream, String group) {
+    protected boolean createGroup0(Jedis jedis, String streamId, String group) {
+        log.debug "Creating Redis group=$group; streamId=$streamId"
         try {
-            jedis.xgroupCreate(stream, group, STREAM_ENTRY_ZERO, true)
+            jedis.xgroupCreate(streamId, group, STREAM_ENTRY_ZERO, true)
             return true
         }
         catch (JedisDataException e) {
             if (e.message.contains("BUSYGROUP")) {
                 // The group already exists, so we can safely ignore this exception
-                log.debug "Redis message stream - consume group=$group already exists"
+                log.warn "Redis message stream - consume group=$group already exists"
                 return true
             }
             throw e
+        }
+    }
+
+    void init(String streamId) {
+        try (Jedis jedis = pool.getResource()) {
+            createGroup0(jedis, streamId, CONSUMER_GROUP_NAME)
         }
     }
 
@@ -103,7 +102,6 @@ class RedisMessageStream implements MessageStream<String> {
     @Override
     boolean consume(String streamId, Predicate<String> consumer) {
         try (Jedis jedis = pool.getResource()) {
-            createGroup(jedis, streamId, CONSUMER_GROUP_NAME)
             final entry = claimMessage(jedis,streamId) ?: readMessage(jedis, streamId)
             if( entry && consumer.test(entry.getFields().get(DATA_FIELD)) ) {
                 // acknowledge the job after processing

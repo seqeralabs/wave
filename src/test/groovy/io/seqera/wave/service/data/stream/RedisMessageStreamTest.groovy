@@ -52,6 +52,9 @@ class RedisMessageStreamTest extends Specification implements RedisTestContainer
         def id2 = "stream-${LongRndKey.rndHex()}"
         and:
         def stream = context.getBean(RedisMessageStream)
+        and:
+        stream.init(id1)
+        stream.init(id2)
         when:
         stream.offer(id1, 'one')
         and:
@@ -73,6 +76,7 @@ class RedisMessageStreamTest extends Specification implements RedisTestContainer
         given:
         def id1 = "stream-${LongRndKey.rndHex()}"
         def stream = context.getBean(RedisMessageStream)
+        stream.init(id1)
         when:
         stream.offer(id1, 'alpha')
         stream.offer(id1, 'delta')

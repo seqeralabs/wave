@@ -58,8 +58,8 @@ class JobQueue extends AbstractMessageStream<JobSpec> {
         super.offer(STREAM_NAME, jobSpec)
     }
 
-    final void consume(Predicate<JobSpec> consumer) {
-        super.consume(STREAM_NAME, consumer)
+    final void addConsumer(Predicate<JobSpec> consumer) {
+        super.addConsumer(STREAM_NAME, consumer)
     }
 
     @PreDestroy

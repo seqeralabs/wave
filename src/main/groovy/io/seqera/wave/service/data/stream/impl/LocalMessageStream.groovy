@@ -42,16 +42,21 @@ class LocalMessageStream implements MessageStream<String> {
     private ConcurrentHashMap<String, LinkedBlockingQueue<String>> delegate = new ConcurrentHashMap<>()
 
     @Override
+    void init(String streamId) {
+        delegate.put(streamId, new LinkedBlockingQueue<>())
+    }
+
+    @Override
     void offer(String streamId, String message) {
         delegate
-                .computeIfAbsent(streamId, (it)-> new LinkedBlockingQueue<>())
+                .get(streamId)
                 .offer(message)
     }
 
     @Override
     boolean consume(String streamId, Predicate<String> consumer) {
         final message = delegate
-                .computeIfAbsent(streamId, (it)-> new LinkedBlockingQueue<>())
+                .get(streamId)
                 .poll()
         if( message==null ) {
             return false

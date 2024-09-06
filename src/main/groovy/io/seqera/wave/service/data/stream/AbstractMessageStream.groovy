@@ -97,10 +97,15 @@ abstract class AbstractMessageStream<M> implements Closeable {
      * @param consumer
      *      The {@link Predicate} to be invoked when a stream message is consumed (read from) the stream.
      */
-    void consume(String streamId, Predicate<M> consumer) {
-        final value = listeners.put(streamId, consumer)
-        if( value!=null )
-            throw new IllegalStateException("Only one consumer can be defined for each stream - offending streamId=$streamId; consumer=$consumer")
+    void addConsumer(String streamId, Predicate<M> consumer) {
+        synchronized (listeners) {
+            if( listeners.containsKey(streamId))
+                throw new IllegalStateException("Only one consumer can be defined for each stream - offending streamId=$streamId; consumer=$consumer")
+            // initialize the stream
+            stream.init(streamId)
+            // then add the consumer to the listeners
+            final value = listeners.put(streamId, consumer)
+        }
     }
 
     /**

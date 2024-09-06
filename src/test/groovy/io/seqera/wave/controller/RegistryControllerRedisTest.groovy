@@ -33,7 +33,6 @@ import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.server.EmbeddedServer
-import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.exchange.RegistryErrorResponse
 import io.seqera.wave.model.ContentType
 import io.seqera.wave.service.ContainerRequestData
@@ -47,14 +46,12 @@ import io.seqera.wave.test.DockerRegistryContainer
 import io.seqera.wave.test.RedisTestContainer
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
-import jakarta.inject.Inject
 import redis.clients.jedis.Jedis
 /**
  *
  * @author Jorge Aguilera <jorge.aguilera@seqera.io>
  */
-@MicronautTest
-class RegistryControllerRedisTest extends Specification implements DockerRegistryContainer, RedisTestContainer{
+class RegistryControllerRedisTest extends Specification implements DockerRegistryContainer, RedisTestContainer {
 
     EmbeddedServer embeddedServer
 
@@ -80,6 +77,7 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
 
     def cleanup(){
         jedis.close()
+        embeddedServer.close()
     }
 
     ApplicationContext getApplicationContext() {

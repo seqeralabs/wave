@@ -42,13 +42,13 @@ class AbstractMessageStreamLocalTest extends Specification {
         and:
         def stream = new TestStream(target)
         def queue = new ArrayBlockingQueue(10)
+        and:
+        stream.addConsumer(id1, { it-> queue.add(it) })
 
         when:
         stream.offer(id1, new TestMessage('one','two'))
         stream.offer(id1, new TestMessage('alpha','omega'))
         then:
-        stream.consume(id1, { it-> queue.add(it) })
-        and:
         queue.take()==new TestMessage('one','two')
         queue.take()==new TestMessage('alpha','omega')
         

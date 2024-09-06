@@ -29,6 +29,13 @@ import java.util.function.Predicate
 interface MessageStream<M> {
 
     /**
+     * Initialize the stream with the given Id
+     *
+     * @param streamId The uniqur ID of the stream to be initialized
+     */
+    void init(String streamId)
+
+    /**
      * Offer a message to the stream.
      *
      * @param message
