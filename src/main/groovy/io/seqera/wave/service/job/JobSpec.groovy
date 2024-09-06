@@ -72,7 +72,7 @@ class JobSpec {
 
     /**
      * The temporary path associated with this job (optional). This is expected to be deleted
-     * once the job execution terminates
+     * once the job execution terminates.
      */
     final Path workDir
 
