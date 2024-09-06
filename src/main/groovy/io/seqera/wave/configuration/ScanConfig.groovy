@@ -69,7 +69,7 @@ class ScanConfig {
     @Nullable
     private String severity
 
-    @Value('${wave.scan.retry-attempts:3}')
+    @Value('${wave.scan.retry-attempts:1}')
     int retryAttempts
 
     String getScanImage() {
