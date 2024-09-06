@@ -49,7 +49,7 @@ class JobSpecTest extends Specification {
         job.operationName == 'oper-123'
         job.creationTime == ts
         job.maxDuration == Duration.ofMinutes(1)
-        job.cleanableDir == Path.of('/some/path')
+        job.workDir == Path.of('/some/path')
 
     }
 
@@ -77,7 +77,7 @@ class JobSpecTest extends Specification {
         job.creationTime == now
         job.maxDuration == Duration.ofMinutes(1)
         job.operationName == 'xyz'
-        job.cleanableDir == Path.of('/some/path')
+        job.workDir == Path.of('/some/path')
     }
 
     def 'should create scan job' () {
@@ -91,6 +91,6 @@ class JobSpecTest extends Specification {
         job.creationTime == now
         job.maxDuration == Duration.ofMinutes(1)
         job.operationName == 'xyz'
-        job.cleanableDir == Path.of('/some/path')
+        job.workDir == Path.of('/some/path')
     }
 }

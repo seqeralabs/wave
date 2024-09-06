@@ -29,7 +29,6 @@ import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.scan.ScanRequest
-import io.seqera.wave.service.scan.Trivy
 
 /**
  *
@@ -58,7 +57,7 @@ class JobFactoryTest extends Specification {
         job.creationTime == ts
         job.type == JobSpec.Type.Build
         job.maxDuration == Duration.ofMinutes(1)
-        job.cleanableDir == Path.of('/some/work/dir')
+        job.workDir == Path.of('/some/work/dir')
     }
 
     def 'should create transfer job' () {
@@ -99,6 +98,6 @@ class JobFactoryTest extends Specification {
         job.type == JobSpec.Type.Scan
         job.maxDuration == duration
         job.creationTime == request.creationTime
-        job.cleanableDir == workdir
+        job.workDir == workdir
     }
 }

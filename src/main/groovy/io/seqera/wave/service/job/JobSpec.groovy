@@ -71,9 +71,10 @@ class JobSpec {
     final Duration maxDuration
 
     /**
-     * The temporary path associated with this job (optional)
+     * The temporary path associated with this job (optional). This is expected to be deleted
+     * once the job execution terminates
      */
-    final Path cleanableDir
+    final Path workDir
 
     protected JobSpec( String id, Type type, String stateId, String operationName, Instant createdAt, Duration maxDuration, Path dir) {
         this.id = id
@@ -82,7 +83,7 @@ class JobSpec {
         this.operationName = operationName
         this.maxDuration = maxDuration
         this.creationTime = createdAt
-        this.cleanableDir = dir
+        this.workDir = dir
     }
 
     static JobSpec transfer(String stateId, String operationName, Instant creationTime, Duration maxDuration) {

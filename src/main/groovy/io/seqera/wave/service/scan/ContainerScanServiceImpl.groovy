@@ -144,7 +144,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler {
         ScanResult result
         if( state.completed() ) {
             log.info("Container scan completed for id: ${scan.id}")
-            result = ScanResult.success(scan, TrivyResultProcessor.process(job.cleanableDir.resolve(Trivy.OUTPUT_FILE_NAME)))
+            result = ScanResult.success(scan, TrivyResultProcessor.process(job.workDir.resolve(Trivy.OUTPUT_FILE_NAME)))
         }
         else{
             log.info("Container scan failed for scan id: ${scan.id} - stdout: $state.stdout")
