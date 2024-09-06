@@ -20,11 +20,11 @@ package io.seqera.wave.service.data.stream.impl
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.LinkedBlockingQueue
-import java.util.function.Predicate
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
+import io.seqera.wave.service.data.stream.MessageConsumer
 import io.seqera.wave.service.data.stream.MessageStream
 import jakarta.inject.Singleton
 /**
@@ -54,7 +54,7 @@ class LocalMessageStream implements MessageStream<String> {
     }
 
     @Override
-    boolean consume(String streamId, Predicate<String> consumer) {
+    boolean consume(String streamId, MessageConsumer<String> consumer) {
         final message = delegate
                 .get(streamId)
                 .poll()
@@ -64,7 +64,7 @@ class LocalMessageStream implements MessageStream<String> {
 
         def result = false
         try {
-            result = consumer.test(message)
+            result = consumer.accept(message)
         }
         catch (Throwable e) {
             result = false

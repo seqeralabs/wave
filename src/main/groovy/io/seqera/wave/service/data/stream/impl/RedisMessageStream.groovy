@@ -19,12 +19,12 @@
 package io.seqera.wave.service.data.stream.impl
 
 import java.time.Duration
-import java.util.function.Predicate
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
+import io.seqera.wave.service.data.stream.MessageConsumer
 import io.seqera.wave.service.data.stream.MessageStream
 import io.seqera.wave.util.LongRndKey
 import jakarta.annotation.PostConstruct
@@ -100,10 +100,10 @@ class RedisMessageStream implements MessageStream<String> {
     }
 
     @Override
-    boolean consume(String streamId, Predicate<String> consumer) {
+    boolean consume(String streamId, MessageConsumer<String> consumer) {
         try (Jedis jedis = pool.getResource()) {
             final entry = claimMessage(jedis,streamId) ?: readMessage(jedis, streamId)
-            if( entry && consumer.test(entry.getFields().get(DATA_FIELD)) ) {
+            if( entry && consumer.accept(entry.getFields().get(DATA_FIELD)) ) {
                 // acknowledge the job after processing
                 // this remove permanently the entry from the stream
                 jedis.xack(streamId, CONSUMER_GROUP_NAME, entry.getID())

@@ -19,10 +19,10 @@
 package io.seqera.wave.service.job
 
 import java.time.Duration
-import java.util.function.Predicate
 
 import groovy.transform.CompileStatic
 import io.seqera.wave.service.data.stream.AbstractMessageStream
+import io.seqera.wave.service.data.stream.MessageConsumer
 import io.seqera.wave.service.data.stream.MessageStream
 import jakarta.annotation.PreDestroy
 import jakarta.inject.Singleton
@@ -58,7 +58,7 @@ class JobQueue extends AbstractMessageStream<JobSpec> {
         super.offer(STREAM_NAME, jobSpec)
     }
 
-    final void addConsumer(Predicate<JobSpec> consumer) {
+    final void addConsumer(MessageConsumer<JobSpec> consumer) {
         super.addConsumer(STREAM_NAME, consumer)
     }
 

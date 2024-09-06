@@ -17,40 +17,24 @@
  */
 
 package io.seqera.wave.service.data.stream
+
 /**
- * Define the contract for a generic message stream
- * able to add message and consume them asynchronously.
+ * Defines the message consumer interface
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface MessageStream<M> {
+interface MessageConsumer<T> {
 
     /**
-     * Initialize the stream with the given Id
-     *
-     * @param streamId The uniqur ID of the stream to be initialized
-     */
-    void init(String streamId)
-
-    /**
-     * Offer a message to the stream.
+     * Consume a message from the stream
      *
      * @param message
-     *      The message that should be offered to the queue
-     */
-    void offer(String streamId, M message)
-
-    /**
-     * Consume a message from the stream and invoke the specified consumer predicate
-     *
-     * @param streamId
-     *      The target stream ID
-     * @param consumer
-     *      The {@link MessageConsumer} instance to be invoked to consume the message
+     *      A message payload ready to be consumed
      * @return
-     *      {code true} when the message has been processed successfully,
-     *      otherwise {@code false} when the message needs to be further processed
+     *      {@link true} to acknowledge the consumer has effectively consumed the message,
+     *      so that it's not made available to other consumers. {@link false} the message
+     *      has been consumed, therefore other consumers will ultimately receve it.
      */
-    boolean consume(String streamId, MessageConsumer<M> consumer)
+    boolean accept(T message)
 
 }
