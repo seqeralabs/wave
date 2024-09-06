@@ -690,6 +690,7 @@ class K8sServiceImpl implements K8sService {
         //spec section
         def spec = builder
                 .withNewSpec()
+                .withBackoffLimit(buildConfig.retryAttempts)
                 .withTtlSecondsAfterFinished(buildConfig.deleteAfterFinished.toSeconds() as Integer)
                 .withNewTemplate()
                 .withNewMetadata()
@@ -769,6 +770,7 @@ class K8sServiceImpl implements K8sService {
         //spec section
         def spec = builder
                 .withNewSpec()
+                .withBackoffLimit(scanConfig.retryAttempts)
                 .withTtlSecondsAfterFinished(buildConfig.deleteAfterFinished.toSeconds() as Integer)
                 .withNewTemplate()
                 .editOrNewSpec()

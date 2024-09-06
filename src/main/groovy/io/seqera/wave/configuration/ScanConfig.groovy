@@ -69,6 +69,9 @@ class ScanConfig {
     @Nullable
     private String severity
 
+    @Value('${wave.scan.retryAttempts:1}')
+    int retryAttempts
+
     String getScanImage() {
         return scanImage
     }
@@ -98,6 +101,6 @@ class ScanConfig {
 
     @PostConstruct
     private void init() {
-        log.debug("Scanner config: docker image name: ${scanImage}; cache directory: ${cacheDirectory}; timeout=${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}; severity: $severity")
+        log.debug("Scanner config: docker image name: ${scanImage}; cache directory: ${cacheDirectory}; timeout=${timeout}; cpus: ${requestsCpu}; mem: ${requestsMemory}; severity: $severity; retryAttempts: $retryAttempts")
     }
 }
