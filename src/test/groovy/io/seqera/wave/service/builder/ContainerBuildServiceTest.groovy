@@ -59,7 +59,6 @@ import io.seqera.wave.util.SpackHelper
 import io.seqera.wave.util.TemplateRenderer
 import io.micronaut.context.event.ApplicationEventPublisher
 import jakarta.inject.Inject
-import org.slf4j.Logger
 
 /**
  *

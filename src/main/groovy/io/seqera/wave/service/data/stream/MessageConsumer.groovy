@@ -33,7 +33,7 @@ interface MessageConsumer<T> {
      * @return
      *      {@link true} to acknowledge the consumer has effectively consumed the message,
      *      so that it's not made available to other consumers. {@link false} the message
-     *      has been consumed, therefore other consumers will ultimately receve it.
+     *      has been consumed, therefore other consumers will ultimately receive it.
      */
     boolean accept(T message)
 
