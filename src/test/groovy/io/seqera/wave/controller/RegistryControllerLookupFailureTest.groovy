@@ -27,7 +27,7 @@ import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
-import io.seqera.wave.auth.RegistryAuthService
+import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.exception.RegistryForwardException
 import io.seqera.wave.model.ContentType
 import io.seqera.wave.test.DockerRegistryContainer
@@ -43,8 +43,8 @@ class RegistryControllerLookupFailureTest extends Specification implements Docke
     @Client("/")
     HttpClient client
 
-    @MockBean(RegistryAuthService)
-    RegistryAuthService lookupService = Mock(RegistryAuthService)
+    @MockBean(RegistryLookupService)
+    RegistryLookupService lookupService = Mock(RegistryLookupService)
 
     def setupSpec() {
         initRegistryContainer()
