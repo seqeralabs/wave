@@ -73,7 +73,7 @@ class Retryable<R> {
 
     private Predicate<? extends Throwable> condition
 
-    private Consumer<Event> retryEvent
+    private Consumer<Event<R>> retryEvent
 
     private Predicate<R> handleResult
 
@@ -92,7 +92,7 @@ class Retryable<R> {
         return this
     }
 
-    Retryable<R> onRetry(Consumer<Event> event) {
+    Retryable<R> onRetry(Consumer<Event<R>> event) {
         this.retryEvent = event
         return this
     }
