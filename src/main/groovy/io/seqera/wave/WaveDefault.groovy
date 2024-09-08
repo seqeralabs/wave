@@ -18,7 +18,6 @@
 
 package io.seqera.wave
 
-
 import groovy.transform.CompileStatic
 /**
  * Wave app defaults
