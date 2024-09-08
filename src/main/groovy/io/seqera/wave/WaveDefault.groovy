@@ -17,11 +17,15 @@
  */
 
 package io.seqera.wave
+
+
+import groovy.transform.CompileStatic
 /**
  * Wave app defaults
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@CompileStatic
 interface WaveDefault {
 
     final static public String DOCKER_IO = 'docker.io'
