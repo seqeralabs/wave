@@ -70,8 +70,8 @@ class RedisMessageStream implements MessageStream<String> {
         log.info "Creating Redis message stream - consumer=${consumerName}; claim-timeout=${claimTimeout}"
     }
 
-    protected boolean createGroup0(Jedis jedis, String streamId, String group) {
-        log.debug "Creating Redis group=$group; streamId=$streamId"
+    protected boolean initGroup0(Jedis jedis, String streamId, String group) {
+        log.debug "Initializing Redis group='$group'; streamId='$streamId'"
         try {
             jedis.xgroupCreate(streamId, group, STREAM_ENTRY_ZERO, true)
             return true
@@ -88,7 +88,7 @@ class RedisMessageStream implements MessageStream<String> {
 
     void init(String streamId) {
         try (Jedis jedis = pool.getResource()) {
-            createGroup0(jedis, streamId, CONSUMER_GROUP_NAME)
+            initGroup0(jedis, streamId, CONSUMER_GROUP_NAME)
         }
     }
 

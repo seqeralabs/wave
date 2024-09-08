@@ -35,6 +35,7 @@ class JwtTimeRedisTest extends Specification implements RedisTestContainer{
     @Shared
     ApplicationContext applicationContext
 
+    @Shared
     JwtTimeStore timer
 
     def setup() {

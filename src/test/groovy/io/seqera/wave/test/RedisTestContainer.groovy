@@ -34,7 +34,6 @@ trait RedisTestContainer {
 
     static GenericContainer redisContainer
 
-
     String getRedisHostName(){
         redisContainer.getHost()
     }

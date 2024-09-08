@@ -21,6 +21,7 @@ package io.seqera.wave.service.job
 import java.time.Duration
 
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.seqera.wave.service.data.stream.AbstractMessageStream
 import io.seqera.wave.service.data.stream.MessageConsumer
 import io.seqera.wave.service.data.stream.MessageStream
@@ -31,6 +32,7 @@ import jakarta.inject.Singleton
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @Singleton
 @CompileStatic
 class JobQueue extends AbstractMessageStream<JobSpec> {
@@ -42,6 +44,7 @@ class JobQueue extends AbstractMessageStream<JobSpec> {
     JobQueue(MessageStream<String> target, JobConfig config) {
         super(target)
         this.config = config
+        log.debug "Created job queue"
     }
 
     @Override
@@ -64,6 +67,7 @@ class JobQueue extends AbstractMessageStream<JobSpec> {
 
     @PreDestroy
     void destroy() {
+        log.debug "Shutting down job queue"
         this.close()
     }
 }
