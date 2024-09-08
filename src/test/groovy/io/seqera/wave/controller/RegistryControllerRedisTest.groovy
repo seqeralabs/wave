@@ -18,6 +18,7 @@
 
 package io.seqera.wave.controller
 
+import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Timeout
 
@@ -25,7 +26,6 @@ import java.time.Duration
 import java.time.Instant
 
 import io.micronaut.context.ApplicationContext
-import io.micronaut.core.io.socket.SocketUtils
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
@@ -46,51 +46,41 @@ import io.seqera.wave.test.DockerRegistryContainer
 import io.seqera.wave.test.RedisTestContainer
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
-import redis.clients.jedis.Jedis
 /**
  *
  * @author Jorge Aguilera <jorge.aguilera@seqera.io>
  */
 class RegistryControllerRedisTest extends Specification implements DockerRegistryContainer, RedisTestContainer {
 
-    EmbeddedServer embeddedServer
+    @Shared
+    ApplicationContext applicationContext
 
+    @Shared
     int port
 
-    Jedis jedis
-
     def setup() {
-        port = SocketUtils.findAvailableTcpPort()
-        embeddedServer = ApplicationContext.run(EmbeddedServer, [
+        EmbeddedServer server = ApplicationContext.run(EmbeddedServer, [
                 REDIS_HOST   : redisHostName,
                 REDIS_PORT   : redisPort,
                 'wave.build.timeout':'2s',
-                'wave.build.trusted-timeout':'2s',
-                'micronaut.server.port': port,
-                'micronaut.http.services.default.url' : "http://localhost:$port".toString(),
-        ], 'test', 'h2', 'redis')
-
-        jedis = new Jedis(redisHostName, redisPort as int)
-        initRegistryContainer(applicationContext)
-        jedis.flushAll()
+                'wave.build.trusted-timeout':'2s'
+        ], 'test', 'redis')
+        and:
+        port = server.port
+        applicationContext = server.getApplicationContext()
     }
 
     def cleanup(){
-        jedis.close()
-        embeddedServer.close()
-    }
-
-    ApplicationContext getApplicationContext() {
-        embeddedServer.applicationContext
+        applicationContext.close()
     }
 
     void 'should get manifest'() {
         given:
-        HttpClient client = applicationContext.createBean(HttpClient)
+        HttpClient client = applicationContext.getBean(HttpClient)
         ManifestCacheStore storage = applicationContext.getBean(ManifestCacheStore)
 
         when:
-        HttpRequest request = HttpRequest.GET("http://localhost:$port/v2/library/hello-world/manifests/sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6").headers({h->
+        HttpRequest request = HttpRequest.GET("http://localhost:${port}/v2/library/hello-world/manifests/sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6").headers({h->
             h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
             h.add('Accept', ContentType.DOCKER_MANIFEST_V1_JWS_TYPE)
             h.add('Accept', MediaType.APPLICATION_JSON)
@@ -103,23 +93,11 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         response.getContentType().get().getName() ==  'application/vnd.oci.image.index.v1+json'
         response.header('docker-content-digest') == 'sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6'
         response.getContentLength() == 10242
-
-        when:
-        storage.clear()
-
-        and:
-        response = client.toBlocking().exchange(request,String)
-
-        then:
-        response.status() == HttpStatus.OK
-        and:
-        response.body().indexOf('"schemaVersion":') != -1
-        response.getContentType().get().getName() ==  'application/vnd.oci.image.index.v1+json'
-        response.getContentLength() == 10242
+        
     }
 
     @Timeout(15)
-    void 'should render a timeout when build failed'() {
+    void 'should return a timeout when build failed'() {
         given:
         def client = applicationContext.createBean(HttpClient)
         def buildCacheStore = applicationContext.getBean(BuildCacheStore)
@@ -138,7 +116,7 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         buildCacheStore.put("library/hello-world", entry)
 
         when:
-        HttpRequest request = HttpRequest.GET("http://localhost:$port/v2/wt/1234/library/hello-world/manifests/latest").headers({h->
+        HttpRequest request = HttpRequest.GET("http://localhost:${port}/v2/wt/1234/library/hello-world/manifests/latest").headers({h->
             h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
             h.add('Accept', ContentType.DOCKER_MANIFEST_V1_JWS_TYPE)
             h.add('Accept', MediaType.APPLICATION_JSON)

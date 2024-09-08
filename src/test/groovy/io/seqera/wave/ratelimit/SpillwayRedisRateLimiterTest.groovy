@@ -18,7 +18,7 @@
 
 package io.seqera.wave.ratelimit
 
-
+import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
@@ -34,10 +34,13 @@ import redis.clients.jedis.Jedis
  */
 class SpillwayRedisRateLimiterTest extends Specification implements RedisTestContainer {
 
+    @Shared
     ApplicationContext applicationContext
 
+    @Shared
     SpillwayRateLimiter rateLimiter
 
+    @Shared
     Jedis jedis
 
     def setup() {

@@ -18,6 +18,7 @@
 
 package io.seqera.wave.memstore.range
 
+import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
@@ -29,8 +30,10 @@ import io.seqera.wave.test.RedisTestContainer
  */
 class RedisRangeProviderTest extends Specification implements RedisTestContainer {
 
+    @Shared
     ApplicationContext applicationContext
 
+    @Shared
     RedisRangeProvider provider
 
     def setup() {

@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.builder
 
+import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Timeout
 
@@ -35,8 +36,10 @@ import redis.clients.jedis.Jedis
  */
 class BuildCacheStoreRedisTest extends Specification implements RedisTestContainer {
 
+    @Shared
     ApplicationContext applicationContext
 
+    @Shared
     Jedis jedis
 
     def setup() {

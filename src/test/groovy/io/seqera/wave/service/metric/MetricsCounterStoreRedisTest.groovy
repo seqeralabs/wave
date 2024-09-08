@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.metric
 
+import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
@@ -29,8 +30,11 @@ import redis.clients.jedis.Jedis
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 class MetricsCounterStoreRedisTest  extends Specification implements RedisTestContainer {
+
+    @Shared
     ApplicationContext applicationContext
 
+    @Shared
     Jedis jedis
 
     def setup() {

@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.cache.impl
 
+import spock.lang.Shared
 import spock.lang.Specification
 
 import java.time.Duration
@@ -27,8 +28,10 @@ import io.seqera.wave.test.RedisTestContainer
 
 class RedisCacheProviderTest extends Specification implements RedisTestContainer {
 
+    @Shared
     ApplicationContext applicationContext
 
+    @Shared
     RedisCacheProvider redisCacheProvider
 
     def setup() {
