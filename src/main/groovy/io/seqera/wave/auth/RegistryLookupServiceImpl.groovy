@@ -84,6 +84,9 @@ class RegistryLookupServiceImpl implements RegistryLookupService {
         final httpClient = HttpClientFactory.followRedirectsHttpClient()
         final request = HttpRequest.newBuilder() .uri(endpoint) .GET() .build()
         // retry strategy
+        // note: do not retry on 429 error code because it just continues to report the error
+        // for a while. better returning the error to the upstream client
+        // see also https://github.com/docker/hub-feedback/issues/1907#issuecomment-631028965
         final retryable = Retryable
                 .<HttpResponse<String>>of(httpConfig)
                 .retryIf((response) -> isServerError(response))
