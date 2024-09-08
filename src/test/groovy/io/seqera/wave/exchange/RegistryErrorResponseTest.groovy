@@ -36,7 +36,7 @@ class RegistryErrorResponseTest extends Specification {
 
     def 'should create from json' () {
         given:
-        def json = '{"errors":[{"code":"DENIED","message":"Unauthenticated request. Unauthenticated requests do not have permission \"artifactregistry.repositories.downloadArtifacts\" on resource \"projects/wired-height-305919/locations/us-central1/repositories/fsdx-docker-dev\" (or it may not exist)"}]}'
+        def json = '{"errors":[{"code":"DENIED","message":"Unauthenticated request. Unauthenticated requests do not have permission \\"artifactregistry.repositories.downloadArtifacts\\" on resource \\"projects/wired-height-305919/locations/us-central1/repositories/fsdx-docker-dev\\" (or it may not exist)"}]}'
         when:
         def resp = RegistryErrorResponse.parse(json)
         then:
