@@ -19,6 +19,7 @@
 package io.seqera.wave.service.k8s
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.nio.file.Path
 import java.time.Duration
@@ -26,8 +27,11 @@ import java.time.OffsetDateTime
 
 import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.openapi.ApiClient
+import io.kubernetes.client.openapi.apis.BatchV1Api
 import io.kubernetes.client.openapi.apis.CoreV1Api
 import io.kubernetes.client.openapi.models.V1EnvVar
+import io.kubernetes.client.openapi.models.V1Job
+import io.kubernetes.client.openapi.models.V1JobStatus
 import io.kubernetes.client.openapi.models.V1ObjectMeta
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
@@ -951,4 +955,78 @@ class K8sServiceImplTest extends Specification {
         ctx.close()
     }
 
+
+    private V1Job jobPending() {
+        def status = new V1JobStatus();
+        status.setActive(1)
+        status.setFailed(2)
+        def result = new V1Job()
+        result.setStatus(status)
+        return result
+    }
+
+    private V1Job jobSucceeded() {
+        def status = new V1JobStatus()
+        status.setCompletionTime(OffsetDateTime.now())
+        status.setSucceeded(1)
+        status.setFailed(2)
+
+        def result = new V1Job()
+        result.setStatus(status)
+        return result
+    }
+
+    private V1Job jobFailed() {
+        def status = new V1JobStatus();
+        status.setFailed(1)
+        status.setCompletionTime(OffsetDateTime.now())
+
+        def result = new V1Job()
+        result.setStatus(status)
+        return result
+    }
+
+    private V1Job jobFailedNoCompletion() {
+        def status = new V1JobStatus();
+        status.setFailed(1)
+
+        def result = new V1Job()
+        result.setStatus(status)
+        return result
+    }
+
+    private V1Job jobUnknown() {
+        def status = new V1JobStatus();
+        status.setCompletionTime(OffsetDateTime.now())
+
+        def result = new V1Job()
+        result.setStatus(status)
+        return result
+    }
+
+
+    @Unroll
+    def 'should validate get status' () {
+        given:
+        def NS = 'foo'
+        def api = Mock(BatchV1Api)
+        def client = Mock(K8sClient) { batchV1Api()>>api }
+        def service = Spy(new K8sServiceImpl(namespace:NS, k8sClient: client))
+
+        when:
+        def status = service.getJobStatus(NAME)
+        then:
+        1 * api.readNamespacedJob(NAME, NS, null) >> JOB
+        and:
+        status == EXPECTED
+
+        where:
+        NAME    | JOB               | EXPECTED
+        'foo'   | null              | null
+        'foo'   | jobPending()      | K8sService.JobStatus.Pending
+        'foo'   | jobSucceeded()    | K8sService.JobStatus.Succeeded
+        'foo'   | jobFailed()       | K8sService.JobStatus.Failed
+        'foo'   | jobFailedNoCompletion() | K8sService.JobStatus.Pending
+        'foo'   | jobUnknown()      | null
+    }
 }
