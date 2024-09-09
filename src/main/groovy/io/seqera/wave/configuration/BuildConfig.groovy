@@ -121,6 +121,10 @@ class BuildConfig {
     @Value('${wave.build.force-compression:false}')
     Boolean forceCompression
 
+    /**
+     * The number of times a build job should be retries. Since failures are expected due to
+     * invalid Dockerfile or Conda environment, retry is disabled.
+     */
     @Value('${wave.build.retry-attempts:0}')
     int retryAttempts
 
