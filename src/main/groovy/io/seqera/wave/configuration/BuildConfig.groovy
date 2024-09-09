@@ -121,7 +121,7 @@ class BuildConfig {
     @Value('${wave.build.force-compression:false}')
     Boolean forceCompression
 
-    @Value('${wave.build.retry-attempts:3}')
+    @Value('${wave.build.retry-attempts:0}')
     int retryAttempts
 
     @PostConstruct
