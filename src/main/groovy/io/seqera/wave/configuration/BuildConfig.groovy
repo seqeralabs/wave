@@ -22,7 +22,6 @@ import javax.annotation.Nullable
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
-import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.api.SubmitContainerTokenRequest
@@ -85,20 +84,6 @@ class BuildConfig {
 
     Duration getFailureDuration() {
         return failureDuration ?: statusDelay.multipliedBy(10)
-    }
-
-    @Memoized
-    Duration getStatusInitialDelay() {
-        final d1 = defaultTimeout.toMillis() * 2.5f
-        final d2 = trustedTimeout.toMillis() * 1.5f
-        return Duration.ofMillis(Math.round(Math.max(d1,d2)))
-    }
-
-    @Memoized
-    Duration getStatusAwaitDuration() {
-        final d1 = defaultTimeout.toMillis() * 2.1f
-        final d2 = trustedTimeout.toMillis() * 1.1f
-        return Duration.ofMillis(Math.round(Math.max(d1,d2)))
     }
 
     @Value('${wave.build.cleanup}')
