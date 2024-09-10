@@ -27,7 +27,6 @@ import groovy.util.logging.Slf4j
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.encoder.MoshiEncodeStrategy
-import io.seqera.wave.exception.BuildTimeoutException
 import io.seqera.wave.service.cache.AbstractCacheStore
 import io.seqera.wave.service.cache.impl.CacheProvider
 import jakarta.inject.Named
@@ -84,7 +83,7 @@ class BuildCacheStore extends AbstractCacheStore<BuildStoreEntry> implements Bui
 
     @Override
     boolean storeIfAbsent(String imageName, BuildStoreEntry build) {
-        return putIfAbsent(imageName, build, buildConfig.statusInitialDelay)
+        return putIfAbsent(imageName, build, buildConfig.statusDuration)
     }
 
     @Override
@@ -107,11 +106,6 @@ class BuildCacheStore extends AbstractCacheStore<BuildStoreEntry> implements Bui
 
         static BuildResult awaitCompletion(BuildCacheStore store, String imageName, BuildResult current) {
             final await = store.buildConfig.statusDelay
-            final beg = System.currentTimeMillis()
-            // await nearly double of the build timeout time because the build job
-            // can require additional time, other than the build time, to be scheduled
-            // note: see also #storeIfAbsent method
-            final max = store.buildConfig.statusAwaitDuration.toMillis()
             while( true ) {
                 if( current==null ) {
                     return BuildResult.unknown()
@@ -121,10 +115,6 @@ class BuildCacheStore extends AbstractCacheStore<BuildStoreEntry> implements Bui
                 if( current.done() ) {
                     return current
                 }
-                // check if it's timed out
-                final delta = System.currentTimeMillis()-beg
-                if( delta > max )
-                    throw new BuildTimeoutException("Build of container '$imageName' timed out")
                 // sleep a bit
                 Thread.sleep(await.toMillis())
                 // fetch the build status again
