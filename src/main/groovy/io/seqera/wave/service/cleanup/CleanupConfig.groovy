@@ -45,13 +45,13 @@ class CleanupConfig {
     @Value('${wave.cleanup.failed:1d}')
     Duration failedDuration
 
-    @Value('${wave.cleanup.range:100}')
+    @Value('${wave.cleanup.range:200}')
     int cleanupRange
 
     @Value('${wave.cleanup.startup-delay:10s}')
     Duration cleanupStartupDelay
 
-    @Value('${wave.cleanup.run-interval:1m}')
+    @Value('${wave.cleanup.run-interval:30s}')
     Duration cleanupRunInterval
 
 }

@@ -123,8 +123,7 @@ class CleanupServiceImpl implements Runnable, CleanupService {
                 : config.failedDuration
         final expirationSecs = Instant.now().plus(ttl).epochSecond
         // schedule the job deletion
-        final id = JOB_PREFIX + job.operationName
-        store.add(id, expirationSecs)
+        store.add(JOB_PREFIX + job.operationName, expirationSecs)
         // schedule work dir path deletion
         if( job.workDir ) {
             store.add(DIR_PREFIX + job.workDir, expirationSecs)
