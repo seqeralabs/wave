@@ -16,6 +16,10 @@ wave:
       interval: '10s'
     monitor:
       interval: '5s'
+  cleanup:
+    succeeded: '10s'
+    failed: '45s'
+    strategy: 'onsuccess'
 ---
 endpoints:
   metrics:

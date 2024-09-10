@@ -16,18 +16,42 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job
+package io.seqera.wave.service.cleanup
+
+import java.time.Duration
+import javax.annotation.Nullable
+
+import groovy.transform.CompileStatic
+import groovy.transform.ToString
+import io.micronaut.context.annotation.Value
+import jakarta.inject.Singleton
+
 /**
- * Define job operations contract
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface JobOperation {
+@ToString(includePackage = false, includeNames = true)
+@CompileStatic
+@Singleton
+class CleanupConfig {
 
-    JobState status(JobSpec jobSpec)
+    @Value('${wave.cleanup.strategy}')
+    @Nullable
+    String strategy
 
-    void cleanup(JobSpec jobSpec)
+    @Value('${wave.cleanup.succeeded:5m}')
+    Duration succeededDuration
 
-    void cleanup(String jobName)
+    @Value('${wave.cleanup.failed:1d}')
+    Duration failedDuration
+
+    @Value('${wave.cleanup.range:100}')
+    int cleanupRange
+
+    @Value('${wave.cleanup.startup-delay:10s}')
+    Duration cleanupStartupDelay
+
+    @Value('${wave.cleanup.run-interval:1m}')
+    Duration cleanupRunInterval
 
 }

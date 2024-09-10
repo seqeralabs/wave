@@ -521,10 +521,8 @@ class K8sServiceImplTest extends Specification {
         def ctx = ApplicationContext.run(PROPS)
         def k8sService = ctx.getBean(K8sServiceImpl)
         def config = Mock(BlobCacheConfig) {
-            getTransferTimeout() >> Duration.ofSeconds(20)
             getEnvironment() >> [:]
             getRetryAttempts() >> 5
-            getDeleteAfterFinished() >> Duration.ofDays(10)
         }
 
         when:
@@ -535,10 +533,8 @@ class K8sServiceImplTest extends Specification {
         result.metadata.namespace == 'my-ns'
         and:
         result.spec.backoffLimit == 5
-        result.spec.ttlSecondsAfterFinished == Duration.ofDays(10).seconds as Integer
         and:
         verifyAll(result.spec.template.spec) {
-            activeDeadlineSeconds == 20
             serviceAccount == null
             containers.get(0).name == 'foo'
             containers.get(0).image == 'my-image:latest'
@@ -561,12 +557,10 @@ class K8sServiceImplTest extends Specification {
         def ctx = ApplicationContext.run(PROPS)
         def k8sService = ctx.getBean(K8sServiceImpl)
         def config = Mock(BlobCacheConfig) {
-            getTransferTimeout() >> Duration.ofSeconds(20)
             getEnvironment() >> ['FOO':'one', 'BAR':'two']
             getRequestsCpu() >> '2'
             getRequestsMemory() >> '8Gi'
             getRetryAttempts() >> 3
-            getDeleteAfterFinished() >> Duration.ofDays(1)
         }
 
         when:
@@ -576,10 +570,8 @@ class K8sServiceImplTest extends Specification {
         result.metadata.namespace == 'my-ns'
         and:
         result.spec.backoffLimit == 3
-        result.spec.ttlSecondsAfterFinished == Duration.ofDays(1).seconds as Integer
         and:
         verifyAll(result.spec.template.spec) {
-            activeDeadlineSeconds == 20
             serviceAccount == 'foo-sa'
             containers.get(0).name == 'foo'
             containers.get(0).image == 'my-image:latest'
@@ -727,7 +719,6 @@ class K8sServiceImplTest extends Specification {
 
         then:
         job.spec.backoffLimit == 3
-        job.spec.ttlSecondsAfterFinished == Duration.ofDays(1).seconds as Integer
         job.spec.template.spec.containers[0].image == containerImage
         job.spec.template.spec.containers[0].command == args
         job.spec.template.spec.containers[0].securityContext.privileged
@@ -868,7 +859,6 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.storage.claimName': 'bar',
                 'wave.build.k8s.storage.mountPath': '/build',
                 'wave.build.k8s.service-account': 'theAdminAccount',
-                'wave.build.deleteAfterFinished': '1d',
         ]
         and:
         def ctx = ApplicationContext.run(PROPS)
@@ -893,7 +883,6 @@ class K8sServiceImplTest extends Specification {
         job.metadata.name == name
         job.metadata.namespace == 'foo'
         job.spec.backoffLimit == 3
-        job.spec.ttlSecondsAfterFinished == Duration.ofDays(1).seconds as Integer
         job.spec.template.spec.containers[0].image == containerImage
         job.spec.template.spec.containers[0].args == args
         job.spec.template.spec.containers[0].resources.requests.get('cpu') == new Quantity('2')
@@ -916,7 +905,6 @@ class K8sServiceImplTest extends Specification {
                 'wave.build.k8s.storage.claimName': 'bar',
                 'wave.build.k8s.storage.mountPath': '/build',
                 'wave.build.k8s.service-account': 'theAdminAccount',
-                'wave.build.deleteAfterFinished': '1d',
                 'wave.scan.retry-attempts': 3
         ]
         and:
@@ -942,7 +930,6 @@ class K8sServiceImplTest extends Specification {
         job.metadata.name == name
         job.metadata.namespace == 'foo'
         job.spec.backoffLimit == 3
-        job.spec.ttlSecondsAfterFinished == Duration.ofDays(1).seconds as Integer
         job.spec.template.spec.containers[0].image == containerImage
         job.spec.template.spec.containers[0].args == args
         job.spec.template.spec.containers[0].resources.requests == null

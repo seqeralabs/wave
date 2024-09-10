@@ -16,18 +16,28 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job
+package io.seqera.wave.service.cleanup
+
+import spock.lang.Specification
+
 /**
- * Define job operations contract
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface JobOperation {
+class CleanupServiceTest extends Specification {
 
-    JobState status(JobSpec jobSpec)
+    def 'should validate cleanup entry' () {
+        given:
+        def service = Spy(new CleanupServiceImpl())
 
-    void cleanup(JobSpec jobSpec)
+        when:
+        service.cleanupEntry('job:foo')
+        then:
+        1 * service.cleanupJob0('foo') >> null
 
-    void cleanup(String jobName)
-
+        when:
+        service.cleanupEntry('dir:/some/data/dir')
+        then:
+        1 * service.cleanupDir0('/some/data/dir') >> null
+    }
 }
