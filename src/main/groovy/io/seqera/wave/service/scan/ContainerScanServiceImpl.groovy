@@ -74,7 +74,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler {
             }
         }
         catch (Exception e) {
-            log.warn "Unable to run the container scan - reason: ${e.message?:e}"
+            log.warn "Unable to run the container scan - image=${event.request.targetImage}; reason=${e.message?:e}"
         }
     }
 
@@ -91,7 +91,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler {
             return persistenceService.loadScanRecord(scanId)
         }
         catch (Throwable t){
-            log.error("Unable to load the scan results for scanId: ${scanId}", t)
+            log.error("Unable to load the scan result - id=${scanId}", t)
              return null
         }
     }
@@ -104,7 +104,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler {
             jobService.launchScan(request)
         }
         catch (Throwable e){
-            log.warn "Unable to launch the scan results for scan id: ${request.id} - cause: ${e.message}", e
+            log.warn "Unable to save scan result - id=${request.id}; cause=${e.message}", e
             updateScanRecord(ScanResult.failure(request))
         }
     }
@@ -118,11 +118,11 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler {
     void onJobEvent(JobEvent event) {
         final scan = persistenceService.loadScanRecord(event.job.stateId)
         if( !scan ) {
-            log.error "Scan record unknown for job=${event.job.stateId}; event=${event}"
+            log.error "Scan record missing state - id=${event.job.stateId}; event=${event}"
             return
         }
         if( scan.done() ) {
-            log.warn "Scan record already marked as completed for job=${event.job.stateId}; event=${event}"
+            log.warn "Scan record already marked as completed - id=${event.job.stateId}; event=${event}"
             return
         }
 
@@ -136,18 +136,18 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler {
             handleJobTimeout(event.job, scan)
         }
         else {
-            throw new IllegalStateException("Unknown container build job event type=$event")
+            throw new IllegalStateException("Unknown container scan job event=$event")
         }
     }
 
     protected void handleJobCompletion(JobSpec job, WaveScanRecord scan, JobState state) {
         ScanResult result
         if( state.completed() ) {
-            log.info("Container scan completed for id: ${scan.id}")
+            log.info("Container scan completed - id=${scan.id}")
             result = ScanResult.success(scan, TrivyResultProcessor.process(job.workDir.resolve(Trivy.OUTPUT_FILE_NAME)))
         }
         else{
-            log.info("Container scan failed for scan id: ${scan.id} - stdout: $state.stdout")
+            log.info("Container scan failed - id=${scan.id}; exit=${state.exitCode}; stdout=${state.stdout}")
             result = ScanResult.failure(scan)
         }
 
@@ -155,12 +155,12 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler {
     }
 
     protected void handleJobException(JobSpec job, WaveScanRecord scan, Throwable e) {
-        log.error("Container scan failed for scan id: ${scan.id} - cause: ${e.getMessage()}", e)
+        log.error("Container scan failed - id=${scan.id} - cause=${e.getMessage()}", e)
         updateScanRecord(ScanResult.failure(scan))
     }
 
     protected void handleJobTimeout(JobSpec job, WaveScanRecord scan) {
-        log.warn("Container scan timed out for scan id: ${scan.id}")
+        log.warn("Container scan timed out - id=${scan.id}")
         updateScanRecord(ScanResult.failure(scan))
     }
 
@@ -170,7 +170,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler {
             persistenceService.updateScanRecord(new WaveScanRecord(result.id, result))
         }
         catch (Throwable t){
-            log.error("Unable to save results for scan id: ${result.id}", t)
+            log.error("Unable to save result - id=${result.id}; cause=${t.message}", t)
         }
     }
 }
