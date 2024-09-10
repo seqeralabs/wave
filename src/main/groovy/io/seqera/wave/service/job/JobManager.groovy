@@ -90,9 +90,9 @@ class JobManager {
             CompletableFuture.runAsync(()-> jobService.cleanup(jobSpec, state.exitCode), ioExecutor)
             return true
         }
-        // set the await timeout nearly double as the blob transfer timeout, this because the
-        // transfer pod can spend `timeout` time in pending status awaiting to be scheduled
-        // and the same `timeout` time amount carrying out the transfer (upload) operation
+        // set the await timeout nearly double as the job timeout, this because the
+        // job can spend `timeout` time in pending status awaiting to be scheduled
+        // and the same `timeout` time amount carrying out job operation
         final max = (jobSpec.maxDuration.toMillis() * 2.10) as long
         if( duration.toMillis()>max ) {
             dispatcher.notifyJobTimeout(jobSpec)
