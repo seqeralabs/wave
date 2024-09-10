@@ -48,8 +48,6 @@ class DockerTransferStrategyTest extends Specification {
                 'run',
                 '--name',
                 'job-name',
-                '--stop-timeout',
-                '10',
                 '-e', 'AWS_ACCESS_KEY_ID',
                 '-e', 'AWS_SECRET_ACCESS_KEY',
                 'cr.seqera.io/public/s5cmd:latest',
