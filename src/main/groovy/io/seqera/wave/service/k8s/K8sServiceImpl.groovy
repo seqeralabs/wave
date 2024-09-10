@@ -205,7 +205,7 @@ class K8sServiceImpl implements K8sService {
                 .readNamespacedJob(name, namespace, null)
         if( !job )
             return null
-        if( job.status.active || !job.status.completionTime )
+        if( job.status.active )
             return JobStatus.Pending
         if( job.status.succeeded )
             return JobStatus.Succeeded
