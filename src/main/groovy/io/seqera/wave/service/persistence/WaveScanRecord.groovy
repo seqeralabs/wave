@@ -45,6 +45,10 @@ class WaveScanRecord {
     String status
     List<ScanVulnerability> vulnerabilities
 
+    boolean done() {
+        return duration != null
+    }
+
     /* required by jackson deserialization - do not remove */
     WaveScanRecord() {}
 

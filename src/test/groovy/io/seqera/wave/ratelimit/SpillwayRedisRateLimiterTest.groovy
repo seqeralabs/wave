@@ -18,7 +18,7 @@
 
 package io.seqera.wave.ratelimit
 
-
+import spock.lang.Shared
 import spock.lang.Specification
 
 import io.micronaut.context.ApplicationContext
@@ -34,10 +34,13 @@ import redis.clients.jedis.Jedis
  */
 class SpillwayRedisRateLimiterTest extends Specification implements RedisTestContainer {
 
+    @Shared
     ApplicationContext applicationContext
 
+    @Shared
     SpillwayRateLimiter rateLimiter
 
+    @Shared
     Jedis jedis
 
     def setup() {
@@ -47,11 +50,12 @@ class SpillwayRedisRateLimiterTest extends Specification implements RedisTestCon
         ], 'test', 'redis','rate-limit')
         rateLimiter = applicationContext.getBean(SpillwayRateLimiter)
         jedis = new Jedis(redisHostName, redisPort as int)
+        jedis.flushAll()
     }
 
     def cleanup(){
-        jedis.flushAll()
         jedis.close()
+        applicationContext.close()
     }
 
     void "can acquire 1 auth resource"() {

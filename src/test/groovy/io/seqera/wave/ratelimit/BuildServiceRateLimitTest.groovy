@@ -59,6 +59,9 @@ class BuildServiceRateLimitTest extends Specification {
         configuration = applicationContext.getBean(RateLimiterConfig)
     }
 
+    def cleanupSpec() {
+        applicationContext.close()
+    }
 
     def 'should not allow more auth builds than rate limit' () {
         given:

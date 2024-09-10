@@ -25,6 +25,7 @@ import javax.annotation.PostConstruct
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
@@ -48,6 +49,8 @@ import io.seqera.wave.exception.BadRequestException
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.exchange.DescribeWaveContainerResponse
 import io.seqera.wave.model.ContainerCoordinates
+import io.seqera.wave.ratelimit.AcquireRequest
+import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.UserService
 import io.seqera.wave.service.builder.BuildRequest
@@ -147,6 +150,10 @@ class ContainerController {
     @Inject
     ContainerInclusionService inclusionService
 
+    @Inject
+    @Nullable
+    RateLimiterService rateLimiterService
+
     @PostConstruct
     private void init() {
         log.info "Wave server url: $serverUrl; allowAnonymous: $allowAnonymous; tower-endpoint-url: $towerEndpointUrl; default-build-repo: $buildConfig.defaultBuildRepository; default-cache-repo: $buildConfig.defaultCacheRepository; default-public-repo: $buildConfig.defaultPublicRepository"
@@ -231,6 +238,10 @@ class ContainerController {
         }
 
         final ip = addressResolver.resolve(httpRequest)
+        // check the rate limit before continuing
+        if( rateLimiterService )
+            rateLimiterService.acquirePull(new AcquireRequest(identity.userId as String, ip))
+        // create request data
         final data = makeRequestData(req, identity, ip)
         final token = tokenService.computeToken(data)
         final target = targetImage(token.value, data.coordinates())

@@ -18,37 +18,20 @@
 
 package io.seqera.wave.auth
 
-import groovy.transform.CompileStatic
-import io.seqera.wave.exception.WaveException
+import java.net.http.HttpResponse
 
+import groovy.transform.CompileStatic
+import io.seqera.wave.WaveDefault
 /**
- * Exception throw when the registry authorization failed
+ * Utility class for registry functions
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @CompileStatic
-class RegistryUnauthorizedAccessException extends WaveException {
+class RegistryUtils {
 
-    private String response
-    private Integer status
-
-    RegistryUnauthorizedAccessException(String message, Integer status=null, String response=null) {
-        super(message)
-        this.status = status
-        this.response = response
+    static boolean isServerError(HttpResponse response) {
+        response.statusCode() in WaveDefault.HTTP_SERVER_ERRORS
     }
 
-    String getResponse() {
-        return response
-    }
-
-    @Override
-    String getMessage() {
-        def result = super.getMessage()
-        if( status!=null )
-            result += " - HTTP status=$status"
-        if( response )
-            result += " - response=$response"
-        return result
-    }
 }
