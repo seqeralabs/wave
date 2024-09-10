@@ -132,7 +132,7 @@ class ContainerScanServiceImplTest extends Specification {
         def spec = JobSpec.scan('scan-1', 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), workDir)
         def state = JobState.completed(0, 'logs')
         def event = JobEvent.complete(spec, state)
-        def scan = new WaveScanRecord('scan-1', 'build-1', Instant.now())
+        def scan = new WaveScanRecord('scan-1', 'build-1', 'ubuntu:latest', Instant.now())
 
         when:
         service.onJobEvent(event)
@@ -154,7 +154,7 @@ class ContainerScanServiceImplTest extends Specification {
         def spec = JobSpec.scan('scan-1', 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
         def state = JobState.completed(1, 'logs')
         def event = JobEvent.error(spec, new Exception('error'))
-        def scan = new WaveScanRecord('scan-1', 'build-1', Instant.now())
+        def scan = new WaveScanRecord('scan-1', 'build-1', 'ubuntu:latest', Instant.now())
 
         when:
         service.onJobEvent(event)
@@ -172,7 +172,7 @@ class ContainerScanServiceImplTest extends Specification {
         def service = new ContainerScanServiceImpl(persistenceService: mockPersistenceService, jobService: jobService)
         def spec = JobSpec.scan('scan-1', 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
         def event = JobEvent.timeout(spec)
-        def scan = new WaveScanRecord('scan-1', 'build-1', Instant.now())
+        def scan = new WaveScanRecord('scan-1', 'build-1', 'ubuntu:latest', Instant.now())
 
         when:
         service.onJobEvent(event)
@@ -208,7 +208,7 @@ class ContainerScanServiceImplTest extends Specification {
         def service = new ContainerScanServiceImpl(persistenceService: mockPersistenceService, jobService: jobService)
         def spec = JobSpec.scan('scan-1', 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
         def event = JobEvent.error(spec, new Exception('error'))
-        def scan = new WaveScanRecord('scan-1', 'build-1', Instant.now(), Duration.ofMinutes(2), 'completed', null)
+        def scan = new WaveScanRecord('scan-1', 'build-1', 'ubuntu:latest', Instant.now(), Duration.ofMinutes(2), 'completed', null)
 
         when:
         service.onJobEvent(event)
