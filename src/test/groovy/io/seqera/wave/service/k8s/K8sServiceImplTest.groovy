@@ -967,7 +967,6 @@ class K8sServiceImplTest extends Specification {
 
     private V1Job jobSucceeded() {
         def status = new V1JobStatus()
-        status.setCompletionTime(OffsetDateTime.now())
         status.setSucceeded(1)
         status.setFailed(2)
 
@@ -979,17 +978,6 @@ class K8sServiceImplTest extends Specification {
     private V1Job jobFailed() {
         def status = new V1JobStatus();
         status.setFailed(1)
-        status.setCompletionTime(OffsetDateTime.now())
-
-        def result = new V1Job()
-        result.setStatus(status)
-        return result
-    }
-
-    private V1Job jobFailedNoCompletion() {
-        def status = new V1JobStatus();
-        status.setFailed(1)
-
         def result = new V1Job()
         result.setStatus(status)
         return result
@@ -997,13 +985,10 @@ class K8sServiceImplTest extends Specification {
 
     private V1Job jobUnknown() {
         def status = new V1JobStatus();
-        status.setCompletionTime(OffsetDateTime.now())
-
         def result = new V1Job()
         result.setStatus(status)
         return result
     }
-
 
     @Unroll
     def 'should validate get status' () {
@@ -1026,7 +1011,6 @@ class K8sServiceImplTest extends Specification {
         'foo'   | jobPending()              | K8sService.JobStatus.Pending
         'foo'   | jobSucceeded()            | K8sService.JobStatus.Succeeded
         'foo'   | jobFailed()               | K8sService.JobStatus.Failed
-        'foo'   | jobFailedNoCompletion()   | K8sService.JobStatus.Pending
         'foo'   | jobUnknown()              | null
     }
 }
