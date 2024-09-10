@@ -21,6 +21,7 @@ package io.seqera.wave.service.cleanup
 
 import io.seqera.wave.service.job.JobSpec
 /**
+ * Define the contract for resources cleanup service
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

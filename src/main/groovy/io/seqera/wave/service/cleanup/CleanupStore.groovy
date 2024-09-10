@@ -24,6 +24,8 @@ import io.seqera.wave.memstore.range.impl.RangeProvider
 import jakarta.inject.Singleton
 
 /**
+ * Implements a timed range to store and retrieve IDs
+ * of resources to be cleaned up.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

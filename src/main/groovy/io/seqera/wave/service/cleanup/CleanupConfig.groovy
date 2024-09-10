@@ -27,6 +27,7 @@ import io.micronaut.context.annotation.Value
 import jakarta.inject.Singleton
 
 /**
+ * Model configuration settings for resources cleanup
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

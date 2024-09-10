@@ -30,6 +30,7 @@ import io.seqera.wave.service.job.JobSpec
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
 /**
+ * Implement a service for resources cleanup
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
