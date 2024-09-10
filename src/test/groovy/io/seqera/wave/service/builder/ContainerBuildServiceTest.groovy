@@ -31,6 +31,7 @@ import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
 import com.sun.net.httpserver.HttpServer
 import groovy.util.logging.Slf4j
+import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.api.ContainerConfig
@@ -43,7 +44,6 @@ import io.seqera.wave.configuration.SpackConfig
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.service.builder.store.BuildRecordStore
-import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.service.job.JobEvent
 import io.seqera.wave.service.job.JobService
@@ -57,9 +57,7 @@ import io.seqera.wave.util.ContainerHelper
 import io.seqera.wave.util.Packer
 import io.seqera.wave.util.SpackHelper
 import io.seqera.wave.util.TemplateRenderer
-import io.micronaut.context.event.ApplicationEventPublisher
 import jakarta.inject.Inject
-
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -309,9 +307,8 @@ class ContainerBuildServiceTest extends Specification {
                 .withBuildId('1')
         and:
         def store = Mock(BuildStore)
-        def strategy = Mock(BuildStrategy)
         def jobService = Mock(JobService)
-        def builder = new ContainerBuildServiceImpl(buildStore: store, buildConfig: buildConfig, spackConfig:spackConfig, cleanup: new CleanupStrategy(buildConfig: buildConfig), jobService: jobService)
+        def builder = new ContainerBuildServiceImpl(buildStore: store, buildConfig: buildConfig, spackConfig:spackConfig, jobService: jobService)
         def RESPONSE = Mock(JobSpec)
 
         when:

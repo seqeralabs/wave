@@ -40,7 +40,7 @@ class DockerTransferStrategyTest extends Specification {
         def strategy = new DockerTransferStrategy(blobConfig: config)
 
         when:
-        def result = strategy.createProcess(['s5cmd', 'run', '--this'], "job-name", 10)
+        def result = strategy.createProcess(['s5cmd', 'run', '--this'], "job-name")
 
         then:
         result.command() == [
