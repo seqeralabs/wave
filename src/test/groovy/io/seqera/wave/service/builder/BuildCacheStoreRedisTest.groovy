@@ -24,10 +24,10 @@ import spock.lang.Timeout
 
 import java.time.Duration
 import java.time.Instant
-import java.util.concurrent.ExecutionException
 
 import io.micronaut.context.ApplicationContext
-import io.seqera.wave.exception.BuildTimeoutException
+import io.seqera.wave.service.job.JobFactory
+import io.seqera.wave.service.job.JobQueue
 import io.seqera.wave.test.RedisTestContainer
 import redis.clients.jedis.Jedis
 /**
@@ -214,24 +214,26 @@ class BuildCacheStoreRedisTest extends Specification implements RedisTestContain
     @Timeout(value=30)
     def 'should abort an await if build never finish' () {
         given:
+        def buildCacheStore = applicationContext.getBean(BuildCacheStore)
+        def jobQueue = applicationContext.getBean(JobQueue)
+        def jobFactory = applicationContext.getBean(JobFactory)
         def res = BuildResult.create('1')
         def req = new BuildRequest(
                 targetImage: 'docker.io/foo:1',
                 buildId: '1',
                 startTime: Instant.now(),
-                maxDuration: Duration.ofMinutes(1)
+                maxDuration: Duration.ofSeconds(5)
         )
         def entry = new BuildStoreEntry(req, res)
         and:
-        def cacheStore = applicationContext.getBean(BuildStore) as BuildStore
-        // insert a value
-        cacheStore.storeBuild('foo', entry)
+        buildCacheStore.storeIfAbsent(req.targetImage, entry)
+        jobQueue.offer(jobFactory.build(req))
 
         when: "wait for an update never will arrive"
-        cacheStore.awaitBuild('foo').get()
-        then:
-        def e = thrown(ExecutionException)
-        e.cause.class == BuildTimeoutException
+        buildCacheStore.awaitBuild(req.targetImage).get()
+
+        then: "job will timeout and the build will be marked as failed"
+        buildCacheStore.getBuild(req.targetImage).result.exitStatus == -1
     }
 
 }
