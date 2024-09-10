@@ -19,6 +19,7 @@
 package io.seqera.wave.service.persistence
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.time.Duration
 import java.time.Instant
@@ -69,5 +70,16 @@ class WaveScanRecordTest extends Specification {
         scanRecord.id == scanId
         scanRecord.buildId == buildId
         scanRecord.vulnerabilities[0] == scanVulnerability
+    }
+
+    @Unroll
+    def 'should validate done' () {
+        expect:
+        RECORD.done() == EXPECTED
+
+        where:
+        EXPECTED| RECORD
+        false   | new WaveScanRecord('123','scan-123',Instant.now())
+        true    | new WaveScanRecord('123','scan-123',Instant.now(), Duration.ofMinutes(1), 'OK', [])
     }
 }

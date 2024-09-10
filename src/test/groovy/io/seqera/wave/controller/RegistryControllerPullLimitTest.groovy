@@ -18,10 +18,9 @@
 
 package io.seqera.wave.controller
 
-import spock.lang.Shared
+
 import spock.lang.Specification
 
-import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Requires
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpStatus
@@ -67,17 +66,13 @@ class RegistryControllerPullLimitTest extends Specification implements DockerReg
 
     @Inject
     @Client("/")
-    HttpClient client;
-
-    @Inject
-    @Shared
-    ApplicationContext applicationContext
+    HttpClient client
 
     @Inject
     ManifestCacheStore storage
 
     def setupSpec() {
-        initRegistryContainer(applicationContext)
+        initRegistryContainer()
     }
 
     void 'should get manifest'() {

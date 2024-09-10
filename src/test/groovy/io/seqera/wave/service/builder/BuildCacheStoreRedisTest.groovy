@@ -18,15 +18,16 @@
 
 package io.seqera.wave.service.builder
 
+import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Timeout
 
 import java.time.Duration
 import java.time.Instant
-import java.util.concurrent.ExecutionException
 
 import io.micronaut.context.ApplicationContext
-import io.seqera.wave.exception.BuildTimeoutException
+import io.seqera.wave.service.job.JobFactory
+import io.seqera.wave.service.job.JobQueue
 import io.seqera.wave.test.RedisTestContainer
 import redis.clients.jedis.Jedis
 /**
@@ -35,8 +36,10 @@ import redis.clients.jedis.Jedis
  */
 class BuildCacheStoreRedisTest extends Specification implements RedisTestContainer {
 
+    @Shared
     ApplicationContext applicationContext
 
+    @Shared
     Jedis jedis
 
     def setup() {
@@ -51,11 +54,19 @@ class BuildCacheStoreRedisTest extends Specification implements RedisTestContain
     def cleanup(){
         jedis.flushAll()
         jedis.close()
+        applicationContext.close()
     }
 
     def 'should get and put key values' () {
         given:
-        def req1 = BuildResult.create('1')
+        def res = BuildResult.create('1')
+        def req = new BuildRequest(
+                targetImage: 'docker.io/foo:0',
+                buildId: '1',
+                startTime: Instant.now(),
+                maxDuration: Duration.ofMinutes(1)
+        )
+        def entry = new BuildStoreEntry(req, res)
         and:
         def cacheStore = applicationContext.getBean(BuildStore)
         
@@ -63,9 +74,9 @@ class BuildCacheStoreRedisTest extends Specification implements RedisTestContain
         cacheStore.getBuild('foo') == null
 
         when:
-        cacheStore.storeBuild('foo', req1)
+        cacheStore.storeBuild('foo', entry)
         then:
-        cacheStore.getBuild('foo') == req1
+        cacheStore.getBuild('foo') == entry
         and:
         jedis.get("wave-build:foo").toString()
 
@@ -73,7 +84,14 @@ class BuildCacheStoreRedisTest extends Specification implements RedisTestContain
 
     def 'should expire entry' () {
         given:
-        def req1 = BuildResult.create('1')
+        def res = BuildResult.create('1')
+        def req = new BuildRequest(
+                targetImage: 'docker.io/foo:0',
+                buildId: '1',
+                startTime: Instant.now(),
+                maxDuration: Duration.ofMinutes(1)
+        )
+        def entry = new BuildStoreEntry(req, res)
         and:
         def cacheStore = applicationContext.getBean(BuildStore)
 
@@ -81,20 +99,20 @@ class BuildCacheStoreRedisTest extends Specification implements RedisTestContain
         cacheStore.getBuild('foo') == null
 
         when:
-        cacheStore.storeBuild('foo', req1)
+        cacheStore.storeBuild('foo', entry)
         then:
-        cacheStore.getBuild('foo') == req1
+        cacheStore.getBuild('foo') == entry
         and:
         sleep 1000
-        cacheStore.getBuild('foo') == req1
+        cacheStore.getBuild('foo') == entry
 
         when:
-        cacheStore.storeBuild('foo', req1, Duration.ofSeconds(1))
+        cacheStore.storeBuild('foo', entry, Duration.ofSeconds(1))
         then:
-        cacheStore.getBuild('foo') == req1
+        cacheStore.getBuild('foo') == entry
         and:
         sleep 500
-        cacheStore.getBuild('foo') == req1
+        cacheStore.getBuild('foo') == entry
         and:
         sleep 1_500
         cacheStore.getBuild('foo') == null
@@ -102,35 +120,56 @@ class BuildCacheStoreRedisTest extends Specification implements RedisTestContain
 
     def 'should store if absent' () {
         given:
-        def req1 = BuildResult.create('1')
-        def req2 = BuildResult.create('2')
+        def res1 = BuildResult.create('1')
+        def req1 = new BuildRequest(
+                targetImage: 'docker.io/foo:1',
+                buildId: '1',
+                startTime: Instant.now(),
+                maxDuration: Duration.ofMinutes(1)
+        )
+        def entry1 = new BuildStoreEntry(req1, res1)
+        def res2 = BuildResult.create('2')
+        def req2 = new BuildRequest(
+                targetImage: 'docker.io/foo:2',
+                buildId: '2',
+                startTime: Instant.now(),
+                maxDuration: Duration.ofMinutes(1)
+        )
+        def entry2 = new BuildStoreEntry(req2, res2)
         and:
         def store = applicationContext.getBean(BuildStore)
 
         expect:
         // the value is store because the key does not exists
-        store.storeIfAbsent('foo', req1)
+        store.storeIfAbsent('foo', entry1)
         and:
         // the value is return
-        store.getBuild('foo') == req1
+        store.getBuild('foo') == entry1
         and:
         // storing a new value fails because the key already exist
-        !store.storeIfAbsent('foo', req2)
+        !store.storeIfAbsent('foo', entry2)
         and:
         // the previous value is returned
-        store.getBuild('foo') == req1
+        store.getBuild('foo') == entry1
 
     }
 
     def 'should remove a build entry' () {
         given:
-        def zero = BuildResult.create('1')
+        def res = BuildResult.create('0')
+        def req = new BuildRequest(
+                targetImage: 'docker.io/foo:0',
+                buildId: '0',
+                startTime: Instant.now(),
+                maxDuration: Duration.ofMinutes(1)
+        )
+        def entry = new BuildStoreEntry(req, res)
         def cache = applicationContext.getBean(BuildStore)
 
         when:
-        cache.storeBuild('foo', zero)
+        cache.storeBuild('foo', entry)
         then:
-        cache.getBuild('foo') == zero
+        cache.getBuild('foo') == entry
 
         when:
         cache.removeBuild('foo')
@@ -142,18 +181,26 @@ class BuildCacheStoreRedisTest extends Specification implements RedisTestContain
     @Timeout(value=10)
     def 'should await for a value' () {
         given:
-        def req1 = BuildResult.create('1')
+        def res = BuildResult.create('1')
+        def req = new BuildRequest(
+                targetImage: 'docker.io/foo:1',
+                buildId: '1',
+                startTime: Instant.now(),
+                maxDuration: Duration.ofSeconds(10)
+        )
+        def entry = new BuildStoreEntry(req, res)
         and:
         def cacheStore = applicationContext.getBean(BuildStore) as BuildStore
 
         when:
         // insert a value
-        cacheStore.storeBuild('foo', req1)
+        cacheStore.storeBuild('foo', entry)
 
         // update a value in a separate thread
         Thread.start {
-            req1 = BuildResult.completed('1', 0, '', Instant.now(), null)
-            cacheStore.storeBuild('foo',req1)
+            res = BuildResult.completed('1', 0, '', Instant.now(), null)
+            entry = entry.withResult(res)
+            cacheStore.storeBuild('foo', entry)
         }
 
         // wait the value is updated
@@ -161,23 +208,32 @@ class BuildCacheStoreRedisTest extends Specification implements RedisTestContain
         def result = cacheStore.awaitBuild('foo')
 
         then:
-        result.get() == req1
+        result.get() == entry.result
     }
 
     @Timeout(value=30)
     def 'should abort an await if build never finish' () {
         given:
-        def req1 = BuildResult.create('1')
+        def buildCacheStore = applicationContext.getBean(BuildCacheStore)
+        def jobQueue = applicationContext.getBean(JobQueue)
+        def jobFactory = applicationContext.getBean(JobFactory)
+        def res = BuildResult.create('1')
+        def req = new BuildRequest(
+                targetImage: 'docker.io/foo:1',
+                buildId: '1',
+                startTime: Instant.now(),
+                maxDuration: Duration.ofSeconds(5)
+        )
+        def entry = new BuildStoreEntry(req, res)
         and:
-        def cacheStore = applicationContext.getBean(BuildStore) as BuildStore
-        // insert a value
-        cacheStore.storeBuild('foo', req1)
+        buildCacheStore.storeIfAbsent(req.targetImage, entry)
+        jobQueue.offer(jobFactory.build(req))
 
         when: "wait for an update never will arrive"
-        cacheStore.awaitBuild('foo').get()
-        then:
-        def e = thrown(ExecutionException)
-        e.cause.class == BuildTimeoutException
+        buildCacheStore.awaitBuild(req.targetImage).get()
+
+        then: "job will timeout and the build will be marked as failed"
+        buildCacheStore.getBuild(req.targetImage).result.exitStatus == -1
     }
 
 }

@@ -29,8 +29,11 @@ import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.service.builder.BuildEvent
-import io.seqera.wave.service.builder.ContainerBuildServiceImpl
-import io.seqera.wave.service.cleanup.CleanupStrategy
+import io.seqera.wave.service.job.JobEvent
+import io.seqera.wave.service.job.JobHandler
+import io.seqera.wave.service.job.JobService
+import io.seqera.wave.service.job.JobState
+import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveScanRecord
 import jakarta.inject.Inject
@@ -43,16 +46,11 @@ import static io.seqera.wave.service.builder.BuildFormat.DOCKER
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
 @Slf4j
+@Named("Scan")
 @Requires(property = 'wave.scan.enabled', value = 'true')
 @Singleton
 @CompileStatic
-class ContainerScanServiceImpl implements ContainerScanService {
-
-    @Inject
-    private ContainerBuildServiceImpl containerBuildService
-
-    @Inject
-    private ScanStrategy scanStrategy
+class ContainerScanServiceImpl implements ContainerScanService, JobHandler {
 
     @Inject
     private ScanConfig scanConfig
@@ -65,7 +63,8 @@ class ContainerScanServiceImpl implements ContainerScanService {
     private PersistenceService persistenceService
 
     @Inject
-    private CleanupStrategy cleanup
+    private JobService jobService
+
 
     @EventListener
     void onBuildEvent(BuildEvent event) {
@@ -75,7 +74,7 @@ class ContainerScanServiceImpl implements ContainerScanService {
             }
         }
         catch (Exception e) {
-            log.warn "Unable to run the container scan - reason: ${e.message?:e}"
+            log.warn "Unable to run the container scan - image=${event.request.targetImage}; reason=${e.message?:e}"
         }
     }
 
@@ -83,47 +82,95 @@ class ContainerScanServiceImpl implements ContainerScanService {
     void scan(ScanRequest request) {
         //start scanning of build container
         CompletableFuture
-                .supplyAsync(() -> launch(request), executor)
-                .thenAcceptAsync((scanResult) -> completeScan(scanResult), executor)
+                .runAsync(() -> launch(request), executor)
     }
 
     @Override
     WaveScanRecord getScanResult(String scanId) {
         try{
             return persistenceService.loadScanRecord(scanId)
-        }catch (Throwable t){
-            log.error "Unable to load the scan results for scanId: ${scanId}", t
+        }
+        catch (Throwable t){
+            log.error("Unable to load the scan result - id=${scanId}", t)
              return null
         }
     }
 
-    protected ScanResult launch(ScanRequest request) {
-        ScanResult scanResult = null
+    protected void launch(ScanRequest request) {
         try {
             // create a record to mark the beginning
             persistenceService.createScanRecord(new WaveScanRecord(request.id, request.buildId, Instant.now()))
             //launch container scan
-            scanResult = scanStrategy.scanContainer(request)
+            jobService.launchScan(request)
         }
         catch (Throwable e){
-            log.warn "Unable to launch the scan results for scan id: ${request.id} - cause: ${e.message}", e
+            log.warn "Unable to save scan result - id=${request.id}; cause=${e.message}", e
+            updateScanRecord(ScanResult.failure(request))
         }
-        finally{
-            // cleanup build context
-            if( cleanup.shouldCleanup(scanResult?.isSucceeded() ? 0 : 1) )
-                request.workDir?.deleteDir()
-        }
-        return scanResult
     }
 
-    protected void completeScan(ScanResult scanResult) {
+
+    // **************************************************************
+    // **               scan job handle implementation
+    // **************************************************************
+
+    @Override
+    void onJobEvent(JobEvent event) {
+        final scan = persistenceService.loadScanRecord(event.job.stateId)
+        if( !scan ) {
+            log.error "Scan record missing state - id=${event.job.stateId}; event=${event}"
+            return
+        }
+        if( scan.done() ) {
+            log.warn "Scan record already marked as completed - id=${event.job.stateId}; event=${event}"
+            return
+        }
+
+        if( event.type == JobEvent.Type.Complete ) {
+            handleJobCompletion(event.job, scan, event.state)
+        }
+        else if( event.type == JobEvent.Type.Error ) {
+            handleJobException(event.job, scan, event.error)
+        }
+        else if( event.type == JobEvent.Type.Timeout ) {
+            handleJobTimeout(event.job, scan)
+        }
+        else {
+            throw new IllegalStateException("Unknown container scan job event=$event")
+        }
+    }
+
+    protected void handleJobCompletion(JobSpec job, WaveScanRecord scan, JobState state) {
+        ScanResult result
+        if( state.completed() ) {
+            log.info("Container scan completed - id=${scan.id}")
+            result = ScanResult.success(scan, TrivyResultProcessor.process(job.workDir.resolve(Trivy.OUTPUT_FILE_NAME)))
+        }
+        else{
+            log.info("Container scan failed - id=${scan.id}; exit=${state.exitCode}; stdout=${state.stdout}")
+            result = ScanResult.failure(scan)
+        }
+
+        updateScanRecord(result)
+    }
+
+    protected void handleJobException(JobSpec job, WaveScanRecord scan, Throwable e) {
+        log.error("Container scan failed - id=${scan.id} - cause=${e.getMessage()}", e)
+        updateScanRecord(ScanResult.failure(scan))
+    }
+
+    protected void handleJobTimeout(JobSpec job, WaveScanRecord scan) {
+        log.warn("Container scan timed out - id=${scan.id}")
+        updateScanRecord(ScanResult.failure(scan))
+    }
+
+    protected void updateScanRecord(ScanResult result) {
         try{
             //save scan results
-            persistenceService.updateScanRecord(new WaveScanRecord(scanResult.id, scanResult))
+            persistenceService.updateScanRecord(new WaveScanRecord(result.id, result))
         }
         catch (Throwable t){
-            log.error "Unable to save results for scan id: ${scanResult.id}", t
+            log.error("Unable to save result - id=${result.id}; cause=${t.message}", t)
         }
     }
-
 }

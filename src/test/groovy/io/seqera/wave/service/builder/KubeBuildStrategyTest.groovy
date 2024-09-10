@@ -72,22 +72,18 @@ class KubeBuildStrategyTest extends Specification {
         def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, repo, containerId, null, null, null)
         def req = new BuildRequest(containerId, dockerfile, null, null, PATH, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1)).withBuildId('1')
         Files.createDirectories(req.workDir)
+        strategy.build('build-job-name', req)
 
-        def resp = strategy.build(req)
         then:
-        resp
-        and:
-        1 * k8sService.buildContainer(_, _, _, _, _, _, _, [service:'wave-build']) >> null
+        1 * k8sService.launchBuildJob(_, _, _, _, _, _, _, [service:'wave-build']) >> null
 
         when:
         def req2 = new BuildRequest(containerId, dockerfile, null, null, PATH, targetImage, USER, ContainerPlatform.of('arm64'), cache, "10.20.30.40", '{}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1)).withBuildId('1')
         Files.createDirectories(req2.workDir)
+        strategy.build('job-name', req2)
 
-        def resp2 = strategy.build(req2)
         then:
-        resp2
-        and:
-        1 * k8sService.buildContainer(_, _, _, _, _, _, _, [service:'wave-build-arm64']) >> null
+        1 * k8sService.launchBuildJob(_, _, _, _, _, _, _, [service:'wave-build-arm64']) >> null
 
     }
 
@@ -120,22 +116,4 @@ class KubeBuildStrategyTest extends Specification {
         strategy.getBuildImage(req) == 'quay.io/singularity/singularity:v3.11.4-slim-arm64'
     }
 
-    def 'should get correct pod name for build' () {
-        given:
-        def USER = new PlatformId(new User(id:1, email: 'foo@user.com'))
-        def PATH = Files.createTempDirectory('test')
-        def repo = 'docker.io/wave'
-        def cache = 'docker.io/cache'
-        def dockerfile = 'from foo'
-        def containerId = ContainerHelper.makeContainerId(dockerfile, null, null, ContainerPlatform.of('amd64'), repo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, repo, containerId, null, null, null)
-        def req = new BuildRequest(containerId, dockerfile, null, null, PATH, targetImage, USER, ContainerPlatform.of('amd64'), cache, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1)).withBuildId('1')
-
-        when:
-        def podName = strategy.podName(req)
-
-        then:
-        req.buildId == '143ee73bcdac45b1_1'
-        podName == 'build-143ee73bcdac45b1-1'
-    }
 }

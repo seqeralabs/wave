@@ -55,6 +55,10 @@ interface ContainerBuildService {
      */
     CompletableFuture<BuildResult> buildResult(String targetImage)
 
+    default CompletableFuture<BuildResult> buildResult(BuildRequest request) {
+        return buildResult(request.targetImage)
+    }
+
     /**
      * Get a completable future that holds the build result
      *

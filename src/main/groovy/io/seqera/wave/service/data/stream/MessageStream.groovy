@@ -17,9 +17,6 @@
  */
 
 package io.seqera.wave.service.data.stream
-
-
-import java.util.function.Predicate
 /**
  * Define the contract for a generic message stream
  * able to add message and consume them asynchronously.
@@ -27,6 +24,13 @@ import java.util.function.Predicate
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 interface MessageStream<M> {
+
+    /**
+     * Initialize the stream with the given Id
+     *
+     * @param streamId The uniqur ID of the stream to be initialized
+     */
+    void init(String streamId)
 
     /**
      * Offer a message to the stream.
@@ -37,16 +41,16 @@ interface MessageStream<M> {
     void offer(String streamId, M message)
 
     /**
-     * Consume a message from the stream and invoke the specified predicate
+     * Consume a message from the stream and invoke the specified consumer predicate
      *
      * @param streamId
      *      The target stream ID
      * @param consumer
-     *      The {@link Predicate} instance to be invoked to consume the message
+     *      The {@link MessageConsumer} instance to be invoked to consume the message
      * @return
      *      {code true} when the message has been processed successfully,
      *      otherwise {@code false} when the message needs to be further processed
      */
-    boolean consume(String streamId, Predicate<M> consumer)
+    boolean consume(String streamId, MessageConsumer<M> consumer)
 
 }

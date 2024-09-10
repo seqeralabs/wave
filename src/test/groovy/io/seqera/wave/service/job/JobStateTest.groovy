@@ -26,7 +26,7 @@ import spock.lang.Unroll
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class TransferTest extends Specification {
+class JobStateTest extends Specification {
 
     @Unroll
     def 'should validate completed status' () {
@@ -50,12 +50,12 @@ class TransferTest extends Specification {
 
         where:
         STATUS                      | EXIT  | EXPECTED
-        JobState.Status.PENDING   | null | false
-        JobState.Status.RUNNING   | null | false
-        JobState.Status.UNKNOWN   | null | false
-        JobState.Status.FAILED    | null | false
-        JobState.Status.SUCCEEDED | 1    | false
-        JobState.Status.SUCCEEDED | 0    | true
+        JobState.Status.PENDING     | null | false
+        JobState.Status.RUNNING     | null | false
+        JobState.Status.UNKNOWN     | null | false
+        JobState.Status.FAILED      | null | false
+        JobState.Status.SUCCEEDED   | 1    | false
+        JobState.Status.SUCCEEDED   | 0    | true
 
     }
 
