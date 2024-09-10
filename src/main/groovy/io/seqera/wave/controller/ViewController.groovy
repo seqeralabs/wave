@@ -148,10 +148,28 @@ class ViewController {
     @Get('/scans/{scanId}')
     HttpResponse<Map<String,Object>> viewScan(String scanId) {
         final binding = new HashMap(10)
-        try {
+
+        try{
             final result = persistenceService.loadScanResult(scanId)
+            binding.putAll(renderScanView(result))
+            } catch (NotFoundException e) {
+            binding.scan_exist = false
+            binding.scan_completed = true
+            binding.error_message = e.getMessage()
+            binding.should_refresh = false
+        }
+
+        // return the response
+        binding.put('server_url', serverUrl)
+        return HttpResponse.<Map<String,Object>>ok(binding)
+    }
+
+    Map<String, Object> renderScanView(ScanResult result) {
+        def binding = new HashMap(10)
+
             binding.should_refresh = !result.isCompleted()
             binding.scan_id = result.id
+            binding.scan_container_image = result.containerImage ?: '-'
             binding.scan_exist = true
             binding.scan_completed = result.isCompleted()
             binding.scan_status = result.status
@@ -164,17 +182,6 @@ class ViewController {
             if ( result.vulnerabilities )
                 binding.vulnerabilities = result.vulnerabilities.toSorted().reverse()
 
-        }
-        catch (NotFoundException e){
-            binding.scan_exist = false
-            binding.scan_completed = true
-            binding.error_message = e.getMessage()
-            binding.should_refresh = false
-        }
-
-        // return the response
-        binding.put('server_url', serverUrl)
-        return HttpResponse.<Map<String,Object>>ok(binding)
+        return binding
     }
-
 }
