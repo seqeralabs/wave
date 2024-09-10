@@ -1021,12 +1021,12 @@ class K8sServiceImplTest extends Specification {
         status == EXPECTED
 
         where:
-        NAME    | JOB               | EXPECTED
-        'foo'   | null              | null
-        'foo'   | jobPending()      | K8sService.JobStatus.Pending
-        'foo'   | jobSucceeded()    | K8sService.JobStatus.Succeeded
-        'foo'   | jobFailed()       | K8sService.JobStatus.Failed
-        'foo'   | jobFailedNoCompletion() | K8sService.JobStatus.Pending
-        'foo'   | jobUnknown()      | null
+        NAME    | JOB                       | EXPECTED
+        'foo'   | null                      | null
+        'foo'   | jobPending()              | K8sService.JobStatus.Pending
+        'foo'   | jobSucceeded()            | K8sService.JobStatus.Succeeded
+        'foo'   | jobFailed()               | K8sService.JobStatus.Failed
+        'foo'   | jobFailedNoCompletion()   | K8sService.JobStatus.Pending
+        'foo'   | jobUnknown()              | null
     }
 }
