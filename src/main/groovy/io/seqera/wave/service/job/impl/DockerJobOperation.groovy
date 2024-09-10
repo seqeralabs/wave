@@ -62,10 +62,15 @@ class DockerJobOperation implements JobOperation {
 
     @Override
     void cleanup(JobSpec jobSpec) {
+        cleanup(jobSpec.operationName)
+    }
+
+    @Override
+    void cleanup(String operationName) {
         final cli = new ArrayList<String>()
         cli.add('docker')
         cli.add('rm')
-        cli.add(jobSpec.operationName)
+        cli.add(operationName)
 
         final builder = new ProcessBuilder(cli)
         builder.redirectErrorStream(true)

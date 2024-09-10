@@ -16,18 +16,17 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job
+package io.seqera.wave.service.cleanup
+
+
+import io.seqera.wave.service.job.JobSpec
 /**
- * Define job operations contract
+ * Define the contract for resources cleanup service
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface JobOperation {
+interface CleanupService {
 
-    JobState status(JobSpec jobSpec)
-
-    void cleanup(JobSpec jobSpec)
-
-    void cleanup(String jobName)
+    void cleanupJob(JobSpec job, Integer exitStatus)
 
 }
