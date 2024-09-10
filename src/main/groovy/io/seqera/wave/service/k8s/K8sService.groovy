@@ -42,14 +42,19 @@ interface K8sService {
 
     void deletePod(String name)
 
+    @Deprecated
     V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, SpackConfig spackConfig, Map <String,String> nodeSelector)
 
+    @Deprecated
     V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector)
 
+    @Deprecated
     Integer waitPodCompletion(V1Pod pod, long timeout)
 
+    @Deprecated
     void deletePodWhenReachStatus(String podName, String statusName, long timeout)
 
+    @Deprecated
     V1Job createJob(String name, String containerImage, List<String> args)
 
     V1Job getJob(String name)
@@ -64,6 +69,7 @@ interface K8sService {
 
     V1Job launchScanJob(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector)
 
+    @Deprecated
     V1PodList waitJob(V1Job job, Long timeout)
 
     V1Pod getLatestPodForJob(String jobName)

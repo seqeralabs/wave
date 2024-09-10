@@ -40,6 +40,9 @@ import io.seqera.wave.service.builder.BuildCacheStore
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.builder.BuildStoreEntry
+import io.seqera.wave.service.job.JobFactory
+import io.seqera.wave.service.job.JobQueue
+import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.token.TokenCacheStore
 import io.seqera.wave.storage.ManifestCacheStore
 import io.seqera.wave.test.DockerRegistryContainer
@@ -96,24 +99,27 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         
     }
 
-    @Timeout(15)
+    @Timeout(30)
     void 'should return a timeout when build failed'() {
         given:
         def client = applicationContext.createBean(HttpClient)
         def buildCacheStore = applicationContext.getBean(BuildCacheStore)
         def tokenCacheStore = applicationContext.getBean(TokenCacheStore)
+        def jobQueue = applicationContext.getBean(JobQueue)
+        def jobFactory = applicationContext.getBean(JobFactory)
         def res = BuildResult.create('1')
         def req = new BuildRequest(
                 targetImage: 'library/hello-world',
                 buildId: '1',
                 startTime: Instant.now(),
-                maxDuration: Duration.ofMinutes(1)
+                maxDuration: Duration.ofSeconds(5)
         )
         def entry = new BuildStoreEntry(req, res)
         def containerRequestData = new ContainerRequestData(new PlatformId(new User(id:1)), "library/hello-world")
         and:
         tokenCacheStore.put("1234", containerRequestData)
         buildCacheStore.put("library/hello-world", entry)
+        jobQueue.offer(jobFactory.build(req))
 
         when:
         HttpRequest request = HttpRequest.GET("http://localhost:${port}/v2/wt/1234/library/hello-world/manifests/latest").headers({h->
@@ -124,7 +130,9 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         client.toBlocking().exchange(request,String)
         then:
         final exception = thrown(HttpClientResponseException)
-        RegistryErrorResponse error = exception.response.getBody(RegistryErrorResponse).get()
-        error.errors.get(0).message.contains('Build of container \'library/hello-world\' timed out')
+        RegistryErrorResponse registryError = exception.response.getBody(RegistryErrorResponse).get()
+        def error = registryError.errors.get(0)
+        error.message.contains('Container image build timed out \'library/hello-world\'')
+        error.code == 'UNKNOWN'
     }
 }

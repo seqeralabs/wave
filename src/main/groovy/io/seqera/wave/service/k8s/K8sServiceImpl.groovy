@@ -205,11 +205,14 @@ class K8sServiceImpl implements K8sService {
                 .readNamespacedJob(name, namespace, null)
         if( !job )
             return null
-        if( job.status.succeeded==1 )
+        if( job.status.active )
+            return JobStatus.Pending
+        if( job.status.succeeded )
             return JobStatus.Succeeded
-        if( job.status.failed>0 )
+        if( job.status.failed )   
             return JobStatus.Failed
-        return JobStatus.Pending
+        else
+            return null
     }
 
     /**
@@ -816,6 +819,7 @@ class K8sServiceImpl implements K8sService {
      *      Max wait time in milliseconds
      * @return list of pods created by the job
      */
+    @Deprecated
     @Override
     V1PodList waitJob(V1Job job, Long timeout) {
         sleep 5_000
