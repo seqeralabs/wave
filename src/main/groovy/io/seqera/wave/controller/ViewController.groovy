@@ -152,7 +152,7 @@ class ViewController {
             final result = persistenceService.loadScanResult(scanId)
             makeScanViewBinding(result, binding)
         }
-        catch (NotFoundException e) {
+        catch (NotFoundException e){
             binding.scan_exist = false
             binding.scan_completed = true
             binding.error_message = e.getMessage()
