@@ -216,7 +216,7 @@ Wave offers a feature to provide a cache for Docker blobs, which improves the pe
 
 - **`wave.blobCache.enabled`**: whether to enable the blob cache. It is `false` by default. *Optional*.
 
-- **`wave.blobCache.s5cmdImage`**: the Docker image that supplies the [s5cmd tool](https://github.com/peak/s5cmd). This tool is used to upload blob binaries to the S3 bucket. The default image used by Wave is `cr.seqera.io/public/wave/s5cmd:v2.2.2`. *Optional*.
+- **`wave.blobCache.s5cmdImage`**: the Docker image that supplies the [s5cmd tool](https://github.com/peak/s5cmd). This tool is used to upload blob binaries to the S3 bucket. The default image used by Wave is `public.cr.seqera.io/wave/s5cmd:v2.2.2`. *Optional*.
 
 - **`wave.blobCache.status.delay`**: the time delay in checking the status of the transfer of the blob binary from the repository to the cache. Its default value is `5s`. *Optional*.
 
