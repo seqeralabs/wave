@@ -148,7 +148,7 @@ class ViewController {
     @Get('/scans/{scanId}')
     HttpResponse<Map<String,Object>> viewScan(String scanId) {
         final binding = new HashMap(10)
-        try{
+        try {
             final result = persistenceService.loadScanResult(scanId)
             makeScanViewBinding(result, binding)
         }
