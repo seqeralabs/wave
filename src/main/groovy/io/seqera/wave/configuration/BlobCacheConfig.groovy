@@ -23,6 +23,7 @@ import java.time.Duration
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 /**
@@ -31,6 +32,7 @@ import io.micronaut.core.annotation.Nullable
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
+@Requires(property = 'wave.blobCache.enabled', value = 'true')
 @ToString(includeNames = true, includePackage = false, excludes = 'storageSecretKey', ignoreNulls = true)
 @CompileStatic
 class BlobCacheConfig {
@@ -87,11 +89,8 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.url-signature-duration:30m}')
     Duration urlSignatureDuration
 
-    @Value('${wave.blobCache.retryAttempts:3}')
+    @Value('${wave.blobCache.retry-attempts:3}')
     Integer retryAttempts
-
-    @Value('${wave.blobCache.deleteAfterFinished:7d}')
-    Duration deleteAfterFinished
 
     @Value('${wave.blobCache.k8s.pod.delete.timeout:20s}')
     Duration podDeleteTimeout

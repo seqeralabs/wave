@@ -18,11 +18,10 @@
 
 package io.seqera.wave.controller
 
-import spock.lang.Shared
+
 import spock.lang.Specification
 
 import groovy.json.JsonSlurper
-import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
@@ -43,17 +42,13 @@ class RegistryControllerLocalTest extends Specification implements DockerRegistr
 
     @Inject
     @Client("/")
-    HttpClient client;
-
-    @Inject
-    @Shared
-    ApplicationContext applicationContext
+    HttpClient client
 
     @Inject
     ManifestCacheStore storage
 
     def setupSpec() {
-        initRegistryContainer(applicationContext)
+        initRegistryContainer()
     }
 
     void 'should get manifest'() {

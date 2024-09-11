@@ -59,7 +59,6 @@ class BuildControllerTest extends Specification {
         Mock(BuildLogService)
     }
 
-
     @Inject
     @Client("/")
     HttpClient client

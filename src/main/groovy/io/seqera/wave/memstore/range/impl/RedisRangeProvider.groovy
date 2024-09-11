@@ -47,15 +47,28 @@ class RedisRangeProvider implements RangeProvider {
         }
     }
 
+    private final static String SCRIPT = '''
+        local elements = redis.call('ZRANGEBYSCORE', KEYS[1], ARGV[1], ARGV[2], 'LIMIT', ARGV[3], ARGV[4])  
+        if #elements > 0 then
+            redis.call('ZREM', KEYS[1], unpack(elements)) 
+        end
+        return elements
+        '''
+
     @Override
     List<String> getRange(String key, double min, double max, int count, boolean remove) {
         try(Jedis conn = pool.getResource()) {
-            List<Tuple> found = conn.zrangeByScoreWithScores(key, min, max, 0, count)
-            final result = new ArrayList<String>(found.size())
-            for( Tuple it : found ) {
-                result.add(it.element)
-                if( remove )
-                    conn.zrem(key, it.element)
+            final result = new ArrayList<String>()
+            if( remove ) {
+                final entries = conn.eval(SCRIPT, 1, key, min.toString(), max.toString(), '0', count.toString())
+                if( entries instanceof List )
+                    result.addAll(entries)
+            }
+            else {
+                List<Tuple> found = conn.zrangeByScoreWithScores(key, min, max, 0, count)
+                for( Tuple it : found ) {
+                    result.add(it.element)
+                }
             }
             return result
         }
