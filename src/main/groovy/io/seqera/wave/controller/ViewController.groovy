@@ -148,11 +148,11 @@ class ViewController {
     @Get('/scans/{scanId}')
     HttpResponse<Map<String,Object>> viewScan(String scanId) {
         final binding = new HashMap(10)
-
         try{
             final result = persistenceService.loadScanResult(scanId)
-            binding.putAll(renderScanView(result))
-            } catch (NotFoundException e) {
+            makeScanViewBinding(result, binding)
+        }
+        catch (NotFoundException e) {
             binding.scan_exist = false
             binding.scan_completed = true
             binding.error_message = e.getMessage()
@@ -164,23 +164,21 @@ class ViewController {
         return HttpResponse.<Map<String,Object>>ok(binding)
     }
 
-    Map<String, Object> renderScanView(ScanResult result) {
-        def binding = new HashMap(10)
-
-            binding.should_refresh = !result.isCompleted()
-            binding.scan_id = result.id
-            binding.scan_container_image = result.containerImage ?: '-'
-            binding.scan_exist = true
-            binding.scan_completed = result.isCompleted()
-            binding.scan_status = result.status
-            binding.scan_failed = result.status == ScanResult.FAILED
-            binding.scan_succeeded = result.status == ScanResult.SUCCEEDED
-            binding.build_id = result.buildId
-            binding.build_url = "$serverUrl/view/builds/${result.buildId}"
-            binding.scan_time = formatTimestamp(result.startTime) ?: '-'
-            binding.scan_duration = formatDuration(result.duration) ?: '-'
-            if ( result.vulnerabilities )
-                binding.vulnerabilities = result.vulnerabilities.toSorted().reverse()
+    Map<String, Object> makeScanViewBinding(ScanResult result, Map<String,Object> binding=new HashMap(10)) {
+        binding.should_refresh = !result.isCompleted()
+        binding.scan_id = result.id
+        binding.scan_container_image = result.containerImage ?: '-'
+        binding.scan_exist = true
+        binding.scan_completed = result.isCompleted()
+        binding.scan_status = result.status
+        binding.scan_failed = result.status == ScanResult.FAILED
+        binding.scan_succeeded = result.status == ScanResult.SUCCEEDED
+        binding.build_id = result.buildId
+        binding.build_url = "$serverUrl/view/builds/${result.buildId}"
+        binding.scan_time = formatTimestamp(result.startTime) ?: '-'
+        binding.scan_duration = formatDuration(result.duration) ?: '-'
+        if ( result.vulnerabilities )
+            binding.vulnerabilities = result.vulnerabilities.toSorted().reverse()
 
         return binding
     }

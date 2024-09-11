@@ -337,7 +337,7 @@ class ViewControllerTest extends Specification {
                 vulnerabilities: [new ScanVulnerability('cve-1', 'HIGH', 'test vul', 'testpkg', '1.0.0', '1.1.0', 'http://vul/cve-1')] )
         def result = ScanResult.success(record, record.vulnerabilities)
         when:
-        def binding = controller.renderScanView(result)
+        def binding = controller.makeScanViewBinding(result)
         then:
         binding.scan_id == '12345'
         binding.scan_container_image == 'docker.io/some:image'
