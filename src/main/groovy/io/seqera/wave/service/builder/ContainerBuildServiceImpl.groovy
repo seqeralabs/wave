@@ -41,7 +41,6 @@ import io.seqera.wave.exception.HttpServerRetryableErrorException
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.builder.store.BuildRecordStore
-import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.job.JobEvent
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
@@ -106,9 +105,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
 
     @Inject
     private HttpClientConfig httpClientConfig
-
-    @Inject
-    private CleanupStrategy cleanup
 
     @Inject
     private StreamService streamService

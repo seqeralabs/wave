@@ -616,11 +616,9 @@ class K8sServiceImpl implements K8sService {
         //spec section
         def spec = builder.withNewSpec()
                 .withBackoffLimit(blobConfig.retryAttempts)
-                .withTtlSecondsAfterFinished(blobConfig.deleteAfterFinished.toSeconds() as Integer)
                 .withNewTemplate()
                     .editOrNewSpec()
                     .withServiceAccount(serviceAccount)
-                    .withActiveDeadlineSeconds(blobConfig.transferTimeout.toSeconds())
                     .withRestartPolicy("Never")
         //container section
                     .addNewContainer()
@@ -694,7 +692,6 @@ class K8sServiceImpl implements K8sService {
         def spec = builder
                 .withNewSpec()
                 .withBackoffLimit(buildConfig.retryAttempts)
-                .withTtlSecondsAfterFinished(buildConfig.deleteAfterFinished.toSeconds() as Integer)
                 .withNewTemplate()
                 .withNewMetadata()
                 .addToAnnotations(getBuildkitAnnotations(name,singularity))
@@ -774,7 +771,6 @@ class K8sServiceImpl implements K8sService {
         def spec = builder
                 .withNewSpec()
                 .withBackoffLimit(scanConfig.retryAttempts)
-                .withTtlSecondsAfterFinished(buildConfig.deleteAfterFinished.toSeconds() as Integer)
                 .withNewTemplate()
                 .editOrNewSpec()
                 .withNodeSelector(nodeSelector)

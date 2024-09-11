@@ -45,19 +45,17 @@ class DockerTransferStrategy implements TransferStrategy {
     @Override
     void launchJob(String jobName, List<String> command) {
         // create a unique name for the container
-        createProcess(command, jobName, blobConfig.transferTimeout.toSeconds())
+        createProcess(command, jobName)
                 .start()
     }
 
-    protected ProcessBuilder createProcess(List<String> command, String name, long timeoutSecs) {
+    protected ProcessBuilder createProcess(List<String> command, String name) {
         // compose the docker command
         final cli = new ArrayList<String>(10)
         cli.add('docker')
         cli.add('run')
         cli.add('--name')
         cli.add(name)
-        cli.add('--stop-timeout')
-        cli.add(String.valueOf(timeoutSecs))
         cli.add('-e')
         cli.add('AWS_ACCESS_KEY_ID')
         cli.add('-e')

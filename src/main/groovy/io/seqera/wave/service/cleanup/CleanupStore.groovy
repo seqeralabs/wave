@@ -16,18 +16,29 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job
+package io.seqera.wave.service.cleanup
+
+import groovy.transform.CompileStatic
+import io.seqera.wave.memstore.range.AbstractRangeStore
+import io.seqera.wave.memstore.range.impl.RangeProvider
+import jakarta.inject.Singleton
+
 /**
- * Define job operations contract
+ * Implements a timed range to store and retrieve IDs
+ * of resources to be cleaned up.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface JobOperation {
+@Singleton
+@CompileStatic
+class CleanupStore extends AbstractRangeStore {
 
-    JobState status(JobSpec jobSpec)
+    CleanupStore(RangeProvider provider) {
+        super(provider)
+    }
 
-    void cleanup(JobSpec jobSpec)
-
-    void cleanup(String jobName)
-
+    @Override
+    protected String getKey() {
+        return 'cleanup-store/v1:'
+    }
 }

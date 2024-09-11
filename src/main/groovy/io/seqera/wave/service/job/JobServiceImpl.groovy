@@ -25,7 +25,7 @@ import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildStrategy
-import io.seqera.wave.service.cleanup.CleanupStrategy
+import io.seqera.wave.service.cleanup.CleanupService
 import io.seqera.wave.service.scan.ScanRequest
 import io.seqera.wave.service.scan.ScanStrategy
 import jakarta.inject.Inject
@@ -40,7 +40,7 @@ import jakarta.inject.Singleton
 class JobServiceImpl implements JobService {
 
     @Inject
-    private CleanupStrategy cleanup
+    private CleanupService cleanupService
 
     @Inject
     private JobOperation operations
@@ -107,14 +107,6 @@ class JobServiceImpl implements JobService {
 
     @Override
     void cleanup(JobSpec job, Integer exitStatus) {
-        if( !cleanup.shouldCleanup(exitStatus) ) {
-            return
-        }
-        // delete compute resource
-        operations.cleanup(job)
-        // delete temporary work directory
-        if( job.workDir ) {
-            job.workDir.deleteDir()
-        }
+        cleanupService.cleanupJob(job, exitStatus)
     }
 }

@@ -29,7 +29,6 @@ import io.micronaut.context.ApplicationContext
 import io.seqera.wave.service.job.JobFactory
 import io.seqera.wave.service.job.JobQueue
 import io.seqera.wave.test.RedisTestContainer
-import redis.clients.jedis.Jedis
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -39,22 +38,24 @@ class BuildCacheStoreRedisTest extends Specification implements RedisTestContain
     @Shared
     ApplicationContext applicationContext
 
-    @Shared
-    Jedis jedis
-
     def setup() {
         applicationContext = ApplicationContext.run([
-                wave:[ build:[ timeout: '5s', 'trusted-timeout': '5s' ]],
                 REDIS_HOST: redisHostName,
                 REDIS_PORT: redisPort
         ], 'test', 'redis')
-        jedis = new Jedis(redisHostName, redisPort as int)
+        flushRedis()
     }
 
     def cleanup(){
-        jedis.flushAll()
-        jedis.close()
         applicationContext.close()
+    }
+
+    def flushRedis() {
+        // The use of Redis flush removes also data structures like consumer groups
+        // causing unexpected exceptions in other components. Only remove entries
+        // creates by this tests
+        def cacheStore = applicationContext.getBean(BuildStore)
+        cacheStore.removeBuild('foo')
     }
 
     def 'should get and put key values' () {
@@ -77,8 +78,6 @@ class BuildCacheStoreRedisTest extends Specification implements RedisTestContain
         cacheStore.storeBuild('foo', entry)
         then:
         cacheStore.getBuild('foo') == entry
-        and:
-        jedis.get("wave-build:foo").toString()
 
     }
 
