@@ -83,9 +83,9 @@ wave:
       multiplier: '1.75'
   scan:
     image:
-      name: aquasec/trivy:0.53.0
+      name: aquasec/trivy:0.55.0
   blobCache:
-    s5cmdImage: cr.seqera.io/public/wave/s5cmd:v2.2.2
+    s5cmdImage: public.cr.seqera.io/wave/s5cmd:v2.2.2
 ---
 jackson:
   serialization:
