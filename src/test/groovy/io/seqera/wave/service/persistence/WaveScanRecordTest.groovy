@@ -39,6 +39,7 @@ class WaveScanRecordTest extends Specification {
         def duration = Duration.ofMinutes(2)
         def scanId = '12345'
         def buildId = "testbuildid"
+        def containerImage = "testcontainerimage"
         def scanVulnerability = new ScanVulnerability(
                                 "id1",
                                 "low",
@@ -53,6 +54,7 @@ class WaveScanRecordTest extends Specification {
         def scanResult= new ScanResult(
                 scanId,
                 buildId,
+                containerImage,
                 startTime,
                 duration,
                 'SUCCEEDED',
@@ -60,6 +62,7 @@ class WaveScanRecordTest extends Specification {
         then:
         scanResult.id == scanId
         scanResult.buildId == buildId
+        scanResult.containerImage == containerImage
         scanResult.isCompleted()
         scanResult.isSucceeded()
 
@@ -79,7 +82,7 @@ class WaveScanRecordTest extends Specification {
 
         where:
         EXPECTED| RECORD
-        false   | new WaveScanRecord('123','scan-123',Instant.now())
-        true    | new WaveScanRecord('123','scan-123',Instant.now(), Duration.ofMinutes(1), 'OK', [])
+        false   | new WaveScanRecord('123', 'scan-123', 'testcontainerimage', Instant.now())
+        true    | new WaveScanRecord('123', 'scan-123', 'testcontainerimage', Instant.now(), Duration.ofMinutes(1), 'OK', [])
     }
 }
