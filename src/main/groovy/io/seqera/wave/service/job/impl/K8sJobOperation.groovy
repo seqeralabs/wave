@@ -46,6 +46,11 @@ class K8sJobOperation implements JobOperation {
     }
 
     @Override
+    void cleanup(String jobName) {
+        k8sService.deleteJob(jobName)
+    }
+
+    @Override
     JobState status(JobSpec job) {
         final status = k8sService.getJobStatus(job.operationName)
         if( !status || !status.completed() ) {

@@ -16,9 +16,10 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.tower.auth
+package io.seqera.wave.service.cleanup
 
 import java.time.Duration
+import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
@@ -27,42 +28,35 @@ import io.seqera.wave.util.DurationUtils
 import jakarta.inject.Singleton
 
 /**
- * Model JWT refreshing service config
- * 
+ * Model configuration settings for resources cleanup
+ *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@Singleton
+@ToString(includePackage = false, includeNames = true)
 @CompileStatic
-@ToString(includeNames = true, includePackage = false)
-class JwtConfig {
+@Singleton
+class CleanupConfig {
 
-    /**
-     * Determine the frequency of the JWT token refresh requests.
-     * This value should be shorter than the Platform JWT *refresh* token lifespan.
-     */
-    @Value('${wave.jwt.refresh.interval:1h}')
-    Duration refreshInterval
+    @Value('${wave.cleanup.strategy}')
+    @Nullable
+    String strategy
 
-    /**
-     * Determine the frequency of the JWT status check made my Wave.
-     */
-    @Value('${wave.jwt.monitor.interval:10s}')
-    Duration monitorInterval
+    @Value('${wave.cleanup.succeeded:5m}')
+    Duration succeededDuration
 
-    /**
-     * Determine the delay after which the JWT monitor service is launcher on bootstrap
-     */
-    @Value('${wave.jwt.monitor.delay:5s}')
-    Duration monitorDelay
+    @Value('${wave.cleanup.failed:1d}')
+    Duration failedDuration
 
-    /**
-     * Determine the number of JWT record that are processed in monitoring cycle
-     */
-    @Value('${wave.jwt.monitor.count:10}')
-    int monitorCount
+    @Value('${wave.cleanup.range:200}')
+    int cleanupRange
 
-    Duration getMonitorDelayRandomized() {
-        DurationUtils.randomDuration(monitorDelay, 0.4f)
+    @Value('${wave.cleanup.startup-delay:10s}')
+    Duration cleanupStartupDelay
+
+    @Value('${wave.cleanup.run-interval:30s}')
+    Duration cleanupRunInterval
+
+    Duration getCleanupStartupDelayRandomized() {
+        DurationUtils.randomDuration(cleanupStartupDelay, 0.4f)
     }
-
 }

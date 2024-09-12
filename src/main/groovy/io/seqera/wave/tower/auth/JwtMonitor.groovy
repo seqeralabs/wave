@@ -63,7 +63,11 @@ class JwtMonitor implements Runnable {
     @PostConstruct
     private init() {
         log.info "Creating JWT heartbeat - $jwtConfig"
-        scheduler.scheduleAtFixedRate(jwtConfig.monitorDelay, jwtConfig.monitorInterval, this)
+        // use randomize initial delay to prevent multiple replicas running at the same time
+        scheduler.scheduleAtFixedRate(
+                jwtConfig.monitorDelayRandomized,
+                jwtConfig.monitorInterval,
+                this )
     }
 
     void run() {

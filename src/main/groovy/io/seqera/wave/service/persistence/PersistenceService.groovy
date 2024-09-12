@@ -119,6 +119,7 @@ interface PersistenceService {
         return ScanResult.create(
                 scanRecord.id,
                 scanRecord.buildId,
+                scanRecord.containerImage,
                 scanRecord.startTime,
                 scanRecord.duration,
                 scanRecord.status,

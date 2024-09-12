@@ -99,7 +99,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler {
     protected void launch(ScanRequest request) {
         try {
             // create a record to mark the beginning
-            persistenceService.createScanRecord(new WaveScanRecord(request.id, request.buildId, Instant.now()))
+            persistenceService.createScanRecord(new WaveScanRecord(request.id, request.buildId, request.targetImage, Instant.now()))
             //launch container scan
             jobService.launchScan(request)
         }

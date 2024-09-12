@@ -16,18 +16,26 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job
+package io.seqera.wave.tower.auth
+
+import spock.lang.Specification
+
+import java.time.Duration
 /**
- * Define job operations contract
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface JobOperation {
+class JwtConfigTest extends Specification {
 
-    JobState status(JobSpec jobSpec)
-
-    void cleanup(JobSpec jobSpec)
-
-    void cleanup(String jobName)
+    def 'should get random delay' () {
+        when:
+        def d = Duration.ofSeconds(10)
+        def config = new JwtConfig(monitorDelay: d)
+        then:
+        config.monitorDelay == d
+        and:
+        config.monitorDelayRandomized >= d.dividedBy(2)
+        config.monitorDelayRandomized < (d + d.dividedBy(2))
+    }
 
 }

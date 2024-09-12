@@ -16,18 +16,27 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job
+package io.seqera.wave.service.cleanup
+
+import spock.lang.Specification
+
+import java.time.Duration
+
 /**
- * Define job operations contract
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface JobOperation {
+class CleanupConfigTest extends Specification {
 
-    JobState status(JobSpec jobSpec)
-
-    void cleanup(JobSpec jobSpec)
-
-    void cleanup(String jobName)
+    def 'should get random delay' () {
+        when:
+        def d = Duration.ofSeconds(10)
+        def config = new CleanupConfig(cleanupStartupDelay: d)
+        then:
+        config.cleanupStartupDelay == d
+        and:
+        config.cleanupStartupDelayRandomized >= d.dividedBy(2)
+        config.cleanupStartupDelayRandomized < (d + d.dividedBy(2))
+    }
 
 }
