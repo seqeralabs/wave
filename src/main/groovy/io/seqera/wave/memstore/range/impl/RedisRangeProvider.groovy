@@ -62,7 +62,7 @@ class RedisRangeProvider implements RangeProvider {
             if( remove ) {
                 final entries = conn.eval(SCRIPT, 1, key, min.toString(), max.toString(), '0', count.toString())
                 if( entries instanceof List )
-                    result.addAll(entries)
+                    result.addAll((List<String>) entries)
             }
             else {
                 List<Tuple> found = conn.zrangeByScoreWithScores(key, min, max, 0, count)
