@@ -163,7 +163,7 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
         def blobStore = Mock(BlobStore)
         def blob = Mock(BlobCacheInfo)
         blob.completed(_,_) >> BlobCacheInfo.create('location', 'object', null, null)
-        def config = new BlobCacheConfig(failureDuration: Duration.ofMinutes(1))
+        def config = new BlobCacheConfig(statusDelay: Duration.ofSeconds(2))
         def service = new BlobCacheServiceImpl(blobStore: blobStore, blobConfig: config)
         def event = Mock(JobEvent)
         event.job >>  JobSpec.transfer('job-id', 'foo', Instant.now(), Duration.ofMinutes(1))
@@ -176,7 +176,7 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
         then:
         1 * blobStore.getBlob('job-id') >> blob
         1 * blob.done() >> false
-        1 * blobStore.storeBlob(_, _, _)
+        1 * blobStore.storeBlob(_, _)
         1 * blob.id()
     }
 
@@ -184,7 +184,7 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
         given:
         def blobStore = Mock(BlobStore)
         def blob = Mock(BlobCacheInfo)
-        def config = new BlobCacheConfig(failureDuration: Duration.ofMinutes(1))
+        def config = new BlobCacheConfig(statusDelay: Duration.ofSeconds(2))
         def service = new BlobCacheServiceImpl(blobStore: blobStore, blobConfig: config)
         def event = Mock(JobEvent)
         event.job >>  JobSpec.transfer('job-id', 'foo', Instant.now(), Duration.ofMinutes(1))
@@ -195,14 +195,14 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
 
         then:
         1 * blobStore.getBlob('job-id') >> blob
-        1 * blob.failed(_) >> blob
+        1 * blob.errored(_) >> blob
     }
 
     def 'handle job event when job encounters an error'() {
         given:
         def blobStore = Mock(BlobStore)
         def blob = Mock(BlobCacheInfo)
-        def config = new BlobCacheConfig(failureDuration: Duration.ofMinutes(1))
+        def config = new BlobCacheConfig(statusDelay: Duration.ofSeconds(2))
         def service = new BlobCacheServiceImpl(blobStore: blobStore, blobConfig: config)
         def event = Mock(JobEvent)
         event.job >>  JobSpec.transfer('job-id', 'foo', Instant.now(), Duration.ofMinutes(1))
