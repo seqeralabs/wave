@@ -7,7 +7,7 @@ micronaut:
     # Using `expire-after-read` can cause an entry to be retained in the cache more than expected if it is hit continuously
     # with a frequency shorter than the declared cache period.
     cache-tower-client:
-      expire-after-write: 20s
+      expire-after-write: 60s
       record-stats: true
     cache-registry-proxy:
       expire-after-write: 20s
