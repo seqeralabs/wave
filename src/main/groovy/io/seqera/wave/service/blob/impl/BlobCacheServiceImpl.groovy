@@ -305,7 +305,7 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler {
                 ? blob.completed(state.exitCode, state.stdout)
                 : blob.failed(state.stdout)
         blobStore.storeBlob(blob.id(), result, ttl)
-        log.debug "== Blob cache completed for object '${blob.objectUri}'; id=${blob.objectUri}; status=${result.exitStatus}; duration=${result.duration()}"
+        log.debug "== Blob cache completed for object '${blob.objectUri}'; operation=${job.operationName}; status=${result.exitStatus}; duration=${result.duration()}"
     }
 
     protected void handleJobException(JobSpec job, BlobCacheInfo blob, Throwable error) {

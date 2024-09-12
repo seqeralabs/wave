@@ -40,11 +40,19 @@ class BlobCacheConfig {
     @Value('${wave.blobCache.enabled:false}')
     boolean enabled
 
-    @Value('${wave.blobCache.status.delay:5s}')
+    /**
+     * The time interval every when the status of the blob transfer is checked
+     */
+    @Value('${wave.blobCache.status.delay:2s}')
     Duration statusDelay
 
-    @Value('${wave.blobCache.failure.duration:4s}')
-    Duration failureDuration
+    /**
+     * How long a failed blob should survive in the cache. Note: this should be longer than
+     * {@link #statusDelay} otherwise the state can be lost.
+     */
+    Duration getFailureDuration() {
+        return statusDelay.multipliedBy(3)
+    }
 
     @Value('${wave.blobCache.timeout:10m}')
     Duration transferTimeout
