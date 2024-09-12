@@ -61,7 +61,11 @@ class CleanupServiceImpl implements Runnable, CleanupService {
     @PostConstruct
     private init() {
         log.info "Creating cleanup service - config=$config"
-        scheduler.scheduleAtFixedRate(config.cleanupStartupDelay, config.cleanupRunInterval, this)
+        // use randomize initial delay to prevent multiple replicas running at the same time
+        scheduler.scheduleWithFixedDelay(
+                config.cleanupStartupDelayRandomized,
+                config.cleanupRunInterval,
+                this )
     }
 
     @Override
