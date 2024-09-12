@@ -176,7 +176,7 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
         then:
         1 * blobStore.getBlob('job-id') >> blob
         1 * blob.done() >> false
-        1 * blobStore.storeBlob(_, _, _)
+        1 * blobStore.storeBlob(_, _)
         1 * blob.id()
     }
 

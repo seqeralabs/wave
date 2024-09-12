@@ -22,7 +22,6 @@ import java.time.Instant
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
-import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 /**
  * Model a blob cache metadata entry
@@ -30,7 +29,6 @@ import groovy.util.logging.Slf4j
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
-@ToString(includePackage = false, includeNames = true, excludes = ['headers','logs'])
 @Canonical
 @CompileStatic
 class BlobCacheInfo {
