@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.builder
 
+import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 
@@ -44,14 +45,16 @@ class BuildResult {
     final Instant startTime
     final Duration duration
     final String digest
+    final Path condaLock
 
-    BuildResult(String id, int exitStatus, String content, Instant startTime, Duration duration, String digest) {
+    BuildResult(String id, int exitStatus, String content, Instant startTime, Duration duration, String digest, Path condaLock) {
         this.id = id
         this.logs = content?.replaceAll("\u001B\\[[;\\d]*m", "") // strip ansi escape codes
         this.exitStatus = exitStatus
         this.startTime = startTime
         this.duration = duration
         this.digest = digest
+        this.condaLock = condaLock
     }
 
     /* Do not remove - required by jackson de-ser */
@@ -78,24 +81,24 @@ class BuildResult {
         return "BuildRequest[id=$id; exitStatus=$exitStatus; duration=$duration]"
     }
 
-    static BuildResult completed(String buildId, int exitStatus, String content, Instant startTime, String digest) {
-        new BuildResult(buildId, exitStatus, content, startTime, Duration.between(startTime, Instant.now()), digest)
+    static BuildResult completed(String buildId, int exitStatus, String content, Instant startTime, String digest, Path condaLock) {
+        new BuildResult(buildId, exitStatus, content, startTime, Duration.between(startTime, Instant.now()), digest, condaLock)
     }
 
     static BuildResult failed(String buildId, String content, Instant startTime) {
-        new BuildResult(buildId, -1, content, startTime, Duration.between(startTime, Instant.now()), null)
+        new BuildResult(buildId, -1, content, startTime, Duration.between(startTime, Instant.now()), null, null)
     }
 
     static BuildResult create(BuildRequest req) {
-        new BuildResult(req.buildId, 0, null, req.startTime, null, null)
+        new BuildResult(req.buildId, 0, null, req.startTime, null, null, null)
     }
 
     static BuildResult create(String buildId) {
-        new BuildResult(buildId, 0, null, Instant.now(), null, null)
+        new BuildResult(buildId, 0, null, Instant.now(), null, null, null)
     }
 
     @Memoized
     static BuildResult unknown() {
-        new BuildResult('-', -1, 'Unknown build status', null as Instant, Duration.ZERO, null)
+        new BuildResult('-', -1, 'Unknown build status', null as Instant, Duration.ZERO, null, null)
     }
 }

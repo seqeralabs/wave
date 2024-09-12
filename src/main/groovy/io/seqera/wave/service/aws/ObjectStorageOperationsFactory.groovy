@@ -27,6 +27,8 @@ import io.micronaut.objectstorage.InputStreamMapper
 import io.micronaut.objectstorage.ObjectStorageOperations
 import io.micronaut.objectstorage.aws.AwsS3Configuration
 import io.micronaut.objectstorage.aws.AwsS3Operations
+import io.seqera.wave.configuration.BuildConfig
+import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 import software.amazon.awssdk.services.s3.S3Client
@@ -38,17 +40,26 @@ import software.amazon.awssdk.services.s3.S3Client
 @Factory
 @CompileStatic
 @Slf4j
-@Requires(property = 'wave.build.logs.bucket')
 class ObjectStorageOperationsFactory {
 
-    @Value('${wave.build.logs.bucket}')
-    String storageBucket
+    @Inject
+    BuildConfig buildConfig
 
     @Singleton
     @Named("build-logs")
-    ObjectStorageOperations<?, ?, ?> awsStorageOperations(@Named("DefaultS3Client") S3Client s3Client, InputStreamMapper inputStreamMapper) {
+    @Requires(property = 'wave.build.logs.bucket')
+    ObjectStorageOperations<?, ?, ?> awsStorageOperationsBuildLogs(@Named("DefaultS3Client") S3Client s3Client, InputStreamMapper inputStreamMapper) {
         AwsS3Configuration configuration = new AwsS3Configuration('build-logs')
-        configuration.setBucket(storageBucket)
+        configuration.setBucket(buildConfig.storageBucket)
+        return new AwsS3Operations(configuration, s3Client, inputStreamMapper)
+    }
+
+    @Singleton
+    @Named("conda-lock")
+    @Requires(property = 'wave.build.conda-lock.bucket')
+    ObjectStorageOperations<?, ?, ?> awsStorageOperationsCondaLock(@Named("DefaultS3Client") S3Client s3Client, InputStreamMapper inputStreamMapper) {
+        AwsS3Configuration configuration = new AwsS3Configuration('conda-lock')
+        configuration.setBucket(buildConfig.condaLockBucket)
         return new AwsS3Operations(configuration, s3Client, inputStreamMapper)
     }
 }

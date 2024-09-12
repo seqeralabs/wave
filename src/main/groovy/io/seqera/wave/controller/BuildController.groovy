@@ -31,6 +31,7 @@ import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.seqera.wave.api.BuildStatusResponse
 import io.seqera.wave.service.builder.ContainerBuildService
+import io.seqera.wave.service.conda.CondaLockService
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import jakarta.inject.Inject
@@ -51,6 +52,10 @@ class BuildController {
     @Inject
     @Nullable
     BuildLogService logService
+
+    @Inject
+    @Nullable
+    CondaLockService condaLockService
 
     @Get("/v1alpha1/builds/{buildId}")
     HttpResponse<WaveBuildRecord> getBuildRecord(String buildId){
@@ -77,6 +82,17 @@ class BuildController {
         build != null
             ? HttpResponse.ok(build.toStatusResponse())
             : HttpResponse.<BuildStatusResponse>notFound()
+    }
+
+    @Produces(MediaType.TEXT_PLAIN)
+    @Get(value="/v1alpha1/builds/{buildId}/condalock")
+    HttpResponse<StreamedFile> getCondaLock(String buildId){
+        if( condaLockService==null )
+            throw new IllegalStateException("Build Logs service not configured")
+        final logs = condaLockService.fetchCondaLockStream(buildId)
+        return logs
+                ? HttpResponse.ok(logs)
+                : HttpResponse.<StreamedFile>notFound()
     }
 
 }

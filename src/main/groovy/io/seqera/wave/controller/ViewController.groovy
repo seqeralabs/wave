@@ -30,6 +30,7 @@ import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.views.View
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.service.builder.ContainerBuildService
+import io.seqera.wave.service.conda.CondaLockService
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
@@ -60,6 +61,10 @@ class ViewController {
     @Inject
     @Nullable
     private BuildLogService buildLogService
+
+    @Inject
+    @Nullable
+    CondaLockService condaLockService
 
     @View("build-view")
     @Get('/builds/{buildId}')
@@ -97,6 +102,10 @@ class ViewController {
             binding.build_log_data = buildLog?.data
             binding.build_log_truncated = buildLog?.truncated
             binding.build_log_url = "$serverUrl/v1alpha1/builds/${result.buildId}/logs"
+        }
+        //configure conda lock file when available
+        if( condaLockService && result.condaFile ) {
+            binding.build_conda_lock_url = "$serverUrl/v1alpha1/builds/${result.buildId}/condalock"
         }
         // result the main object
         return binding

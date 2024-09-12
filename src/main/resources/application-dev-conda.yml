@@ -1,0 +1,7 @@
+---
+wave:
+  build:
+    conda-lock:
+      bucket: "{CONDA_LOCK_BUCKET:wave-conda-lock}"
+      prefix: 'wave-build/conda-lock'
+...

@@ -106,6 +106,14 @@ class BuildConfig {
     @Value('${wave.build.retry-attempts:0}')
     int retryAttempts
 
+    @Nullable
+    @Value('${wave.build.logs.bucket}')
+    String storageBucket
+
+    @Nullable
+    @Value('${wave.build.conda-lock.bucket}')
+    String condaLockBucket
+
     @PostConstruct
     private void init() {
         log.info("Builder config: " +
