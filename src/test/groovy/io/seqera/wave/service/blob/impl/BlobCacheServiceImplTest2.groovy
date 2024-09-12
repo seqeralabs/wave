@@ -176,7 +176,7 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
         then:
         1 * blobStore.getBlob('job-id') >> blob
         1 * blob.done() >> false
-        1 * blobStore.storeBlob(_, _, _)
+        1 * blobStore.storeBlob(_, _)
         1 * blob.id()
     }
 
@@ -195,7 +195,7 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
 
         then:
         1 * blobStore.getBlob('job-id') >> blob
-        1 * blob.failed(_) >> blob
+        1 * blob.errored(_) >> blob
     }
 
     def 'handle job event when job encounters an error'() {
