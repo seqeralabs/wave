@@ -40,6 +40,7 @@ import io.seqera.wave.util.StringUtils
 class WaveScanRecord {
     String id
     String buildId
+    String containerImage
     Instant startTime
     Duration duration
     String status
@@ -52,15 +53,17 @@ class WaveScanRecord {
     /* required by jackson deserialization - do not remove */
     WaveScanRecord() {}
 
-    WaveScanRecord(String id, String buildId, Instant startTime) {
+    WaveScanRecord(String id, String buildId, String containerImage, Instant startTime) {
         this.id = StringUtils.surrealId(id)
         this.buildId = buildId
+        this.containerImage = containerImage
         this.startTime = startTime
     }
 
-    WaveScanRecord(String id, String buildId, Instant startTime, Duration duration, String status, List<ScanVulnerability> vulnerabilities) {
+    WaveScanRecord(String id, String buildId, String containerImage, Instant startTime, Duration duration, String status, List<ScanVulnerability> vulnerabilities) {
         this.id = StringUtils.surrealId(id)
         this.buildId = buildId
+        this.containerImage = containerImage
         this.startTime = startTime
         this.duration = duration
         this.status = status
@@ -72,6 +75,7 @@ class WaveScanRecord {
     WaveScanRecord(String id, ScanResult scanResult) {
         this.id = StringUtils.surrealId(id)
         this.buildId = scanResult.buildId
+        this.containerImage = scanResult.containerImage
         this.startTime = scanResult.startTime
         this.duration = scanResult.duration
         this.status = scanResult.status
