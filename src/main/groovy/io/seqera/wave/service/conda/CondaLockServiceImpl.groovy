@@ -80,6 +80,7 @@ class CondaLockServiceImpl implements CondaLockService {
 
     @Override
     void storeCondaLock(String buildId, Path condaLock) {
+        if( !condaLock ) return
         try {
             log.debug "Storing condalock for buildId: $buildId"
             final uploadRequest = UploadRequest.fromBytes(Files.readAllBytes(condaLock), condaLockKey(buildId))
