@@ -37,9 +37,14 @@ import io.seqera.wave.service.logs.BuildLogServiceImpl
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
+import io.seqera.wave.service.persistence.WaveScanRecord
+import io.seqera.wave.service.scan.ScanResult
+import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.tower.User
 import jakarta.inject.Inject
+import static io.seqera.wave.util.DataTimeUtils.formatDuration
+import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -51,7 +56,6 @@ class ViewControllerTest extends Specification {
     BuildLogService logsService() {
         Mock(BuildLogService)
     }
-
 
     @Inject
     @Client("/")
@@ -102,6 +106,9 @@ class ViewControllerTest extends Specification {
         binding.build_log_data == 'log content'
         binding.build_log_truncated == false
         binding.build_log_url == 'http://foo.com/v1alpha1/builds/12345/logs'
+        binding.build_success == true
+        binding.build_in_progress == false
+        binding.build_failed == false
     }
 
     def 'should render a build page' () {
@@ -227,5 +234,117 @@ class ViewControllerTest extends Specification {
         def response = client.toBlocking().exchange(request, String)
         then:
         response.body().contains(token)
+    }
+
+    def 'should render in progress build page' () {
+        given:
+        def controller = new ViewController(serverUrl: 'http://foo.com', buildLogService: buildLogService)
+        and:
+        def record = new WaveBuildRecord(
+                buildId: '12345',
+                dockerFile: 'FROM foo',
+                condaFile: 'conda::foo',
+                spackFile: 'some-spack-recipe',
+                targetImage: 'docker.io/some:image',
+                userName: 'paolo',
+                userEmail: 'paolo@seqera.io',
+                userId: 100,
+                requestIp: '10.20.30.40',
+                startTime: Instant.now(),
+                offsetId: '+02:00',
+                duration: Duration.ofMinutes(1),
+                platform: 'linux/amd64' )
+        when:
+        def binding = controller.renderBuildView(record)
+        then:
+        1 * buildLogService.fetchLogString('12345') >> new BuildLogService.BuildLog('log content', false)
+        and:
+        binding.build_id == '12345'
+        binding.build_containerfile == 'FROM foo'
+        binding.build_condafile == 'conda::foo'
+        binding.build_image == 'docker.io/some:image'
+        binding.build_user == 'paolo (ip: 10.20.30.40)'
+        binding.build_platform == 'linux/amd64'
+        binding.build_exit_status == null
+        binding.build_platform == 'linux/amd64'
+        binding.build_containerfile == 'FROM foo'
+        binding.build_condafile == 'conda::foo'
+        binding.build_spackfile == 'some-spack-recipe'
+        binding.build_format == 'Docker'
+        binding.build_log_data == 'log content'
+        binding.build_log_truncated == false
+        binding.build_log_url == 'http://foo.com/v1alpha1/builds/12345/logs'
+        binding.build_success == false
+        binding.build_in_progress == true
+        binding.build_failed == false
+    }
+
+    def 'should render in progress build page' () {
+        given:
+        def controller = new ViewController(serverUrl: 'http://foo.com', buildLogService: buildLogService)
+        and:
+        def record = new WaveBuildRecord(
+                buildId: '12345',
+                dockerFile: 'FROM foo',
+                condaFile: 'conda::foo',
+                spackFile: 'some-spack-recipe',
+                targetImage: 'docker.io/some:image',
+                userName: 'paolo',
+                userEmail: 'paolo@seqera.io',
+                userId: 100,
+                requestIp: '10.20.30.40',
+                startTime: Instant.now(),
+                offsetId: '+02:00',
+                duration: Duration.ofMinutes(1),
+                exitStatus: 1,
+                platform: 'linux/amd64' )
+        when:
+        def binding = controller.renderBuildView(record)
+        then:
+        1 * buildLogService.fetchLogString('12345') >> new BuildLogService.BuildLog('log content', false)
+        and:
+        binding.build_id == '12345'
+        binding.build_containerfile == 'FROM foo'
+        binding.build_condafile == 'conda::foo'
+        binding.build_image == 'docker.io/some:image'
+        binding.build_user == 'paolo (ip: 10.20.30.40)'
+        binding.build_platform == 'linux/amd64'
+        binding.build_exit_status == 1
+        binding.build_platform == 'linux/amd64'
+        binding.build_containerfile == 'FROM foo'
+        binding.build_condafile == 'conda::foo'
+        binding.build_spackfile == 'some-spack-recipe'
+        binding.build_format == 'Docker'
+        binding.build_log_data == 'log content'
+        binding.build_log_truncated == false
+        binding.build_log_url == 'http://foo.com/v1alpha1/builds/12345/logs'
+        binding.build_success == false
+        binding.build_in_progress == false
+        binding.build_failed == true
+    }
+
+    def 'should render in success scan page' () {
+        given:
+        def controller = new ViewController(serverUrl: 'http://foo.com', buildLogService: buildLogService)
+        and:
+        def record = new WaveScanRecord(
+                id: '12345',
+                buildId: '12345',
+                containerImage: 'docker.io/some:image',
+                startTime: Instant.now(),
+                duration: Duration.ofMinutes(1),
+                status: ScanResult.SUCCEEDED,
+                vulnerabilities: [new ScanVulnerability('cve-1', 'HIGH', 'test vul', 'testpkg', '1.0.0', '1.1.0', 'http://vul/cve-1')] )
+        def result = ScanResult.success(record, record.vulnerabilities)
+        when:
+        def binding = controller.makeScanViewBinding(result)
+        then:
+        binding.scan_id == '12345'
+        binding.scan_container_image == 'docker.io/some:image'
+        binding.scan_time == formatTimestamp(result.startTime)
+        binding.scan_duration == formatDuration(result.duration)
+        binding.scan_succeeded
+        binding.vulnerabilities == [new ScanVulnerability(id:'cve-1', severity:'HIGH', title:'test vul', pkgName:'testpkg', installedVersion:'1.0.0', fixedVersion:'1.1.0', primaryUrl:'http://vul/cve-1')]
+        binding.build_url == 'http://foo.com/view/builds/12345'
     }
 }

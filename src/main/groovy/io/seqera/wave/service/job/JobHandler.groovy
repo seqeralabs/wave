@@ -16,39 +16,14 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.auth
-
-import groovy.transform.CompileStatic
-import io.seqera.wave.exception.WaveException
-
+package io.seqera.wave.service.job
 /**
- * Exception throw when the registry authorization failed
+ * Define events and properties for jobs managed via {@link JobManager}
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@CompileStatic
-class RegistryUnauthorizedAccessException extends WaveException {
+interface JobHandler {
 
-    private String response
-    private Integer status
+    void onJobEvent(JobEvent event)
 
-    RegistryUnauthorizedAccessException(String message, Integer status=null, String response=null) {
-        super(message)
-        this.status = status
-        this.response = response
-    }
-
-    String getResponse() {
-        return response
-    }
-
-    @Override
-    String getMessage() {
-        def result = super.getMessage()
-        if( status!=null )
-            result += " - HTTP status=$status"
-        if( response )
-            result += " - response=$response"
-        return result
-    }
 }

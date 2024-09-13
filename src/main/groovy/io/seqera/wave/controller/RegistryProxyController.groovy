@@ -104,7 +104,7 @@ class RegistryProxyController {
 
     @Error
     HttpResponse<RegistryErrorResponse> handleError(HttpRequest request, Throwable t) {
-        return errorHandler.handle(request, t, (msg, code) -> new RegistryErrorResponse(code,msg) )
+        return errorHandler.handle(request, t, (String msg, String code) -> new RegistryErrorResponse(code,msg) )
     }
 
     @Get
@@ -223,7 +223,7 @@ class RegistryProxyController {
             return fromDownloadResponse(resp, route, headers)
         }
         else {
-            log.debug "Pulling stream from repository: '${route.getTargetContainer()}'"
+            log.warn "Pulling stream from repository: '${route.getTargetContainer()}' - Streaming is not scalable. Blob cache service should be configured instead."
             return fromStreamResponse(resp, route, headers)
         }
     }
@@ -315,7 +315,6 @@ class RegistryProxyController {
     }
 
     MutableHttpResponse<?> fromDownloadResponse(final DelegateResponse resp, RoutePath route, Map<String, List<String>> headers) {
-        log.debug "== Blob cache upstream $resp"
         final blobCache = blobCacheService .retrieveBlobCache(route, headers, resp.headers)
         log.debug "== Blob cache response [succeeded=${blobCache.succeeded()}] $blobCache"
         if( !blobCache.succeeded() ) {

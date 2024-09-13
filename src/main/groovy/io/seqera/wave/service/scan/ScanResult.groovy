@@ -31,6 +31,7 @@ import groovy.transform.CompileStatic
  */
 
 import groovy.transform.ToString
+import io.seqera.wave.service.persistence.WaveScanRecord
 
 @ToString(includePackage = false, includeNames = true)
 @Canonical
@@ -42,14 +43,16 @@ class ScanResult {
 
     String id
     String buildId
+    String containerImage
     Instant startTime
     Duration duration
     String status
     List<ScanVulnerability> vulnerabilities
 
-    private ScanResult(String id, String buildId, Instant startTime, Duration duration, String status, List<ScanVulnerability> vulnerabilities) {
+    private ScanResult(String id, String buildId, String containerImage, Instant startTime, Duration duration, String status, List<ScanVulnerability> vulnerabilities) {
         this.id = id
         this.buildId = buildId
+        this.containerImage = containerImage
         this.startTime = startTime
         this.duration = duration
         this.status = status
@@ -60,15 +63,19 @@ class ScanResult {
 
     boolean isCompleted() { duration!=null }
 
-    static ScanResult success(ScanRequest request, Instant startTime, List<ScanVulnerability> vulnerabilities){
-        return new ScanResult(request.id, request.buildId, startTime, Duration.between(startTime, Instant.now()), SUCCEEDED, vulnerabilities)
+    static ScanResult success(WaveScanRecord scan, List<ScanVulnerability> vulnerabilities){
+        return new ScanResult(scan.id, scan.buildId, scan.containerImage, scan.startTime, Duration.between(scan.startTime, Instant.now()), SUCCEEDED, vulnerabilities)
     }
 
-    static ScanResult failure(ScanRequest request, Instant startTime){
-        return new ScanResult(request.id, request.buildId, startTime, Duration.between(startTime, Instant.now()), FAILED, List.of())
+    static ScanResult failure(WaveScanRecord scan){
+        return new ScanResult(scan.id, scan.buildId, scan.containerImage, scan.startTime, Duration.between(scan.startTime, Instant.now()), FAILED, List.of())
     }
 
-    static ScanResult create(String scanId, String buildId, Instant startTime, Duration duration1, String status, List<ScanVulnerability> vulnerabilities){
-        return new ScanResult(scanId, buildId, startTime, duration1, status, vulnerabilities)
+    static ScanResult failure(ScanRequest request){
+        return new ScanResult(request.id, request.buildId, request.targetImage, request.creationTime, Duration.between(request.creationTime, Instant.now()), FAILED, List.of())
+    }
+
+    static ScanResult create(String scanId, String buildId, String containerImage, Instant startTime, Duration duration1, String status, List<ScanVulnerability> vulnerabilities){
+        return new ScanResult(scanId, buildId, containerImage, startTime, duration1, status, vulnerabilities)
     }
 }

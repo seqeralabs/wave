@@ -56,16 +56,6 @@ interface BlobStore {
     void storeBlob(String key, BlobCacheInfo info)
 
     /**
-     * Store the blob cache info object with the specified key. The object is evicted after the specified
-     * duration is reached
-     *
-     * @param key The unique to be used to store the blob cache info
-     * @param info The {@link BlobCacheInfo} object modelling the container blob information
-     * @param ttl How long the object is allowed to stay in the cache
-     */
-    void storeBlob(String key, BlobCacheInfo info, Duration ttl)
-
-    /**
      * Store a blob cache location only if the specified key does not exit
      *
      * @param key The key of the blob

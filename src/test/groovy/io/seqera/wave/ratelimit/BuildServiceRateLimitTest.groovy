@@ -59,6 +59,9 @@ class BuildServiceRateLimitTest extends Specification {
         configuration = applicationContext.getBean(RateLimiterConfig)
     }
 
+    def cleanupSpec() {
+        applicationContext.close()
+    }
 
     def 'should not allow more auth builds than rate limit' () {
         given:
@@ -71,7 +74,17 @@ class BuildServiceRateLimitTest extends Specification {
         and:
         def CONTAINER_ID = ContainerHelper.makeContainerId(dockerfile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
         def TARGET_IMAGE = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, CONTAINER_ID, null, null, null)
-        def REQ = new BuildRequest(CONTAINER_ID, dockerfile, null, null, folder, TARGET_IMAGE, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "127.0.0.1", '{"config":"json"}', null, null, null, null,BuildFormat.DOCKER)
+        def REQ = new BuildRequest(
+                containerId: CONTAINER_ID,
+                containerFile: dockerfile,
+                workspace:  folder,
+                targetImage:  TARGET_IMAGE,
+                identity:  Mock(PlatformId),
+                platform:  ContainerPlatform.of('amd64'),
+                cacheRepository:  cacheRepo,
+                ip:  "127.0.0.1",
+                configJson:  '{"config":"json"}',
+                format: BuildFormat.DOCKER )
 
         when:
         (0..configuration.build.authenticated.max).each {
@@ -95,7 +108,17 @@ class BuildServiceRateLimitTest extends Specification {
         and:
         def CONTAINER_ID = ContainerHelper.makeContainerId(dockerfile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
         def TARGET_IMAGE = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, CONTAINER_ID, null, null, null)
-        def REQ = new BuildRequest(CONTAINER_ID, dockerfile, null, null, folder, TARGET_IMAGE, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "127.0.0.1", '{"config":"json"}', null, null, null, null,BuildFormat.DOCKER)
+        def REQ = new BuildRequest(
+                containerId: CONTAINER_ID,
+                containerFile: dockerfile,
+                workspace: folder,
+                targetImage: TARGET_IMAGE,
+                identity: Mock(PlatformId),
+                platform: ContainerPlatform.of('amd64'),
+                cacheRepository: cacheRepo,
+                ip: "127.0.0.1",
+                configJson: '{"config":"json"}',
+                format:  BuildFormat.DOCKER)
 
         when:
         (0..configuration.build.anonymous.max).each {

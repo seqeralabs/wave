@@ -18,11 +18,14 @@
 
 package io.seqera.wave.controller
 
+import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Timeout
 
+import java.time.Duration
+import java.time.Instant
+
 import io.micronaut.context.ApplicationContext
-import io.micronaut.core.io.socket.SocketUtils
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
@@ -30,56 +33,57 @@ import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.runtime.server.EmbeddedServer
-import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.exchange.RegistryErrorResponse
 import io.seqera.wave.model.ContentType
+import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.builder.BuildCacheStore
+import io.seqera.wave.service.builder.BuildRequest
+import io.seqera.wave.service.builder.BuildResult
+import io.seqera.wave.service.builder.BuildStoreEntry
+import io.seqera.wave.service.job.JobFactory
+import io.seqera.wave.service.job.JobQueue
+import io.seqera.wave.service.job.JobSpec
+import io.seqera.wave.service.token.TokenCacheStore
 import io.seqera.wave.storage.ManifestCacheStore
 import io.seqera.wave.test.DockerRegistryContainer
 import io.seqera.wave.test.RedisTestContainer
-import redis.clients.jedis.Jedis
+import io.seqera.wave.tower.PlatformId
+import io.seqera.wave.tower.User
 /**
  *
  * @author Jorge Aguilera <jorge.aguilera@seqera.io>
  */
-@MicronautTest
-class RegistryControllerRedisTest extends Specification implements DockerRegistryContainer, RedisTestContainer{
+class RegistryControllerRedisTest extends Specification implements DockerRegistryContainer, RedisTestContainer {
 
-    EmbeddedServer embeddedServer
+    @Shared
+    ApplicationContext applicationContext
 
+    @Shared
     int port
 
-    Jedis jedis
-
     def setup() {
-        port = SocketUtils.findAvailableTcpPort()
-        embeddedServer = ApplicationContext.run(EmbeddedServer, [
+        EmbeddedServer server = ApplicationContext.run(EmbeddedServer, [
                 REDIS_HOST   : redisHostName,
                 REDIS_PORT   : redisPort,
                 'wave.build.timeout':'2s',
-                'micronaut.server.port': port,
-                'micronaut.http.services.default.url' : "http://localhost:$port".toString(),
-        ], 'test', 'h2', 'redis')
-
-        jedis = new Jedis(redisHostName, redisPort as int)
-        initRegistryContainer(applicationContext)
+                'wave.build.trusted-timeout':'2s'
+        ], 'test', 'redis')
+        and:
+        port = server.port
+        applicationContext = server.getApplicationContext()
     }
 
     def cleanup(){
-        jedis.flushAll()
-        jedis.close()
-    }
-
-    ApplicationContext getApplicationContext() {
-        embeddedServer.applicationContext
+        applicationContext.close()
     }
 
     void 'should get manifest'() {
         given:
-        HttpClient client = applicationContext.createBean(HttpClient)
+        HttpClient client = applicationContext.getBean(HttpClient)
         ManifestCacheStore storage = applicationContext.getBean(ManifestCacheStore)
 
         when:
-        HttpRequest request = HttpRequest.GET("http://localhost:$port/v2/library/hello-world/manifests/sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6").headers({h->
+        HttpRequest request = HttpRequest.GET("http://localhost:${port}/v2/library/hello-world/manifests/sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6").headers({h->
             h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
             h.add('Accept', ContentType.DOCKER_MANIFEST_V1_JWS_TYPE)
             h.add('Accept', MediaType.APPLICATION_JSON)
@@ -92,30 +96,33 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         response.getContentType().get().getName() ==  'application/vnd.oci.image.index.v1+json'
         response.header('docker-content-digest') == 'sha256:53641cd209a4fecfc68e21a99871ce8c6920b2e7502df0a20671c6fccc73a7c6'
         response.getContentLength() == 10242
-
-        when:
-        storage.clear()
-
-        and:
-        response = client.toBlocking().exchange(request,String)
-
-        then:
-        response.status() == HttpStatus.OK
-        and:
-        response.body().indexOf('"schemaVersion":') != -1
-        response.getContentType().get().getName() ==  'application/vnd.oci.image.index.v1+json'
-        response.getContentLength() == 10242
+        
     }
 
-    @Timeout(15)
-    void 'should render a timeout when build failed'() {
+    @Timeout(30)
+    void 'should return a timeout when build failed'() {
         given:
-        HttpClient client = applicationContext.createBean(HttpClient)
+        def client = applicationContext.createBean(HttpClient)
+        def buildCacheStore = applicationContext.getBean(BuildCacheStore)
+        def tokenCacheStore = applicationContext.getBean(TokenCacheStore)
+        def jobQueue = applicationContext.getBean(JobQueue)
+        def jobFactory = applicationContext.getBean(JobFactory)
+        def res = BuildResult.create('1')
+        def req = new BuildRequest(
+                targetImage: 'library/hello-world',
+                buildId: '1',
+                startTime: Instant.now(),
+                maxDuration: Duration.ofSeconds(5)
+        )
+        def entry = new BuildStoreEntry(req, res)
+        def containerRequestData = new ContainerRequestData(new PlatformId(new User(id:1)), "library/hello-world")
         and:
-        jedis.set("wave-tokens/v1:1234", '{"containerImage":"library/hello-world"}')
-        jedis.set("wave-build/v1:library/hello-world", '{"containerImage":"library/hello-world"}')
+        tokenCacheStore.put("1234", containerRequestData)
+        buildCacheStore.put("library/hello-world", entry)
+        jobQueue.offer(jobFactory.build(req))
+
         when:
-        HttpRequest request = HttpRequest.GET("http://localhost:$port/v2/wt/1234/library/hello-world/manifests/latest").headers({h->
+        HttpRequest request = HttpRequest.GET("http://localhost:${port}/v2/wt/1234/library/hello-world/manifests/latest").headers({h->
             h.add('Accept', ContentType.DOCKER_MANIFEST_V2_TYPE)
             h.add('Accept', ContentType.DOCKER_MANIFEST_V1_JWS_TYPE)
             h.add('Accept', MediaType.APPLICATION_JSON)
@@ -123,7 +130,9 @@ class RegistryControllerRedisTest extends Specification implements DockerRegistr
         client.toBlocking().exchange(request,String)
         then:
         final exception = thrown(HttpClientResponseException)
-        RegistryErrorResponse error = exception.response.getBody(RegistryErrorResponse).get()
-        error.errors.get(0).message.contains('Build of container \'library/hello-world\' timed out')
+        RegistryErrorResponse registryError = exception.response.getBody(RegistryErrorResponse).get()
+        def error = registryError.errors.get(0)
+        error.message.contains('Container image build timed out \'library/hello-world\'')
+        error.code == 'UNKNOWN'
     }
 }

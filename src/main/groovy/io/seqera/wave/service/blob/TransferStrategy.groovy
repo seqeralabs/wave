@@ -24,6 +24,6 @@ package io.seqera.wave.service.blob
  */
 interface TransferStrategy {
 
-    BlobCacheInfo transfer(BlobCacheInfo info, List<String> command)
+    void launchJob(String jobName, List<String> command)
 
 }

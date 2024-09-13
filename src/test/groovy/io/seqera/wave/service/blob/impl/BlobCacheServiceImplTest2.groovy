@@ -21,9 +21,18 @@ package io.seqera.wave.service.blob.impl
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import java.time.Duration
+import java.time.Instant
+
 import io.micronaut.context.ApplicationContext
+import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.core.RoutePath
 import io.seqera.wave.model.ContainerCoordinates
+import io.seqera.wave.service.blob.BlobCacheInfo
+import io.seqera.wave.service.blob.BlobStore
+import io.seqera.wave.service.job.JobEvent
+import io.seqera.wave.service.job.JobSpec
+import io.seqera.wave.service.job.JobState
 import io.seqera.wave.test.AwsS3TestContainer
 /**
  *
@@ -117,6 +126,95 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
         and:
         'library/ubuntu:22.04'  | 's3://foo'          | 'https://bar.com/y'   | 'https'       | 'bar.com'     | '/y/docker.io/v2/library/ubuntu/manifests/22.04'
         'ubuntu@sha256:32353'   | 's3://foo'          | 'https://bar.com/'    | 'https'       | 'bar.com'     | '/docker.io/v2/library/ubuntu/manifests/sha256:32353'
+    }
+
+    def 'handle job event when blob cache entry is unknown'() {
+        given:
+        def blobStore = Mock(BlobStore)
+        def service = new BlobCacheServiceImpl(blobStore: blobStore)
+        def event = Mock(JobEvent)
+        event.job >> JobSpec.transfer('unknown-id', 'foo', Instant.now(), Duration.ofMinutes(1))
+
+        when:
+        service.onJobEvent(event)
+
+        then:
+        1 * blobStore.getBlob('unknown-id') >> null
+    }
+
+    def 'handle job event when blob cache entry is already completed'() {
+        given:
+        def blobStore = Mock(BlobStore)
+        def blob = Mock(BlobCacheInfo)
+        def service = new BlobCacheServiceImpl(blobStore: blobStore)
+        def event = Mock(JobEvent)
+        event.job >> JobSpec.transfer('completed-id', 'foo', Instant.now(), Duration.ofMinutes(1))
+
+        when:
+        service.onJobEvent(event)
+
+        then:
+        1 * blobStore.getBlob('completed-id') >> blob
+        1 * blob.done() >> true
+    }
+
+    def 'handle job event when job is completed'() {
+        given:
+        def blobStore = Mock(BlobStore)
+        def blob = Mock(BlobCacheInfo)
+        blob.completed(_,_) >> BlobCacheInfo.create('location', 'object', null, null)
+        def config = new BlobCacheConfig(statusDelay: Duration.ofSeconds(2))
+        def service = new BlobCacheServiceImpl(blobStore: blobStore, blobConfig: config)
+        def event = Mock(JobEvent)
+        event.job >>  JobSpec.transfer('job-id', 'foo', Instant.now(), Duration.ofMinutes(1))
+        event.type >> JobEvent.Type.Complete
+        event.state >> JobState.completed(0, 'Job completed')
+
+        when:
+        service.onJobEvent(event)
+
+        then:
+        1 * blobStore.getBlob('job-id') >> blob
+        1 * blob.done() >> false
+        1 * blobStore.storeBlob(_, _)
+        1 * blob.id()
+    }
+
+    def 'handle job event when job times out'() {
+        given:
+        def blobStore = Mock(BlobStore)
+        def blob = Mock(BlobCacheInfo)
+        def config = new BlobCacheConfig(statusDelay: Duration.ofSeconds(2))
+        def service = new BlobCacheServiceImpl(blobStore: blobStore, blobConfig: config)
+        def event = Mock(JobEvent)
+        event.job >>  JobSpec.transfer('job-id', 'foo', Instant.now(), Duration.ofMinutes(1))
+        event.type >> JobEvent.Type.Timeout
+
+        when:
+        service.onJobEvent(event)
+
+        then:
+        1 * blobStore.getBlob('job-id') >> blob
+        1 * blob.errored(_) >> blob
+    }
+
+    def 'handle job event when job encounters an error'() {
+        given:
+        def blobStore = Mock(BlobStore)
+        def blob = Mock(BlobCacheInfo)
+        def config = new BlobCacheConfig(statusDelay: Duration.ofSeconds(2))
+        def service = new BlobCacheServiceImpl(blobStore: blobStore, blobConfig: config)
+        def event = Mock(JobEvent)
+        event.job >>  JobSpec.transfer('job-id', 'foo', Instant.now(), Duration.ofMinutes(1))
+        event.type >> JobEvent.Type.Error
+        event.error >> new RuntimeException("Error message")
+
+        when:
+        service.onJobEvent(event)
+
+        then:
+        1 * blobStore.getBlob('job-id') >> blob
+        1 * blob.done() >> false
     }
 
 }

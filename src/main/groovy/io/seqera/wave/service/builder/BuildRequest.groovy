@@ -19,6 +19,7 @@
 package io.seqera.wave.service.builder
 
 import java.nio.file.Path
+import java.time.Duration
 import java.time.Instant
 import java.time.OffsetDateTime
 
@@ -133,12 +134,35 @@ class BuildRequest {
      * The target build format, either Docker or Singularity
      */
     final BuildFormat format
+
+    /**
+     * Max allow time duration for this build
+     */
+    final Duration maxDuration
     
     volatile String buildId
 
     volatile Path workDir
 
-    BuildRequest(String containerId, String containerFile, String condaFile, String spackFile, Path workspace, String targetImage, PlatformId identity, ContainerPlatform platform, String cacheRepository, String ip, String configJson, String offsetId, ContainerConfig containerConfig, String scanId, BuildContext buildContext, BuildFormat format) {
+    BuildRequest(String containerId,
+                 String containerFile,
+                 String condaFile,
+                 String spackFile,
+                 Path workspace,
+                 String targetImage,
+                 PlatformId identity,
+                 ContainerPlatform platform,
+                 String cacheRepository,
+                 String ip,
+                 String configJson,
+                 String offsetId,
+                 ContainerConfig containerConfig,
+                 String scanId,
+                 BuildContext buildContext,
+                 BuildFormat format,
+                 Duration maxDuration
+    )
+    {
         this.containerId = containerId
         this.containerFile = containerFile
         this.condaFile = condaFile
@@ -157,10 +181,11 @@ class BuildRequest {
         this.scanId = scanId
         this.buildContext = buildContext
         this.format = format
+        this.maxDuration = maxDuration
     }
 
     BuildRequest(Map opts) {
-        this.containerId = opts.id
+        this.containerId = opts.containerId
         this.containerFile = opts.containerFile
         this.condaFile = opts.condaFile
         this.spackFile = opts.spackFile
@@ -180,11 +205,12 @@ class BuildRequest {
         this.format = opts.format as BuildFormat
         this.workDir = opts.workDir as Path
         this.buildId = opts.buildId
+        this.maxDuration = opts.maxDuration as Duration
     }
 
     @Override
     String toString() {
-        return "BuildRequest[containerId=$containerId; targetImage=$targetImage; identity=$identity; dockerFile=${trunc(containerFile)}; condaFile=${trunc(condaFile)}; spackFile=${trunc(spackFile)}; buildId=$buildId]"
+        return "BuildRequest[containerId=$containerId; targetImage=$targetImage; identity=$identity; dockerFile=${trunc(containerFile)}; condaFile=${trunc(condaFile)}; spackFile=${trunc(spackFile)}; buildId=$buildId, maxDuration=$maxDuration]"
     }
 
     String getContainerId() {
@@ -242,6 +268,10 @@ class BuildRequest {
 
     String getOffsetId() {
         return offsetId
+    }
+
+    Duration getMaxDuration() {
+        return maxDuration
     }
 
     boolean formatDocker() {

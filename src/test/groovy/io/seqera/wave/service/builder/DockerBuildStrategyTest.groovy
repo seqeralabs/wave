@@ -45,11 +45,12 @@ class DockerBuildStrategyTest extends Specification {
         and:
         def work = Path.of('/work/foo')
         when:
-        def cmd = service.cmdForBuildkit(work, null, null, null)
+        def cmd = service.cmdForBuildkit('build-job-name', work, null, null, null)
         then:
         cmd == ['docker',
                 'run',
-                '--rm',
+                '--name',
+                'build-job-name',
                 '--privileged',
                 '-v', '/work/foo:/work/foo',
                 '--entrypoint',
@@ -57,11 +58,12 @@ class DockerBuildStrategyTest extends Specification {
                 'moby/buildkit:v0.14.1-rootless']
 
         when:
-        cmd = service.cmdForBuildkit(work, Path.of('/foo/creds.json'), null, ContainerPlatform.of('arm64'))
+        cmd = service.cmdForBuildkit('build-job-name', work, Path.of('/foo/creds.json'), null, ContainerPlatform.of('arm64'))
         then:
         cmd == ['docker',
                 'run',
-                '--rm',
+                '--name',
+                'build-job-name',
                 '--privileged',
                 '-v', '/work/foo:/work/foo',
                 '--entrypoint',
@@ -71,11 +73,12 @@ class DockerBuildStrategyTest extends Specification {
                 'moby/buildkit:v0.14.1-rootless']
 
         when:
-        cmd = service.cmdForBuildkit(work, Path.of('/foo/creds.json'), spackConfig, null)
+        cmd = service.cmdForBuildkit('build-job-name', work, Path.of('/foo/creds.json'), spackConfig, null)
         then:
         cmd == ['docker',
                 'run',
-                '--rm',
+                '--name',
+                'build-job-name',
                 '--privileged',
                 '-v', '/work/foo:/work/foo',
                 '--entrypoint',
@@ -96,17 +99,18 @@ class DockerBuildStrategyTest extends Specification {
         def creds = Path.of('/work/creds.json')
         and:
         def req = new BuildRequest(
-                id: '89fb83ce6ec8627b',
+                containerId: '89fb83ce6ec8627b',
                 workDir: Path.of('/work/foo/89fb83ce6ec8627b'),
                 platform: ContainerPlatform.of('linux/amd64'),
                 targetImage: 'repo:89fb83ce6ec8627b',
                 cacheRepository: 'reg.io/wave/build/cache' )
         when:
-        def cmd = service.buildCmd(req, creds)
+        def cmd = service.buildCmd('build-job-name', req, creds)
         then:
         cmd == ['docker',
                 'run',
-                '--rm',
+                '--name',
+                'build-job-name',
                 '--privileged',
                 '-v', '/work/foo/89fb83ce6ec8627b:/work/foo/89fb83ce6ec8627b',
                 '--entrypoint',
@@ -156,11 +160,12 @@ class DockerBuildStrategyTest extends Specification {
                 format: BuildFormat.SINGULARITY,
                 isSpackBuild: true )
         when:
-        def cmd = service.buildCmd(req, creds)
+        def cmd = service.buildCmd('build-job-name', req, creds)
         then:
         cmd == ['docker',
                 'run',
-                '--rm',
+                '--name',
+                'build-job-name',
                 '--privileged',
                 '--entrypoint', '',
                 '-v', '/work/foo/d4869cc39b8d7d55:/work/foo/d4869cc39b8d7d55',
@@ -198,11 +203,12 @@ class DockerBuildStrategyTest extends Specification {
                 format: BuildFormat.SINGULARITY,
                 isSpackBuild: true )
         when:
-        def cmd = service.buildCmd(req, creds)
+        def cmd = service.buildCmd('build-job-name', req, creds)
         then:
         cmd == ['docker',
                 'run',
-                '--rm',
+                '--name',
+                'build-job-name',
                 '--privileged',
                 '--entrypoint', '',
                 '-v', '/work/foo/9c68af894bb2419c:/work/foo/9c68af894bb2419c',

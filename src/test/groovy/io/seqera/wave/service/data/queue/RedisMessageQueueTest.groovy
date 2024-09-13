@@ -24,14 +24,12 @@ import spock.lang.Specification
 import java.time.Duration
 
 import io.micronaut.context.ApplicationContext
-import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.service.data.queue.impl.RedisMessageQueue
 import io.seqera.wave.test.RedisTestContainer
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@MicronautTest(environments = ['test'])
 class RedisMessageQueueTest extends Specification implements RedisTestContainer {
 
     @Shared
@@ -42,7 +40,10 @@ class RedisMessageQueueTest extends Specification implements RedisTestContainer 
                 REDIS_HOST: redisHostName,
                 REDIS_PORT: redisPort
         ], 'test', 'redis')
+    }
 
+    def cleanup() {
+        context.stop()
     }
 
     def 'should return null if empty' () {
@@ -76,4 +77,17 @@ class RedisMessageQueueTest extends Specification implements RedisTestContainer 
         broker.poll('bar') == 'beta'
     }
 
+    def 'should offer and poll a value after wait' () {
+        given:
+        def broker = context.getBean(RedisMessageQueue)
+        def wait = Duration.ofMillis(500)
+        and:
+        broker.offer('bar1', 'alpha1')
+        broker.offer('bar1', 'beta1')
+
+        expect:
+        broker.poll('foo1', wait) == null
+        broker.poll('bar1', wait) == 'alpha1'
+        broker.poll('bar1', wait) == 'beta1'
+    }
 }

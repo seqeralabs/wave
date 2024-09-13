@@ -22,16 +22,13 @@ import spock.lang.Specification
 
 import java.time.Duration
 import java.time.OffsetDateTime
-import java.util.concurrent.Executors
 
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
 import io.kubernetes.client.openapi.models.V1PodStatus
 import io.seqera.wave.configuration.BlobCacheConfig
-import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.service.blob.BlobCacheInfo
-import io.seqera.wave.service.cleanup.CleanupStrategy
 import io.seqera.wave.service.k8s.K8sService
 /**
  *
@@ -41,56 +38,28 @@ class KubeTransferStrategyTest extends Specification {
 
     K8sService k8sService = Mock(K8sService)
     BlobCacheConfig blobConfig = new BlobCacheConfig(s5Image: 's5cmd', transferTimeout: Duration.ofSeconds(10), retryAttempts: 3)
-    CleanupStrategy cleanup = new CleanupStrategy(buildConfig: new BuildConfig(cleanup: "OnSuccess"))
-    KubeTransferStrategy strategy = new KubeTransferStrategy(k8sService: k8sService, blobConfig: blobConfig, cleanup: cleanup, executor: Executors.newSingleThreadExecutor())
+    KubeTransferStrategy strategy = new KubeTransferStrategy(k8sService: k8sService, blobConfig: blobConfig)
 
-   def "transfer should return completed info when job is successful"() {
+    def "transfer should start a transferJob"() {
         given:
-        def info = BlobCacheInfo.create("https://test.com/blobs", null, null)
+        def info = BlobCacheInfo.create("https://test.com/blobs", "https://test.com/bucket/blobs", null, null)
         def command = ["transfer", "blob"]
         final jobName = "job-123"
-        def podName = "$jobName-abc"
+        def podName = "$jobName-abc".toString()
         def pod = new V1Pod(metadata: [name: podName, creationTimestamp: OffsetDateTime.now()])
         pod.status = new V1PodStatus(phase: "Succeeded")
         def podList = new V1PodList(items: [pod])
-        k8sService.transferJob(_, _, _, _) >> new V1Job(metadata: [name: jobName])
+        k8sService.launchTransferJob(_, _, _, _) >> new V1Job(metadata: [name: jobName])
         k8sService.waitJob(_, _) >> podList
         k8sService.getPod(_) >> pod
         k8sService.waitPodCompletion(_, _) >> 0
         k8sService.logsPod(_) >> "transfer successful"
 
         when:
-        def result = strategy.transfer(info, command)
+        strategy.launchJob(podName, command)
 
         then:
-        result.exitStatus == 0
-        result.logs == "transfer successful"
-        result.done()
-        result.succeeded()
+        1 * k8sService.launchTransferJob(podName, blobConfig.s5Image, command, blobConfig)
     }
 
-    def "transfer should return failed info when job is failed"() {
-        given:
-        def info = BlobCacheInfo.create("https://test.com/blobs", null, null)
-        def command = ["transfer", "blob"]
-        final jobName = "job-123"
-        def podName = "$jobName-abc"
-        def pod = new V1Pod(metadata: [name: podName, creationTimestamp: OffsetDateTime.now()])
-        pod.status = new V1PodStatus(phase: "Succeeded")
-        def podList = new V1PodList(items: [pod])
-        k8sService.transferJob(_, _, _, _) >> new V1Job(metadata: [name: jobName])
-        k8sService.waitJob(_, _) >> podList
-        k8sService.getPod(_) >> pod
-        k8sService.waitPodCompletion(pod, _) >> 1
-        k8sService.logsPod(pod) >> "transfer failed"
-
-        when:
-        def result = strategy.transfer(info, command)
-
-        then:
-        result.exitStatus == 1
-        result.logs == "transfer failed"
-        result.done()
-        !result.succeeded()
-    }
 }

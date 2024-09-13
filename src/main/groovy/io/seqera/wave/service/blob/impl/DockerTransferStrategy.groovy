@@ -18,16 +18,14 @@
 
 package io.seqera.wave.service.blob.impl
 
-import java.util.concurrent.TimeUnit
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Replaces
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.BlobCacheConfig
-import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.TransferStrategy
 import jakarta.inject.Inject
+import jakarta.inject.Singleton
 /**
  * Implements {@link TransferStrategy} that runs s5cmd using a docker
  * container. Meant for development purposes
@@ -36,28 +34,28 @@ import jakarta.inject.Inject
  */
 @Slf4j
 @CompileStatic
-@Requires(property = 'wave.blobCache.strategy', value = 'docker')
-@Replaces(SimpleTransferStrategy)
+@Singleton
+@Requires(missingProperty = 'wave.build.k8s')
+@Requires(property = 'wave.blobCache.enabled', value = 'true')
 class DockerTransferStrategy implements TransferStrategy {
 
     @Inject
     private BlobCacheConfig blobConfig
 
     @Override
-    BlobCacheInfo transfer(BlobCacheInfo info, List<String> command) {
-        final proc = createProcess(command).start()
-        // wait for the completion and save the result
-        final completed = proc.waitFor(blobConfig.transferTimeout.toSeconds(), TimeUnit.SECONDS)
-        final int status = completed ? proc.exitValue() : -1
-        final logs = proc.inputStream.text
-        return info.completed(status, logs)
+    void launchJob(String jobName, List<String> command) {
+        // create a unique name for the container
+        createProcess(command, jobName)
+                .start()
     }
 
-    protected ProcessBuilder createProcess(List<String> command) {
+    protected ProcessBuilder createProcess(List<String> command, String name) {
         // compose the docker command
         final cli = new ArrayList<String>(10)
         cli.add('docker')
         cli.add('run')
+        cli.add('--name')
+        cli.add(name)
         cli.add('-e')
         cli.add('AWS_ACCESS_KEY_ID')
         cli.add('-e')
@@ -73,4 +71,6 @@ class DockerTransferStrategy implements TransferStrategy {
         builder.redirectErrorStream(true)
         return builder
     }
+
+
 }

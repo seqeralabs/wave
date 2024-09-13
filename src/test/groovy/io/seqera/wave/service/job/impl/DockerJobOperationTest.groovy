@@ -16,22 +16,28 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.blob
+package io.seqera.wave.service.job.impl
 
-import groovy.transform.CompileStatic
-import io.seqera.wave.exception.WaveException
-
-
+import spock.lang.Specification
+import spock.lang.Unroll
 /**
- * Exception fired when the time to blob download takes too long
  *
- * @author: Paolo Di Tommaso <paolo.ditommaso@gmail.com>
- *
+ * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@CompileStatic
-class TransferTimeoutException extends WaveException{
+class DockerJobOperationTest extends Specification {
 
-    TransferTimeoutException(String message) {
-        super(message)
+    @Unroll
+    def 'should parse state string' () {
+        expect:
+        DockerJobOperation.State.parse(STATE) == EXPECTED
+
+        where:
+        STATE               | EXPECTED
+        'running'           | new DockerJobOperation.State('running')
+        'exited'            | new DockerJobOperation.State('exited')
+        'exited,'           | new DockerJobOperation.State('exited')
+        'exited,0'          | new DockerJobOperation.State('exited', 0)
+        'exited,10'         | new DockerJobOperation.State('exited', 10)
     }
+
 }
