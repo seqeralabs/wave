@@ -31,6 +31,7 @@ import io.kubernetes.client.openapi.apis.BatchV1Api
 import io.kubernetes.client.openapi.apis.CoreV1Api
 import io.kubernetes.client.openapi.models.V1EnvVar
 import io.kubernetes.client.openapi.models.V1Job
+import io.kubernetes.client.openapi.models.V1JobSpec
 import io.kubernetes.client.openapi.models.V1JobStatus
 import io.kubernetes.client.openapi.models.V1ObjectMeta
 import io.kubernetes.client.openapi.models.V1Pod
@@ -943,7 +944,7 @@ class K8sServiceImplTest extends Specification {
     }
 
 
-    private V1Job jobPending() {
+    private V1Job jobActive() {
         def status = new V1JobStatus();
         status.setActive(1)
         status.setFailed(2)
@@ -964,7 +965,30 @@ class K8sServiceImplTest extends Specification {
 
     private V1Job jobFailed() {
         def status = new V1JobStatus();
-        status.setFailed(1)
+        status.setFailed(3) // <-- failed 3 times
+        def spec = new V1JobSpec()
+        spec.setBackoffLimit(2) // <-- max 2 retries
+        def result = new V1Job()
+        result.setStatus(status)
+        result.setSpec(spec)
+        return result
+    }
+
+    private V1Job jobFailedWitMoreRetries() {
+        def status = new V1JobStatus();
+        status.setFailed(1) // <-- failed 1 time
+        def spec = new V1JobSpec()
+        spec.setBackoffLimit(2) // <-- max 2 retries
+        def result = new V1Job()
+        result.setStatus(status)
+        result.setSpec(spec)
+        return result
+    }
+
+    private V1Job jobCompleted() {
+        def status = new V1JobStatus();
+        status.setFailed(1) // <-- failed 1 time
+        status.setCompletionTime(OffsetDateTime.now())
         def result = new V1Job()
         result.setStatus(status)
         return result
@@ -981,6 +1005,7 @@ class K8sServiceImplTest extends Specification {
     def 'should validate get status' () {
         given:
         def NS = 'foo'
+        def NAME = 'bar'
         def api = Mock(BatchV1Api)
         def client = Mock(K8sClient) { batchV1Api()>>api }
         def service = Spy(new K8sServiceImpl(namespace:NS, k8sClient: client))
@@ -993,11 +1018,13 @@ class K8sServiceImplTest extends Specification {
         status == EXPECTED
 
         where:
-        NAME    | JOB                       | EXPECTED
-        'foo'   | null                      | null
-        'foo'   | jobPending()              | K8sService.JobStatus.Pending
-        'foo'   | jobSucceeded()            | K8sService.JobStatus.Succeeded
-        'foo'   | jobFailed()               | K8sService.JobStatus.Failed
-        'foo'   | jobUnknown()              | null
+        JOB                       | EXPECTED
+        null                      | null
+        jobActive()               | K8sService.JobStatus.Pending
+        jobSucceeded()            | K8sService.JobStatus.Succeeded
+        jobFailed()               | K8sService.JobStatus.Failed
+        jobFailedWitMoreRetries() | K8sService.JobStatus.Pending
+        jobCompleted()            | K8sService.JobStatus.Failed
+        jobUnknown()              | null
     }
 }
