@@ -171,7 +171,6 @@ class ViewController {
         return HttpResponse.<Map<String,Object>>ok(binding)
     }
 
-<<<<<<< 599-add-page-to-render-container-inspect-metadata
     @View("inspect-view")
     @Get('/inspects/{image}')
     HttpResponse<Map<String,Object>> viewInspect(String image, @Nullable @QueryValue String format) {
@@ -200,7 +199,6 @@ class ViewController {
         return HttpResponse.<Map<String,Object>>ok(binding)
     }
 
-=======
     Map<String, Object> makeScanViewBinding(ScanResult result, Map<String,Object> binding=new HashMap(10)) {
         binding.should_refresh = !result.isCompleted()
         binding.scan_id = result.id
@@ -219,5 +217,5 @@ class ViewController {
 
         return binding
     }
->>>>>>> master
+
 }
