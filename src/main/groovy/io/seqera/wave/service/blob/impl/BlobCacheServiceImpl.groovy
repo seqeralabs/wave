@@ -189,9 +189,9 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler {
         }
         catch (Throwable t) {
             log.warn "== Blob cache failed for object '${blob.objectUri}' - cause: ${t.message}", t
-            final result = blob.failed(t.message)
+            final result = blob.errored(t.message)
             // update the blob status
-            blobStore.storeBlob(blob.id(), result, blobConfig.failureDuration)
+            blobStore.storeBlob(blob.id(), result)
         }
     }
 
@@ -295,28 +295,23 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler {
     }
 
     protected void handleJobCompletion(JobSpec job, BlobCacheInfo blob, JobState state) {
-        // use a short time-to-live for failed downloads
-        // this is needed to allow re-try caching of failure transfers
-        final ttl = state.succeeded()
-                ? blobConfig.statusDuration
-                : blobConfig.failureDuration
         // update the blob status
         final result = state.succeeded()
                 ? blob.completed(state.exitCode, state.stdout)
-                : blob.failed(state.stdout)
-        blobStore.storeBlob(blob.id(), result, ttl)
-        log.debug "== Blob cache completed for object '${blob.objectUri}'; id=${blob.objectUri}; status=${result.exitStatus}; duration=${result.duration()}"
+                : blob.errored(state.stdout)
+        blobStore.storeBlob(blob.id(), result)
+        log.debug "== Blob cache completed for object '${blob.objectUri}'; operation=${job.operationName}; status=${result.exitStatus}; duration=${result.duration()}"
     }
 
     protected void handleJobException(JobSpec job, BlobCacheInfo blob, Throwable error) {
-        final result = blob.failed("Unexpected error caching blob '${blob.locationUri}' - operation '${job.operationName}'")
+        final result = blob.errored("Unexpected error caching blob '${blob.locationUri}' - operation '${job.operationName}'")
         log.error("== Blob cache exception for object '${blob.objectUri}'; operation=${job.operationName}; cause=${error.message}", error)
-        blobStore.storeBlob(blob.id(), result, blobConfig.failureDuration)
+        blobStore.storeBlob(blob.id(), result)
     }
 
     protected void handleJobTimeout(JobSpec job, BlobCacheInfo blob) {
-        final result = blob.failed("Blob cache transfer timed out ${blob.objectUri}")
+        final result = blob.errored("Blob cache transfer timed out ${blob.objectUri}")
         log.warn "== Blob cache completed for object '${blob.objectUri}'; operation=${job.operationName}; duration=${result.duration()}"
-        blobStore.storeBlob(blob.id(), result, blobConfig.failureDuration)
+        blobStore.storeBlob(blob.id(), result)
     }
 }

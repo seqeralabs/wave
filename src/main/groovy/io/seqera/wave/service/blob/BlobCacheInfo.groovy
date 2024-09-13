@@ -22,7 +22,6 @@ import java.time.Instant
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
-import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 /**
  * Model a blob cache metadata entry
@@ -30,10 +29,16 @@ import groovy.util.logging.Slf4j
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
-@ToString(includePackage = false, includeNames = true, excludes = ['headers','logs'])
 @Canonical
 @CompileStatic
 class BlobCacheInfo {
+
+    enum State { CREATED, CACHED, COMPLETED, ERRORED, UNKNOWN }
+
+    /**
+     * The Blob state
+     */
+    final State state
 
     /**
      * The HTTP location from the where the cached container blob can be retrieved
@@ -113,7 +118,7 @@ class BlobCacheInfo {
         final type = headerString0(response, 'Content-Type')
         final cache = headerString0(response, 'Cache-Control')
         final creationTime = Instant.now()
-        return new BlobCacheInfo(locationUri, objectUri, headers0, length, type, cache, creationTime, null, null, null)
+        return new BlobCacheInfo(State.CREATED, locationUri, objectUri, headers0, length, type, cache, creationTime, null, null, null)
     }
 
     static String headerString0(Map<String,List<String>> headers, String name) {
@@ -130,8 +135,28 @@ class BlobCacheInfo {
         }
     }
 
+    @Override
+    String toString() {
+        if( state==State.UNKNOWN ) {
+            return "BlobCacheInfo(UNKNOWN)"
+        }
+
+        return "BlobCacheInfo(" +
+                "state=" + state +
+                ", locationUri='" + locationUri + "'" +
+                ", objectUri='" + objectUri + "'" +
+                ", contentLength=" + contentLength +
+                ", contentType='" + contentType + "'" +
+                ", cacheControl='" + cacheControl + "'" +
+                ", creationTime=" + creationTime +
+                ", completionTime=" + completionTime +
+                ", exitStatus=" + exitStatus +
+                ')'
+    }
+
     BlobCacheInfo cached() {
         new BlobCacheInfo(
+                State.CACHED,
                 locationUri,
                 objectUri,
                 headers,
@@ -147,6 +172,7 @@ class BlobCacheInfo {
 
     BlobCacheInfo completed(int status, String logs) {
         new BlobCacheInfo(
+                State.COMPLETED,
                 locationUri,
                 objectUri,
                 headers,
@@ -160,8 +186,9 @@ class BlobCacheInfo {
         )
     }
 
-    BlobCacheInfo failed(String logs) {
+    BlobCacheInfo errored(String logs) {
         new BlobCacheInfo(
+                State.ERRORED,
                 locationUri,
                 objectUri,
                 headers,
@@ -177,6 +204,7 @@ class BlobCacheInfo {
 
     BlobCacheInfo withLocation(String location) {
         new BlobCacheInfo(
+                state,
                 location,
                 objectUri,
                 headers,
@@ -191,7 +219,7 @@ class BlobCacheInfo {
     }
 
     static BlobCacheInfo unknown(String logs) {
-        new BlobCacheInfo(null, null, null, null, null, null, Instant.ofEpochMilli(0), Instant.ofEpochMilli(0), null, logs) {
+        new BlobCacheInfo(State.UNKNOWN, null, null, null, null, null, null, Instant.ofEpochMilli(0), Instant.ofEpochMilli(0), null, logs) {
             @Override
             BlobCacheInfo withLocation(String uri) {
                 // prevent the change of location for unknown status
@@ -199,5 +227,6 @@ class BlobCacheInfo {
             }
         }
     }
+
 
 }
