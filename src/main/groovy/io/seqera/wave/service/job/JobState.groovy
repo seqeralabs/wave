@@ -22,7 +22,7 @@ import groovy.transform.Canonical
 import groovy.transform.ToString
 
 /**
- * Model the sate of a job execution
+ * Model the state of a job execution
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

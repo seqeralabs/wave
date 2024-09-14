@@ -37,7 +37,7 @@ class JobSpecTest extends Specification {
         def job = new JobSpec(
                 '1234',
                 JobSpec.Type.Build,
-                'state-123',
+                'record-123',
                 'oper-123',
                 ts,
                 Duration.ofMinutes(1),
@@ -45,7 +45,7 @@ class JobSpecTest extends Specification {
         )
         then:
         job.id == '1234'
-        job.recordId == 'state-123'
+        job.recordId == 'record-123'
         job.operationName == 'oper-123'
         job.creationTime == ts
         job.maxDuration == Duration.ofMinutes(1)
