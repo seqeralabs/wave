@@ -99,7 +99,7 @@ class JobManager {
             return true
         }
         else {
-            log.trace "== Job pending for completion $jobSpec.stateId"
+            log.trace "== Job pending for completion ${jobSpec}"
             return false
         }
     }
