@@ -755,7 +755,7 @@ class ContainerBuildServiceTest extends Specification {
         def build = new BuildStoreEntry(req, res)
 
         when:
-        service.handleJobCompletion(job, build, state)
+        service.onJobCompletion(job, build, state)
 
         then:
         1 * mockBuildStore.storeBuild('1', _, _)
@@ -783,7 +783,7 @@ class ContainerBuildServiceTest extends Specification {
         def build = new BuildStoreEntry(req, res)
 
         when:
-        service.handleJobException(job, build, error)
+        service.onJobException(job, build, error)
 
         then:
         1 * mockBuildStore.storeBuild('1', _, _)
@@ -808,7 +808,7 @@ class ContainerBuildServiceTest extends Specification {
         def build = new BuildStoreEntry(req, res)
 
         when:
-        service.handleJobTimeout(job, build)
+        service.onJobTimeout(job, build)
 
         then:
         1 * mockBuildStore.storeBuild('1', _, _)

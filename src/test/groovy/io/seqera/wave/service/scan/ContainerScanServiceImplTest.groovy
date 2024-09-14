@@ -133,13 +133,13 @@ class ContainerScanServiceImplTest extends Specification {
         def scan = new WaveScanRecord('scan-1', 'build-1', 'ubuntu:latest', Instant.now())
 
         when:
-        service.handleJobCompletion(job, scan, state)
+        service.onJobCompletion(job, scan, state)
         then:
         1 * state.completed() >> true
         1 * mockPersistenceService.updateScanRecord(_ as WaveScanRecord) >> { WaveScanRecord scanRecord -> assert scanRecord.status=='SUCCEEDED' }
 
         when:
-        service.handleJobCompletion(job, scan, state)
+        service.onJobCompletion(job, scan, state)
         then:
         1 * state.completed() >> false
         1 * mockPersistenceService.updateScanRecord(_ as WaveScanRecord) >> { WaveScanRecord scanRecord -> assert scanRecord.status=='FAILED' }
@@ -158,7 +158,7 @@ class ContainerScanServiceImplTest extends Specification {
         def scan = new WaveScanRecord('scan-1', 'build-1', 'ubuntu:latest', Instant.now())
 
         when:
-        service.handleJobException(job, scan, error)
+        service.onJobException(job, scan, error)
         then:
         1 * mockPersistenceService.updateScanRecord(_ as WaveScanRecord) >> { WaveScanRecord scanRecord -> assert scanRecord.status=='FAILED' }
 
@@ -173,7 +173,7 @@ class ContainerScanServiceImplTest extends Specification {
         def scan = new WaveScanRecord('scan-1', 'build-1', 'ubuntu:latest', Instant.now())
 
         when:
-        service.handleJobTimeout(job, scan)
+        service.onJobTimeout(job, scan)
 
         then:
         1 * mockPersistenceService.updateScanRecord(_ as WaveScanRecord) >> { WaveScanRecord scanRecord -> assert scanRecord.status=='FAILED' }

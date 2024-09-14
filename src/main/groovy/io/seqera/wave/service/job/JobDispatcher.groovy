@@ -18,6 +18,8 @@
 
 package io.seqera.wave.service.job
 
+import java.util.function.BiConsumer
+
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
@@ -39,7 +41,7 @@ class JobDispatcher {
     @Inject
     private ApplicationContext context
 
-    private Map<JobSpec.Type, JobHandler<? extends StateRecord>> dispatch = new HashMap<>()
+    private Map<JobSpec.Type, JobHandler<? extends JobRecord>> dispatch = new HashMap<>()
 
     /**
      * Load all available implementations of {@link JobHandler}. Job handler should be:
@@ -60,42 +62,30 @@ class JobDispatcher {
         }
     }
 
-    protected StateRecord loadRecord(JobHandler handler, JobSpec job) {
-        final result = handler.loadRecord(job)
-        if( !result ) {
-            log.error "== ${job.type} entry unknown for job=${job.stateId}"
-            return null
-        }
-        if( result.done() ) {
-            log.warn "== ${job.type} entry already marked as completed for job=${job.stateId}"
-            return null
-        }
-
-        return result
-    }
-
-    void notifyJobError(JobSpec job, Throwable error) {
+    protected void apply(JobSpec job, BiConsumer<JobHandler, JobRecord> consumer) {
         final handler = dispatch.get(job.type)
-        final record = loadRecord(handler,job)
-        if( record ) {
-            handler.handleJobException(job, record, error)
+        final record = handler.getJobRecord(job)
+        if( !record ) {
+            log.error "== ${job.type} record unknown for job=${job.recordId}"
+        }
+        else if( record.done() ) {
+            log.warn "== ${job.type} record already marked as completed for job=${job.recordId}"
+        }
+        else {
+            consumer.accept(handler, record)
         }
     }
 
     void notifyJobCompletion(JobSpec job, JobState state) {
-        final handler = dispatch.get(job.type)
-        final record = loadRecord(handler,job)
-        if( record ) {
-            handler.handleJobCompletion(job, record, state)
-        }
+        apply(job, (handler, record)-> handler.onJobCompletion(job, record, state))
+    }
+
+    void notifyJobError(JobSpec job, Throwable error) {
+        apply(job, (handler, record)-> handler.onJobException(job, record, error))
     }
 
     void notifyJobTimeout(JobSpec job) {
-        final handler = dispatch.get(job.type)
-        final record = loadRecord(handler,job)
-        if( record ) {
-            handler.handleJobTimeout(job, record)
-        }
+        apply(job, (handler, record)-> handler.onJobTimeout(job, record))
     }
 
 }

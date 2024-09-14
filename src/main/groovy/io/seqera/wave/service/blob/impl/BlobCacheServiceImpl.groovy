@@ -268,12 +268,12 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobCacheInfo
     // ============ handles transfer job events ============
 
     @Override
-    BlobCacheInfo loadRecord(JobSpec job) {
-        blobStore.getBlob(job.stateId)
+    BlobCacheInfo getJobRecord(JobSpec job) {
+        blobStore.getBlob(job.recordId)
     }
 
     @Override
-    void handleJobCompletion(JobSpec job, BlobCacheInfo blob, JobState state) {
+    void onJobCompletion(JobSpec job, BlobCacheInfo blob, JobState state) {
         // update the blob status
         final result = state.succeeded()
                 ? blob.completed(state.exitCode, state.stdout)
@@ -283,14 +283,14 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobCacheInfo
     }
 
     @Override
-    void handleJobException(JobSpec job, BlobCacheInfo blob, Throwable error) {
+    void onJobException(JobSpec job, BlobCacheInfo blob, Throwable error) {
         final result = blob.errored("Unexpected error caching blob '${blob.locationUri}' - operation '${job.operationName}'")
         log.error("== Blob cache exception for object '${blob.objectUri}'; operation=${job.operationName}; cause=${error.message}", error)
         blobStore.storeBlob(blob.id(), result)
     }
 
     @Override
-    void handleJobTimeout(JobSpec job, BlobCacheInfo blob) {
+    void onJobTimeout(JobSpec job, BlobCacheInfo blob) {
         final result = blob.errored("Blob cache transfer timed out ${blob.objectUri}")
         log.warn "== Blob cache completed for object '${blob.objectUri}'; operation=${job.operationName}; duration=${result.duration()}"
         blobStore.storeBlob(blob.id(), result)

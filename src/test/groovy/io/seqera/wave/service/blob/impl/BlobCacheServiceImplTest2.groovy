@@ -138,12 +138,12 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
         def ok = new JobState(JobState.Status.SUCCEEDED, 0, 'done')
 
         when:
-        service.handleJobCompletion(job, blob, failed)
+        service.onJobCompletion(job, blob, failed)
         then:
         1 * store.storeBlob(blob.id(), _ as BlobCacheInfo) >> { id, BlobCacheInfo info -> info.state==BlobCacheInfo.State.ERRORED }
 
         when:
-        service.handleJobCompletion(job, blob, ok)
+        service.onJobCompletion(job, blob, ok)
         then:
         1 * store.storeBlob(blob.id(), _ as BlobCacheInfo) >> { id, BlobCacheInfo info -> info.state==BlobCacheInfo.State.COMPLETED }
 
@@ -158,7 +158,7 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
         def job = JobSpec.transfer('job-id', 'foo', Instant.now(), Duration.ofMinutes(1))
 
         when:
-        service.handleJobTimeout(job, blob)
+        service.onJobTimeout(job, blob)
         then:
         1 * store.storeBlob(blob.id(), _ as BlobCacheInfo) >> { id, BlobCacheInfo info -> info.state==BlobCacheInfo.State.ERRORED }
 
@@ -174,7 +174,7 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
         def error = Mock(Exception)
 
         when:
-        service.handleJobException(job, blob, error)
+        service.onJobException(job, blob, error)
         then:
         1 * store.storeBlob(blob.id(), _ as BlobCacheInfo) >> { id, BlobCacheInfo info -> info.state==BlobCacheInfo.State.ERRORED }
     }

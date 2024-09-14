@@ -114,12 +114,12 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<WaveS
     // **************************************************************
 
     @Override
-    WaveScanRecord loadRecord(JobSpec job) {
-        persistenceService.loadScanRecord(job.stateId)
+    WaveScanRecord getJobRecord(JobSpec job) {
+        persistenceService.loadScanRecord(job.recordId)
     }
 
     @Override
-    void handleJobCompletion(JobSpec job, WaveScanRecord scan, JobState state) {
+    void onJobCompletion(JobSpec job, WaveScanRecord scan, JobState state) {
         ScanResult result
         if( state.completed() ) {
             log.info("Container scan completed - id=${scan.id}")
@@ -134,13 +134,13 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<WaveS
     }
 
     @Override
-    void handleJobException(JobSpec job, WaveScanRecord scan, Throwable e) {
+    void onJobException(JobSpec job, WaveScanRecord scan, Throwable e) {
         log.error("Container scan failed - id=${scan.id} - cause=${e.getMessage()}", e)
         updateScanRecord(ScanResult.failure(scan))
     }
 
     @Override
-    void handleJobTimeout(JobSpec job, WaveScanRecord scan) {
+    void onJobTimeout(JobSpec job, WaveScanRecord scan) {
         log.warn("Container scan timed out - id=${scan.id}")
         updateScanRecord(ScanResult.failure(scan))
     }

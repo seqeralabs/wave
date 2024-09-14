@@ -19,9 +19,10 @@
 package io.seqera.wave.service.job
 
 /**
+ * Marker interface for persisted state record associated with a job execution
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface StateRecord {
+interface JobRecord {
     boolean done()
 }
