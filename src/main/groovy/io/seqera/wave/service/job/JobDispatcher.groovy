@@ -18,13 +18,12 @@
 
 package io.seqera.wave.service.job
 
-
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
-import io.micronaut.inject.qualifiers.Qualifiers
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 /**
  * Concrete implementation of {@link JobHandler} that dispatcher event invocations
@@ -42,25 +41,22 @@ class JobDispatcher {
 
     private Map<JobSpec.Type, JobHandler<? extends StateRecord>> dispatch = new HashMap<>()
 
+    /**
+     * Load all available implementations of {@link JobHandler}. Job handler should be:
+     * 1. declared as a @Singleton
+     * 2. annotated with the {@link Named} annotation
+     * 3. the Named value should be a literal matching the corresponding {@JobSpec.Type}
+     */
     @PostConstruct
-    void init() {
-        // implementation should be added here
-        add(JobSpec.Type.Build, dispatch, true)
-        add(JobSpec.Type.Scan, dispatch, false)
-        add(JobSpec.Type.Transfer, dispatch, false)
-    }
-
-    protected void add(JobSpec.Type type, Map<JobSpec.Type, JobHandler> map, boolean required) {
-        final handler = context.findBean(JobHandler.class, Qualifiers.byName(type.toString()))
-        if( handler.isPresent() ) {
-            log.debug "Adding job handler for type: $type; handler=$handler"
-            map.put(type, handler.get())
-        }
-        else if( required ) {
-            throw new IllegalStateException("Unable to find Job handler for type: $type")
-        }
-        else {
-            log.debug "Disabled job handler for type: $type"
+    protected init() {
+        final handlers = context.getBeansOfType(JobHandler)
+        for( JobHandler it : handlers ) {
+            final qualifier = it.getClass().getAnnotation(Named)?.value()
+            if( !qualifier )
+                throw new IllegalStateException("Missing 'Named' annotation for handler ${it.class.name}")
+            final type = JobSpec.Type.valueOf(qualifier)
+            log.info "Adding job handler for type: $type; handler=${it.class.simpleName}"
+            dispatch.put(type, it)
         }
     }
 
