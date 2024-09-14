@@ -16,30 +16,31 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job
+package io.seqera.wave.service.mirror
 
-import io.seqera.wave.service.blob.BlobCacheInfo
-import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.mirror.MirrorRequest
-import io.seqera.wave.service.scan.ScanRequest
+import java.time.Duration
+
+import groovy.transform.CompileStatic
+import io.micronaut.context.annotation.Value
+import jakarta.inject.Singleton
 
 /**
- * Define the contract for submitting and monitoring jobs
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface JobService {
+@Singleton
+@CompileStatic
+class MirrorConfig {
 
-    JobSpec launchTransfer(BlobCacheInfo blob, List<String> command)
+    @Value('${wave.mirror.max-duration:10m}')
+    Duration maxDuration
 
-    JobSpec launchBuild(BuildRequest request)
+    @Value('${wave.blobCache.status.delay:4s}')
+    Duration statusDelay
 
-    JobSpec launchScan(ScanRequest request)
+    @Value('${wave.blobCache.status.duration:1h}')
+    Duration statusDuration
 
-    JobSpec launchMirror(MirrorRequest request)
-
-    JobState status(JobSpec jobSpec)
-
-    void cleanup(JobSpec jobSpec, Integer exitStatus)
-
+    @Value('${wave.mirror.skopeoImage:`quay.io/skopeo/stable`}')
+    String skopeoImage
 }

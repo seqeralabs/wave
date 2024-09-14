@@ -37,7 +37,7 @@ import io.seqera.wave.util.LongRndKey
 @CompileStatic
 class JobSpec {
 
-    enum Type { Transfer, Build, Scan }
+    enum Type { Transfer, Build, Scan, Mirror }
 
     /**
      * The job unique identifier
@@ -119,6 +119,18 @@ class JobSpec {
                 creationTime,
                 maxDuration,
                 dir
+        )
+    }
+
+    static JobSpec mirror(String stateId, String operationName, Instant creationTime, Duration maxDuration, Path workDir) {
+        new JobSpec(
+                LongRndKey.rndHex(),
+                Type.Mirror,
+                stateId,
+                operationName,
+                creationTime,
+                maxDuration,
+                workDir
         )
     }
 }

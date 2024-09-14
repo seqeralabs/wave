@@ -48,6 +48,7 @@ class JobDispatcher  {
         add(JobSpec.Type.Build, dispatch, true)
         add(JobSpec.Type.Scan, dispatch, false)
         add(JobSpec.Type.Transfer, dispatch, false)
+        add(JobSpec.Type.Mirror, dispatch, true)
     }
 
     protected void add(JobSpec.Type type, Map<JobSpec.Type, JobHandler> map, boolean required) {

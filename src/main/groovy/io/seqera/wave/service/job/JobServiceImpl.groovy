@@ -26,6 +26,8 @@ import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildStrategy
 import io.seqera.wave.service.cleanup.CleanupService
+import io.seqera.wave.service.mirror.MirrorRequest
+import io.seqera.wave.service.mirror.MirrorStrategy
 import io.seqera.wave.service.scan.ScanRequest
 import io.seqera.wave.service.scan.ScanStrategy
 import jakarta.inject.Inject
@@ -62,6 +64,9 @@ class JobServiceImpl implements JobService {
     @Inject
     private JobFactory jobFactory
 
+    @Inject
+    private MirrorStrategy mirrorStrategy
+
     @Override
     JobSpec launchTransfer(BlobCacheInfo blob, List<String> command) {
         if( !transferStrategy )
@@ -95,6 +100,20 @@ class JobServiceImpl implements JobService {
         final job = jobFactory.scan(request)
         // launch the scan job
         scanStrategy.scanContainer(job.operationName, request)
+        // signal the build has been submitted
+        jobQueue.offer(job)
+        return job
+    }
+
+    @Override
+    JobSpec launchMirror(MirrorRequest request) {
+        if( !mirrorStrategy )
+            throw new IllegalStateException("Container mirror service is not available - check configuration setting 'wave.mirror.enabled'")
+
+        // create the unique job id for the build
+        final job = jobFactory.mirror(request)
+        // launch the scan job
+        mirrorStrategy.mirrorJob(job.operationName, request)
         // signal the build has been submitted
         jobQueue.offer(job)
         return job

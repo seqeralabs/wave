@@ -21,6 +21,7 @@ package io.seqera.wave.tower
 import spock.lang.Specification
 
 import io.seqera.wave.api.ContainerInspectRequest
+import io.seqera.wave.api.ContainerMirrorRequest
 import io.seqera.wave.api.SubmitContainerTokenRequest
 
 /**
@@ -58,6 +59,20 @@ class PlatformIdTest extends Specification {
     def 'should create form a inspect request' () {
         when:
         def id = PlatformId.of(new User(id:2), new ContainerInspectRequest(
+                towerWorkspaceId: 100,
+                towerEndpoint: 'http://foo.com',
+                towerAccessToken: 'token-123' ))
+        then:
+        id.userId == 2
+        id.user.id == 2
+        id.workspaceId == 100
+        id.towerEndpoint == 'http://foo.com'
+        id.accessToken == 'token-123'
+    }
+
+    def 'should create form a  mirror request' () {
+        when:
+        def id = PlatformId.of(new User(id:2), new ContainerMirrorRequest(
                 towerWorkspaceId: 100,
                 towerEndpoint: 'http://foo.com',
                 towerAccessToken: 'token-123' ))

@@ -16,30 +16,26 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job
+package io.seqera.wave.service.mirror
 
-import io.seqera.wave.service.blob.BlobCacheInfo
-import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.mirror.MirrorRequest
-import io.seqera.wave.service.scan.ScanRequest
+import spock.lang.Specification
+
+import java.nio.file.Path
 
 /**
- * Define the contract for submitting and monitoring jobs
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface JobService {
+class MirrorRequestTest extends Specification {
 
-    JobSpec launchTransfer(BlobCacheInfo blob, List<String> command)
-
-    JobSpec launchBuild(BuildRequest request)
-
-    JobSpec launchScan(ScanRequest request)
-
-    JobSpec launchMirror(MirrorRequest request)
-
-    JobState status(JobSpec jobSpec)
-
-    void cleanup(JobSpec jobSpec, Integer exitStatus)
+    def 'should create mirror request' () {
+        when:
+        def req = MirrorRequest.create('docker.io/foo:latest', 'quay.io/foo:latest', Path.of('/workspace'), '{json config}')
+        then:
+        req.id 
+        req.sourceImage == 'docker.io/foo:latest'
+        req.targetImage == 'quay.io/foo:latest'
+        req.workDir == Path.of("/workspace/mirror-${req.id}")
+    }
 
 }

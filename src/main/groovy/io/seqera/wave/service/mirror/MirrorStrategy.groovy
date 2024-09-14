@@ -16,30 +16,24 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.job
+package io.seqera.wave.service.mirror
 
-import io.seqera.wave.service.blob.BlobCacheInfo
-import io.seqera.wave.service.builder.BuildRequest
-import io.seqera.wave.service.mirror.MirrorRequest
-import io.seqera.wave.service.scan.ScanRequest
+import groovy.transform.CompileStatic
 
 /**
- * Define the contract for submitting and monitoring jobs
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface JobService {
+@CompileStatic
+abstract class MirrorStrategy {
 
-    JobSpec launchTransfer(BlobCacheInfo blob, List<String> command)
+    abstract void mirrorJob(String jobName, MirrorRequest request)
 
-    JobSpec launchBuild(BuildRequest request)
-
-    JobSpec launchScan(ScanRequest request)
-
-    JobSpec launchMirror(MirrorRequest request)
-
-    JobState status(JobSpec jobSpec)
-
-    void cleanup(JobSpec jobSpec, Integer exitStatus)
-
+    protected List<String> copyCommand(MirrorRequest request) {
+        List.of(
+                "copy",
+                "docker://${request.sourceImage}".toString().toString(),
+                "docker://${request.targetImage}".toString()
+        )
+    }
 }
