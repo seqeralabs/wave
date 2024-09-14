@@ -25,6 +25,7 @@ import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
+import io.seqera.wave.service.job.JobRecord
 import io.seqera.wave.service.scan.ScanResult
 import io.seqera.wave.service.scan.ScanVulnerability
 import io.seqera.wave.util.StringUtils
@@ -37,7 +38,8 @@ import io.seqera.wave.util.StringUtils
 @ToString(includeNames = true, includePackage = false)
 @EqualsAndHashCode
 @CompileStatic
-class WaveScanRecord {
+class WaveScanRecord implements JobRecord {
+
     String id
     String buildId
     String containerImage
@@ -46,6 +48,7 @@ class WaveScanRecord {
     String status
     List<ScanVulnerability> vulnerabilities
 
+    @Override
     boolean done() {
         return duration != null
     }

@@ -24,6 +24,7 @@ import java.time.Instant
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
+import io.seqera.wave.service.job.JobRecord
 import jakarta.inject.Singleton
 /**
  *
@@ -33,7 +34,7 @@ import jakarta.inject.Singleton
 @Singleton
 @CompileStatic
 @Canonical
-class MirrorResult {
+class MirrorResult implements JobRecord {
     enum Status { PENDING, COMPLETE }
 
     final String id
@@ -45,6 +46,7 @@ class MirrorResult {
     final Integer exitCode
     final String logs
 
+    @Override
     boolean done() {
         status==Status.COMPLETE
     }

@@ -18,34 +18,11 @@
 
 package io.seqera.wave.service.job
 
-import groovy.transform.Canonical
-import groovy.transform.CompileStatic
-
 /**
- * Model a job event
+ * Marker interface for persisted state record associated with a job execution
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@CompileStatic
-@Canonical
-class JobEvent {
-    enum Type { Complete, Error, Timeout }
-
-    Type type
-    JobSpec job
-    JobState state
-    Throwable error
-
-    static JobEvent complete(JobSpec job, JobState state) {
-        new JobEvent(Type.Complete, job, state)
-    }
-
-    static JobEvent timeout(JobSpec job) {
-        new JobEvent(Type.Timeout, job)
-    }
-
-    static JobEvent error(JobSpec job, Throwable error) {
-        new JobEvent(Type.Error, job, null, error)
-    }
-
+interface JobRecord {
+    boolean done()
 }

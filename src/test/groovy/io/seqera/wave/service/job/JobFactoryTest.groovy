@@ -54,7 +54,7 @@ class JobFactoryTest extends Specification {
         when:
         def job = factory.build(request)
         then:
-        job.stateId == 'docker.io/foo:bar'
+        job.recordId == 'docker.io/foo:bar'
         job.operationName == 'build-12345-9'
         job.creationTime == ts
         job.type == JobSpec.Type.Build
@@ -71,7 +71,7 @@ class JobFactoryTest extends Specification {
         when:
         def job = factory.transfer('foo-123')
         then:
-        job.stateId == 'foo-123'
+        job.recordId == 'foo-123'
         job.operationName =~ /transfer-.+/
         job.type == JobSpec.Type.Transfer
         job.maxDuration == duration
@@ -95,7 +95,7 @@ class JobFactoryTest extends Specification {
         when:
         def job = factory.scan(request)
         then:
-        job.stateId == '12345'
+        job.recordId == '12345'
         job.operationName == 'scan-12345'
         job.type == JobSpec.Type.Scan
         job.maxDuration == duration

@@ -52,7 +52,7 @@ class JobSpec {
     /**
      * The unique id of the state record associated with this job
      */
-    final String stateId
+    final String recordId
 
     /**
      * The unique name of the underlying infra operation associated with this job
@@ -76,10 +76,10 @@ class JobSpec {
      */
     final Path workDir
 
-    protected JobSpec( String id, Type type, String stateId, String operationName, Instant createdAt, Duration maxDuration, Path dir) {
+    protected JobSpec(String id, Type type, String recordId, String operationName, Instant createdAt, Duration maxDuration, Path dir) {
         this.id = id
         this.type = type
-        this.stateId = stateId
+        this.recordId = recordId
         this.operationName = operationName
         this.maxDuration = maxDuration
         this.creationTime = createdAt

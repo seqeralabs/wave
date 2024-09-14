@@ -22,8 +22,14 @@ package io.seqera.wave.service.job
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface JobHandler {
+interface JobHandler<R extends JobRecord> {
 
-    void onJobEvent(JobEvent event)
+    R getJobRecord(JobSpec job)
+
+    void onJobCompletion(JobSpec job, R jobRecord, JobState state)
+
+    void onJobException(JobSpec job, R jobRecord, Throwable error)
+
+    void onJobTimeout(JobSpec job, R jobRecord)
 
 }
