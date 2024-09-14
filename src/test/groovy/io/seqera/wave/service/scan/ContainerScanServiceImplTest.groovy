@@ -27,7 +27,6 @@ import java.time.Instant
 
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.service.job.JobEvent
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
@@ -129,18 +128,21 @@ class ContainerScanServiceImplTest extends Specification {
         def mockPersistenceService = Mock(PersistenceService)
         def jobService = Mock(JobService)
         def service = new ContainerScanServiceImpl(persistenceService: mockPersistenceService, jobService: jobService)
-        def spec = JobSpec.scan('scan-1', 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), workDir)
-        def state = JobState.completed(0, 'logs')
-        def event = JobEvent.complete(spec, state)
+        def job = JobSpec.scan('scan-1', 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), workDir)
+        def state = Mock(JobState)
         def scan = new WaveScanRecord('scan-1', 'build-1', 'ubuntu:latest', Instant.now())
 
         when:
-        service.onJobEvent(event)
-
+        service.handleJobCompletion(job, scan, state)
         then:
-        1 * mockPersistenceService.loadScanRecord('scan-1') >> scan
-        and:
-        1 * mockPersistenceService.updateScanRecord(_)
+        1 * state.completed() >> true
+        1 * mockPersistenceService.updateScanRecord(_ as WaveScanRecord) >> { WaveScanRecord scanRecord -> assert scanRecord.status=='SUCCEEDED' }
+
+        when:
+        service.handleJobCompletion(job, scan, state)
+        then:
+        1 * state.completed() >> false
+        1 * mockPersistenceService.updateScanRecord(_ as WaveScanRecord) >> { WaveScanRecord scanRecord -> assert scanRecord.status=='FAILED' }
 
         cleanup:
         workDir?.deleteDir()
@@ -151,18 +153,15 @@ class ContainerScanServiceImplTest extends Specification {
         def mockPersistenceService = Mock(PersistenceService)
         def jobService = Mock(JobService)
         def service = new ContainerScanServiceImpl(persistenceService: mockPersistenceService, jobService: jobService)
-        def spec = JobSpec.scan('scan-1', 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
-        def state = JobState.completed(1, 'logs')
-        def event = JobEvent.error(spec, new Exception('error'))
+        def job = JobSpec.scan('scan-1', 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
+        def error = new Exception('error')
         def scan = new WaveScanRecord('scan-1', 'build-1', 'ubuntu:latest', Instant.now())
 
         when:
-        service.onJobEvent(event)
-
+        service.handleJobException(job, scan, error)
         then:
-        1 * mockPersistenceService.loadScanRecord('scan-1') >> scan
-        and:
-        1 * mockPersistenceService.updateScanRecord(_)
+        1 * mockPersistenceService.updateScanRecord(_ as WaveScanRecord) >> { WaveScanRecord scanRecord -> assert scanRecord.status=='FAILED' }
+
     }
 
     def 'should handle job timeout event and update scan record'() {
@@ -170,53 +169,15 @@ class ContainerScanServiceImplTest extends Specification {
         def mockPersistenceService = Mock(PersistenceService)
         def jobService = Mock(JobService)
         def service = new ContainerScanServiceImpl(persistenceService: mockPersistenceService, jobService: jobService)
-        def spec = JobSpec.scan('scan-1', 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
-        def event = JobEvent.timeout(spec)
+        def job = JobSpec.scan('scan-1', 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
         def scan = new WaveScanRecord('scan-1', 'build-1', 'ubuntu:latest', Instant.now())
 
         when:
-        service.onJobEvent(event)
+        service.handleJobTimeout(job, scan)
 
         then:
-        1 * mockPersistenceService.loadScanRecord('scan-1') >> scan
-        and:
-        1 * mockPersistenceService.updateScanRecord(_)
-    }
+        1 * mockPersistenceService.updateScanRecord(_ as WaveScanRecord) >> { WaveScanRecord scanRecord -> assert scanRecord.status=='FAILED' }
 
-    def 'should handle for unknown scan record'() {
-        given:
-        def mockPersistenceService = Mock(PersistenceService)
-        def jobService = Mock(JobService)
-        def service = new ContainerScanServiceImpl(persistenceService: mockPersistenceService, jobService: jobService)
-        def spec = JobSpec.scan('scan-1', 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
-        def event = JobEvent.error(spec, new Exception('error'))
-        def scan = null
-
-        when:
-        service.onJobEvent(event)
-
-        then:
-        1 * mockPersistenceService.loadScanRecord('scan-1') >> scan
-        and:
-        0 * mockPersistenceService.updateScanRecord(_)
-    }
-
-    def 'should handle already completed scan record'() {
-        given:
-        def mockPersistenceService = Mock(PersistenceService)
-        def jobService = Mock(JobService)
-        def service = new ContainerScanServiceImpl(persistenceService: mockPersistenceService, jobService: jobService)
-        def spec = JobSpec.scan('scan-1', 'ubuntu:latest', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
-        def event = JobEvent.error(spec, new Exception('error'))
-        def scan = new WaveScanRecord('scan-1', 'build-1', 'ubuntu:latest', Instant.now(), Duration.ofMinutes(2), 'completed', null)
-
-        when:
-        service.onJobEvent(event)
-
-        then:
-        1 * mockPersistenceService.loadScanRecord('scan-1') >> scan
-        and:
-        0 * mockPersistenceService.updateScanRecord(_)
     }
 
 }

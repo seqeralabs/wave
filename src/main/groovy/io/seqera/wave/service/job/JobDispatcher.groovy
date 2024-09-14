@@ -35,12 +35,12 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @CompileStatic
-class JobDispatcher  {
+class JobDispatcher {
 
     @Inject
     private ApplicationContext context
 
-    private Map<JobSpec.Type, JobHandler> dispatch = new HashMap<>()
+    private Map<JobSpec.Type, JobHandler<? extends StateRecord>> dispatch = new HashMap<>()
 
     @PostConstruct
     void init() {
@@ -64,16 +64,42 @@ class JobDispatcher  {
         }
     }
 
+    protected StateRecord loadRecord(JobHandler handler, JobSpec job) {
+        final result = handler.loadRecord(job)
+        if( !result ) {
+            log.error "== ${job.type} entry unknown for job=${job.stateId}"
+            return null
+        }
+        if( result.done() ) {
+            log.warn "== ${job.type} entry already marked as completed for job=${job.stateId}"
+            return null
+        }
+
+        return result
+    }
+
     void notifyJobError(JobSpec job, Throwable error) {
-        dispatch.get(job.type).onJobEvent(JobEvent.error(job, error))
+        final handler = dispatch.get(job.type)
+        final record = loadRecord(handler,job)
+        if( record ) {
+            handler.handleJobException(job, record, error)
+        }
     }
 
     void notifyJobCompletion(JobSpec job, JobState state) {
-        dispatch.get(job.type).onJobEvent(JobEvent.complete(job,state))
+        final handler = dispatch.get(job.type)
+        final record = loadRecord(handler,job)
+        if( record ) {
+            handler.handleJobCompletion(job, record, state)
+        }
     }
 
     void notifyJobTimeout(JobSpec job) {
-        dispatch.get(job.type).onJobEvent(JobEvent.timeout(job))
+        final handler = dispatch.get(job.type)
+        final record = loadRecord(handler,job)
+        if( record ) {
+            handler.handleJobTimeout(job, record)
+        }
     }
 
 }

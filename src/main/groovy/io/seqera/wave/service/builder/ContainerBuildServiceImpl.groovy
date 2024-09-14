@@ -41,7 +41,6 @@ import io.seqera.wave.exception.HttpServerRetryableErrorException
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.builder.store.BuildRecordStore
-import io.seqera.wave.service.job.JobEvent
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
@@ -72,7 +71,7 @@ import static java.nio.file.StandardOpenOption.WRITE
 @Singleton
 @Named('Build')
 @CompileStatic
-class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
+class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<BuildStoreEntry> {
 
     @Inject
     private BuildConfig buildConfig
@@ -332,32 +331,12 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
     // **************************************************************
 
     @Override
-    void onJobEvent(JobEvent event) {
-        final build = buildStore.getBuild(event.job.stateId)
-        if( !build ) {
-            log.error "== Container build missing state entry - ${event.job.stateId}; event=${event}"
-            return
-        }
-        if( build.result.done() ) {
-            log.warn "== Container build already marked complete - ${event.job.stateId}; event=${event}"
-            return
-        }
-
-        if( event.type == JobEvent.Type.Complete ) {
-            handleJobCompletion(event.job, build, event.state)
-        }
-        else if( event.type == JobEvent.Type.Error ) {
-          handleJobException(event.job, build, event.error)
-        }
-        else if( event.type == JobEvent.Type.Timeout ) {
-            handleJobTimeout(event.job, build)
-        }
-        else {
-            throw new IllegalStateException("Unknown container build job event type=$event")
-        }
+    BuildStoreEntry loadRecord(JobSpec job) {
+        buildStore.getBuild(job.stateId)
     }
 
-    protected void handleJobCompletion(JobSpec job, BuildStoreEntry build, JobState state) {
+    @Override
+    void handleJobCompletion(JobSpec job, BuildStoreEntry build, JobState state) {
         final buildId = build.request.buildId
         final digest = state.succeeded()
                         ? proxyService.getImageDigest(build.request, true)
@@ -379,13 +358,15 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
         eventPublisher.publishEvent(new BuildEvent(build.request, result))
     }
 
-    protected void handleJobException(JobSpec job, BuildStoreEntry build, Throwable error) {
+    @Override
+    void handleJobException(JobSpec job, BuildStoreEntry build, Throwable error) {
         final result= BuildResult.failed(build.request.buildId, error.message, job.creationTime)
         log.error("== Container build errored '${build.request.targetImage}' - operation=${job.operationName}; cause=${error.message}", error)
         buildStore.storeBuild(job.stateId, build.withResult(result), buildConfig.failureDuration)
     }
 
-    protected void handleJobTimeout(JobSpec job, BuildStoreEntry build) {
+    @Override
+    void handleJobTimeout(JobSpec job, BuildStoreEntry build) {
         final buildId = build.request.buildId
         final result= BuildResult.failed(buildId, "Container image build timed out '${build.request.targetImage}'", job.creationTime)
         log.warn "== Container build time out '${build.request.targetImage}'; operation=${job.operationName}; duration=${result.duration}"

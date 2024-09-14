@@ -37,11 +37,11 @@ class JobState {
     final Integer exitCode
     final String stdout
 
-    final boolean completed() {
+    boolean completed() {
         return status==Status.SUCCEEDED || status==Status.FAILED
     }
 
-    final boolean succeeded() {
+    boolean succeeded() {
         status==Status.SUCCEEDED && exitCode==0
     }
 

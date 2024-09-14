@@ -30,7 +30,6 @@ import io.seqera.wave.core.RoutePath
 import io.seqera.wave.model.ContainerCoordinates
 import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.BlobStore
-import io.seqera.wave.service.job.JobEvent
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.test.AwsS3TestContainer
@@ -128,93 +127,56 @@ class BlobCacheServiceImplTest2 extends Specification implements AwsS3TestContai
         'ubuntu@sha256:32353'   | 's3://foo'          | 'https://bar.com/'    | 'https'       | 'bar.com'     | '/docker.io/v2/library/ubuntu/manifests/sha256:32353'
     }
 
-    def 'handle job event when blob cache entry is unknown'() {
+    def 'handle job completion'() {
         given:
-        def blobStore = Mock(BlobStore)
-        def service = new BlobCacheServiceImpl(blobStore: blobStore)
-        def event = Mock(JobEvent)
-        event.job >> JobSpec.transfer('unknown-id', 'foo', Instant.now(), Duration.ofMinutes(1))
-
-        when:
-        service.onJobEvent(event)
-
-        then:
-        1 * blobStore.getBlob('unknown-id') >> null
-    }
-
-    def 'handle job event when blob cache entry is already completed'() {
-        given:
-        def blobStore = Mock(BlobStore)
-        def blob = Mock(BlobCacheInfo)
-        def service = new BlobCacheServiceImpl(blobStore: blobStore)
-        def event = Mock(JobEvent)
-        event.job >> JobSpec.transfer('completed-id', 'foo', Instant.now(), Duration.ofMinutes(1))
-
-        when:
-        service.onJobEvent(event)
-
-        then:
-        1 * blobStore.getBlob('completed-id') >> blob
-        1 * blob.done() >> true
-    }
-
-    def 'handle job event when job is completed'() {
-        given:
-        def blobStore = Mock(BlobStore)
-        def blob = Mock(BlobCacheInfo)
-        blob.completed(_,_) >> BlobCacheInfo.create('location', 'object', null, null)
+        def store = Mock(BlobStore)
+        def blob = BlobCacheInfo.create('http://some/blob','s3://some/blob', [:], [:])
         def config = new BlobCacheConfig(statusDelay: Duration.ofSeconds(2))
-        def service = new BlobCacheServiceImpl(blobStore: blobStore, blobConfig: config)
-        def event = Mock(JobEvent)
-        event.job >>  JobSpec.transfer('job-id', 'foo', Instant.now(), Duration.ofMinutes(1))
-        event.type >> JobEvent.Type.Complete
-        event.state >> JobState.completed(0, 'Job completed')
+        def service = new BlobCacheServiceImpl(blobStore: store, blobConfig: config)
+        def job =  JobSpec.transfer('job-id', 'foo', Instant.now(), Duration.ofMinutes(1))
+        def failed = new JobState(JobState.Status.FAILED, 1, 'Oops')
+        def ok = new JobState(JobState.Status.SUCCEEDED, 0, 'done')
 
         when:
-        service.onJobEvent(event)
-
+        service.handleJobCompletion(job, blob, failed)
         then:
-        1 * blobStore.getBlob('job-id') >> blob
-        1 * blob.done() >> false
-        1 * blobStore.storeBlob(_, _)
-        1 * blob.id()
+        1 * store.storeBlob(blob.id(), _ as BlobCacheInfo) >> { id, BlobCacheInfo info -> info.state==BlobCacheInfo.State.ERRORED }
+
+        when:
+        service.handleJobCompletion(job, blob, ok)
+        then:
+        1 * store.storeBlob(blob.id(), _ as BlobCacheInfo) >> { id, BlobCacheInfo info -> info.state==BlobCacheInfo.State.COMPLETED }
+
     }
 
     def 'handle job event when job times out'() {
         given:
-        def blobStore = Mock(BlobStore)
-        def blob = Mock(BlobCacheInfo)
+        def store = Mock(BlobStore)
+        def blob = BlobCacheInfo.create('http://some/blob','s3://some/blob', [:], [:])
         def config = new BlobCacheConfig(statusDelay: Duration.ofSeconds(2))
-        def service = new BlobCacheServiceImpl(blobStore: blobStore, blobConfig: config)
-        def event = Mock(JobEvent)
-        event.job >>  JobSpec.transfer('job-id', 'foo', Instant.now(), Duration.ofMinutes(1))
-        event.type >> JobEvent.Type.Timeout
+        def service = new BlobCacheServiceImpl(blobStore: store, blobConfig: config)
+        def job = JobSpec.transfer('job-id', 'foo', Instant.now(), Duration.ofMinutes(1))
 
         when:
-        service.onJobEvent(event)
-
+        service.handleJobTimeout(job, blob)
         then:
-        1 * blobStore.getBlob('job-id') >> blob
-        1 * blob.errored(_) >> blob
+        1 * store.storeBlob(blob.id(), _ as BlobCacheInfo) >> { id, BlobCacheInfo info -> info.state==BlobCacheInfo.State.ERRORED }
+
     }
 
     def 'handle job event when job encounters an error'() {
         given:
-        def blobStore = Mock(BlobStore)
-        def blob = Mock(BlobCacheInfo)
+        def store = Mock(BlobStore)
+        def blob = BlobCacheInfo.create('http://some/blob','s3://some/blob', [:], [:])
         def config = new BlobCacheConfig(statusDelay: Duration.ofSeconds(2))
-        def service = new BlobCacheServiceImpl(blobStore: blobStore, blobConfig: config)
-        def event = Mock(JobEvent)
-        event.job >>  JobSpec.transfer('job-id', 'foo', Instant.now(), Duration.ofMinutes(1))
-        event.type >> JobEvent.Type.Error
-        event.error >> new RuntimeException("Error message")
+        def service = new BlobCacheServiceImpl(blobStore: store, blobConfig: config)
+        def job = JobSpec.transfer('job-id', 'foo', Instant.now(), Duration.ofMinutes(1))
+        def error = Mock(Exception)
 
         when:
-        service.onJobEvent(event)
-
+        service.handleJobException(job, blob, error)
         then:
-        1 * blobStore.getBlob('job-id') >> blob
-        1 * blob.done() >> false
+        1 * store.storeBlob(blob.id(), _ as BlobCacheInfo) >> { id, BlobCacheInfo info -> info.state==BlobCacheInfo.State.ERRORED }
     }
 
 }

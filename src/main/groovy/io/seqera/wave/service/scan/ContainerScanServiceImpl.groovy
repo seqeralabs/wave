@@ -29,7 +29,6 @@ import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.service.builder.BuildEvent
-import io.seqera.wave.service.job.JobEvent
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobState
@@ -50,7 +49,7 @@ import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 @Requires(property = 'wave.scan.enabled', value = 'true')
 @Singleton
 @CompileStatic
-class ContainerScanServiceImpl implements ContainerScanService, JobHandler {
+class ContainerScanServiceImpl implements ContainerScanService, JobHandler<WaveScanRecord> {
 
     @Inject
     private ScanConfig scanConfig
@@ -115,32 +114,12 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler {
     // **************************************************************
 
     @Override
-    void onJobEvent(JobEvent event) {
-        final scan = persistenceService.loadScanRecord(event.job.stateId)
-        if( !scan ) {
-            log.error "Scan record missing state - id=${event.job.stateId}; event=${event}"
-            return
-        }
-        if( scan.done() ) {
-            log.warn "Scan record already marked as completed - id=${event.job.stateId}; event=${event}"
-            return
-        }
-
-        if( event.type == JobEvent.Type.Complete ) {
-            handleJobCompletion(event.job, scan, event.state)
-        }
-        else if( event.type == JobEvent.Type.Error ) {
-            handleJobException(event.job, scan, event.error)
-        }
-        else if( event.type == JobEvent.Type.Timeout ) {
-            handleJobTimeout(event.job, scan)
-        }
-        else {
-            throw new IllegalStateException("Unknown container scan job event=$event")
-        }
+    WaveScanRecord loadRecord(JobSpec job) {
+        persistenceService.loadScanRecord(job.stateId)
     }
 
-    protected void handleJobCompletion(JobSpec job, WaveScanRecord scan, JobState state) {
+    @Override
+    void handleJobCompletion(JobSpec job, WaveScanRecord scan, JobState state) {
         ScanResult result
         if( state.completed() ) {
             log.info("Container scan completed - id=${scan.id}")
@@ -154,12 +133,14 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler {
         updateScanRecord(result)
     }
 
-    protected void handleJobException(JobSpec job, WaveScanRecord scan, Throwable e) {
+    @Override
+    void handleJobException(JobSpec job, WaveScanRecord scan, Throwable e) {
         log.error("Container scan failed - id=${scan.id} - cause=${e.getMessage()}", e)
         updateScanRecord(ScanResult.failure(scan))
     }
 
-    protected void handleJobTimeout(JobSpec job, WaveScanRecord scan) {
+    @Override
+    void handleJobTimeout(JobSpec job, WaveScanRecord scan) {
         log.warn("Container scan timed out - id=${scan.id}")
         updateScanRecord(ScanResult.failure(scan))
     }
