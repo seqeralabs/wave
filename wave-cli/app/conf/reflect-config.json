@@ -301,8 +301,9 @@
   "methods":[{"name":"deserializeDuration","parameterTypes":["java.lang.String"] }, {"name":"deserializeInstant","parameterTypes":["java.lang.String"] }, {"name":"serializeInstant","parameterTypes":["java.time.Instant"] }]
 },
 {
-  "name":"io.seqera.wave.cli.json.PathAdapter",
-  "queryAllDeclaredMethods":true
+  "name":"io.seqera.wave.cli.json.ImageNameStrategyAdapter",
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"fromJson","parameterTypes":["java.lang.String"] }, {"name":"toJson","parameterTypes":["io.seqera.wave.api.ImageNameStrategy"] }]
 },
 {
   "name":"io.seqera.wave.cli.json.LayerRefAdapter",
@@ -310,9 +311,8 @@
   "methods":[{"name":"toJson","parameterTypes":["io.seqera.wave.core.spec.ObjectRef"] }]
 },
 {
-  "name":"io.seqera.wave.cli.json.ImageNameStrategyAdapter",
-  "queryAllDeclaredMethods":true,
-  "methods":[{"name":"toJson","parameterTypes":["io.seqera.wave.api.ImageNameStrategy"] }, {"name":"fromJson","parameterTypes":["java.lang.String"] }]
+  "name":"io.seqera.wave.cli.json.PathAdapter",
+  "queryAllDeclaredMethods":true
 },
 {
   "name":"io.seqera.wave.cli.model.ContainerInspectResponseEx",
