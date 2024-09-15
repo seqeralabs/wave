@@ -24,7 +24,6 @@ import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.seqera.wave.api.ContainerInspectRequest
-import io.seqera.wave.api.ContainerMirrorRequest
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.DigestFunctions
@@ -144,11 +143,4 @@ class JwtAuth {
                 req.towerRefreshToken )
     }
 
-    static JwtAuth of(ContainerMirrorRequest req) {
-        return new JwtAuth(
-                key(req.towerEndpoint,req.towerAccessToken),
-                req.towerEndpoint,
-                req.towerAccessToken,
-                req.towerRefreshToken )
-    }
 }

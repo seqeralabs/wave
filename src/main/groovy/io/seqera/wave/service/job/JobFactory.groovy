@@ -84,7 +84,7 @@ class JobFactory {
     JobSpec mirror(MirrorRequest request) {
         JobSpec.mirror(
                 request.targetImage,
-                "mirror-${request.id}",
+                "mirror-${request.id.substring(MirrorRequest.ID_PREFIX.length())}",
                 request.creationTime,
                 mirrorConfig.maxDuration,
                 request.workDir

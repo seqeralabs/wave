@@ -16,39 +16,37 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.mirror
+package io.seqera.wave.controller
 
 import groovy.transform.CompileStatic
-
+import groovy.util.logging.Slf4j
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.annotation.Controller
+import io.micronaut.http.annotation.Get
+import io.micronaut.scheduling.TaskExecutors
+import io.micronaut.scheduling.annotation.ExecuteOn
+import io.seqera.wave.service.mirror.ContainerMirrorService
+import io.seqera.wave.service.mirror.MirrorResult
+import jakarta.inject.Inject
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @CompileStatic
-abstract class MirrorStrategy {
+@Controller("/")
+@ExecuteOn(TaskExecutors.IO)
+class MirrorController {
 
-    abstract void mirrorJob(String jobName, MirrorRequest request)
+    @Inject
+    private ContainerMirrorService mirrorService
 
-    protected List<String> copyCommand(MirrorRequest request) {
-        final result = new ArrayList<String>(20)
-        if( request.platform ) {
-            result.add("--override-os")
-            result.add(request.platform.os)
-            result.add("--override-arch")
-            result.add(request.platform.arch)
-            if( request.platform.variant ) {
-                result.add("--override-variant")
-                result.add(request.platform.variant)
-            }
-        }
-
-        result.add("copy")
-        result.add("--preserve-digests")
-        result.add("--multi-arch")
-        result.add( request.platform ? 'system' : 'all')
-        result.add("docker://${request.sourceImage}".toString())
-        result.add("docker://${request.targetImage}".toString())
-
+    @Get("/v1alpha1/mirrors/{mirrorId}")
+    HttpResponse<MirrorResult> getMirrorRecord(String mirrorId) {
+        final result = mirrorService.getMirrorResult(mirrorId)
         return result
+                ? HttpResponse.ok(result)
+                : HttpResponse.<MirrorResult>notFound()
     }
+
 }

@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit
 
 import groovy.util.logging.Slf4j
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
@@ -52,11 +53,17 @@ class ContainerMirrorServiceTest extends Specification {
         println "Temp path: $folder"
         when:
         def creds = dockerAuthService.credentialsConfigJson(null, source, target, Mock(PlatformId))
-        def request = MirrorRequest.create( source, target, folder, creds )
+        def request = MirrorRequest.create(
+                source,
+                target,
+                'sha256:12345',
+                ContainerPlatform.DEFAULT,
+                folder,
+                creds )
         and:
-        service.mirror(request)
+        service.mirrorImage(request)
         then:
-        service.mirrorResult(target)
+        service.awaitCompletion(target)
                 .get(90, TimeUnit.SECONDS)
                 .succeeded()
 

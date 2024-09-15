@@ -56,9 +56,9 @@ class DockerMirrorStrategy extends MirrorStrategy {
         Files.createDirectories(request.workDir)
 
         // save docker config for creds
-        if( request.configJson ) {
+        if( request.authJson ) {
             configFile = request.workDir.resolve('config.json')
-            Files.write(configFile, JsonOutput.prettyPrint(request.configJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+            Files.write(configFile, JsonOutput.prettyPrint(request.authJson).bytes, CREATE, WRITE, TRUNCATE_EXISTING)
         }
 
         // command the docker build command
@@ -72,18 +72,21 @@ class DockerMirrorStrategy extends MirrorStrategy {
                     CREATE, WRITE, TRUNCATE_EXISTING)
         }
 
-        new ProcessBuilder()
+        final process = new ProcessBuilder()
                 .command(buildCmd)
                 .directory(request.workDir.toFile())
                 .redirectErrorStream(true)
                 .start()
+        if( process.waitFor()!=0 ) {
+            throw new IllegalStateException("Unable to launch mirror container job - exitCode=${process.exitValue()}; output=${process.text}")
+        }
     }
-
 
     protected List<String> mirrorCmd(String name, Path workDir, Path credsFile ) {
         //checkout the documentation here to know more about these options https://github.com/moby/buildkit/blob/master/docs/rootless.md#docker
         final wrapper = ['docker',
                          'run',
+                        '--detach',
                          '--name', name,
                          '-v', "$workDir:$workDir".toString() ]
 

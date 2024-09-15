@@ -21,6 +21,9 @@ package io.seqera.wave.service.mirror
 import spock.lang.Specification
 
 import java.nio.file.Path
+import java.time.Instant
+
+import io.seqera.wave.core.ContainerPlatform
 
 /**
  *
@@ -30,12 +33,24 @@ class MirrorRequestTest extends Specification {
 
     def 'should create mirror request' () {
         when:
-        def req = MirrorRequest.create('docker.io/foo:latest', 'quay.io/foo:latest', Path.of('/workspace'), '{json config}')
+        def ts = Instant.now()
+        def req = MirrorRequest.create(
+                'docker.io/foo:latest',
+                'quay.io/foo:latest',
+                'sha256:12345',
+                ContainerPlatform.DEFAULT,
+                Path.of('/workspace'),
+                '{json config}')
         then:
         req.id 
         req.sourceImage == 'docker.io/foo:latest'
         req.targetImage == 'quay.io/foo:latest'
-        req.workDir == Path.of("/workspace/mirror-${req.id}")
+        req.digest == 'sha256:12345'
+        req.platform == ContainerPlatform.DEFAULT
+        req.workDir == Path.of("/workspace/mirror-${req.id.substring(3)}")
+        req.authJson == '{json config}'
+        req.creationTime >= ts
+        req.creationTime <= Instant.now()
     }
 
 }

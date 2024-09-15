@@ -113,17 +113,19 @@ class JobFactoryTest extends Specification {
         def request = MirrorRequest.create(
                 'source/foo',
                 'target/foo',
+                'sha256:12345',
+                Mock(ContainerPlatform),
                 workspace,
                 '{config}' )
 
         when:
         def job = factory.mirror(request)
         then:
-        job.stateId == "target/foo"
-        job.operationName == /mirror-${request.id}/
+        job.recordId == "target/foo"
+        job.operationName == /mirror-${request.id.substring(3)}/
         job.type == JobSpec.Type.Mirror
         job.maxDuration == duration
+        job.workDir == workspace.resolve(/mirror-${request.id.substring(3)}/)
         job.creationTime == request.creationTime
-        job.workDir == workspace.resolve(/mirror-${request.id}/)
     }
 }

@@ -59,6 +59,8 @@ import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.builder.FreezeService
 import io.seqera.wave.service.inclusion.ContainerInclusionService
 import io.seqera.wave.service.inspect.ContainerInspectService
+import io.seqera.wave.service.mirror.ContainerMirrorService
+import io.seqera.wave.service.mirror.MirrorRequest
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
@@ -153,6 +155,10 @@ class ContainerController {
     @Inject
     @Nullable
     RateLimiterService rateLimiterService
+
+    @Inject
+    private ContainerMirrorService mirrorService
+
 
     @PostConstruct
     private void init() {
@@ -415,6 +421,15 @@ class ContainerController {
             buildId = track.id
             buildNew = !track.cached
         }
+        else if( req.mirrorRegistry ) {
+            final mirror = makeMirrorRequest(req, identity)
+            final track = checkMirror(mirror, identity, req.dryRun)
+            targetImage = track.targetImage
+            targetContent = null
+            condaContent = null
+            buildId = track.id
+            buildNew = !track.cached
+        }
         else if( req.containerImage ) {
             // normalize container image
             final coords = ContainerCoordinates.parse(req.containerImage)
@@ -436,7 +451,51 @@ class ContainerController {
                 ContainerPlatform.of(req.containerPlatform),
                 buildId,
                 buildNew,
-                req.freeze )
+                req.freeze,
+                req.mirrorRegistry!=null
+        )
+    }
+
+    protected MirrorRequest makeMirrorRequest(SubmitContainerTokenRequest request, PlatformId identity) {
+        final coords = ContainerCoordinates.parse(request.containerImage)
+        if( coords.registry == request.mirrorRegistry )
+            throw new BadRequestException("Source and target mirror registry as the same - offending value '${request.mirrorRegistry}'")
+        final targetImage = request.mirrorRegistry + '/' + coords.imageAndTag
+        final configJson = dockerAuthService.credentialsConfigJson(null, request.containerImage, targetImage, identity)
+        final platform = request.containerPlatform
+                ? ContainerPlatform.of(request.containerPlatform)
+                : ContainerPlatform.DEFAULT
+        final digest = registryProxyService.getImageDigest(request.containerImage, identity)
+        if( !digest )
+            throw new BadRequestException("Container image '$request.containerImage' does not exist")
+        return MirrorRequest.create(
+                request.containerImage,
+                targetImage,
+                digest,
+                platform,
+                Path.of(buildConfig.buildWorkspace).toAbsolutePath(),
+                configJson )
+    }
+
+    protected BuildTrack checkMirror(MirrorRequest request, PlatformId identity, boolean dryRun) {
+        final targetDigest = registryProxyService.getImageDigest(request.targetImage, identity)
+        log.debug "== Mirror target digest: $targetDigest"
+        final cached = request.digest==targetDigest
+        // check for dry-run execution
+        if( dryRun ) {
+            log.debug "== Dry-run request request: $request"
+            final dryId = request.id +  BuildRequest.SEP + '0'
+            return new BuildTrack(dryId, request.targetImage, cached)
+        }
+        // check for existing image
+        if( request.digest==targetDigest ) {
+            log.debug "== Found cached request for request: $request"
+            final cache = persistenceService.loadMirrorResult(request.targetImage, targetDigest)
+            return new BuildTrack(cache?.mirrorId, request.targetImage, true)
+        }
+        else {
+            return mirrorService.mirrorImage(request)
+        }
     }
 
     protected String targetImage(String token, ContainerCoordinates container) {

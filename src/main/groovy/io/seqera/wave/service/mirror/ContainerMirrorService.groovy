@@ -20,13 +20,19 @@ package io.seqera.wave.service.mirror
 
 import java.util.concurrent.CompletableFuture
 
+import io.seqera.wave.service.builder.BuildTrack
+
 /**
+ * Define the contrat for container images mirroring service
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 interface ContainerMirrorService {
 
-    MirrorResult mirror(MirrorRequest request)
+    BuildTrack mirrorImage(MirrorRequest request)
 
-    CompletableFuture<MirrorResult> mirrorResult(String targetImage)
+    CompletableFuture<MirrorResult> awaitCompletion(String targetImage)
+
+    MirrorResult getMirrorResult(String id)
+
 }

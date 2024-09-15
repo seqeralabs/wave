@@ -24,6 +24,7 @@ import java.time.Instant
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.util.LongRndKey
 /**
  *
@@ -34,24 +35,63 @@ import io.seqera.wave.util.LongRndKey
 @CompileStatic
 class MirrorRequest {
 
+    static final String ID_PREFIX = 'mr-'
+
+    /**
+     * Unique id of the request
+     */
     final String id
+
+    /**
+     * The container image to be mirrored
+     */
     final String sourceImage
+
+    /**
+     * The target image name where the container should be mirrored
+     */
     final String targetImage
+
+    /**
+     * The (SHA256) digest of the container to be mirrored
+     */
+    final String digest
+
+    /**
+     * The container platform to be copied
+     */
+    final ContainerPlatform platform
+
+    /**
+     * The work directory used by the mirror operation
+     */
     final Path workDir
-    final String configJson
+
+    /**
+     * Docker config json to authorise the mirror (pull & push) operation
+     */
+    final String authJson
+
+    /**
+     * The timestamp when the request has been submitted
+     */
     final Instant creationTime
 
-    static MirrorRequest create(String sourceImage, String targetImage, Path workspace, String configJson, Instant ts=Instant.now()) {
+    static MirrorRequest create(String sourceImage, String targetImage, String digest, ContainerPlatform platform, Path workspace, String authJson, Instant ts=Instant.now()) {
         assert sourceImage, "Argument 'sourceImage' cannot be null"
         assert targetImage, "Argument 'targetImage' cannot be empty"
+        assert workspace, "Argument 'workspace' cannot be null"
+        assert digest, "Argument 'digest' cannot be empty"
 
         final id = LongRndKey.rndHex()
         return new MirrorRequest(
-                id,
+                ID_PREFIX + id,
                 sourceImage,
                 targetImage,
+                digest,
+                platform,
                 workspace.resolve("mirror-${id}"),
-                configJson,
+                authJson,
                 ts )
     }
 }

@@ -16,13 +16,13 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.mirror
+package io.seqera.wave.service.mirror.impl
 
 import spock.lang.Specification
 
 import java.nio.file.Path
 
-import io.seqera.wave.service.mirror.impl.DockerMirrorStrategy
+import io.seqera.wave.service.mirror.MirrorConfig
 
 /**
  *
@@ -40,6 +40,7 @@ class DockerMirrorStrategyTest extends Specification {
         then:
         result == ['docker',
                    'run',
+                   '--detach',
                    '--name', 'foo',
                    '-v', '/work/dir:/work/dir',
                    '-v', '/work/dir/creds.json:/tmp/config.json:ro',

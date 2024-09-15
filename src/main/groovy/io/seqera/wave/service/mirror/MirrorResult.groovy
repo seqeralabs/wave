@@ -24,6 +24,8 @@ import java.time.Instant
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import groovy.transform.ToString
+import io.seqera.wave.api.BuildStatusResponse
+import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.job.JobRecord
 import jakarta.inject.Singleton
 /**
@@ -35,11 +37,13 @@ import jakarta.inject.Singleton
 @CompileStatic
 @Canonical
 class MirrorResult implements JobRecord {
-    enum Status { PENDING, COMPLETE }
+    enum Status { PENDING, COMPLETED }
 
-    final String id
+    final String mirrorId
+    final String digest
     final String sourceImage
     final String targetImage
+    final ContainerPlatform platform
     final Instant creationTime
     final Status status
     final Duration duration
@@ -48,32 +52,52 @@ class MirrorResult implements JobRecord {
 
     @Override
     boolean done() {
-        status==Status.COMPLETE
+        status==Status.COMPLETED
     }
 
     boolean succeeded() {
-        status==Status.COMPLETE && exitCode==0
+        status==Status.COMPLETED && exitCode==0
     }
 
-    MirrorResult complete( Integer exitCode, String logs) {
+    MirrorResult complete( Integer exitCode, String logs ) {
         new MirrorResult(
-                this.id,
+                this.mirrorId,
+                this.digest,
                 this.sourceImage,
                 this.targetImage,
+                this.platform,
                 this.creationTime,
-                Status.COMPLETE,
+                Status.COMPLETED,
                 Duration.between(this.creationTime, Instant.now()),
-                exitCode
+                exitCode,
+                logs
         )
     }
 
     static MirrorResult from(MirrorRequest request) {
         new MirrorResult(
                 request.id,
+                request.digest,
                 request.sourceImage,
                 request.targetImage,
+                request.platform,
                 request.creationTime,
                 Status.PENDING
         )
+    }
+
+    BuildStatusResponse toStatusResponse() {
+        final status = status == Status.COMPLETED
+                ? BuildStatusResponse.Status.COMPLETED
+                : BuildStatusResponse.Status.PENDING
+        final succeeded = exitCode!=null
+                ? exitCode==0
+                : null
+        return new BuildStatusResponse(
+                mirrorId,
+                status,
+                creationTime,
+                duration,
+                succeeded )
     }
 }

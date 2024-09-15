@@ -21,7 +21,6 @@ package io.seqera.wave.tower
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import io.seqera.wave.api.ContainerInspectRequest
-import io.seqera.wave.api.ContainerMirrorRequest
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.util.StringUtils
 
@@ -60,14 +59,6 @@ class PlatformId {
     }
 
     static PlatformId of(User user, ContainerInspectRequest request) {
-        new PlatformId(
-                user,
-                request.towerWorkspaceId,
-                request.towerAccessToken,
-                request.towerEndpoint)
-    }
-
-    static PlatformId of(User user, ContainerMirrorRequest request) {
         new PlatformId(
                 user,
                 request.towerWorkspaceId,
