@@ -309,7 +309,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 'source.io/foo',
                 'target.io/foo',
                 'sha256:12345',
-                Mock(ContainerPlatform),
+                ContainerPlatform.DEFAULT,
                 Path.of('/workspace'),
                 '{auth json}' )
         and:
@@ -333,7 +333,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
                 'source.io/foo',
                 'target.io/foo',
                 'sha256:12345',
-                Mock(ContainerPlatform),
+                ContainerPlatform.DEFAULT,
                 Path.of('/workspace'),
                 '{auth json}'  )
         and:
