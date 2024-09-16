@@ -73,6 +73,7 @@ dependencies {
     implementation "software.amazon.awssdk:ecrpublic"
     implementation 'software.amazon.awssdk:ses'
     implementation 'org.yaml:snakeyaml:2.0'
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
     //object storage dependency
     implementation("io.micronaut.objectstorage:micronaut-object-storage-aws")
     // include sts to allow the use of service account role - https://stackoverflow.com/a/73306570

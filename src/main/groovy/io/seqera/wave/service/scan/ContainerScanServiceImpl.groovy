@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.scan
 
+import java.nio.file.NoSuchFileException
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
@@ -29,7 +30,6 @@ import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.configuration.ScanConfig
 import io.seqera.wave.service.builder.BuildEvent
-import io.seqera.wave.service.job.JobEvent
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobState
@@ -50,7 +50,7 @@ import static io.seqera.wave.service.builder.BuildFormat.DOCKER
 @Requires(property = 'wave.scan.enabled', value = 'true')
 @Singleton
 @CompileStatic
-class ContainerScanServiceImpl implements ContainerScanService, JobHandler {
+class ContainerScanServiceImpl implements ContainerScanService, JobHandler<WaveScanRecord> {
 
     @Inject
     private ScanConfig scanConfig
@@ -115,51 +115,39 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler {
     // **************************************************************
 
     @Override
-    void onJobEvent(JobEvent event) {
-        final scan = persistenceService.loadScanRecord(event.job.stateId)
-        if( !scan ) {
-            log.error "Scan record missing state - id=${event.job.stateId}; event=${event}"
-            return
-        }
-        if( scan.done() ) {
-            log.warn "Scan record already marked as completed - id=${event.job.stateId}; event=${event}"
-            return
-        }
-
-        if( event.type == JobEvent.Type.Complete ) {
-            handleJobCompletion(event.job, scan, event.state)
-        }
-        else if( event.type == JobEvent.Type.Error ) {
-            handleJobException(event.job, scan, event.error)
-        }
-        else if( event.type == JobEvent.Type.Timeout ) {
-            handleJobTimeout(event.job, scan)
-        }
-        else {
-            throw new IllegalStateException("Unknown container scan job event=$event")
-        }
+    WaveScanRecord getJobRecord(JobSpec job) {
+        persistenceService.loadScanRecord(job.recordId)
     }
 
-    protected void handleJobCompletion(JobSpec job, WaveScanRecord scan, JobState state) {
+    @Override
+    void onJobCompletion(JobSpec job, WaveScanRecord scan, JobState state) {
         ScanResult result
         if( state.completed() ) {
-            log.info("Container scan completed - id=${scan.id}")
-            result = ScanResult.success(scan, TrivyResultProcessor.process(job.workDir.resolve(Trivy.OUTPUT_FILE_NAME)))
+            try {
+                result = ScanResult.success(scan, TrivyResultProcessor.process(job.workDir.resolve(Trivy.OUTPUT_FILE_NAME)))
+                log.info("Container scan succeeded - id=${scan.id}; exit=${state.exitCode}; stdout=${state.stdout}")
+            }
+            catch (NoSuchFileException e) {
+                result = ScanResult.failure(scan)
+                log.warn("Container scan failed - id=${scan.id}; exit=${state.exitCode}; stdout=${state.stdout}; exception: NoSuchFile=${e.message}")
+            }
         }
         else{
-            log.info("Container scan failed - id=${scan.id}; exit=${state.exitCode}; stdout=${state.stdout}")
             result = ScanResult.failure(scan)
+            log.warn("Container scan failed - id=${scan.id}; exit=${state.exitCode}; stdout=${state.stdout}")
         }
 
         updateScanRecord(result)
     }
 
-    protected void handleJobException(JobSpec job, WaveScanRecord scan, Throwable e) {
-        log.error("Container scan failed - id=${scan.id} - cause=${e.getMessage()}", e)
+    @Override
+    void onJobException(JobSpec job, WaveScanRecord scan, Throwable e) {
+        log.error("Container scan exception - id=${scan.id} - cause=${e.getMessage()}", e)
         updateScanRecord(ScanResult.failure(scan))
     }
 
-    protected void handleJobTimeout(JobSpec job, WaveScanRecord scan) {
+    @Override
+    void onJobTimeout(JobSpec job, WaveScanRecord scan) {
         log.warn("Container scan timed out - id=${scan.id}")
         updateScanRecord(ScanResult.failure(scan))
     }

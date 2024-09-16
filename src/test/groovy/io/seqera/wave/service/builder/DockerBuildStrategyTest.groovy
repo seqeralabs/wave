@@ -49,6 +49,7 @@ class DockerBuildStrategyTest extends Specification {
         then:
         cmd == ['docker',
                 'run',
+                '--detach',
                 '--name',
                 'build-job-name',
                 '--privileged',
@@ -62,6 +63,7 @@ class DockerBuildStrategyTest extends Specification {
         then:
         cmd == ['docker',
                 'run',
+                '--detach',
                 '--name',
                 'build-job-name',
                 '--privileged',
@@ -77,6 +79,7 @@ class DockerBuildStrategyTest extends Specification {
         then:
         cmd == ['docker',
                 'run',
+                '--detach',
                 '--name',
                 'build-job-name',
                 '--privileged',
@@ -109,6 +112,7 @@ class DockerBuildStrategyTest extends Specification {
         then:
         cmd == ['docker',
                 'run',
+                '--detach',
                 '--name',
                 'build-job-name',
                 '--privileged',
@@ -164,6 +168,7 @@ class DockerBuildStrategyTest extends Specification {
         then:
         cmd == ['docker',
                 'run',
+                '--detach',
                 '--name',
                 'build-job-name',
                 '--privileged',
@@ -207,6 +212,7 @@ class DockerBuildStrategyTest extends Specification {
         then:
         cmd == ['docker',
                 'run',
+                '--detach',
                 '--name',
                 'build-job-name',
                 '--privileged',

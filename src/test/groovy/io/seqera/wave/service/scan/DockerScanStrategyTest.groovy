@@ -48,6 +48,7 @@ class DockerScanStrategyTest extends Specification {
         command == [
                 'docker',
                 'run',
+                '--detach',
                 '--name',
                 'foo-123',
                 '-w',
