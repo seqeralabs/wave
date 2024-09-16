@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.scan
 
+import java.nio.file.NoSuchFileException
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
@@ -122,12 +123,18 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<WaveS
     void onJobCompletion(JobSpec job, WaveScanRecord scan, JobState state) {
         ScanResult result
         if( state.completed() ) {
-            log.info("Container scan completed - id=${scan.id}")
-            result = ScanResult.success(scan, TrivyResultProcessor.process(job.workDir.resolve(Trivy.OUTPUT_FILE_NAME)))
+            try {
+                result = ScanResult.success(scan, TrivyResultProcessor.process(job.workDir.resolve(Trivy.OUTPUT_FILE_NAME)))
+                log.info("Container scan succeeded - id=${scan.id}; exit=${state.exitCode}; stdout=${state.stdout}")
+            }
+            catch (NoSuchFileException e) {
+                result = ScanResult.failure(scan)
+                log.warn("Container scan failed - id=${scan.id}; exit=${state.exitCode}; stdout=${state.stdout}; exception: NoSuchFile=${e.message}")
+            }
         }
         else{
-            log.info("Container scan failed - id=${scan.id}; exit=${state.exitCode}; stdout=${state.stdout}")
             result = ScanResult.failure(scan)
+            log.warn("Container scan failed - id=${scan.id}; exit=${state.exitCode}; stdout=${state.stdout}")
         }
 
         updateScanRecord(result)
@@ -135,7 +142,7 @@ class ContainerScanServiceImpl implements ContainerScanService, JobHandler<WaveS
 
     @Override
     void onJobException(JobSpec job, WaveScanRecord scan, Throwable e) {
-        log.error("Container scan failed - id=${scan.id} - cause=${e.getMessage()}", e)
+        log.error("Container scan exception - id=${scan.id} - cause=${e.getMessage()}", e)
         updateScanRecord(ScanResult.failure(scan))
     }
 

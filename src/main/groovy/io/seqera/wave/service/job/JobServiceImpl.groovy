@@ -21,6 +21,7 @@ package io.seqera.wave.service.job
 import javax.annotation.Nullable
 
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.TransferStrategy
 import io.seqera.wave.service.builder.BuildRequest
@@ -37,6 +38,7 @@ import jakarta.inject.Singleton
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @Singleton
 @CompileStatic
 class JobServiceImpl implements JobService {
@@ -121,7 +123,13 @@ class JobServiceImpl implements JobService {
 
     @Override
     JobState status(JobSpec job) {
-        return operations.status(job)
+        try {
+            return operations.status(job)
+        }
+        catch (Throwable t) {
+            log.warn "Unable to obtain status for job=${job.operationName} - cause: ${t.message}", t
+            return new JobState(JobState.Status.UNKNOWN, null, t.message)
+        }
     }
 
     @Override
