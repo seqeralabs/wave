@@ -173,7 +173,7 @@ class ViewController {
 
     @View("inspect-view")
     @Get('/inspects/{image}')
-    HttpResponse<Map<String,Object>> viewInspect(String image, @Nullable @QueryValue String format) {
+    HttpResponse<Map<String,Object>> viewInspect(String image) {
         final binding = new HashMap(10)
         try {
             final spec = inspectService.containerSpec(image, null)
@@ -182,14 +182,8 @@ class ViewController {
             binding.digest = spec.digest
             binding.registry = spec.registry
             binding.hostName = spec.hostName
-            if  ("yaml" == format) {
-                binding.config = JacksonHelper.toYaml(spec.config)
-                binding.manifest = JacksonHelper.toYaml(spec.manifest)
-            }
-            else {
-                binding.config = JacksonHelper.toJson(spec.config)
-                binding.manifest = JacksonHelper.toJson(spec.manifest)
-            }
+            binding.config = JacksonHelper.toJson(spec.config)
+            binding.manifest = JacksonHelper.toJson(spec.manifest)
         }catch (Exception e){
             binding.error_message = e.getMessage()
         }
