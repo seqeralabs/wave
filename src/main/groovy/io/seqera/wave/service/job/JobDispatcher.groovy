@@ -80,7 +80,7 @@ class JobDispatcher {
         apply(job, (handler, record)-> handler.onJobCompletion(job, record, state))
     }
 
-    void notifyJobError(JobSpec job, Throwable error) {
+    void notifyJobException(JobSpec job, Throwable error) {
         apply(job, (handler, record)-> handler.onJobException(job, record, error))
     }
 

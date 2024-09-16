@@ -945,7 +945,8 @@ class K8sServiceImplTest extends Specification {
 
 
     private V1Job jobActive() {
-        def status = new V1JobStatus();
+        def status = new V1JobStatus()
+        status.startTime(OffsetDateTime.now())
         status.setActive(1)
         status.setFailed(2)
         def result = new V1Job()
@@ -955,6 +956,7 @@ class K8sServiceImplTest extends Specification {
 
     private V1Job jobSucceeded() {
         def status = new V1JobStatus()
+        status.startTime(OffsetDateTime.now())
         status.setSucceeded(1)
         status.setFailed(2)
 
@@ -965,6 +967,7 @@ class K8sServiceImplTest extends Specification {
 
     private V1Job jobFailed() {
         def status = new V1JobStatus();
+        status.startTime(OffsetDateTime.now())
         status.setFailed(3) // <-- failed 3 times
         def spec = new V1JobSpec()
         spec.setBackoffLimit(2) // <-- max 2 retries
@@ -976,6 +979,7 @@ class K8sServiceImplTest extends Specification {
 
     private V1Job jobFailedWitMoreRetries() {
         def status = new V1JobStatus();
+        status.startTime(OffsetDateTime.now())
         status.setFailed(1) // <-- failed 1 time
         def spec = new V1JobSpec()
         spec.setBackoffLimit(2) // <-- max 2 retries
@@ -987,8 +991,17 @@ class K8sServiceImplTest extends Specification {
 
     private V1Job jobCompleted() {
         def status = new V1JobStatus();
+        status.startTime(OffsetDateTime.now())
         status.setFailed(1) // <-- failed 1 time
         status.setCompletionTime(OffsetDateTime.now())
+        def result = new V1Job()
+        result.setStatus(status)
+        return result
+    }
+
+    private V1Job jobStarted() {
+        def status = new V1JobStatus();
+        status.startTime(OffsetDateTime.now())
         def result = new V1Job()
         result.setStatus(status)
         return result
@@ -1025,6 +1038,7 @@ class K8sServiceImplTest extends Specification {
         jobFailed()               | K8sService.JobStatus.Failed
         jobFailedWitMoreRetries() | K8sService.JobStatus.Pending
         jobCompleted()            | K8sService.JobStatus.Failed
-        jobUnknown()              | null
+        jobStarted()              | K8sService.JobStatus.Pending
+        jobUnknown()              | K8sService.JobStatus.Pending
     }
 }
