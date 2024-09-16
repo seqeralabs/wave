@@ -16,6 +16,10 @@ wave:
       interval: '10s'
     monitor:
       interval: '5s'
+  cleanup:
+    succeeded: '10s'
+    failed: '45s'
+    strategy: 'onsuccess'
 ---
 endpoints:
   metrics:
@@ -40,5 +44,7 @@ logger:
     io.seqera.wave.service.data: DEBUG
     io.seqera.wave.service.pairing: TRACE
     io.seqera.wave.tower.client.connector: TRACE
+    io.seqera.wave.service.job: TRACE
+    io.seqera.wave.service.k8s.K8sServiceImpl: TRACE
 #    io.seqera.wave.tower.auth: 'TRACE'
 ...

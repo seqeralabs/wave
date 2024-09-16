@@ -17,22 +17,19 @@
  */
 
 package io.seqera.wave.service.job
-
-import java.time.Duration
-
 /**
  * Define events and properties for jobs managed via {@link JobManager}
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-interface JobHandler {
+interface JobHandler<R extends JobRecord> {
 
-    Duration jobMaxDuration(JobId job)
+    R getJobRecord(JobSpec job)
 
-    void onJobCompletion(JobId job, JobState state)
+    void onJobCompletion(JobSpec job, R jobRecord, JobState state)
 
-    void onJobException(JobId job, Throwable error)
+    void onJobException(JobSpec job, R jobRecord, Throwable error)
 
-    void onJobTimeout(JobId job)
+    void onJobTimeout(JobSpec job, R jobRecord)
 
 }

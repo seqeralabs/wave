@@ -50,8 +50,8 @@ class HttpClientConfig implements Retryable.Config {
     @Value('${wave.httpclient.retry.attempts:3}')
     int retryAttempts
 
-    @Value('${wave.httpclient.retry.multiplier:1.0}')
-    float retryMultiplier
+    @Value('${wave.httpclient.retry.multiplier:2.0}')
+    double retryMultiplier
 
     @Value('${wave.httpclient.retry.jitter:0.25}')
     double retryJitter
@@ -73,4 +73,8 @@ class HttpClientConfig implements Retryable.Config {
     double getJitter() { retryJitter }
 
     int getStreamThreshold() { streamThreshold }
+
+    double getMultiplier() {
+        return retryMultiplier
+    }
 }

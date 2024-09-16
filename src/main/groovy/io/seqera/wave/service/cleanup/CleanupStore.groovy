@@ -16,39 +16,29 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.auth
+package io.seqera.wave.service.cleanup
 
 import groovy.transform.CompileStatic
-import io.seqera.wave.exception.WaveException
+import io.seqera.wave.memstore.range.AbstractRangeStore
+import io.seqera.wave.memstore.range.impl.RangeProvider
+import jakarta.inject.Singleton
 
 /**
- * Exception throw when the registry authorization failed
+ * Implements a timed range to store and retrieve IDs
+ * of resources to be cleaned up.
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Singleton
 @CompileStatic
-class RegistryUnauthorizedAccessException extends WaveException {
+class CleanupStore extends AbstractRangeStore {
 
-    private String response
-    private Integer status
-
-    RegistryUnauthorizedAccessException(String message, Integer status=null, String response=null) {
-        super(message)
-        this.status = status
-        this.response = response
-    }
-
-    String getResponse() {
-        return response
+    CleanupStore(RangeProvider provider) {
+        super(provider)
     }
 
     @Override
-    String getMessage() {
-        def result = super.getMessage()
-        if( status!=null )
-            result += " - HTTP status=$status"
-        if( response )
-            result += " - response=$response"
-        return result
+    protected String getKey() {
+        return 'cleanup-store/v1:'
     }
 }

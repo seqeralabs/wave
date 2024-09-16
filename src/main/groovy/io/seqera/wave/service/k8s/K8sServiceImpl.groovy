@@ -32,6 +32,7 @@ import io.kubernetes.client.openapi.models.V1EnvVar
 import io.kubernetes.client.openapi.models.V1HostPathVolumeSource
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1JobBuilder
+import io.kubernetes.client.openapi.models.V1JobStatus
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodBuilder
@@ -152,6 +153,7 @@ class K8sServiceImpl implements K8sService {
      */
     @Override
     @CompileDynamic
+    @Deprecated
     V1Job createJob(String name, String containerImage, List<String> args) {
 
         V1Job body = new V1JobBuilder()
@@ -203,15 +205,29 @@ class K8sServiceImpl implements K8sService {
         final job = k8sClient
                 .batchV1Api()
                 .readNamespacedJob(name, namespace, null)
-        if( !job )
+        if( !job ) {
+            log.warn "K8s job=$name - unknown"
             return null
-        if( job.status.succeeded==1 )
-            return JobStatus.Succeeded
-        if( job.status.failed>0 )
-            return JobStatus.Failed
-        return JobStatus.Pending
+        }
+
+        final result = jobStatus0(job.status, job.spec?.backoffLimit)
+        log.trace "K8s job=$name - result=$result; backoff-limit=${job.spec?.backoffLimit}; status=${job.status}"
+        return result
     }
 
+    private JobStatus jobStatus0(V1JobStatus status, Integer backoffLimit) {
+        if( status.succeeded )
+            return JobStatus.Succeeded
+        if( status.active )
+            return JobStatus.Pending
+        if( status.failed ) {
+            if( status.completionTime!=null )
+                return JobStatus.Failed
+            if( backoffLimit!=null && status.failed > backoffLimit )
+                return JobStatus.Failed
+        }
+        return JobStatus.Pending
+    }
     /**
      * Get pod description
      *
@@ -332,6 +348,7 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Pod} description the submitted pod
      */
     @Override
+    @Deprecated
     V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, SpackConfig spackConfig, Map<String,String> nodeSelector) {
         final spec = buildSpec(name, containerImage, args, workDir, creds, timeout, spackConfig, nodeSelector)
         return k8sClient
@@ -433,6 +450,7 @@ class K8sServiceImpl implements K8sService {
      *      or timeout was reached.
      */
     @Override
+    @Deprecated
     Integer waitPodCompletion(V1Pod pod, long timeout) {
         final start = System.currentTimeMillis()
         // wait for termination
@@ -474,7 +492,7 @@ class K8sServiceImpl implements K8sService {
             logs.streamNamespacedPodLog(namespace, pod.metadata.name, pod.spec.containers.first().name).getText()
         }
         catch (Exception e) {
-            log.error "Unable to fetch logs for pod: ${pod.metadata.name}", e
+            log.error "Unable to fetch logs for pod: ${pod.metadata.name} - cause: ${e.message}"
             return null
         }
     }
@@ -499,6 +517,7 @@ class K8sServiceImpl implements K8sService {
      * @param timeout The max wait time in milliseconds
      */
     @Override
+    @Deprecated
     void deletePodWhenReachStatus(String podName, String statusName, long timeout){
         final pod = getPod(podName)
         final start = System.currentTimeMillis()
@@ -512,6 +531,7 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
+    @Deprecated
     V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
         final spec = scanSpec(name, containerImage, args, workDir, creds, scanConfig, nodeSelector)
         return k8sClient
@@ -519,6 +539,7 @@ class K8sServiceImpl implements K8sService {
                 .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
+    @Deprecated
     V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig, Map<String,String> nodeSelector) {
 
         final mounts = new ArrayList<V1VolumeMount>(5)
@@ -585,7 +606,7 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Job} description the submitted job
      */
     @Override
-    V1Job launchJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
+    V1Job launchTransferJob(String name, String containerImage, List<String> args, BlobCacheConfig blobConfig) {
         final spec = createTransferJobSpec(name, containerImage, args, blobConfig)
 
         return k8sClient
@@ -613,11 +634,9 @@ class K8sServiceImpl implements K8sService {
         //spec section
         def spec = builder.withNewSpec()
                 .withBackoffLimit(blobConfig.retryAttempts)
-                .withTtlSecondsAfterFinished(blobConfig.deleteAfterFinished.toSeconds() as Integer)
                 .withNewTemplate()
                     .editOrNewSpec()
                     .withServiceAccount(serviceAccount)
-                    .withActiveDeadlineSeconds(blobConfig.transferTimeout.toSeconds())
                     .withRestartPolicy("Never")
         //container section
                     .addNewContainer()
@@ -632,6 +651,168 @@ class K8sServiceImpl implements K8sService {
                 .endSpec()
 
         return spec.build()
+    }
+
+    /**
+     * Create a container for container image building via buildkit
+     *
+     * @param name
+     *      The name of pod
+     * @param containerImage
+     *      The container image to be used
+     * @param args
+     *      The build command to be performed
+     * @param workDir
+     *      The build context directory
+     * @param creds
+     *      The target container repository credentials
+     * @return
+     *      The {@link V1Pod} description the submitted pod
+     */
+    @Override
+    V1Job launchBuildJob(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, SpackConfig spackConfig, Map<String,String> nodeSelector) {
+        final spec = buildJobSpec(name, containerImage, args, workDir, creds, timeout, spackConfig, nodeSelector)
+        return k8sClient
+                .batchV1Api()
+                .createNamespacedJob(namespace, spec, null, null, null,null)
+    }
+
+    V1Job buildJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, Duration timeout, SpackConfig spackConfig, Map<String,String> nodeSelector) {
+
+        // dirty dependency to avoid introducing another parameter
+        final singularity = containerImage.contains('singularity')
+
+        // required volumes
+        final mounts = new ArrayList<V1VolumeMount>(5)
+        mounts.add(mountBuildStorage(workDir, storageMountPath, true))
+
+        final volumes = new ArrayList<V1Volume>(5)
+        volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
+
+        if( credsFile ){
+            mounts.add(0, mountHostPath(credsFile, storageMountPath, '/home/user/.docker/config.json'))
+        }
+
+        if( spackConfig ) {
+            mounts.add(mountSpackSecretFile(spackConfig.secretKeyFile, storageMountPath, spackConfig.secretMountPath))
+        }
+
+        V1JobBuilder builder = new V1JobBuilder()
+
+        //metadata section
+        builder.withNewMetadata()
+                .withNamespace(namespace)
+                .withName(name)
+                .addToLabels(labels)
+                .endMetadata()
+
+        //spec section
+        def spec = builder
+                .withNewSpec()
+                .withBackoffLimit(buildConfig.retryAttempts)
+                .withNewTemplate()
+                .withNewMetadata()
+                .addToAnnotations(getBuildkitAnnotations(name,singularity))
+                .endMetadata()
+                .editOrNewSpec()
+                .withNodeSelector(nodeSelector)
+                .withServiceAccount(serviceAccount)
+                .withActiveDeadlineSeconds( timeout.toSeconds() )
+                .withRestartPolicy("Never")
+                .addAllToVolumes(volumes)
+
+        final requests = new V1ResourceRequirements()
+        if( requestsCpu )
+            requests.putRequestsItem('cpu', new Quantity(requestsCpu))
+        if( requestsMemory )
+            requests.putRequestsItem('memory', new Quantity(requestsMemory))
+
+        // container section
+        final container = new V1ContainerBuilder()
+                .withName(name)
+                .withImage(containerImage)
+                .withVolumeMounts(mounts)
+                .withResources(requests)
+
+        if( singularity ) {
+            container
+            // use 'command' to override the entrypoint of the container
+                    .withCommand(args)
+                    .withNewSecurityContext().withPrivileged(true).endSecurityContext()
+        } else {
+            container
+            //required by buildkit rootless container
+                    .withEnv(toEnvList(BUILDKIT_FLAGS))
+            // buildCommand is to set entrypoint for buildkit
+                    .withCommand(BUILDKIT_ENTRYPOINT)
+                    .withArgs(args)
+        }
+
+        // spec section
+        spec.withContainers(container.build()).endSpec().endTemplate().endSpec()
+
+        return builder.build()
+    }
+
+    @Override
+    V1Job launchScanJob(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
+        final spec = scanJobSpec(name, containerImage, args, workDir, creds, scanConfig, nodeSelector)
+        return k8sClient
+                .batchV1Api()
+                .createNamespacedJob(namespace, spec, null, null, null,null)
+    }
+
+    V1Job scanJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig, Map<String,String> nodeSelector) {
+
+        final mounts = new ArrayList<V1VolumeMount>(5)
+        mounts.add(mountBuildStorage(workDir, storageMountPath, false))
+        mounts.add(mountScanCacheDir(scanConfig.cacheDirectory, storageMountPath))
+
+        final volumes = new ArrayList<V1Volume>(5)
+        volumes.add(volumeBuildStorage(storageMountPath, storageClaimName))
+
+        if( credsFile ){
+            mounts.add(0, mountHostPath(credsFile, storageMountPath, Trivy.CONFIG_MOUNT_PATH))
+        }
+
+        V1JobBuilder builder = new V1JobBuilder()
+
+        //metadata section
+        builder.withNewMetadata()
+                .withNamespace(namespace)
+                .withName(name)
+                .addToLabels(labels)
+                .endMetadata()
+
+        //spec section
+        def spec = builder
+                .withNewSpec()
+                .withBackoffLimit(scanConfig.retryAttempts)
+                .withNewTemplate()
+                .editOrNewSpec()
+                .withNodeSelector(nodeSelector)
+                .withServiceAccount(serviceAccount)
+                .withRestartPolicy("Never")
+                .addAllToVolumes(volumes)
+
+        final requests = new V1ResourceRequirements()
+        if( scanConfig.requestsCpu )
+            requests.putRequestsItem('cpu', new Quantity(scanConfig.requestsCpu))
+        if( scanConfig.requestsMemory )
+            requests.putRequestsItem('memory', new Quantity(scanConfig.requestsMemory))
+
+        // container section
+        final container = new V1ContainerBuilder()
+                .withName(name)
+                .withImage(containerImage)
+                .withArgs(args)
+                .withVolumeMounts(mounts)
+                .withResources(requests)
+
+        // spec section
+        spec.withContainers(container.build()).endSpec().endTemplate().endSpec()
+
+        return builder.build()
     }
 
     protected List<V1EnvVar> toEnvList(Map<String,String> env) {
@@ -649,6 +830,7 @@ class K8sServiceImpl implements K8sService {
      *      Max wait time in milliseconds
      * @return list of pods created by the job
      */
+    @Deprecated
     @Override
     V1PodList waitJob(V1Job job, Long timeout) {
         sleep 5_000
@@ -686,11 +868,11 @@ class K8sServiceImpl implements K8sService {
                 .coreV1Api()
                 .listNamespacedPod(namespace, null, null, null, null, "job-name=${jobName}", null, null, null, null, null, null)
 
-        if( !allPods )
+        if( !allPods || !allPods.items )
             return null
 
         // Find the latest created pod among the pods associated with the job
-        def latest = allPods.getItems().get(0)
+        def latest = allPods.items.get(0)
         for (def pod : allPods.items) {
             if (pod.metadata?.creationTimestamp?.isAfter(latest.metadata.creationTimestamp)) {
                 latest = pod

@@ -18,6 +18,7 @@
 
 package io.seqera.wave.service.cache.impl
 
+import spock.lang.Shared
 import spock.lang.Specification
 
 import java.time.Duration
@@ -27,8 +28,10 @@ import io.seqera.wave.test.RedisTestContainer
 
 class RedisCacheProviderTest extends Specification implements RedisTestContainer {
 
+    @Shared
     ApplicationContext applicationContext
 
+    @Shared
     RedisCacheProvider redisCacheProvider
 
     def setup() {
@@ -38,6 +41,10 @@ class RedisCacheProviderTest extends Specification implements RedisTestContainer
         ], 'test', 'redis')
         redisCacheProvider = applicationContext.getBean(RedisCacheProvider)
         sleep(500) // workaround to wait for Redis connection
+    }
+
+    def cleanup() {
+        applicationContext.close()
     }
 
     def 'conditional put with current value when ke is not set'() {

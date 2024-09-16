@@ -19,14 +19,13 @@
 package io.seqera.wave.service.blob.impl
 
 import spock.lang.Specification
-import spock.lang.Unroll
 
 import io.seqera.wave.configuration.BlobCacheConfig
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-class DockerJobStrategyTest extends Specification {
+class DockerTransferStrategyTest extends Specification {
 
     def 'should create transfer cli' () {
         given:
@@ -41,16 +40,15 @@ class DockerJobStrategyTest extends Specification {
         def strategy = new DockerTransferStrategy(blobConfig: config)
 
         when:
-        def result = strategy.createProcess(['s5cmd', 'run', '--this'], "job-name", 10)
+        def result = strategy.createProcess(['s5cmd', 'run', '--this'], "job-name")
 
         then:
         result.command() == [
                 'docker', 
                 'run',
+                '--detach',
                 '--name',
                 'job-name',
-                '--stop-timeout',
-                '10',
                 '-e', 'AWS_ACCESS_KEY_ID',
                 '-e', 'AWS_SECRET_ACCESS_KEY',
                 'cr.seqera.io/public/s5cmd:latest',
@@ -65,17 +63,4 @@ class DockerJobStrategyTest extends Specification {
         result.redirectErrorStream()
     }
 
-    @Unroll
-    def 'should parse state string' () {
-        expect:
-        DockerTransferStrategy.State.parse(STATE) == EXPECTED
-
-        where:
-        STATE               | EXPECTED
-        'running'           | new DockerTransferStrategy.State('running')
-        'exited'            | new DockerTransferStrategy.State('exited')
-        'exited,'           | new DockerTransferStrategy.State('exited')
-        'exited,0'          | new DockerTransferStrategy.State('exited', 0)
-        'exited,10'         | new DockerTransferStrategy.State('exited', 10)
-    }
 }

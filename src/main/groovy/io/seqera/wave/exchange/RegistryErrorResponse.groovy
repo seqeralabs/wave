@@ -20,8 +20,10 @@ package io.seqera.wave.exchange
 
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import groovy.transform.ToString
 import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Produces
+import io.seqera.wave.encoder.MoshiEncodeStrategy
 
 /**
  * Model a docker registry error response
@@ -30,27 +32,56 @@ import io.micronaut.http.annotation.Produces
  */
 @CompileStatic
 @Produces(MediaType.APPLICATION_JSON)
+@ToString(includePackage = false, includeNames = true)
 class RegistryErrorResponse {
 
     @Canonical
     static class RegistryError {
+        /**
+         * The error code as defined in the registry API. see
+         * https://distribution.github.io/distribution/spec/api/#errors-2
+         */
         final String code
+
+        /**
+         * The error message
+         */
         final String message
     }
 
-    List<RegistryError> errors = new ArrayList<>(10)
+    final List<RegistryError> errors = new ArrayList<>(10)
 
     /**
      * Do not remove -- required for object de-serialisation
      */
-    RegistryErrorResponse() { }
+    protected RegistryErrorResponse() { }
 
-    RegistryErrorResponse(List<RegistryError> errors) {
-        this.errors = errors
-    }
-
+    /**
+     * Creates a {@link RegistryErrorResponse} object with the specified error
+     * code and message.
+     *
+     * @param code  The error code as string.
+     * @param message The error message as string
+     */
     RegistryErrorResponse(String code, String message) {
         errors.add( new RegistryError(code, message) )
     }
 
+    /**
+     * Parse a JSON error response into a {@link RegistryErrorResponse}.
+     *
+     * @param json
+     *      The JSON error response as a string
+     * @return
+     *      The corresponding {@link RegistryErrorResponse} object
+     */
+    static RegistryErrorResponse parse(String json) throws IllegalArgumentException {
+        try {
+            final decoder = new MoshiEncodeStrategy<RegistryErrorResponse>() {}
+            return decoder.decode(json)
+        }
+        catch (Throwable t) {
+            throw new IllegalArgumentException("Unable to parse registry error response - offending value: $json", t)
+        }
+    }
 }

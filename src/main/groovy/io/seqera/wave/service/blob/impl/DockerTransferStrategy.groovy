@@ -18,19 +18,16 @@
 
 package io.seqera.wave.service.blob.impl
 
-import groovy.transform.Canonical
+
 import groovy.transform.CompileStatic
-import groovy.transform.ToString
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Requires
 import io.seqera.wave.configuration.BlobCacheConfig
-import io.seqera.wave.service.job.JobId
-import io.seqera.wave.service.job.JobState
-import io.seqera.wave.service.job.JobStrategy
+import io.seqera.wave.service.blob.TransferStrategy
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
- * Implements {@link JobStrategy} that runs s5cmd using a docker
+ * Implements {@link TransferStrategy} that runs s5cmd using a docker
  * container. Meant for development purposes
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -40,7 +37,7 @@ import jakarta.inject.Singleton
 @Singleton
 @Requires(missingProperty = 'wave.build.k8s')
 @Requires(property = 'wave.blobCache.enabled', value = 'true')
-class DockerTransferStrategy implements JobStrategy {
+class DockerTransferStrategy implements TransferStrategy {
 
     @Inject
     private BlobCacheConfig blobConfig
@@ -48,19 +45,20 @@ class DockerTransferStrategy implements JobStrategy {
     @Override
     void launchJob(String jobName, List<String> command) {
         // create a unique name for the container
-        createProcess(command, jobName, blobConfig.transferTimeout.toSeconds())
-                .start()
+        final process = createProcess(command, jobName) .start()
+        if( process.waitFor()!=0 ) {
+            throw new IllegalStateException("Unable to launch transfer container - exitCode=${process.exitValue()}; output=${process.text}")
+        }
     }
 
-    protected ProcessBuilder createProcess(List<String> command, String name, long timeoutSecs) {
+    protected ProcessBuilder createProcess(List<String> command, String name) {
         // compose the docker command
         final cli = new ArrayList<String>(10)
         cli.add('docker')
         cli.add('run')
+        cli.add('--detach')
         cli.add('--name')
         cli.add(name)
-        cli.add('--stop-timeout')
-        cli.add(String.valueOf(timeoutSecs))
         cli.add('-e')
         cli.add('AWS_ACCESS_KEY_ID')
         cli.add('-e')
@@ -77,81 +75,5 @@ class DockerTransferStrategy implements JobStrategy {
         return builder
     }
 
-    @Override
-    JobState status(JobId job) {
-        final state = getDockerContainerState(job.schedulerId)
-        log.trace "Docker transfer status name=$job.schedulerId; state=$state"
-        
-        if (state.status == 'running') {
-            return JobState.running()
-        }
-        else if (state.status == 'exited') {
-            final logs = getDockerContainerLogs(job.schedulerId)
-            return JobState.completed(state.exitCode, logs)
-        }
-        else if (state.status == 'created' || state.status == 'paused') {
-            return JobState.pending()
-        }
-        else {
-            final logs = getDockerContainerLogs(job.schedulerId)
-            return JobState.unknown(logs)
-        }
-    }
-
-    @Override
-    void cleanup(JobId jobId, Integer exitStatus) {
-        final cli = new ArrayList<String>()
-        cli.add('docker')
-        cli.add('rm')
-        cli.add(jobId.schedulerId)
-
-        final builder = new ProcessBuilder(cli)
-        builder.redirectErrorStream(true)
-        final process = builder.start()
-        process.waitFor()
-    }
-
-    @ToString(includePackage = false, includeNames = true)
-    @Canonical
-    static class State {
-        String status
-        Integer exitCode
-
-        static State parse(String result) {
-            final ret = result.tokenize(',')
-            final status = ret[0]
-            final exit = ret[1] ? Integer.valueOf(ret[1]) : null
-            new State(status,exit)
-        }
-    }
-
-    private static State getDockerContainerState(String containerName) {
-        final cli = new ArrayList<String>()
-        cli.add('docker')
-        cli.add('inspect')
-        cli.add('--format')
-        cli.add('{{.State.Status}},{{.State.ExitCode}}')
-        cli.add(containerName)
-
-        final builder = new ProcessBuilder(cli)
-        builder.redirectErrorStream(true)
-        final process = builder.start()
-        process.waitFor()
-        final result = process.inputStream.text.trim()
-        return State.parse(result)
-    }
-
-    private static String getDockerContainerLogs(String containerName) {
-        final cli = new ArrayList<String>()
-        cli.add('docker')
-        cli.add('logs')
-        cli.add(containerName)
-
-        final builder = new ProcessBuilder(cli)
-        builder.redirectErrorStream(true)
-        final process = builder.start()
-        process.waitFor()
-        process.inputStream.text
-    }
 
 }
