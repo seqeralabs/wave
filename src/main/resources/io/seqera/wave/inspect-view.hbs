@@ -17,6 +17,29 @@
             padding: 5px;
             border: 1px solid #ddd;
         }
+
+        #jsonTree ul {
+            list-style: none;
+            margin: 5px;
+            padding: 0;
+            cursor: default;
+        }
+
+        #jsonTree li {
+            list-style: none;
+            padding-left: 14px;
+        }
+
+        #jsonTree li.collapse {
+            background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAADxSURBVHjafFBLaoRAFKzE9gfiFTyEF8gcYEAIZOUJcpdsA24CA+6yGGEO4NqtR3AlBHdG2h+mX82HyWYePLr6VTVV/Z6yLHuxbbv0PA+u68JxHEhN04RxHKG1xjzPO7UsSxnHMcmu60hKBUGAKIqIq6oqlVHLCw6GYUCSJMRFUSAMQ2LhlVi0bUsrDlfcrJumYRTBSqz6vkeappiMSF+EyesbHAvI85xxKJT++cW/0uc0uPIUruuK78MniX36zvOUn+9KKQqfxd+sB77vM7RkZBssM+GY8f7X27bh+PVBbFnWbc5fmz3u6rp+uHDR/AkwAGqHn+ZepzDiAAAAAElFTkSuQmCC);
+            background-repeat: no-repeat;
+            background-position: 0 5px;
+            cursor: pointer;
+        }
+
+        #jsonTree li.expanded {
+            background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAACYSURBVHjajJA7CoMhEIQ3sD7u4wXy38NzBeyFXCGdta0HSG2XxsIn5F9DOiMZ2Go+mXEuxpgrY8xJKUEIAZxzINVaoZQCOWdorR3Ye3dKKdjJe+/wpOnFFiQfKSLGOKNWoirkIfVIKYHWeglaa2fXCdI9X+vYrz/BMQY87rcliIgfkPLPeeb90uz496/PHY8QwnZwYt4CDACMsHBjtyPgCAAAAABJRU5ErkJggg==);
+        }
     </style>
 </head>
 <body>
@@ -59,11 +82,11 @@
             </tr>
             <tr>
                 <td>Config</td>
-                <td><pre>{{config}}</pre></td>
+                <td><div id="config-div"></div></td>
             </tr>
             <tr>
                 <td>Manifest</td>
-                <td><pre>{{manifest}}</pre></td>
+                <td><div id="manifest-div"></div></td>
             </tr>
         </table>
     </div>
@@ -78,5 +101,62 @@
         </p>
     </div>
 </div>
+<script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
+<script>
+    $(document).ready(function () {
+        const config = {{{config}}}
+        const manifest = {{{manifest}}}
+
+        const treeBuilder = new JsonTreeBuilder();
+
+        const tree_config = treeBuilder.build(config);
+        $('div#config-div').append(tree_config);
+
+        const tree_manifest = treeBuilder.build(manifest);
+        $('div#manifest-div').append(tree_manifest);
+    });
+
+    function JsonTreeBuilder() {
+
+        this.build = function (jsonDoc) {
+            const tree = generateTree(jsonDoc);
+            activateTree(tree);
+
+            return $('<div id="jsonTree"></div>').append(tree);
+        };
+
+        const generateTree = function (data) {
+            if (typeof (data) == 'object' && data != null) {
+                const ul = $("<ul>");
+                for (const i in data) {
+                    const li = $("<li>");
+                    ul.append(li.text(i).append(generateTree(data[i])));
+                }
+                return ul;
+            } else {
+                const v = (data === undefined) ? "[empty]" : data;
+                return document.createTextNode(" : " + v);
+            }
+        };
+
+        const activateTree = function (tree) {
+            $('li > ul', tree).each(function () {
+                const innerUlContent = $(this);
+                const parent = innerUlContent.parent("li");
+                parent.addClass('collapse');
+                parent.click(function () {
+                    $(this).toggleClass('expanded');
+                    innerUlContent.slideToggle('fast');
+                });
+
+                innerUlContent.click(function (event) {
+                    event.stopPropagation();
+                });
+            });
+
+            $('ul', tree).hide();
+        };
+    }
+</script>
 </body>
 </html>

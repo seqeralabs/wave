@@ -187,8 +187,8 @@ class ViewController {
                 binding.manifest = JacksonHelper.toYaml(spec.manifest)
             }
             else {
-                binding.config = JsonOutput.prettyPrint(JacksonHelper.toJson(spec.config))
-                binding.manifest = JsonOutput.prettyPrint(JacksonHelper.toJson(spec.manifest))
+                binding.config = JacksonHelper.toJson(spec.config)
+                binding.manifest = JacksonHelper.toJson(spec.manifest)
             }
         }catch (Exception e){
             binding.error_message = e.getMessage()
