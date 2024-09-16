@@ -86,7 +86,7 @@
 
         .tree summary::before {
             z-index: 1;
-            background: #696 url('/assets/expand-collapse.svg') 0 0;
+            background: #3D95FD url('/assets/expand-collapse.svg') 0 0;
         }
 
         .tree details[open] > summary::before {
@@ -134,10 +134,6 @@
             </tr>
             <tr>
                 <td>Config</td>
-                <td><div id="config-div-2"></div></td>
-            </tr>
-            <tr>
-                <td>Config</td>
                 <td><div id="config-div"></div></td>
             </tr>
             <tr>
@@ -158,9 +154,9 @@
     </div>
 </div>
 <script>
-    function createNestedList(data) {
+    function createTreeView(data) {
         const ul = document.createElement('ul');
-        ul.classList.add('tree')
+        ul.classList.add('tree');
 
         for (const key in data) {
             if (data.hasOwnProperty(key)) {
@@ -171,7 +167,7 @@
                     const summary = document.createElement('summary');
                     summary.textContent = key;
                     details.appendChild(summary);
-                    details.appendChild(createNestedList(data[key]));
+                    details.appendChild(createTreeView(data[key]));
                     li.appendChild(details);
                 } else if (Array.isArray(data[key])) {
                     const details = document.createElement('details');
@@ -180,16 +176,23 @@
                     details.appendChild(summary);
 
                     const nestedUl = document.createElement('ul');
+                    nestedUl.classList.add('tree');
                     data[key].forEach(item => {
                         const nestedLi = document.createElement('li');
-                        nestedLi.textContent = item;
+
+                        if (typeof item === 'object') {
+                            nestedLi.appendChild(createTreeView(item));
+                        } else {
+                            nestedLi.textContent = item;
+                        }
+
                         nestedUl.appendChild(nestedLi);
                     });
 
                     details.appendChild(nestedUl);
                     li.appendChild(details);
                 } else {
-                    li.textContent = key;
+                    li.textContent = `${key}: ${data[key]}`;
                 }
 
                 ul.appendChild(li);
@@ -199,8 +202,8 @@
         return ul;
     }
 
-    document.getElementById('config-div').appendChild(createNestedList({{{config}}}));
-    document.getElementById('manifest-div').appendChild(createNestedList({{{manifest}}}));
+    document.getElementById('config-div').appendChild(createTreeView({{{config}}}));
+    document.getElementById('manifest-div').appendChild(createTreeView({{{manifest}}}));
 </script>
 </body>
 </html>
