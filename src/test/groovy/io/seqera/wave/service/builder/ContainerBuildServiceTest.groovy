@@ -31,6 +31,7 @@ import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
 import com.sun.net.httpserver.HttpServer
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Primary
 import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.BuildContext
@@ -50,6 +51,8 @@ import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
+import io.seqera.wave.service.scan.ScanRequest
+import io.seqera.wave.service.scan.ScanStrategy
 import io.seqera.wave.test.TestHelper
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.ContainerHelper
@@ -57,13 +60,40 @@ import io.seqera.wave.util.Packer
 import io.seqera.wave.util.SpackHelper
 import io.seqera.wave.util.TemplateRenderer
 import jakarta.inject.Inject
+import jakarta.inject.Singleton
+
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
-@MicronautTest
+@MicronautTest(environments = ['build-service-test'])
 class ContainerBuildServiceTest extends Specification {
+
+    @Primary
+    @Singleton
+    @io.micronaut.context.annotation.Requires(env = 'build-service-test')
+    static class FakeBuildStrategy extends BuildStrategy {
+
+        @Override
+        void build(String jobName, BuildRequest request) {
+            // do nothing
+            log.debug "Running fake build job=$jobName - request=$request"
+        }
+    }
+
+    @Primary
+    @Singleton
+    @io.micronaut.context.annotation.Requires(env = 'build-service-test')
+    static class FakeScanStrategy extends ScanStrategy {
+
+        @Override
+        void scanContainer(String jobName, ScanRequest request) {
+            // do nothing
+            log.debug "Running fake scan job=$jobName - request=$request"
+        }
+    }
+
 
     @Inject ContainerBuildServiceImpl service
     @Inject RegistryLookupService lookupService
@@ -788,7 +818,7 @@ class ContainerBuildServiceTest extends Specification {
         then:
         1 * mockBuildStore.storeBuild('1', _, _)
         and:
-        0 * mockEventPublisher.publishEvent(_)
+        1 * mockEventPublisher.publishEvent(_)
     }
 
     def 'should handle job timeout event and update build store'() {
@@ -813,7 +843,7 @@ class ContainerBuildServiceTest extends Specification {
         then:
         1 * mockBuildStore.storeBuild('1', _, _)
         and:
-        0 * mockEventPublisher.publishEvent(_)
+        1 * mockEventPublisher.publishEvent(_)
     }
 
 }
