@@ -865,11 +865,11 @@ class K8sServiceImpl implements K8sService {
                 .coreV1Api()
                 .listNamespacedPod(namespace, null, null, null, null, "job-name=${jobName}", null, null, null, null, null, null)
 
-        if( !allPods )
+        if( !allPods || !allPods.items )
             return null
 
         // Find the latest created pod among the pods associated with the job
-        def latest = allPods.getItems().get(0)
+        def latest = allPods.items.get(0)
         for (def pod : allPods.items) {
             if (pod.metadata?.creationTimestamp?.isAfter(latest.metadata.creationTimestamp)) {
                 latest = pod

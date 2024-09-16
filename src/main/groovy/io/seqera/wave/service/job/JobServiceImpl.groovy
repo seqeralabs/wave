@@ -108,7 +108,7 @@ class JobServiceImpl implements JobService {
             return operations.status(job)
         }
         catch (Throwable t) {
-            log.warn "Unable to aquire status for job=${job.operationName} - cause: ${t.message}"
+            log.warn "Unable to obtain status for job=${job.operationName} - cause: ${t.message}", t
             return new JobState(JobState.Status.UNKNOWN, null, t.message)
         }
     }
