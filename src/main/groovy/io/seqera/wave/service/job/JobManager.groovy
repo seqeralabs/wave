@@ -50,12 +50,12 @@ class JobManager {
     @Inject
     private JobConfig config
 
-    private Cache<String,Instant> unknownCache
+    private Cache<String,Instant> debounceCache
 
     @PostConstruct
     void init() {
         log.info "Creating job manager - config=$config"
-        unknownCache = Caffeine.newBuilder().expireAfterWrite(config.graceInterval.multipliedBy(2)).build()
+        debounceCache = Caffeine.newBuilder().expireAfterWrite(config.graceInterval.multipliedBy(2)).build()
         queue.addConsumer((job)-> processJob(job))
     }
 
@@ -73,13 +73,13 @@ class JobManager {
     }
 
     protected JobState state(JobSpec job) {
-        return state0(job, config.graceInterval, unknownCache)
+        return state0(job, config.graceInterval, debounceCache)
     }
 
     protected JobState state0(final JobSpec job, final Duration graceInterval, final Cache<String,Instant> cache) {
         final key = job.operationName
         final state = jobService.status(job)
-        // non unknown error return directly
+        // return directly non-unknown statuses
         if( state.status != JobState.Status.UNKNOWN ) {
             cache.invalidate(key)
             return state

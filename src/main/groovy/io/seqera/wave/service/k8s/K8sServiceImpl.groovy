@@ -205,12 +205,12 @@ class K8sServiceImpl implements K8sService {
                 .batchV1Api()
                 .readNamespacedJob(name, namespace, null)
         if( !job ) {
-            log.debug "K8s job=$name - unknown"
+            log.warn "K8s job=$name - unknown"
             return null
         }
 
         final result = jobStatus0(job.status, job.spec?.backoffLimit)
-        log.debug "K8s job=$name - result=$result; backoff-limit=${job.spec?.backoffLimit}; status=${job.status}"
+        log.trace "K8s job=$name - result=$result; backoff-limit=${job.spec?.backoffLimit}; status=${job.status}"
         return result
     }
 
@@ -225,10 +225,7 @@ class K8sServiceImpl implements K8sService {
             if( backoffLimit!=null && status.failed > backoffLimit )
                 return JobStatus.Failed
         }
-        if( status.startTime )
-            return JobStatus.Pending
-        else
-            return null
+        return JobStatus.Pending
     }
     /**
      * Get pod description

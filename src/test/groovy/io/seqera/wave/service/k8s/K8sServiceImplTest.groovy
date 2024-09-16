@@ -1039,6 +1039,6 @@ class K8sServiceImplTest extends Specification {
         jobFailedWitMoreRetries() | K8sService.JobStatus.Pending
         jobCompleted()            | K8sService.JobStatus.Failed
         jobStarted()              | K8sService.JobStatus.Pending
-        jobUnknown()              | null
+        jobUnknown()              | K8sService.JobStatus.Pending
     }
 }

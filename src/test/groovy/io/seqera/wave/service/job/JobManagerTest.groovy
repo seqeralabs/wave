@@ -39,7 +39,7 @@ class JobManagerTest extends Specification {
         def jobDispatcher = Mock(JobDispatcher)
         def config = new JobConfig(graceInterval: Duration.ofMillis(1))
         def cache = Caffeine.newBuilder().build()
-        def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config: config, unknownCache: cache)
+        def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config: config, debounceCache: cache)
         and:
         def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now(), Duration.ofMinutes(10))
 
@@ -76,7 +76,7 @@ class JobManagerTest extends Specification {
         def jobDispatcher = Mock(JobDispatcher)
         def config = new JobConfig(graceInterval: Duration.ofMillis(1))
         def cache = Caffeine.newBuilder().build()
-        def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config:config, unknownCache: cache)
+        def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config:config, debounceCache: cache)
         and:
         def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now() - Duration.ofMinutes(5), Duration.ofMinutes(2))
 
@@ -95,7 +95,7 @@ class JobManagerTest extends Specification {
         def jobDispatcher = Mock(JobDispatcher)
         def config = new JobConfig(graceInterval: Duration.ofMillis(1))
         def cache = Caffeine.newBuilder().build()
-        def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config: config, unknownCache: cache)
+        def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, config: config, debounceCache: cache)
         and:
         def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now().minus(Duration.ofMillis(500)), Duration.ofMinutes(10))
 
