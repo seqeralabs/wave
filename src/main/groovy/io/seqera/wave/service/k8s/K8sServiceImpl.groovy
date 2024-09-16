@@ -153,6 +153,7 @@ class K8sServiceImpl implements K8sService {
      */
     @Override
     @CompileDynamic
+    @Deprecated
     V1Job createJob(String name, String containerImage, List<String> args) {
 
         V1Job body = new V1JobBuilder()
@@ -347,6 +348,7 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Pod} description the submitted pod
      */
     @Override
+    @Deprecated
     V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, SpackConfig spackConfig, Map<String,String> nodeSelector) {
         final spec = buildSpec(name, containerImage, args, workDir, creds, timeout, spackConfig, nodeSelector)
         return k8sClient
@@ -448,6 +450,7 @@ class K8sServiceImpl implements K8sService {
      *      or timeout was reached.
      */
     @Override
+    @Deprecated
     Integer waitPodCompletion(V1Pod pod, long timeout) {
         final start = System.currentTimeMillis()
         // wait for termination
@@ -514,6 +517,7 @@ class K8sServiceImpl implements K8sService {
      * @param timeout The max wait time in milliseconds
      */
     @Override
+    @Deprecated
     void deletePodWhenReachStatus(String podName, String statusName, long timeout){
         final pod = getPod(podName)
         final start = System.currentTimeMillis()
@@ -527,6 +531,7 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
+    @Deprecated
     V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
         final spec = scanSpec(name, containerImage, args, workDir, creds, scanConfig, nodeSelector)
         return k8sClient
@@ -534,6 +539,7 @@ class K8sServiceImpl implements K8sService {
                 .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
+    @Deprecated
     V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig, Map<String,String> nodeSelector) {
 
         final mounts = new ArrayList<V1VolumeMount>(5)
@@ -715,7 +721,6 @@ class K8sServiceImpl implements K8sService {
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
 
-
         final requests = new V1ResourceRequirements()
         if( requestsCpu )
             requests.putRequestsItem('cpu', new Quantity(requestsCpu))
@@ -790,7 +795,6 @@ class K8sServiceImpl implements K8sService {
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
 
-
         final requests = new V1ResourceRequirements()
         if( scanConfig.requestsCpu )
             requests.putRequestsItem('cpu', new Quantity(scanConfig.requestsCpu))
@@ -805,11 +809,10 @@ class K8sServiceImpl implements K8sService {
                 .withVolumeMounts(mounts)
                 .withResources(requests)
 
-
         // spec section
         spec.withContainers(container.build()).endSpec().endTemplate().endSpec()
 
-        builder.build()
+        return builder.build()
     }
 
     protected List<V1EnvVar> toEnvList(Map<String,String> env) {
