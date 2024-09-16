@@ -492,7 +492,7 @@ class K8sServiceImpl implements K8sService {
             logs.streamNamespacedPodLog(namespace, pod.metadata.name, pod.spec.containers.first().name).getText()
         }
         catch (Exception e) {
-            log.error "Unable to fetch logs for pod: ${pod.metadata.name}", e
+            log.error "Unable to fetch logs for pod: ${pod.metadata.name} - cause: ${e.message}"
             return null
         }
     }
