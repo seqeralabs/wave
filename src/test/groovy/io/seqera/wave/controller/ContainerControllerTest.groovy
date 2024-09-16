@@ -391,7 +391,7 @@ class ContainerControllerTest extends Specification {
         def pairing = Mock(PairingService)
         def channel = Mock(PairingChannel)
         def controller = new ContainerController(validationService: validation, pairingService: pairing, pairingChannel: channel)
-        def msg
+        def err
 
         when:
         controller.validateContainerRequest(new SubmitContainerTokenRequest())
@@ -411,15 +411,95 @@ class ContainerControllerTest extends Specification {
         when:
         controller.validateContainerRequest(new SubmitContainerTokenRequest(containerImage: 'http://docker.io/foo:latest'))
         then:
-        msg = thrown(BadRequestException)
-        msg.message == 'Invalid container repository name — offending value: http://docker.io/foo:latest'
+        err = thrown(BadRequestException)
+        err.message == 'Invalid container repository name — offending value: http://docker.io/foo:latest'
 
         when:
         controller.validateContainerRequest(new SubmitContainerTokenRequest(containerImage: 'http:docker.io/foo:latest'))
         then:
-        msg = thrown(BadRequestException)
-        msg.message == 'Invalid container image name — offending value: http:docker.io/foo:latest'
+        err = thrown(BadRequestException)
+        err.message == 'Invalid container image name — offending value: http:docker.io/foo:latest'
 
+        when:
+        controller.validateContainerRequest(new SubmitContainerTokenRequest(mirrorRegistry: 'docker.io/foo'))
+        then:
+        err = thrown(BadRequestException)
+        err.message == 'Mirror registry syntax is invalid - offending value: docker.io/foo'
+
+    }
+
+    def 'should validate mirror request' () {
+        given:
+        def validation = new ValidationServiceImpl()
+        def pairing = Mock(PairingService)
+        def channel = Mock(PairingChannel)
+        def controller = new ContainerController(validationService: validation, pairingService: pairing, pairingChannel: channel)
+        def err
+
+        when:
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(containerImage: 'foo:latest'), false)
+        then:
+        noExceptionThrown()
+
+        when:
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirrorRegistry: 'quay.io'), false)
+        then:
+        err = thrown(BadRequestException)
+        err.message == 'Container mirroring requires the use of v2 API'
+
+        when:
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirrorRegistry: 'quay.io'), true)
+        then:
+        err = thrown(BadRequestException)
+        err.message == 'Attribute `containerImage` is required when specifying `mirrorRegistry`'
+
+        when:
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirrorRegistry: 'quay.io', containerImage: 'docker.io/foo'), true)
+        then:
+        err = thrown(BadRequestException)
+        err.message == 'Container mirroring requires an authenticated request - specify the tower token attribute'
+
+        when:
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirrorRegistry: 'docker.io', containerImage: 'docker.io/foo', towerAccessToken: 'xyz'), true)
+        then:
+        err = thrown(BadRequestException)
+        err.message == "Source and target mirror registry as the same - offending value 'docker.io'"
+
+        when:
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirrorRegistry: 'docker.io', containerImage: 'foo', towerAccessToken: 'xyz'), true)
+        then:
+        err = thrown(BadRequestException)
+        err.message == "Source and target mirror registry as the same - offending value 'docker.io'"
+
+        when:
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirrorRegistry: 'quay.io', containerImage: 'docker.io/foo', towerAccessToken: 'xyz', containerFile: 'content'), true)
+        then:
+        err = thrown(BadRequestException)
+        err.message == "Attribute `mirrorRegistry` and `containerFile` conflict each other"
+
+        when:
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirrorRegistry: 'quay.io', containerImage: 'docker.io/foo', towerAccessToken: 'xyz', freeze: true), true)
+        then:
+        err = thrown(BadRequestException)
+        err.message == "Attribute `mirrorRegistry` and `freeze` conflict each other"
+
+        when:
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirrorRegistry: 'quay.io', containerImage: 'docker.io/foo', towerAccessToken: 'xyz', containerIncludes: ['include']), true)
+        then:
+        err = thrown(BadRequestException)
+        err.message == "Attribute `mirrorRegistry` and `containerIncludes` conflict each other"
+
+        when:
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirrorRegistry: 'quay.io', containerImage: 'docker.io/foo', towerAccessToken: 'xyz', containerConfig: new ContainerConfig(entrypoint: ['foo'])), true)
+        then:
+        err = thrown(BadRequestException)
+        err.message == "Attribute `mirrorRegistry` and `containerConfig` conflict each other"
+
+        when:
+        controller.validateMirrorRequest(new SubmitContainerTokenRequest(mirrorRegistry: 'quay.io/bar', containerImage: 'docker.io/foo', towerAccessToken: 'xyz'), true)
+        then:
+        err = thrown(BadRequestException)
+        err.message == "Mirror registry syntax is invalid - offending value: quay.io/bar"
     }
 
     def 'should create response with conda packages' () {

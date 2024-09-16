@@ -184,6 +184,7 @@ class ContainerController {
 
         // validate request
         validateContainerRequest(req)
+        validateMirrorRequest(req, v2)
 
         // this is needed for backward compatibility with old clients
         if( !req.towerEndpoint ) {
@@ -521,7 +522,7 @@ class ContainerController {
         return HttpResponse.ok()
     }
 
-    void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException{
+    void validateContainerRequest(SubmitContainerTokenRequest req) throws BadRequestException {
         String msg
         // check valid image name
         msg = validationService.checkContainerName(req.containerImage)
@@ -532,6 +533,32 @@ class ContainerController {
         // check cache repository
         msg = validationService.checkBuildRepository(req.cacheRepository, true)
         if( msg ) throw new BadRequestException(msg)
+    }
+
+    void validateMirrorRequest(SubmitContainerTokenRequest req, boolean v2) throws BadRequestException {
+        if( !req.mirrorRegistry )
+            return
+        // container mirror validation
+        if( !v2 )
+            throw new BadRequestException("Container mirroring requires the use of v2 API")
+        if( !req.containerImage )
+            throw new BadRequestException("Attribute `containerImage` is required when specifying `mirrorRegistry`")
+        if( !req.towerAccessToken )
+            throw new BadRequestException("Container mirroring requires an authenticated request - specify the tower token attribute")
+        if( req.freeze )
+            throw new BadRequestException("Attribute `mirrorRegistry` and `freeze` conflict each other")
+        if( req.containerFile )
+            throw new BadRequestException("Attribute `mirrorRegistry` and `containerFile` conflict each other")
+        if( req.containerIncludes )
+            throw new BadRequestException("Attribute `mirrorRegistry` and `containerIncludes` conflict each other")
+        if( req.containerConfig )
+            throw new BadRequestException("Attribute `mirrorRegistry` and `containerConfig` conflict each other")
+        final coords = ContainerCoordinates.parse(req.containerImage)
+        if( coords.registry == req.mirrorRegistry )
+            throw new BadRequestException("Source and target mirror registry as the same - offending value '${req.mirrorRegistry}'")
+        def msg = validationService.checkMirrorRegistry(req.mirrorRegistry)
+        if( msg )
+            throw new BadRequestException(msg)
     }
 
     @Error(exception = AuthorizationException.class)

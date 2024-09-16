@@ -92,4 +92,18 @@ class ValidationServiceImpl implements ValidationService {
             return null
     }
 
+    @Override
+    String checkMirrorRegistry(String registry) {
+        if( !registry )
+            return null
+        final prot = StringUtils.getUrlProtocol(registry)
+        if( prot )
+            return "Mirror registry should not include any protocol prefix - offending value: $registry"
+        // check no tag is included
+        final coords = ContainerCoordinates.parse(registry)
+        if( coords.repository )
+            return "Mirror registry syntax is invalid - offending value: ${registry}"
+        return null
+    }
+
 }
