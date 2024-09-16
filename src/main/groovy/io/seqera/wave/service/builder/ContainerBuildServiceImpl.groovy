@@ -362,7 +362,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         final result= BuildResult.failed(build.request.buildId, error.message, job.creationTime)
         buildStore.storeBuild(job.recordId, build.withResult(result), buildConfig.failureDuration)
         eventPublisher.publishEvent(new BuildEvent(build.request, result))
-        log.error("== Container build errored '${build.request.targetImage}' - operation=${job.operationName}; cause=${error.message}", error)
+        log.error("== Container build exception '${build.request.targetImage}' - operation=${job.operationName}; cause=${error.message}", error)
     }
 
     @Override
