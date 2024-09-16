@@ -22,9 +22,6 @@ import spock.lang.Specification
 
 import java.time.Duration
 import java.time.Instant
-import java.util.concurrent.ExecutorService
-
-
 /**
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
@@ -34,8 +31,7 @@ class JobManagerTest extends Specification {
         given:
         def jobService = Mock(JobService)
         def jobDispatcher = Mock(JobDispatcher)
-        def ioExecutor = Mock(ExecutorService)
-        def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher, ioExecutor: ioExecutor)
+        def manager = new JobManager(jobService: jobService, dispatcher: jobDispatcher)
         and:
         def jobSpec = JobSpec.transfer('foo', 'scheduler-1', Instant.now(), Duration.ofMinutes(10))
 
