@@ -78,16 +78,20 @@ class DockerScanStrategy extends ScanStrategy {
 
         //launch scanning
         log.debug("Container scan command: ${command.join(' ')}")
-        new ProcessBuilder()
+        final process = new ProcessBuilder()
                 .command(command)
                 .redirectErrorStream(true)
                 .start()
+
+        if( process.waitFor()!=0 ) {
+            throw new IllegalStateException("Unable to launch scan container - exitCode=${process.exitValue()}; output=${process.text}")
+        }
     }
 
     protected List<String> dockerWrapper(String jobName, Path scanDir, Path credsFile) {
 
         final wrapper = ['docker','run']
-
+        wrapper.add('--detach')
         wrapper.add('--name')
         wrapper.add(jobName)
 

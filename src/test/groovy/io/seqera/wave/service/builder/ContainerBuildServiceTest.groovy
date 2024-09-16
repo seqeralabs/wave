@@ -45,7 +45,6 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.service.builder.store.BuildRecordStore
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
-import io.seqera.wave.service.job.JobEvent
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
@@ -746,7 +745,6 @@ class ContainerBuildServiceTest extends Specification {
         def service = new ContainerBuildServiceImpl(buildStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
         def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
         def state = JobState.succeeded('logs')
-        def event = new JobEvent(JobEvent.Type.Complete, job, state, null)
         def res = BuildResult.create('1')
         def req = new BuildRequest(
                 targetImage: 'docker.io/foo:0',
@@ -757,11 +755,9 @@ class ContainerBuildServiceTest extends Specification {
         def build = new BuildStoreEntry(req, res)
 
         when:
-        service.onJobEvent(event)
+        service.onJobCompletion(job, build, state)
 
         then:
-        1 * mockBuildStore.getBuild('1') >> build
-        and:
         1 * mockBuildStore.storeBuild('1', _, _)
         and:
         1 * mockProxyService.getImageDigest(_, _) >> 'digest'
@@ -776,8 +772,7 @@ class ContainerBuildServiceTest extends Specification {
         def mockEventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
         def service = new ContainerBuildServiceImpl(buildStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
         def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
-        def state = JobState.completed(1,'logs')
-        def event = new JobEvent(JobEvent.Type.Error, job, state, new Exception('error'))
+        def error = new Exception('error')
         def res = BuildResult.create('1')
         def req = new BuildRequest(
                 targetImage: 'docker.io/foo:0',
@@ -788,11 +783,9 @@ class ContainerBuildServiceTest extends Specification {
         def build = new BuildStoreEntry(req, res)
 
         when:
-        service.onJobEvent(event)
+        service.onJobException(job, build, error)
 
         then:
-        1 * mockBuildStore.getBuild('1') >> build
-        and:
         1 * mockBuildStore.storeBuild('1', _, _)
         and:
         0 * mockEventPublisher.publishEvent(_)
@@ -805,8 +798,6 @@ class ContainerBuildServiceTest extends Specification {
         def mockEventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
         def service = new ContainerBuildServiceImpl(buildStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
         def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
-        def state = JobState.completed(127, 'logs')
-        def event = new JobEvent(JobEvent.Type.Timeout, job, state, new Exception('error'))
         def res = BuildResult.create('1')
         def req = new BuildRequest(
                 targetImage: 'docker.io/foo:0',
@@ -817,59 +808,12 @@ class ContainerBuildServiceTest extends Specification {
         def build = new BuildStoreEntry(req, res)
 
         when:
-        service.onJobEvent(event)
+        service.onJobTimeout(job, build)
 
         then:
-        1 * mockBuildStore.getBuild('1') >> build
-        and:
         1 * mockBuildStore.storeBuild('1', _, _)
         and:
         0 * mockEventPublisher.publishEvent(_)
-    }
-
-    def 'should handle already completed build record'() {
-        given:
-        def mockBuildStore = Mock(BuildStore)
-        def mockProxyService = Mock(RegistryProxyService)
-        def mockEventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
-        def service = new ContainerBuildServiceImpl(buildStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
-        def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
-        def state = JobState.unknown('can not complete')
-        def event = new JobEvent(JobEvent.Type.Timeout, job, state, new Exception('error'))
-        def res = BuildResult.completed('1', 0, 'logs', Instant.now().minusSeconds(30), 'digest')
-        def req = new BuildRequest(
-                targetImage: 'docker.io/foo:0',
-                buildId: '1',
-                startTime: Instant.now(),
-                maxDuration: Duration.ofMinutes(1)
-        )
-        def build = new BuildStoreEntry(req, res)
-
-        when:
-        service.onJobEvent(event)
-
-        then:
-        1 * mockBuildStore.getBuild('1') >> build
-        and:
-        0 * mockBuildStore.storeBuild('1', _, _)
-    }
-
-    def 'should handle unknown build record'() {
-        given:
-        def mockBuildStore = Mock(BuildStore)
-        def mockProxyService = Mock(RegistryProxyService)
-        def mockEventPublisher = Mock(ApplicationEventPublisher<BuildEvent>)
-        def service = new ContainerBuildServiceImpl(buildStore: mockBuildStore, proxyService: mockProxyService, eventPublisher: mockEventPublisher, buildConfig: buildConfig)
-        def job = JobSpec.build('1', 'operationName', Instant.now(), Duration.ofMinutes(1), Path.of('/work/dir'))
-        def state = JobState.running()
-        def event = new JobEvent(JobEvent.Type.Timeout, job, state, new Exception('error'))
-        when:
-        service.onJobEvent(event)
-
-        then:
-        1 * mockBuildStore.getBuild('1') >> null
-        and:
-        0 * mockBuildStore.storeBuild('1', _, _)
     }
 
 }

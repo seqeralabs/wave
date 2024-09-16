@@ -21,6 +21,7 @@ package io.seqera.wave.service.builder
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
+import io.seqera.wave.service.job.JobRecord
 
 /**
  * Class to store build request and result in cache
@@ -30,11 +31,16 @@ import groovy.transform.ToString
 @ToString(includePackage = false, includeNames = true)
 @EqualsAndHashCode
 @CompileStatic
-class BuildStoreEntry {
+class BuildStoreEntry implements JobRecord {
 
     final BuildRequest request
 
     final BuildResult result
+
+    @Override
+    boolean done() {
+        return result.done()
+    }
 
     protected BuildStoreEntry() {}
 
