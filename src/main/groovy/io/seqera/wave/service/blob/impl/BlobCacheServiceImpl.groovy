@@ -34,7 +34,6 @@ import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.BlobCacheService
 import io.seqera.wave.service.blob.BlobSigningService
 import io.seqera.wave.service.blob.BlobStore
-import io.seqera.wave.service.job.JobEvent
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
@@ -57,7 +56,7 @@ import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
 @Singleton
 @Requires(property = 'wave.blobCache.enabled', value = 'true')
 @CompileStatic
-class BlobCacheServiceImpl implements BlobCacheService, JobHandler {
+class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobCacheInfo> {
 
     @Value('${wave.debug:false}')
     private Boolean debug
@@ -269,32 +268,12 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler {
     // ============ handles transfer job events ============
 
     @Override
-    void onJobEvent(JobEvent event) {
-        final blob = blobStore.getBlob(event.job.stateId)
-        if( !blob ) {
-            log.error "== Blob cache entry unknown for job=${event.job.stateId}; event=${event}"
-            return
-        }
-        if( blob.done() ) {
-            log.warn "== Blob cache entry already marked as completed for job=${event.job.stateId}; event=${event}"
-            return
-        }
-
-        if( event.type == JobEvent.Type.Complete) {
-            handleJobCompletion(event.job, blob, event.state)
-        }
-        else if( event.type == JobEvent.Type.Timeout ) {
-            handleJobTimeout(event.job, blob)
-        }
-        else if( event.type == JobEvent.Type.Error ) {
-            handleJobException(event.job, blob, event.error)
-        }
-        else {
-            throw new IllegalStateException("Unknown blob cache job event type=$event")
-        }
+    BlobCacheInfo getJobRecord(JobSpec job) {
+        blobStore.getBlob(job.recordId)
     }
 
-    protected void handleJobCompletion(JobSpec job, BlobCacheInfo blob, JobState state) {
+    @Override
+    void onJobCompletion(JobSpec job, BlobCacheInfo blob, JobState state) {
         // update the blob status
         final result = state.succeeded()
                 ? blob.completed(state.exitCode, state.stdout)
@@ -303,13 +282,15 @@ class BlobCacheServiceImpl implements BlobCacheService, JobHandler {
         log.debug "== Blob cache completed for object '${blob.objectUri}'; operation=${job.operationName}; status=${result.exitStatus}; duration=${result.duration()}"
     }
 
-    protected void handleJobException(JobSpec job, BlobCacheInfo blob, Throwable error) {
+    @Override
+    void onJobException(JobSpec job, BlobCacheInfo blob, Throwable error) {
         final result = blob.errored("Unexpected error caching blob '${blob.locationUri}' - operation '${job.operationName}'")
         log.error("== Blob cache exception for object '${blob.objectUri}'; operation=${job.operationName}; cause=${error.message}", error)
         blobStore.storeBlob(blob.id(), result)
     }
 
-    protected void handleJobTimeout(JobSpec job, BlobCacheInfo blob) {
+    @Override
+    void onJobTimeout(JobSpec job, BlobCacheInfo blob) {
         final result = blob.errored("Blob cache transfer timed out ${blob.objectUri}")
         log.warn "== Blob cache completed for object '${blob.objectUri}'; operation=${job.operationName}; duration=${result.duration()}"
         blobStore.storeBlob(blob.id(), result)

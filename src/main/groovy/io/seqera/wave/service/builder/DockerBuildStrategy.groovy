@@ -20,7 +20,6 @@ package io.seqera.wave.service.builder
 
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.concurrent.TimeUnit
 
 import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
@@ -89,12 +88,15 @@ class DockerBuildStrategy extends BuildStrategy {
                     CREATE, WRITE, TRUNCATE_EXISTING)
         }
         
-        new ProcessBuilder()
+        final process = new ProcessBuilder()
             .command(buildCmd)
             .directory(req.workDir.toFile())
             .redirectErrorStream(true)
             .start()
 
+        if( process.waitFor()!=0 ) {
+            throw new IllegalStateException("Unable to launch build container - exitCode=${process.exitValue()}; output=${process.text}")
+        }
     }
 
     protected List<String> buildCmd(String jobName, BuildRequest req, Path credsFile) {
@@ -111,6 +113,7 @@ class DockerBuildStrategy extends BuildStrategy {
         //checkout the documentation here to know more about these options https://github.com/moby/buildkit/blob/master/docs/rootless.md#docker
         final wrapper = ['docker',
                          'run',
+                         '--detach',
                          '--name', name,
                          '--privileged',
                          '-v', "$workDir:$workDir".toString(),
@@ -142,6 +145,7 @@ class DockerBuildStrategy extends BuildStrategy {
     protected List<String> cmdForSingularity(String name, Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform) {
         final wrapper = ['docker',
                          'run',
+                         '--detach',
                          '--name', name,
                          '--privileged',
                          "--entrypoint", '',
