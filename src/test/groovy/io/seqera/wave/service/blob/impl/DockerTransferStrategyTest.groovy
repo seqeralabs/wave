@@ -46,6 +46,7 @@ class DockerTransferStrategyTest extends Specification {
         result.command() == [
                 'docker', 
                 'run',
+                '--detach',
                 '--name',
                 'job-name',
                 '-e', 'AWS_ACCESS_KEY_ID',
