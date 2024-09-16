@@ -17,28 +17,80 @@
             padding: 5px;
             border: 1px solid #ddd;
         }
-
-        #jsonTree ul {
-            list-style: none;
-            margin: 5px;
-            padding: 0;
-            cursor: default;
+        .tree {
+            --spacing: 1.5rem;
+            --radius: 10px;
         }
 
-        #jsonTree li {
-            list-style: none;
-            padding-left: 14px;
+        .tree li {
+            display: block;
+            position: relative;
+            padding-left: calc(2 * var(--spacing) - var(--radius) - 2px);
         }
 
-        #jsonTree li.collapse {
-            background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAADxSURBVHjafFBLaoRAFKzE9gfiFTyEF8gcYEAIZOUJcpdsA24CA+6yGGEO4NqtR3AlBHdG2h+mX82HyWYePLr6VTVV/Z6yLHuxbbv0PA+u68JxHEhN04RxHKG1xjzPO7UsSxnHMcmu60hKBUGAKIqIq6oqlVHLCw6GYUCSJMRFUSAMQ2LhlVi0bUsrDlfcrJumYRTBSqz6vkeappiMSF+EyesbHAvI85xxKJT++cW/0uc0uPIUruuK78MniX36zvOUn+9KKQqfxd+sB77vM7RkZBssM+GY8f7X27bh+PVBbFnWbc5fmz3u6rp+uHDR/AkwAGqHn+ZepzDiAAAAAElFTkSuQmCC);
-            background-repeat: no-repeat;
-            background-position: 0 5px;
+        .tree ul {
+            margin-left: calc(var(--radius) - var(--spacing));
+            padding-left: 0;
+        }
+
+        .tree ul li {
+            border-left: 2px solid #ddd;
+        }
+
+        .tree ul li:last-child {
+            border-color: transparent;
+        }
+
+        .tree ul li::before {
+            content: '';
+            display: block;
+            position: absolute;
+            top: calc(var(--spacing) / -2);
+            left: -2px;
+            width: calc(var(--spacing) + 2px);
+            height: calc(var(--spacing) + 1px);
+            border: solid #ddd;
+            border-width: 0 0 2px 2px;
+        }
+
+        .tree summary {
+            display: block;
             cursor: pointer;
         }
 
-        #jsonTree li.expanded {
-            background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAACYSURBVHjajJA7CoMhEIQ3sD7u4wXy38NzBeyFXCGdta0HSG2XxsIn5F9DOiMZ2Go+mXEuxpgrY8xJKUEIAZxzINVaoZQCOWdorR3Ye3dKKdjJe+/wpOnFFiQfKSLGOKNWoirkIfVIKYHWeglaa2fXCdI9X+vYrz/BMQY87rcliIgfkPLPeeb90uz496/PHY8QwnZwYt4CDACMsHBjtyPgCAAAAABJRU5ErkJggg==);
+        .tree summary::marker,
+        .tree summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .tree summary:focus {
+            outline: none;
+        }
+
+        .tree summary:focus-visible {
+            outline: 1px dotted #000;
+        }
+
+        .tree li::after,
+        .tree summary::before {
+            content: '';
+            display: block;
+            position: absolute;
+            top: calc(var(--spacing) / 2 - var(--radius));
+            left: calc(var(--spacing) - var(--radius) - 1px);
+            width: calc(2 * var(--radius));
+            height: calc(2 * var(--radius));
+            border-radius: 50%;
+            background: #ddd;
+        }
+
+        .tree summary::before {
+            z-index: 1;
+            background: #696 url('/assets/expand-collapse.svg') 0 0;
+        }
+
+        .tree details[open] > summary::before {
+            background-position: calc(-2 * var(--radius)) 0;
         }
     </style>
 </head>
@@ -82,6 +134,10 @@
             </tr>
             <tr>
                 <td>Config</td>
+                <td><div id="config-div-2"></div></td>
+            </tr>
+            <tr>
+                <td>Config</td>
                 <td><div id="config-div"></div></td>
             </tr>
             <tr>
@@ -101,62 +157,50 @@
         </p>
     </div>
 </div>
-<script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
 <script>
-    $(document).ready(function () {
-        const config = {{{config}}}
-        const manifest = {{{manifest}}}
+    function createNestedList(data) {
+        const ul = document.createElement('ul');
+        ul.classList.add('tree')
 
-        const treeBuilder = new JsonTreeBuilder();
+        for (const key in data) {
+            if (data.hasOwnProperty(key)) {
+                const li = document.createElement('li');
 
-        const tree_config = treeBuilder.build(config);
-        $('div#config-div').append(tree_config);
+                if (typeof data[key] === 'object' && !Array.isArray(data[key])) {
+                    const details = document.createElement('details');
+                    const summary = document.createElement('summary');
+                    summary.textContent = key;
+                    details.appendChild(summary);
+                    details.appendChild(createNestedList(data[key]));
+                    li.appendChild(details);
+                } else if (Array.isArray(data[key])) {
+                    const details = document.createElement('details');
+                    const summary = document.createElement('summary');
+                    summary.textContent = key;
+                    details.appendChild(summary);
 
-        const tree_manifest = treeBuilder.build(manifest);
-        $('div#manifest-div').append(tree_manifest);
-    });
+                    const nestedUl = document.createElement('ul');
+                    data[key].forEach(item => {
+                        const nestedLi = document.createElement('li');
+                        nestedLi.textContent = item;
+                        nestedUl.appendChild(nestedLi);
+                    });
 
-    function JsonTreeBuilder() {
-
-        this.build = function (jsonDoc) {
-            const tree = generateTree(jsonDoc);
-            activateTree(tree);
-
-            return $('<div id="jsonTree"></div>').append(tree);
-        };
-
-        const generateTree = function (data) {
-            if (typeof (data) == 'object' && data != null) {
-                const ul = $("<ul>");
-                for (const i in data) {
-                    const li = $("<li>");
-                    ul.append(li.text(i).append(generateTree(data[i])));
+                    details.appendChild(nestedUl);
+                    li.appendChild(details);
+                } else {
+                    li.textContent = key;
                 }
-                return ul;
-            } else {
-                const v = (data === undefined) ? "[empty]" : data;
-                return document.createTextNode(" : " + v);
+
+                ul.appendChild(li);
             }
-        };
+        }
 
-        const activateTree = function (tree) {
-            $('li > ul', tree).each(function () {
-                const innerUlContent = $(this);
-                const parent = innerUlContent.parent("li");
-                parent.addClass('collapse');
-                parent.click(function () {
-                    $(this).toggleClass('expanded');
-                    innerUlContent.slideToggle('fast');
-                });
-
-                innerUlContent.click(function (event) {
-                    event.stopPropagation();
-                });
-            });
-
-            $('ul', tree).hide();
-        };
+        return ul;
     }
+
+    document.getElementById('config-div').appendChild(createNestedList({{{config}}}));
+    document.getElementById('manifest-div').appendChild(createNestedList({{{manifest}}}));
 </script>
 </body>
 </html>
