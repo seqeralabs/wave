@@ -420,12 +420,6 @@ class ContainerControllerTest extends Specification {
         err = thrown(BadRequestException)
         err.message == 'Invalid container image name — offending value: http:docker.io/foo:latest'
 
-        when:
-        controller.validateContainerRequest(new SubmitContainerTokenRequest(mirrorRegistry: 'docker.io/foo'))
-        then:
-        err = thrown(BadRequestException)
-        err.message == 'Mirror registry syntax is invalid - offending value: docker.io/foo'
-
     }
 
     def 'should validate mirror request' () {
