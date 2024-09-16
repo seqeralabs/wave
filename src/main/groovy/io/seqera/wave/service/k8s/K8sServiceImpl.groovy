@@ -32,6 +32,7 @@ import io.kubernetes.client.openapi.models.V1EnvVar
 import io.kubernetes.client.openapi.models.V1HostPathVolumeSource
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1JobBuilder
+import io.kubernetes.client.openapi.models.V1JobStatus
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodBuilder
@@ -203,23 +204,32 @@ class K8sServiceImpl implements K8sService {
         final job = k8sClient
                 .batchV1Api()
                 .readNamespacedJob(name, namespace, null)
-        if( !job )
+        if( !job ) {
+            log.debug "K8s job=$name - unknown"
             return null
-        if( job.status.succeeded )
-            return JobStatus.Succeeded
-        if( job.status.active )
-            return JobStatus.Pending
-        if( job.status.failed ) {
-            if( job.status.completionTime!=null )
-                return JobStatus.Failed
-            if( job.status.failed > job.spec.backoffLimit )
-                return JobStatus.Failed
-            else
-                return JobStatus.Pending
         }
-        return null
+
+        final result = jobStatus0(job.status, job.spec?.backoffLimit)
+        log.debug "K8s job=$name - result=$result; backoff-limit=${job.spec?.backoffLimit}; status=${job.status}"
+        return result
     }
 
+    private JobStatus jobStatus0(V1JobStatus status, Integer backoffLimit) {
+        if( status.succeeded )
+            return JobStatus.Succeeded
+        if( status.active )
+            return JobStatus.Pending
+        if( status.failed ) {
+            if( status.completionTime!=null )
+                return JobStatus.Failed
+            if( backoffLimit!=null && status.failed > backoffLimit )
+                return JobStatus.Failed
+        }
+        if( status.startTime )
+            return JobStatus.Pending
+        else
+            return null
+    }
     /**
      * Get pod description
      *

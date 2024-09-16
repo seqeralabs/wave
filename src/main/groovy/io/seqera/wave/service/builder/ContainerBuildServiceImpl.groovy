@@ -353,7 +353,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
                 ? BuildResult.completed(buildId, exit, state.stdout, job.creationTime, digest)
                 : BuildResult.failed(buildId, state.stdout, job.creationTime)
         buildStore.storeBuild(job.recordId, build.withResult(result), ttl)
-        log.warn "== Container build completed '${build.request.targetImage}' - operation=${job.operationName}; exit=${exit}; duration=${result.duration}"
+        log.info "== Container build completed '${build.request.targetImage}' - operation=${job.operationName}; exit=${exit}; status=${state.status}; duration=${result.duration}"
         // finally notify completion
         eventPublisher.publishEvent(new BuildEvent(build.request, result))
     }
