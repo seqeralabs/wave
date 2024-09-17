@@ -18,17 +18,17 @@
 
 package io.seqera.wave.service.conda
 
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.http.server.types.files.StreamedFile
-import io.micronaut.objectstorage.ObjectStorageEntry
 import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.service.builder.BuildEvent
 import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.persistence.WaveCondaLockRecord
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
@@ -65,10 +65,9 @@ class CondaLockServiceImpl implements CondaLockService {
         if( !logs ) return
         try {
             String condaLock = extractCondaLockFile(logs)
-            log.debug("logs: $logs")
             log.debug "Storing condalock for buildId: $buildId"
-            log.debug("Conda lock file path: $condaLock")
-            persistenceService.saveCondaLock(buildId, condaLock)
+            def record = new WaveCondaLockRecord(buildId, condaLock.getBytes(StandardCharsets.UTF_8))
+            persistenceService.saveCondaLock(record)
         }
         catch (Exception e) {
             log.warn "Unable to store condalock for buildId: $buildId  - reason: ${e.message}", e
@@ -76,10 +75,10 @@ class CondaLockServiceImpl implements CondaLockService {
     }
 
     @Override
-    String fetchCondaLockStream(String buildId) {
+    String fetchCondaLock(String buildId) {
         if( !buildId )
             return null
-        return persistenceService.loadCondaLock(buildId)
+        return new String(persistenceService.loadCondaLock(buildId).condaLockFile, StandardCharsets.UTF_8)
     }
 
     protected static extractCondaLockFile(String logs) {

@@ -134,7 +134,7 @@ interface PersistenceService {
      *
      * @param build A {@link WaveBuildRecord} object
      */
-    void saveCondaLock(String buildId, String condaLock)
+    void saveCondaLock(WaveCondaLockRecord condaLock)
 
     /**
      * Retrieve a condaLock for the given build id
@@ -142,5 +142,5 @@ interface PersistenceService {
      * @param buildId The build id i.e. the checksum of dockerfile + condafile + repo
      * @return The corresponding condaLock file as a string
      */
-    String loadCondaLock(String buildId)
+    WaveCondaLockRecord loadCondaLock(String buildId)
 }

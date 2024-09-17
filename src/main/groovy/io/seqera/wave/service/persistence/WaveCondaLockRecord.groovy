@@ -16,17 +16,28 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.conda
+package io.seqera.wave.service.persistence
+
+import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
+import groovy.transform.ToString
 
 /**
- * Service to manage conda lock files
+ * Model a Wave conda lock
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */
-interface CondaLockService {
+@ToString
+@CompileStatic
+@EqualsAndHashCode
+class WaveCondaLockRecord {
+    String buildId
+    byte[] condaLockFile
 
-    void storeCondaLock(String buildId, String condaLock)
+    WaveCondaLockRecord() {}
 
-    String fetchCondaLock(String buildId)
-
+    WaveCondaLockRecord(String buildId, byte[] condaLockFile) {
+        this.buildId = buildId
+        this.condaLockFile = condaLockFile
+    }
 }

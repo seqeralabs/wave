@@ -89,7 +89,7 @@ class BuildController {
     HttpResponse<String> getCondaLock(String buildId){
         if( condaLockService==null )
             throw new IllegalStateException("Build Logs service not configured")
-        final logs = condaLockService.fetchCondaLockStream(buildId)
+        final logs = condaLockService.fetchCondaLock(buildId)
         return logs
                 ? HttpResponse.ok(logs)
                 : HttpResponse.<String>notFound()
