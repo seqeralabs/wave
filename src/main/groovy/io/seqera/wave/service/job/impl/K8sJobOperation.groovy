@@ -59,8 +59,10 @@ class K8sJobOperation implements JobOperation {
 
         // Find the latest created pod among the pods associated with the job
         final pod = k8sService.getLatestPodForJob(job.operationName)
-        if( !pod )
-            throw new IllegalStateException("Missing carried pod for job: ${job.operationName}")
+        if( !pod ) {
+            log.warn "K8s missing carrier pod for job ${job.operationName}"
+            return new JobState(JobState.Status.UNKNOWN)
+        }
 
         // determine exit code and logs
         final exitCode = pod
