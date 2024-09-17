@@ -33,10 +33,10 @@ import jakarta.inject.Singleton
 @Singleton
 class JobConfig {
 
-    @Value('${wave.job-manager.grace-interval:20s}')
+    @Value('${wave.job-manager.grace-interval:30s}')
     Duration graceInterval
 
-    @Value('${wave.job-manager.poll-interval:200ms}')
+    @Value('${wave.job-manager.poll-interval:400ms}')
     Duration pollInterval
 
 }

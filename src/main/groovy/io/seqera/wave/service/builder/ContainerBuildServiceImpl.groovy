@@ -357,24 +357,25 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
                 ? BuildResult.completed(buildId, exit, state.stdout, job.creationTime, digest, condaLock)
                 : BuildResult.failed(buildId, state.stdout, job.creationTime)
         buildStore.storeBuild(job.recordId, build.withResult(result), ttl)
-        log.warn "== Container build completed '${build.request.targetImage}' - operation=${job.operationName}; exit=${exit}; duration=${result.duration}"
-        // finally notify completion
         eventPublisher.publishEvent(new BuildEvent(build.request, result))
+        log.info "== Container build completed '${build.request.targetImage}' - operation=${job.operationName}; exit=${exit}; status=${state.status}; duration=${result.duration}"
     }
 
     @Override
     void onJobException(JobSpec job, BuildStoreEntry build, Throwable error) {
         final result= BuildResult.failed(build.request.buildId, error.message, job.creationTime)
-        log.error("== Container build errored '${build.request.targetImage}' - operation=${job.operationName}; cause=${error.message}", error)
         buildStore.storeBuild(job.recordId, build.withResult(result), buildConfig.failureDuration)
+        eventPublisher.publishEvent(new BuildEvent(build.request, result))
+        log.error("== Container build exception '${build.request.targetImage}' - operation=${job.operationName}; cause=${error.message}", error)
     }
 
     @Override
     void onJobTimeout(JobSpec job, BuildStoreEntry build) {
         final buildId = build.request.buildId
         final result= BuildResult.failed(buildId, "Container image build timed out '${build.request.targetImage}'", job.creationTime)
-        log.warn "== Container build time out '${build.request.targetImage}'; operation=${job.operationName}; duration=${result.duration}"
         buildStore.storeBuild(job.recordId, build.withResult(result), buildConfig.failureDuration)
+        eventPublisher.publishEvent(new BuildEvent(build.request, result))
+        log.warn "== Container build time out '${build.request.targetImage}'; operation=${job.operationName}; duration=${result.duration}"
     }
 
     // **************************************************************

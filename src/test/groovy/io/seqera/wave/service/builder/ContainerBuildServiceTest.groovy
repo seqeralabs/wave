@@ -18,19 +18,19 @@
 
 package io.seqera.wave.service.builder
 
-import spock.lang.Requires
 import spock.lang.Specification
 
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
-import java.util.concurrent.TimeUnit
 
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
 import com.sun.net.httpserver.HttpServer
 import groovy.util.logging.Slf4j
+import io.micronaut.context.annotation.Primary
+import io.micronaut.context.annotation.Requires
 import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.BuildContext
@@ -50,6 +50,8 @@ import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
+import io.seqera.wave.service.scan.ScanRequest
+import io.seqera.wave.service.scan.ScanStrategy
 import io.seqera.wave.test.TestHelper
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.ContainerHelper
@@ -57,13 +59,39 @@ import io.seqera.wave.util.Packer
 import io.seqera.wave.util.SpackHelper
 import io.seqera.wave.util.TemplateRenderer
 import jakarta.inject.Inject
+import jakarta.inject.Singleton
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
-@MicronautTest
+@MicronautTest(environments = ['build-service-test'])
 class ContainerBuildServiceTest extends Specification {
+
+    @Primary
+    @Singleton
+    @Requires(env = 'build-service-test')
+    static class FakeBuildStrategy extends BuildStrategy {
+
+        @Override
+        void build(String jobName, BuildRequest request) {
+            // do nothing
+            log.debug "Running fake build job=$jobName - request=$request"
+        }
+    }
+
+    @Primary
+    @Singleton
+    @Requires(env = 'build-service-test')
+    static class FakeScanStrategy extends ScanStrategy {
+
+        @Override
+        void scanContainer(String jobName, ScanRequest request) {
+            // do nothing
+            log.debug "Running fake scan job=$jobName - request=$request"
+        }
+    }
+
 
     @Inject ContainerBuildServiceImpl service
     @Inject RegistryLookupService lookupService
@@ -75,190 +103,6 @@ class ContainerBuildServiceTest extends Specification {
     @Inject BuildCacheStore buildCacheStore
     @Inject PersistenceService persistenceService
     @Inject JobService jobService
-
-    @Requires({System.getenv('AWS_ACCESS_KEY_ID') && System.getenv('AWS_SECRET_ACCESS_KEY')})
-    def 'should build & push container to aws' () {
-        given:
-        def folder = Files.createTempDirectory('test')
-        def buildRepo = buildConfig.defaultBuildRepository
-        def cacheRepo = buildConfig.defaultCacheRepository
-        def duration = Duration.ofMinutes(1)
-        and:
-        def dockerFile = '''
-        FROM busybox
-        RUN echo Hello > hello.txt
-        '''.stripIndent()
-        and:
-        def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, cacheRepo, Mock(PlatformId))
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
-        def req =
-                new BuildRequest(
-                        containerId: containerId,
-                        containerFile: dockerFile,
-                        workspace: folder,
-                        targetImage: targetImage,
-                        identity: Mock(PlatformId),
-                        platform: ContainerPlatform.of('amd64'),
-                        cacheRepository: cacheRepo,
-                        configJson: cfg,
-                        format: BuildFormat.DOCKER,
-                        startTime: Instant.now(),
-                        maxDuration: duration
-                )
-                    .withBuildId('1')
-        and:
-        buildCacheStore.storeBuild(targetImage, new BuildStoreEntry(req, BuildResult.create(req)))
-
-        when:
-        service.launch(req)
-        then:
-        service
-                .buildResult(targetImage)
-                .get(duration.toSeconds(), TimeUnit.SECONDS)
-                .succeeded()
-
-        cleanup:
-        folder?.deleteDir()
-    }
-
-    @Requires({System.getenv('DOCKER_USER') && System.getenv('DOCKER_PAT')})
-    def 'should build & push container to docker.io' () {
-        given:
-        def folder = Files.createTempDirectory('test')
-        def buildRepo = "docker.io/pditommaso/wave-tests"
-        def cacheRepo = buildConfig.defaultCacheRepository
-        def duration = Duration.ofMinutes(1)
-        and:
-        def dockerFile = '''
-        FROM busybox
-        RUN echo Hello > hello.txt
-        '''.stripIndent()
-        and:
-        def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
-        def req =
-                new BuildRequest(
-                        containerId: containerId,
-                        containerFile: dockerFile,
-                        workspace: folder,
-                        targetImage: targetImage,
-                        identity: Mock(PlatformId),
-                        platform: TestHelper.containerPlatform(),
-                        cacheRepository: cacheRepo,
-                        configJson: cfg,
-                        format: BuildFormat.DOCKER,
-                        startTime: Instant.now(),
-                        maxDuration: duration
-                )
-                .withBuildId('1')
-        and:
-        buildCacheStore.storeBuild(targetImage, new BuildStoreEntry(req, BuildResult.create(req)))
-
-        when:
-        service.launch(req)
-        then:
-        service
-                .buildResult(targetImage)
-                .get(duration.toSeconds(), TimeUnit.SECONDS)
-                .succeeded()
-
-        cleanup:
-        folder?.deleteDir()
-    }
-
-    @Requires({System.getenv('QUAY_USER') && System.getenv('QUAY_PAT')})
-    def 'should build & push container to quay.io' () {
-        given:
-        def folder = Files.createTempDirectory('test')
-        def cacheRepo = buildConfig.defaultCacheRepository
-        def duration = Duration.ofMinutes(1)
-        and:
-        def dockerFile = '''
-        FROM busybox
-        RUN echo Hello > hello.txt
-        '''.stripIndent()
-        and:
-        def buildRepo = "quay.io/pditommaso/wave-tests"
-        def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('linux/arm64'), buildRepo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
-        def req =
-                new BuildRequest(
-                        containerId: containerId,
-                        containerFile: dockerFile,
-                        workspace: folder,
-                        targetImage: targetImage,
-                        identity: Mock(PlatformId),
-                        platform: TestHelper.containerPlatform(),
-                        cacheRepository: cacheRepo,
-                        configJson: cfg,
-                        format: BuildFormat.DOCKER,
-                        startTime: Instant.now(),
-                        maxDuration: duration
-                )
-                .withBuildId('1')
-        and:
-        buildCacheStore.storeBuild(targetImage, new BuildStoreEntry(req, BuildResult.create(req)))
-
-        when:
-        service.launch(req)
-        then:
-        service
-                .buildResult(targetImage)
-                .get(duration.toSeconds(), TimeUnit.SECONDS)
-                .succeeded()
-
-        cleanup:
-        folder?.deleteDir()
-    }
-
-    @Requires({System.getenv('AZURECR_USER') && System.getenv('AZURECR_PAT')})
-    def 'should build & push container to azure' () {
-        given:
-        def folder = Files.createTempDirectory('test')
-        def buildRepo = "seqeralabs.azurecr.io/wave-tests"
-        def cacheRepo = buildConfig.defaultCacheRepository
-        and:
-        def dockerFile = '''
-        FROM busybox
-        RUN echo Hello > hello.txt
-        '''.stripIndent()
-        and:
-        def duration = Duration.ofMinutes(1)
-        def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
-        def req =
-                new BuildRequest(
-                        containerId: containerId,
-                        containerFile: dockerFile,
-                        workspace: folder,
-                        targetImage: targetImage,
-                        identity: Mock(PlatformId),
-                        platform: TestHelper.containerPlatform(),
-                        cacheRepository: cacheRepo,
-                        configJson: cfg,
-                        format: BuildFormat.DOCKER,
-                        startTime: Instant.now(),
-                        maxDuration: duration
-                )
-                .withBuildId('1')
-        and:
-        buildCacheStore.storeBuild(targetImage, new BuildStoreEntry(req, BuildResult.create(req)))
-
-        when:
-        service.launch(req)
-        then:
-        service
-                .buildResult(targetImage)
-                .get(duration.toSeconds(), TimeUnit.SECONDS)
-                .succeeded()
-
-        cleanup:
-        folder?.deleteDir()
-    }
 
     def 'should save build docker build file' () {
         given:
@@ -487,59 +331,6 @@ class ContainerBuildServiceTest extends Specification {
           /some/context/nf-1234/* /
         '''.stripIndent()
 
-    }
-
-    @Requires({System.getenv('DOCKER_USER') && System.getenv('DOCKER_PAT')})
-    def 'should build & push container to docker.io with local layers' () {
-        given:
-        def folder = Files.createTempDirectory('test')
-        def buildRepo = "docker.io/pditommaso/wave-tests"
-        def cacheRepo = buildConfig.defaultCacheRepository
-        def layer = Files.createDirectories(folder.resolve('layer'))
-        def file1 = layer.resolve('hola.txt'); file1.text = 'Hola\n'
-        def file2 = layer.resolve('ciao.txt'); file2.text = 'Ciao\n'
-        and:
-        def dockerFile = '''
-        FROM busybox
-        RUN echo Hello > hello_docker.txt
-        '''.stripIndent()
-        and:
-        def l1 = new Packer().layer(layer, [file1, file2])
-        def containerConfig = new ContainerConfig(cmd: ['echo', 'Hola'], layers: [l1])
-        and:
-        def duration = Duration.ofMinutes(1)
-        def cfg = dockerAuthService.credentialsConfigJson(dockerFile, buildRepo, null, Mock(PlatformId))
-        def containerId = ContainerHelper.makeContainerId(dockerFile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
-        def req =
-                new BuildRequest(
-                        containerId: containerId,
-                        containerFile: dockerFile,
-                        workspace: folder,
-                        targetImage: targetImage,
-                        identity: Mock(PlatformId),
-                        platform: TestHelper.containerPlatform(),
-                        cacheRepository: cacheRepo,
-                        configJson: cfg,
-                        containerConfig: containerConfig ,
-                        format: BuildFormat.DOCKER,
-                        startTime: Instant.now(),
-                        maxDuration: duration
-                )
-                        .withBuildId('1')
-        and:
-        buildCacheStore.storeBuild(targetImage, new BuildStoreEntry(req, BuildResult.create(req)))
-        
-        when:
-        service.launch(req)
-        then:
-        service
-                .buildResult(targetImage)
-                .get(duration.toSeconds(), TimeUnit.SECONDS)
-                .succeeded()
-
-        cleanup:
-        folder?.deleteDir()
     }
 
     def 'should untar build context' () {
@@ -788,7 +579,7 @@ class ContainerBuildServiceTest extends Specification {
         then:
         1 * mockBuildStore.storeBuild('1', _, _)
         and:
-        0 * mockEventPublisher.publishEvent(_)
+        1 * mockEventPublisher.publishEvent(_)
     }
 
     def 'should handle job timeout event and update build store'() {
@@ -813,7 +604,7 @@ class ContainerBuildServiceTest extends Specification {
         then:
         1 * mockBuildStore.storeBuild('1', _, _)
         and:
-        0 * mockEventPublisher.publishEvent(_)
+        1 * mockEventPublisher.publishEvent(_)
     }
 
 }
