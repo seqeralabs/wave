@@ -104,7 +104,7 @@ abstract class AbstractMessageStream<M> implements Closeable {
             // initialize the stream
             stream.init(streamId)
             // then add the consumer to the listeners
-            final value = listeners.put(streamId, consumer)
+            listeners.put(streamId, consumer)
         }
     }
 
