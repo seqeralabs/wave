@@ -16,7 +16,9 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.seqera.wave.service.conda
+package io.seqera.wave.service.conda.impl
+
+import io.seqera.wave.service.conda.CondaLockService
 
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.CompletableFuture
@@ -32,6 +34,8 @@ import io.seqera.wave.service.persistence.WaveCondaLockRecord
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
+import static io.seqera.wave.service.conda.Conda.CONDA_LOCK_END
+import static io.seqera.wave.service.conda.Conda.CONDA_LOCK_START
 /**
  * Implements Service  to manage conda lock files from an Object store
  *
@@ -55,10 +59,6 @@ class CondaLockServiceImpl implements CondaLockService {
             CompletableFuture.supplyAsync(() -> storeCondaLock(event.result.id, event.result.logs), ioExecutor)
         }
     }
-
-    private static String CONDA_LOCK_START = "conda_lock_start"
-
-    private static String CONDA_LOCK_END = "conda_lock_end"
 
     @Override
     void storeCondaLock(String buildId, String logs) {

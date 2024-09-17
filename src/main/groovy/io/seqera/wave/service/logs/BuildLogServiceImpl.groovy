@@ -42,6 +42,8 @@ import jakarta.inject.Named
 import jakarta.inject.Singleton
 import org.apache.commons.io.input.BoundedInputStream
 import static org.apache.commons.lang3.StringUtils.strip
+import static io.seqera.wave.service.conda.Conda.CONDA_LOCK_END
+import static io.seqera.wave.service.conda.Conda.CONDA_LOCK_START
 /**
  * Implements Service  to manage logs from an Object store
  *
@@ -98,6 +100,7 @@ class BuildLogServiceImpl implements BuildLogService {
     @Override
     void storeLog(String buildId, String content){
         try {
+            content = removeCondaLockFile(content)
             log.debug "Storing logs for buildId: $buildId"
             final uploadRequest = UploadRequest.fromBytes(content.getBytes(), logKey(buildId))
             objectStorageOperations.upload(uploadRequest)
@@ -125,5 +128,14 @@ class BuildLogServiceImpl implements BuildLogService {
             return null
         final logs = new BoundedInputStream(result.getInputStream(), maxLength).getText()
         return new BuildLog(logs, logs.length()>=maxLength)
+    }
+
+    protected static removeCondaLockFile(String logs) {
+        if(logs.indexOf(CONDA_LOCK_START) < 0 ) {
+            return logs
+        }
+        def condaLock = logs.substring(logs.lastIndexOf( CONDA_LOCK_START), logs.lastIndexOf(CONDA_LOCK_END) + CONDA_LOCK_END.length())
+
+        return logs.replace(condaLock, '')
     }
 }
