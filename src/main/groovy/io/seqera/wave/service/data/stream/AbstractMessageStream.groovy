@@ -125,7 +125,7 @@ abstract class AbstractMessageStream<M> implements Closeable {
     protected boolean processMessage(String msg, MessageConsumer<M> consumer, AtomicInteger count) {
         count.incrementAndGet()
         final decoded = encoder.decode(msg)
-        log.trace "Message streaming - receiving message=$msg; decoded=$decoded"
+        log.trace "Message stream - receiving message=$msg; decoded=$decoded"
         return consumer.accept(decoded)
     }
 
@@ -145,7 +145,8 @@ abstract class AbstractMessageStream<M> implements Closeable {
                 // reset the attempt count because no error has been thrown
                 attempt.reset()
                 // if no message was sent, sleep for a while before retrying
-                if( count==0 ) {
+                if( count.get()==0 ) {
+                    log.trace "Message stream - await before checking for new messages"
                     sleep(pollInterval().toMillis())
                 }
             }
