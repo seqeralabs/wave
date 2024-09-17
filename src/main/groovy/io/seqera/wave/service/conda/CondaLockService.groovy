@@ -29,10 +29,8 @@ import io.micronaut.http.server.types.files.StreamedFile
  */
 interface CondaLockService {
 
-    String CONDA_LOCK_FILE_NAME = 'environment.lock'
+    void storeCondaLock(String buildId, String condaLock)
 
-    void storeCondaLock(String buildId, Path condaLock)
-
-    StreamedFile fetchCondaLockStream(String buildId)
+    String fetchCondaLockStream(String buildId)
 
 }

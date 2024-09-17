@@ -126,4 +126,21 @@ interface PersistenceService {
                 scanRecord.vulnerabilities )
     }
 
+    /**
+     * Store a  condaLock for buildId in the underlying persistence layer.
+     *
+     * It maye be implemented in non-blocking manner therefore there's no guarantee
+     * the record is accessible via #loadBuild immediately after this operation
+     *
+     * @param build A {@link WaveBuildRecord} object
+     */
+    void saveCondaLock(String buildId, String condaLock)
+
+    /**
+     * Retrieve a condaLock for the given build id
+     *
+     * @param buildId The build id i.e. the checksum of dockerfile + condafile + repo
+     * @return The corresponding condaLock file as a string
+     */
+    String loadCondaLock(String buildId)
 }

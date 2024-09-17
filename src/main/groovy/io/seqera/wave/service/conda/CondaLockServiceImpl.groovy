@@ -18,27 +18,20 @@
 
 package io.seqera.wave.service.conda
 
-import java.nio.file.Files
-import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import io.micronaut.context.annotation.Requires
-import io.micronaut.context.annotation.Value
-import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.server.types.files.StreamedFile
 import io.micronaut.objectstorage.ObjectStorageEntry
-import io.micronaut.objectstorage.ObjectStorageOperations
-import io.micronaut.objectstorage.request.UploadRequest
 import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.service.builder.BuildEvent
+import io.seqera.wave.service.persistence.PersistenceService
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
-import static org.apache.commons.lang3.StringUtils.strip
 /**
  * Implements Service  to manage conda lock files from an Object store
  *
@@ -47,44 +40,35 @@ import static org.apache.commons.lang3.StringUtils.strip
 @Slf4j
 @Singleton
 @CompileStatic
-@Requires(property = 'wave.build.conda-lock.bucket')
 class CondaLockServiceImpl implements CondaLockService {
-
-    @Inject
-    @Named('conda-lock')
-    private ObjectStorageOperations<?, ?, ?> objectStorageOperations
-
-    @Nullable
-    @Value('${wave.build.conda-lock.prefix}')
-    private String prefix
 
     @Inject
     @Named(TaskExecutors.IO)
     private volatile ExecutorService ioExecutor
 
-    protected String condaLockKey(String buildId) {
-        if( !buildId )
-            return null
-        if( !prefix )
-            return buildId + '/' + CONDA_LOCK_FILE_NAME
-        final base = strip(prefix, '/')
-        return "${base}/${buildId}/${CONDA_LOCK_FILE_NAME}"
-    }
+    @Inject
+    PersistenceService persistenceService
 
     @EventListener
     void onBuildEvent(BuildEvent event) {
         if (event.request.condaFile) {
-            CompletableFuture.supplyAsync(() -> storeCondaLock(event.result.id, event.result.condaLock), ioExecutor)
+            CompletableFuture.supplyAsync(() -> storeCondaLock(event.result.id, event.result.logs), ioExecutor)
         }
     }
 
+    private static String CONDA_LOCK_START = "conda_lock_start"
+
+    private static String CONDA_LOCK_END = "conda_lock_end"
+
     @Override
-    void storeCondaLock(String buildId, Path condaLock) {
-        if( !condaLock ) return
+    void storeCondaLock(String buildId, String logs) {
+        if( !logs ) return
         try {
+            String condaLock = extractCondaLockFile(logs)
+            log.debug("logs: $logs")
             log.debug "Storing condalock for buildId: $buildId"
-            final uploadRequest = UploadRequest.fromBytes(Files.readAllBytes(condaLock), condaLockKey(buildId))
-            objectStorageOperations.upload(uploadRequest)
+            log.debug("Conda lock file path: $condaLock")
+            persistenceService.saveCondaLock(buildId, condaLock)
         }
         catch (Exception e) {
             log.warn "Unable to store condalock for buildId: $buildId  - reason: ${e.message}", e
@@ -92,10 +76,15 @@ class CondaLockServiceImpl implements CondaLockService {
     }
 
     @Override
-    StreamedFile fetchCondaLockStream(String buildId) {
-        if( !buildId ) return null
-        final Optional<ObjectStorageEntry<?>> result = objectStorageOperations.retrieve(condaLockKey(buildId))
-        return result.isPresent() ? result.get().toStreamedFile() : null
+    String fetchCondaLockStream(String buildId) {
+        if( !buildId )
+            return null
+        return persistenceService.loadCondaLock(buildId)
+    }
+
+    protected static extractCondaLockFile(String logs) {
+        return logs.substring(logs.lastIndexOf(CONDA_LOCK_START) + CONDA_LOCK_START.length(), logs.lastIndexOf(CONDA_LOCK_END))
+                .replaceAll(/#\d+ \d+\.\d+\s*/, '')
     }
 
 }

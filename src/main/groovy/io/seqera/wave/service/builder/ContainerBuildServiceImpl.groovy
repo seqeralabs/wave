@@ -42,7 +42,6 @@ import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.builder.store.BuildRecordStore
 import io.seqera.wave.service.conda.CondaLockService
-import io.seqera.wave.service.job.JobEvent
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
@@ -50,7 +49,6 @@ import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.metric.MetricsService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
-import io.seqera.wave.service.scan.Trivy
 import io.seqera.wave.service.stream.StreamService
 import io.seqera.wave.tower.PlatformId
 import io.seqera.wave.util.Retryable
@@ -352,9 +350,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
                 : buildConfig.failureDuration
         // update build status store
         final exit = state.exitCode!=null ? state.exitCode : -1
-        final condaLock = build.request.condaFile ? build.request.workDir.resolve(CondaLockService.CONDA_LOCK_FILE_NAME) : null
         final result = state.completed()
-                ? BuildResult.completed(buildId, exit, state.stdout, job.creationTime, digest, condaLock)
+                ? BuildResult.completed(buildId, exit, state.stdout, job.creationTime, digest)
                 : BuildResult.failed(buildId, state.stdout, job.creationTime)
         buildStore.storeBuild(job.recordId, build.withResult(result), ttl)
         eventPublisher.publishEvent(new BuildEvent(build.request, result))

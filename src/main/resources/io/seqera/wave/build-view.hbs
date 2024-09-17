@@ -117,9 +117,12 @@
                 <td><a href="{{scan_url}}">Image scan report</a></td>
             </tr>
         {{/if}}
-        {{#if build_conda_lock_url}}
-            <td>Conda Lockfile</td>
-            <td><a href="{{build_conda_lock_url}}" download>Conda Lockfile</a></td>
+
+        {{#if build_success}}
+            {{#if build_conda_lock_url }}
+                <td>Conda Lockfile</td>
+                <td><a href="{{build_conda_lock_url}}" download>Conda Lockfile</a></td>
+            {{/if}}
         {{/if}}
     </table>
 

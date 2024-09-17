@@ -37,7 +37,10 @@ class LocalPersistenceService implements PersistenceService {
     private Map<String,WaveBuildRecord> buildStore = new HashMap<>()
 
     private Map<String,WaveContainerRecord> requestStore = new HashMap<>()
+
     private Map<String,WaveScanRecord> scanStore = new HashMap<>()
+
+    private Map<String,String> condaLockStore = new HashMap<>()
 
     @Override
     void saveBuild(WaveBuildRecord record) {
@@ -87,4 +90,13 @@ class LocalPersistenceService implements PersistenceService {
         scanStore.get(scanId)
     }
 
+    @Override
+    void saveCondaLock(String buildId, String condaLock) {
+        condaLockStore.put(buildId, condaLock)
+    }
+
+    @Override
+    String loadCondaLock(String buildId) {
+        return condaLockStore.get(buildId)
+    }
 }

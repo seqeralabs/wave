@@ -87,6 +87,10 @@ class SurrealPersistenceService implements PersistenceService {
         final ret4 = surrealDb.sqlAsMap(authorization, "define table wave_scan_vuln SCHEMALESS")
         if( ret4.status != "OK")
             throw new IllegalStateException("Unable to define SurrealDB table wave_scan_vuln - cause: $ret4")
+        // create wave_conda_lock table
+        final ret5 = surrealDb.sqlAsMap(authorization, "define table wave_conda_lock SCHEMALESS")
+        if( ret5.status != "OK")
+            throw new IllegalStateException("Unable to define SurrealDB table wave_conda_lock - cause: $ret5")
     }
 
     private String getAuthorization() {
@@ -234,4 +238,34 @@ class SurrealPersistenceService implements PersistenceService {
         return result
     }
 
+    @Override
+    void saveCondaLock(String buildId, String condaLock) {
+        final query = """\
+                                INSERT into wave_conda_lock {
+                                    buildId: '$buildId',
+                                    condaLock = '$condaLock'
+                                }""".stripIndent()
+        surrealDb
+                .sqlAsync(getAuthorization(), query)
+                .subscribe({result ->
+                    log.trace "Conda lock for buildId '$buildId' saved record: ${result}"
+                },
+                        {error->
+                            def msg = error.message
+                            if( error instanceof HttpClientResponseException ){
+                                msg += ":\n $error.response.body"
+                            }
+                            log.error("Error saving conda lock for buildId: $buildId", error)
+                        })
+    }
+
+    @Override
+    String loadCondaLock(String buildId) {
+        final query = "select condaLock from wave_conda_lock where buildId = '$buildId'"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<String>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result[0] : null
+        return result
+    }
 }
