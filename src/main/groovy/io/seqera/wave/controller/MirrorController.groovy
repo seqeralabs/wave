@@ -29,7 +29,8 @@ import io.seqera.wave.service.mirror.ContainerMirrorService
 import io.seqera.wave.service.mirror.MirrorResult
 import jakarta.inject.Inject
 /**
- *
+ * Implements a controller for container mirror apis
+ * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j

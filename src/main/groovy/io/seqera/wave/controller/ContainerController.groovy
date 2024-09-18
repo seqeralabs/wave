@@ -129,7 +129,7 @@ class ContainerController {
     ContainerBuildService buildService
 
     @Inject
-    ContainerInspectService dockerAuthService
+    ContainerInspectService inspectService
 
     @Inject
     RegistryProxyService registryProxyService
@@ -331,7 +331,7 @@ class ContainerController {
                 ? buildConfig.defaultPublicRepository
                 : buildConfig.defaultBuildRepository), req.nameStrategy)
         final cacheRepository = req.cacheRepository ?: buildConfig.defaultCacheRepository
-        final configJson = dockerAuthService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
+        final configJson = inspectService.credentialsConfigJson(containerSpec, buildRepository, cacheRepository, identity)
         final containerConfig = req.freeze ? req.containerConfig : null
         final offset = DataTimeUtils.offsetId(req.timestamp)
         final scanId = scanEnabled && format==DOCKER ? LongRndKey.rndHex() : null
@@ -462,7 +462,7 @@ class ContainerController {
         if( coords.registry == request.mirrorRegistry )
             throw new BadRequestException("Source and target mirror registry as the same - offending value '${request.mirrorRegistry}'")
         final targetImage = request.mirrorRegistry + '/' + coords.imageAndTag
-        final configJson = dockerAuthService.credentialsConfigJson(null, request.containerImage, targetImage, identity)
+        final configJson = inspectService.credentialsConfigJson(null, request.containerImage, targetImage, identity)
         final platform = request.containerPlatform
                 ? ContainerPlatform.of(request.containerPlatform)
                 : ContainerPlatform.DEFAULT

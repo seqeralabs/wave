@@ -24,12 +24,14 @@ import spock.lang.Unroll
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
+import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Property
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.http.server.util.HttpClientAddressResolver
+import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.ImageNameStrategy
@@ -50,6 +52,9 @@ import io.seqera.wave.service.builder.FreezeService
 import io.seqera.wave.service.builder.FreezeServiceImpl
 import io.seqera.wave.service.inclusion.ContainerInclusionService
 import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
+import io.seqera.wave.service.job.JobService
+import io.seqera.wave.service.job.JobServiceImpl
+import io.seqera.wave.service.mirror.ContainerMirrorService
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
@@ -80,6 +85,14 @@ class ContainerControllerTest extends Specification {
 
     @Inject
     JwtAuthStore jwtAuthStore
+
+    @Inject
+    ApplicationContext applicationContext
+
+    @MockBean(JobServiceImpl)
+    JobService mockJobService() {
+        Mock(JobService)
+    }
 
     def setup() {
         jwtAuthStore.clear()
@@ -157,7 +170,7 @@ class ContainerControllerTest extends Specification {
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
         def proxyRegistry = Mock(RegistryProxyService)
-        def controller = new ContainerController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService))
+        def controller = new ContainerController(buildService: builder, inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService))
         def DOCKER = 'FROM foo'
         def user = new PlatformId(new User(id: 100))
         def cfg = new ContainerConfig()
@@ -185,7 +198,7 @@ class ContainerControllerTest extends Specification {
         def dockerAuth = Mock(ContainerInspectServiceImpl)
         def proxyRegistry = Mock(RegistryProxyService)
         def persistenceService = Mock(PersistenceService)
-        def controller = new ContainerController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, persistenceService:persistenceService, inclusionService: Mock(ContainerInclusionService))
+        def controller = new ContainerController(buildService: builder, inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig: buildConfig, persistenceService:persistenceService, inclusionService: Mock(ContainerInclusionService))
         def DOCKER = 'FROM foo'
         def user = new PlatformId(new User(id: 100))
         def cfg = new ContainerConfig()
@@ -213,7 +226,7 @@ class ContainerControllerTest extends Specification {
         def builder = Mock(ContainerBuildService)
         def dockerAuth = Mock(ContainerInspectServiceImpl)
         def proxyRegistry = Mock(RegistryProxyService)
-        def controller = new ContainerController(buildService: builder, dockerAuthService: dockerAuth, registryProxyService: proxyRegistry, buildConfig:buildConfig, inclusionService: Mock(ContainerInclusionService))
+        def controller = new ContainerController(buildService: builder, inspectService: dockerAuth, registryProxyService: proxyRegistry, buildConfig:buildConfig, inclusionService: Mock(ContainerInclusionService))
         def DOCKER = 'FROM foo'
         def user = new PlatformId(new User(id: 100))
         def cfg = new ContainerConfig()
@@ -237,10 +250,39 @@ class ContainerControllerTest extends Specification {
         data.platform.toString() == 'linux/arm64'
     }
 
+    def 'should make a mirror request' () {
+        given:
+        def jobService = applicationContext.getBean(JobService)
+        def mirrorService = applicationContext.getBean(ContainerMirrorService)
+        def inspectService = Mock(ContainerInspectServiceImpl)
+        def proxyRegistry = Mock(RegistryProxyService)
+        def controller = new ContainerController(mirrorService: mirrorService, inspectService: inspectService, registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService))
+        def user = new PlatformId(new User(id: 100))
+        def req = new SubmitContainerTokenRequest(
+                containerImage: 'docker.io/source/image:latest',
+                containerPlatform: 'arm64',
+                mirrorRegistry: 'quay.io'
+        )
+
+        when:
+        def data = controller.makeRequestData(req, user, "")
+        then:
+        1 * proxyRegistry.getImageDigest('docker.io/source/image:latest', user) >> 'sha256:12345'
+        1 * proxyRegistry.getImageDigest('quay.io/source/image:latest', user) >> null
+        and:
+        data.identity.userId == 100
+        data.containerImage ==  'quay.io/source/image:latest'
+        data.platform.toString() == 'linux/arm64'
+        data.buildId =~ /mr-.+/
+        data.buildNew
+        !data.freeze
+        data.mirror
+    }
+
     def 'should create build request' () {
         given:
         def dockerAuth = Mock(ContainerInspectServiceImpl)
-        def controller = new ContainerController(dockerAuthService: dockerAuth, buildConfig: buildConfig)
+        def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig)
 
         when:
         def submit = new SubmitContainerTokenRequest(containerFile: encode('FROM foo'))
@@ -296,7 +338,7 @@ class ContainerControllerTest extends Specification {
     def 'should return a bad request exception when field is not encoded' () {
         given:
         def dockerAuth = Mock(ContainerInspectServiceImpl)
-        def controller = new ContainerController(dockerAuthService: dockerAuth, buildConfig: buildConfig)
+        def controller = new ContainerController(inspectService: dockerAuth, buildConfig: buildConfig)
 
         // validate containerFile
         when:
@@ -505,7 +547,7 @@ class ContainerControllerTest extends Specification {
         def addressResolver = Mock(HttpClientAddressResolver)
         def tokenService = Mock(ContainerTokenService)
         def persistence = Mock(PersistenceService)
-        def controller = new ContainerController(freezeService:  freeze, buildService: builder, dockerAuthService: dockerAuth,
+        def controller = new ContainerController(freezeService:  freeze, buildService: builder, inspectService: dockerAuth,
                 registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService),
                 addressResolver: addressResolver, tokenService: tokenService, persistenceService: persistence, serverUrl: 'http://wave.com')
 
@@ -542,7 +584,7 @@ class ContainerControllerTest extends Specification {
         def addressResolver = Mock(HttpClientAddressResolver)
         def tokenService = Mock(ContainerTokenService)
         def persistence = Mock(PersistenceService)
-        def controller = new ContainerController(freezeService:  freeze, buildService: builder, dockerAuthService: dockerAuth,
+        def controller = new ContainerController(freezeService:  freeze, buildService: builder, inspectService: dockerAuth,
                 registryProxyService: proxyRegistry, buildConfig: buildConfig, inclusionService: Mock(ContainerInclusionService),
                 addressResolver: addressResolver, tokenService: tokenService, persistenceService: persistence, serverUrl: 'https://wave.seqera.io')
 
