@@ -148,7 +148,7 @@ class SurrealPersistenceService implements PersistenceService {
 
     @Override
     WaveBuildRecord latestBuild(String containerId) {
-        final query = "select * from wave_build where buildId ~ '${containerId}${BuildRequest.SEP}' order by startTime desc limit 1"
+        final query = "select * from wave_build where string::contains(buildId,'${containerId}${BuildRequest.SEP}') order by startTime desc limit 1"
         final json = surrealDb.sqlAsString(getAuthorization(), query)
         final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
         final data= json ? JacksonHelper.fromJson(json, type) : null
