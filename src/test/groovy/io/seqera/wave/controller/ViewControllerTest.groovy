@@ -245,7 +245,7 @@ class ViewControllerTest extends Specification {
 
     def 'should render inspect view'() {
         when:
-        def request = HttpRequest.GET('/view/inspects/ubuntu')
+        def request = HttpRequest.GET('/view/inspect?image=ubuntu')
         def response = client.toBlocking().exchange(request, String)
 
         then:
