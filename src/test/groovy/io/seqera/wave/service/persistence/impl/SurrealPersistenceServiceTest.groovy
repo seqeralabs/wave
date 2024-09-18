@@ -171,6 +171,46 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         loaded == record
     }
 
+    def 'should find latest build' () {
+        given:
+        def persistence = applicationContext.getBean(SurrealPersistenceService)
+        final request = new BuildRequest(
+                'abc',
+                'FROM foo:latest',
+                'conda::recipe',
+                null,
+                Path.of("."),
+                'docker.io/my/repo:container1234',
+                PlatformId.NULL,
+                ContainerPlatform.of('amd64'),
+                'docker.io/my/cache',
+                '127.0.0.1',
+                '{"config":"json"}',
+                null,
+                null,
+                'scan12345',
+                null,
+                BuildFormat.DOCKER,
+                Duration.ofMinutes(1) )
+
+
+        def result = new BuildResult(request.withBuildId('1').buildId, -1, "ok", Instant.now().minusSeconds(3), Duration.ofSeconds(2), null)
+        persistence.saveBuild(WaveBuildRecord.fromEvent(new BuildEvent(request, result)))
+        and:
+        result = new BuildResult(request.withBuildId('2').buildId, -1, "ok", Instant.now().minusSeconds(2), Duration.ofSeconds(2), null)
+        persistence.saveBuild(WaveBuildRecord.fromEvent(new BuildEvent(request, result)))
+        and:
+        result = new BuildResult(request.withBuildId('3').buildId, -1, "ok", Instant.now().minusSeconds(1), Duration.ofSeconds(2), null)
+        persistence.saveBuild(WaveBuildRecord.fromEvent(new BuildEvent(request, result)))
+
+        when:
+        sleep 200
+        def loaded = persistence.latestBuild('abc')
+
+        then:
+        loaded.buildId == 'abc_3'
+    }
+
     def 'should save and update a build' () {
         given:
         def persistence = applicationContext.getBean(SurrealPersistenceService)

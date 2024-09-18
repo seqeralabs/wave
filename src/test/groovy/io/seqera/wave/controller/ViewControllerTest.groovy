@@ -19,6 +19,7 @@
 package io.seqera.wave.controller
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.time.Duration
 import java.time.Instant
@@ -32,6 +33,7 @@ import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.logs.BuildLogServiceImpl
 import io.seqera.wave.service.persistence.PersistenceService
@@ -346,5 +348,44 @@ class ViewControllerTest extends Specification {
         binding.scan_succeeded
         binding.vulnerabilities == [new ScanVulnerability(id:'cve-1', severity:'HIGH', title:'test vul', pkgName:'testpkg', installedVersion:'1.0.0', fixedVersion:'1.1.0', primaryUrl:'http://vul/cve-1')]
         binding.build_url == 'http://foo.com/view/builds/12345'
+    }
+
+    @Unroll
+    def 'should validate redirection check' () {
+        given:
+        def service = Mock(ContainerBuildService)
+        def controller = new ViewController(buildService: service)
+
+        when:
+        def result = controller.shouldRedirect1(BUILD)
+        then:
+        result == EXPECTED
+
+        where:
+        BUILD           | EXPECTED
+        '12345_1'       | null
+        '12345-1'       | '/view/builds/12345_1'
+        'foo-887766-1'  | '/view/builds/foo-887766_1'
+
+    }
+
+
+    def 'should validate redirect 2' () {
+        given:
+        def service = Mock(ContainerBuildService)
+        def controller = new ViewController(buildService: service)
+
+        when:
+        def result = controller.shouldRedirect2(BUILD)
+        then:
+        result == EXPECTED
+        TIMES * service.getLatestBuild(BUILD) >> LATEST
+
+        where:
+        BUILD           | TIMES | LATEST     | EXPECTED
+        '12345_1'       | 0     | null       | null
+        '12345'         | 1     | Mock(WaveBuildRecord) { buildId >> '12345_99' }       | '/view/builds/12345_99'
+        '12345'         | 1     | Mock(WaveBuildRecord) { buildId >> 'xyz_99' }         | null
+        'foo-887766'    | 1     | Mock(WaveBuildRecord) { buildId >> 'foo-887766_99' }  | '/view/builds/foo-887766_99'
     }
 }

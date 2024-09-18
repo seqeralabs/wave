@@ -18,10 +18,11 @@
 
 package io.seqera.wave.controller
 
-import io.micronaut.core.annotation.Nullable
+import java.util.regex.Pattern
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
+import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
@@ -61,13 +62,48 @@ class ViewController {
     @Nullable
     private BuildLogService buildLogService
 
+
     @View("build-view")
     @Get('/builds/{buildId}')
-    HttpResponse<Map<String,String>> viewBuild(String buildId) {
+    HttpResponse viewBuild(String buildId) {
+        // check redirection for invalid suffix in the form `-nn`
+        final r1 = shouldRedirect1(buildId)
+        if( r1 )
+            return HttpResponse.redirect(URI.create(r1))
+        // check redirection when missing the suffix `_nn`
+        final r2 = shouldRedirect2(buildId)
+        if( r2 )
+            return HttpResponse.redirect(URI.create(r2))
+        // go ahead with proper handling
         final record = buildService.getBuildRecord(buildId)
         if( !record )
             throw new NotFoundException("Unknown build id '$buildId'")
         return HttpResponse.ok(renderBuildView(record))
+    }
+
+    static final private Pattern DASH_SUFFIX = ~/([0-9a-zA-Z\-]+)-(\d+)$/
+
+    static final private Pattern MISSING_SUFFIX = ~/([0-9a-zA-Z\-]+)(?<!_\d{2})$/
+
+    protected String shouldRedirect1(String buildId) {
+        // check for build id containing a -nn suffix
+        final check1 = DASH_SUFFIX.matcher(buildId)
+        if( check1.matches() ) {
+            return "/view/builds/${check1.group(1)}_${check1.group(2)}"
+        }
+        return null
+    }
+
+    protected String shouldRedirect2(String buildId) {
+        // check build id missing the _nn suffix
+        if( !MISSING_SUFFIX.matcher(buildId).matches() )
+            return null
+
+        final rec = buildService.getLatestBuild(buildId)
+        if( !rec || !rec.buildId.startsWith(buildId) )
+            return null
+
+        return "/view/builds/${rec.buildId}"
     }
 
     Map<String,String> renderBuildView(WaveBuildRecord result) {

@@ -445,4 +445,8 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
         return buildRecordStore.getBuildRecord(buildId) ?: persistenceService.loadBuild(buildId)
     }
 
+    @Override
+    WaveBuildRecord getLatestBuild(String containerId) {
+        return persistenceService.latestBuild(containerId)
+    }
 }

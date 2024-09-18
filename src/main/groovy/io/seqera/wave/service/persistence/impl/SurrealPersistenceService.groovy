@@ -147,6 +147,16 @@ class SurrealPersistenceService implements PersistenceService {
     }
 
     @Override
+    WaveBuildRecord latestBuild(String containerId) {
+        final query = "select * from wave_build where buildId ~ '${containerId}${BuildRequest.SEP}' order by startTime desc limit 1"
+        final json = surrealDb.sqlAsString(getAuthorization(), query)
+        final type = new TypeReference<ArrayList<SurrealResult<WaveBuildRecord>>>() {}
+        final data= json ? JacksonHelper.fromJson(json, type) : null
+        final result = data && data[0].result ? data[0].result[0] : null
+        return result
+    }
+
+    @Override
     void saveContainerRequest(String token, WaveContainerRecord data) {
         surrealDb.insertContainerRequestAsync(authorization, token, data).subscribe({ result->
             log.trace "Container request with token '$token' saved record: ${result}"
