@@ -19,6 +19,8 @@
 package io.seqera.wave.controller
 
 import java.util.regex.Pattern
+import groovy.json.JsonOutput
+import io.micronaut.core.annotation.Nullable
 
 import groovy.transform.CompileStatic
 import io.micronaut.context.annotation.Value
@@ -26,15 +28,18 @@ import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
+import io.micronaut.http.annotation.QueryValue
 import io.micronaut.scheduling.TaskExecutors
 import io.micronaut.scheduling.annotation.ExecuteOn
 import io.micronaut.views.View
 import io.seqera.wave.exception.NotFoundException
 import io.seqera.wave.service.builder.ContainerBuildService
+import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.scan.ScanResult
+import io.seqera.wave.util.JacksonHelper
 import jakarta.inject.Inject
 import static io.seqera.wave.util.DataTimeUtils.formatDuration
 import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
@@ -62,6 +67,8 @@ class ViewController {
     @Nullable
     private BuildLogService buildLogService
 
+    @Inject
+    private ContainerInspectService inspectService
 
     @View("build-view")
     @Get('/builds/{buildId}')
@@ -200,6 +207,28 @@ class ViewController {
         return HttpResponse.<Map<String,Object>>ok(binding)
     }
 
+    @View("inspect-view")
+    @Get('/inspect')
+    HttpResponse<Map<String,Object>> viewInspect(@QueryValue String image) {
+        final binding = new HashMap(10)
+        try {
+            final spec = inspectService.containerSpec(image, null)
+            binding.imageName = spec.imageName
+            binding.reference = spec.reference
+            binding.digest = spec.digest
+            binding.registry = spec.registry
+            binding.hostName = spec.hostName
+            binding.config = JacksonHelper.toJson(spec.config)
+            binding.manifest = JacksonHelper.toJson(spec.manifest)
+        }catch (Exception e){
+            binding.error_message = e.getMessage()
+        }
+
+        // return the response
+        binding.put('server_url', serverUrl)
+        return HttpResponse.<Map<String,Object>>ok(binding)
+    }
+
     Map<String, Object> makeScanViewBinding(ScanResult result, Map<String,Object> binding=new HashMap(10)) {
         binding.should_refresh = !result.isCompleted()
         binding.scan_id = result.id
@@ -218,4 +247,5 @@ class ViewController {
 
         return binding
     }
+
 }
