@@ -45,8 +45,10 @@ class DockerTransferStrategy implements TransferStrategy {
     @Override
     void launchJob(String jobName, List<String> command) {
         // create a unique name for the container
-        createProcess(command, jobName)
-                .start()
+        final process = createProcess(command, jobName) .start()
+        if( process.waitFor()!=0 ) {
+            throw new IllegalStateException("Unable to launch transfer container - exitCode=${process.exitValue()}; output=${process.text}")
+        }
     }
 
     protected ProcessBuilder createProcess(List<String> command, String name) {
@@ -54,6 +56,7 @@ class DockerTransferStrategy implements TransferStrategy {
         final cli = new ArrayList<String>(10)
         cli.add('docker')
         cli.add('run')
+        cli.add('--detach')
         cli.add('--name')
         cli.add(name)
         cli.add('-e')

@@ -32,6 +32,7 @@ import io.kubernetes.client.openapi.models.V1EnvVar
 import io.kubernetes.client.openapi.models.V1HostPathVolumeSource
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1JobBuilder
+import io.kubernetes.client.openapi.models.V1JobStatus
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodBuilder
@@ -152,6 +153,7 @@ class K8sServiceImpl implements K8sService {
      */
     @Override
     @CompileDynamic
+    @Deprecated
     V1Job createJob(String name, String containerImage, List<String> args) {
 
         V1Job body = new V1JobBuilder()
@@ -203,23 +205,29 @@ class K8sServiceImpl implements K8sService {
         final job = k8sClient
                 .batchV1Api()
                 .readNamespacedJob(name, namespace, null)
-        if( !job )
+        if( !job ) {
+            log.warn "K8s job=$name - unknown"
             return null
-        if( job.status.succeeded )
-            return JobStatus.Succeeded
-        if( job.status.active )
-            return JobStatus.Pending
-        if( job.status.failed ) {
-            if( job.status.completionTime!=null )
-                return JobStatus.Failed
-            if( job.status.failed > job.spec.backoffLimit )
-                return JobStatus.Failed
-            else
-                return JobStatus.Pending
         }
-        return null
+
+        final result = jobStatus0(job.status, job.spec?.backoffLimit)
+        log.trace "K8s job=$name - result=$result; backoff-limit=${job.spec?.backoffLimit}; status=${job.status}"
+        return result
     }
 
+    private JobStatus jobStatus0(V1JobStatus status, Integer backoffLimit) {
+        if( status.succeeded )
+            return JobStatus.Succeeded
+        if( status.active )
+            return JobStatus.Pending
+        if( status.failed ) {
+            if( status.completionTime!=null )
+                return JobStatus.Failed
+            if( backoffLimit!=null && status.failed > backoffLimit )
+                return JobStatus.Failed
+        }
+        return JobStatus.Pending
+    }
     /**
      * Get pod description
      *
@@ -340,6 +348,7 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Pod} description the submitted pod
      */
     @Override
+    @Deprecated
     V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, SpackConfig spackConfig, Map<String,String> nodeSelector) {
         final spec = buildSpec(name, containerImage, args, workDir, creds, timeout, spackConfig, nodeSelector)
         return k8sClient
@@ -441,6 +450,7 @@ class K8sServiceImpl implements K8sService {
      *      or timeout was reached.
      */
     @Override
+    @Deprecated
     Integer waitPodCompletion(V1Pod pod, long timeout) {
         final start = System.currentTimeMillis()
         // wait for termination
@@ -482,7 +492,7 @@ class K8sServiceImpl implements K8sService {
             logs.streamNamespacedPodLog(namespace, pod.metadata.name, pod.spec.containers.first().name).getText()
         }
         catch (Exception e) {
-            log.error "Unable to fetch logs for pod: ${pod.metadata.name}", e
+            log.error "Unable to fetch logs for pod: ${pod.metadata.name} - cause: ${e.message}"
             return null
         }
     }
@@ -507,6 +517,7 @@ class K8sServiceImpl implements K8sService {
      * @param timeout The max wait time in milliseconds
      */
     @Override
+    @Deprecated
     void deletePodWhenReachStatus(String podName, String statusName, long timeout){
         final pod = getPod(podName)
         final start = System.currentTimeMillis()
@@ -520,6 +531,7 @@ class K8sServiceImpl implements K8sService {
     }
 
     @Override
+    @Deprecated
     V1Pod scanContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, ScanConfig scanConfig, Map<String,String> nodeSelector) {
         final spec = scanSpec(name, containerImage, args, workDir, creds, scanConfig, nodeSelector)
         return k8sClient
@@ -527,6 +539,7 @@ class K8sServiceImpl implements K8sService {
                 .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
+    @Deprecated
     V1Pod scanSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, ScanConfig scanConfig, Map<String,String> nodeSelector) {
 
         final mounts = new ArrayList<V1VolumeMount>(5)
@@ -708,7 +721,6 @@ class K8sServiceImpl implements K8sService {
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
 
-
         final requests = new V1ResourceRequirements()
         if( requestsCpu )
             requests.putRequestsItem('cpu', new Quantity(requestsCpu))
@@ -783,7 +795,6 @@ class K8sServiceImpl implements K8sService {
                 .withRestartPolicy("Never")
                 .addAllToVolumes(volumes)
 
-
         final requests = new V1ResourceRequirements()
         if( scanConfig.requestsCpu )
             requests.putRequestsItem('cpu', new Quantity(scanConfig.requestsCpu))
@@ -798,11 +809,10 @@ class K8sServiceImpl implements K8sService {
                 .withVolumeMounts(mounts)
                 .withResources(requests)
 
-
         // spec section
         spec.withContainers(container.build()).endSpec().endTemplate().endSpec()
 
-        builder.build()
+        return builder.build()
     }
 
     protected List<V1EnvVar> toEnvList(Map<String,String> env) {
@@ -858,11 +868,11 @@ class K8sServiceImpl implements K8sService {
                 .coreV1Api()
                 .listNamespacedPod(namespace, null, null, null, null, "job-name=${jobName}", null, null, null, null, null, null)
 
-        if( !allPods )
+        if( !allPods || !allPods.items )
             return null
 
         // Find the latest created pod among the pods associated with the job
-        def latest = allPods.getItems().get(0)
+        def latest = allPods.items.get(0)
         for (def pod : allPods.items) {
             if (pod.metadata?.creationTimestamp?.isAfter(latest.metadata.creationTimestamp)) {
                 latest = pod

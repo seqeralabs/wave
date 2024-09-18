@@ -45,5 +45,6 @@ logger:
     io.seqera.wave.service.pairing: TRACE
     io.seqera.wave.tower.client.connector: TRACE
     io.seqera.wave.service.job: TRACE
+    io.seqera.wave.service.k8s.K8sServiceImpl: TRACE
 #    io.seqera.wave.tower.auth: 'TRACE'
 ...

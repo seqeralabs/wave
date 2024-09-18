@@ -29,6 +29,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.core.annotation.Nullable
+import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.auth.RegistryCredentialsProvider
@@ -41,7 +42,6 @@ import io.seqera.wave.exception.HttpServerRetryableErrorException
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.builder.store.BuildRecordStore
-import io.seqera.wave.service.job.JobEvent
 import io.seqera.wave.service.job.JobHandler
 import io.seqera.wave.service.job.JobService
 import io.seqera.wave.service.job.JobSpec
@@ -72,7 +72,7 @@ import static java.nio.file.StandardOpenOption.WRITE
 @Singleton
 @Named('Build')
 @CompileStatic
-class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
+class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<BuildStoreEntry> {
 
     @Inject
     private BuildConfig buildConfig
@@ -332,32 +332,12 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
     // **************************************************************
 
     @Override
-    void onJobEvent(JobEvent event) {
-        final build = buildStore.getBuild(event.job.stateId)
-        if( !build ) {
-            log.error "== Container build missing state entry - ${event.job.stateId}; event=${event}"
-            return
-        }
-        if( build.result.done() ) {
-            log.warn "== Container build already marked complete - ${event.job.stateId}; event=${event}"
-            return
-        }
-
-        if( event.type == JobEvent.Type.Complete ) {
-            handleJobCompletion(event.job, build, event.state)
-        }
-        else if( event.type == JobEvent.Type.Error ) {
-          handleJobException(event.job, build, event.error)
-        }
-        else if( event.type == JobEvent.Type.Timeout ) {
-            handleJobTimeout(event.job, build)
-        }
-        else {
-            throw new IllegalStateException("Unknown container build job event type=$event")
-        }
+    BuildStoreEntry getJobRecord(JobSpec job) {
+        buildStore.getBuild(job.recordId)
     }
 
-    protected void handleJobCompletion(JobSpec job, BuildStoreEntry build, JobState state) {
+    @Override
+    void onJobCompletion(JobSpec job, BuildStoreEntry build, JobState state) {
         final buildId = build.request.buildId
         final digest = state.succeeded()
                         ? proxyService.getImageDigest(build.request, true)
@@ -373,48 +353,92 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler {
         final result = state.completed()
                 ? BuildResult.completed(buildId, exit, state.stdout, job.creationTime, digest)
                 : BuildResult.failed(buildId, state.stdout, job.creationTime)
-        buildStore.storeBuild(job.stateId, build.withResult(result), ttl)
-        log.warn "== Container build completed '${build.request.targetImage}' - operation=${job.operationName}; exit=${exit}; duration=${result.duration}"
-        // finally notify completion
+        buildStore.storeBuild(job.recordId, build.withResult(result), ttl)
         eventPublisher.publishEvent(new BuildEvent(build.request, result))
+        log.info "== Container build completed '${build.request.targetImage}' - operation=${job.operationName}; exit=${exit}; status=${state.status}; duration=${result.duration}"
     }
 
-    protected void handleJobException(JobSpec job, BuildStoreEntry build, Throwable error) {
+    @Override
+    void onJobException(JobSpec job, BuildStoreEntry build, Throwable error) {
         final result= BuildResult.failed(build.request.buildId, error.message, job.creationTime)
-        log.error("== Container build errored '${build.request.targetImage}' - operation=${job.operationName}; cause=${error.message}", error)
-        buildStore.storeBuild(job.stateId, build.withResult(result), buildConfig.failureDuration)
+        buildStore.storeBuild(job.recordId, build.withResult(result), buildConfig.failureDuration)
+        eventPublisher.publishEvent(new BuildEvent(build.request, result))
+        log.error("== Container build exception '${build.request.targetImage}' - operation=${job.operationName}; cause=${error.message}", error)
     }
 
-    protected void handleJobTimeout(JobSpec job, BuildStoreEntry build) {
+    @Override
+    void onJobTimeout(JobSpec job, BuildStoreEntry build) {
         final buildId = build.request.buildId
         final result= BuildResult.failed(buildId, "Container image build timed out '${build.request.targetImage}'", job.creationTime)
+        buildStore.storeBuild(job.recordId, build.withResult(result), buildConfig.failureDuration)
+        eventPublisher.publishEvent(new BuildEvent(build.request, result))
         log.warn "== Container build time out '${build.request.targetImage}'; operation=${job.operationName}; duration=${result.duration}"
-        buildStore.storeBuild(job.stateId, build.withResult(result), buildConfig.failureDuration)
     }
 
     // **************************************************************
     // **               build record implementation
     // **************************************************************
 
+    @EventListener
+    protected void onBuildEvent(BuildEvent event) {
+        saveBuildRecord(event)
+    }
+
     /**
-     * @Inherited
+     * Store a build record for the given {@link BuildRequest} object.
+     *
+     * This method is expected to store the build record associated with the request
+     * *only* in the short term store caching system, ie. without hitting the
+     * long-term SurrealDB storage
+     *
+     * @param request The build request that needs to be storage
      */
-    @Override
-    void createBuildRecord(String buildId, WaveBuildRecord value) {
+    protected void createBuildRecord(BuildRequest request) {
+        final record0 = WaveBuildRecord.fromEvent(new BuildEvent(request))
+        createBuildRecord(record0.buildId, record0)
+    }
+
+    /**
+     * Store the build record associated with the specified event both in the
+     * short-term cache (redis) and long-term persistence layer (surrealdb)
+     *
+     * @param event The {@link BuildEvent} object for which the build record needs to be stored
+     */
+    protected void saveBuildRecord(BuildEvent event) {
+        final record0 = WaveBuildRecord.fromEvent(event)
+        saveBuildRecord(record0.buildId, record0)
+    }
+
+    /**
+     * Store a build record object.
+     *
+     * This method is expected to store the build record *only* in the short term store cache (redis),
+     * ie. without hitting the long-term storage (surrealdb)
+     *
+     * @param buildId The Id of the build record
+     * @param value The {@link WaveBuildRecord} to be stored
+     */
+    protected void createBuildRecord(String buildId, WaveBuildRecord value) {
         buildRecordStore.putBuildRecord(buildId, value)
     }
 
     /**
-     * @Inherited
+     * Store the specified build record  both in the short-term cache (redis)
+     * and long-term persistence layer (surrealdb)
+     *
+     * @param buildId The Id of the build record
+     * @param value The {@link WaveBuildRecord} to be stored
      */
-    @Override
-    void saveBuildRecord(String buildId, WaveBuildRecord value) {
+    protected void saveBuildRecord(String buildId, WaveBuildRecord value) {
         buildRecordStore.putBuildRecord(buildId, value)
         persistenceService.saveBuild(value)
     }
 
     /**
-     * @Inherited
+     * Retrieve the build record for the specified id.
+     *
+     * @param buildId The ID of the build record to be retrieve
+     * @return The {@link WaveBuildRecord} associated with the corresponding Id, or {@code null} if it cannot be found
      */
     @Override
     WaveBuildRecord getBuildRecord(String buildId) {
