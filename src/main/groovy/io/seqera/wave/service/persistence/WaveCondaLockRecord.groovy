@@ -23,7 +23,7 @@ import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 
 /**
- * Model a Wave conda lock
+ * Model a Wave conda lock record
  *
  * @author Munish Chouhan <munish.chouhan@seqera.io>
  */

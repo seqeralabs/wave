@@ -129,8 +129,6 @@ interface PersistenceService {
     /**
      * Store a  condaLock for buildId in the underlying persistence layer.
      *
-     * It maye be implemented in non-blocking manner therefore there's no guarantee
-     * the record is accessible via #loadBuild immediately after this operation
      *
      * @param build A {@link WaveBuildRecord} object
      */
@@ -139,7 +137,7 @@ interface PersistenceService {
     /**
      * Retrieve a condaLock for the given build id
      *
-     * @param buildId The build id i.e. the checksum of dockerfile + condafile + repo
+     * @param buildId
      * @return The corresponding condaLock file as a string
      */
     WaveCondaLockRecord loadCondaLock(String buildId)
