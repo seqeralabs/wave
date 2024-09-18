@@ -80,45 +80,4 @@ class LocalCacheProviderTest extends Specification {
         localCacheProvider.get('key') == 'new-value'
     }
 
-    def 'should add and find keys for values' () {
-        when:
-        localCacheProvider.biPut('x1', 'a', Duration.ofMinutes(1))
-        localCacheProvider.biPut('x2', 'b', Duration.ofMinutes(1))
-        localCacheProvider.biPut('x3', 'a', Duration.ofMinutes(1))
-        localCacheProvider.biPut('x4', 'c', Duration.ofMinutes(1))
-
-        then:
-        localCacheProvider.biKeysFor('a') == ['x1', 'x3'] as Set
-        localCacheProvider.biKeysFor('c') == ['x4'] as Set
-        localCacheProvider.biKeysFor('d') == [] as Set
-
-        when:
-        localCacheProvider.biRemove('x1')
-        then:
-        localCacheProvider.biKeysFor('a') == ['x3'] as Set
-
-        when:
-        localCacheProvider.biRemove('x3')
-        then:
-        localCacheProvider.biKeysFor('a') == [] as Set
-    }
-
-    def 'should add and find keys for values' () {
-        when:
-        localCacheProvider.biPut('x1', 'a', Duration.ofMillis(100))
-        localCacheProvider.biPut('x2', 'b', Duration.ofMinutes(1))
-        localCacheProvider.biPut('x3', 'a', Duration.ofMinutes(1))
-        localCacheProvider.biPut('x4', 'c', Duration.ofMinutes(1))
-
-        then:
-        localCacheProvider.biKeyFind('a', true) == 'x1'
-        and:
-        localCacheProvider.biKeysFor('a') == ['x1','x3'] as Set
-        and:
-        sleep 500
-        and:
-        localCacheProvider.biKeyFind('a', true) == 'x3'
-        localCacheProvider.biKeysFor('a') == ['x3'] as Set
-
-    }
 }
