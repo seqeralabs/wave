@@ -67,7 +67,6 @@ class ViewController {
     private BuildLogService buildLogService
 
     @Inject
-    @Nullable
     private CondaLockService condaLockService
 
     @Inject

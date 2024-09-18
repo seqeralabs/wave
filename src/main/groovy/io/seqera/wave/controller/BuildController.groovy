@@ -55,7 +55,6 @@ class BuildController {
     BuildLogService logService
 
     @Inject
-    @Nullable
     CondaLockService condaLockService
 
     @Get("/v1alpha1/builds/{buildId}")
