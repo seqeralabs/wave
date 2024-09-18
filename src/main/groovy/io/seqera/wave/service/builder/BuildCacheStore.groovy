@@ -60,7 +60,12 @@ class BuildCacheStore extends AbstractCacheStore<BuildStoreEntry> implements Bui
     protected Duration getDuration() {
         return buildConfig.statusDuration
     }
-    
+
+    @Override
+    BuildStoreEntry getBuild(String imageName) {
+        return get(imageName)
+    }
+
     @Override
     BuildResult getBuildResult(String imageName) {
         return getBuild(imageName)?.getResult()

@@ -91,8 +91,7 @@ class KubeBuildStrategy extends BuildStrategy {
             final buildCmd = launchCmd(req)
             final timeout = req.maxDuration ?: buildConfig.defaultTimeout
             final selector= getSelectorLabel(req.platform, nodeSelectorMap)
-            final spackCfg0 = req.isSpackBuild ? spackConfig : null
-            k8sService.launchBuildJob(jobName, buildImage, buildCmd, req.workDir, configFile, timeout, spackCfg0, selector)
+            k8sService.launchBuildJob(jobName, buildImage, buildCmd, req.workDir, configFile, timeout, selector)
         }
         catch (ApiException e) {
             throw new BadRequestException("Unexpected build failure - ${e.responseBody}", e)

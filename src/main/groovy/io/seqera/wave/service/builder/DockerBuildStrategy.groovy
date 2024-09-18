@@ -96,16 +96,15 @@ class DockerBuildStrategy extends BuildStrategy {
     }
 
     protected List<String> buildCmd(String jobName, BuildRequest req, Path credsFile) {
-        final spack = req.isSpackBuild ? spackConfig : null
 
         final dockerCmd = req.formatDocker()
-                ? cmdForBuildkit(jobName, req.workDir, credsFile, spack, req.platform)
-                : cmdForSingularity(jobName, req.workDir, credsFile, spack, req.platform)
+                ? cmdForBuildkit(jobName, req.workDir, credsFile, req.platform)
+                : cmdForSingularity(jobName, req.workDir, credsFile, req.platform)
 
         return dockerCmd + launchCmd(req)
     }
 
-    protected List<String> cmdForBuildkit(String name, Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform ) {
+    protected List<String> cmdForBuildkit(String name, Path workDir, Path credsFile, ContainerPlatform platform ) {
         //checkout the documentation here to know more about these options https://github.com/moby/buildkit/blob/master/docs/rootless.md#docker
         final wrapper = ['docker',
                          'run',
@@ -132,7 +131,7 @@ class DockerBuildStrategy extends BuildStrategy {
         return wrapper
     }
 
-    protected List<String> cmdForSingularity(String name, Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform) {
+    protected List<String> cmdForSingularity(String name, Path workDir, Path credsFile, ContainerPlatform platform) {
         final wrapper = ['docker',
                          'run',
                          '--detach',

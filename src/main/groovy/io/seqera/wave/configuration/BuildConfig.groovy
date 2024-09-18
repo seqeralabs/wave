@@ -22,7 +22,6 @@ import javax.annotation.Nullable
 import javax.annotation.PostConstruct
 
 import groovy.transform.CompileStatic
-import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.seqera.wave.api.SubmitContainerTokenRequest
@@ -127,7 +126,6 @@ class BuildConfig {
                 "compression=${compression}; " +
                 "force-compression=${forceCompression}; " +
                 "retry-attempts=${retryAttempts}")
-
         // minimal validation
         if( trustedTimeout < defaultTimeout ) {
             log.warn "Trusted build timeout should be longer than default timeout - check configuration setting 'wave.build.trusted-timeout'"

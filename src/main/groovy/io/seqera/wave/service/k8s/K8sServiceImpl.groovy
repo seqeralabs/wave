@@ -345,14 +345,14 @@ class K8sServiceImpl implements K8sService {
      */
     @Override
     @Deprecated
-    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, SpackConfig spackConfig, Map<String,String> nodeSelector) {
-        final spec = buildSpec(name, containerImage, args, workDir, creds, timeout, spackConfig, nodeSelector)
+    V1Pod buildContainer(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, Map<String,String> nodeSelector) {
+        final spec = buildSpec(name, containerImage, args, workDir, creds, timeout, nodeSelector)
         return k8sClient
                 .coreV1Api()
                 .createNamespacedPod(namespace, spec, null, null, null,null)
     }
 
-    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, Duration timeout, SpackConfig spackConfig, Map<String,String> nodeSelector) {
+    V1Pod buildSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, Duration timeout, Map<String,String> nodeSelector) {
 
         // dirty dependency to avoid introducing another parameter
         final singularity = containerImage.contains('singularity')
@@ -662,14 +662,14 @@ class K8sServiceImpl implements K8sService {
      *      The {@link V1Pod} description the submitted pod
      */
     @Override
-    V1Job launchBuildJob(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, SpackConfig spackConfig, Map<String,String> nodeSelector) {
-        final spec = buildJobSpec(name, containerImage, args, workDir, creds, timeout, spackConfig, nodeSelector)
+    V1Job launchBuildJob(String name, String containerImage, List<String> args, Path workDir, Path creds, Duration timeout, Map<String,String> nodeSelector) {
+        final spec = buildJobSpec(name, containerImage, args, workDir, creds, timeout, nodeSelector)
         return k8sClient
                 .batchV1Api()
                 .createNamespacedJob(namespace, spec, null, null, null,null)
     }
 
-    V1Job buildJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, Duration timeout, SpackConfig spackConfig, Map<String,String> nodeSelector) {
+    V1Job buildJobSpec(String name, String containerImage, List<String> args, Path workDir, Path credsFile, Duration timeout, Map<String,String> nodeSelector) {
 
         // dirty dependency to avoid introducing another parameter
         final singularity = containerImage.contains('singularity')
@@ -683,10 +683,6 @@ class K8sServiceImpl implements K8sService {
 
         if( credsFile ){
             mounts.add(0, mountHostPath(credsFile, storageMountPath, '/home/user/.docker/config.json'))
-        }
-
-        if( spackConfig ) {
-            mounts.add(mountSpackSecretFile(spackConfig.secretKeyFile, storageMountPath, spackConfig.secretMountPath))
         }
 
         V1JobBuilder builder = new V1JobBuilder()

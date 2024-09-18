@@ -338,10 +338,9 @@ class ContainerController {
         checkContainerSpec(containerSpec)
 
         // create a unique digest to identify the build request
-        final containerId = makeContainerId(containerFile, condaContent, spackContent, platform, buildRepository, req.buildContext)
-        final targetImage = makeTargetImage(format, buildRepository, containerId, condaContent, spackContent, nameStrategy)
+        final containerId = makeContainerId(containerSpec, condaContent, platform, buildRepository, req.buildContext)
+        final targetImage = makeTargetImage(format, buildRepository, containerId, condaContent, nameStrategy)
         final maxDuration = buildConfig.buildMaxDuration(req)
-      
         return new BuildRequest(
                 containerId,
                 containerSpec,
