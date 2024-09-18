@@ -24,14 +24,12 @@ import spock.lang.Specification
 import java.time.Duration
 
 import io.micronaut.context.ApplicationContext
-import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.service.data.queue.impl.RedisMessageQueue
 import io.seqera.wave.test.RedisTestContainer
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-@MicronautTest(environments = ['test'])
 class RedisMessageQueueTest extends Specification implements RedisTestContainer {
 
     @Shared
@@ -42,7 +40,10 @@ class RedisMessageQueueTest extends Specification implements RedisTestContainer 
                 REDIS_HOST: redisHostName,
                 REDIS_PORT: redisPort
         ], 'test', 'redis')
+    }
 
+    def cleanup() {
+        context.stop()
     }
 
     def 'should return null if empty' () {

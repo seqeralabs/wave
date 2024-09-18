@@ -54,6 +54,7 @@ class ScanControllerTest extends Specification {
         def duration = Duration.ofMinutes(2)
         def scanId = '123'
         def buildId = "testbuildid"
+        def containerImage = "testcontainerimage"
         def scanVulnerability = new ScanVulnerability(
                 "id1",
                 "low",
@@ -68,6 +69,7 @@ class ScanControllerTest extends Specification {
                                                 new ScanResult(
                                                         scanId,
                                                         buildId,
+                                                        containerImage,
                                                         startTime,
                                                         duration,
                                                         'SUCCEEDED',

@@ -137,6 +137,7 @@ class BuildRequest {
     BuildRequest(String containerId,
                  String containerFile,
                  String condaFile,
+                 String spackFile,
                  Path workspace,
                  String targetImage,
                  PlatformId identity,
@@ -195,7 +196,7 @@ class BuildRequest {
 
     @Override
     String toString() {
-        return "BuildRequest[containerId=$containerId; targetImage=$targetImage; identity=$identity; dockerFile=${trunc(containerFile)}; condaFile=${trunc(condaFile)}; buildId=$buildId, maxDuration=$maxDuration]"
+        return "BuildRequest[containerId=$containerId; targetImage=$targetImage; identity=$identity; dockerFile=${trunc(containerFile)}; condaFile=${trunc(condaFile)}; spackFile=${trunc(spackFile)}; buildId=$buildId, maxDuration=$maxDuration]"
     }
 
     String getContainerId() {

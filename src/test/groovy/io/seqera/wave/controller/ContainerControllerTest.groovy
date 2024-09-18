@@ -52,6 +52,7 @@ import io.seqera.wave.service.inspect.ContainerInspectServiceImpl
 import io.seqera.wave.service.pairing.PairingService
 import io.seqera.wave.service.pairing.socket.PairingChannel
 import io.seqera.wave.service.persistence.PersistenceService
+import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.token.ContainerTokenService
 import io.seqera.wave.service.token.TokenData
 import io.seqera.wave.service.validation.ValidationServiceImpl
@@ -552,5 +553,28 @@ class ContainerControllerTest extends Specification {
         controller.targetRepo('bar.com/build', null)
         then:
         noExceptionThrown()
+    }
+
+    def '/v1alpha2/container/{containerId} should return a container record' () {
+        given:
+        def body = new SubmitContainerTokenRequest(containerImage: 'hello-world')
+        def req1 = HttpRequest.POST("/container-token", body)
+        def resp1 = client.toBlocking().exchange(req1, SubmitContainerTokenResponse)
+        and:
+        resp1.status() == HttpStatus.OK
+        and:
+        def containerId = resp1.body().containerToken
+
+        when:
+        def req2 = HttpRequest.GET("/v1alpha2/container/${containerId}")
+        def resp2 = client.toBlocking().exchange(req2, WaveContainerRecord)
+        then:
+        resp2.status() == HttpStatus.OK
+        and:
+        def result = resp2.body()
+        and:
+        result.containerImage == 'hello-world'
+        result.sourceImage == 'docker.io/library/hello-world:latest'
+        result.waveImage == resp1.body().targetImage
     }
 }

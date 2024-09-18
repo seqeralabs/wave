@@ -18,7 +18,7 @@
 
 package io.seqera.wave.controller
 
-import spock.lang.Shared
+
 import spock.lang.Specification
 import spock.lang.Timeout
 
@@ -26,7 +26,6 @@ import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
-import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
@@ -60,10 +59,6 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
     @Inject
     @Client("/")
     HttpClient client;
-
-    @Inject
-    @Shared
-    ApplicationContext applicationContext
 
     BuildResult expected
 
@@ -125,7 +120,7 @@ class CustomImageControllerTest extends Specification implements DockerRegistryC
     }
 
     def setupSpec() {
-        initRegistryContainer(applicationContext)
+        initRegistryContainer()
     }
 
     void 'should fails head manifest when no image'() {

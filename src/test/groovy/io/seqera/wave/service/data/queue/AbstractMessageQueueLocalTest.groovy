@@ -40,7 +40,6 @@ class AbstractMessageQueueLocalTest extends Specification {
     @Inject
     private MessageQueue<String> broker
 
-
     def 'should send and consume a request'() {
         given:
         def queue = new PairingOutboundQueue(broker, Duration.ofMillis(100))

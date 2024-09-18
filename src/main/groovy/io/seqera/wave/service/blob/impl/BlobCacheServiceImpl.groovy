@@ -34,13 +34,16 @@ import io.seqera.wave.service.blob.BlobCacheInfo
 import io.seqera.wave.service.blob.BlobCacheService
 import io.seqera.wave.service.blob.BlobSigningService
 import io.seqera.wave.service.blob.BlobStore
-import io.seqera.wave.service.blob.transfer.TransferQueue
-import io.seqera.wave.service.blob.transfer.TransferStrategy
+import io.seqera.wave.service.job.JobHandler
+import io.seqera.wave.service.job.JobService
+import io.seqera.wave.service.job.JobSpec
+import io.seqera.wave.service.job.JobState
 import io.seqera.wave.util.Escape
 import io.seqera.wave.util.Retryable
 import io.seqera.wave.util.StringUtils
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Inject
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
 /**
@@ -49,10 +52,11 @@ import static io.seqera.wave.WaveDefault.HTTP_SERVER_ERRORS
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Slf4j
+@Named('Transfer')
 @Singleton
 @Requires(property = 'wave.blobCache.enabled', value = 'true')
 @CompileStatic
-class BlobCacheServiceImpl implements BlobCacheService {
+class BlobCacheServiceImpl implements BlobCacheService, JobHandler<BlobCacheInfo> {
 
     @Value('${wave.debug:false}')
     private Boolean debug
@@ -67,10 +71,7 @@ class BlobCacheServiceImpl implements BlobCacheService {
     private RegistryProxyService proxyService
 
     @Inject
-    private TransferStrategy transferStrategy
-
-    @Inject
-    private TransferQueue transferQueue
+    private JobService jobService
 
     @Inject
     private BlobSigningService signingService
@@ -178,21 +179,18 @@ class BlobCacheServiceImpl implements BlobCacheService {
         return command
     }
 
-    protected void store(RoutePath route, BlobCacheInfo info) {
-        log.debug "== Blob cache begin for object '${info.locationUri}'"
+    protected void store(RoutePath route, BlobCacheInfo blob) {
+        log.debug "== Blob cache begin for object '${blob.locationUri}'"
         try {
             // the transfer command to be executed
-            final cli = transferCommand(route, info)
-            transferStrategy.transfer(info, cli)
-            // signal the transfer to be started
-            // note: both `transferQueue` and `blobStore` use the same object `id`
-            transferQueue.offer(info.id())
+            final cli = transferCommand(route, blob)
+            jobService.launchTransfer(blob, cli)
         }
         catch (Throwable t) {
-            log.warn "== Blob cache failed for object '${info.objectUri}' - cause: ${t.message}", t
-            final result = info.failed(t.message)
+            log.warn "== Blob cache failed for object '${blob.objectUri}' - cause: ${t.message}", t
+            final result = blob.errored(t.message)
             // update the blob status
-            blobStore.storeBlob(info.id(), result, blobConfig.failureDuration)
+            blobStore.storeBlob(blob.id(), result)
         }
     }
 
@@ -266,4 +264,35 @@ class BlobCacheServiceImpl implements BlobCacheService {
         }
     }
 
+
+    // ============ handles transfer job events ============
+
+    @Override
+    BlobCacheInfo getJobRecord(JobSpec job) {
+        blobStore.getBlob(job.recordId)
+    }
+
+    @Override
+    void onJobCompletion(JobSpec job, BlobCacheInfo blob, JobState state) {
+        // update the blob status
+        final result = state.succeeded()
+                ? blob.completed(state.exitCode, state.stdout)
+                : blob.errored(state.stdout)
+        blobStore.storeBlob(blob.id(), result)
+        log.debug "== Blob cache completed for object '${blob.objectUri}'; operation=${job.operationName}; status=${result.exitStatus}; duration=${result.duration()}"
+    }
+
+    @Override
+    void onJobException(JobSpec job, BlobCacheInfo blob, Throwable error) {
+        final result = blob.errored("Unexpected error caching blob '${blob.locationUri}' - operation '${job.operationName}'")
+        log.error("== Blob cache exception for object '${blob.objectUri}'; operation=${job.operationName}; cause=${error.message}", error)
+        blobStore.storeBlob(blob.id(), result)
+    }
+
+    @Override
+    void onJobTimeout(JobSpec job, BlobCacheInfo blob) {
+        final result = blob.errored("Blob cache transfer timed out ${blob.objectUri}")
+        log.warn "== Blob cache timed out for object '${blob.objectUri}'; operation=${job.operationName}; duration=${result.duration()}"
+        blobStore.storeBlob(blob.id(), result)
+    }
 }

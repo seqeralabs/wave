@@ -30,10 +30,11 @@ import io.micronaut.http.HttpMethod
 import io.micronaut.http.MutableHttpRequest
 import io.micronaut.http.server.exceptions.InternalServerException
 import io.micronaut.reactor.http.client.ReactorStreamingHttpClient
+import io.seqera.wave.exception.RegistryForwardException
 import io.seqera.wave.auth.RegistryAuthService
 import io.seqera.wave.auth.RegistryCredentials
 import io.seqera.wave.auth.RegistryInfo
-import io.seqera.wave.auth.RegistryUnauthorizedAccessException
+import io.seqera.wave.exception.RegistryUnauthorizedAccessException
 import io.seqera.wave.configuration.HttpClientConfig
 import io.seqera.wave.core.ContainerPath
 import io.seqera.wave.util.RegHelper
@@ -239,7 +240,7 @@ class ProxyClient {
             // just re-throw it so that it's managed by the retry policy
             throw e
         }
-        catch (RegistryUnauthorizedAccessException e) {
+        catch (RegistryForwardException | RegistryUnauthorizedAccessException e) {
             // just re-throw it because it's a known error condition
             throw e
         }

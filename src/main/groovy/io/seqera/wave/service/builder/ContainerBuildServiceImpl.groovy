@@ -29,17 +29,23 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.core.annotation.Nullable
+import io.micronaut.runtime.event.annotation.EventListener
 import io.micronaut.scheduling.TaskExecutors
 import io.seqera.wave.api.BuildContext
 import io.seqera.wave.auth.RegistryCredentialsProvider
 import io.seqera.wave.auth.RegistryLookupService
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.configuration.HttpClientConfig
+import io.seqera.wave.configuration.SpackConfig
+import io.seqera.wave.core.RegistryProxyService
 import io.seqera.wave.exception.HttpServerRetryableErrorException
 import io.seqera.wave.ratelimit.AcquireRequest
 import io.seqera.wave.ratelimit.RateLimiterService
 import io.seqera.wave.service.builder.store.BuildRecordStore
-import io.seqera.wave.service.cleanup.CleanupStrategy
+import io.seqera.wave.service.job.JobHandler
+import io.seqera.wave.service.job.JobService
+import io.seqera.wave.service.job.JobSpec
+import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.metric.MetricsService
 import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.service.persistence.WaveBuildRecord
@@ -52,7 +58,6 @@ import jakarta.inject.Named
 import jakarta.inject.Singleton
 import static io.seqera.wave.util.RegHelper.layerDir
 import static io.seqera.wave.util.RegHelper.layerName
-import static io.seqera.wave.util.StringUtils.indent
 import static java.nio.file.StandardOpenOption.CREATE
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 import static java.nio.file.StandardOpenOption.WRITE
@@ -63,8 +68,9 @@ import static java.nio.file.StandardOpenOption.WRITE
  */
 @Slf4j
 @Singleton
+@Named('Build')
 @CompileStatic
-class ContainerBuildServiceImpl implements ContainerBuildService {
+class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<BuildStoreEntry> {
 
     @Inject
     private BuildConfig buildConfig
@@ -86,7 +92,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     private RegistryCredentialsProvider credentialsProvider
 
     @Inject
-    private BuildStrategy buildStrategy
+    private JobService jobService
 
     @Inject
     @Nullable
@@ -96,22 +102,22 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     private HttpClientConfig httpClientConfig
 
     @Inject
-    private CleanupStrategy cleanup
-
-    @Inject
     private StreamService streamService
 
     @Inject
     private BuildCounterStore buildCounter
 
     @Inject
-    PersistenceService persistenceService
+    private PersistenceService persistenceService
 
     @Inject
     private MetricsService metricsService
 
     @Inject
-    BuildRecordStore buildRecordStore
+    private BuildRecordStore buildRecordStore
+
+    @Inject
+    private RegistryProxyService proxyService
     
     /**
      * Build a container image for the given {@link BuildRequest}
@@ -152,9 +158,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         return containerFile
     }
 
-    protected BuildResult launch(BuildRequest req) {
-        // launch an external process to build the container
-        BuildResult resp=null
+    protected void launch(BuildRequest req) {
         try {
             // create the workdir path
             Files.createDirectories(req.workDir)
@@ -178,34 +182,17 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
             if( req.containerConfig ) {
                 saveLayersToContext(req, context)
             }
-            resp = buildStrategy.build(req)
-            def msg = "== Build request ${req.buildId} completed with status=$resp.exitStatus"
-            if( log.isTraceEnabled() )
-                msg += "; stdout: (see below)\n${indent(resp.logs)}"
-            log.info(msg)
-            return resp
+            // launch the container build
+            jobService.launchBuild(req)
         }
         catch (Throwable e) {
-            log.error "== Ouch! Unable to build container req=$req", e
-            return resp = BuildResult.failed(req.buildId, e.message, req.startTime)
-        }
-        finally {
-            // use a short time-to-live for failed build
-            // this is needed to allow re-try builds failed for
-            // temporary error conditions e.g. expired credentials
-            final ttl = resp.failed()
-                    ? buildConfig.statusDelay.multipliedBy(10)
-                    : buildConfig.statusDuration
-            // update build status store
-            buildStore.storeBuild(req.targetImage, resp, ttl)
-            // cleanup build context
-            if( cleanup.shouldCleanup(resp) )
-                buildStrategy.cleanup(req)
+            log.error "== Container build unexpected exception: ${e.message} - request=$req", e
+            final result = BuildResult.failed(req.buildId, e.message, req.startTime)
+            buildStore.storeBuild(req.targetImage, new BuildStoreEntry(req, result), buildConfig.failureDuration)
         }
     }
 
-
-    protected CompletableFuture<BuildResult> launchAsync(BuildRequest request) {
+    protected void launchAsync(BuildRequest request) {
         // check the build rate limit
         try {
             if( rateLimiterService )
@@ -224,12 +211,7 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
 
         // launch the build async
         CompletableFuture
-                .<BuildResult>supplyAsync(() -> launch(request), executor)
-                .thenApply((result) -> { notifyCompletion(request,result); return result })
-    }
-
-    protected notifyCompletion(BuildRequest request, BuildResult result) {
-        eventPublisher.publishEvent(new BuildEvent(request, result))
+                .runAsync(() -> launch(request), executor)
     }
 
     protected BuildTrack checkOrSubmit(BuildRequest request) {
@@ -239,17 +221,17 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
         // try to store a new build status for the given target image
         // this returns true if and only if such container image was not set yet
         final ret1 = BuildResult.create(request)
-        if( buildStore.storeIfAbsent(request.targetImage, ret1) ) {
+        if( buildStore.storeIfAbsent(request.targetImage, new BuildStoreEntry(request, ret1)) ) {
             // go ahead
-            log.info "== Submit build request: $request"
+            log.info "== Container build submitted - request=$request"
             launchAsync(request)
             return new BuildTrack(ret1.id, request.targetImage, false)
         }
         // since it was unable to initialise the build result status
         // this means the build status already exists, retrieve it
-        final ret2 = buildStore.getBuild(request.targetImage)
+        final ret2 = buildStore.getBuildResult(request.targetImage)
         if( ret2 ) {
-            log.info "== Hit build cache for request: $request"
+            log.info "== Container build hit cache - request=$request"
             // note: mark as cached only if the build result is 'done'
             // if the build is still in progress it should be marked as not cached
             // so that the client will wait for the container completion
@@ -325,28 +307,117 @@ class ContainerBuildServiceImpl implements ContainerBuildService {
     }
 
     // **************************************************************
+    // **               build job handle implementation
+    // **************************************************************
+
+    @Override
+    BuildStoreEntry getJobRecord(JobSpec job) {
+        buildStore.getBuild(job.recordId)
+    }
+
+    @Override
+    void onJobCompletion(JobSpec job, BuildStoreEntry build, JobState state) {
+        final buildId = build.request.buildId
+        final digest = state.succeeded()
+                        ? proxyService.getImageDigest(build.request, true)
+                        : null
+        // use a short time-to-live for failed build
+        // this is needed to allow re-try builds failed for
+        // temporary error conditions e.g. expired credentials
+        final ttl = state.succeeded()
+                ? buildConfig.statusDuration
+                : buildConfig.failureDuration
+        // update build status store
+        final exit = state.exitCode!=null ? state.exitCode : -1
+        final result = state.completed()
+                ? BuildResult.completed(buildId, exit, state.stdout, job.creationTime, digest)
+                : BuildResult.failed(buildId, state.stdout, job.creationTime)
+        buildStore.storeBuild(job.recordId, build.withResult(result), ttl)
+        eventPublisher.publishEvent(new BuildEvent(build.request, result))
+        log.info "== Container build completed '${build.request.targetImage}' - operation=${job.operationName}; exit=${exit}; status=${state.status}; duration=${result.duration}"
+    }
+
+    @Override
+    void onJobException(JobSpec job, BuildStoreEntry build, Throwable error) {
+        final result= BuildResult.failed(build.request.buildId, error.message, job.creationTime)
+        buildStore.storeBuild(job.recordId, build.withResult(result), buildConfig.failureDuration)
+        eventPublisher.publishEvent(new BuildEvent(build.request, result))
+        log.error("== Container build exception '${build.request.targetImage}' - operation=${job.operationName}; cause=${error.message}", error)
+    }
+
+    @Override
+    void onJobTimeout(JobSpec job, BuildStoreEntry build) {
+        final buildId = build.request.buildId
+        final result= BuildResult.failed(buildId, "Container image build timed out '${build.request.targetImage}'", job.creationTime)
+        buildStore.storeBuild(job.recordId, build.withResult(result), buildConfig.failureDuration)
+        eventPublisher.publishEvent(new BuildEvent(build.request, result))
+        log.warn "== Container build time out '${build.request.targetImage}'; operation=${job.operationName}; duration=${result.duration}"
+    }
+
+    // **************************************************************
     // **               build record implementation
     // **************************************************************
 
+    @EventListener
+    protected void onBuildEvent(BuildEvent event) {
+        saveBuildRecord(event)
+    }
+
     /**
-     * @Inherited
+     * Store a build record for the given {@link BuildRequest} object.
+     *
+     * This method is expected to store the build record associated with the request
+     * *only* in the short term store caching system, ie. without hitting the
+     * long-term SurrealDB storage
+     *
+     * @param request The build request that needs to be storage
      */
-    @Override
-    void createBuildRecord(String buildId, WaveBuildRecord value) {
+    protected void createBuildRecord(BuildRequest request) {
+        final record0 = WaveBuildRecord.fromEvent(new BuildEvent(request))
+        createBuildRecord(record0.buildId, record0)
+    }
+
+    /**
+     * Store the build record associated with the specified event both in the
+     * short-term cache (redis) and long-term persistence layer (surrealdb)
+     *
+     * @param event The {@link BuildEvent} object for which the build record needs to be stored
+     */
+    protected void saveBuildRecord(BuildEvent event) {
+        final record0 = WaveBuildRecord.fromEvent(event)
+        saveBuildRecord(record0.buildId, record0)
+    }
+
+    /**
+     * Store a build record object.
+     *
+     * This method is expected to store the build record *only* in the short term store cache (redis),
+     * ie. without hitting the long-term storage (surrealdb)
+     *
+     * @param buildId The Id of the build record
+     * @param value The {@link WaveBuildRecord} to be stored
+     */
+    protected void createBuildRecord(String buildId, WaveBuildRecord value) {
         buildRecordStore.putBuildRecord(buildId, value)
     }
 
     /**
-     * @Inherited
+     * Store the specified build record  both in the short-term cache (redis)
+     * and long-term persistence layer (surrealdb)
+     *
+     * @param buildId The Id of the build record
+     * @param value The {@link WaveBuildRecord} to be stored
      */
-    @Override
-    void saveBuildRecord(String buildId, WaveBuildRecord value) {
+    protected void saveBuildRecord(String buildId, WaveBuildRecord value) {
         buildRecordStore.putBuildRecord(buildId, value)
         persistenceService.saveBuild(value)
     }
 
     /**
-     * @Inherited
+     * Retrieve the build record for the specified id.
+     *
+     * @param buildId The ID of the build record to be retrieve
+     * @return The {@link WaveBuildRecord} associated with the corresponding Id, or {@code null} if it cannot be found
      */
     @Override
     WaveBuildRecord getBuildRecord(String buildId) {

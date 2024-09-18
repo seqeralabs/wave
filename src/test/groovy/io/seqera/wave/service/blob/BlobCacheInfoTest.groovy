@@ -38,6 +38,7 @@ class BlobCacheInfoTest extends Specification {
         blob.objectUri == 's3://foo/com'
         blob.headers == [:]
         blob.id() == 's3://foo/com'
+        blob.state == BlobCacheInfo.State.CREATED
 
         expect:
         BlobCacheInfo.create('http://foo.com', 's3://foo/com', [Foo:['alpha'], Bar:['delta', 'gamma', 'omega']], [:])
@@ -137,7 +138,7 @@ class BlobCacheInfoTest extends Specification {
         def cache = BlobCacheInfo.create(location, object, headers, response)
 
         when:
-        def result = cache.failed('Oops')
+        def result = cache.errored('Oops')
         then:
         result.headers == [Foo:'something']
         result.locationUri == 'http://foo.com'
@@ -243,7 +244,7 @@ class BlobCacheInfoTest extends Specification {
     def 'should validate duration' () {
         given:
         def info = new BlobCacheInfo(
-                null,
+                BlobCacheInfo.State.CREATED,
                 null,
                 null,
                 null,
@@ -266,4 +267,65 @@ class BlobCacheInfoTest extends Specification {
         now         | now.plusSeconds(10)   | Duration.ofSeconds(10)
         now         | now.plusSeconds(60)   | Duration.ofSeconds(60)
     }
+
+    def 'should create blob cached' () {
+        given:
+        def blob = BlobCacheInfo.create('http://foo.com', 's3://foo/com', [:], [:])
+
+        when:
+        def info = blob.cached()
+        then:
+        info.state == BlobCacheInfo.State.CACHED
+        info.locationUri == blob.locationUri
+        info.objectUri == blob.objectUri
+        info.headers == blob.headers
+        info.contentLength == blob.contentLength
+        info.contentType == blob.contentType
+        info.cacheControl == blob.cacheControl
+        info.creationTime == blob.creationTime
+        info.completionTime == blob.creationTime
+        info.exitStatus == 0
+        info.logs == null
+    }
+
+    def 'should create blob completed' () {
+        given:
+        def blob = BlobCacheInfo.create('http://foo.com', 's3://foo/com', [:], [:])
+
+        when:
+        def info = blob.completed(1, 'this is the log')
+        then:
+        info.state == BlobCacheInfo.State.COMPLETED
+        info.locationUri == blob.locationUri
+        info.objectUri == blob.objectUri
+        info.headers == blob.headers
+        info.contentLength == blob.contentLength
+        info.contentType == blob.contentType
+        info.cacheControl == blob.cacheControl
+        info.creationTime == blob.creationTime
+        info.completionTime <= Instant.now()
+        info.exitStatus == 1
+        info.logs == 'this is the log'
+    }
+
+    def 'should create blob failed' () {
+        given:
+        def blob = BlobCacheInfo.create('http://foo.com', 's3://foo/com', [:], [:])
+
+        when:
+        def info = blob.errored('this is the log')
+        then:
+        info.state == BlobCacheInfo.State.ERRORED
+        info.locationUri == blob.locationUri
+        info.objectUri == blob.objectUri
+        info.headers == blob.headers
+        info.contentLength == blob.contentLength
+        info.contentType == blob.contentType
+        info.cacheControl == blob.cacheControl
+        info.creationTime == blob.creationTime
+        info.completionTime <= Instant.now()
+        info.exitStatus == null
+        info.logs == 'this is the log'
+    }
+
 }

@@ -20,7 +20,6 @@ package io.seqera.wave.service.builder
 
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.concurrent.TimeUnit
 
 import groovy.json.JsonOutput
 import groovy.transform.CompileStatic
@@ -57,7 +56,7 @@ class DockerBuildStrategy extends BuildStrategy {
     RegistryProxyService proxyService
 
     @Override
-    BuildResult build(BuildRequest req) {
+    void build(String jobName, BuildRequest req) {
 
         Path configFile = null
         // save docker config for creds
@@ -76,7 +75,7 @@ class DockerBuildStrategy extends BuildStrategy {
         }
 
         // command the docker build command
-        final buildCmd= buildCmd(req, configFile)
+        final buildCmd= buildCmd(jobName, req, configFile)
         log.debug "Build run command: ${buildCmd.join(' ')}"
         // save docker cli for debugging purpose
         if( debug ) {
@@ -85,38 +84,33 @@ class DockerBuildStrategy extends BuildStrategy {
                     CREATE, WRITE, TRUNCATE_EXISTING)
         }
         
-        final proc = new ProcessBuilder()
-                .command(buildCmd)
-                .directory(req.workDir.toFile())
-                .redirectErrorStream(true)
-                .start()
+        final process = new ProcessBuilder()
+            .command(buildCmd)
+            .directory(req.workDir.toFile())
+            .redirectErrorStream(true)
+            .start()
 
-        final timeout = req.maxDuration ?: buildConfig.defaultTimeout
-        final completed = proc.waitFor(timeout.toSeconds(), TimeUnit.SECONDS)
-        final stdout = proc.inputStream.text
-        if( completed ) {
-            final digest = proc.exitValue()==0 ? proxyService.getImageDigest(req, true) : null
-            return BuildResult.completed(req.buildId, proc.exitValue(), stdout, req.startTime, digest)
-        }
-        else {
-            return BuildResult.failed(req.buildId, stdout, req.startTime)
+        if( process.waitFor()!=0 ) {
+            throw new IllegalStateException("Unable to launch build container - exitCode=${process.exitValue()}; output=${process.text}")
         }
     }
 
-    protected List<String> buildCmd(BuildRequest req, Path credsFile) {
+    protected List<String> buildCmd(String jobName, BuildRequest req, Path credsFile) {
+        final spack = req.isSpackBuild ? spackConfig : null
 
         final dockerCmd = req.formatDocker()
-                ? cmdForBuildkit( req.workDir, credsFile, req.platform)
-                : cmdForSingularity( req.workDir, credsFile, req.platform)
+                ? cmdForBuildkit(jobName, req.workDir, credsFile, spack, req.platform)
+                : cmdForSingularity(jobName, req.workDir, credsFile, spack, req.platform)
 
         return dockerCmd + launchCmd(req)
     }
 
-    protected List<String> cmdForBuildkit(Path workDir, Path credsFile, ContainerPlatform platform ) {
+    protected List<String> cmdForBuildkit(String name, Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform ) {
         //checkout the documentation here to know more about these options https://github.com/moby/buildkit/blob/master/docs/rootless.md#docker
         final wrapper = ['docker',
                          'run',
-                         '--rm',
+                         '--detach',
+                         '--name', name,
                          '--privileged',
                          '-v', "$workDir:$workDir".toString(),
                          '--entrypoint',
@@ -138,10 +132,11 @@ class DockerBuildStrategy extends BuildStrategy {
         return wrapper
     }
 
-    protected List<String> cmdForSingularity(Path workDir, Path credsFile, ContainerPlatform platform) {
+    protected List<String> cmdForSingularity(String name, Path workDir, Path credsFile, SpackConfig spackConfig, ContainerPlatform platform) {
         final wrapper = ['docker',
                          'run',
-                         '--rm',
+                         '--detach',
+                         '--name', name,
                          '--privileged',
                          "--entrypoint", '',
                          '-v', "$workDir:$workDir".toString()]

@@ -104,7 +104,7 @@ class RegistryProxyController {
 
     @Error
     HttpResponse<RegistryErrorResponse> handleError(HttpRequest request, Throwable t) {
-        return errorHandler.handle(request, t, (msg, code) -> new RegistryErrorResponse(code,msg) )
+        return errorHandler.handle(request, t, (String msg, String code) -> new RegistryErrorResponse(code,msg) )
     }
 
     @Get

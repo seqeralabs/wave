@@ -37,14 +37,13 @@ import jakarta.inject.Inject
  */
 @Slf4j
 @CompileStatic
-@Requires(property = 'wave.scan.enabled', value = 'true')
+@Requires(bean = ContainerScanService)
 @Controller("/")
 @ExecuteOn(TaskExecutors.IO)
 class ScanController {
     
     @Inject
     private ContainerScanService containerScanService
-
 
     @Get("/v1alpha1/scans/{scanId}")
     HttpResponse<WaveScanRecord> scanImage(String scanId){

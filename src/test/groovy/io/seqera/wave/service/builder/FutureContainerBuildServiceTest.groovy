@@ -19,62 +19,45 @@
 package io.seqera.wave.service.builder
 
 import spock.lang.Specification
-import spock.lang.Timeout
 
 import java.nio.file.Files
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.CompletableFuture
 
-import io.micronaut.context.annotation.Value
-import io.micronaut.test.annotation.MockBean
-import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.tower.PlatformId
-import jakarta.inject.Inject
 import io.seqera.wave.util.ContainerHelper
-
 /**
  *
  * @author Jorge Aguilera <jorge.aguilera@seqera.ia>
  */
-@MicronautTest
 class FutureContainerBuildServiceTest extends Specification {
 
-    @Value('${wave.build.repo}') String buildRepo
-    @Value('${wave.build.cache}') String cacheRepo
+    String buildRepo = 'build/repo'
+    String cacheRepo = 'cache/repo'
 
-    @Inject
-    ContainerBuildServiceImpl service
-
-    int exitCode
-
-    @MockBean(BuildStrategy)
-    BuildStrategy fakeBuildStrategy(){
-        new BuildStrategy() {
-            @Override
-            BuildResult build(BuildRequest req) {
-                new BuildResult("", exitCode, "a fake build result in a test", Instant.now(), Duration.ofSeconds(3), 'abc')
-            }
-        }
-    }
-
-
-    @Timeout(30)
-    def 'should wait to build container completion' () {
+    def 'should wait for successful container build' () {
         given:
         def folder = Files.createTempDirectory('test')
         and:
         def dockerfile = """
         FROM busybox
-        RUN echo $EXIT_CODE > hello.txt
+        RUN echo 'hello' > hello.txt
         """.stripIndent()
         and:
-        def containerId = ContainerHelper.makeContainerId(dockerfile, null, ContainerPlatform.of('amd64'), buildRepo, null)
-        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null)
-        def req = new BuildRequest(containerId, dockerfile, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1)).withBuildId('1')
+        def containerId = ContainerHelper.makeContainerId(dockerfile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
+        def req = new BuildRequest(containerId, dockerfile, null, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1)).withBuildId('1')
+        def res = new BuildResult("", 0, "a fake build result in a test", Instant.now(), Duration.ofSeconds(3), 'abc')
+        and:
+        def buildStore = Mock(BuildStore)
+        def buildCounter = Mock(BuildCounterStore)
+        buildStore.getBuildResult(targetImage) >> res
+        buildStore.awaitBuild(targetImage) >> CompletableFuture.completedFuture(res)
+        def service = new ContainerBuildServiceImpl(buildStore: buildStore, buildCounter: buildCounter)
 
         when:
-        exitCode = EXIT_CODE
         service.checkOrSubmit(req)
         then:
         noExceptionThrown()
@@ -82,15 +65,45 @@ class FutureContainerBuildServiceTest extends Specification {
         when:
         def status = service.buildResult(req.targetImage).get()
         then:
-        status.getExitStatus() == EXIT_CODE
+        status.getExitStatus() == 0
 
         cleanup:
         folder?.deleteDir()
+    }
 
-        where:
-        EXIT_CODE | _
-        0         | _
-        1         | _
+
+    def 'should wait for unsuccessful container build' () {
+        given:
+        def folder = Files.createTempDirectory('test')
+        and:
+        def dockerfile = """
+        FROM busybox
+        RUN echo 'hello' > hello.txt
+        """.stripIndent()
+        and:
+        def containerId = ContainerHelper.makeContainerId(dockerfile, null, null, ContainerPlatform.of('amd64'), buildRepo, null)
+        def targetImage = ContainerHelper.makeTargetImage(BuildFormat.DOCKER, buildRepo, containerId, null, null, null)
+        def req = new BuildRequest(containerId, dockerfile, null, null, folder, targetImage, Mock(PlatformId), ContainerPlatform.of('amd64'), cacheRepo, "10.20.30.40", '{"config":"json"}', null,null , null, null, BuildFormat.DOCKER, Duration.ofMinutes(1)).withBuildId('1')
+        def res = new BuildResult("", 1, "a fake build result in a test", Instant.now(), Duration.ofSeconds(3), 'abc')
+        and:
+        def buildStore = Mock(BuildStore)
+        def buildCounter = Mock(BuildCounterStore)
+        buildStore.getBuildResult(targetImage) >> res
+        buildStore.awaitBuild(targetImage) >> CompletableFuture.completedFuture(res)
+        def service = new ContainerBuildServiceImpl(buildStore: buildStore, buildCounter: buildCounter)
+
+        when:
+        service.checkOrSubmit(req)
+        then:
+        noExceptionThrown()
+
+        when:
+        def status = service.buildResult(req.targetImage).get()
+        then:
+        status.getExitStatus() == 1
+
+        cleanup:
+        folder?.deleteDir()
     }
 
 }
