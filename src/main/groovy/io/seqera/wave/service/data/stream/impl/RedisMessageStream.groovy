@@ -104,9 +104,12 @@ class RedisMessageStream implements MessageStream<String> {
         try (Jedis jedis = pool.getResource()) {
             final entry = claimMessage(jedis,streamId) ?: readMessage(jedis, streamId)
             if( entry && consumer.accept(entry.getFields().get(DATA_FIELD)) ) {
-                // acknowledge the job after processing
+                final tx = jedis.multi()
+                // acknowledge the entry has been processed so that it cannot be claimed anymore
+                tx.xack(streamId, CONSUMER_GROUP_NAME, entry.getID())
                 // this remove permanently the entry from the stream
-                jedis.xack(streamId, CONSUMER_GROUP_NAME, entry.getID())
+                tx.xdel(streamId, entry.getID())
+                tx.exec()
                 return true
             }
             else
