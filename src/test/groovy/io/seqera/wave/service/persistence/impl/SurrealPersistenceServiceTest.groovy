@@ -204,7 +204,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         persistence.saveBuild(WaveBuildRecord.fromEvent(new BuildEvent(request, result)))
 
         when:
-        sleep 200
+        sleep 300
         def loaded = persistence.latestBuild('abc')
 
         then:
