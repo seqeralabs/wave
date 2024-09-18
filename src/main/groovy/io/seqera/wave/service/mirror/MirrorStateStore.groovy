@@ -27,6 +27,7 @@ import io.seqera.wave.service.cache.impl.CacheProvider
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
+ * Implement a {@link io.seqera.wave.service.cache.CacheStore} for {@link MirrorResult} objects
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

@@ -87,7 +87,7 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
 
     @Override
     MirrorResult getMirrorResult(String mirrorId) {
-        store.get(mirrorId) ?: persistence.loadMirrorResult(mirrorId)
+        persistence.loadMirrorResult(mirrorId)
     }
 
     @Override

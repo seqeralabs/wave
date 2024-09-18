@@ -21,6 +21,8 @@ package io.seqera.wave.service.mirror
 import groovy.transform.CompileStatic
 
 /**
+ * Implement the common strategy to handle container mirror
+ * via Skopeo
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

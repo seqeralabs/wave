@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture
 import io.seqera.wave.service.builder.BuildTrack
 
 /**
- * Define the contrat for container images mirroring service
+ * Define the contract for container images mirroring service
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */

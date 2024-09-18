@@ -22,12 +22,14 @@ import spock.lang.Requires
 import spock.lang.Specification
 
 import java.nio.file.Files
+import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
 import groovy.util.logging.Slf4j
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.service.inspect.ContainerInspectService
+import io.seqera.wave.service.persistence.PersistenceService
 import io.seqera.wave.tower.PlatformId
 import jakarta.inject.Inject
 /**
@@ -40,6 +42,12 @@ class ContainerMirrorServiceTest extends Specification {
 
     @Inject
     ContainerMirrorService service
+
+    @Inject
+    MirrorStateStore mirrorStateStore
+
+    @Inject
+    PersistenceService persistenceService
 
     @Inject
     ContainerInspectService dockerAuthService
@@ -69,6 +77,25 @@ class ContainerMirrorServiceTest extends Specification {
 
         cleanup:
         folder?.deleteDir()
+    }
+
+    def 'should get mirror result from persistent service' () {
+        given:
+        def request = MirrorRequest.create(
+                'source/foo',
+                'target/foo',
+                'sha256:12345',
+                ContainerPlatform.DEFAULT,
+                Path.of('/some/dir'),
+                '{config}' )
+        and:
+        def result = MirrorResult.from(request)
+        and:
+        persistenceService.saveMirrorResult(result)
+        when:
+        def copy = service.getMirrorResult(request.id)
+        then:
+        copy == result
     }
 
 }

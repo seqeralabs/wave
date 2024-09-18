@@ -25,6 +25,7 @@ import io.micronaut.context.annotation.Value
 import jakarta.inject.Singleton
 
 /**
+ * Model mirror service config options
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
