@@ -4,8 +4,24 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Wave container inspect">
-    <title>Wave container inspect</title>
+    <title>Wave inspect: {{imageName}}</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+        body {
+            font-family: "Inter", sans-serif;
+            font-optical-sizing: auto;
+            font-weight: 200;
+            font-style: normal;
+        }
+        .monospace {
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        .container {
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
         table {
             width: 100%;
             margin: 20px 0;
@@ -18,9 +34,14 @@
             border: 1px solid #ddd;
             vertical-align: top;
         }
+        td:first-child {
+            max-width: 200px;
+            font-weight: 500;
+        }
         .tree {
             --spacing: 1.5rem;
             --radius: 6px;
+            padding: 10px 0 0;
         }
 
         .tree li {
@@ -87,7 +108,7 @@
 
         .tree summary::before {
             z-index: 1;
-            background: #3D95FD url('/assets/expand-collapse.svg') 0 0;
+            background: #3D95FD url("data:image/svg+xml,%3C%3Fxml version='1.0'%3F%3E%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20' viewBox='0 0 40 20'%3E%3Cg fill='%23fff'%3E%3Cpath d='m5 9h4v-4h2v4h4v2h-4v4h-2v-4h-4z'/%3E%3Cpath d='m25 9h10v2h-10z'/%3E%3C/g%3E%3C/svg%3E%0A") 0 0;
         }
 
         .tree details[open] > summary::before {
@@ -96,7 +117,7 @@
     </style>
 </head>
 <body>
-<div style="font-family:'-apple-system', BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; padding: 30px; max-width: 1200px; margin: 0 auto;">
+<div class="container">
 
     <div>
         <img style="float:left; margin-top: 5px; margin-right: 10px; width: 30px;" src="/assets/wave-logo.png">
@@ -115,19 +136,19 @@
         <table>
             <tr>
                 <td>Image Name</td>
-                <td>{{imageName}}</td>
+                <td class="monospace">{{imageName}}</td>
             </tr>
             <tr>
                 <td>Reference (tag)</td>
-                <td>{{reference}}</td>
+                <td class="monospace">{{reference}}</td>
             </tr>
             <tr>
                 <td>Digest</td>
-                <td>{{digest}}</td>
+                <td class="monospace">{{digest}}</td>
             </tr>
             <tr>
                 <td>Registry</td>
-                <td>{{registry}}</td>
+                <td class="monospace">{{registry}}</td>
             </tr>
             <tr>
                 <td>Host Name</td>
