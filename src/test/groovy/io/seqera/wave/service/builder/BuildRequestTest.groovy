@@ -124,20 +124,13 @@ class BuildRequestTest extends Specification {
         req.targetImage == 'docker.io/wave:samtools-1.0--8026e3a63b5c863f'
         req.condaFile == CONDA_RECIPE
 
-        // ===== spack content ====
-        def SPACK_RECIPE = '''\
-            spack:
-              specs: [bwa@0.7.15]
-            '''
-
         when:
-        CONTAINER_ID = ContainerHelper.makeContainerId(CONTENT, null, SPACK_RECIPE, PLATFORM, BUILD_REPO, CONTEXT)
-        TARGET_IMAGE = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID, null, SPACK_RECIPE, null)
+        CONTAINER_ID = ContainerHelper.makeContainerId(CONTENT, null, PLATFORM, BUILD_REPO, CONTEXT)
+        TARGET_IMAGE = ContainerHelper.makeTargetImage(FORMAT, BUILD_REPO, CONTAINER_ID, null, null)
         req = new BuildRequest(
                 CONTAINER_ID,
                 CONTENT,
                 null,
-                SPACK_RECIPE,
                 PATH,
                 TARGET_IMAGE,
                 USER,
@@ -155,10 +148,7 @@ class BuildRequestTest extends Specification {
         then:
         req.containerId == '8726782b1d9bb8fb'
         req.targetImage == 'docker.io/wave:bwa-0.7.15--8726782b1d9bb8fb'
-        req.spackFile == SPACK_RECIPE
         req.condaFile == null
-        and:
-        req.isSpackBuild
     }
 
     def 'should create singularity build request'() {

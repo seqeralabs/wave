@@ -153,7 +153,6 @@ class ContainerBuildServiceImpl implements ContainerBuildService, JobHandler<Bui
                 ? req.containerFile.replace('{{wave_context_dir}}', context.toString())
                 : req.containerFile
 
-        // render the Spack template if needed
         return containerFile
     }
 

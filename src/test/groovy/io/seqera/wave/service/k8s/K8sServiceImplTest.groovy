@@ -42,7 +42,6 @@ import io.micronaut.context.annotation.Replaces
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.configuration.BlobCacheConfig
 import io.seqera.wave.configuration.ScanConfig
-import io.seqera.wave.configuration.SpackConfig
 /**
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
@@ -292,9 +291,8 @@ class K8sServiceImplTest extends Specification {
         and:
         def ctx = ApplicationContext.run(PROPS)
         def k8sService = ctx.getBean(K8sServiceImpl)
-        def spackConfig = ctx.getBean(SpackConfig)
         when:
-        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null,Duration.ofSeconds(10), spackConfig, [:])
+        def result = k8sService.buildSpec('foo', 'my-image:latest', ['this','that'], Path.of('/build/work/xyz'), null,Duration.ofSeconds(10), [:])
         then:
         result.metadata.name == 'foo'
         result.metadata.namespace == 'my-ns'
@@ -692,11 +690,10 @@ class K8sServiceImplTest extends Specification {
         def workDir = Path.of('/work/dir')
         def credsFile = Path.of('/creds/file')
         def timeout = Duration.ofMinutes(10)
-        def spackConfig = new SpackConfig(secretKeyFile: Path.of('/build/secret/key'), secretMountPath: '/secret/mount')
         def nodeSelector = [key: 'value']
 
         when:
-        def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, spackConfig, nodeSelector)
+        def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, nodeSelector)
 
         then:
         job.spec.backoffLimit == 3
@@ -727,11 +724,10 @@ class K8sServiceImplTest extends Specification {
         def workDir = Path.of('/work/dir')
         def credsFile = Path.of('/creds/file')
         def timeout = Duration.ofMinutes(10)
-        def spackConfig = new SpackConfig(secretKeyFile: Path.of('/build/secret/key'), secretMountPath: '/secret/mount')
         def nodeSelector = [key: 'value']
 
         when:
-        def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, spackConfig, nodeSelector)
+        def job = k8sService.buildJobSpec(name, containerImage, args, workDir, credsFile, timeout, nodeSelector)
 
         then:
         job.spec.template.spec.containers[0].image == containerImage

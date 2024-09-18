@@ -296,27 +296,6 @@ class K8sServiceImpl implements K8sService {
                 .readOnly(true)
     }
 
-    protected V1VolumeMount mountSpackCacheDir(Path spackCacheDir, String storageMountPath, String containerPath) {
-        final rel = Path.of(storageMountPath).relativize(spackCacheDir).toString()
-        if( !rel || rel.startsWith('../') )
-            throw new IllegalArgumentException("Spack cacheDirectory '$spackCacheDir' must be a sub-directory of storage path '$storageMountPath'")
-        return new V1VolumeMount()
-                .name('build-data')
-                .mountPath(containerPath)
-                .subPath(rel)
-    }
-
-    protected V1VolumeMount mountSpackSecretFile(Path secretFile, String storageMountPath, String containerPath) {
-        final rel = Path.of(storageMountPath).relativize(secretFile).toString()
-        if( !rel || rel.startsWith('../') )
-            throw new IllegalArgumentException("Spack secretKeyFile '$secretFile' must be a sub-directory of storage path '$storageMountPath'")
-        return new V1VolumeMount()
-                .name('build-data')
-                .readOnly(true)
-                .mountPath(containerPath)
-                .subPath(rel)
-    }
-
     protected V1VolumeMount mountScanCacheDir(Path scanCacheDir, String storageMountPath) {
         final rel = Path.of(storageMountPath).relativize(scanCacheDir).toString()
         if( !rel || rel.startsWith('../') )

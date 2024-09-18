@@ -227,7 +227,6 @@ class ViewControllerTest extends Specification {
                 buildId: '12345',
                 dockerFile: 'FROM foo',
                 condaFile: 'conda::foo',
-                spackFile: 'some-spack-recipe',
                 targetImage: 'docker.io/some:image',
                 userName: 'paolo',
                 userEmail: 'paolo@seqera.io',
@@ -252,7 +251,6 @@ class ViewControllerTest extends Specification {
         binding.build_platform == 'linux/amd64'
         binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
-        binding.build_spackfile == 'some-spack-recipe'
         binding.build_format == 'Docker'
         binding.build_log_data == 'log content'
         binding.build_log_truncated == false
@@ -270,7 +268,6 @@ class ViewControllerTest extends Specification {
                 buildId: '12345',
                 dockerFile: 'FROM foo',
                 condaFile: 'conda::foo',
-                spackFile: 'some-spack-recipe',
                 targetImage: 'docker.io/some:image',
                 userName: 'paolo',
                 userEmail: 'paolo@seqera.io',
@@ -296,7 +293,6 @@ class ViewControllerTest extends Specification {
         binding.build_platform == 'linux/amd64'
         binding.build_containerfile == 'FROM foo'
         binding.build_condafile == 'conda::foo'
-        binding.build_spackfile == 'some-spack-recipe'
         binding.build_format == 'Docker'
         binding.build_log_data == 'log content'
         binding.build_log_truncated == false

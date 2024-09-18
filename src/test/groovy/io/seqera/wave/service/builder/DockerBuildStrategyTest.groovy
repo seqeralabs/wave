@@ -70,7 +70,7 @@ class DockerBuildStrategyTest extends Specification {
                 'moby/buildkit:v0.14.1-rootless']
 
         when:
-        cmd = service.cmdForBuildkit('build-job-name', work, Path.of('/foo/creds.json'), spackConfig, null)
+        cmd = service.cmdForBuildkit('build-job-name', work, Path.of('/foo/creds.json'), null)
         then:
         cmd == ['docker',
                 'run',
