@@ -89,12 +89,18 @@ class SurrealPersistenceService implements PersistenceService {
         if( ret4.status != "OK")
             throw new IllegalStateException("Unable to define SurrealDB table wave_scan_vuln - cause: $ret4")
         // create wave_conda_lock table
-        final ret5 = surrealDb.sqlAsMap(authorization, "DEFINE TABLE wave_conda_lock SCHEMAFULL;" +
-                "DEFINE FIELD buildId ON TABLE wave_conda_lock TYPE number;" +
-                "DEFINE FIELD condaLockFile ON TABLE wave_conda_lock TYPE bytes;" +
-                "DEFINE INDEX idx_buildId ON TABLE wave_conda_lock COLUMNS buildId UNIQUE;")
+        final ret5 = surrealDb.sqlAsMap(authorization, "DEFINE TABLE wave_conda_lock SCHEMAFULL;")
         if( ret5.status != "OK")
             throw new IllegalStateException("Unable to define SurrealDB table wave_conda_lock - cause: $ret5")
+        final ret6 = surrealDb.sqlAsMap(authorization, "DEFINE FIELD buildId ON TABLE wave_conda_lock TYPE number;")
+        if( ret6.status != "OK")
+            throw new IllegalStateException("Unable to define SurrealDB field buildId on table wave_conda_lock - cause: $ret6")
+        final ret7 = surrealDb.sqlAsMap(authorization, "DEFINE FIELD condaLockFile ON TABLE wave_conda_lock TYPE bytes;")
+        if( ret7.status != "OK")
+            throw new IllegalStateException("Unable to define SurrealDB field condaLockFile on table wave_conda_lock - cause: $ret7")
+        final ret8 = surrealDb.sqlAsMap(authorization, "DEFINE INDEX idx_buildId ON TABLE wave_conda_lock COLUMNS buildId UNIQUE;")
+        if( ret8.status != "OK")
+            throw new IllegalStateException("Unable to define SurrealDB index idx_buildId on table wave_conda_lock - cause: $ret8")
     }
 
     private String getAuthorization() {

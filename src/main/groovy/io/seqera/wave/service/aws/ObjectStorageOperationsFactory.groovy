@@ -51,5 +51,4 @@ class ObjectStorageOperationsFactory {
         configuration.setBucket(storageBucket)
         return new AwsS3Operations(configuration, s3Client, inputStreamMapper)
     }
-
 }

@@ -35,6 +35,7 @@ import io.seqera.wave.core.ContainerPlatform
 import io.seqera.wave.core.spec.ContainerSpec
 import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.service.ContainerRequestData
+import io.seqera.wave.service.conda.CondaLockService
 import io.seqera.wave.service.inspect.ContainerInspectService
 import io.seqera.wave.service.logs.BuildLogService
 import io.seqera.wave.service.logs.BuildLogServiceImpl
@@ -74,9 +75,12 @@ class ViewControllerTest extends Specification {
     @Inject
     private ContainerInspectService inspectService
 
+    @Inject
+    private CondaLockService condaLockService
+
     def 'should render build page' () {
         given:
-        def controller = new ViewController(serverUrl: 'http://foo.com', buildLogService: buildLogService)
+        def controller = new ViewController(serverUrl: 'http://foo.com', buildLogService: buildLogService, condaLockService: condaLockService)
         and:
         def record = new WaveBuildRecord(
                 buildId: '12345',
@@ -113,6 +117,7 @@ class ViewControllerTest extends Specification {
         binding.build_log_data == 'log content'
         binding.build_log_truncated == false
         binding.build_log_url == 'http://foo.com/v1alpha1/builds/12345/logs'
+        binding.build_conda_lock_url == 'http://foo.com/v1alpha1/builds/12345/condalock'
         binding.build_success == true
         binding.build_in_progress == false
         binding.build_failed == false

@@ -18,6 +18,8 @@
 
 package io.seqera.wave.service.conda
 
+import io.micronaut.http.server.types.files.StreamedFile
+
 /**
  * Service to manage conda lock files
  *
@@ -27,6 +29,6 @@ interface CondaLockService {
 
     void storeCondaLock(String buildId, String condaLock)
 
-    String fetchCondaLock(String buildId)
+    StreamedFile fetchCondaLock(String buildId)
 
 }

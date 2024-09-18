@@ -78,7 +78,7 @@ class CondaLockServiceImplTest extends Specification {
         def condaLock = service.fetchCondaLock("someId")
 
         then:
-        condaLock == "conda lock content"
+        condaLock.inputStream.text == "conda lock content"
     }
 
     def "should return null when buildId is null" () {

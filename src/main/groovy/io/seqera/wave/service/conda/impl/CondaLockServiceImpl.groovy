@@ -18,6 +18,8 @@
 
 package io.seqera.wave.service.conda.impl
 
+import io.micronaut.http.MediaType
+import io.micronaut.http.server.types.files.StreamedFile
 import io.seqera.wave.service.conda.CondaLockService
 
 import java.nio.charset.StandardCharsets
@@ -75,13 +77,20 @@ class CondaLockServiceImpl implements CondaLockService {
     }
 
     @Override
-    String fetchCondaLock(String buildId) {
+    StreamedFile fetchCondaLock(String buildId) {
         if( !buildId )
             return null
-        return new String(persistenceService.loadCondaLock(buildId).condaLockFile, StandardCharsets.UTF_8)
+        def condaLock = persistenceService.loadCondaLock(buildId)?.condaLockFile
+        if( !condaLock )
+            return null
+        def inputStream = new ByteArrayInputStream(condaLock)
+        return new StreamedFile(inputStream, MediaType.APPLICATION_OCTET_STREAM_TYPE)
+
     }
 
     protected static extractCondaLockFile(String logs) {
+        if ( !logs )
+            return null
         return logs.substring(logs.lastIndexOf(CONDA_LOCK_START) + CONDA_LOCK_START.length(), logs.lastIndexOf(CONDA_LOCK_END))
                 .replaceAll(/#\d+ \d+\.\d+\s*/, '')
     }

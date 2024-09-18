@@ -68,8 +68,9 @@ class ViewController {
 
     @Inject
     @Nullable
-    CondaLockService condaLockService
-  
+    private CondaLockService condaLockService
+
+    @Inject
     private ContainerInspectService inspectService
 
     @View("build-view")

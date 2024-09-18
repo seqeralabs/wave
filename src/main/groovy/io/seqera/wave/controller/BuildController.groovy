@@ -86,13 +86,13 @@ class BuildController {
 
     @Produces(MediaType.TEXT_PLAIN)
     @Get(value="/v1alpha1/builds/{buildId}/condalock")
-    HttpResponse<String> getCondaLock(String buildId){
+    HttpResponse<StreamedFile> getCondaLock(String buildId){
         if( condaLockService==null )
             throw new IllegalStateException("Build Logs service not configured")
-        final logs = condaLockService.fetchCondaLock(buildId)
-        return logs
-                ? HttpResponse.ok(logs)
-                : HttpResponse.<String>notFound()
+        final condaLock = condaLockService.fetchCondaLock(buildId)
+        return condaLock
+                ? HttpResponse.ok(condaLock)
+                : HttpResponse.<StreamedFile>notFound()
     }
 
 }
