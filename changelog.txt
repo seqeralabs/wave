@@ -1,4 +1,9 @@
 # Wave changelog
+1.12.2 - 18 Sep 2024 
+- Fix Remove entries permanently from stream once consumed [adfad9d6]
+- Refactor container build service [1a858c12]
+- Remove unused code [268c76ea]
+
 1.12.1 - 17 Sep 2024 
 - Fix stream check for new messages [16a7e256]
 
