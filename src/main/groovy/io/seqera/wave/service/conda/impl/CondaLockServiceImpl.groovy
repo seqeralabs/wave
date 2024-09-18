@@ -55,7 +55,7 @@ class CondaLockServiceImpl implements CondaLockService {
 
     @EventListener
     void onBuildEvent(BuildEvent event) {
-        if (event.request.condaFile) {
+        if ( event.request.condaFile ) {
             CompletableFuture.supplyAsync(() -> storeCondaLock(event.result.id, event.result.logs), ioExecutor)
         }
     }

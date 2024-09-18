@@ -134,8 +134,6 @@ class BuildLogServiceImpl implements BuildLogService {
         if(logs.indexOf(CONDA_LOCK_START) < 0 ) {
             return logs
         }
-        def condaLock = logs.substring(logs.lastIndexOf( CONDA_LOCK_START), logs.lastIndexOf(CONDA_LOCK_END) + CONDA_LOCK_END.length())
-
-        return logs.replace(condaLock, '')
+        return logs.replaceAll(/(?s)\n?#\d+ \d+\.\d+ $CONDA_LOCK_START.*?$CONDA_LOCK_END\n?/, '\n')
     }
 }
