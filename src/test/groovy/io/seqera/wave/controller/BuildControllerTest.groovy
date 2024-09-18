@@ -195,6 +195,7 @@ class BuildControllerTest extends Specification {
         then:
         res.status() == HttpStatus.OK
         new String(res.body()) == condaLock
+        res.header("Content-Disposition") == "attachment; filename=\"${build1.buildId}.lock\""
 
         when:
         client.toBlocking().exchange(HttpRequest.GET("/v1alpha1/builds/0000/condalock"), String)
