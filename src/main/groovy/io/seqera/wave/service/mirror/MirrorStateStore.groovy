@@ -27,19 +27,19 @@ import io.seqera.wave.service.cache.impl.CacheProvider
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 /**
- * Implement a {@link io.seqera.wave.service.cache.CacheStore} for {@link MirrorResult} objects
+ * Implement a {@link io.seqera.wave.service.cache.CacheStore} for {@link MirrorState} objects
  *
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
 @Singleton
 @CompileStatic
-class MirrorStateStore extends AbstractCacheStore<MirrorResult> {
+class MirrorStateStore extends AbstractCacheStore<MirrorState> {
 
     @Inject
     private MirrorConfig config
 
     MirrorStateStore(CacheProvider<String,String> provider) {
-        super(provider, new MoshiEncodeStrategy<MirrorResult>() {})
+        super(provider, new MoshiEncodeStrategy<MirrorState>() {})
     }
 
     @Override
@@ -52,7 +52,7 @@ class MirrorStateStore extends AbstractCacheStore<MirrorResult> {
         return config.statusDuration
     }
 
-    MirrorResult awaitCompletion(String targetImage) {
+    MirrorState awaitCompletion(String targetImage) {
         final beg = System.currentTimeMillis()
         while( true ) {
             final result = get(targetImage)

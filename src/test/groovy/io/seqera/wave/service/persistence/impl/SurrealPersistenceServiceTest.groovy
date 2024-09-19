@@ -38,7 +38,7 @@ import io.seqera.wave.service.builder.BuildFormat
 import io.seqera.wave.service.builder.BuildRequest
 import io.seqera.wave.service.builder.BuildResult
 import io.seqera.wave.service.mirror.MirrorRequest
-import io.seqera.wave.service.mirror.MirrorResult
+import io.seqera.wave.service.mirror.MirrorState
 import io.seqera.wave.service.persistence.WaveBuildRecord
 import io.seqera.wave.service.persistence.WaveContainerRecord
 import io.seqera.wave.service.persistence.WaveScanRecord
@@ -337,7 +337,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         and:
         storage.initializeDb()
         and:
-        def result = MirrorResult.from(request)
+        def result = MirrorState.from(request)
         storage.saveMirrorResult(result)
         sleep 100
 
@@ -361,7 +361,7 @@ class SurrealPersistenceServiceTest extends Specification implements SurrealDBTe
         and:
         storage.initializeDb()
         and:
-        def result = MirrorResult.from(request)
+        def result = MirrorState.from(request)
         storage.saveMirrorResult(result)
         sleep 100
 

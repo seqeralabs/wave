@@ -29,10 +29,35 @@ import io.seqera.wave.service.builder.BuildTrack
  */
 interface ContainerMirrorService {
 
+    /**
+     * Submit a container mirror request
+     *
+     * @param request
+     *      The {@link MirrorRequest} modelling the container mirror request
+     * @return
+     *      A {@link BuildTrack} object representing the state of the request
+     */
     BuildTrack mirrorImage(MirrorRequest request)
 
-    CompletableFuture<MirrorResult> awaitCompletion(String targetImage)
+    /**
+     * Await the completion for the specified target container image
+     *
+     * @param targetImage
+     *      The container image of the mirror operation to be awaited
+     * @return
+     *      A future holding the {@link MirrorState} when the mirror operation complete
+     */
+    CompletableFuture<MirrorState> awaitCompletion(String targetImage)
 
-    MirrorResult getMirrorResult(String id)
+    /**
+     * Retrieve the current state of the mirror operation
+     *
+     * @param id
+     *      The id of the mirror state record
+     * @return
+     *      The {@link MirrorState} object modelling the current state of the mirror operation,
+     *      or {@link null} otherwise
+     */
+    MirrorState getMirrorState(String id)
 
 }

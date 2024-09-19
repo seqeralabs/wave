@@ -31,7 +31,7 @@ import io.seqera.wave.service.job.JobSpec
 import io.seqera.wave.service.job.JobState
 import io.seqera.wave.service.mirror.ContainerMirrorService
 import io.seqera.wave.service.mirror.MirrorRequest
-import io.seqera.wave.service.mirror.MirrorResult
+import io.seqera.wave.service.mirror.MirrorState
 import io.seqera.wave.service.mirror.MirrorStateStore
 import io.seqera.wave.service.persistence.PersistenceService
 import jakarta.inject.Inject
@@ -46,7 +46,7 @@ import jakarta.inject.Singleton
 @Singleton
 @Named('Mirror')
 @CompileStatic
-class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<MirrorResult> {
+class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<MirrorState> {
 
     @Inject
     private MirrorStateStore store
@@ -61,9 +61,12 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
     @Inject
     private PersistenceService persistence
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     BuildTrack mirrorImage(MirrorRequest request) {
-        if( store.putIfAbsent(request.targetImage, MirrorResult.from(request))) {
+        if( store.putIfAbsent(request.targetImage, MirrorState.from(request))) {
             log.info "== Container mirror submitted - request=$request"
             jobService.launchMirror(request)
             return new BuildTrack(request.id, request.targetImage, false)
@@ -80,39 +83,57 @@ class ContainerMirrorServiceImpl implements ContainerMirrorService, JobHandler<M
         throw new IllegalStateException("Unable to determine mirror status for '$request.targetImage'")
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    CompletableFuture<MirrorResult> awaitCompletion(String targetImage) {
+    CompletableFuture<MirrorState> awaitCompletion(String targetImage) {
         return CompletableFuture.supplyAsync(()-> store.awaitCompletion(targetImage), ioExecutor)
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    MirrorResult getMirrorResult(String mirrorId) {
+    MirrorState getMirrorState(String mirrorId) {
         store.getByRecordId(mirrorId) ?: persistence.loadMirrorResult(mirrorId)
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    MirrorResult getJobRecord(JobSpec jobSpec) {
+    MirrorState getJobRecord(JobSpec jobSpec) {
         store.get(jobSpec.recordId)
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    void onJobCompletion(JobSpec jobSpec, MirrorResult mirror, JobState jobState) {
+    void onJobCompletion(JobSpec jobSpec, MirrorState mirror, JobState jobState) {
         final result = mirror.complete(jobState.exitCode, jobState.stdout)
         store.put(mirror.targetImage, result)
         persistence.saveMirrorResult(mirror)
         log.debug "Mirror container completed - job=${jobSpec.operationName}; result=${result}; state=${jobState}"
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    void onJobTimeout(JobSpec jobSpec, MirrorResult mirror) {
+    void onJobTimeout(JobSpec jobSpec, MirrorState mirror) {
         final result = mirror.complete(null, "Mirror container timed out")
         store.put(mirror.targetImage, result)
         persistence.saveMirrorResult(mirror)
         log.warn "Mirror container timed out - job=${jobSpec.operationName}; result=${result}"
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    void onJobException(JobSpec jobSpec, MirrorResult mirror, Throwable error) {
+    void onJobException(JobSpec jobSpec, MirrorState mirror, Throwable error) {
         final result = mirror.complete(null, error.message)
         store.put(mirror.targetImage, result)
         persistence.saveMirrorResult(mirror)

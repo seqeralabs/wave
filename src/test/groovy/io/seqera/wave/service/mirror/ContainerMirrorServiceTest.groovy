@@ -89,11 +89,11 @@ class ContainerMirrorServiceTest extends Specification {
                 Path.of('/some/dir'),
                 '{config}' )
         and:
-        def result = MirrorResult.from(request)
+        def result = MirrorState.from(request)
         and:
         persistenceService.saveMirrorResult(result)
         when:
-        def copy = service.getMirrorResult(request.id)
+        def copy = service.getMirrorState(request.id)
         then:
         copy == result
     }
@@ -108,11 +108,11 @@ class ContainerMirrorServiceTest extends Specification {
                 Path.of('/some/dir'),
                 '{config}' )
         and:
-        def result = MirrorResult.from(request)
+        def result = MirrorState.from(request)
         and:
         mirrorStateStore.put('target/foo', result)
         when:
-        def copy = service.getMirrorResult(request.id)
+        def copy = service.getMirrorState(request.id)
         then:
         copy == result
     }
