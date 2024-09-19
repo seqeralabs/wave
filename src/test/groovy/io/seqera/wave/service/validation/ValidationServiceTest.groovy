@@ -106,6 +106,8 @@ class ValidationServiceTest extends Specification {
         'docker.io'             | null
         'docker.io/foo'         | 'Mirror registry syntax is invalid - offending value: docker.io/foo'
         'docker://foo.io'       | 'Mirror registry should not include any protocol prefix - offending value: docker://foo.io'
+        'wave.seqera.io'        | 'Mirror registry not allowed - offending value: wave.seqera.io'
+        'cr.wave.seqera.io'     | 'Mirror registry not allowed - offending value: cr.wave.seqera.io'
     }
 
 }

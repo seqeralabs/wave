@@ -103,6 +103,8 @@ class ValidationServiceImpl implements ValidationService {
         final coords = ContainerCoordinates.parse(registry)
         if( coords.repository )
             return "Mirror registry syntax is invalid - offending value: ${registry}"
+        if( coords.registry == 'wave.seqera.io' || coords.registry?.contains('.wave.seqera.io') )
+            return "Mirror registry not allowed - offending value: ${registry}"
         return null
     }
 
