@@ -33,8 +33,6 @@ import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import io.seqera.wave.api.ContainerConfig
 import io.seqera.wave.api.SubmitContainerTokenRequest
 import io.seqera.wave.core.ContainerPlatform
-import io.seqera.wave.core.spec.ContainerSpec
-import io.seqera.wave.exception.DockerRegistryException
 import io.seqera.wave.service.ContainerRequestData
 import io.seqera.wave.service.builder.ContainerBuildService
 import io.seqera.wave.service.inspect.ContainerInspectService
@@ -76,7 +74,7 @@ class ViewControllerTest extends Specification {
     @Inject
     private ContainerInspectService inspectService
 
-    def 'should render build page' () {
+    def 'should return build page mapping' () {
         given:
         def controller = new ViewController(serverUrl: 'http://foo.com', buildLogService: buildLogService)
         and:
@@ -118,7 +116,7 @@ class ViewControllerTest extends Specification {
         binding.build_failed == false
     }
 
-    def 'should render a build page' () {
+    def 'should render build page' () {
         given:
         def record1 = new WaveBuildRecord(
                 buildId: '112233',
@@ -146,7 +144,7 @@ class ViewControllerTest extends Specification {
         !response.body().contains('Conda file')
     }
 
-    def 'should render a build page with conda file' () {
+    def 'should render build page with conda file' () {
         given:
         def record1 = new WaveBuildRecord(
                 buildId: 'test',

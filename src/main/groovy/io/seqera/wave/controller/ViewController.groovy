@@ -19,10 +19,9 @@
 package io.seqera.wave.controller
 
 import java.util.regex.Pattern
-import groovy.json.JsonOutput
-import io.micronaut.core.annotation.Nullable
 
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import io.micronaut.context.annotation.Value
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpResponse
@@ -48,6 +47,7 @@ import static io.seqera.wave.util.DataTimeUtils.formatTimestamp
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
+@Slf4j
 @CompileStatic
 @Controller("/view")
 @ExecuteOn(TaskExecutors.IO)
@@ -75,16 +75,21 @@ class ViewController {
     HttpResponse viewBuild(String buildId) {
         // check redirection for invalid suffix in the form `-nn`
         final r1 = shouldRedirect1(buildId)
-        if( r1 )
+        if( r1 ) {
+            log.debug "Redirect to build page: $r1"
             return HttpResponse.redirect(URI.create(r1))
+        }
         // check redirection when missing the suffix `_nn`
         final r2 = shouldRedirect2(buildId)
-        if( r2 )
+        if( r2 ) {
+            log.debug "Redirect to build page: $r2"
             return HttpResponse.redirect(URI.create(r2))
+        }
         // go ahead with proper handling
         final record = buildService.getBuildRecord(buildId)
         if( !record )
             throw new NotFoundException("Unknown build id '$buildId'")
+        log.debug "View build page for: $buildId"
         return HttpResponse.ok(renderBuildView(record))
     }
 
