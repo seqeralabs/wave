@@ -97,7 +97,6 @@ class MailServiceImpl implements MailService {
         binding.build_platform = req.platform
         binding.build_containerfile = req.containerFile ?: '-'
         binding.build_condafile = req.condaFile
-        binding.build_spackfile = req.spackFile
         binding.build_digest = result.digest ?: '-'
         binding.put('build_log_data', result.logs)
         binding.build_url = "$serverUrl/view/builds/${result.id}"

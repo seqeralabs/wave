@@ -28,7 +28,7 @@ import io.seqera.wave.service.cache.impl.CacheProvider
  * 
  * @author Paolo Di Tommaso <paolo.ditommaso@gmail.com>
  */
-abstract class AbstractCacheStore<V> implements CacheStore<String,V>, BiCacheStore<String,V> {
+abstract class AbstractCacheStore<V> implements CacheStore<String,V> {
 
     private EncodingStrategy<V> encodingStrategy
 
@@ -101,25 +101,4 @@ abstract class AbstractCacheStore<V> implements CacheStore<String,V>, BiCacheSto
         delegate.clear()
     }
 
-    @Override
-    void biPut(String key, V value, Duration ttl) {
-        delegate.biPut(key0(key), serialize(value), ttl)
-    }
-
-    @Override
-    void biRemove(String key) {
-        delegate.biRemove(key0(key))
-    }
-
-    @Override
-    Set<String> biKeysFor(V value) {
-        final keys = delegate.biKeysFor(serialize(value))
-        return keys.collect( (it) -> it.replace(getPrefix(),'') )
-    }
-
-    @Override
-    String biKeyFind(V value, boolean sorted) {
-        final result = delegate.biKeyFind(serialize(value), sorted)
-        result ? result.replace(getPrefix(),'') : null
-    }
 }

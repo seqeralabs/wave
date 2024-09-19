@@ -23,6 +23,7 @@ import java.time.Duration
 import groovy.transform.CompileStatic
 import io.seqera.wave.configuration.BuildConfig
 import io.seqera.wave.encoder.MoshiEncodeStrategy
+import io.seqera.wave.service.builder.BuildStoreEntry
 import io.seqera.wave.service.cache.AbstractCacheStore
 import io.seqera.wave.service.cache.impl.CacheProvider
 import io.seqera.wave.service.persistence.WaveBuildRecord
