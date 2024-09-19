@@ -4,8 +4,6 @@ wave:
     enabled: true
   build:
     workspace: 'build-workspace'
-    spack:
-      cacheDirectory: 'spack-cache'
   metrics:
     enabled: true
   accounts:
